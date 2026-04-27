@@ -21,8 +21,6 @@ export class VideoStreamHandler {
   private initialFragmentCount: number;
   private maxQualityLevel: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
-  private currentLoadingLevel: number;
-  private isLoadingQuality: boolean;
 
   constructor(
     videoElement: HTMLVideoElement,
@@ -40,8 +38,6 @@ export class VideoStreamHandler {
     this.initialFragmentCount = options.initialFragmentCount || 1;
     this.maxQualityLevel = -1; // Will be set after manifest is parsed
     this.onLoadingChange = options.onLoadingChange || (() => {}); // Callback for loading state
-    this.currentLoadingLevel = -1; // Track the level being loaded
-    this.isLoadingQuality = false; // Track if we're in a quality loading state
 
     this.init();
   }
@@ -86,20 +82,10 @@ export class VideoStreamHandler {
       }
     });
 
-    // Track level switching - show loading when quality changes
+    // Track level switching
     this.hls.on(Hls.Events.LEVEL_SWITCHING, (event, data) => {
       const newLevel = data.level;
       console.log(`Level switching to: ${newLevel}`);
-
-      // Only show loading if we're not in initial load and quality is actually changing
-      if (!this.isInitialLoad && this.currentLoadingLevel !== newLevel) {
-        this.currentLoadingLevel = newLevel;
-        this.isLoadingQuality = true;
-
-        const qualityInfo = this.getQualityInfo(newLevel);
-        this.onLoadingChange(true, qualityInfo);
-        console.log(`Showing loading state for quality level: ${newLevel}`);
-      }
     });
 
     // Track fragment loading
@@ -110,13 +96,6 @@ export class VideoStreamHandler {
       console.log(
         `Fragment ${this.fragmentsLoaded} loaded (segment #${data.frag.sn}, level: ${fragmentLevel})`
       );
-
-      // Hide loading state when the new quality fragment is loaded
-      if (this.isLoadingQuality && this.currentLoadingLevel === fragmentLevel) {
-        console.log(`First fragment of new quality level ${fragmentLevel} loaded, hiding loader`);
-        this.isLoadingQuality = false;
-        this.onLoadingChange(false);
-      }
 
       // Stop after initial fragments during initial load
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
@@ -259,29 +238,40 @@ export class VideoStreamHandler {
     // Force HLS to reload from current position with specified quality
     this.hls.startLoad(currentTime);
 
-    // Listen for buffer append completion which means data is ready
-    const onBufferAppended = () => {
-      console.log(`Quality level ${level} buffer appended`);
+    // Track fragment loads
+    let fragmentLoadCount = 0;
 
-      // Remove listener
-      if (this.hls) {
-        this.hls.off(Hls.Events.BUFFER_APPENDED, onBufferAppended);
+    // Listen for fragment loaded events
+    const onFragLoaded = (event: string, data: any) => {
+      console.log(`Quality level ${level} fragment loaded (count: ${fragmentLoadCount}, level: ${data.frag.level})`);
+
+      // Only count fragments for the target quality level
+      if (data.frag.level === level) {
+        fragmentLoadCount++;
+
+        // Only process on the second fragment load
+        if (fragmentLoadCount === 2) {
+          // Remove listener
+          if (this.hls) {
+            this.hls.off(Hls.Events.FRAG_LOADED, onFragLoaded);
+          }
+
+          // Small delay to ensure decoder has processed the data
+          setTimeout(() => {
+            // Force a tiny seek to refresh the frame
+            const oldTime = this.videoElement.currentTime;
+            this.videoElement.currentTime = oldTime + 0.001;
+
+            console.log(`Quality level ${level} frame rendered after 2 fragments`);
+
+            // Hide loader immediately
+            this.onLoadingChange(false);
+          }, 50);
+        }
       }
-
-      // Small delay to ensure decoder has processed the data
-      setTimeout(() => {
-        // Force a tiny seek to refresh the frame
-        const oldTime = this.videoElement.currentTime;
-        this.videoElement.currentTime = oldTime + 0.001;
-
-        console.log(`Quality level ${level} frame rendered`);
-
-        // Hide loader immediately
-        this.onLoadingChange(false);
-      }, 50);
     };
 
-    this.hls.on(Hls.Events.BUFFER_APPENDED, onBufferAppended);
+    this.hls.on(Hls.Events.FRAG_LOADED, onFragLoaded);
   }
 
   private renderHighQualityFrame(): void {
