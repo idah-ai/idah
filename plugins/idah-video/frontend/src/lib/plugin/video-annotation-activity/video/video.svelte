@@ -161,16 +161,24 @@
     videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("resize", () => onResize());
 
-    // Initialize the video stream handler
-    streamHandler = new VideoStreamHandler(videoElement, src, {
-      initialFragmentCount: initialFragments,
-      onLoadingChange: (loading: boolean, qualityInfo?: { label: string; height: number; width: number }) => {
-        isLoadingHighQuality = loading;
-        if (qualityInfo) {
-          qualityLabel = qualityInfo.label;
-        }
-      },
-    });
+    // Check if source is HLS (m3u8)
+    const isHLS = src.toLowerCase().includes(".m3u8");
+
+    if (isHLS) {
+      // Initialize the video stream handler for HLS
+      streamHandler = new VideoStreamHandler(videoElement, src, {
+        initialFragmentCount: initialFragments,
+        onLoadingChange: (loading: boolean, qualityInfo?: { label: string; height: number; width: number }) => {
+          isLoadingHighQuality = loading;
+          if (qualityInfo) {
+            qualityLabel = qualityInfo.label;
+          }
+        },
+      });
+    } else {
+      // For non-HLS sources, use native video element
+      videoElement.src = src;
+    }
 
     return () => {
       if (animationFrameId) {

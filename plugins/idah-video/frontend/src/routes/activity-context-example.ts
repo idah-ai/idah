@@ -153,7 +153,7 @@ export const activityContextExample: IActivityContext = {
     };
   },
   get mediaUrl() {
-    return "http://localhost:5173/segments/master.m3u8";
+    return "http://localhost:5173/medias/video.mp4";
   },
 
   mediaInfo(key?: string): Promise<IMedia> {
