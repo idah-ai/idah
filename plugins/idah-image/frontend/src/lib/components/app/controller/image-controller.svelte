@@ -49,12 +49,7 @@
 
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext } from "$lib/context/context";
-  import type {
-    ImageAnnotationObject,
-    ImageFrameSelection,
-    ImageShape,
-    Point,
-  } from "$lib/context/image-annotation-context";
+  import type { ImageAnnotationObject, ImageShape, Point } from "$lib/context/image-annotation-context";
 
   // Props
   interface Props {
@@ -330,12 +325,6 @@
     context.commands.run("annotation.delete", { annotationId });
   }
 
-  async function addSelection(id: string, selection: ImageFrameSelection) {
-    if (!editable) return;
-
-    context.commands.run("keyframe.add", { id, selection });
-  }
-
   function deleteAnnotation(annotation: ImageAnnotationObject) {
     if (!editable) return;
 
@@ -381,6 +370,13 @@
     context.commands.run("annotation.updateGroupCategory", {
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
+    });
+
+    context.commands.run("annotation.update", {
+      annotation: $selectedAnnotationGroup.annotations[0],
+      value: {
+        category: reselectedCategoryId,
+      },
     });
   }
 
@@ -432,8 +428,6 @@
         shapeSelectionArgs = [type, frame, _points, angle, selectedId];
         showPopOver = true;
       }
-    } else {
-      addSelection(selectedId, { frame, angle, points });
     }
   }
 
@@ -624,6 +618,7 @@
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
                 {imageResizedAt}
+                {annotationValue}
               >
                 <img
                   id="idah-image"
