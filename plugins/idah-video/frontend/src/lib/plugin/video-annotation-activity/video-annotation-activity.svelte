@@ -634,6 +634,9 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+
+    // Update the currently selected annotation value to reflect the category change in the properties sidebar
+    onEditValue({ category: reselectedCategoryId }, $currentMode);
   }
 </script>
 
