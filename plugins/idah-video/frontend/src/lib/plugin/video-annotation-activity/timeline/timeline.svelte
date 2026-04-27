@@ -21,7 +21,7 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setCurrentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import { setCurrentFrame, setCurrentModeTo, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
@@ -41,6 +41,7 @@
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { DEFAULT_MODE } from "$lib/plugin/type";
 
   // Props
   interface Props {
@@ -412,6 +413,8 @@
       deleteAllAnnotations();
     }
 
+    // Return to default mode after deletion
+    setCurrentModeTo(DEFAULT_MODE);
     openConfirmDeleteModal = false;
   }}
   bind:open={openConfirmDeleteModal}
