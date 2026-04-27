@@ -351,7 +351,7 @@
         // scroll to bottom most
         scrollContainer.scrollTo({
           top: scrollContainer.scrollHeight,
-          behavior: "smooth",
+          behavior: "instant",
         });
       }, 100);
     }
