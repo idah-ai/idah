@@ -490,7 +490,7 @@
             Render Data Source Input
           {/if}
 
-          <CommandItem class="hover:cursor-pointer" disabled={!isFiltering} onclick={clearFilter}>
+          <CommandItem disabled={!isFiltering} onclick={clearFilter}>
             <FunnelXIcon class="size-4"></FunnelXIcon>
             Clear filter
           </CommandItem>

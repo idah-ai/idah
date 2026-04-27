@@ -172,7 +172,7 @@
   {#snippet actions()}
     <!-- Only show actions when not uploading -->
     {#if !showUploadStatus}
-      <DialogClose class="cursor-pointer">
+      <DialogClose>
         <Button variant="outline" class="w-full lg:w-auto" onclick={resetForm}>Cancel</Button>
       </DialogClose>
 
