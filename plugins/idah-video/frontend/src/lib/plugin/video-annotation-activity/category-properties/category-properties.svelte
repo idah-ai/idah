@@ -274,6 +274,16 @@
       </Select>
     </div>
 
+    <!-- Frame range -->
+    {#if firstAnnotationInGroup}
+      <div class="flex items-center gap-1">
+        <Text size="sm" weight="semibold">Frame :</Text>
+        <Text size="xs" class="text-muted-foreground">
+          {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape.end}
+        </Text>
+      </div>
+    {/if}
+
     <Separator class="my-3" />
   </section>
 {/snippet}
@@ -291,15 +301,6 @@
     <section class="flex flex-col gap-2">
       <div class="flex flex-row items-center gap-2">
         <Text size="sm" weight="semibold">Properties</Text>
-
-        <!-- Frame range -->
-        {#if firstAnnotationInGroup}
-          <Text size="xs" class="text-muted-foreground">
-            ( Frame :
-            {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape.end}
-            )
-          </Text>
-        {/if}
       </div>
 
       {#each properties as property, index (`${property.id}-${index}`)}

@@ -1,159 +1,282 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
+  import { VideoStreamHandler } from "./VideoStreamHandler.ts";
 
-  import videojs from "video.js";
-  import type Player from "video.js/dist/types/player";
-  import "video.js/dist/video-js.css";
+  let {
+    src = undefined,
+    fps,
+    initialFragments = 3,
+    bind: videoRef = undefined,
+    element = $bindable(),
+    onFrameUpdate = (currentFrame: number) => {},
+    onTogglePlay = (playing: boolean) => {},
+    onResize = () => {},
+  } = $props();
 
-  const DEFAULT_FPS = 30;
-
-  type Props = {
-    element?: HTMLDivElement;
-    onTimeUpdate?: (currentFrame: number) => void;
-    onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
-    onVolumeChange: (volume: number, muted: boolean) => void;
-    onResize?: () => void;
-  };
-
-  let { element = $bindable(), onTimeUpdate, onFramesChange, onResize, onVolumeChange }: Props = $props();
-
-  let player: Player | undefined = $state();
-  let options = {
-    controls: false,
-    preload: "auto",
-    loop: false,
-    muted: false,
-    autoplay: false,
-    fill: false,
-    responsive: false,
-    fluid: true,
-    disablePictureInPicture: true,
-  };
-  let duration = $state(0);
-  let fps = $state(DEFAULT_FPS);
-  let frames = $derived(Math.round(duration * fps));
-  let volume = $state(0);
-  let muted = $state(false);
-  let mediaTime = $state(0);
-  let currentFrame = $derived(Math.min(frames, Math.round(mediaTime * fps) + 1));
+  let videoElement: HTMLVideoElement;
+  let streamHandler: VideoStreamHandler | undefined;
+  let isLoadingHighQuality = $state(false);
+  let qualityLabel = $state("");
+  let animationFrameId: number | null = null;
   let isPlaying = $state(false);
-  let raf: number | undefined = $state();
 
-  $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
-  $effect(() => onVolumeChange?.(volume, muted));
+  function updateFrameCounter() {
+    if (videoElement && onFrameUpdate) {
+      frameUpdate();
+    }
 
-  export const getFrames = () => frames;
+    // Continue animation loop if playing
+    if (isPlaying) {
+      animationFrameId = requestAnimationFrame(updateFrameCounter);
+    }
+  }
 
   export function togglePlay() {
-    return player?.paused() ? player?.play() : player?.pause();
+    if (!videoElement) return;
+    if (videoElement.paused) {
+      videoElement.play();
+      isPlaying = true;
+      onTogglePlay(true);
+      updateFrameCounter(); // Start RAF loop
+    } else {
+      videoElement.pause();
+      isPlaying = false;
+      onTogglePlay(false);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      // Update once more for accuracy
+      if (onFrameUpdate) {
+        frameUpdate();
+      }
+    }
   }
 
-  export function source(src?: string) {
-    return player?.src(src);
+  function frameUpdate() {
+    if (videoElement && onFrameUpdate) {
+      onFrameUpdate(timeToFrame(videoElement.currentTime));
+    }
   }
 
-  export function nextFrame(count = 1) {
-    seekToFrame(currentFrame + count);
+  function timeToFrame(time: number) {
+    return Math.round(time * fps);
   }
 
-  export function previousFrame(count = 1) {
-    seekToFrame(currentFrame - count);
-  }
-
-  export function toggleMute() {
-    player?.muted(!player?.muted());
-  }
-
-  export function setVolume(percent: number) {
-    if (player?.muted()) player?.muted(false);
-    return player?.volume(percent / 100);
+  function frameToTime(frame: number) {
+    // + 0.001 to account for browser rounding difference
+    return (frame + 0.001) / fps;
   }
 
   export function seekToFrame(frame: number) {
-    if (!player?.paused()) player?.pause();
-    if (!fps) return console.error({ seekToFrame, fps, frame });
+    if (!videoElement) return;
 
-    // + 0.001 to account for browser rounding difference
-    player?.currentTime((frame - 1 + 0.001) / fps);
+    const wasPaused = videoElement.paused;
+
+    // Pause if playing
+    if (!videoElement.paused) {
+      videoElement.pause();
+    }
+
+    // If video hasn't started yet, play briefly to load then pause
+    if (videoElement.readyState < 2) {
+      videoElement.play().then(() => {
+        videoElement.currentTime = frameToTime(frame);
+        videoElement.pause();
+      });
+
+      console.log("Video not ready, playing briefly to seek to frame:", frame);
+      return;
+    }
+
+    // Seek to frame time
+    videoElement.currentTime = frameToTime(frame);
+
+    console.log("Seeking to frame:", frame);
+
+    // If video was already paused, reload the current quality at the new position
+    if (wasPaused && streamHandler) {
+      streamHandler.reloadCurrentQuality();
+    }
   }
 
-  export function playbackRate(value: number) {
-    player?.playbackRate(value);
+  export function nextFrame(step: number = 1) {
+    if (!videoElement) return;
+    seekToFrame(Math.round(videoElement.currentTime * fps) + 1);
   }
 
-  function setUpPlayer() {
-    if (!element) return console.error({ setUpPlayer: { element } });
+  export function previousFrame(step: number = 1) {
+    if (!videoElement) return;
+    seekToFrame(Math.round(videoElement.currentTime * fps) - 1);
+  }
 
-    player = videojs(element, options);
-    volume = (player.volume() || 0) * 100;
-    quality_check("onMount");
+  export function playbackRate(rate: number) {
+    if (!videoElement) return;
+    videoElement.playbackRate = rate;
+  }
 
-    player.on("durationchange", () => {
-      duration = player?.duration() || 0;
-    });
+  export function setVolume(level: number) {
+    if (!videoElement) return;
+    videoElement.volume = level / 100;
+    videoElement.muted = level === 0;
+  }
 
-    player.on("durationchange", () => quality_check("durationchange"));
-    player.on("loadstart", () => quality_check("loadstart"));
-    player.on("sourceset", () => quality_check("sourceset"));
-    player.on("loadeddata", () => quality_check("loadeddata"));
-    player.on("loadedmetadata", () => quality_check("loadedmetadata"));
-    player.on("resize", () => {
-      onResize?.();
-      // quick fix for now // I'll review it all post plugin
-      quality_check("resize");
-    });
-    player.on("timeupdate", () => {
-      mediaTime = player?.currentTime() || 0;
-      onTimeUpdate?.(currentFrame);
-    });
+  // Expose video element to parent
+  $effect(() => {
+    if (videoRef && videoElement) {
+      videoRef.value = videoElement;
+    }
+  });
 
-    player.on("play", () => {
+  onMount(() => {
+    // Listen for play/pause events from video element
+    const handlePlay = () => {
       isPlaying = true;
-      raf = requestAnimationFrame(trackFrame);
-    });
+      onTogglePlay(true);
+      updateFrameCounter(); // Start RAF loop
+    };
 
-    player.on("pause", () => {
+    const handlePause = () => {
       isPlaying = false;
-      if (raf) {
-        cancelAnimationFrame(raf);
-        raf = undefined;
+      onTogglePlay(false);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
       }
-      mediaTime = player?.currentTime() || 0;
-      nextFrame(); // smoothest quick fix currentFrame on play/pause I can think of for now
-    });
+      // Update once more for accuracy
+      if (onFrameUpdate) {
+        frameUpdate();
+      }
+    };
 
-    player.on("volumechange", () => {
-      volume = player?.volume() || 0 * 100;
-      muted = player?.muted() || true;
-    });
+    const handleSeeked = () => {
+      // Update frame counter after seek completes
+      if (onFrameUpdate) {
+        frameUpdate();
+      }
+    };
 
-    player.on("playing", () => {});
+    videoElement.addEventListener("play", handlePlay);
+    videoElement.addEventListener("pause", handlePause);
+    videoElement.addEventListener("seeked", handleSeeked);
+    videoElement.addEventListener("resize", () => onResize());
 
-    player.on("seeked", () => {
-      mediaTime = player?.currentTime() || 0;
-    });
+    // Check if source is HLS (m3u8)
+    const isHLS = src.toLowerCase().includes(".m3u8");
 
-    player.on("suspend", () => {});
-  }
+    if (isHLS) {
+      // Initialize the video stream handler for HLS
+      streamHandler = new VideoStreamHandler(videoElement, src, {
+        initialFragmentCount: initialFragments,
+        onLoadingChange: (loading: boolean, qualityInfo?: { label: string; height: number; width: number }) => {
+          isLoadingHighQuality = loading;
+          if (qualityInfo) {
+            qualityLabel = qualityInfo.label;
+          }
+        },
+      });
+    } else {
+      // For non-HLS sources, use native video element
+      videoElement.src = src;
+    }
 
-  onMount(setUpPlayer);
-
-  function trackFrame() {
-    mediaTime = player?.currentTime() || 0;
-    raf = requestAnimationFrame(trackFrame);
-  }
-
-  function quality_check(from?: string) {
-    let qualityLevel = player?.qualityLevels()[player?.qualityLevels().selectedIndex];
-
-    duration = player?.duration() || 0;
-    fps = qualityLevel?.frameRate || DEFAULT_FPS; // ....
-    console.debug({ quality_check_from: from, duration, fps });
-  }
-
-  onDestroy(() => {
-    player?.dispose();
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      videoElement.removeEventListener("play", handlePlay);
+      videoElement.removeEventListener("pause", handlePause);
+      videoElement.removeEventListener("seeked", handleSeeked);
+      if (streamHandler) {
+        streamHandler.destroy();
+      }
+    };
   });
 </script>
 
-<video-js id="idah-video" bind:this={element}></video-js>
+<div class="video-wrapper" bind:this={element}>
+  <video bind:this={videoElement}>
+    <track kind="captions" />
+    Your browser does not support the video tag.
+  </video>
+
+  {#if isLoadingHighQuality}
+    <div class="loader-overlay">
+      <div class="quality-badge">
+        <span class="quality-label">Loading: {qualityLabel}</span>
+      </div>
+    </div>
+  {/if}
+</div>
+
+<style>
+  video {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .video-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .quality-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .quality-label {
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .quality-label::before {
+    content: "●";
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 8px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+</style>
