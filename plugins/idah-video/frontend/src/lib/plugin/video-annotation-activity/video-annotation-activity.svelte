@@ -177,13 +177,6 @@
     };
   });
 
-  // Lifecycles
-  $effect(() => {
-    if (mediaUrl && player && mediaUrl != player?.source()) {
-      player?.source(mediaUrl);
-    }
-  });
-
   $effect(() => {
     context.tools.setTool($currentMode);
   });
@@ -191,6 +184,9 @@
   onMount(async () => {
     mediaInfo = await context.mediaInfo();
     mediaMasterInfo = await context.mediaInfo("master.m3u8");
+
+    setTotalFrames(Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number)));
+    // setAnnotationFrame(1);
 
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
@@ -767,41 +763,36 @@
 
           <ResizablePane defaultSize={75}>
             <section id="video-section" class="flex h-full w-full flex-1">
-              <SvgOverlay
-                bind:this={overlay}
-                {annotations_promise}
-                frame={$currentFrame}
-                onSelectAnnotation={selectAnnotation}
-                onSelection={onShapeSelection}
-                onAddNewNote={showNewNotePopup}
-                onChangeFrame={seekToFrame}
-                target_container={() => player_container}
-                {videoResizedAt}
-                isPlaying={$isVideoPlaying}
-              >
-                <!-- container context ?-->
-                {#if mediaInfo && mediaMasterInfo}
+              {#if mediaInfo && mediaMasterInfo}
+                <SvgOverlay
+                  bind:this={overlay}
+                  {annotations_promise}
+                  frame={$currentFrame}
+                  onSelectAnnotation={selectAnnotation}
+                  onSelection={onShapeSelection}
+                  onAddNewNote={showNewNotePopup}
+                  onChangeFrame={seekToFrame}
+                  target_container={() => player_container}
+                  {videoResizedAt}
+                  isPlaying={$isVideoPlaying}
+                >
+                  <!-- container context ?-->
                   <Video
-                    // fps={mediaInfo.meta.fps as number}
-                    // duration={mediaInfo.meta.duration as number}
-                    segmentDuration={mediaMasterInfo.meta.streaming_time_per_segment as number}
                     bind:this={player}
                     bind:element={player_container}
+                    src={mediaUrl}
+                    fps={mediaInfo.meta.fps as number}
+                    onTogglePlay={(isPlaying: boolean) => setVideoIsPlaying(isPlaying)}
                     onResize={() => {
                       videoResizedAt = new Date();
                     }}
-                    onFramesChange={(current, total, playing) => {
-                      setCurrentFrame(current);
-                      setTotalFrames(total);
-                      setVideoIsPlaying(playing);
-                    }}
-                    onTimeUpdate={(currentFrame) => {
+                    onFrameUpdate={(currentFrame: number) => {
+                      setCurrentFrame(currentFrame);
                       setAnnotationFrame(currentFrame);
                     }}
-                    onVolumeChange={(level, muted) => (volume = { level, muted })}
                   />
-                {/if}
-              </SvgOverlay>
+                </SvgOverlay>
+              {/if}
 
               <PropertiesSidebar
                 {annotationId}

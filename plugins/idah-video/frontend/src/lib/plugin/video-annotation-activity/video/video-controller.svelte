@@ -93,6 +93,8 @@
     const target = event.target as HTMLInputElement;
     const { value } = target;
 
+    if (!value) return;
+
     /** If value is out of current frame range, set a new frame range */
     const [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $currentFrameRange;
     const rulerScale = Math.floor($timelineRulerWidth / $timelineCellWidth);
