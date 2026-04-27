@@ -184,8 +184,6 @@
           </SelectContent>
         </Select>
       </div>
-
-      <Separator class="my-3" />
     </section>
   {/if}
 {/snippet}
@@ -283,8 +281,6 @@
         </Text>
       </div>
     {/if}
-
-    <Separator class="my-3" />
   </section>
 {/snippet}
 
@@ -296,8 +292,10 @@
 {/if}
 
 <!-- PROPERTIES -->
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-3">
   {#if category && properties?.length > 0}
+    <Separator class="mt-3" />
+
     <section class="flex flex-col gap-2">
       <div class="flex flex-row items-center gap-2">
         <Text size="sm" weight="semibold">Properties</Text>
