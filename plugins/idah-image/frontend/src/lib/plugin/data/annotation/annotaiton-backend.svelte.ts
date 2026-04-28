@@ -1,10 +1,8 @@
-import {
-  openAnnotationsDB,
-  type AnnotationsIndexedDB,
-  type StoresDefinition,
-} from "$lib/plugin/data/annotation/annotation-db";
+import { openAnnotationsDB } from "$lib/plugin/data/annotation/annotation-db";
 
-import type { ImageAnnotationObject, ImageFrameSelection } from "$lib/context/image-annotation-context";
+import { type ImageAnnotationObject, type ImageFrameSelection } from "$lib/context/image-annotation-context";
+
+import type { AnnotationsIndexedDB, StoresDefinition } from "$lib/plugin/data/annotation/annotation-db";
 
 /**
  * Reactive middleware layer
@@ -81,7 +79,7 @@ export class AnnotationBackend {
    *    };
    *
    *    // Load full data on-demand
-   *    async getFullAnnotation(id: string): Promise<VideoAnnotationObject> {
+   *    async getFullAnnotation(id: string): Promise<ImageAnnotationObject> {
    *      return this.db.get("annotations", id);
    *    }
    *    ```

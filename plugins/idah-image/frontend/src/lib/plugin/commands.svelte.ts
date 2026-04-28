@@ -15,6 +15,7 @@ import {
   setCurrentModeTo,
   setSelectedAnnotation,
 } from "$lib/plugin/store/store";
+import { uiStore } from "$lib/plugin/store/ui-store.svelte";
 import {
   DEFAULT_MODE,
   ENTRY_ROOT,
@@ -868,4 +869,20 @@ export function registerCommands(params: CommandContext) {
       combine: (prevCmd) => prevCmd,
     };
   });
+
+  context.commands.on(
+    "command_dialog",
+    () => {
+      return {
+        name: "Toggle shortcut guide",
+        apply: () => {
+          uiStore.toggleCommandDialog();
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
 }

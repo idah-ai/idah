@@ -63,7 +63,7 @@ export interface INoteComment {
 
 export interface IAnnotationDriver {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
+  create(id: string, dimension: any, annotation: any, metadata?: any): Promise<IAnnotation>;
 
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
@@ -154,6 +154,7 @@ export interface ICommands {
 }
 
 export interface AnnotationHeaderBarBaseTool {
+  name: string;
   label: string;
   icon?: Component;
   iconName?: string;
@@ -170,6 +171,10 @@ export interface ITools {
   setTool: (tool: string) => void;
   onToolsChange: (cb: (tools: HeaderBarModeTool[]) => void) => void;
   onToolChange: (cb: (tool: string) => void) => void;
+}
+
+export interface IIconDriver {
+  get(iconName: string): Promise<string>;
 }
 
 export type IWorkflowStep = "start" | "annotate" | "review" | "done" | "export";
@@ -210,6 +215,8 @@ export interface IActivityContext {
 
   get tools(): ITools;
 
+  get icons(): IIconDriver;
+
   // Return to previous step of the workflow
   back(): void;
 
@@ -218,6 +225,14 @@ export interface IActivityContext {
 
   // Mark this activity as errored
   error(message: string): Promise<void>;
+
+  get shortcutReferences():
+    | Record<string, { label: string; description: string; keyCombinations: string[] }>
+    | undefined;
+
+  registerShortcutReferences(
+    refs: Record<string, { label: string; description: string; keyCombinations: string[] }>,
+  ): void;
 }
 
 export interface IActivityView {

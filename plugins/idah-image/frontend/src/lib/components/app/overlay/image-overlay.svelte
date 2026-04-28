@@ -232,7 +232,6 @@
 
   // Reset editionCursor when switching to visual mode without selection
   $effect(() => {
-    console.log({ frame });
     if ($currentMode === DEFAULT_MODE && !$selectedAnnotation) {
       editionCursor = undefined;
     }

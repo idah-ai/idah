@@ -128,8 +128,7 @@ export function getInterpolatedFrame(
       ]),
       angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
     };
-  }
-  else if (shape.type == IMAGE_POLYGON) {
+  } else if (shape.type == IMAGE_POLYGON) {
     return {
       points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
       angle: 0,

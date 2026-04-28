@@ -22,12 +22,13 @@
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
 
-  import { ShortcutManager } from "$lib/shortcut/shortcut-manager";
+  import { getShortcuts } from "$lib/components/ui/kbd/utils";
+  import { ShortcutManager } from "$lib/shortcut/shortcut-manager.svelte";
 
   import { requiredFullfilled } from "$lib/components/app/sidebar/properties/properties.index";
   import { registerCommands } from "$lib/plugin/commands.svelte";
   import { annotationsIndexedDB, type AnnotationBackend } from "$lib/plugin/data/annotation/annotaiton-backend.svelte";
-  import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/shortcut";
+  import { registerOnSelectShortcuts, registerShortcuts, registerShortcutsReference } from "$lib/plugin/shortcut";
   import { boundingBoxes, entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import {
     currentFrame,
@@ -38,6 +39,7 @@
     setSelectedAnnotation,
     setSelectedAnnotationGroup,
   } from "$lib/plugin/store/store";
+  import { uiStore } from "$lib/plugin/store/ui-store.svelte";
   import {
     DEFAULT_MODE,
     EDITOR_MODE_TOOLS,
@@ -70,11 +72,11 @@
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let { id: entryId, workflowStep } = $derived(context);
-
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IMAGE_NOTE);
   let tools: {
+    name: string;
     label: string;
     type: string;
     iconName: string;
@@ -168,8 +170,6 @@
   });
 
   onMount(async () => {
-    $boundingBoxes = [];
-
     // Watch for image container resize events
     let resizeObserver: ResizeObserver | undefined;
     const checkAndObserve = () => {
@@ -190,6 +190,11 @@
       clearInterval(intervalId);
     }, 1000);
 
+    // Generate the full static reference list of shortcuts and register them to the shared context
+    registerShortcutsReference(context);
+
+    $boundingBoxes = [];
+
     try {
       annotationsIDB = await annotationsIndexedDB(["idah-image", "entry", entryId].join(":"));
 
@@ -204,6 +209,8 @@
       });
 
       fetchAnnotations(annotationsIDB).then(() => {
+        if (!annotationsIDB) return;
+
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
         const entryRootAnnotation = annotationsIDB?.annotations.find((a) => a.shape.type === ENTRY_ROOT);
         if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
@@ -215,12 +222,14 @@
     /** TOOLS CONFIGURATION */
     const toolListConfig = [
       {
+        name: "tools.visual",
         label: "Visual",
         type: DEFAULT_MODE,
         iconName: "mouse-pointer-2",
         command: "tools.visual",
       },
       {
+        name: "tools.bounding_box",
         label: "Bounding Box",
         type: IMAGE_BOUNDING_BOX,
         iconName: "vector-square",
@@ -228,6 +237,7 @@
         command: "tools.bounding_box",
       },
       {
+        name: "tools.polygon",
         label: "Polygon",
         type: IMAGE_POLYGON,
         iconName: "polygon",
@@ -235,6 +245,7 @@
         command: "tools.polygon",
       },
       {
+        name: "tools.note",
         label: "Notes",
         type: IMAGE_NOTE,
         iconName: "message-circle",
@@ -252,6 +263,7 @@
 
     tools = toolConfig.map((tool) => {
       return {
+        name: tool.name,
         label: tool.label,
         type: tool.type,
         iconName: tool.iconName,
@@ -264,9 +276,6 @@
 
     registerShortcuts({
       commands: context.commands,
-      toggleCommandCB: () => {
-        commandOpen = !commandOpen;
-      },
       flush: () => context.annotations.flush(),
       switch_mode: (mode: string) => {
         const config = toolConfig.find((c) => c.type === mode) || toolListConfig[0];
@@ -508,15 +517,20 @@
 
 <div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), $selectedAnnotation]}
-    <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
+    <!-- All available shortcuts list -->
+    <CommandDialog bind:open={uiStore.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap($currentMode) || {}) as [key, value] (key)}
-            <CommandItem onclick={() => value.action()}>
-              <span>{value.name} ({value.description})</span>
-              <CommandShortcut>{key}</CommandShortcut>
+        <CommandGroup heading="All Shortcuts">
+          <!-- Get shortcuts from reference list -->
+          {#each Object.entries(context.shortcutReferences || {}) as [name, value] (name)}
+            <CommandItem>
+              <span>{value.label} ({value.description})</span>
+              <CommandShortcut>
+                <!-- Get humanized key combinations, with symbols, join if multiple is available for an action  -->
+                {getShortcuts(value.keyCombinations)?.join(" or ")}
+              </CommandShortcut>
             </CommandItem>
           {/each}
         </CommandGroup>

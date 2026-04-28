@@ -8,7 +8,7 @@ let mounted: object;
 
 const idah_plugin: IActivityView = {
   name: "idah-image",
-  label: "idah image",
+  label: "Idah Image Annotation",
   description: "idah image annotation plugin",
   version: "1.0",
   type: "image",

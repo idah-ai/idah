@@ -1,4 +1,4 @@
-import type { ImageAnnotationObject, ImageFrameSelection } from "$lib/context/image-annotation-context";
+import { type ImageAnnotationObject, type ImageFrameSelection } from "$lib/context/image-annotation-context";
 
 export const storeDefinition: StoresDefinition = {
   annotations: [
@@ -7,7 +7,6 @@ export const storeDefinition: StoresDefinition = {
     { index: "range", path: "shape.range", opts: { unique: false } },
     { index: "type", path: "shape.type", opts: { unique: false } },
     { index: "category", path: "value.category", opts: { unique: false } },
-    { index: "color", path: "value.color", opts: { unique: false } },
     { index: "created_at", path: "metadata.createdAt", opts: { unique: false } },
     { index: "updated_at", path: "metadata.updatedAt", opts: { unique: false } },
     { index: "groupIdIndex", path: "metadata.metadata.group_id", opts: { unique: false } },
@@ -232,6 +231,20 @@ export class AnnotationsIndexedDB {
     return new Promise<void>((resolve, reject) => {
       request.onsuccess = () => resolve();
       request.onerror = (e) => reject(e);
+    });
+  }
+
+  /**
+   * Get all keyframes for an annotation
+   */
+  async getKeyFrames(annotation_id: string): Promise<ImageFrameSelection[]> {
+    return new Promise<ImageFrameSelection[]>((resolve, reject) => {
+      const transaction = this.db.transaction("keyframes", "readonly");
+      const index = transaction.objectStore("keyframes").index("annotation");
+      const request = index.getAll(IDBKeyRange.only(annotation_id));
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
     });
   }
 
