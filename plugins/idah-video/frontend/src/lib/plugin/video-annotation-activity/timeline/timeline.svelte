@@ -236,6 +236,25 @@
           annotationId: closestAnnotation.metadata.id,
           frame: displayScaledFrame,
         });
+
+        /**
+         * NOTE:: Need to decide here.
+         * 1. If the keyframe that we delete is the last keyframe, how we gonna handle that?
+         *    1.1 Delete the entire annotation
+         *        1.1.1 If the delete annotation is the only annotation in the annotation group, delete the entire annotation group
+         *        1.1.2 If the delete annotation is not the only annotation in the annotation group, delete only the annotation
+         *    1.2 Delete only the keyframe
+         */
+
+        selectAnnotationGroup.annotations = selectAnnotationGroup.annotations.filter(
+          (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
+        );
+
+        if (selectAnnotationGroup.annotations.length > 0) {
+          /** Select the new closest annotation after filter the deleted annotation */
+          selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
+        }
+
         closeContextMenu();
       },
     };
@@ -253,6 +272,7 @@
         );
 
         if (selectAnnotationGroup.annotations.length > 0) {
+          /** Select the new closest annotation after filter the deleted annotation */
           selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
         } else {
           context.commands.run("tools.reset");
