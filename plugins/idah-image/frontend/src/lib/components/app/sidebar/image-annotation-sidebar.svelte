@@ -64,7 +64,7 @@
 
     for (const [toolType, categories] of tools) {
       const matching = categories.filter((category) =>
-        category.label.toLowerCase().includes(searchValue.toLowerCase()),
+        category.id.toLowerCase().includes(searchValue.toLowerCase()),
       );
 
       if (matching.length > 0) {
