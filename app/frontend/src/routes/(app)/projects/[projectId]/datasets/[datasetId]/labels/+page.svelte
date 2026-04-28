@@ -299,24 +299,29 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     if (!selectedLabelConfig) return;
 
-    const { color, text_color } = getColor({ labelConfigKey });
-
     const normalizedId = categoryId.trim();
 
-    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => cat.id.trim() !== normalizedId);
-    // Check if we need to create a parent category
-    const categoryPaths = normalizedId.split("/");
+    const hasChildren = selectedLabelConfig.values.some((cat) => cat.id.trim().startsWith(normalizedId + "/"));
 
-    if (categoryPaths.length > 1) {
-      // Create the parent path by removing the last segment
-      const parentPath = categoryPaths.slice(0, -1).join("/");
-      // Check if any existing category starts with the parent path
-      const anyExistingCategoryStartsWithParent = selectedLabelConfig.values.some((cat) =>
-        cat.id.startsWith(parentPath + "/"),
-      );
+    const isChild = normalizedId.includes("/");
+
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => {
+      const id = cat.id.trim();
+
+      if (id === normalizedId) return false;
+
+      if (hasChildren && id.startsWith(normalizedId + "/")) return false;
+
+      return true;
+    });
+
+    if (isChild) {
+      const parentPath = normalizedId.split("/").slice(0, -1).join("/");
+      const parentExists = selectedLabelConfig.values.some((cat) => cat.id.trim() === parentPath);
 
       // If parent doesn't exist, create it
-      if (!anyExistingCategoryStartsWithParent) {
+      if (!parentExists) {
+        const { color, text_color } = getColor({ labelConfigKey });
         selectedLabelConfig.values.push({
           id: parentPath,
           label: humanize(parentPath),
