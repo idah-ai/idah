@@ -129,8 +129,8 @@
     }
   });
 
-  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
-  const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
+  let zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
+  let displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
 
   // Variables::Timeline Container width for calculating dynamic ruler steps
   const TARGET_MAJOR_STEP_PX = 80; // pixels per major step
@@ -940,6 +940,9 @@
 
             <!-- <TimelineControllerLegacy /> -->
             <!-- <TimelineController {viewport} {length} onViewportChange={(v) => (viewport = v)} /> -->
+            <span class="text-sm whitespace-nowrap">
+              Viewport: [{viewport.startRange.toFixed(0)}, {viewport.endRange.toFixed(0)}]
+            </span>
             <input
               type="range"
               min={1}
@@ -959,6 +962,7 @@
               rulerMajorStep={effectiveRulerMajorStep}
               remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
               onViewportContainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
+              onViewportChange={(newViewport) => (viewport = newViewport)}
             />
 
             <!-- <TimelineLegacy

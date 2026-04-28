@@ -3,17 +3,17 @@
 
   import Caret from "$lib/plugin/video-annotation-activity/timelines/caret.svelte";
   import Ruler from "$lib/plugin/video-annotation-activity/timelines/ruler.svelte";
+  import Selection from "$lib/plugin/video-annotation-activity/timelines/selection.svelte";
+  import TrackInfo from "$lib/plugin/video-annotation-activity/timelines/track-info.svelte";
+  import Track from "$lib/plugin/video-annotation-activity/timelines/track.svelte";
 
   import type { TimelineProps, Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
-  import Selection from "./selection.svelte";
-  import TrackInfo from "./track-info.svelte";
-  import Track from "./track.svelte";
 
   interface Props extends TimelineProps {
     toolbar?: Snippet;
     remainingHeight: number;
     onViewportContainerWidthChange?: (width: number) => void;
-    onViewportChange?: (viewport: Viewport, zoomLevel: number) => void;
+    onViewportChange: (viewport: Viewport) => void;
     onSelectionChange?: (offset: number, length: number) => void;
   }
 
@@ -40,11 +40,13 @@
   let timelineBodyScrollEl = $state<HTMLDivElement | null>(null);
   let timelineBodyScrollTop = $state<number>(0);
   let timelineBodyScrollClientHeight = $state<number>(0);
+  $inspect(timelineBodyScrollClientHeight);
   let timelineHScrollbarEl = $state<HTMLDivElement | null>(null);
 
   // Variables:: ContainerViewport
   let viewportContainerWidth = $state<number>(0);
   let timelineRulerContainerHeight = $state<number>(0);
+  let timelineHScrollbarHeight = $state<number>(16);
 
   // Variables:: Viewport
   const viewportRange = $derived(viewport.endRange - viewport.startRange);
@@ -122,12 +124,16 @@
       newStart = totalFrames - rangeWidth;
     }
 
-    if (newStart !== viewport.startRange) viewport.startRange = newStart;
-    if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
+    // if (newStart !== viewport.startRange) viewport.startRange = newStart;
+    // if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
 
-    // if (newStart !== viewport.startRange && newEnd !== viewport.endRange) {
-    //   onViewportChange?.({ startRange: newStart, endRange: newEnd }, zoomLevel);
-    // }
+    // Update viewport values
+    if (newStart !== viewport.startRange) {
+      onViewportChange({ startRange: newStart, endRange: viewport.endRange });
+    }
+    if (newEnd !== viewport.endRange) {
+      onViewportChange({ startRange: viewport.startRange, endRange: newEnd });
+    }
   });
 
   // Track in-flight programmatic scrolls per element to prevent feedback loops.
@@ -178,9 +184,10 @@
     const rangeWidth = viewport.endRange - viewport.startRange;
     // Clamp startRange so the viewport stays within [0, length] without changing rangeWidth
     const clampedStartRange = Math.max(0, Math.min(newScrollLeft / scale, length - rangeWidth));
-    viewport.startRange = clampedStartRange;
-    viewport.endRange = clampedStartRange + rangeWidth;
-    // onViewportChange?.({ startRange: clampedStartRange, endRange: clampedStartRange + rangeWidth }, zoomLevel);
+    // viewport.startRange = clampedStartRange;
+    // viewport.endRange = clampedStartRange + rangeWidth;
+
+    onViewportChange({ startRange: clampedStartRange, endRange: clampedStartRange + rangeWidth });
   }
 
   function handleRulerScroll() {
@@ -275,8 +282,7 @@
     }
 
     // Update viewport values
-    viewport.startRange = newStartRange;
-    viewport.endRange = newEndRange;
+    onViewportChange({ startRange: newStartRange, endRange: newEndRange });
   }
 
   // Compute content-space x from a mouse event relative to a given scrollable element
@@ -339,7 +345,7 @@
   }
 </script>
 
-<div id="timeline" class="flex w-full flex-col border">
+<div id="timeline" class="flex w-full flex-col border" style:height="{remainingHeight}px">
   {#if toolbar}
     <div id="timeline-toolbar" class="flex shrink-0">
       {@render toolbar()}
@@ -483,9 +489,19 @@
   </div>
 
   <div id="timeline-hscrollbar-wrapper" class="flex shrink-0 border-t">
-    <div id="timeline-hscrollbar-spacer" aria-hidden="true" style:width="{TIMELINE_TRACK_INFO_WIDTH}px"></div>
-    <div id="timeline-hscroolbar" bind:this={timelineHScrollbarEl} onscroll={handleHScrollbarScroll}>
-      <div style="width: {contentWidth}px; height: 1px;" aria-hidden="true"></div>
+    <div
+      id="timeline-hscrollbar-spacer"
+      class="bg-background shrink-0 border-r"
+      aria-hidden="true"
+      style:width="{TIMELINE_TRACK_INFO_WIDTH}px"
+    ></div>
+    <div
+      id="timeline-hscroolbar"
+      class="flex-1 overflow-x-auto overflow-y-hidden"
+      bind:this={timelineHScrollbarEl}
+      onscroll={handleHScrollbarScroll}
+    >
+      <div style="width: {contentWidth}px; height: {timelineHScrollbarHeight}px;" aria-hidden="true"></div>
     </div>
   </div>
 </div>
