@@ -129,8 +129,8 @@
     }
   });
 
-  let zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
-  let displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
+  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
+  const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
 
   // Variables::Timeline Container width for calculating dynamic ruler steps
   const TARGET_MAJOR_STEP_PX = 80; // pixels per major step
@@ -165,12 +165,12 @@
   }
 
   let viewportContainerWidth = $state<number>(1000); // default value until measured
-  let effectiveRulerMajorStep = $derived.by<number>(() => {
+  const effectiveRulerMajorStep = $derived.by<number>(() => {
     if (viewportContainerWidth <= 0) return 50;
     const target = (TARGET_MAJOR_STEP_PX * (viewport.endRange - viewport.startRange)) / viewportContainerWidth;
     return Math.max(1, roundToSeries(Math.max(1, target)));
   });
-  let effectiveRulerMinorStep = $derived.by<number>(() => {
+  const effectiveRulerMinorStep = $derived.by<number>(() => {
     if (viewportContainerWidth <= 0) return 10;
     const target = (TARGET_MINOR_STEP_PX * (viewport.endRange - viewport.startRange)) / viewportContainerWidth;
     const rounded = roundToSeries(Math.max(1, target));
