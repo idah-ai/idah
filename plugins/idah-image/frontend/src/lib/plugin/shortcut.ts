@@ -3,6 +3,7 @@ import { BuildKeymap, KeyMapBuilder } from "$lib/shortcut/key-map-builder";
 import { ShortcutManager } from "$lib/shortcut/shortcut-manager.svelte";
 
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON, IMAGE_VISUAL } from "$lib/plugin/types";
+import { setCurrentModeTo } from "$lib/plugin/store/store";
 
 import type { IActivityContext, ICommands } from "$lib/context/context";
 
@@ -27,9 +28,11 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
   };
   const redoAction = () => {
     context.commands.redo();
+    setCurrentModeTo(IMAGE_VISUAL)
   };
   const undoAction = () => {
     context.commands.undo();
+    setCurrentModeTo(IMAGE_VISUAL);
   };
   const toggleCommand = () => {
     context.commands.run("command_dialog");
