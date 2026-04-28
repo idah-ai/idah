@@ -295,29 +295,29 @@
   function removeCategory(labelConfigKey: string, categoryId: string) {
     if (!labelConfig) return;
     // Filter out the exact category with the given ID
-    // This will only remove the exact match, keeping any parent categories
+    // If remove children it's still have parent but if remove parent, all children will be removed as well
     const selectedLabelConfig = labelConfig[labelConfigKey];
     if (!selectedLabelConfig) return;
 
     const normalizedId = categoryId.trim();
 
-    const hasChildren = selectedLabelConfig.values.some((cat) => cat.id.trim().startsWith(normalizedId + "/"));
+    const hasChildren = selectedLabelConfig.values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
 
     const isChild = normalizedId.includes("/");
 
-    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => {
-      const id = cat.id.trim();
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((value) => {
+      const valueId = value.id.trim();
 
-      if (id === normalizedId) return false;
+      if (valueId === normalizedId) return false;
 
-      if (hasChildren && id.startsWith(normalizedId + "/")) return false;
+      if (hasChildren && valueId.startsWith(normalizedId + "/")) return false;
 
       return true;
     });
 
     if (isChild) {
       const parentPath = normalizedId.split("/").slice(0, -1).join("/");
-      const parentExists = selectedLabelConfig.values.some((cat) => cat.id.trim() === parentPath);
+      const parentExists = selectedLabelConfig.values.some((value) => value.id.trim() === parentPath);
 
       // If parent doesn't exist, create it
       if (!parentExists) {
