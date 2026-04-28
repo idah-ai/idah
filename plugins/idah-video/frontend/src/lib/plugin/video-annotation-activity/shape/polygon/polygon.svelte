@@ -539,7 +539,7 @@
 
 <style>
   .cursor-note {
-    cursor: url("../../assets/icons/message-circle.svg"), auto;
+    cursor: url("../assets/message-circle.svg"), auto;
   }
 
   .cursor-none {
@@ -547,15 +547,15 @@
   }
 
   .cursor-pen-plus {
-    cursor: url("../../assets/icons/pen-tool-add-2-24x24.svg"), auto;
+    cursor: url("../assets/pen-tool-add-2-24x24.svg"), auto;
   }
 
   .cursor-pen-plus:hover {
-    cursor: url("../../assets/icons/pen-tool-add-2-24x24.svg"), auto;
+    cursor: url("../assets/pen-tool-add-2-24x24.svg"), auto;
   }
 
   .cursor-minus-icon {
-    cursor: url("../../assets/icons/pen-tool-remove-2-24x24.svg"), auto;
+    cursor: url("../assets/pen-tool-remove-2-24x24.svg"), auto;
   }
 
   .cursor-pointer {

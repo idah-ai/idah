@@ -26,6 +26,7 @@
   // Props
   interface Props extends SingleSelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
+    additionalChoices?: Choice[];
   }
 
   let {
@@ -49,6 +50,7 @@
     info,
     errors,
     class: className,
+    additionalChoices = [],
     onSelected,
 
     // Slots
@@ -76,7 +78,7 @@
 
   // Lifecycle
   onMount(async () => {
-    choices = await fetchChoices();
+    choices = [...additionalChoices, ...(await fetchChoices())];
 
     /** Get selected choice if value is defined */
     if (value) {
