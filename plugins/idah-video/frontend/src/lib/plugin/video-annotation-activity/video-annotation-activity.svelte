@@ -51,6 +51,7 @@
     setSelectedAnnotationGroup,
     setTotalFrames,
     setVideoIsPlaying,
+    totalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
   import {
@@ -64,10 +65,10 @@
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import TimelineController from "$lib/plugin/video-annotation-activity/timeline/timeline-controller.svelte";
-  import Timeline from "$lib/plugin/video-annotation-activity/timeline/timeline.svelte";
+  import Timeline from "$lib/plugin/video-annotation-activity/timelines/timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
+  import Block from "./timelines/block.svelte";
 
   import {
     type Point,
@@ -78,6 +79,7 @@
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
+  import type { TimelineItem, Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
 
   // Props
   interface Props {
@@ -108,7 +110,107 @@
 
   // Variables::Timeline
   let annotationFooterHeight: number = $state(0);
+  let annotationFooterToolbarHeight: number = $state(0);
   let zoom = $state(85);
+
+  let length = $state(0);
+  let viewport: Viewport = $state({
+    startRange: 0,
+    endRange: 0,
+  });
+
+  $effect(() => {
+    length = player?.getFrames() || 0;
+    if (length > 0) {
+      viewport = {
+        startRange: 0,
+        endRange: length,
+      };
+    }
+  });
+
+  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
+  const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
+
+  // Variables::Timeline Container width for calculating dynamic ruler steps
+  const TARGET_MAJOR_STEP_PX = 80; // pixels per major step
+  const TARGET_MINOR_STEP_PX = 20; // pixels per minor step
+
+  // Dynamic ruler step calculation: round to series 1, 2, 10, 20, 100, 200, 1000, 2000...
+  // serie(x) => x.odd ? serie(x-1)*5 : serie(x-1) * 2, with serie(1) = 1
+  function generateSeriesUpTo(target: number): number[] {
+    const series: number[] = [1]; // serie(1) = 1
+    let current = 1;
+    let idx = 1;
+    while (current < target) {
+      idx++;
+      current = series[idx - 2] * (idx % 2 === 0 ? 2 : 5);
+      series.push(current);
+    }
+    return series;
+  }
+
+  function roundToSeries(target: number): number {
+    if (target <= 1) return 1;
+    const series = generateSeriesUpTo(target);
+    // Check values around target to find closest
+    let closest = series[0];
+    for (const val of series) {
+      if (val <= target) closest = val;
+    }
+    // Find the next value to check if it's closer
+    const nextIdx = series.indexOf(closest) + 1;
+    const nextVal = nextIdx < series.length ? series[nextIdx] : Infinity;
+    return Math.abs(target - closest) <= Math.abs(target - nextVal) ? closest : nextVal;
+  }
+
+  let viewportContainerWidth = $state<number>(1000); // default value until measured
+  let effectiveRulerMajorStep = $derived.by<number>(() => {
+    if (viewportContainerWidth <= 0) return 50;
+    const target = (TARGET_MAJOR_STEP_PX * (viewport.endRange - viewport.startRange)) / viewportContainerWidth;
+    return Math.max(1, roundToSeries(Math.max(1, target)));
+  });
+  let effectiveRulerMinorStep = $derived.by<number>(() => {
+    if (viewportContainerWidth <= 0) return 10;
+    const target = (TARGET_MINOR_STEP_PX * (viewport.endRange - viewport.startRange)) / viewportContainerWidth;
+    const rounded = roundToSeries(Math.max(1, target));
+    return rounded === effectiveRulerMajorStep ? 0 : rounded;
+  });
+
+  // Generate 32 tracks with ~8 objects each (non-overlapping, bounded 0-1000)
+  function generateItems(): TimelineItem[] {
+    const items: TimelineItem[] = [];
+    const numTracks = 32;
+    const objectsPerTrack = 50;
+    const minObjectSize = 1;
+    const maxObjectSize = 20;
+    const padding = 5;
+
+    for (let track = 0; track < numTracks; track++) {
+      const trackId = `track-${track + 1}`;
+      let currentPosition = 0;
+
+      for (let obj = 0; obj < objectsPerTrack; obj++) {
+        const objectSize = Math.floor(Math.random() * (maxObjectSize - minObjectSize + 1)) + minObjectSize;
+        const endPosition = currentPosition + objectSize;
+
+        if (endPosition > $totalFrames - padding) {
+          break;
+        }
+
+        items.push({
+          trackId,
+          startRange: currentPosition,
+          endRange: endPosition,
+          component: Block,
+        });
+
+        currentPosition = endPosition + padding;
+      }
+    }
+
+    return items;
+  }
 
   let annotationsIDB: AnnotationBackend | undefined = $state();
   let volume = $state({ level: 0, muted: false });
@@ -636,6 +738,30 @@
       categoryIdToBeUpdate: reselectedCategoryId,
     });
   }
+
+  function applyZoom(newZoom: number) {
+    // Keep the center of current viewport when zooming
+    // TODO: Need to calculate from the hovered / selection caret instead of the center of viewport
+    const centerOfViewport = (viewport.startRange + viewport.endRange) / 2;
+    const newRange = length / newZoom;
+
+    let newStart = centerOfViewport - newRange / 2;
+    let newEnd = centerOfViewport + newRange / 2;
+
+    // Clamp within [0, length]
+    if (newStart < 0) {
+      newStart = 0;
+      newEnd = newRange;
+    }
+
+    if (newEnd > length) {
+      newEnd = length;
+      newStart = length - newRange;
+    }
+
+    viewport.startRange = newStart;
+    viewport.endRange = newEnd;
+  }
 </script>
 
 <div class="relative flex h-full w-full flex-col">
@@ -809,19 +935,38 @@
 
       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
         <AnnotationFooter bind:annotationFooterHeight>
-          <AnnotationFooterToolbar>
+          <AnnotationFooterToolbar bind:annotationFooterToolbarHeight>
             <VideoController {zoom} {volume} bind:video={player} />
 
-            <TimelineController />
+            <!-- <TimelineControllerLegacy /> -->
+            <!-- <TimelineController {viewport} {length} onViewportChange={(v) => (viewport = v)} /> -->
+            <input
+              type="range"
+              min={1}
+              max={40}
+              step={0.1}
+              value={displayZoomLevel}
+              oninput={(e) => applyZoom(parseFloat(e.currentTarget.value))}
+            />
           </AnnotationFooterToolbar>
 
           {#if annotationsIDB}
             <Timeline
+              {viewport}
+              items={generateItems()}
+              totalFrames={$totalFrames}
+              rulerMinorStep={effectiveRulerMinorStep}
+              rulerMajorStep={effectiveRulerMajorStep}
+              remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
+              onViewportContainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
+            />
+
+            <!-- <TimelineLegacy
               annotations={annotationsIDB.annotations}
               {annotationFooterHeight}
               onSeekFrame={seekToFrame}
               onSelectAnnotationGroup={selectAnnotationGroup}
-            />
+            /> -->
           {/if}
         </AnnotationFooter>
       </ResizablePane>
