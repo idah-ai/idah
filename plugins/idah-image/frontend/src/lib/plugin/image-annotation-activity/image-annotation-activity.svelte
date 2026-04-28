@@ -100,7 +100,6 @@
     const annotations = annotationsIDB.annotations;
     return Promise.resolve(annotations);
   });
-  let commandOpen = $state(false);
   let shapeSelectionArgs:
     | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
     | undefined = $state();
