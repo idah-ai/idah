@@ -7,6 +7,8 @@
     TIMELINE_ROW_HEADER_WIDTH,
     timelineRulerWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { recalculateSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { cn } from "$lib/utils";
 
   // Variables
   let isDragging = $state(false);
@@ -39,7 +41,9 @@
     const endFrame = startFrame + currentRangeSpan;
 
     setCurrentFrameRange([startFrame, endFrame]);
+    recalculateSelectedFrameXFromCurrentFrame();
   }
+
   function handleWindowMouseMove(e: MouseEvent) {
     if (!isDragging) return;
 
@@ -52,6 +56,7 @@
     const endFrame = startFrame + currentRangeSpan;
 
     setCurrentFrameRange([startFrame, endFrame]);
+    recalculateSelectedFrameXFromCurrentFrame();
   }
 
   function handleWindowMouseUp() {
@@ -74,7 +79,10 @@
   <div class="bg-primary" style:width="{scrollbarMaxWidth}px">
     <button
       aria-label="scrollbar-handle"
-      class="rounded-lg bg-secondary-foreground/20 h-2.5 absolute bottom-0 -translate-y-[10%] focus:outline-none"
+      class={cn(
+        "rounded-lg bg-secondary-foreground/20 h-2.5 absolute bottom-0 -translate-y-[10%] focus:outline-none",
+        isDragging ? "cursor-grabbing" : "cursor-pointer",
+      )}
       style:width="{scrollbarHandleWidth}px"
       style:left="{handlePositionX}px"
       onclick={(e) => e.stopPropagation()}

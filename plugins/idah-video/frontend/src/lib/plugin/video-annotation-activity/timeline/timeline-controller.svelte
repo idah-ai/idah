@@ -7,19 +7,13 @@
 
   import {
     recalculateFramePerScale,
-    recalculateFrameRange,
     setTimelineCellWidth,
     TIMELINE_CELL_MAX_WIDTH,
     TIMELINE_CELL_MIN_WIDTH,
     TIMELINE_CELL_WIDTH_STEP,
     timelineCellWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
-
-  // Props
-  interface Props {
-    onSeekFrame: (frame: number) => void;
-  }
-  let { onSeekFrame }: Props = $props();
+  import { recalculateSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
 
   // Functions
   function zoomTimelineOut() {
@@ -38,12 +32,9 @@
     /** 1. Set a new timeline cell width */
     setTimelineCellWidth(newCellWidth);
 
-    /** 2. Re-calculate framePerScale & rangeRange */
-    recalculateFrameRange();
+    /** 2. Re-calculate framePerScale & selectedFrameX to display timeline-vertical-line properly */
     recalculateFramePerScale();
-
-    /** 3. Then select the first frame as frame range is re-computed */
-    onSeekFrame(1);
+    recalculateSelectedFrameXFromCurrentFrame();
   }
 </script>
 

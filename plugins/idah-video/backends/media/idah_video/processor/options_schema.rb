@@ -39,8 +39,8 @@ module IdahVideo
 
       field :streaming_time_per_segment,
             Integer,
-            default: 10,
-            desc: "Time per segment in seconds for HLS streaming. Default is 10 seconds."
+            default: 2,
+            desc: "Time per segment in seconds for HLS streaming. Default is 2 seconds."
 
       # Generate the navigation thumbnail
       field :generate_thumbnail,

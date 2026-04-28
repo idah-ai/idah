@@ -52,11 +52,11 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
+  import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
   } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
-  import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -76,7 +76,7 @@
     type VideoShape,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
+  import type { IActivityContext, IMedia } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
 
   // Props
@@ -93,6 +93,7 @@
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let { id: entryId, mediaUrl, workflowStep } = $derived(context);
+  let mediaInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IDAH_NOTE);
@@ -111,7 +112,7 @@
   let zoom = $state(85);
 
   let annotationsIDB: AnnotationBackend | undefined = $state();
-  let volume = $state({ level: 0, muted: false });
+  let volume = $state({ level: 0, muted: true });
   let tools: {
     name: string;
     label: string;
@@ -175,18 +176,16 @@
     };
   });
 
-  // Lifecycles
-  $effect(() => {
-    if (mediaUrl && player && mediaUrl != player?.source()) {
-      player?.source(mediaUrl);
-    }
-  });
-
   $effect(() => {
     context.tools.setTool($currentMode);
   });
 
   onMount(async () => {
+    mediaInfo = await context.mediaInfo();
+
+    setTotalFrames(Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number)));
+    // setAnnotationFrame(1);
+
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
 
@@ -346,7 +345,7 @@
         // scroll to bottom most
         scrollContainer.scrollTo({
           top: scrollContainer.scrollHeight,
-          behavior: "smooth",
+          behavior: "instant",
         });
       }, 100);
     }
@@ -635,6 +634,9 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+
+    // Update the currently selected annotation value to reflect the category change in the properties sidebar
+    onEditValue({ category: reselectedCategoryId }, $currentMode);
   }
 </script>
 
@@ -748,7 +750,7 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={selectAnnotationGroup}
+              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, $currentFrame)}
               onDeleteAnnotation={deleteAnnotation}
               {context}
             />
@@ -762,36 +764,39 @@
 
           <ResizablePane defaultSize={75}>
             <section id="video-section" class="flex h-full w-full flex-1">
-              <SvgOverlay
-                bind:this={overlay}
-                {annotations_promise}
-                frame={$currentFrame}
-                onSelectAnnotation={selectAnnotation}
-                onSelection={onShapeSelection}
-                onAddNewNote={showNewNotePopup}
-                onChangeFrame={seekToFrame}
-                target_container={() => player_container}
-                {videoResizedAt}
-                isPlaying={$isVideoPlaying}
-              >
-                <!-- container context ?-->
-                <Video
-                  bind:this={player}
-                  bind:element={player_container}
-                  onResize={() => {
-                    videoResizedAt = new Date();
-                  }}
-                  onFramesChange={(current, total, playing) => {
-                    setCurrentFrame(current);
-                    setTotalFrames(total);
-                    setVideoIsPlaying(playing);
-                  }}
-                  onTimeUpdate={(currentFrame) => {
-                    setAnnotationFrame(currentFrame);
-                  }}
-                  onVolumeChange={(level, muted) => (volume = { level, muted })}
-                />
-              </SvgOverlay>
+              {#if mediaInfo}
+                <SvgOverlay
+                  bind:this={overlay}
+                  {annotations_promise}
+                  frame={$currentFrame}
+                  onSelectAnnotation={selectAnnotation}
+                  onSelection={onShapeSelection}
+                  onAddNewNote={showNewNotePopup}
+                  onChangeFrame={seekToFrame}
+                  target_container={() => player_container}
+                  {videoResizedAt}
+                  isPlaying={$isVideoPlaying}
+                >
+                  <!-- container context ?-->
+                  <Video
+                    bind:this={player}
+                    bind:element={player_container}
+                    src={mediaUrl}
+                    fps={mediaInfo.meta.fps as number}
+                    onTogglePlay={(isPlaying: boolean) => setVideoIsPlaying(isPlaying)}
+                    onResize={() => {
+                      videoResizedAt = new Date();
+                    }}
+                    onFrameUpdate={(currentFrame: number) => {
+                      setCurrentFrame(currentFrame);
+                      setAnnotationFrame(currentFrame);
+                    }}
+                    onVolumeChange={(level: number, muted: boolean) => {
+                      volume = { level, muted };
+                    }}
+                  />
+                </SvgOverlay>
+              {/if}
 
               <PropertiesSidebar
                 {annotationId}
@@ -812,7 +817,7 @@
           <AnnotationFooterToolbar>
             <VideoController {zoom} {volume} bind:video={player} />
 
-            <TimelineController onSeekFrame={seekToFrame} />
+            <TimelineController />
           </AnnotationFooterToolbar>
 
           {#if annotationsIDB}
@@ -821,6 +826,7 @@
               {annotationFooterHeight}
               onSeekFrame={seekToFrame}
               onSelectAnnotationGroup={selectAnnotationGroup}
+              {selectClosestAnnotation}
             />
           {/if}
         </AnnotationFooter>
