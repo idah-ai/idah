@@ -2,7 +2,7 @@ import { BuildKeymap, KeyMapBuilder } from "$lib/shortcut/key-map-builder";
 
 import { ShortcutManager } from "$lib/shortcut/shortcut-manager.svelte";
 
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "$lib/plugin/types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON, IMAGE_VISUAL } from "$lib/plugin/types";
 
 import type { IActivityContext, ICommands } from "$lib/context/context";
 
@@ -77,6 +77,14 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
   };
 };
 
+const buildVisualModeShortcuts = (context: KeyMapContext) => {
+  return (b: KeyMapBuilder) => {
+    // TODO: test, need uniform way to map accross keyboards (-/+)
+    b.on(null, "Equal",() => context.zoom.in(), "zoom_in", "Zoom In", "Zoom In");
+    b.on(null, "Minus", () => context.zoom.out(), "zoom_out", "Zoom Out", "Zoom Out");
+  };
+};
+
 // TODO: review this mode's shortcuts
 const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
   const backAction = () => {
@@ -109,6 +117,7 @@ const buildNoteModeShortcuts = (context: KeyMapContext) => {
 
 // Add mode and shortcut definitions here.
 const MODE_BUILDERS: Record<string, (context: KeyMapContext) => (b: KeyMapBuilder) => void> = {
+  [IMAGE_VISUAL]: buildVisualModeShortcuts,
   [IMAGE_BOUNDING_BOX]: buildBoundingBoxModeShortcuts,
   [IMAGE_POLYGON]: buildPolygonModeShortcuts,
   [IMAGE_NOTE]: buildNoteModeShortcuts,
