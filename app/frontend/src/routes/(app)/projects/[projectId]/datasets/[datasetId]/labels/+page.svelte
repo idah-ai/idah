@@ -297,11 +297,16 @@
     // Filter out the exact category with the given ID
     // This will only remove the exact match, keeping any parent categories
     const selectedLabelConfig = labelConfig[labelConfigKey];
-    const { color, text_color } = getColor({ labelConfigKey });
-    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => !cat.id.includes(categoryId));
+    if (!selectedLabelConfig) return;
 
+    const { color, text_color } = getColor({ labelConfigKey });
+
+    const normalizedId = categoryId.trim();
+
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => cat.id.trim() !== normalizedId);
     // Check if we need to create a parent category
-    const categoryPaths = categoryId.split("/");
+    const categoryPaths = normalizedId.split("/");
+
     if (categoryPaths.length > 1) {
       // Create the parent path by removing the last segment
       const parentPath = categoryPaths.slice(0, -1).join("/");
