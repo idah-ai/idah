@@ -14,6 +14,21 @@ interface IUser {
   pictureUrl: string;
 }
 
+export interface IMedia {
+  resource: string;
+  key: string;
+
+  size: number;
+  mime_type: string;
+
+  filename: string;
+  meta: Record<string, unknown>;
+
+  created_by: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface IDimension {
   type: string;
 }
@@ -198,6 +213,9 @@ export interface IActivityContext {
 
   // Return the root media url
   get mediaUrl(): string;
+
+  // Fetch media info for the current entry, or for a specific media key if provided
+  mediaInfo(key?: string): Promise<IMedia>;
 
   // Returns current user working on this activity
   get user(): IUser;

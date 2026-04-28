@@ -4,6 +4,8 @@ import { SvelteMap } from "svelte/reactivity";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
+import type { RecordResponse } from "@/data/model/types";
 
 import CommandManager from "@/command/CommandManager";
 
@@ -12,7 +14,7 @@ import { createIconDriver } from "@/plugin/IconDriver";
 import { createNoteDriver } from "@/plugin/NoteDriver";
 
 import type { Command } from "@/command/Command";
-import type { HeaderBarModeTool, IActivityContext, ITools } from "@/plugin/interface/Activity";
+import type { HeaderBarModeTool, IActivityContext, IMedia, ITools } from "@/plugin/interface/Activity";
 
 function createCommandsInterface() {
   const commands = new SvelteMap<string, { manager: boolean; builder: (props?: object) => Command }>();
@@ -77,6 +79,24 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     status: entry.status,
     config: entry.dataset.labeling_configuration,
     mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),
+    async mediaInfo(key?: string): Promise<IMedia> {
+      const record = (await mediaBackendDataSource.getInfo({
+        resource: entry.resource,
+        key,
+      })) as RecordResponse<MediaRecord>;
+
+      return {
+        resource: record.data.resource,
+        key: record.data.key,
+        size: record.data.size,
+        mime_type: record.data.mime_type,
+        filename: record.data.filename,
+        meta: record.data.meta,
+        created_by: record.data.created_by,
+        created_at: record.data.created_at,
+        updated_at: record.data.updated_at,
+      };
+    },
     user: {
       id: 0,
       email: "",

@@ -21,7 +21,12 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setCurrentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    setCurrentFrame,
+    setCurrentModeTo,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
@@ -41,6 +46,7 @@
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { DEFAULT_MODE } from "$lib/plugin/type";
 
   // Props
   interface Props {
@@ -49,8 +55,10 @@
 
     onSeekFrame: (frame: number) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    selectClosestAnnotation: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame: number) => void;
   }
-  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
+  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup, selectClosestAnnotation }: Props =
+    $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -238,6 +246,12 @@
         context.commands.run("annotation.delete", {
           annotationId: closestAnnotation.metadata.id,
         });
+
+        selectAnnotationGroup.annotations = selectAnnotationGroup.annotations.filter(
+          (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
+        );
+
+        selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
         closeContextMenu();
       },
     };
@@ -412,6 +426,8 @@
       deleteAllAnnotations();
     }
 
+    // Return to default mode after deletion
+    setCurrentModeTo(DEFAULT_MODE);
     openConfirmDeleteModal = false;
   }}
   bind:open={openConfirmDeleteModal}
