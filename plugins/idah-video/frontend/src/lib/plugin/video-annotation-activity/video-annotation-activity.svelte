@@ -112,7 +112,7 @@
   let zoom = $state(85);
 
   let annotationsIDB: AnnotationBackend | undefined = $state();
-  let volume = $state({ level: 0, muted: false });
+  let volume = $state({ level: 0, muted: true });
   let tools: {
     name: string;
     label: string;
@@ -790,6 +790,9 @@
                     onFrameUpdate={(currentFrame: number) => {
                       setCurrentFrame(currentFrame);
                       setAnnotationFrame(currentFrame);
+                    }}
+                    onVolumeChange={(level: number, muted: boolean) => {
+                      volume = { level, muted };
                     }}
                   />
                 </SvgOverlay>
