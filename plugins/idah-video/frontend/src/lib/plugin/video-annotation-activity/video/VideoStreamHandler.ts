@@ -76,9 +76,10 @@ export class VideoStreamHandler {
       console.log("Available quality levels:", data.levels.length);
       this.maxQualityLevel = data.levels.length - 1;
 
-      // Start with adaptive quality
+      // Start with highest quality
       if (this.hls) {
-        this.hls.currentLevel = -1; // Auto quality
+        this.hls.currentLevel = this.maxQualityLevel; // Highest quality
+        console.log(`Initial quality set to: ${this.maxQualityLevel}`);
       }
     });
 
@@ -118,7 +119,7 @@ export class VideoStreamHandler {
       // Hide loader if it's showing
       this.onLoadingChange(false);
 
-      // Resume with adaptive quality
+      // Switch to adaptive quality for smooth playback based on connection
       if (this.hls) {
         this.hls.currentLevel = -1;
 
