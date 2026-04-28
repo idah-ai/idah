@@ -2,12 +2,7 @@
   import { InfoIcon } from "@lucide/svelte";
 
   import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
-  import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldLabel,
-  } from "$lib/components/ui/field";
+  import { Field, FieldDescription, FieldError, FieldLabel } from "$lib/components/ui/field";
   import {
     InputGroup,
     InputGroupAddon,
@@ -33,6 +28,7 @@
     suffixIcon: SuffixIcon = undefined,
     oninput = undefined,
     onblur = undefined,
+    onkeyup = undefined,
     name,
     inputmode = "decimal",
     min = undefined,
@@ -54,9 +50,7 @@
 </script>
 
 <Field class={cn("", className)}>
-  <FieldLabel for={name} {required} class={cn("", { hidden: !label })}
-    >{label}</FieldLabel
-  >
+  <FieldLabel for={name} {required} class={cn("", { hidden: !label })}>{label}</FieldLabel>
 
   <InputGroup class={cn("", groupInputClass)}>
     {#if PrefixIcon}
@@ -86,6 +80,7 @@
       {value}
       {oninput}
       {onblur}
+      {onkeyup}
     />
 
     {#if suffix}
