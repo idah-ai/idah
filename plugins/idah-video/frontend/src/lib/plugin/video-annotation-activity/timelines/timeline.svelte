@@ -71,8 +71,6 @@
 
   // Variables:: Track
   const TRACK_HEIGHT = 50;
-  // let tracksHeight = $derived(items.length * TRACK_HEIGHT);
-  let tracksHeight = $derived(remainingHeight - timelineRulerContainerHeight);
 
   let tracks = $derived(
     [...new Set(items.map((item) => item.trackId))].map((trackId) => ({
@@ -92,6 +90,8 @@
       top: (firstVisibleTrackIndex + i) * TRACK_HEIGHT,
     })),
   );
+  let tracksHeight = $derived(tracks.length * TRACK_HEIGHT);
+  // let tracksHeight = $derived(remainingHeight - timelineRulerContainerHeight);
 
   // Emit viewportContainerWidth changes to parent
   $effect(() => {
@@ -124,6 +124,10 @@
 
     if (newStart !== viewport.startRange) viewport.startRange = newStart;
     if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
+
+    // if (newStart !== viewport.startRange && newEnd !== viewport.endRange) {
+    //   onViewportChange?.({ startRange: newStart, endRange: newEnd }, zoomLevel);
+    // }
   });
 
   // Track in-flight programmatic scrolls per element to prevent feedback loops.
@@ -176,6 +180,7 @@
     const clampedStartRange = Math.max(0, Math.min(newScrollLeft / scale, length - rangeWidth));
     viewport.startRange = clampedStartRange;
     viewport.endRange = clampedStartRange + rangeWidth;
+    // onViewportChange?.({ startRange: clampedStartRange, endRange: clampedStartRange + rangeWidth }, zoomLevel);
   }
 
   function handleRulerScroll() {
@@ -334,7 +339,7 @@
   }
 </script>
 
-<div id="timeline" class="flex flex-col border w-full">
+<div id="timeline" class="flex w-full flex-col border">
   {#if toolbar}
     <div id="timeline-toolbar" class="flex shrink-0">
       {@render toolbar()}
@@ -349,7 +354,7 @@
     <div
       id="timeline-ruler-spacer"
       aria-hidden="true"
-      class="shrink-0 border-r h-9 border-b flex items-center px-2"
+      class="flex h-9 shrink-0 items-center border-r border-b px-2"
       style="width: {TIMELINE_TRACK_INFO_WIDTH}px"
     >
       Annotations (Actions)
@@ -375,28 +380,38 @@
     <div
       id="timeline-ruler-caret-overlay"
       aria-hidden="true"
-      class="absolute top-0 bottom-0 right-0 pointer-events-none overflow-hidden z-10"
+      class="pointer-events-none absolute top-0 right-0 bottom-0 z-10 overflow-hidden"
       style:left="{TIMELINE_TRACK_INFO_WIDTH}px"
     >
+      <!-- CARET LABEL::SELECTED ON RULER -->
       {#if hasSelection && selectionOffset >= 0 && selectionOffset < totalFrames && selectionCaretViewportX >= 0 && selectionCaretViewportX <= viewportContainerWidth}
         <Caret
           x={selectionCaretViewportX}
           value={selectionOffset}
           labelFormatter={rulerLabelFormatter}
-          height={30}
+          height={36}
+          color="primary"
           showLabel
         />
       {/if}
 
+      <!-- CARET LABEL::HOVER ON RULER -->
       {#if showCaret && hoverCaretViewportX >= 0 && hoverCaretViewportX <= viewportContainerWidth}
-        <Caret x={hoverCaretViewportX} value={caretValue} labelFormatter={rulerLabelFormatter} height={30} showLabel />
+        <Caret
+          x={hoverCaretViewportX}
+          value={caretValue}
+          labelFormatter={rulerLabelFormatter}
+          height={36}
+          color="secondary"
+          showLabel
+        />
       {/if}
     </div>
   </div>
 
   <div
     id="timeline-body-scroll"
-    class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+    class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
     bind:this={timelineBodyScrollEl}
     bind:clientHeight={timelineBodyScrollClientHeight}
     onscroll={handleBodyScroll}
@@ -428,20 +443,22 @@
         onkeypress={() => {}}
       >
         <div id="timeline-tracks-content" class="relative" style:height="{tracksHeight}px">
-          {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
+          {#if hasSelection && selectionOffset >= 0 && selectionOffset < totalFrames}
+            <!-- SELECTION BLOCK -->
             <Selection
               offset={selectionOffset}
               length={selectionLength}
               {scale}
               height={tracksHeight}
-              trackLength={length}
+              trackLength={totalFrames}
             />
+            <!-- CARET LINE::SELECTED ON TRACKS -->
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
               labelFormatter={rulerLabelFormatter}
               height={tracksHeight}
-              color="#4a90d9"
+              color="primary"
               showLine
             />
           {/if}
@@ -451,7 +468,14 @@
           {/each}
 
           {#if showCaret && caretX >= 0 && caretX <= contentWidth}
-            <Caret x={caretX} value={caretValue} labelFormatter={rulerLabelFormatter} height={tracksHeight} showLine />
+            <Caret
+              x={caretX}
+              value={caretValue}
+              labelFormatter={rulerLabelFormatter}
+              height={tracksHeight}
+              color="secondary"
+              showLine
+            />
           {/if}
         </div>
       </div>

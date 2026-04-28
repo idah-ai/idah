@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { cn } from "$lib/utils";
+
+  // Props
   interface Props {
     x: number;
     value: number;
     height: number;
     labelFormatter?: (value: number) => string;
-    color?: string;
+    color: "primary" | "secondary";
     showLine?: boolean;
     showLabel?: boolean;
   }
@@ -14,19 +17,31 @@
     value,
     height,
     labelFormatter = (value: number) => String(Math.floor(value)),
-    color = "#ccc",
+    color,
     showLine = false,
     showLabel = false,
   }: Props = $props();
+
+  // Variables
+  let colorClass = $derived.by(() => {
+    switch (color) {
+      case "primary": {
+        return "bg-primary text-primary-foreground border-primary";
+      }
+      case "secondary": {
+        return "bg-secondary text-secondary-foreground border-1 border-secondary-foreground/50";
+      }
+    }
+  });
 </script>
 
 <div class="caret" style:left="{x}px" style:height="{height}px">
   {#if showLine}
-    <div class="caret-line" style:background-color={color}></div>
+    <div class={cn("caret-line", colorClass)}></div>
   {/if}
 
   {#if showLabel}
-    <div class="caret-label" style:border-color={color} style:color>
+    <div class={cn("caret-label", colorClass)}>
       {labelFormatter(value)}
     </div>
   {/if}
@@ -56,12 +71,10 @@
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #fff;
-    border: 1px solid;
     padding: 2px 6px;
     font-size: 11px;
     font-family: sans-serif;
     white-space: nowrap;
-    border-radius: 3px;
+    border-radius: 4px;
   }
 </style>

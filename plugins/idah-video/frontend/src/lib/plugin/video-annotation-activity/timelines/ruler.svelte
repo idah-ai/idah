@@ -57,17 +57,17 @@
 </script>
 
 {#if shouldShowRuler}
-  <div id="timeline-ruler" class="relative h-9 border-b focus:outline-none overflow-hidden">
+  <div id="timeline-ruler" class="relative h-9 overflow-hidden border-b focus:outline-none">
     {#each groupedMarks as mark, markIndex (markIndex)}
       {#if mark.isMajor && rulerMajorStep > 0}
-        <div class="absolute bottom-0 w-px h-[80%] bg-muted-foreground -translate-x-1/2" style:left="{mark.position}px">
-          <span class="absolute text-xs -top-1 left-0.5 pb-0.5 whitespace-nowrap text-muted-foreground">
+        <div class="bg-muted-foreground absolute bottom-0 h-[80%] w-px -translate-x-1/2" style:left="{mark.position}px">
+          <span class="text-muted-foreground absolute -top-1 left-0.5 pb-0.5 text-xs whitespace-nowrap">
             {mark.value}
           </span>
         </div>
       {:else if rulerMinorStep > 0}
         <div
-          class="absolute bottom-0 w-px h-[40%] bg-muted-foreground -translate-x-1/2"
+          class="bg-muted-foreground absolute bottom-0 h-[40%] w-px -translate-x-1/2"
           style:left="{mark.position}px"
         ></div>
       {/if}
