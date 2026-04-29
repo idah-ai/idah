@@ -301,15 +301,18 @@
 
     const normalizedId = categoryId.trim();
 
-    const hasChildren = selectedLabelConfig.values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
+    const values = selectedLabelConfig.values;
+
+    const removedIndex = values.findIndex((v) => v.id.trim() === normalizedId);
+
+    const hasChildren = values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
 
     const isChild = normalizedId.includes("/");
 
-    selectedLabelConfig.values = selectedLabelConfig.values.filter((value) => {
+    selectedLabelConfig.values = values.filter((value) => {
       const valueId = value.id.trim();
 
       if (valueId === normalizedId) return false;
-
       if (hasChildren && valueId.startsWith(normalizedId + "/")) return false;
 
       return true;
@@ -317,17 +320,22 @@
 
     if (isChild) {
       const parentPath = normalizedId.split("/").slice(0, -1).join("/");
+
       const parentExists = selectedLabelConfig.values.some((value) => value.id.trim() === parentPath);
 
-      // If parent doesn't exist, create it
       if (!parentExists) {
         const { color, text_color } = getColor({ labelConfigKey });
-        selectedLabelConfig.values.push({
+
+        const newParent = {
           id: parentPath,
           label: humanize(parentPath),
           color,
           text_color,
-        });
+        };
+
+        const insertIndex = removedIndex >= 0 ? removedIndex : selectedLabelConfig.values.length;
+
+        selectedLabelConfig.values.splice(insertIndex, 0, newParent);
       }
     }
   }
