@@ -441,7 +441,7 @@
       r={5}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
-      class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-minus-icon" : ""}
+      class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-pen-minus" : ""}
       style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
       style:stroke={isMatched ? color : "orange"}
@@ -536,29 +536,3 @@
     {@render PolygonVertices(points)}
   {/if}
 {/if}
-
-<style>
-  .cursor-note {
-    cursor: url("../assets/message-circle.svg"), auto;
-  }
-
-  .cursor-none {
-    cursor: none;
-  }
-
-  .cursor-pen-plus {
-    cursor: url("../assets/pen-tool-add-2-24x24.svg"), auto;
-  }
-
-  .cursor-pen-plus:hover {
-    cursor: url("../assets/pen-tool-add-2-24x24.svg"), auto;
-  }
-
-  .cursor-minus-icon {
-    cursor: url("../assets/pen-tool-remove-2-24x24.svg"), auto;
-  }
-
-  .cursor-pointer {
-    cursor: pointer;
-  }
-</style>
