@@ -121,16 +121,6 @@
     endRange: 0,
   });
 
-  $effect(() => {
-    length = player?.getFrames() || 0;
-    if (length > 0) {
-      viewport = {
-        startRange: 0,
-        endRange: length,
-      };
-    }
-  });
-
   const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
   const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
 
@@ -251,7 +241,13 @@
   onMount(async () => {
     mediaInfo = await context.mediaInfo();
 
-    setTotalFrames(Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number)));
+    const totalFrames = Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number));
+    setTotalFrames(totalFrames);
+    length = totalFrames;
+    viewport = {
+      startRange: 0,
+      endRange: totalFrames,
+    };
     // setAnnotationFrame(1);
 
     // Generate the full static reference list of shortcuts and register them to the shared context
