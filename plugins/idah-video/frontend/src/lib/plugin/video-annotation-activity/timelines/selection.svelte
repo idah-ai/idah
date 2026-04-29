@@ -20,13 +20,7 @@
   const width = $derived(clampedLength * scale);
 </script>
 
-<div
-  class="selection"
-  style:left="{left}px"
-  style:width="{width}px"
-  style:height="{height}px"
-  style:background-color={color}
->
+<div class="selection" style="left: {left}px; width: {width}px; height: {height}px; background-color: {color};">
   <div class="selection-caret"></div>
 </div>
 

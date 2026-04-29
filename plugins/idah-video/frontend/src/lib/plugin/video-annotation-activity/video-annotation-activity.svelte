@@ -65,10 +65,10 @@
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
+  import Block from "$lib/plugin/video-annotation-activity/timelines/block.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timelines/timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
-  import Block from "./timelines/block.svelte";
 
   import {
     type Point,
@@ -957,14 +957,11 @@
             <Timeline
               {viewport}
               items={generateItems()}
-              totalFrames={$totalFrames}
-              rulerMinorStep={effectiveRulerMinorStep}
-              rulerMajorStep={effectiveRulerMajorStep}
+              {length}
               remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
-              onViewportContainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
-              onViewportChange={(newViewport) => {
-                viewport = newViewport;
-              }}
+              rulerSmallStep={effectiveRulerMinorStep}
+              rulerBigStep={effectiveRulerMajorStep}
+              oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
             />
 
             <!-- <TimelineLegacy

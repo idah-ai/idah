@@ -1,13 +1,10 @@
 <script lang="ts">
-  import { cn } from "$lib/utils";
-
-  // Props
   interface Props {
     x: number;
     value: number;
-    height: number;
     labelFormatter?: (value: number) => string;
-    color: "primary" | "secondary";
+    height: number;
+    color?: string;
     showLine?: boolean;
     showLabel?: boolean;
   }
@@ -15,35 +12,20 @@
   let {
     x,
     value,
+    labelFormatter = (v: number) => String(Math.floor(v)),
     height,
-    labelFormatter = (value: number) => String(Math.floor(value)),
-    color,
-    showLine = false,
-    showLabel = false,
+    color = "#ccc",
+    showLine = true,
+    showLabel = true,
   }: Props = $props();
-
-  // Variables
-  let colorClass = $derived.by(() => {
-    switch (color) {
-      case "primary": {
-        return "bg-primary text-primary-foreground border-primary";
-      }
-      case "secondary": {
-        return "bg-secondary text-secondary-foreground border-1 border-secondary-foreground/50";
-      }
-    }
-  });
 </script>
 
-<div class="caret" style:left="{x}px" style:height="{height}px">
+<div class="caret" style="left: {x}px; height: {height}px;">
   {#if showLine}
-    <div class={cn("caret-line", colorClass)}></div>
+    <div class="caret-line" style="background-color: {color};"></div>
   {/if}
-
   {#if showLabel}
-    <div class={cn("caret-label", colorClass)}>
-      {labelFormatter(value)}
-    </div>
+    <div class="caret-label" style="border-color: {color}; color: {color};">{labelFormatter(value)}</div>
   {/if}
 </div>
 
@@ -71,10 +53,12 @@
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
+    background-color: #fff;
+    border: 1px solid;
     padding: 2px 6px;
     font-size: 11px;
     font-family: sans-serif;
     white-space: nowrap;
-    border-radius: 4px;
+    border-radius: 3px;
   }
 </style>

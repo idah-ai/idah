@@ -5,13 +5,8 @@
  * @param start2 - Start of second range
  * @param end2 - End of second range
  */
-export function rangesOverlap(
-	start1: number,
-	end1: number,
-	start2: number,
-	end2: number
-): boolean {
-	return start1 < end2 && end1 > start2;
+export function rangesOverlap(start1: number, end1: number, start2: number, end2: number): boolean {
+  return start1 < end2 && end1 > start2;
 }
 
 /**
@@ -21,11 +16,6 @@ export function rangesOverlap(
  * @param viewportStart - Start of viewport
  * @param viewportEnd - End of viewport
  */
-export function isInViewport(
-	itemStart: number,
-	itemEnd: number,
-	viewportStart: number,
-	viewportEnd: number
-): boolean {
-	return rangesOverlap(itemStart, itemEnd, viewportStart, viewportEnd);
+export function isInViewport(itemStart: number, itemEnd: number, viewportStart: number, viewportEnd: number): boolean {
+  return rangesOverlap(itemStart, itemEnd, viewportStart, viewportEnd);
 }

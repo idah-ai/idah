@@ -1,78 +1,78 @@
 <script lang="ts">
-  import type { TimelineRulerProps } from "$lib/plugin/video-annotation-activity/timelines/types";
+  import type { Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
 
-  // Props
-  interface Props extends TimelineRulerProps {
+  interface Props {
+    viewport: Viewport;
     scale: number;
+    smallStep?: number;
+    bigStep?: number;
+    labelFormatter?: (value: number) => string;
   }
 
   let {
     viewport,
-    rulerMajorStep = 10,
-    rulerMinorStep = 50,
-    rulerLabelFormatter = (value: number) => String(Math.floor(value)),
     scale,
+    smallStep = 10,
+    bigStep = 50,
+    labelFormatter = (value: number) => String(Math.floor(value)),
   }: Props = $props();
 
-  // Variables
   // Generate all marks (small and big) within the viewport range
   const marks = $derived.by(() => {
-    const result: Array<{ position: number; value: number; isMajor: boolean }> = [];
+    const result: Array<{ position: number; value: number; isBig: boolean }> = [];
 
     // If both steps are 0, no marks to generate
-    if (rulerMinorStep === 0 && rulerMajorStep === 0) {
+    if (smallStep === 0 && bigStep === 0) {
       return result;
     }
 
     const { startRange, endRange } = viewport;
 
     // If smallStep is 0, only generate big marks (at bigStep intervals)
-    if (rulerMinorStep === 0) {
-      const firstMark = Math.ceil(startRange / rulerMajorStep) * rulerMajorStep;
-      for (let value = firstMark; value <= endRange; value += rulerMajorStep) {
+    if (smallStep === 0) {
+      const firstMark = Math.ceil(startRange / bigStep) * bigStep;
+      for (let value = firstMark; value <= endRange; value += bigStep) {
         const position = (value - viewport.startRange) * scale;
-        result.push({ position, value, isMajor: true });
+        result.push({ position, value, isBig: true });
       }
     } else {
       // Normal case: generate all marks
-      const firstMark = Math.ceil(startRange / rulerMinorStep) * rulerMinorStep;
-      for (let value = firstMark; value <= endRange; value += rulerMinorStep) {
+      const firstMark = Math.ceil(startRange / smallStep) * smallStep;
+      for (let value = firstMark; value <= endRange; value += smallStep) {
         const position = (value - viewport.startRange) * scale;
-        const isMajor = rulerMajorStep > 0 && value % rulerMajorStep === 0;
-        result.push({ position, value, isMajor });
+        const isBig = bigStep > 0 && value % bigStep === 0;
+        result.push({ position, value, isBig });
       }
     }
 
     return result;
   });
 
-  // group marks by position to handle overlapping big/small marks
+  // Group marks by position to handle overlapping big/small marks
   const groupedMarks = $derived.by(() => {
-    const map = new Map<number, { position: number; value: number; isMajor: boolean }>();
+    const map = new Map<number, { position: number; value: number; isBig: boolean }>();
     for (const mark of marks) {
       const existing = map.get(mark.position);
-      if (!existing || mark.isMajor) {
-        map.set(mark.position, { position: mark.position, value: mark.value, isMajor: mark.isMajor });
+      if (!existing || mark.isBig) {
+        map.set(mark.position, { position: mark.position, value: mark.value, isBig: mark.isBig });
       }
     }
     return Array.from(map.values());
   });
 
   // Hide entire ruler when both steps are 0
-  const shouldShowRuler = $derived(rulerMinorStep > 0 || rulerMajorStep > 0);
+  const shouldShowRuler = $derived(smallStep > 0 || bigStep > 0);
 </script>
 
 {#if shouldShowRuler}
   <div class="ruler">
     {#each groupedMarks as mark, markIndex (markIndex)}
-      {#if mark.isMajor && rulerMajorStep > 0}
-        <!-- bg-muted-foreground absolute bottom-0 h-[80%] w-px -translate-x-1/2 -->
-        <div class="mark major" style:left="{mark.position}px">
-          <span class="label">{rulerLabelFormatter?.(mark.value)} </span>
+      {#if mark.isBig && bigStep > 0}
+        <div class="mark big" style="left: {mark.position}px;">
+          <span class="label">{labelFormatter(mark.value)}</span>
         </div>
-      {:else if rulerMinorStep > 0}
-        <!-- bg-muted-foreground absolute bottom-0 h-[40%] w-px -translate-x-1/2 -->
-        <div class="mark minor" style:left="{mark.position}px"></div>
+      {:else if smallStep > 0}
+        <div class="mark small" style="left: {mark.position}px;"></div>
       {/if}
     {/each}
   </div>
@@ -93,7 +93,7 @@
     transform: translateX(-50%);
   }
 
-  .mark.minor:after {
+  .mark.small:after {
     position: absolute;
     content: "";
     bottom: 0;
@@ -103,7 +103,7 @@
     transform: rotateZ(15deg);
   }
 
-  .mark.major:after {
+  .mark.big:after {
     position: absolute;
     content: "";
     bottom: 0;
@@ -117,7 +117,7 @@
     position: absolute;
     top: -1.5rem;
     left: 0.25rem;
-    transform: translateX(-50%);
+    /* transform: translateX(-50%); */
     font-size: 12px;
     font-family: sans-serif;
     color: #333;

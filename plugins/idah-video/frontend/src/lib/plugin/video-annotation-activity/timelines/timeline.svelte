@@ -12,52 +12,52 @@
   interface Props extends TimelineProps {
     toolbar?: Snippet;
     remainingHeight: number;
-    onViewportContainerWidthChange?: (width: number) => void;
-    onViewportChange: (viewport: Viewport) => void;
-    onSelectionChange?: (offset: number, length: number) => void;
+    oncontainerWidthChange?: (width: number) => void;
+    onViewportChange?: (viewport: Viewport, zoomLevel: number) => void;
+    onselectionchange?: (offset: number, length: number) => void;
   }
 
   let {
     viewport,
     items,
-    totalFrames,
-    rulerMajorStep = 10,
-    rulerMinorStep = 50,
-    remainingHeight,
+    length,
+    rulerSmallStep = 10,
+    rulerBigStep = 50,
     rulerLabelFormatter,
     toolbar,
-    onViewportContainerWidthChange,
+    remainingHeight,
+    oncontainerWidthChange,
     onViewportChange,
-    onSelectionChange,
+    onselectionchange,
   }: Props = $props();
 
   // Constants
   const TIMELINE_TRACK_INFO_WIDTH = 300;
 
-  // Variables:: Selection state
-  let selectionOffset = $state<number>(0);
-  let selectionLength = $state<number>(1);
-  let hasSelection = $state<boolean>(false);
+  // Selection state
+  let selectionOffset = $state(0);
+  let selectionLength = $state(1);
+  let hasSelection = $state(false);
 
-  // Emit viewportContainerWidth changes to parent
+  // Emit containerWidth changes to parent
   $effect(() => {
-    if (onViewportContainerWidthChange && viewportContainerWidth > 0) {
-      onViewportContainerWidthChange(viewportContainerWidth);
+    if (oncontainerWidthChange && containerWidth > 0) {
+      oncontainerWidthChange(containerWidth);
     }
   });
 
-  // Variables:: Zoom
-  let zoomLevel = $derived(totalFrames / (viewport.endRange - viewport.startRange));
+  // Derive zoom level from viewport range
+  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
 
   // Notify parent of viewport changes (including zoom level)
   $effect(() => {
-    // if (onViewportChange) {
-    // onViewportChange({ startRange: viewport.startRange, endRange: viewport.endRange });
-    // }
+    if (onViewportChange) {
+      onViewportChange({ startRange: viewport.startRange, endRange: viewport.endRange }, zoomLevel);
+    }
   });
 
   // Clamp viewport to valid bounds whenever it changes from any source.
-  // Preserves range width when only translating; shrinks to [0, totalFrames] if range exceeds length.
+  // Preserves range width when only translating; shrinks to [0, length] if range exceeds length.
   $effect(() => {
     const rangeWidth = viewport.endRange - viewport.startRange;
     if (rangeWidth <= 0) return;
@@ -65,58 +65,52 @@
     let newStart = viewport.startRange;
     let newEnd = viewport.endRange;
 
-    if (rangeWidth >= totalFrames) {
-      // Range is wider than (or equal to) the entire content - show everything
+    if (rangeWidth >= length) {
+      // Range wider than (or equal to) the entire content — show everything
       newStart = 0;
-      newEnd = totalFrames;
+      newEnd = length;
     } else if (newStart < 0) {
-      // Slide right to the start, keeping width
+      // Slide right to the start, keep width
       newStart = 0;
       newEnd = rangeWidth;
-    } else if (newEnd > totalFrames) {
-      newEnd = totalFrames;
-      newStart = totalFrames - rangeWidth;
+    } else if (newEnd > length) {
+      // Slide left to the end, keep width
+      newEnd = length;
+      newStart = length - rangeWidth;
     }
 
-    // Update viewport values
     if (newStart !== viewport.startRange) viewport.startRange = newStart;
     if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
-
-    // if (newStart !== viewport.startRange) {
-    //   onViewportChange({ startRange: newStart, endRange: viewport.endRange });
-    // }
-    // if (newEnd !== viewport.endRange) {
-    //   onViewportChange({ startRange: viewport.startRange, endRange: newEnd });
-    // }
   });
 
   // Group items by trackId to get unique tracks
-  let tracks = $derived(
+  const tracks = $derived(
     [...new Set(items.map((item) => item.trackId))].map((trackId) => ({
       id: trackId,
       items: items.filter((item) => item.trackId === trackId),
     })),
   );
 
-  // Variables:: Viewport
-  let viewportContainerWidth = $state<number>(0);
-  let viewportRange = $derived(viewport.endRange - viewport.startRange);
-  let scale = $derived(viewportContainerWidth > 0 ? viewportContainerWidth / viewportRange : 1);
-  let contentWidth = $derived(totalFrames * scale); // Total context pixel width
+  // Bind to actual container pixel width
+  let containerWidth = $state(0);
 
-  // Variables:: Elements
+  // Scale: pixels per one unit of the timeline
+  // The viewport range always fills the whole container
+  const viewportRange = $derived(viewport.endRange - viewport.startRange);
+  const scale = $derived(containerWidth > 0 ? containerWidth / viewportRange : 1);
+
+  // Total content pixel width
+  const contentWidth = $derived(length * scale);
+
+  // Caret state
+  let showCaret = $state(false);
+  let caretX = $state(0);
+  let caretValue = $state(0);
+  let lastMouseX = $state(0);
+
   let rulerViewportEl = $state<HTMLDivElement | null>(null);
   let tracksViewportEl = $state<HTMLDivElement | null>(null);
   let hScrollbarEl = $state<HTMLDivElement | null>(null);
-  let timelineHScrollbarHeight = $state<number>(16);
-
-  // Variables:: Caret
-  let showCaret = $state<boolean>(false);
-  let caretX = $state<number>(0);
-  let caretValue = $state<number>(0);
-  let lastMouseX = $state<number>(0);
-  let selectionCaretViewportX = $derived((selectionOffset - viewport.startRange) * scale);
-  let hoverCaretViewportX = $derived<number>(caretX - viewport.startRange * scale);
 
   // Track in-flight programmatic scrolls per element to prevent feedback loops.
   // Using a Set so ruler, tracks and hscrollbar can all be pending simultaneously.
@@ -157,10 +151,8 @@
     const rangeWidth = viewport.endRange - viewport.startRange;
     // Clamp startRange so the viewport stays within [0, length] without changing rangeWidth
     const clampedStartRange = Math.max(0, Math.min(newScrollLeft / scale, length - rangeWidth));
-
     viewport.startRange = clampedStartRange;
     viewport.endRange = clampedStartRange + rangeWidth;
-    // onViewportChange({ startRange: clampedStartRange, endRange: clampedStartRange + rangeWidth });
   }
 
   function handleRulerScroll() {
@@ -172,7 +164,8 @@
     syncScrollLeft(rulerViewportEl.scrollLeft, "ruler");
   }
 
-  let lastTracksScrollLeft = $state(0);
+  // Track last known scrollLeft to skip pure vertical scroll events
+  let lastTracksScrollLeft = 0;
 
   function handleTracksScroll() {
     if (pendingProgrammatic.has("tracks")) {
@@ -198,7 +191,7 @@
   // Handle wheel on the ruler: non-Ctrl → horizontal pan, Ctrl → zoom
   function handleRulerWheel(e: WheelEvent) {
     e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
+    if (e.ctrlKey) {
       handleWheel(e);
       return;
     }
@@ -212,6 +205,7 @@
     syncScrollLeft(newScrollLeft, "ruler");
   }
 
+  // Handle Ctrl+scroll zoom
   function handleWheel(e: WheelEvent) {
     if (!e.metaKey || scale <= 0) return;
 
@@ -258,7 +252,6 @@
     // Update viewport values
     viewport.startRange = newStartRange;
     viewport.endRange = newEndRange;
-    // onViewportChange({ startRange: newStartRange, endRange: newEndRange });
   }
 
   // Compute content-space x from a mouse event relative to a given scrollable element
@@ -267,6 +260,7 @@
     return e.clientX - rect.left + el.scrollLeft;
   }
 
+  // Handle mouse move for caret (works for both ruler and tracks viewport)
   function handleMouseMove(e: MouseEvent) {
     const el = tracksViewportEl ?? rulerViewportEl;
     if (!el || scale <= 0) return;
@@ -301,20 +295,17 @@
 
   // Common click-to-select logic
   function applyClickSelect(mouseXInContent: number) {
-    let clickValue = Math.floor(mouseXInContent / scale);
-    if (clickValue > totalFrames) clickValue = totalFrames;
-
+    const clickValue = Math.floor(mouseXInContent / scale);
     selectionOffset = clickValue;
     selectionLength = 1;
     hasSelection = true;
-
-    if (onSelectionChange) {
-      onSelectionChange(selectionOffset, selectionLength);
+    if (onselectionchange) {
+      onselectionchange(selectionOffset, selectionLength);
     }
   }
 
   // Handle click to set selection (tracks viewport)
-  function handleTrackClick(e: MouseEvent) {
+  function handleClick(e: MouseEvent) {
     if (!tracksViewportEl || scale <= 0) return;
     applyClickSelect(contentXFromEvent(e, tracksViewportEl));
   }
@@ -325,26 +316,30 @@
     applyClickSelect(contentXFromEvent(e, rulerViewportEl));
   }
 
-  function handleBodyScroll() {
-    if (!timelineBodyScrollEl) return;
-    timelineBodyScrollTop = timelineBodyScrollEl.scrollTop;
-  }
+  // Viewport-relative x positions for caret labels (so they don't need to scroll)
+  const selectionCaretViewportX = $derived((selectionOffset - viewport.startRange) * scale);
+  const hoverCaretViewportX = $derived(caretX - viewport.startRange * scale);
 
-  let timelineBodyScrollEl = $state<HTMLDivElement | null>(null);
-  let timelineBodyScrollTop = $state<number>(0);
-  let timelineBodyScrollClientHeight = $state<number>(0);
-
-  // Variables:: Track
   // Calculate tracks height for content
   const TRACK_HEIGHT = 50;
-  let tracksHeight = $derived(tracks.length * TRACK_HEIGHT);
+  const tracksHeight = $derived(tracks.length * TRACK_HEIGHT);
+
+  // Vertical virtualization: track the body-scroll element's scroll position
+  let bodyScrollEl = $state<HTMLDivElement | null>(null);
+  let bodyScrollTop = $state(0);
+  let bodyScrollClientHeight = $state(0);
+
+  function handleBodyScroll() {
+    if (!bodyScrollEl) return;
+    bodyScrollTop = bodyScrollEl.scrollTop;
+  }
 
   // Derive which tracks are vertically visible (with one track of overdraw on each side)
-  let firstVisibleTrackIndex = $derived(Math.max(0, Math.floor(timelineBodyScrollTop / TRACK_HEIGHT) - 1));
-  let lastVisibleTrackIndex = $derived(
-    Math.min(tracks.length - 1, Math.ceil((timelineBodyScrollTop + timelineBodyScrollClientHeight) / TRACK_HEIGHT)),
+  const firstVisibleTrackIndex = $derived(Math.max(0, Math.floor(bodyScrollTop / TRACK_HEIGHT) - 1));
+  const lastVisibleTrackIndex = $derived(
+    Math.min(tracks.length - 1, Math.ceil((bodyScrollTop + bodyScrollClientHeight) / TRACK_HEIGHT)),
   );
-  let visibleTracks = $derived(
+  const visibleTracks = $derived(
     tracks.slice(firstVisibleTrackIndex, lastVisibleTrackIndex + 1).map((track, i) => ({
       ...track,
       top: (firstVisibleTrackIndex + i) * TRACK_HEIGHT,
@@ -352,138 +347,115 @@
   );
 </script>
 
-<div id="timeline" class="flex w-full flex-col border" style:height="{remainingHeight}px">
+<div class="timeline" style:height="{remainingHeight}px">
   {#if toolbar}
-    <div id="timeline-toolbar" class="flex shrink-0">
+    <div class="timeline-toolbar">
       {@render toolbar()}
     </div>
   {/if}
 
-  <div id="timeline-ruler-wrapper" class="relative flex w-full shrink-0">
+  <div class="timeline-ruler-wrapper">
+    <div class="timeline-ruler-spacer" aria-hidden="true" style:width="{TIMELINE_TRACK_INFO_WIDTH}px"></div>
     <div
-      id="timeline-ruler-spacer"
-      aria-hidden="true"
-      class="flex h-9 shrink-0 items-center border-r border-b px-2"
-      style="width: {TIMELINE_TRACK_INFO_WIDTH}px"
-    >
-      Annotations (Actions)
-    </div>
-
-    <div
-      id="timeline-ruler-viewport"
       role="button"
       tabindex="0"
       class="timeline-ruler-viewport"
       bind:this={rulerViewportEl}
-      bind:clientWidth={viewportContainerWidth}
       onscroll={handleRulerScroll}
       onwheel={handleRulerWheel}
       onmousemove={handleRulerMouseMove}
       onmouseleave={handleMouseLeave}
-      onclick={handleRulerClick}
       onkeypress={() => {}}
+      onclick={handleRulerClick}
     >
-      <Ruler {viewport} {scale} {rulerMajorStep} {rulerMinorStep} {rulerLabelFormatter} />
+      <Ruler
+        {viewport}
+        {scale}
+        smallStep={rulerSmallStep}
+        bigStep={rulerBigStep}
+        labelFormatter={rulerLabelFormatter}
+      />
     </div>
-
-    <div
-      id="timeline-ruler-caret-overlay"
-      aria-hidden="true"
-      class="pointer-events-none absolute top-0 right-0 bottom-0 z-10 overflow-hidden"
-      style:left="{TIMELINE_TRACK_INFO_WIDTH}px"
-    >
-      <!-- CARET LABEL::SELECTED ON RULER -->
-      {#if hasSelection && selectionOffset >= 0 && selectionOffset < totalFrames && selectionCaretViewportX >= 0 && selectionCaretViewportX <= viewportContainerWidth}
+    <!-- Non-scrolling overlay for caret labels — uses viewport-relative x so labels track correctly -->
+    <div class="timeline-ruler-caret-overlay" aria-hidden="true" style:left="{TIMELINE_TRACK_INFO_WIDTH}px">
+      {#if hasSelection && selectionOffset >= 0 && selectionOffset < length && selectionCaretViewportX >= 0 && selectionCaretViewportX <= containerWidth}
         <Caret
           x={selectionCaretViewportX}
           value={selectionOffset}
           labelFormatter={rulerLabelFormatter}
-          height={36}
-          color="primary"
-          showLabel
+          height={30}
+          color="#4a90d9"
+          showLine={false}
         />
       {/if}
 
-      <!-- CARET LABEL::HOVER ON RULER -->
-      {#if showCaret && hoverCaretViewportX >= 0 && hoverCaretViewportX <= viewportContainerWidth}
+      {#if showCaret && hoverCaretViewportX >= 0 && hoverCaretViewportX <= containerWidth}
         <Caret
           x={hoverCaretViewportX}
           value={caretValue}
           labelFormatter={rulerLabelFormatter}
-          height={36}
-          color="secondary"
-          showLabel
+          height={30}
+          showLine={false}
         />
       {/if}
     </div>
   </div>
 
+  <!-- Vertical scroll container: scrolls both trackinfos and tracks together -->
   <div
-    id="timeline-body-scroll"
-    class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
-    bind:this={timelineBodyScrollEl}
-    bind:clientHeight={timelineBodyScrollClientHeight}
+    class="timeline-body-scroll"
+    bind:this={bodyScrollEl}
+    bind:clientHeight={bodyScrollClientHeight}
     onscroll={handleBodyScroll}
   >
-    <div id="timeline-main" class="flex">
-      <div
-        id="timeline-trackinfos-body"
-        class="relative shrink-0"
-        style:width="{TIMELINE_TRACK_INFO_WIDTH}px"
-        style:height="{tracksHeight}px"
-      >
-        {#each visibleTracks as visibleTrack (visibleTrack.id)}
-          <TrackInfo trackId={visibleTrack.id} top={visibleTrack.top} />
+    <div class="timeline-main">
+      <div class="timeline-trackinfos-body" style:width="{TIMELINE_TRACK_INFO_WIDTH}px" style:height="{tracksHeight}px">
+        {#each visibleTracks as track (track.id)}
+          <TrackInfo trackId={track.id} top={track.top} />
         {/each}
       </div>
 
       <div
         role="button"
         tabindex="0"
-        id="timeline-tracks-viewport"
         class="timeline-tracks-viewport"
         bind:this={tracksViewportEl}
-        bind:clientWidth={viewportContainerWidth}
+        bind:clientWidth={containerWidth}
         onscroll={handleTracksScroll}
         onwheel={handleWheel}
         onmousemove={handleMouseMove}
         onmouseleave={handleMouseLeave}
-        onclick={handleTrackClick}
+        onclick={handleClick}
         onkeypress={() => {}}
       >
-        <div id="timeline-tracks-content" class="relative" style:height="{tracksHeight}px">
-          {#if hasSelection && selectionOffset >= 0 && selectionOffset < totalFrames}
-            <!-- SELECTION BLOCK -->
+        <div class="timeline-tracks-content" style="height: {tracksHeight}px;">
+          {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
             <Selection
               offset={selectionOffset}
               length={selectionLength}
               {scale}
               height={tracksHeight}
-              trackLength={totalFrames}
+              trackLength={length}
             />
-            <!-- CARET LINE::SELECTED ON TRACKS -->
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
               labelFormatter={rulerLabelFormatter}
               height={tracksHeight}
-              color="primary"
-              showLine
+              color="#4a90d9"
+              showLabel={false}
             />
           {/if}
-
-          {#each visibleTracks as visibleTrack (visibleTrack.id)}
-            <Track {viewport} items={visibleTrack.items} {scale} top={visibleTrack.top} />
+          {#each visibleTracks as track (track.id)}
+            <Track {viewport} items={track.items} {scale} top={track.top} />
           {/each}
-
           {#if showCaret && caretX >= 0 && caretX <= contentWidth}
             <Caret
               x={caretX}
               value={caretValue}
               labelFormatter={rulerLabelFormatter}
               height={tracksHeight}
-              color="secondary"
-              showLine
+              showLabel={false}
             />
           {/if}
         </div>
@@ -491,25 +463,39 @@
     </div>
   </div>
 
-  <div id="timeline-hscrollbar-wrapper" class="flex shrink-0 border-t">
-    <div
-      id="timeline-hscrollbar-spacer"
-      class="bg-background shrink-0 border-r"
-      aria-hidden="true"
-      style:width="{TIMELINE_TRACK_INFO_WIDTH}px"
-    ></div>
-    <div
-      id="timeline-hscroolbar"
-      class="flex-1 overflow-x-auto overflow-y-hidden"
-      bind:this={hScrollbarEl}
-      onscroll={handleHScrollbarScroll}
-    >
-      <div style="width: {contentWidth}px; height: {timelineHScrollbarHeight}px;" aria-hidden="true"></div>
+  <!-- Custom horizontal scrollbar pinned at the bottom of .timeline,
+	     outside .timeline-body-scroll so it is always visible regardless of vertical scroll -->
+  <div class="timeline-hscrollbar-wrapper">
+    <div class="timeline-hscrollbar-spacer" aria-hidden="true" style:width="{TIMELINE_TRACK_INFO_WIDTH}px"></div>
+    <div class="timeline-hscrollbar" bind:this={hScrollbarEl} onscroll={handleHScrollbarScroll}>
+      <div style="width: {contentWidth}px; height: 1px;" aria-hidden="true"></div>
     </div>
   </div>
 </div>
 
 <style>
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+  }
+
+  .timeline-toolbar {
+    flex-shrink: 0;
+  }
+
+  .timeline-ruler-wrapper {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .timeline-ruler-spacer {
+    flex-shrink: 0;
+    border-right: 1px solid #ccc;
+    background-color: red;
+  }
+
   .timeline-ruler-viewport {
     position: relative;
     flex: 1;
@@ -524,6 +510,36 @@
     display: none; /* Chrome/Safari */
   }
 
+  /* Absolutely-positioned overlay aligned with the ruler viewport area.
+	   Caret labels are rendered here at viewport-relative x so they follow scroll correctly. */
+  .timeline-ruler-caret-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+  }
+
+  /* Vertical scroll container: takes remaining height, scrolls trackinfos + tracks together */
+  .timeline-body-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .timeline-main {
+    display: flex;
+  }
+
+  .timeline-trackinfos-body {
+    position: relative;
+    flex-shrink: 0;
+    border-right: 1px solid #ccc;
+  }
+
   /* Horizontal-only scroll viewport for the tracks area.
 	   Native scrollbar is hidden — the custom hscrollbar below is used instead. */
   .timeline-tracks-viewport {
@@ -531,5 +547,32 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+  }
+
+  .timeline-tracks-viewport::-webkit-scrollbar {
+    display: none;
+  }
+
+  .timeline-tracks-content {
+    position: relative;
+  }
+
+  /* Always-visible horizontal scrollbar, pinned at the bottom of .timeline */
+  .timeline-hscrollbar-wrapper {
+    display: flex;
+    flex-shrink: 0;
+    border-top: 1px solid #eee;
+  }
+
+  .timeline-hscrollbar-spacer {
+    flex-shrink: 0;
+    border-right: 1px solid #ccc;
+    background-color: #fafafa;
+  }
+
+  .timeline-hscrollbar {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 </style>

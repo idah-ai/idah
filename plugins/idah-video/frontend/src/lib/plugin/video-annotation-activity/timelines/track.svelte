@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { isInViewport } from "./range";
-  import TrackItem from "./track-item.svelte";
-  import type { TimelineItem, Viewport } from "./types";
+  import TrackItem from "$lib/plugin/video-annotation-activity/timelines/track-item.svelte";
+
+  import { isInViewport } from "$lib/plugin/video-annotation-activity/timelines/utils";
+
+  import type { TimelineItem, Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
 
   interface Props {
     viewport: Viewport;
