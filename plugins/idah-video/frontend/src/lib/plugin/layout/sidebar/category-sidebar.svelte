@@ -15,7 +15,12 @@
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    currentMode,
+    selectedAnnotation,
+    selectedAnnotationGroup,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/context/activity-context";
@@ -69,12 +74,13 @@
       return acc;
     }, {});
 
-    // If there's a selected annotation, expand its category path
-    if ($selectedAnnotation) {
-      const categoryId = $selectedAnnotation.value.category;
-      if (categoryId) {
-        autoExpanded[categoryId] = true;
-      }
+    if ($selectedAnnotationGroup) {
+      const categoryIds = $selectedAnnotationGroup.annotations.map((annotation) => annotation.value.category);
+      categoryIds.forEach((categoryId) => {
+        if (categoryId) {
+          autoExpanded[categoryId] = true;
+        }
+      });
     }
 
     // Merge with manual toggles (manual toggles take precedence)
