@@ -21,6 +21,7 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
+  import { DEFAULT_MODE } from "$lib/plugin/type";
   import {
     currentFrame,
     setCurrentFrame,
@@ -45,8 +46,8 @@
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
+
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import { DEFAULT_MODE } from "$lib/plugin/type";
 
   // Props
   interface Props {
@@ -235,6 +236,7 @@
           annotationId: closestAnnotation.metadata.id,
           frame: displayScaledFrame,
         });
+
         closeContextMenu();
       },
     };
@@ -251,7 +253,13 @@
           (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
         );
 
-        selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
+        if (selectAnnotationGroup.annotations.length > 0) {
+          /** Select the new closest annotation after filter the deleted annotation */
+          selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
+        } else {
+          context.commands.run("tools.reset");
+        }
+
         closeContextMenu();
       },
     };
@@ -281,13 +289,31 @@
 
       return displayScaledFrame >= f && displayScaledFrame <= next;
     });
-    if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
-    if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
 
-    /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
+    if (isSelectedFrameInKeyFrames) {
+      contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
+    }
+
+    /** Only show delete menu, if selected frame is in the range of keyframes of the closest annotation */
+    if (
+      closestAnnotationKeyFrames[closestAnnotationKeyFrames.length - 1] >= displayScaledFrame &&
+      closestAnnotationKeyFrames[0] <= displayScaledFrame
+    ) {
+      contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
+    }
+
+    /**
+     * Only show delete interpolation menu;
+     * - If selected annotations have keyframe at selected frame
+     * - If annotation have more than 1 key frames
+     *  */
+    const closestAnnotationHaveMoreThanOneKeyFrame = sortedClosestAnnotationKeyFrames.length > 1;
     const hasInterpolationAtFrame =
       closestAnnotation.shape.frames.filter((f) => f.frame === displayScaledFrame).length > 0;
-    if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+
+    if (hasInterpolationAtFrame && closestAnnotationHaveMoreThanOneKeyFrame) {
+      contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+    }
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
     const annotationMenus = contextMenu.menus.annotationMenu.items.length;
