@@ -70,7 +70,7 @@
     shapes = showModalityRes.shapes;
 
     labelConfig = datasetRes.data.labeling_configuration;
-    
+
     // Sorting labelConfig values to make sure the categories are always in the same order, which can improve the experience when users switch between different label configs.
     Object.keys(labelConfig).forEach((key) => {
       labelConfig[key].values = sortingLabelConfigValues(labelConfig[key].values);
