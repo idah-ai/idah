@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TimelineItem } from "./types";
+  import type { TimelineItem } from "$lib/plugin/video-annotation-activity/timelines/types";
 
   interface Props {
     item: TimelineItem;

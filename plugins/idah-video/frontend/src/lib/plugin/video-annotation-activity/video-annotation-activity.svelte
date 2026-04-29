@@ -955,7 +955,7 @@
 
           {#if annotationsIDB}
             <Timeline
-              {viewport}
+              bind:viewport
               items={generateItems()}
               {length}
               remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}

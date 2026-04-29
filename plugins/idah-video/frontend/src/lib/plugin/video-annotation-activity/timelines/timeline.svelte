@@ -18,7 +18,7 @@
   }
 
   let {
-    viewport,
+    viewport = $bindable(),
     items,
     length,
     rulerSmallStep = 10,
@@ -30,9 +30,6 @@
     onViewportChange,
     onselectionchange,
   }: Props = $props();
-
-  // Constants
-  const TIMELINE_TRACK_INFO_WIDTH = 300;
 
   // Selection state
   let selectionOffset = $state(0);
@@ -355,7 +352,7 @@
   {/if}
 
   <div class="timeline-ruler-wrapper">
-    <div class="timeline-ruler-spacer" aria-hidden="true" style:width="{TIMELINE_TRACK_INFO_WIDTH}px"></div>
+    <div class="timeline-ruler-spacer" aria-hidden="true"></div>
     <div
       role="button"
       tabindex="0"
@@ -377,7 +374,7 @@
       />
     </div>
     <!-- Non-scrolling overlay for caret labels — uses viewport-relative x so labels track correctly -->
-    <div class="timeline-ruler-caret-overlay" aria-hidden="true" style:left="{TIMELINE_TRACK_INFO_WIDTH}px">
+    <div class="timeline-ruler-caret-overlay" aria-hidden="true">
       {#if hasSelection && selectionOffset >= 0 && selectionOffset < length && selectionCaretViewportX >= 0 && selectionCaretViewportX <= containerWidth}
         <Caret
           x={selectionCaretViewportX}
@@ -388,7 +385,6 @@
           showLine={false}
         />
       {/if}
-
       {#if showCaret && hoverCaretViewportX >= 0 && hoverCaretViewportX <= containerWidth}
         <Caret
           x={hoverCaretViewportX}
@@ -409,12 +405,11 @@
     onscroll={handleBodyScroll}
   >
     <div class="timeline-main">
-      <div class="timeline-trackinfos-body" style:width="{TIMELINE_TRACK_INFO_WIDTH}px" style:height="{tracksHeight}px">
+      <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
           <TrackInfo trackId={track.id} top={track.top} />
         {/each}
       </div>
-
       <div
         role="button"
         tabindex="0"
@@ -428,7 +423,7 @@
         onclick={handleClick}
         onkeypress={() => {}}
       >
-        <div class="timeline-tracks-content" style="height: {tracksHeight}px;">
+        <div class="timeline-tracks-content" style="width: {contentWidth}px; height: {tracksHeight}px;">
           {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
             <Selection
               offset={selectionOffset}
@@ -466,7 +461,7 @@
   <!-- Custom horizontal scrollbar pinned at the bottom of .timeline,
 	     outside .timeline-body-scroll so it is always visible regardless of vertical scroll -->
   <div class="timeline-hscrollbar-wrapper">
-    <div class="timeline-hscrollbar-spacer" aria-hidden="true" style:width="{TIMELINE_TRACK_INFO_WIDTH}px"></div>
+    <div class="timeline-hscrollbar-spacer" aria-hidden="true"></div>
     <div class="timeline-hscrollbar" bind:this={hScrollbarEl} onscroll={handleHScrollbarScroll}>
       <div style="width: {contentWidth}px; height: 1px;" aria-hidden="true"></div>
     </div>
@@ -491,9 +486,10 @@
   }
 
   .timeline-ruler-spacer {
+    width: 300px;
     flex-shrink: 0;
     border-right: 1px solid #ccc;
-    background-color: red;
+    background-color: #fafafa;
   }
 
   .timeline-ruler-viewport {
@@ -516,6 +512,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
+    left: 300px; /* same width as .timeline-ruler-spacer */
     right: 0;
     pointer-events: none;
     overflow: hidden;
@@ -536,6 +533,7 @@
 
   .timeline-trackinfos-body {
     position: relative;
+    width: 300px;
     flex-shrink: 0;
     border-right: 1px solid #ccc;
   }
@@ -565,6 +563,7 @@
   }
 
   .timeline-hscrollbar-spacer {
+    width: 300px;
     flex-shrink: 0;
     border-right: 1px solid #ccc;
     background-color: #fafafa;
