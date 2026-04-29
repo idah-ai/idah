@@ -49,8 +49,8 @@
         if (containsSelected) {
           setTimeout(() => {
             selectedAnnotationElement?.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
+              behavior: "instant",
+              block: "center",
               inline: "nearest",
             });
           }, 0);
