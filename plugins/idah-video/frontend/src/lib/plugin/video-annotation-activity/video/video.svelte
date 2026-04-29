@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { VideoStreamHandler } from "./VideoStreamHandler.ts";
+  import { totalFrames } from "../store/store.ts";
 
   let {
     src = undefined,
@@ -11,6 +12,7 @@
     onFrameUpdate = (currentFrame: number) => {},
     onTogglePlay = (playing: boolean) => {},
     onResize = () => {},
+    onVolumeChange = (level: number, muted: boolean) => {},
   } = $props();
 
   let videoElement: HTMLVideoElement;
@@ -71,6 +73,9 @@
   export function seekToFrame(frame: number) {
     if (!videoElement) return;
 
+    if (frame <= 0) frame = 1;
+    if (frame >= $totalFrames) frame = $totalFrames;
+
     const wasPaused = videoElement.paused;
 
     // Pause if playing
@@ -102,12 +107,12 @@
 
   export function nextFrame(step: number = 1) {
     if (!videoElement) return;
-    seekToFrame(Math.round(videoElement.currentTime * fps) + 1);
+    seekToFrame(Math.round(videoElement.currentTime * fps) + step);
   }
 
   export function previousFrame(step: number = 1) {
     if (!videoElement) return;
-    seekToFrame(Math.round(videoElement.currentTime * fps) - 1);
+    seekToFrame(Math.round(videoElement.currentTime * fps) - step);
   }
 
   export function playbackRate(rate: number) {
@@ -119,6 +124,7 @@
     if (!videoElement) return;
     videoElement.volume = level / 100;
     videoElement.muted = level === 0;
+    onVolumeChange(level, level === 0);
   }
 
   // Expose video element to parent
@@ -129,6 +135,10 @@
   });
 
   onMount(() => {
+    // Set default volume to 0 (muted)
+    videoElement.volume = 0;
+    videoElement.muted = true;
+
     // Listen for play/pause events from video element
     const handlePlay = () => {
       isPlaying = true;

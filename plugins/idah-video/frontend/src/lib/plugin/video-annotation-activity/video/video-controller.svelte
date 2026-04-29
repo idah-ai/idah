@@ -281,7 +281,7 @@
         <Slider
           type="single"
           orientation="vertical"
-          min={1}
+          min={0}
           max={100}
           step={1}
           onValueChange={video.setVolume}
