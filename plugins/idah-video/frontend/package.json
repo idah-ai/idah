@@ -21,6 +21,7 @@
 		"date-fns": "^4.1.0",
 		"hls.js": "^1.6.16",
 		"paneforge": "1.0.0-next.5",
+		"prettier": "^3.8.3",
 		"svelte-sonner": "^1.0.5",
 		"tailwind-merge": "^3.3.1",
 		"tailwind-variants": "^3.1.1",

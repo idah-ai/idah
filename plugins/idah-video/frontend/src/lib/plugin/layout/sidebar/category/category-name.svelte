@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-  } from "$lib/components/ui/tooltip";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "$lib/components/ui/tooltip";
 
   // Props
   interface Props {

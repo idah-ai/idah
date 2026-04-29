@@ -59,16 +59,23 @@
     const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
       if (category.id.includes("/")) {
         const parts = category.id.split("/");
+
         for (let i = 0; i < parts.length - 1; i++) {
           const parentPath = parts.slice(0, i + 1).join("/");
           acc[parentPath] = true;
         }
-      } else {
-        // Set last level categories to false by default (only parent categories are auto-expanded)
-        acc[category.id] = false;
       }
+
       return acc;
     }, {});
+
+    // If there's a selected annotation, expand its category path
+    if ($selectedAnnotation) {
+      const categoryId = $selectedAnnotation.value.category;
+      if (categoryId) {
+        autoExpanded[categoryId] = true;
+      }
+    }
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };

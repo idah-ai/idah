@@ -1,6 +1,6 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import { SidebarMenuButton, SidebarMenuItem } from "$lib/components/ui/sidebar";
 
@@ -12,7 +12,7 @@
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selectedAnnotation, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
@@ -38,6 +38,29 @@
   let isSelected = $derived($selectedAnnotationGroup?.groupId == groupId);
   let isAllHidden = $derived(annotations.map((annotation) => annotation.hidden).every((hidden) => hidden));
   let isAllLocked = $derived(annotations.map((annotation) => annotation.locked).every((locked) => locked));
+  let selectedAnnotationElement: HTMLDivElement | null = null;
+
+  onMount(() => {
+    const unsubscribeAnnotation = selectedAnnotation.subscribe((annotation) => {
+      if (annotation && selectedAnnotationElement) {
+        const containsSelected = annotations.some((ann) => ann.metadata.id === annotation.metadata.id);
+
+        if (containsSelected) {
+          setTimeout(() => {
+            selectedAnnotationElement?.scrollIntoView({
+              behavior: "instant",
+              block: "center",
+              inline: "nearest",
+            });
+          }, 0);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeAnnotation();
+    };
+  });
 
   // function
   function selectAnnotationGroup() {
@@ -59,62 +82,64 @@
 </script>
 
 <SidebarMenuItem class="list-none">
-  <SidebarMenuButton
-    class={cn("group hover:bg-primary/10 w-full gap-0 pr-0 hover:cursor-pointer", {
-      "bg-primary/10 font-semibold": isSelected,
-    })}
-    onclick={selectAnnotationGroup}
-  >
-    <div class="flex w-full items-center gap-1 text-xs" style:padding-left={`${Number(level - 1) + 1.5}rem`}>
-      <div class="shrink-0">
-        <div>
-          {#if annotationGroup.annotations[0].shape.type === IDAH_VIDEO_BOUNDING_BOX}
-            <VectorSquareIcon />
-          {:else}
-            <PolygonCircleIcon />
-          {/if}
+  <div bind:this={selectedAnnotationElement}>
+    <SidebarMenuButton
+      class={cn("group hover:bg-primary/10 w-full gap-0 pr-0 hover:cursor-pointer", {
+        "bg-primary/10 font-semibold": isSelected,
+      })}
+      onclick={selectAnnotationGroup}
+    >
+      <div class="flex w-full items-center gap-1 text-xs" style:padding-left={`${Number(level - 1) + 1.5}rem`}>
+        <div class="shrink-0">
+          <div>
+            {#if annotationGroup.annotations[0].shape.type === IDAH_VIDEO_BOUNDING_BOX}
+              <VectorSquareIcon />
+            {:else}
+              <PolygonCircleIcon />
+            {/if}
+          </div>
+        </div>
+
+        <CategoryName name="{category.name}-{lastPartOfGroupId}" />
+
+        <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
+        <div class="ml-auto flex items-center gap-0">
+          <!-- BUTTON::HIDE/SHOW ALL ANNOTATIONS -->
+          <CategoryAction
+            class={cn({
+              flex: isAllHidden,
+              "hidden group-hover:flex": !isAllHidden,
+            })}
+            onclick={toggleAnnotationGroupVisibility}
+          >
+            {#if isAllHidden}
+              <EyeOffIcon />
+            {:else}
+              <EyeIcon />
+            {/if}
+          </CategoryAction>
+
+          <!-- BUTTON::LOCK & UNLOCK ALL ANNOTATIONS -->
+          <CategoryAction
+            class={cn({
+              flex: isAllLocked,
+              "hidden group-hover:flex": !isAllLocked,
+            })}
+            onclick={toggleAnnotationGroupEditability}
+          >
+            {#if isAllLocked}
+              <LockIcon />
+            {:else}
+              <LockOpenIcon />
+            {/if}
+          </CategoryAction>
+
+          <!-- BUTTON::DELETE ALL ANNOTATIONS -->
+          <CategoryAction class="hidden group-hover:flex" onclick={deleteAnnotationGroup}>
+            <Trash2Icon />
+          </CategoryAction>
         </div>
       </div>
-
-      <CategoryName name="{category.name}-{lastPartOfGroupId}" />
-
-      <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
-      <div class="ml-auto flex items-center gap-0">
-        <!-- BUTTON::HIDE/SHOW ALL ANNOTATIONS -->
-        <CategoryAction
-          class={cn({
-            flex: isAllHidden,
-            "hidden group-hover:flex": !isAllHidden,
-          })}
-          onclick={toggleAnnotationGroupVisibility}
-        >
-          {#if isAllHidden}
-            <EyeOffIcon />
-          {:else}
-            <EyeIcon />
-          {/if}
-        </CategoryAction>
-
-        <!-- BUTTON::LOCK & UNLOCK ALL ANNOTATIONS -->
-        <CategoryAction
-          class={cn({
-            flex: isAllLocked,
-            "hidden group-hover:flex": !isAllLocked,
-          })}
-          onclick={toggleAnnotationGroupEditability}
-        >
-          {#if isAllLocked}
-            <LockIcon />
-          {:else}
-            <LockOpenIcon />
-          {/if}
-        </CategoryAction>
-
-        <!-- BUTTON::DELETE ALL ANNOTATIONS -->
-        <CategoryAction class="hidden group-hover:flex" onclick={deleteAnnotationGroup}>
-          <Trash2Icon />
-        </CategoryAction>
-      </div>
-    </div>
-  </SidebarMenuButton>
+    </SidebarMenuButton>
+  </div>
 </SidebarMenuItem>
