@@ -70,6 +70,11 @@
     shapes = showModalityRes.shapes;
 
     labelConfig = datasetRes.data.labeling_configuration;
+    
+    // Sorting labelConfig values to make sure the categories are always in the same order, which can improve the experience when users switch between different label configs.
+    Object.keys(labelConfig).forEach((key) => {
+      labelConfig[key].values = sortingLabelConfigValues(labelConfig[key].values);
+    });
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
 
@@ -301,43 +306,19 @@
 
     const normalizedId = categoryId.trim();
 
-    const values = selectedLabelConfig.values;
+    const hasChildren = selectedLabelConfig.values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
 
-    const removedIndex = values.findIndex((v) => v.id.trim() === normalizedId);
-
-    const hasChildren = values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
-
-    const isChild = normalizedId.includes("/");
-
-    selectedLabelConfig.values = values.filter((value) => {
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((value) => {
       const valueId = value.id.trim();
 
+      // remove self
       if (valueId === normalizedId) return false;
+
+      // remove children (only when deleting parent)
       if (hasChildren && valueId.startsWith(normalizedId + "/")) return false;
 
       return true;
     });
-
-    if (isChild) {
-      const parentPath = normalizedId.split("/").slice(0, -1).join("/");
-
-      const parentExists = selectedLabelConfig.values.some((value) => value.id.trim() === parentPath);
-
-      if (!parentExists) {
-        const { color, text_color } = getColor({ labelConfigKey });
-
-        const newParent = {
-          id: parentPath,
-          label: humanize(parentPath),
-          color,
-          text_color,
-        };
-
-        const insertIndex = removedIndex >= 0 ? removedIndex : selectedLabelConfig.values.length;
-
-        selectedLabelConfig.values.splice(insertIndex, 0, newParent);
-      }
-    }
   }
 
   function setProperty(labelConfigKey: string, property: IConfigProperty) {
@@ -364,6 +345,23 @@
     if (!labelConfig) return;
     const selectedLabelConfig = labelConfig[labelConfigKey];
     selectedLabelConfig.properties = selectedLabelConfig.properties.filter((p) => p.id !== propertyId);
+  }
+
+  function sortingLabelConfigValues(labelConfigKey: IConfigValue[]) {
+    return labelConfigKey.sort((a, b) => {
+      const aParts = a.id.split("/");
+      const bParts = b.id.split("/");
+
+      const len = Math.min(aParts.length, bParts.length);
+
+      for (let i = 0; i < len; i++) {
+        if (aParts[i] !== bParts[i]) {
+          return aParts[i].localeCompare(bParts[i]);
+        }
+      }
+
+      return aParts.length - bParts.length;
+    });
   }
 </script>
 
