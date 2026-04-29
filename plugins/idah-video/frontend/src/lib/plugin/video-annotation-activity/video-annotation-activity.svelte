@@ -962,7 +962,9 @@
               rulerMajorStep={effectiveRulerMajorStep}
               remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
               onViewportContainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
-              onViewportChange={(newViewport) => (viewport = newViewport)}
+              onViewportChange={(newViewport) => {
+                viewport = newViewport;
+              }}
             />
 
             <!-- <TimelineLegacy

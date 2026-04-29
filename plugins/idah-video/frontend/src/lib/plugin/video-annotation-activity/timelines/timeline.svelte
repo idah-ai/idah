@@ -78,16 +78,16 @@
       newStart = totalFrames - rangeWidth;
     }
 
-    // if (newStart !== viewport.startRange) viewport.startRange = newStart;
-    // if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
-
     // Update viewport values
-    if (newStart !== viewport.startRange) {
-      onViewportChange({ startRange: newStart, endRange: viewport.endRange });
-    }
-    if (newEnd !== viewport.endRange) {
-      onViewportChange({ startRange: viewport.startRange, endRange: newEnd });
-    }
+    if (newStart !== viewport.startRange) viewport.startRange = newStart;
+    if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
+
+    // if (newStart !== viewport.startRange) {
+    //   onViewportChange({ startRange: newStart, endRange: viewport.endRange });
+    // }
+    // if (newEnd !== viewport.endRange) {
+    //   onViewportChange({ startRange: viewport.startRange, endRange: newEnd });
+    // }
   });
 
   // Group items by trackId to get unique tracks
@@ -105,9 +105,9 @@
   let contentWidth = $derived(totalFrames * scale); // Total context pixel width
 
   // Variables:: Elements
-  let timelineRulerViewportEl = $state<HTMLDivElement | null>(null);
-  let timelineTracksViewportEl = $state<HTMLDivElement | null>(null);
-  let timelineHScrollbarEl = $state<HTMLDivElement | null>(null);
+  let rulerViewportEl = $state<HTMLDivElement | null>(null);
+  let tracksViewportEl = $state<HTMLDivElement | null>(null);
+  let hScrollbarEl = $state<HTMLDivElement | null>(null);
   let timelineHScrollbarHeight = $state<number>(16);
 
   // Variables:: Caret
@@ -126,40 +126,41 @@
   $effect(() => {
     const targetScrollLeft = viewport.startRange * scale;
 
-    if (timelineRulerViewportEl && Math.abs(timelineRulerViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
+    if (rulerViewportEl && Math.abs(rulerViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("ruler");
-      timelineRulerViewportEl.scrollLeft = targetScrollLeft;
+      rulerViewportEl.scrollLeft = targetScrollLeft;
     }
-    if (timelineTracksViewportEl && Math.abs(timelineTracksViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
+    if (tracksViewportEl && Math.abs(tracksViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("tracks");
-      timelineTracksViewportEl.scrollLeft = targetScrollLeft;
+      tracksViewportEl.scrollLeft = targetScrollLeft;
     }
-    if (timelineHScrollbarEl && Math.abs(timelineHScrollbarEl.scrollLeft - targetScrollLeft) > 0.5) {
+    if (hScrollbarEl && Math.abs(hScrollbarEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("hscrollbar");
-      timelineHScrollbarEl.scrollLeft = targetScrollLeft;
+      hScrollbarEl.scrollLeft = targetScrollLeft;
     }
   });
 
   function syncScrollLeft(newScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar") {
-    if (skip !== "ruler" && timelineRulerViewportEl && timelineRulerViewportEl.scrollLeft !== newScrollLeft) {
+    if (skip !== "ruler" && rulerViewportEl && rulerViewportEl.scrollLeft !== newScrollLeft) {
       pendingProgrammatic.add("ruler");
-      timelineRulerViewportEl.scrollLeft = newScrollLeft;
+      rulerViewportEl.scrollLeft = newScrollLeft;
     }
-    if (skip !== "tracks" && timelineTracksViewportEl && timelineTracksViewportEl.scrollLeft !== newScrollLeft) {
+    if (skip !== "tracks" && tracksViewportEl && tracksViewportEl.scrollLeft !== newScrollLeft) {
       pendingProgrammatic.add("tracks");
-      timelineTracksViewportEl.scrollLeft = newScrollLeft;
+      tracksViewportEl.scrollLeft = newScrollLeft;
     }
-    if (skip !== "hscrollbar" && timelineHScrollbarEl && timelineHScrollbarEl.scrollLeft !== newScrollLeft) {
+    if (skip !== "hscrollbar" && hScrollbarEl && hScrollbarEl.scrollLeft !== newScrollLeft) {
       pendingProgrammatic.add("hscrollbar");
-      timelineHScrollbarEl.scrollLeft = newScrollLeft;
+      hScrollbarEl.scrollLeft = newScrollLeft;
     }
+
     const rangeWidth = viewport.endRange - viewport.startRange;
     // Clamp startRange so the viewport stays within [0, length] without changing rangeWidth
     const clampedStartRange = Math.max(0, Math.min(newScrollLeft / scale, length - rangeWidth));
 
-    // viewport.startRange = clampedStartRange;
-    // viewport.endRange = clampedStartRange + rangeWidth;
-    onViewportChange({ startRange: clampedStartRange, endRange: clampedStartRange + rangeWidth });
+    viewport.startRange = clampedStartRange;
+    viewport.endRange = clampedStartRange + rangeWidth;
+    // onViewportChange({ startRange: clampedStartRange, endRange: clampedStartRange + rangeWidth });
   }
 
   function handleRulerScroll() {
@@ -167,8 +168,8 @@
       pendingProgrammatic.delete("ruler");
       return;
     }
-    if (!timelineRulerViewportEl || scale <= 0) return;
-    syncScrollLeft(timelineRulerViewportEl.scrollLeft, "ruler");
+    if (!rulerViewportEl || scale <= 0) return;
+    syncScrollLeft(rulerViewportEl.scrollLeft, "ruler");
   }
 
   let lastTracksScrollLeft = $state(0);
@@ -178,11 +179,11 @@
       pendingProgrammatic.delete("tracks");
       return;
     }
-    if (!timelineTracksViewportEl || scale <= 0) return;
+    if (!tracksViewportEl || scale <= 0) return;
     // Ignore events that didn't change horizontal position (vertical scroll)
-    if (timelineTracksViewportEl.scrollLeft === lastTracksScrollLeft) return;
-    lastTracksScrollLeft = timelineTracksViewportEl.scrollLeft;
-    syncScrollLeft(timelineTracksViewportEl.scrollLeft, "tracks");
+    if (tracksViewportEl.scrollLeft === lastTracksScrollLeft) return;
+    lastTracksScrollLeft = tracksViewportEl.scrollLeft;
+    syncScrollLeft(tracksViewportEl.scrollLeft, "tracks");
   }
 
   function handleHScrollbarScroll() {
@@ -190,8 +191,8 @@
       pendingProgrammatic.delete("hscrollbar");
       return;
     }
-    if (!timelineHScrollbarEl || scale <= 0) return;
-    syncScrollLeft(timelineHScrollbarEl.scrollLeft, "hscrollbar");
+    if (!hScrollbarEl || scale <= 0) return;
+    syncScrollLeft(hScrollbarEl.scrollLeft, "hscrollbar");
   }
 
   // Handle wheel on the ruler: non-Ctrl → horizontal pan, Ctrl → zoom
@@ -217,7 +218,7 @@
     e.preventDefault();
 
     // Use tracks viewport for wheel events
-    const el = timelineTracksViewportEl || timelineRulerViewportEl;
+    const el = tracksViewportEl || rulerViewportEl;
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
@@ -255,9 +256,9 @@
     }
 
     // Update viewport values
-    // viewport.startRange = newStartRange;
-    // viewport.endRange = newEndRange;
-    onViewportChange({ startRange: newStartRange, endRange: newEndRange });
+    viewport.startRange = newStartRange;
+    viewport.endRange = newEndRange;
+    // onViewportChange({ startRange: newStartRange, endRange: newEndRange });
   }
 
   // Compute content-space x from a mouse event relative to a given scrollable element
@@ -267,7 +268,7 @@
   }
 
   function handleMouseMove(e: MouseEvent) {
-    const el = timelineTracksViewportEl ?? timelineRulerViewportEl;
+    const el = tracksViewportEl ?? rulerViewportEl;
     if (!el || scale <= 0) return;
     const mouseXInContent = contentXFromEvent(e, el);
     lastMouseX = mouseXInContent;
@@ -277,8 +278,8 @@
   }
 
   function handleRulerMouseMove(e: MouseEvent) {
-    if (!timelineRulerViewportEl || scale <= 0) return;
-    const mouseXInContent = contentXFromEvent(e, timelineRulerViewportEl);
+    if (!rulerViewportEl || scale <= 0) return;
+    const mouseXInContent = contentXFromEvent(e, rulerViewportEl);
     lastMouseX = mouseXInContent;
     caretValue = mouseXInContent / scale;
     caretX = mouseXInContent;
@@ -314,14 +315,14 @@
 
   // Handle click to set selection (tracks viewport)
   function handleTrackClick(e: MouseEvent) {
-    if (!timelineTracksViewportEl || scale <= 0) return;
-    applyClickSelect(contentXFromEvent(e, timelineTracksViewportEl));
+    if (!tracksViewportEl || scale <= 0) return;
+    applyClickSelect(contentXFromEvent(e, tracksViewportEl));
   }
 
   // Handle click to set selection (ruler viewport)
   function handleRulerClick(e: MouseEvent) {
-    if (!timelineRulerViewportEl || scale <= 0) return;
-    applyClickSelect(contentXFromEvent(e, timelineRulerViewportEl));
+    if (!rulerViewportEl || scale <= 0) return;
+    applyClickSelect(contentXFromEvent(e, rulerViewportEl));
   }
 
   function handleBodyScroll() {
@@ -373,7 +374,7 @@
       role="button"
       tabindex="0"
       class="timeline-ruler-viewport"
-      bind:this={timelineRulerViewportEl}
+      bind:this={rulerViewportEl}
       bind:clientWidth={viewportContainerWidth}
       onscroll={handleRulerScroll}
       onwheel={handleRulerWheel}
@@ -441,7 +442,7 @@
         tabindex="0"
         id="timeline-tracks-viewport"
         class="timeline-tracks-viewport"
-        bind:this={timelineTracksViewportEl}
+        bind:this={tracksViewportEl}
         bind:clientWidth={viewportContainerWidth}
         onscroll={handleTracksScroll}
         onwheel={handleWheel}
@@ -500,7 +501,7 @@
     <div
       id="timeline-hscroolbar"
       class="flex-1 overflow-x-auto overflow-y-hidden"
-      bind:this={timelineHScrollbarEl}
+      bind:this={hScrollbarEl}
       onscroll={handleHScrollbarScroll}
     >
       <div style="width: {contentWidth}px; height: {timelineHScrollbarHeight}px;" aria-hidden="true"></div>
