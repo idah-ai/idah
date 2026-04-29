@@ -1,7 +1,12 @@
 import { SvelteMap } from "svelte/reactivity";
 
+import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
+import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
+
+import type { IConfig } from "$idah/context/activity-context";
 import type { AnnotationGroup } from "$idah/context/annotation-context";
 import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type { TrackData } from "$lib/plugin/video-annotation-activity/timelines/types";
 
 export function groupAnnotations(annotations: VideoAnnotationObject[]): AnnotationGroup<VideoAnnotationObject>[] {
   const map = new SvelteMap<string, VideoAnnotationObject[]>();
@@ -70,4 +75,67 @@ export function findClosestAnnotationInGroup(props: {
   }
 
   return closestAnnotation;
+}
+
+function categoryValueToLabel(value?: string) {
+  if (!value) return "";
+
+  const label = value.split("/").map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
+
+  // remove the last part of array
+  label.pop();
+
+  return label.join(" / ");
+}
+
+export function getGroupTitle(props: {
+  annotationGroup: AnnotationGroup<VideoAnnotationObject>;
+  labelConfig: IConfig;
+}): [string, string] {
+  const { annotationGroup, labelConfig } = props;
+  const { groupId, annotations: anns } = annotationGroup;
+  const splittedGroupId = groupId.split("-");
+  const lastPartOfGroupId = splittedGroupId[splittedGroupId.length - 1];
+  const fallbackGroupTitle = `Group-${lastPartOfGroupId}`;
+
+  const firstAnnotationInGroup = anns[0];
+  const firstAnnotationCategoryId = firstAnnotationInGroup.value.category;
+  if (!firstAnnotationCategoryId) return ["", fallbackGroupTitle];
+
+  const foundCategory = findCategory({
+    labelConfig: labelConfig,
+    categoryId: firstAnnotationCategoryId,
+    shapeType: firstAnnotationInGroup.shape.type,
+  });
+
+  if (!foundCategory) return ["", fallbackGroupTitle];
+
+  return [categoryValueToLabel(foundCategory.id), `${foundCategory.label}-${lastPartOfGroupId}`];
+}
+
+export function transformAnnotationsToTracks(props: {
+  annotations: VideoAnnotationObject[];
+  labelConfig: IConfig;
+}): TrackData[] {
+  const { annotations, labelConfig } = props;
+  const groupedAnnotations = groupAnnotations(annotations);
+
+  const tracks = groupedAnnotations.map((group, groupIndex) => {
+    let [groupTitle, groupTitleWithCategory] = getGroupTitle({ annotationGroup: group, labelConfig: labelConfig });
+
+    return {
+      id: group.groupId,
+      title: groupTitleWithCategory,
+      subtitle: groupTitle,
+      top: groupIndex * TRACK_HEIGHT,
+      items: group.annotations.map((annotation) => ({
+        trackId: annotation.metadata.id,
+        startRange: annotation.shape.start,
+        endRange: annotation.shape.end,
+        rawData: annotation,
+        component: undefined,
+      })),
+    };
+  });
+  return tracks;
 }

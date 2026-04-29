@@ -1,14 +1,19 @@
 <script lang="ts">
+  import type { TrackData } from "$lib/plugin/video-annotation-activity/timelines/types";
+
+  // Props
   interface Props {
-    trackId: string;
-    top: number;
+    track: TrackData;
   }
 
-  let { trackId, top }: Props = $props();
+  let { track }: Props = $props();
+
+  // Variables
+  const { id, top } = $derived(track);
 </script>
 
 <div class="track-info" style="top: {top}px;">
-  {trackId}
+  {id}
 </div>
 
 <style>

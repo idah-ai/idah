@@ -7,6 +7,8 @@
   import TrackInfo from "$lib/plugin/video-annotation-activity/timelines/track-info.svelte";
   import Track from "$lib/plugin/video-annotation-activity/timelines/track.svelte";
 
+  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
+
   import type { TimelineProps, Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
 
   interface Props extends TimelineProps {
@@ -29,6 +31,8 @@
     oncontainerWidthChange,
     onViewportChange,
     onselectionchange,
+
+    TrackInfoSlot,
   }: Props = $props();
 
   // Selection state
@@ -79,14 +83,6 @@
     if (newStart !== viewport.startRange) viewport.startRange = newStart;
     if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
   });
-
-  // Group items by trackId to get unique tracks
-  const tracks = $derived(
-    [...new Set(items.map((item) => item.trackId))].map((trackId) => ({
-      id: trackId,
-      items: items.filter((item) => item.trackId === trackId),
-    })),
-  );
 
   // Bind to actual container pixel width
   let containerWidth = $state(0);
@@ -317,10 +313,6 @@
   const selectionCaretViewportX = $derived((selectionOffset - viewport.startRange) * scale);
   const hoverCaretViewportX = $derived(caretX - viewport.startRange * scale);
 
-  // Calculate tracks height for content
-  const TRACK_HEIGHT = 50;
-  const tracksHeight = $derived(tracks.length * TRACK_HEIGHT);
-
   // Vertical virtualization: track the body-scroll element's scroll position
   let bodyScrollEl = $state<HTMLDivElement | null>(null);
   let bodyScrollTop = $state(0);
@@ -331,13 +323,16 @@
     bodyScrollTop = bodyScrollEl.scrollTop;
   }
 
+  // Calculate tracks height for content
+  const tracksHeight = $derived(items.length * TRACK_HEIGHT);
+
   // Derive which tracks are vertically visible (with one track of overdraw on each side)
   const firstVisibleTrackIndex = $derived(Math.max(0, Math.floor(bodyScrollTop / TRACK_HEIGHT) - 1));
   const lastVisibleTrackIndex = $derived(
-    Math.min(tracks.length - 1, Math.ceil((bodyScrollTop + bodyScrollClientHeight) / TRACK_HEIGHT)),
+    Math.min(items.length - 1, Math.ceil((bodyScrollTop + bodyScrollClientHeight) / TRACK_HEIGHT)),
   );
   const visibleTracks = $derived(
-    tracks.slice(firstVisibleTrackIndex, lastVisibleTrackIndex + 1).map((track, i) => ({
+    items.slice(firstVisibleTrackIndex, lastVisibleTrackIndex + 1).map((track, i) => ({
       ...track,
       top: (firstVisibleTrackIndex + i) * TRACK_HEIGHT,
     })),
@@ -407,7 +402,11 @@
     <div class="timeline-main">
       <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
-          <TrackInfo trackId={track.id} top={track.top} />
+          {#if TrackInfoSlot}
+            {@render TrackInfoSlot({ track })}
+          {:else}
+            <TrackInfo {track} />
+          {/if}
         {/each}
       </div>
       <div

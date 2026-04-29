@@ -1,4 +1,5 @@
-import type { Component } from "svelte";
+import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type { Component, Snippet } from "svelte";
 
 export interface Viewport {
   startRange: number;
@@ -9,7 +10,8 @@ export interface TimelineItem<T extends Record<string, unknown> = Record<string,
   trackId: string;
   startRange: number;
   endRange: number;
-  component: Component<T>;
+  rawData: VideoAnnotationObject;
+  component?: Component<T>;
 }
 
 export interface RulerProps {
@@ -20,6 +22,28 @@ export interface RulerProps {
 
 export interface TimelineProps extends RulerProps {
   viewport: Viewport;
-  items: TimelineItem[];
+  items: TrackData[];
   length: number;
+
+  TrackInfoSlot?: Snippet<[{ track: TrackData }]>;
+}
+
+/**
+ * Track data structure for rendering grouped annotations
+ */
+export interface TrackData {
+  id: string;
+  title: string;
+  subtitle?: string;
+  top: number;
+  items: TimelineItem[];
+}
+
+/**
+ * Annotation item for track rendering
+ */
+export interface AnnotationItem {
+  annotation: VideoAnnotationObject;
+  startRange: number;
+  endRange: number;
 }
