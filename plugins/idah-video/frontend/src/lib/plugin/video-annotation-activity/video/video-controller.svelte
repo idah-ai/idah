@@ -12,7 +12,6 @@
     VolumeXIcon,
   } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
-  import type { ChangeEventHandler } from "svelte/elements";
 
   import NumberField from "$lib/components/app/forms/fields/input/number-field.svelte";
   import ToolTooltip from "$lib/components/app/tooltips/tool-tooltip.svelte";
@@ -79,6 +78,7 @@
 
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
+  let frameInputValue = $state<number>($currentFrame);
   let sliderValue: number = $derived(max - (zoom - min));
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
@@ -86,31 +86,58 @@
     if ($selectedAnnotation.shape.end < $currentFrame) return true;
   });
 
+  // Sync frameInputValue with $currentFrame when it changes externally
+  $effect(() => {
+    frameInputValue = $currentFrame;
+  });
+
   // TODO: @audi ideally, these should call commands ?
 
   // Functions
-  const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
-    const target = event.target as HTMLInputElement;
-    const { value } = target;
+  const performSeek = (value: string) => {
+    if (!value || value === "") return;
+
+    const frameNumber = Number(value);
+
+    // Validate frame number
+    if (isNaN(frameNumber) || frameNumber < 1 || frameNumber > $totalFrames) {
+      return;
+    }
 
     /** If value is out of current frame range, set a new frame range */
     const [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $currentFrameRange;
     const rulerScale = Math.floor($timelineRulerWidth / $timelineCellWidth);
     const halfOfRulerScale = Math.floor(rulerScale / 2) * $framePerScale;
-    const newStart = Math.max((Number(value) - halfOfRulerScale) / $framePerScale, 0);
-    const newEnd = Math.max((Number(value) + halfOfRulerScale) / $framePerScale, rulerScale);
+    const newStart = Math.max((frameNumber - halfOfRulerScale) / $framePerScale, 0);
+    const newEnd = Math.max((frameNumber + halfOfRulerScale) / $framePerScale, rulerScale);
 
     if (newEnd * $framePerScale > $totalFrames) {
       /** Note:: if new end is greater than total frames, set new end to total frames */
-      setCurrentFrameRange([Number(value) / $framePerScale - rulerScale, Number(value) / $framePerScale]);
+      setCurrentFrameRange([frameNumber / $framePerScale - rulerScale, frameNumber / $framePerScale]);
     } else {
-      if (Number(value) >= endFrameIndexOfCurrentFrameRange || Number(value) <= startFrameIndexOfCurrentFrameRange) {
+      if (frameNumber >= endFrameIndexOfCurrentFrameRange || frameNumber <= startFrameIndexOfCurrentFrameRange) {
         /** Note:: if new end is greater than total frames, set new end to total frames */
         setCurrentFrameRange([newStart, newEnd]);
       }
     }
 
-    video.seekToFrame(Number(value));
+    video.seekToFrame(frameNumber);
+  };
+
+  const handleKeyUp = (event: KeyboardEvent) => {
+    // Only trigger on Enter key
+    if (event.key !== "Enter") return;
+
+    const target = event.target as HTMLInputElement;
+    performSeek(target.value);
+
+    // Blur the input after seeking
+    target.blur();
+  };
+
+  const handleBlur = (event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
+    const target = event.currentTarget;
+    performSeek(target.value);
   };
 
   function selectVideoSpeed(selectedSpeed: number): void {
@@ -254,7 +281,7 @@
         <Slider
           type="single"
           orientation="vertical"
-          min={1}
+          min={0}
           max={100}
           step={1}
           onValueChange={video.setVolume}
@@ -291,8 +318,9 @@
         min={1}
         max={Math.max(0, $totalFrames)}
         suffix={`/ ${Math.max(0, $totalFrames)}`}
-        value={$currentFrame}
-        oninput={seekToFrame}
+        bind:value={frameInputValue}
+        onkeyup={handleKeyUp}
+        onblur={handleBlur}
         groupInputClass="h-7"
       />
     </div>

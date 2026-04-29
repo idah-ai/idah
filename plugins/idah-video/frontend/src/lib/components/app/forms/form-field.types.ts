@@ -41,6 +41,7 @@ export interface NumberFieldBaseProps extends FormFieldBaseProps {
   step?: number;
   oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
   onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
+  onkeyup?: ((event: KeyboardEvent) => void) | null | undefined;
 }
 
 export interface TextAreaFieldBaseProps extends FormFieldBaseProps {

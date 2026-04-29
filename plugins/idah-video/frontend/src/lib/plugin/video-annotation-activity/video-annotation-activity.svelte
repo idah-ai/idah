@@ -78,7 +78,7 @@
     type VideoShape,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
+  import type { IActivityContext, IMedia } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
   import type { Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
 
@@ -96,6 +96,7 @@
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let { id: entryId, mediaUrl, workflowStep } = $derived(context);
+  let mediaInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IDAH_NOTE);
@@ -179,7 +180,7 @@
   });
 
   let annotationsIDB: AnnotationBackend | undefined = $state();
-  let volume = $state({ level: 0, muted: false });
+  let volume = $state({ level: 0, muted: true });
   let tools: {
     name: string;
     label: string;
@@ -243,18 +244,16 @@
     };
   });
 
-  // Lifecycles
-  $effect(() => {
-    if (mediaUrl && player && mediaUrl != player?.source()) {
-      player?.source(mediaUrl);
-    }
-  });
-
   $effect(() => {
     context.tools.setTool($currentMode);
   });
 
   onMount(async () => {
+    mediaInfo = await context.mediaInfo();
+
+    setTotalFrames(Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number)));
+    // setAnnotationFrame(1);
+
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
 
@@ -703,6 +702,9 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+
+    // Update the currently selected annotation value to reflect the category change in the properties sidebar
+    onEditValue({ category: reselectedCategoryId }, $currentMode);
   }
 
   function applyZoom(newZoom: number) {
@@ -840,7 +842,7 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={selectAnnotationGroup}
+              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, $currentFrame)}
               onDeleteAnnotation={deleteAnnotation}
               {context}
             />
@@ -854,36 +856,39 @@
 
           <ResizablePane defaultSize={75}>
             <section id="video-section" class="flex h-full w-full flex-1">
-              <SvgOverlay
-                bind:this={overlay}
-                {annotations_promise}
-                frame={$currentFrame}
-                onSelectAnnotation={selectAnnotation}
-                onSelection={onShapeSelection}
-                onAddNewNote={showNewNotePopup}
-                onChangeFrame={seekToFrame}
-                target_container={() => player_container}
-                {videoResizedAt}
-                isPlaying={$isVideoPlaying}
-              >
-                <!-- container context ?-->
-                <Video
-                  bind:this={player}
-                  bind:element={player_container}
-                  onResize={() => {
-                    videoResizedAt = new Date();
-                  }}
-                  onFramesChange={(current, total, playing) => {
-                    setCurrentFrame(current);
-                    setTotalFrames(total);
-                    setVideoIsPlaying(playing);
-                  }}
-                  onTimeUpdate={(currentFrame) => {
-                    setAnnotationFrame(currentFrame);
-                  }}
-                  onVolumeChange={(level, muted) => (volume = { level, muted })}
-                />
-              </SvgOverlay>
+              {#if mediaInfo}
+                <SvgOverlay
+                  bind:this={overlay}
+                  {annotations_promise}
+                  frame={$currentFrame}
+                  onSelectAnnotation={selectAnnotation}
+                  onSelection={onShapeSelection}
+                  onAddNewNote={showNewNotePopup}
+                  onChangeFrame={seekToFrame}
+                  target_container={() => player_container}
+                  {videoResizedAt}
+                  isPlaying={$isVideoPlaying}
+                >
+                  <!-- container context ?-->
+                  <Video
+                    bind:this={player}
+                    bind:element={player_container}
+                    src={mediaUrl}
+                    fps={mediaInfo.meta.fps as number}
+                    onTogglePlay={(isPlaying: boolean) => setVideoIsPlaying(isPlaying)}
+                    onResize={() => {
+                      videoResizedAt = new Date();
+                    }}
+                    onFrameUpdate={(currentFrame: number) => {
+                      setCurrentFrame(currentFrame);
+                      setAnnotationFrame(currentFrame);
+                    }}
+                    onVolumeChange={(level: number, muted: boolean) => {
+                      volume = { level, muted };
+                    }}
+                  />
+                </SvgOverlay>
+              {/if}
 
               <PropertiesSidebar
                 {annotationId}

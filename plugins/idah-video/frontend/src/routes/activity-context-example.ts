@@ -4,6 +4,7 @@ import CommandManager from "$idah/command/command-manager";
 import type {
   HeaderBarModeTool,
   IActivityContext,
+  IMedia,
   IAnnotationDriver,
   ICommand,
   ICommands,
@@ -153,6 +154,24 @@ export const activityContextExample: IActivityContext = {
   },
   get mediaUrl() {
     return "http://localhost:5173/medias/video.mp4";
+  },
+
+  mediaInfo(key?: string): Promise<IMedia> {
+    console.log("mediaInfo called with key:", key);
+    return Promise.resolve({
+      resource: "test-entry-1",
+      key: key || "master",
+      size: 123456789,
+      mime_type: "video/mp4",
+      filename: "video.mp4",
+      meta: {
+        duration: 37.375000,
+        fps: 24,
+      },
+      created_by: 1,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
   },
   get user() {
     return {
