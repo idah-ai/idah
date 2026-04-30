@@ -339,7 +339,7 @@
   );
 </script>
 
-<div class="timeline" style:height="{remainingHeight}px">
+<div class="timeline" style:height="{Math.min(remainingHeight, tracksHeight + TRACK_HEIGHT)}px">
   {#if toolbar}
     <div class="timeline-toolbar">
       {@render toolbar()}
@@ -412,7 +412,7 @@
       <div
         role="button"
         tabindex="0"
-        class="timeline-tracks-viewport"
+        class="timeline-tracks-viewport focus:outline-none"
         bind:this={tracksViewportEl}
         bind:clientWidth={containerWidth}
         onscroll={handleTracksScroll}
@@ -441,7 +441,7 @@
             />
           {/if}
           {#each visibleTracks as track (track.id)}
-            <Track {viewport} items={track.items} {scale} top={track.top} />
+            <Track {viewport} {scale} items={track.items} top={track.top} />
           {/each}
           {#if showCaret && caretX >= 0 && caretX <= contentWidth}
             <Caret
