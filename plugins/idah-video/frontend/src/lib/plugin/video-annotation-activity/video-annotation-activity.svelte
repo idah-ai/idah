@@ -156,16 +156,10 @@
             : [e.code]
       ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-      for (let index = 0; index < shortcut_keys.length; index++) {
-        let shortcut_key = shortcut_keys[index];
-
-        let shortcut = keymap[shortcut_key];
-
-        if (!shortcut) continue;
-
+      const matched_key = shortcut_keys.find((key) => keymap[key]);
+      if (matched_key) {
         e.preventDefault();
-        shortcut.action();
-        break;
+        keymap[matched_key].action();
       }
     };
 
@@ -332,7 +326,7 @@
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
-    const videoShape: VideoShape = { type, start, end, frames, value };
+    const videoShape: VideoShape = { type, start, end, frames };
 
     context.commands.run("annotation.add", { shape: videoShape, value });
 

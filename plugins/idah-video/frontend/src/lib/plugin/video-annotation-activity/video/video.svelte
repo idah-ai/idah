@@ -127,6 +127,10 @@
     onVolumeChange(level, level === 0);
   }
 
+  export function getFrames() {
+    return $totalFrames;
+  }
+
   // Expose video element to parent
   $effect(() => {
     if (videoRef && videoElement) {
