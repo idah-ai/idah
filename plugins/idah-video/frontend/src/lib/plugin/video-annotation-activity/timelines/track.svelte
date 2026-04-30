@@ -20,8 +20,8 @@
   );
 </script>
 
-<div class="track" style="top: {top}px;">
-  {#each visibleItems as item (item.startRange)}
+<div class="track border-b" style="top: {top}px;">
+  {#each visibleItems as item, itemIndex (itemIndex)}
     <TrackItem {item} {scale} />
   {/each}
 </div>
@@ -32,7 +32,6 @@
     left: 0;
     right: 0;
     height: 50px;
-    border-bottom: 1px solid #eee;
     box-sizing: border-box;
   }
 </style>

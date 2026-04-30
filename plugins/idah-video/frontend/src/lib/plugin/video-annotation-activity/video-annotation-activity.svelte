@@ -66,7 +66,7 @@
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import AnnotationGroupTrack from "$lib/plugin/video-annotation-activity/timelines/annotation-group-track.svelte";
+  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/annotation-track-info.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timelines/timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
@@ -908,7 +908,7 @@
             <!-- <TimelineControllerLegacy /> -->
             <!-- <TimelineController {viewport} {length} onViewportChange={(v) => (viewport = v)} /> -->
             <span class="text-sm whitespace-nowrap">
-              Viewport: [{viewport.startRange.toFixed(0)}, {viewport.endRange.toFixed(0)}]
+              Viewport: [{viewport.startRange.toFixed(0)}, {viewport.endRange.toFixed(0)}], {zoomLevel.toFixed(2)}
             </span>
             <input
               type="range"
@@ -933,8 +933,12 @@
               rulerBigStep={effectiveRulerMajorStep}
               oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
             >
+              <!-- {#snippet TrackInfoHeaderSlot()}
+              <TrackInfoHeader />
+             {/snippet} -->
+
               {#snippet TrackInfoSlot({ track })}
-                <AnnotationGroupTrack {track} onSelectAnnotationGroup={selectAnnotationGroup} />
+                <AnnotationTrackInfo {track} onClick={selectAnnotation} />
               {/snippet}
             </Timeline>
 

@@ -1,5 +1,7 @@
 import { SvelteMap } from "svelte/reactivity";
 
+import AnnotationTrackBlock from "$lib/plugin/video-annotation-activity/timelines/annotations/annotation-track-block.svelte";
+
 import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
 import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
@@ -133,7 +135,7 @@ export function transformAnnotationsToTracks(props: {
         startRange: annotation.shape.start,
         endRange: annotation.shape.end,
         rawData: annotation,
-        component: undefined,
+        component: AnnotationTrackBlock,
       })),
     };
   });

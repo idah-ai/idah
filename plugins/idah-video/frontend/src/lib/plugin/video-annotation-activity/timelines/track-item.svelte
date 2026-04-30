@@ -10,7 +10,7 @@
 
   // Calculate pixel position based on scale (pixels per unit)
   const left = $derived(`${item.startRange * scale}px`);
-  const width = $derived(`${(item.endRange - item.startRange) * scale}px`);
+  const width = $derived(`${(item.endRange - item.startRange + 1) * scale}px`);
   const style = $derived(`left: ${left}; width: ${width};`);
 
   // Get the component to render
@@ -19,7 +19,7 @@
 
 <div class="track-item" {style}>
   <div class="track-item-content">
-    <Component />
+    <Component {item} />
   </div>
 </div>
 
@@ -29,7 +29,7 @@
     top: 4px;
     height: calc(100% - 8px);
     box-sizing: border-box;
-    background-color: red;
+    background-color: transparent;
   }
 
   .track-item-content {

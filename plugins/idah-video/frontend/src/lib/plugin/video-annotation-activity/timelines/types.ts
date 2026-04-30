@@ -11,7 +11,7 @@ export interface TimelineItem<T extends Record<string, unknown> = Record<string,
   startRange: number;
   endRange: number;
   rawData: VideoAnnotationObject;
-  component?: Component<T>;
+  component: Component<{ item: TimelineItem<T> }>;
 }
 
 export interface RulerProps {
@@ -37,13 +37,4 @@ export interface TrackData {
   subtitle?: string;
   top: number;
   items: TimelineItem[];
-}
-
-/**
- * Annotation item for track rendering
- */
-export interface AnnotationItem {
-  annotation: VideoAnnotationObject;
-  startRange: number;
-  endRange: number;
 }
