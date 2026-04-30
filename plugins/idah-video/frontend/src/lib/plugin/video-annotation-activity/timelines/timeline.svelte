@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Caret from "$lib/plugin/video-annotation-activity/timelines/caret.svelte";
-  import Ruler from "$lib/plugin/video-annotation-activity/timelines/ruler.svelte";
-  import Selection from "$lib/plugin/video-annotation-activity/timelines/selection.svelte";
-  import TrackInfo from "$lib/plugin/video-annotation-activity/timelines/track-info.svelte";
-  import Track from "$lib/plugin/video-annotation-activity/timelines/track.svelte";
+  import Caret from "$lib/plugin/video-annotation-activity/timelines/_Caret.svelte";
+  import Ruler from "$lib/plugin/video-annotation-activity/timelines/_Ruler.svelte";
+  import Selection from "$lib/plugin/video-annotation-activity/timelines/_Selection.svelte";
+  import TrackInfo from "$lib/plugin/video-annotation-activity/timelines/_TrackInfo.svelte";
+  import Track from "$lib/plugin/video-annotation-activity/timelines/_Track.svelte";
 
   import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
 

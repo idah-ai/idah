@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TrackItem from "$lib/plugin/video-annotation-activity/timelines/track-item.svelte";
+  import TrackItem from "$lib/plugin/video-annotation-activity/timelines/_TrackItem.svelte";
 
   import { isInViewport } from "$lib/plugin/video-annotation-activity/timelines/utils";
 

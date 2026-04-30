@@ -1,6 +1,6 @@
 import { SvelteMap } from "svelte/reactivity";
 
-import AnnotationTrackBlock from "$lib/plugin/video-annotation-activity/timelines/annotations/annotation-track-block.svelte";
+import AnnotationTrackBlock from "$lib/plugin/video-annotation-activity/timelines/annotations/_AnnotationTrackBlock.svelte";
 
 import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
 import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";

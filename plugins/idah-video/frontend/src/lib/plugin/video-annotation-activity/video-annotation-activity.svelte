@@ -66,8 +66,8 @@
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/annotation-track-info.svelte";
-  import Timeline from "$lib/plugin/video-annotation-activity/timelines/timeline.svelte";
+  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/_AnnotationTrackInfo.svelte";
+  import Timeline from "$lib/plugin/video-annotation-activity/timelines/Timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
