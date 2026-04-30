@@ -174,7 +174,7 @@
             </ContextMenuItem>
           </ContextMenuGroup>
 
-          <!-- <ContextMenuGroup>
+          <ContextMenuGroup>
             {#each keyFrames as { frame }, index (index)}
               <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
                 <ArrowLeftRightIcon class="size-4" />
@@ -192,7 +192,7 @@
                 </ContextMenuItem>
               {/if}
             {/each}
-          </ContextMenuGroup> -->
+          </ContextMenuGroup>
 
           <ContextMenuSeparator />
           <ContextMenuGroup>

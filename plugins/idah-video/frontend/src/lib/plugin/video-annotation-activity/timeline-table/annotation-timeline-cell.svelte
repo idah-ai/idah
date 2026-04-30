@@ -95,7 +95,7 @@
           {/if}
         </ContextMenuTrigger>
 
-        <!-- <ContextMenuContent>
+        <ContextMenuContent>
           <ContextMenuItem
             onclick={() =>
               context.commands.run("annotation.split", {
@@ -120,7 +120,7 @@
               </ContextMenuItem>
             {/if}
           {/each}
-        </ContextMenuContent> -->
+        </ContextMenuContent>
       </ContextMenu>
     </div>
   </div>

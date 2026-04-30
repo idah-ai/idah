@@ -69,7 +69,6 @@ export function clearCopiedKeyframe() {
   copiedKeyframe.set(null);
 }
 
-// Helper function to check if keyframe is copied for specific annotation
 export function hasCopiedKeyframeForAnnotation(annotationId: string, copiedData: { annotationId: string; frameSelection: VideoFrameSelection } | null): boolean {
   return copiedData !== null && copiedData.annotationId === annotationId;
 }
