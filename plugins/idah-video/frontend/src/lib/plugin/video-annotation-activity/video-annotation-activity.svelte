@@ -157,7 +157,6 @@
       ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
       const matched_key = shortcut_keys.find((key) => keymap[key]);
-
       if (matched_key) {
         e.preventDefault();
         keymap[matched_key].action();
