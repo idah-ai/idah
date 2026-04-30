@@ -65,6 +65,7 @@
   import AnnotationSidebar from "$lib/plugin/layout/sidebar/annotation-sidebar.svelte";
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
+  import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
   import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/_AnnotationTrackInfo.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timelines/Timeline.svelte";
@@ -955,3 +956,5 @@
     </ResizablePaneGroup>
   </div>
 </div>
+
+<ContextMenu />

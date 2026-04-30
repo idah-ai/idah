@@ -1,6 +1,13 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
+  import TimelineContextMenu from "$lib/plugin/video-annotation-activity/timelines/annotations/_TimelineContextMenu.svelte";
+
+  import {
+    showContextMenu,
+    type ContextMenuComponent,
+    type ContextMenuComponentProps,
+  } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
   import type { IActivityContext } from "$idah/context/activity-context";
@@ -27,13 +34,24 @@
     }),
   );
   const keyframes = $derived(annotation.shape.frames.map((f) => f.frame));
+
+  // Functions
+  function handleOnContextMenu(e: MouseEvent) {
+    e.preventDefault();
+
+    const contextMenuProps: ContextMenuComponentProps = {};
+
+    showContextMenu(TimelineContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
+  }
 </script>
 
 <div
-  class="box-border h-full w-full overflow-hidden rounded-lg border p-2"
+  role="button"
+  tabindex="0"
+  class="box-border h-full w-full overflow-hidden rounded-lg border p-2 focus:outline-none"
   style:background-color="{category ? category.color : DEFAULT_BG_COLOR}70"
-  // 70 : 30
   style:border-color={category ? category.color : DEFAULT_BG_COLOR}
+  oncontextmenu={handleOnContextMenu}
 >
   <!-- KEYFRAMES -->
   {#each keyframes as keyframe (keyframe)}
