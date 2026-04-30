@@ -52,18 +52,24 @@ module IdahVideo
         # Uses split to decode video once, then scales to multiple resolutions
         args += ["-filter_complex", build_filter_complex(variants)]
 
-        # Map all video and audio streams for each variant
-        # Each variant needs both video and audio mapped
+        # Check if any variant has audio configured
+        has_audio = variants.any?(&:audiobitrate)
+
+        # Map streams for each variant
         variants.each do |variant|
           args += ["-map", "[v#{variant.name}]"] # Map scaled video stream
-          args += ["-map", "0:a"] # Map original audio stream
+          args += ["-map", "0:a?"] if has_audio # Map original audio stream (optional)
         end
 
         # Global video encoding settings (apply to all outputs)
         args += ["-c:v", "libx264"]          # Use H.264 video codec
         args += ["-preset", "veryfast"]      # Encoding speed preset
         args += ["-profile:v", "main"]       # H.264 profile for compatibility
-        args += ["-crf", "20"]               # Constant Rate Factor for quality
+
+        # Per-variant video bitrates (must specify for each mapped stream)
+        variants.each do |variant|
+          args += ["-b:v", variant.bitrate.to_s]
+        end
 
         # Calculate keyframe interval (keyint = fps * segment_duration)
         keyint = (fps * streaming_time_per_segment).round
@@ -72,12 +78,24 @@ module IdahVideo
         args += ["-sc_threshold", "0"]       # Disable scene cut detection
         args += ["-force_key_frames", "expr:gte(t,n_forced*#{streaming_time_per_segment})"]
 
-        # Global audio encoding settings (apply to all outputs)
-        args += ["-c:a", "aac"]              # Use AAC audio codec
-        args += ["-ar", "48000"]             # Audio sample rate: 48kHz
+        # Global audio encoding settings (apply to all outputs if audio exists)
+        if has_audio
+          args += ["-c:a", "aac"]              # Use AAC audio codec
+          args += ["-ar", "48000"]             # Audio sample rate: 48kHz
 
-        # HLS output format and settings
-        args += ["-f", "hls"] # Output format: HLS
+          # Per-variant audio bitrates (must specify for each mapped audio stream)
+          variants.each do |variant|
+            if variant.audiobitrate
+              args += ["-b:a", variant.audiobitrate.to_s]
+            end
+          end
+        end
+
+        # Encoding threads (if configured)
+        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
+
+        # HLS output format and settings (global for all variants)
+        args += ["-f", "hls"]                                   # Output format: HLS
         args += ["-hls_time", streaming_time_per_segment.to_s]  # Target segment duration
         args += ["-hls_playlist_type", "vod"]                   # VOD playlist type
         args += ["-hls_flags", "independent_segments"]          # Independent segments
@@ -85,9 +103,14 @@ module IdahVideo
         args += ["-hls_start_number_source", "0"]               # Start numbering from 0
 
         # Build var_stream_map: defines which video/audio pairs go to which variant
-        # Format: "v:0,a:0,name:240p v:1,a:1,name:360p ..."
+        # Format with audio: "v:0,a:0,name:240p v:1,a:1,name:360p ..."
+        # Format without audio: "v:0,name:240p v:1,name:360p ..."
         var_stream_map = variants.each_with_index.map do |variant, index|
-          "v:#{index},a:#{index},name:#{variant.name}"
+          if has_audio
+            "v:#{index},a:#{index},name:#{variant.name}"
+          else
+            "v:#{index},name:#{variant.name}"
+          end
         end.join(" ")
         args += ["-var_stream_map", var_stream_map]
 
@@ -205,60 +228,6 @@ module IdahVideo
 
         # Join all filters with semicolons into a single filter_complex string
         filter_parts.join(";")
-      end
-
-      def map_variant(variant, streaming_time_per_segment)
-        # Build FFmpeg arguments for encoding a single variant/quality level
-        # This generates all the parameters needed for one output stream
-        #
-        # Example output arguments for a 240p variant:
-        # -map [v240p] -map 0:a -c:v libx264 -b:v 400k -c:a aac -b:a 96k \
-        # -hls_time 2 -hls_playlist_type vod -hls_flags independent_segments \
-        # -hls_segment_filename 240p_%05d.ts 240p.m3u8
-
-        args = []
-
-        # Map streams: specify which input streams to use for this output
-        # -map [vNAME] = use the scaled video stream from filter_complex
-        # -map 0:a = use audio from input file (stream 0)
-        args += ["-map", "[v#{variant.name}]"]
-        args += ["-map", "0:a"] if variant.audiobitrate
-
-        # Video codec and bitrate
-        # -c:v libx264 = use H.264 video codec
-        # -b:v {bitrate} = set video bitrate (e.g., 400k, 800k, 1200k)
-        args += ["-c:v", "libx264", "-b:v", variant.bitrate.to_s]
-
-        # Audio codec and bitrate (or disable audio if no audiobitrate specified)
-        # -c:a aac = use AAC audio codec
-        # -b:a {bitrate} = set audio bitrate (e.g., 96k, 128k, 192k)
-        # -an = disable audio output
-        args += if variant.audiobitrate
-                  ["-c:a", "aac", "-b:a", variant.audiobitrate.to_s]
-                else
-                  ["-an"]
-                end
-
-        # HLS (HTTP Live Streaming) output settings
-        # -hls_time = target duration of each segment in seconds
-        # -hls_playlist_type vod = generate VOD (video on demand) playlist
-        # -hls_flags independent_segments = make segments independently decodable
-        # -hls_segment_filename = naming pattern for .ts segment files (%05d = 5-digit number)
-        args += [
-          "-hls_time", streaming_time_per_segment.to_s,
-          "-hls_playlist_type", "vod",
-          "-hls_flags", "independent_segments",
-          "-hls_segment_filename", "#{variant.name}_%05d.ts"
-        ]
-
-        # Optional: set encoding threads for this output
-        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
-
-        # Output file: HLS playlist file (.m3u8)
-        # This file contains references to all the .ts segment files
-        args += ["#{variant.name}.m3u8"]
-
-        args
       end
     end
   end
