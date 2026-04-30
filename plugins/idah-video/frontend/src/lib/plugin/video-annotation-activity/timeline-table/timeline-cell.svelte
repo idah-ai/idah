@@ -174,7 +174,7 @@
             </ContextMenuItem>
           </ContextMenuGroup>
 
-          <ContextMenuGroup>
+          <!-- <ContextMenuGroup>
             {#each keyFrames as { frame }, index (index)}
               <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
                 <ArrowLeftRightIcon class="size-4" />
@@ -186,9 +186,13 @@
                   <Trash2Icon class="size-4" />
                   Delete frame {frame}
                 </ContextMenuItem>
+                <ContextMenuItem onclick={() => {}} disabled={annotation?.locked}>
+                  <Trash2Icon class="size-4" />
+                  Copy frame {frame}
+                </ContextMenuItem>
               {/if}
             {/each}
-          </ContextMenuGroup>
+          </ContextMenuGroup> -->
 
           <ContextMenuSeparator />
           <ContextMenuGroup>

@@ -3,7 +3,10 @@ import { writable } from "svelte/store";
 import { DEFAULT_MODE } from "$lib/plugin/type";
 
 import type { AnnotationGroup } from "$idah/context/annotation-context";
-import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type {
+  VideoAnnotationObject,
+  VideoFrameSelection,
+} from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
 /** CURRENT MODE */
 export const currentMode = writable<string>(DEFAULT_MODE);
@@ -53,4 +56,20 @@ export function setSelectedAnnotationGroup(annotationGroup: AnnotationGroup<Vide
 
 export function deselectAnnotationGroup() {
   selectedAnnotationGroup.set(undefined);
+}
+
+/** COPIED KEYFRAME */
+export const copiedKeyframe = writable<{ annotationId: string; frameSelection: VideoFrameSelection } | null>(null);
+
+export function setCopiedKeyframe(data: { annotationId: string; frameSelection: VideoFrameSelection } | null) {
+  copiedKeyframe.set(data);
+}
+
+export function clearCopiedKeyframe() {
+  copiedKeyframe.set(null);
+}
+
+// Helper function to check if keyframe is copied for specific annotation
+export function hasCopiedKeyframeForAnnotation(annotationId: string, copiedData: { annotationId: string; frameSelection: VideoFrameSelection } | null): boolean {
+  return copiedData !== null && copiedData.annotationId === annotationId;
 }

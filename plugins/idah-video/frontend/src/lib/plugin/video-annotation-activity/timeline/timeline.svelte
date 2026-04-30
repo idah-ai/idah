@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
+  import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon, CopyIcon, ClipboardPasteIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
+  import { copiedKeyframe, hasCopiedKeyframeForAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
   import ConfirmModal from "$lib/components/app/overlays/modals/confirm-modal.svelte";
   import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
   import TimelineCells from "$lib/plugin/video-annotation-activity/timeline/timeline-cells.svelte";
@@ -241,6 +242,32 @@
       },
     };
 
+    const copyInterpolationMenu: TimelineContextMenuMenu = {
+      label: `Copy frame ${displayScaledFrame}`,
+      icon: CopyIcon,
+      disabled: closestAnnotation.locked,
+      onClick: () => {
+        context.commands.run("keyframe.copy", {
+          annotationId: closestAnnotation.metadata.id,
+          frame: displayScaledFrame,
+        });
+        closeContextMenu();
+      },
+    };
+
+    const pasteInterpolationMenu: TimelineContextMenuMenu = {
+      label: `Paste frame ${$copiedKeyframe?.frameSelection.frame}`,
+      icon: ClipboardPasteIcon,
+      disabled: closestAnnotation.locked,
+      onClick: () => {
+        context.commands.run("keyframe.paste", {
+          annotationId: closestAnnotation.metadata.id,
+          targetFrame: displayScaledFrame,
+        });
+        closeContextMenu();
+      },
+    };
+
     const deleteAnnotationMenu: TimelineContextMenuMenu = {
       label: "Delete annotation",
       icon: Trash2Icon,
@@ -313,6 +340,16 @@
 
     if (hasInterpolationAtFrame && closestAnnotationHaveMoreThanOneKeyFrame) {
       contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+    }
+
+    if (hasInterpolationAtFrame) {
+      contextMenu.menus.frameRelatedMenu.items.push(copyInterpolationMenu);
+    }
+
+    // Only show paste menu if there's a copied keyframe for this annotation and it's not locked
+    if (!closestAnnotation.locked && hasCopiedKeyframeForAnnotation(closestAnnotation.metadata.id, $copiedKeyframe)) {
+
+      contextMenu.menus.frameRelatedMenu.items.push(pasteInterpolationMenu);
     }
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;

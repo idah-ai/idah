@@ -24,9 +24,12 @@ import {
   setIndexedDBUpdatedAt,
 } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
 import {
+  clearCopiedKeyframe,
+  copiedKeyframe,
   deselectAnnotation,
   deselectAnnotationGroup,
   selectedAnnotation,
+  setCopiedKeyframe,
   setCurrentModeTo,
   setSelectedAnnotation,
 } from "$lib/plugin/video-annotation-activity/store/store";
@@ -1088,4 +1091,175 @@ export function registerCommands(params: CommandContext) {
     },
     false,
   );
+
+  context.commands.on("keyframe.copy", async (props: { annotationId: string; frame: number }) => {
+    const { annotationId, frame } = props;
+    const db = getDb();
+    const annotation = await db?.get("annotations", annotationId);
+
+    if (!annotation) {
+      return showToast.error({
+        title: "cannot copy keyframe, annotation not found",
+      });
+    }
+
+    const keyframeSelection = annotation.shape.frames.find((f: VideoFrameSelection) => f.frame === frame);
+
+    if (!keyframeSelection) {
+      // If exact keyframe not found, try to get interpolated frame
+      const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, frame);
+      if (interpolated) {
+        const normalizedPoints = normalizePoints(interpolated.points);
+        if (normalizedPoints) {
+          setCopiedKeyframe({
+            annotationId,
+            frameSelection: {
+              frame: frame,
+              points: normalizedPoints,
+              angle: interpolated.angle || 0,
+            },
+          });
+          showToast.success({
+            title: `Copied interpolated frame ${frame}`,
+          });
+        }
+      } else {
+        return showToast.error({
+          title: "cannot copy frame, keyframe not found",
+        });
+      }
+    } else {
+      setCopiedKeyframe({
+        annotationId,
+        frameSelection: { ...keyframeSelection },
+      });
+      showToast.success({
+        title: `Copied keyframe ${frame}`,
+      });
+    }
+
+    return {
+      name: "copy keyframe",
+      apply: () => {},
+      undo: () => {
+        clearCopiedKeyframe();
+      },
+      isCombinable: () => false,
+      combine: (prevCmd) => prevCmd,
+    };
+  });
+
+  context.commands.on("keyframe.paste", async (props: { annotationId: string; targetFrame: number }) => {
+    const { annotationId, targetFrame } = props;
+    const db = getDb();
+
+    const copiedFrame = get(copiedKeyframe);
+    console.log("paste", copiedFrame);
+
+    if (!copiedFrame) {
+      return showToast.error({
+        title: "no keyframe copied",
+      });
+    }
+
+    const annotation = await db?.get("annotations", annotationId);
+    if (!annotation) {
+      return showToast.error({
+        title: "cannot paste keyframe, annotation not found",
+      });
+    }
+
+    const snapshotFrames = [...annotation.shape.frames];
+    const snapshotStart = annotation.shape.start;
+    const snapshotEnd = annotation.shape.end;
+
+    // Check if paste is to the same annotation
+    if (copiedFrame.annotationId !== annotationId) {
+      return showToast.error({
+        title: "can only paste keyframe to the same annotation",
+      });
+    }
+
+    // Create new selection at target frame with copied keyframe data
+    const newSelection: VideoFrameSelection = {
+      frame: targetFrame,
+      points: copiedFrame.frameSelection.points.map((p: Point) => ({ ...p })), // Deep copy points
+      angle: copiedFrame.frameSelection.angle,
+    };
+
+    return {
+      name: "paste keyframe",
+      async apply() {
+        const annotationToApply = await db?.get("annotations", annotationId);
+        if (!annotationToApply) {
+          return showToast.error({
+            title: "cannot paste keyframe, annotation not found",
+          });
+        }
+
+        const applyUpdatedAt = new Date();
+
+        // Remove existing keyframe at target frame if exists, then add new one
+        const filteredFrames = annotationToApply.shape.frames.filter((f: VideoFrameSelection) => f.frame !== targetFrame);
+        const updatedFrames = [...filteredFrames, newSelection].sort((a, b) => a.frame - b.frame);
+
+        annotationToApply.shape = {
+          ...annotationToApply.shape,
+          start: Math.min(annotationToApply.shape.start, targetFrame),
+          end: Math.max(annotationToApply.shape.end, targetFrame),
+          frames: updatedFrames,
+        };
+        annotationToApply.metadata.updatedAt = applyUpdatedAt;
+        annotationToApply.synced = false;
+
+        await db?.addKeyFrame(annotationToApply, newSelection);
+        await updateAnnotationIndexedDB({
+          annotationToUpdate: annotationToApply,
+        });
+        await syncUpdatedAnnotation({
+          annotationId,
+          annotationToUpdate: annotationToApply,
+          value: annotationToApply.value,
+          updatedAt: applyUpdatedAt,
+        });
+
+        showToast.success({
+          title: `Pasted keyframe at frame ${targetFrame}`,
+        });
+      },
+      async undo() {
+        const annotationToUndo = await db?.get("annotations", annotationId);
+        if (!annotationToUndo) {
+          return showToast.error({
+            title: "cannot undo paste keyframe, annotation not found",
+          });
+        }
+
+        const undoUpdatedAt = new Date();
+        annotationToUndo.shape = {
+          ...annotationToUndo.shape,
+          start: snapshotStart,
+          end: snapshotEnd,
+          frames: snapshotFrames,
+        };
+        annotationToUndo.metadata.updatedAt = undoUpdatedAt;
+        annotationToUndo.synced = false;
+
+        await db?.deleteKeyFrame(annotationToUndo, targetFrame);
+        await updateAnnotationIndexedDB({
+          annotationToUpdate: annotationToUndo,
+        });
+        await syncUpdatedAnnotation({
+          annotationId,
+          annotationToUpdate: annotationToUndo,
+          value: annotationToUndo.value,
+          updatedAt: undoUpdatedAt,
+        });
+
+        clearCopiedKeyframe();
+      },
+      isCombinable: () => false,
+      combine: (prevCmd) => prevCmd,
+    };
+  });
 }
