@@ -331,7 +331,8 @@
   async function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!editable) return;
 
-    const videoShape: VideoShape = { type: shape.type, start: shape.start, end: shape.end, frames: shape.frames };
+    const { type, start, end, frames } = shape;
+    const videoShape: VideoShape = { type, start, end, frames };
 
     context.commands.run("annotation.add", { shape: videoShape, value });
 
