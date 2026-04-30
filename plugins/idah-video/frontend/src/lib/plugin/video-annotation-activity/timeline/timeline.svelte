@@ -242,7 +242,7 @@
       },
     };
 
-    const copyInterpolationMenu: TimelineContextMenuMenu = {
+    const copyKeyFrameMenu: TimelineContextMenuMenu = {
       label: `Copy frame ${displayScaledFrame}`,
       icon: CopyIcon,
       disabled: closestAnnotation.locked,
@@ -255,7 +255,7 @@
       },
     };
 
-    const pasteInterpolationMenu: TimelineContextMenuMenu = {
+    const pasteKeyFrameMenu: TimelineContextMenuMenu = {
       label: `Paste frame ${$copiedKeyframe?.frameSelection.frame}`,
       icon: ClipboardPasteIcon,
       disabled: closestAnnotation.locked,
@@ -343,13 +343,11 @@
     }
 
     if (hasInterpolationAtFrame) {
-      contextMenu.menus.frameRelatedMenu.items.push(copyInterpolationMenu);
+      contextMenu.menus.frameRelatedMenu.items.push(copyKeyFrameMenu);
     }
 
-    // Only show paste menu if there's a copied keyframe for this annotation and it's not locked
     if (!closestAnnotation.locked && hasCopiedKeyframeForAnnotation(closestAnnotation.metadata.id, $copiedKeyframe)) {
-
-      contextMenu.menus.frameRelatedMenu.items.push(pasteInterpolationMenu);
+      contextMenu.menus.frameRelatedMenu.items.push(pasteKeyFrameMenu);
     }
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
