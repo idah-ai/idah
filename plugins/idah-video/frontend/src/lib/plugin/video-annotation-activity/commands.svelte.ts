@@ -1125,28 +1125,9 @@ export function registerCommands(params: CommandContext) {
     const keyframeSelection = annotation.shape.frames.find((f: VideoFrameSelection) => f.frame === frame);
 
     if (!keyframeSelection) {
-      // If exact keyframe not found, try to get interpolated frame
-      const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, frame);
-      if (interpolated) {
-        const normalizedPoints = normalizePoints(interpolated.points);
-        if (normalizedPoints) {
-          setCopiedKeyframe({
-            annotationId,
-            frameSelection: {
-              frame: frame,
-              points: normalizedPoints,
-              angle: interpolated.angle || 0,
-            },
-          });
-          showToast.success({
-            title: `Copied interpolated frame ${frame}`,
-          });
-        }
-      } else {
-        return showToast.error({
-          title: "cannot copy frame, keyframe not found",
-        });
-      }
+      return showToast.error({
+        title: "cannot copy frame, keyframe not found",
+      });
     } else {
       setCopiedKeyframe({
         annotationId,
@@ -1173,7 +1154,6 @@ export function registerCommands(params: CommandContext) {
     const db = getDb();
 
     const copiedFrame = get(copiedKeyframe);
-    console.log("paste", copiedFrame);
 
     if (!copiedFrame) {
       return showToast.error({

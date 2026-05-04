@@ -229,6 +229,18 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
     }
   };
 
+  const copyKeyFrameAnnotation = () => {
+    if (!context.selectedId) return;
+
+    context.commands.run("keyframe.copy", { annotationId: context.selectedId, frame: context.getCurrentFrame() });
+  };
+
+  const pasteKeyFrameAnnotation = () => {
+    if (!context.selectedId) return;
+
+    context.commands.run("keyframe.paste", { annotationId: context.selectedId, targetFrame: context.getCurrentFrame() });
+  }
+
   const toggleGroupVisibility = () => {
     if (!context.selectedGroupId) return;
 
@@ -254,6 +266,8 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
     b.on(null, "H", toggleGroupVisibility, "selected.toggle_group_visibility", "Toggle Group Visibility", "Hide/Show selected annotation group");
     b.on(null, "L", toggleGroupEditability, "selected.toggle_group_editability", "Toggle Group Editability", "Lock/Unlock selected annotation group");
     b.on(null, "S", splitAnnotation, "selected.split", "Split", "Split selected annotation at selected frame");
+    b.on([b.Ctrl], "C", copyKeyFrameAnnotation, "keyframe.copy", "Copy Keyframe", "Copy current frame's annotation data to clipboard");
+    b.on([b.Ctrl], "V", pasteKeyFrameAnnotation, "keyframe.paste", "Paste Keyframe", "Paste annotation data from clipboard to current frame");
   };
 };
 
@@ -268,6 +282,18 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
     }
   };
 
+  const copyKeyFrameAnnotation = () => {
+    if (!context.selectedId) return;
+
+    context.commands.run("keyframe.copy", { annotationId: context.selectedId, frame: context.getCurrentFrame() });
+  };
+
+  const pasteKeyFrameAnnotation = () => {
+    if (!context.selectedId) return;
+
+    context.commands.run("keyframe.paste", { annotationId: context.selectedId, targetFrame: context.getCurrentFrame() });
+  }
+
   const toggleGroupVisibility = () => {
     if (!context.selectedGroupId) return;
 
@@ -293,6 +319,8 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
     b.on(null, "H", toggleGroupVisibility, "selected.toggle_group_visibility", "Toggle Group Visibility", "Hide/Show selected annotation group");
     b.on(null, "L", toggleGroupEditability, "selected.toggle_group_editability", "Toggle Group Editability", "Lock/Unlock selected annotation group");
     b.on(null, "S", splitAnnotation, "selected.split", "Split", "Split selected annotation at selected frame");
+    b.on([b.Ctrl], "C", copyKeyFrameAnnotation, "keyframe.copy", "Copy Keyframe", "Copy current frame's annotation data to clipboard");
+    b.on([b.Ctrl], "V", pasteKeyFrameAnnotation, "keyframe.paste", "Paste Keyframe", "Paste annotation data from clipboard to current frame");
   };
 };
 
