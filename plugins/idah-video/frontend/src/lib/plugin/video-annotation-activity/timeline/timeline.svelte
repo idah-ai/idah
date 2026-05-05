@@ -256,8 +256,6 @@
         if (selectAnnotationGroup.annotations.length > 0) {
           /** Select the new closest annotation after filter the deleted annotation */
           selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
-        } else {
-          context.commands.run("tools.reset");
         }
 
         closeContextMenu();
