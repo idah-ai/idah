@@ -95,7 +95,9 @@
         )}
         oninput={(e) => {
           filterChoices(e.currentTarget.value);
-          onSelected?.(e.currentTarget.value);
+          if (!filteredChoices) {
+            onSelected?.(e.currentTarget.value);
+          }
         }}
         autofocus={false}
         {disabled}
