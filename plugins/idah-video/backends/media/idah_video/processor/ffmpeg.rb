@@ -38,7 +38,7 @@ module IdahVideo
 
         # Logging and progress reporting
         args += ["-y"]                       # Overwrite output files without asking
-        args += ["-v", "quiet"]              # Suppress console output
+        args += ["-v", "error"]              # Suppress console output unless error
         args += ["-progress", "pipe:1"]      # Send progress info to stdout for monitoring
 
         # Input handling flags (must come before -i)
@@ -52,24 +52,19 @@ module IdahVideo
         # Uses split to decode video once, then scales to multiple resolutions
         args += ["-filter_complex", build_filter_complex(variants)]
 
-        # Check if any variant has audio configured
-        has_audio = variants.any?(&:audiobitrate)
-
-        # Map streams for each variant
+        # Map all video and audio streams for each variant
+        # Each variant needs both video and audio mapped
         variants.each do |variant|
           args += ["-map", "[v#{variant.name}]"] # Map scaled video stream
-          args += ["-map", "0:a?"] if has_audio # Map original audio stream (optional)
+          args += ["-map", "0:a"] if variant.audiobitrate # Map original audio stream if present
         end
 
         # Global video encoding settings (apply to all outputs)
         args += ["-c:v", "libx264"]          # Use H.264 video codec
         args += ["-preset", "veryfast"]      # Encoding speed preset
         args += ["-profile:v", "main"]       # H.264 profile for compatibility
-
-        # Per-variant video bitrates (must specify for each mapped stream)
-        variants.each do |variant|
-          args += ["-b:v", variant.bitrate.to_s]
-        end
+        args += ["-pix_fmt", "yuv420p"]      # force 4:2:0 mode (won't work with 4:4:4)
+        args += ["-crf", "20"]               # Constant Rate Factor for quality
 
         # Calculate keyframe interval (keyint = fps * segment_duration)
         keyint = (fps * streaming_time_per_segment).round
@@ -78,24 +73,16 @@ module IdahVideo
         args += ["-sc_threshold", "0"]       # Disable scene cut detection
         args += ["-force_key_frames", "expr:gte(t,n_forced*#{streaming_time_per_segment})"]
 
-        # Global audio encoding settings (apply to all outputs if audio exists)
-        if has_audio
+        # Global audio encoding settings (apply to all outputs)
+        if variants.any?(&:audiobitrate)
           args += ["-c:a", "aac"]              # Use AAC audio codec
           args += ["-ar", "48000"]             # Audio sample rate: 48kHz
-
-          # Per-variant audio bitrates (must specify for each mapped audio stream)
-          variants.each do |variant|
-            if variant.audiobitrate
-              args += ["-b:a", variant.audiobitrate.to_s]
-            end
-          end
         end
 
-        # Encoding threads (if configured)
         args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
 
-        # HLS output format and settings (global for all variants)
-        args += ["-f", "hls"]                                   # Output format: HLS
+        # HLS output format and settings
+        args += ["-f", "hls"] # Output format: HLS
         args += ["-hls_time", streaming_time_per_segment.to_s]  # Target segment duration
         args += ["-hls_playlist_type", "vod"]                   # VOD playlist type
         args += ["-hls_flags", "independent_segments"]          # Independent segments
@@ -103,10 +90,9 @@ module IdahVideo
         args += ["-hls_start_number_source", "0"]               # Start numbering from 0
 
         # Build var_stream_map: defines which video/audio pairs go to which variant
-        # Format with audio: "v:0,a:0,name:240p v:1,a:1,name:360p ..."
-        # Format without audio: "v:0,name:240p v:1,name:360p ..."
+        # Format: "v:0,a:0,name:240p v:1,a:1,name:360p ..."
         var_stream_map = variants.each_with_index.map do |variant, index|
-          if has_audio
+          if variant.audiobitrate
             "v:#{index},a:#{index},name:#{variant.name}"
           else
             "v:#{index},name:#{variant.name}"
@@ -167,25 +153,22 @@ module IdahVideo
         Verse.logger&.debug { "ffmpeg #{args.join(" ")} #{kv.map{ |k, v| "#{k}=#{v}" }.join(" ")}" }
 
         Open3.popen3("ffmpeg", *args, **kv) do |_, stdout, stderr, wait_thr|
-          captured_stderr = nil
+          err_t = Thread.new { stderr.read }
 
           if block_given?
-            yield stdout, stderr
+            yield stdout
           else
-            err_t = Thread.new { stderr.read }
             out_t = Thread.new { stdout.read }
-
-            err_t.join
             out_t.join
-
-            captured_stderr = err_t.value
           end
+
+          err_t.join
+          captured_stderr = err_t.value
 
           result = wait_thr.value
 
           unless result.success?
-            err = captured_stderr || stderr.read
-            error = "Failed to execute `ffmpeg #{args.join(" ")}`: #{result}\n#{err}"
+            error = "Failed to execute `ffmpeg #{args.join(" ")}`: #{result}\n#{captured_stderr}"
             Verse.logger&.error { error }
             raise error
           end
