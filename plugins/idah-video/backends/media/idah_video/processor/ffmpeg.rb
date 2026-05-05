@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 require "open3"
 
 module IdahVideo
@@ -79,6 +78,8 @@ module IdahVideo
           args += ["-ar", "48000"]             # Audio sample rate: 48kHz
         end
 
+        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
+
         # HLS output format and settings
         args += ["-f", "hls"] # Output format: HLS
         args += ["-hls_time", streaming_time_per_segment.to_s]  # Target segment duration
@@ -151,25 +152,22 @@ module IdahVideo
         Verse.logger&.debug { "ffmpeg #{args.join(" ")} #{kv.map{ |k, v| "#{k}=#{v}" }.join(" ")}" }
 
         Open3.popen3("ffmpeg", *args, **kv) do |_, stdout, stderr, wait_thr|
-          captured_stderr = nil
+          err_t = Thread.new { stderr.read }
 
           if block_given?
-            yield stdout, stderr
+            yield stdout
           else
-            err_t = Thread.new { stderr.read }
             out_t = Thread.new { stdout.read }
-
-            err_t.join
             out_t.join
-
-            captured_stderr = err_t.value
           end
+
+          err_t.join
+          captured_stderr = err_t.value
 
           result = wait_thr.value
 
           unless result.success?
-            err = captured_stderr || stderr.read
-            error = "Failed to execute `ffmpeg #{args.join(" ")}`: #{result}\n#{err}"
+            error = "Failed to execute `ffmpeg #{args.join(" ")}`: #{result}\n#{captured_stderr}"
             Verse.logger&.error { error }
             raise error
           end
@@ -212,60 +210,6 @@ module IdahVideo
 
         # Join all filters with semicolons into a single filter_complex string
         filter_parts.join(";")
-      end
-
-      def map_variant(variant, streaming_time_per_segment)
-        # Build FFmpeg arguments for encoding a single variant/quality level
-        # This generates all the parameters needed for one output stream
-        #
-        # Example output arguments for a 240p variant:
-        # -map [v240p] -map 0:a -c:v libx264 -b:v 400k -c:a aac -b:a 96k \
-        # -hls_time 2 -hls_playlist_type vod -hls_flags independent_segments \
-        # -hls_segment_filename 240p_%05d.ts 240p.m3u8
-
-        args = []
-
-        # Map streams: specify which input streams to use for this output
-        # -map [vNAME] = use the scaled video stream from filter_complex
-        # -map 0:a = use audio from input file (stream 0)
-        args += ["-map", "[v#{variant.name}]"]
-        args += ["-map", "0:a"] if variant.audiobitrate
-
-        # Video codec and bitrate
-        # -c:v libx264 = use H.264 video codec
-        # -b:v {bitrate} = set video bitrate (e.g., 400k, 800k, 1200k)
-        args += ["-c:v", "libx264", "-b:v", variant.bitrate.to_s]
-
-        # Audio codec and bitrate (or disable audio if no audiobitrate specified)
-        # -c:a aac = use AAC audio codec
-        # -b:a {bitrate} = set audio bitrate (e.g., 96k, 128k, 192k)
-        # -an = disable audio output
-        args += if variant.audiobitrate
-                  ["-c:a", "aac", "-b:a", variant.audiobitrate.to_s]
-                else
-                  ["-an"]
-                end
-
-        # HLS (HTTP Live Streaming) output settings
-        # -hls_time = target duration of each segment in seconds
-        # -hls_playlist_type vod = generate VOD (video on demand) playlist
-        # -hls_flags independent_segments = make segments independently decodable
-        # -hls_segment_filename = naming pattern for .ts segment files (%05d = 5-digit number)
-        args += [
-          "-hls_time", streaming_time_per_segment.to_s,
-          "-hls_playlist_type", "vod",
-          "-hls_flags", "independent_segments",
-          "-hls_segment_filename", "#{variant.name}_%05d.ts"
-        ]
-
-        # Optional: set encoding threads for this output
-        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
-
-        # Output file: HLS playlist file (.m3u8)
-        # This file contains references to all the .ts segment files
-        args += ["#{variant.name}.m3u8"]
-
-        args
       end
     end
   end

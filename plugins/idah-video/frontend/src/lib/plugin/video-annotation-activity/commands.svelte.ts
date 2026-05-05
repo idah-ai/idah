@@ -289,6 +289,12 @@ export function registerCommands(params: CommandContext) {
       },
       async undo() {
         await deleteAnnotationIndexedDB(uuid);
+
+        // Reset to default mode and deselect annotation/group
+        setCurrentModeTo(DEFAULT_MODE);
+        deselectAnnotation();
+        deselectAnnotationGroup();
+
         setIndexedDBUpdatedAt();
       },
       isCombinable: () => false,
@@ -439,6 +445,19 @@ export function registerCommands(params: CommandContext) {
       name: "remove annotation",
       async apply() {
         await deleteAnnotationIndexedDB(annotationId);
+
+        const snapshotGroupAnnotations = await db?.getGroupAnnotations(
+          snapshotAnnotation.metadata.metadata?.group_id || "",
+        );
+
+        // If there are no annotations left in the group after deletion,
+        // reset to default mode and deselect group
+        if (snapshotGroupAnnotations?.length == 0) {
+          setCurrentModeTo(DEFAULT_MODE);
+          deselectAnnotation();
+          deselectAnnotationGroup();
+        }
+
         setIndexedDBUpdatedAt();
       },
       async undo() {

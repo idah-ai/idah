@@ -132,25 +132,15 @@ const buildVisualModeShortcuts = (context: KeyMapContext) => {
 
 // TODO: review this mode's shortcuts
 const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
-  const backAction = () => {
-    ShortcutManager.leaveMode();
-    context.switch_mode(ShortcutManager.getCurrentMode());
-  };
-
   return (b: KeyMapBuilder) => {
-    b.on(null, "Backspace", backAction, "back", "Back", "Go Back");
+    // No specific shortcuts for bounding box mode yet
   };
 };
 
 // TODO: review this mode's shortcuts
 const buildPolygonModeShortcuts = (context: KeyMapContext) => {
-  const backAction = () => {
-    ShortcutManager.leaveMode();
-    context.switch_mode(ShortcutManager.getCurrentMode());
-  };
-
   return (b: KeyMapBuilder) => {
-    b.on(null, "Backspace", backAction, "back", "Back", "Go Back");
+    // No specific shortcuts for polygon mode yet
   };
 };
 
@@ -260,7 +250,7 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
 
   return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "selected.delete", "Delete", "Delete selected annotation");
-    b.on([b.Ctrl], "Backspace", deleteSelected, "selected.delete", "Delete", "Delete selected annotation");
+    b.on(null, "Backspace", deleteSelected, "selected.delete", "Delete", "Delete selected annotation");
     b.on(null, "H", toggleGroupVisibility, "selected.toggle_group_visibility", "Toggle Group Visibility", "Hide/Show selected annotation group");
     b.on(null, "L", toggleGroupEditability, "selected.toggle_group_editability", "Toggle Group Editability", "Lock/Unlock selected annotation group");
     b.on(null, "S", splitAnnotation, "selected.split", "Split", "Split selected annotation at selected frame");
@@ -299,7 +289,7 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
 
   return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "selected.delete", "Delete", "Delete selected annotation");
-    b.on([b.Ctrl], "Backspace", deleteSelected, "selected.delete", "Delete", "Delete selected annotation");
+    b.on(null, "Backspace", deleteSelected, "selected.delete", "Delete", "Delete selected annotation");
     b.on(null, "H", toggleGroupVisibility, "selected.toggle_group_visibility", "Toggle Group Visibility", "Hide/Show selected annotation group");
     b.on(null, "L", toggleGroupEditability, "selected.toggle_group_editability", "Toggle Group Editability", "Lock/Unlock selected annotation group");
     b.on(null, "S", splitAnnotation, "selected.split", "Split", "Split selected annotation at selected frame");
