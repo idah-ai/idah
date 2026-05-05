@@ -100,7 +100,7 @@
     width: 1px;
     height: 8px;
     background-color: #999;
-    transform: rotateZ(15deg);
+    /* transform: rotateZ(15deg); */
   }
 
   .mark.big:after {
@@ -110,7 +110,7 @@
     width: 1px;
     height: 16px;
     background-color: #333;
-    transform: rotateZ(15deg) translateX(2px);
+    /* transform: rotateZ(15deg) translateX(2px); */
   }
 
   .label {

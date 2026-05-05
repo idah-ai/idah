@@ -1,6 +1,7 @@
 <script lang="ts">
   import TrackItem from "$lib/plugin/video-annotation-activity/timelines/_TrackItem.svelte";
 
+  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
   import { isInViewport } from "$lib/plugin/video-annotation-activity/timelines/utils";
   import { cn } from "$lib/utils";
 
@@ -26,6 +27,7 @@
   class={cn("track border-b", {
     "border-primary bg-primary/10 border-t border-b": isSelected,
   })}
+  style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"
 >
   {#each visibleItems as item, itemIndex (itemIndex)}
@@ -38,7 +40,6 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 50px;
     box-sizing: border-box;
   }
 </style>
