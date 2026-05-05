@@ -53,7 +53,6 @@
 
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();
-    e.stopPropagation();
     console.log("TODO:: Select keyframe", keyframe);
   }
 </script>

@@ -15,6 +15,7 @@ export function getGroupContextMenus(props: { context: IActivityContext; track: 
         visibility: {
           label: isSomeHidden ? "Show Group" : "Hide Group",
           icon: isSomeHidden ? EyeIcon : EyeOffIcon,
+          alwaysShow: isSomeHidden,
           onClick: () => {
             context.commands.run("annotation.toggleGroupVisibility", { groupId: track.id });
           },
@@ -22,6 +23,7 @@ export function getGroupContextMenus(props: { context: IActivityContext; track: 
         editability: {
           label: isSomeLocked ? "Unlock Group" : "Lock Group",
           icon: isSomeLocked ? LockOpenIcon : LockIcon,
+          alwaysShow: isSomeLocked,
           onClick: () => {
             context.commands.run("annotation.toggleGroupEditability", { groupId: track.id });
           },

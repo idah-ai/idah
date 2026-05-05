@@ -5,6 +5,7 @@ export interface Menu {
   icon?: typeof IconType;
   hidden?: boolean;
   disabled?: boolean;
+  alwaysShow?: boolean;
   destructive?: boolean;
   onClick: () => void;
 }

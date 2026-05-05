@@ -67,7 +67,7 @@
 
 <button
   class={cn(
-    "hover:bg-secondary absolute right-0 left-0 box-border cursor-pointer border-b px-2 text-left focus:outline-none",
+    "hover:bg-secondary absolute right-0 left-0 box-border cursor-pointer border-b px-2 text-left select-none focus:outline-none",
     {
       "border-primary bg-primary/10 border-t border-b": isGroupSelected,
     },
@@ -95,15 +95,17 @@
       </span>
     </div>
 
-    <div class="ml-auto hidden shrink-0 items-center group-hover:flex">
-      {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick }] (key)}
-        <ToolTooltip {label}>
-          {#snippet trigger()}
-            <Button variant="ghost" size="icon-sm" onclick={onClick}>
-              <Icon />
-            </Button>
-          {/snippet}
-        </ToolTooltip>
+    <div class="ml-auto flex shrink-0 items-center">
+      {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, alwaysShow, onClick }] (key)}
+        <div class={cn("", alwaysShow ? "block" : "hidden group-hover:flex")}>
+          <ToolTooltip {label}>
+            {#snippet trigger()}
+              <Button variant="ghost" size="icon-sm" onclick={onClick}>
+                <Icon />
+              </Button>
+            {/snippet}
+          </ToolTooltip>
+        </div>
       {/each}
     </div>
   </div>
