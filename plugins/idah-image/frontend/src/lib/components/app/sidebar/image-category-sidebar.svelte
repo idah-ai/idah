@@ -1,7 +1,8 @@
 <script lang="ts">
   import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "lucide-svelte";
+  import { onMount } from "svelte";
 
-  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/store/store";
+  import { currentFrame, currentMode, selectedAnnotationGroup } from "$lib/plugin/store/store";
   import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
   import { cn } from "$lib/utils";
   import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
@@ -50,32 +51,9 @@
   let openCategory = $state(true);
   let currentModeIsSameAsShape = $derived($currentMode == modalityShape);
 
-  // Automatically expand all categories when categories prop changes, but allow manual toggles
-  let manualToggleStates = $state<Record<string, boolean>>({});
-  let openStates = $derived.by(() => {
-    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
-      if (category.id.includes("/")) {
-        const parts = category.id.split("/");
-
-        for (let i = 0; i < parts.length - 1; i++) {
-          const parentPath = parts.slice(0, i + 1).join("/");
-          acc[parentPath] = true;
-        }
-      }
-
-      return acc;
-    }, {});
-
-    // If there's a selected annotation, expand its category path
-    if ($selectedAnnotation) {
-      const categoryId = $selectedAnnotation.value.category;
-      if (categoryId) {
-        autoExpanded[categoryId] = true;
-      }
-    }
-
-    // Merge with manual toggles (manual toggles take precedence)
-    return { ...autoExpanded, ...manualToggleStates };
+  let categoryExpandedStates = $state<Record<string, boolean>>({});
+  let visibleOpenStates = $derived.by(() => {
+    return applySelection(categoryExpandedStates, $selectedAnnotationGroup);
   });
 
   let categoriesTree = $derived(
@@ -87,6 +65,23 @@
   );
 
   // Functions
+  function createInitialExpandedStates(categories: IConfigValue[]) {
+    const result: Record<string, boolean> = {};
+
+    for (const category of categories) {
+      if (!category.id.includes("/")) continue;
+
+      const parts = category.id.split("/");
+
+      for (let i = 0; i < parts.length - 1; i++) {
+        const path = parts.slice(0, i + 1).join("/");
+        result[path] = true;
+      }
+    }
+
+    return result;
+  }
+
   function formatShapeName(shape: string) {
     return humanize(shape.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "));
   }
@@ -144,9 +139,9 @@
     }
 
     if (category.nestedCategories) {
-      manualToggleStates = {
-        ...manualToggleStates,
-        [category.id]: !openStates[category.id],
+      categoryExpandedStates = {
+        ...categoryExpandedStates,
+        [category.id]: !categoryExpandedStates[category.id],
       };
     }
   }
@@ -168,6 +163,34 @@
       count: filteredGroupedAnnotations.length,
     };
   }
+
+  function applySelection(
+    categoryStates: Record<string, boolean>,
+    annotationGroup: AnnotationGroup<ImageAnnotationObject> | undefined,
+  ) {
+    if (!annotationGroup) return categoryStates;
+
+    const newCategoryStates = { ...categoryStates };
+
+    for (const annotation of annotationGroup.annotations) {
+      const categoryId = annotation.value.category;
+      if (!categoryId) continue;
+
+      const parts = categoryId.split("/");
+
+      for (let i = 0; i < parts.length; i++) {
+        const path = parts.slice(0, i + 1).join("/");
+        newCategoryStates[path] = true;
+      }
+    }
+
+    return newCategoryStates;
+  }
+
+  onMount(() => {
+    // reset expanded states when categories change
+    categoryExpandedStates = createInitialExpandedStates(categories);
+  });
 </script>
 
 <SidebarGroup>
@@ -207,7 +230,7 @@
   parent: string[] = [],
   level: number = 1,
 )}
-  <Collapsible open={openStates[category.id] || false}>
+  <Collapsible open={visibleOpenStates[category.id] || false}>
     {#if db && category}
       {@const annotations = db.annotationsForCategory(category.id)}
       {@const { count } = groupFilteredAnnotations(annotations)}
@@ -238,9 +261,9 @@
                 e.stopPropagation();
 
                 if (category.nestedCategories || showChevronRightIcon) {
-                  manualToggleStates = {
-                    ...manualToggleStates,
-                    [category.id]: !openStates[category.id],
+                  categoryExpandedStates = {
+                    ...categoryExpandedStates,
+                    [category.id]: !categoryExpandedStates[category.id],
                   };
                 }
               }}
@@ -253,7 +276,7 @@
                   {:else if hasChildren}
                     <ChevronRightIcon
                       class={cn({
-                        "rotate-90": openStates[category.id],
+                        "rotate-90": visibleOpenStates[category.id],
                         "stroke-blue-300": isSelectingCategory,
                         "stroke-gray-500": !isSelectingCategory,
                       })}
@@ -266,7 +289,7 @@
                   <ChevronRightIcon
                     class={cn({
                       "opacity-0": !showChevronRightIcon,
-                      "rotate-90": openStates[category.id],
+                      "rotate-90": visibleOpenStates[category.id],
                       "stroke-blue-300": isSelectingCategory,
                       "stroke-gray-500": !isSelectingCategory,
                     })}
@@ -278,7 +301,7 @@
                 {#if hasChildren}
                   <ChevronRightIcon
                     class={cn({
-                      "rotate-90": openStates[category.id],
+                      "rotate-90": visibleOpenStates[category.id],
                     })}
                   />
                 {:else}
@@ -312,7 +335,7 @@
         </div>
       </CollapsibleTrigger>
 
-      <CollapsibleContent hidden={!openStates[category.id]}>
+      <CollapsibleContent hidden={!visibleOpenStates[category.id]}>
         {#if db && category}
           {@const categoryAnnotations = db.annotationsByCategory(category.id)}
           {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
