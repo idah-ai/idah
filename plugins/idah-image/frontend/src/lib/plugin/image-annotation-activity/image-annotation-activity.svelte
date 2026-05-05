@@ -413,29 +413,7 @@
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
-      let shape: AnnotationShape = { type };
-      switch (type) {
-        case DEFAULT_MODE:
-          break;
-        case IMAGE_BOUNDING_BOX:
-          shape = {
-            ...shape,
-            start: frame,
-            end: frame,
-            frames: [{ frame, angle, points }],
-          };
-          break;
-        case IMAGE_POLYGON:
-          shape = {
-            ...shape,
-            start: frame,
-            end: frame,
-            frames: [{ frame, points }],
-          };
-          break;
-        default:
-          throw `unhandled type ${type}`;
-      }
+      let shape: AnnotationShape = buildShape(type, frame, points, angle);
 
       if (
         context.config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
@@ -449,6 +427,27 @@
       }
     } else {
       addSelection(selectedId, { frame, angle, points });
+    }
+  }
+
+  function buildShape(type: string, frame: number, points: Point[], angle: number): AnnotationShape {
+    switch (type) {
+      case IMAGE_BOUNDING_BOX:
+        return {
+          type,
+          start: frame,
+          end: frame,
+          frames: [{ frame, angle, points }],
+        };
+      case IMAGE_POLYGON:
+        return {
+          type,
+          start: frame,
+          end: frame,
+          frames: [{ frame, points }],
+        };
+      default:
+        throw `unhandled type ${type}`;
     }
   }
 
