@@ -70,6 +70,7 @@
   import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/_AnnotationTrackInfo.svelte";
   import TrackInfoHeader from "$lib/plugin/video-annotation-activity/timelines/annotations/_TrackInfoHeader.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timelines/Timeline.svelte";
+  import TimelineZoom from "$lib/plugin/video-annotation-activity/timelines/TimelineZoom.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
@@ -123,7 +124,7 @@
     endRange: 0,
   });
 
-  const zoomLevel = $derived(Math.min(40, length / (viewport.endRange - viewport.startRange)));
+  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
   const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
 
   // Variables::Timeline Container width for calculating dynamic ruler steps
@@ -908,18 +909,7 @@
             <VideoController {zoom} {volume} bind:video={player} />
 
             <!-- <TimelineControllerLegacy /> -->
-            <!-- <TimelineController {viewport} {length} onViewportChange={(v) => (viewport = v)} /> -->
-            <span class="text-sm whitespace-nowrap">
-              Viewport: [{viewport.startRange.toFixed(0)}, {viewport.endRange.toFixed(0)}], {zoomLevel.toFixed(2)}
-            </span>
-            <input
-              type="range"
-              min={1}
-              max={40}
-              step={0.1}
-              value={displayZoomLevel}
-              oninput={(e) => applyZoom(parseFloat(e.currentTarget.value))}
-            />
+            <TimelineZoom {displayZoomLevel} {applyZoom} />
           </AnnotationFooterToolbar>
 
           {#if annotationsIDB}
