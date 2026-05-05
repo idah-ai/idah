@@ -139,10 +139,17 @@
 
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
     e.preventDefault();
-    categoryExpandedStates = {
-      ...categoryExpandedStates,
-      [category.id]: !categoryExpandedStates[category.id],
-    };
+
+    if (categories.find((c) => c.id === category.id)) {
+      onSelectCategory(category.id);
+    }
+
+    if (category.nestedCategories) {
+      categoryExpandedStates = {
+        ...categoryExpandedStates,
+        [category.id]: !categoryExpandedStates[category.id],
+      };
+    }
   }
 
   function groupFilteredAnnotations(annotations: Array<VideoAnnotationObject>): {
