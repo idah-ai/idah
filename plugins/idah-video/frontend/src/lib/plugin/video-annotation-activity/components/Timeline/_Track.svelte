@@ -1,11 +1,11 @@
 <script lang="ts">
-  import TrackItem from "$lib/plugin/video-annotation-activity/timeline/_TrackItem.svelte";
+  import TrackItem from "$lib/plugin/video-annotation-activity/components/Timeline/_TrackItem.svelte";
 
-  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timeline/constants";
-  import { isInViewport } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/components/Timeline/constants";
+  import { isInViewport } from "$lib/plugin/video-annotation-activity/components/Timeline/utils";
   import { cn } from "$lib/utils";
 
-  import type { TimelineItem, Viewport } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TimelineItem, Viewport } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   interface Props {
     viewport: Viewport;

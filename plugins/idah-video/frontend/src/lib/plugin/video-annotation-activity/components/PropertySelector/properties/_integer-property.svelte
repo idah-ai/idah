@@ -2,7 +2,7 @@
   import Input from "$lib/components/ui/input/input.svelte";
   import Label from "$lib/components/ui/label/label.svelte";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 

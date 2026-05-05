@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent } from "$lib/components/ui/sidebar";
 
-  import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
+  import PropertySelector from "$lib/plugin/video-annotation-activity/components/PropertySelector/PropertySelector.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
@@ -48,7 +48,7 @@
     <SidebarGroup class="p-3">
       <SidebarGroupContent>
         {#key [annotationValue, $currentMode, $entryRoot?.value.category]}
-          <CategoryProperties
+          <PropertySelector
             selectedCategory={(defaultMode
               ? annotationValue.category || $entryRoot?.value.category
               : annotationValue.category) || ""}

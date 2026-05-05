@@ -2,7 +2,7 @@
   import Label from "$lib/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 
@@ -13,16 +13,18 @@
     disabled,
   }: {
     property: IConfigProperty;
-    value: string;
-    onValueChange: (v: string) => void;
+    value: string[];
+    onValueChange: (v: string[]) => void;
     disabled: boolean;
   } = $props();
 
-  const options = $derived(property.format.options);
+  const options = $derived(property.format?.options);
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+    ["minimum", (v: number) => [property.label, "minimum selection:", v].join(" ")],
+    ["maximum", (v: number) => [property.label, "maximum selection:", v].join(" ")],
     ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
@@ -35,12 +37,15 @@
     {/if}
   </Label>
 
-  <Select type="single" {value} {onValueChange} {disabled}>
+  <Select type="multiple" {value} {onValueChange} {disabled}>
     <SelectTrigger
       class="data-placeholder:text-secondary-foreground bg-secondary w-full text-xs"
       aria-invalid={invalid}
     >
-      {options?.find(({ id }) => id == value)?.label || "Select property"}
+      {options
+        ?.filter(({ id }) => value?.includes(id))
+        .map((o) => o.label)
+        .join(", ") || "Select property"}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>

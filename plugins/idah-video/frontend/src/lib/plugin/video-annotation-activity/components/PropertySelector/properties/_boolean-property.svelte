@@ -2,7 +2,7 @@
   import { Label } from "$lib/components/ui/label";
   import { Switch } from "$lib/components/ui/switch";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 

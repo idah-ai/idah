@@ -8,7 +8,7 @@
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { ContextMenuComponentProps } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
   import type { Menus } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.types";
-  import type { TimelineItem } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TimelineItem } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   // Props
   interface Props extends ContextMenuComponentProps {

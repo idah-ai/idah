@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Viewport } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { Viewport } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   interface Props {
     viewport: Viewport;

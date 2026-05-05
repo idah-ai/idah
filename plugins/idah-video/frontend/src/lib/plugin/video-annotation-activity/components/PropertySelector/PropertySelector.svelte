@@ -9,14 +9,14 @@
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
-  import BooleanProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/boolean-property.svelte";
-  import IntegerProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/integer-property.svelte";
-  import MultipleSelectProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/multiple-select-property.svelte";
-  import SingleSelectProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/single-select-property.svelte";
-  import TextProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/text-property.svelte";
+  import BooleanProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_boolean-property.svelte";
+  import IntegerProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_integer-property.svelte";
+  import MultipleSelectProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_multiple-select-property.svelte";
+  import SingleSelectProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_single-select-property.svelte";
+  import TextProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_text-property.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
   import { currentMode, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";

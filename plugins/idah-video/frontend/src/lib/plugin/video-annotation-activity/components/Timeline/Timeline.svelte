@@ -1,16 +1,16 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Caret from "$lib/plugin/video-annotation-activity/timeline/_Caret.svelte";
-  import Ruler from "$lib/plugin/video-annotation-activity/timeline/_Ruler.svelte";
-  import Selection from "$lib/plugin/video-annotation-activity/timeline/_Selection.svelte";
-  import Track from "$lib/plugin/video-annotation-activity/timeline/_Track.svelte";
-  import TrackInfo from "$lib/plugin/video-annotation-activity/timeline/_TrackInfo.svelte";
+  import Caret from "$lib/plugin/video-annotation-activity/components/Timeline/_Caret.svelte";
+  import Ruler from "$lib/plugin/video-annotation-activity/components/Timeline/_Ruler.svelte";
+  import Selection from "$lib/plugin/video-annotation-activity/components/Timeline/_Selection.svelte";
+  import Track from "$lib/plugin/video-annotation-activity/components/Timeline/_Track.svelte";
+  import TrackInfo from "$lib/plugin/video-annotation-activity/components/Timeline/_TrackInfo.svelte";
 
   import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
-  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timeline/constants";
+  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/components/Timeline/constants";
 
-  import type { TimelineProps, Viewport } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TimelineProps, Viewport } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   interface Props extends TimelineProps {
     toolbar?: Snippet;

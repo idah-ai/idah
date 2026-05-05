@@ -26,7 +26,7 @@
     IDAH_VIDEO_BOUNDING_BOX,
     IDAH_VIDEO_POLYGON,
   } from "$lib/plugin/type";
-  import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
   import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
     annotationsIndexedDB,
@@ -66,13 +66,13 @@
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
   import AnnotationSidebar from "$lib/plugin/layout/sidebar/annotation-sidebar.svelte";
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
-  import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
+  import PropertySelector from "$lib/plugin/video-annotation-activity/components/PropertySelector/PropertySelector.svelte";
   import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timeline/annotations/_AnnotationTrackInfo.svelte";
-  import TrackInfoHeader from "$lib/plugin/video-annotation-activity/timeline/annotations/_TrackInfoHeader.svelte";
-  import Timeline from "$lib/plugin/video-annotation-activity/timeline/Timeline.svelte";
-  import TimelineZoom from "$lib/plugin/video-annotation-activity/timeline/TimelineZoom.svelte";
+  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_AnnotationTrackInfo.svelte";
+  import TrackInfoHeader from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_TrackInfoHeader.svelte";
+  import Timeline from "$lib/plugin/video-annotation-activity/components/Timeline/Timeline.svelte";
+  import TimelineZoom from "$lib/plugin/video-annotation-activity/components/Timeline/TimelineZoom.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
@@ -764,7 +764,7 @@
     <PopoverContent class="min-w-80 p-0">
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
-          <CategoryProperties
+          <PropertySelector
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(selectedCategory) => {

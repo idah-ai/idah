@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import TrackBlockContextMenu from "$lib/plugin/video-annotation-activity/timeline/annotations/_TrackBlockContextMenu.svelte";
+  import TrackBlockContextMenu from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_TrackBlockContextMenu.svelte";
 
   import {
     showContextMenu,
@@ -11,7 +11,7 @@
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { TimelineItem } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TimelineItem } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   // Contexts
   const context: IActivityContext = getContext("context");

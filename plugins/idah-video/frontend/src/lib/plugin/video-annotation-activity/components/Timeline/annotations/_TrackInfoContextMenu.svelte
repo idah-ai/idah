@@ -4,11 +4,11 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
 
-  import { getGroupContextMenus } from "$lib/plugin/video-annotation-activity/timeline/annotations/menus";
+  import { getGroupContextMenus } from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/menus";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { ContextMenuComponentProps } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
-  import type { TrackData } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TrackData } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   // Contexts
   const context: IActivityContext = getContext("context");

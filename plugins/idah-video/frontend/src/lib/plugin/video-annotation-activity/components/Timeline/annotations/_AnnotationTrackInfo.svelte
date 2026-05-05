@@ -3,7 +3,7 @@
 
   import ToolTooltip from "$lib/components/app/tooltips/tool-tooltip.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
-  import TrackInfoContextMenu from "$lib/plugin/video-annotation-activity/timeline/annotations/_TrackInfoContextMenu.svelte";
+  import TrackInfoContextMenu from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_TrackInfoContextMenu.svelte";
 
   import {
     showContextMenu,
@@ -11,13 +11,13 @@
     type ContextMenuComponentProps,
   } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
   import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
-  import { getGroupContextMenus } from "$lib/plugin/video-annotation-activity/timeline/annotations/menus";
-  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timeline/constants";
+  import { getGroupContextMenus } from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/menus";
+  import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/components/Timeline/constants";
   import { cn } from "$lib/utils";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { TrackData } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TrackData } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   // Props
   interface Props {

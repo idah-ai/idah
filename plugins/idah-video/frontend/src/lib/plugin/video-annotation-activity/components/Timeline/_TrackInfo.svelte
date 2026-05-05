@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TrackData } from "$lib/plugin/video-annotation-activity/timeline/types";
+  import type { TrackData } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
 
   // Props
   interface Props {
