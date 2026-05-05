@@ -83,7 +83,8 @@
           </Button>
         {/each}
 
-        {#if !isLastGroup}
+        <!-- Only show separator if group has items and it is not the last group -->
+        {#if !isLastGroup && group.items.length > 0}
           <Separator class="my-1" />
         {/if}
       {/each}
