@@ -15,6 +15,7 @@
   interface Props extends TimelineProps {
     toolbar?: Snippet;
     remainingHeight: number;
+    currentFrame?: number;
     oncontainerWidthChange?: (width: number) => void;
     onViewportChange?: (viewport: Viewport, zoomLevel: number) => void;
     onselectionchange?: (offset: number, length: number) => void;
@@ -29,6 +30,7 @@
     rulerLabelFormatter,
     toolbar,
     remainingHeight,
+    currentFrame = $bindable(0),
     oncontainerWidthChange,
     onViewportChange,
     onselectionchange,
@@ -37,10 +39,12 @@
     TrackInfoSlot,
   }: Props = $props();
 
-  // Selection state
-  let selectionOffset = $state(0);
+  // Selection state (selectionLength is always 1 — single frame)
   let selectionLength = $state(1);
   let hasSelection = $state(false);
+
+  // Derive selectionOffset from currentFrame
+  const selectionOffset = $derived(currentFrame);
 
   // Emit containerWidth changes to parent
   $effect(() => {
@@ -58,6 +62,15 @@
       onViewportChange({ startRange: viewport.startRange, endRange: viewport.endRange }, zoomLevel);
     }
   });
+
+  // Helpers: convert between mouse x (content-space) and frame value
+  function mouseXToFrame(mouseXInContent: number): number {
+    return Math.floor(mouseXInContent / scale);
+  }
+
+  function frameToPixelX(frame: number): number {
+    return frame * scale;
+  }
 
   // Clamp viewport to valid bounds whenever it changes from any source.
   // Preserves range width when only translating; shrinks to [0, length] if range exceeds length.
@@ -97,10 +110,10 @@
   // Total content pixel width
   const contentWidth = $derived(length * scale);
 
-  // Caret state
+  // Caret state (snapped to frame grid — shows where a click would land)
   let showCaret = $state(false);
-  let caretX = $state(0);
-  let caretValue = $state(0);
+  let caretFrame = $state(0);
+  let caretPixelX = $state(0);
   let lastMouseX = $state(0);
 
   let rulerViewportEl = $state<HTMLDivElement | null>(null);
@@ -255,47 +268,48 @@
     return e.clientX - rect.left + el.scrollLeft;
   }
 
+  // Shared: snap mouse to frame grid (same logic as applyClickSelect)
+  function updateHoverCaret(mouseXInContent: number) {
+    caretFrame = mouseXToFrame(mouseXInContent);
+    caretPixelX = frameToPixelX(caretFrame);
+    showCaret = true;
+  }
+
   // Handle mouse move for caret (works for both ruler and tracks viewport)
   function handleMouseMove(e: MouseEvent) {
     const el = tracksViewportEl ?? rulerViewportEl;
     if (!el || scale <= 0) return;
     const mouseXInContent = contentXFromEvent(e, el);
     lastMouseX = mouseXInContent;
-    caretValue = mouseXInContent / scale;
-    caretX = mouseXInContent;
-    showCaret = true;
+    updateHoverCaret(mouseXInContent);
   }
 
   function handleRulerMouseMove(e: MouseEvent) {
     if (!rulerViewportEl || scale <= 0) return;
     const mouseXInContent = contentXFromEvent(e, rulerViewportEl);
     lastMouseX = mouseXInContent;
-    caretValue = mouseXInContent / scale;
-    caretX = mouseXInContent;
-    showCaret = true;
+    updateHoverCaret(mouseXInContent);
   }
 
   function handleMouseLeave() {
     showCaret = false;
   }
 
-  // Update caret position when scale changes (e.g., during zoom)
+  // Update hover caret when scale changes (e.g., during zoom)
   $effect(() => {
-    // This effect runs when scale changes
     if (showCaret && lastMouseX > 0) {
-      caretX = lastMouseX;
-      caretValue = lastMouseX / scale;
+      updateHoverCaret(lastMouseX);
     }
   });
 
   // Common click-to-select logic
   function applyClickSelect(mouseXInContent: number) {
-    const clickValue = Math.floor(mouseXInContent / scale);
-    selectionOffset = clickValue;
+    const clickValue = mouseXToFrame(mouseXInContent);
+    currentFrame = clickValue;
     selectionLength = 1;
     hasSelection = true;
     if (onselectionchange) {
-      onselectionchange(selectionOffset, selectionLength);
+      onselectionchange(currentFrame, selectionLength);
     }
   }
 
@@ -313,7 +327,7 @@
 
   // Viewport-relative x positions for caret labels (so they don't need to scroll)
   const selectionCaretViewportX = $derived((selectionOffset - viewport.startRange) * scale);
-  const hoverCaretViewportX = $derived(caretX - viewport.startRange * scale);
+  const hoverCaretViewportX = $derived(caretPixelX - viewport.startRange * scale);
 
   // Vertical virtualization: track the body-scroll element's scroll position
   let bodyScrollEl = $state<HTMLDivElement | null>(null);
@@ -341,7 +355,7 @@
   );
 </script>
 
-<div class="timeline" style:height="{Math.min(remainingHeight, tracksHeight + TRACK_HEIGHT)}px">
+<div class="timeline" style:height="{Math.max(remainingHeight, TRACK_HEIGHT)}px">
   {#if toolbar}
     <div class="timeline-toolbar">
       {@render toolbar()}
@@ -390,7 +404,7 @@
       {#if showCaret && hoverCaretViewportX >= 0 && hoverCaretViewportX <= containerWidth}
         <Caret
           x={hoverCaretViewportX}
-          value={caretValue}
+          value={caretFrame}
           labelFormatter={rulerLabelFormatter}
           height={30}
           color="orangered"
@@ -458,10 +472,18 @@
               isSelected={$selectedAnnotationGroup?.groupId === track.id}
             />
           {/each}
-          {#if showCaret && caretX >= 0 && caretX <= contentWidth}
+          {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
+            <Selection
+              offset={caretFrame}
+              length={1}
+              {scale}
+              height={tracksHeight}
+              trackLength={length}
+              color="orangered"
+            />
             <Caret
-              x={caretX}
-              value={caretValue}
+              x={caretPixelX}
+              value={caretFrame}
               labelFormatter={rulerLabelFormatter}
               height={tracksHeight}
               color="orangered"

@@ -16,6 +16,11 @@ import type {
   IWorkflowStep,
 } from "$idah/context/activity-context";
 
+// import iconMessageCircle from "$lib/assets/icons/message-circle.svg?raw";
+// import iconPenToolAdd from "$lib/assets/icons/pen-tool-add-2-24x24.svg?raw";
+// import iconPolygon from "$lib/assets/icons/polygon.svg?raw";
+// import iconVectorSquare from "$lib/assets/icons/vector-square.svg?raw";
+
 function createCommandsInterface(): ICommands {
   const commands = new Map();
 
@@ -69,7 +74,7 @@ function createToolsInterface(): ITools {
   };
 }
 
-async function createIconInterface(): Promise<IIconDriver> {
+function createIconInterface(): IIconDriver {
   return {
     async get(iconName: string) {
       switch (iconName) {

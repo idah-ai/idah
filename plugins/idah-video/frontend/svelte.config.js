@@ -11,6 +11,7 @@ const config = {
     adapter: adapter(),
     alias: {
       "$idah/*": "./src/idah/*",
+      "$mock/*": "./src/mock/*",
     },
   },
 };

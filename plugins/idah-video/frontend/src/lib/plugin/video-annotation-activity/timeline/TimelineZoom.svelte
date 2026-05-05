@@ -14,25 +14,25 @@
   interface Props {
     displayZoomLevel: number;
     applyZoom: (zoom: number) => void;
+    zoomMin: number;
+    zoomMax: number;
   }
-  let { displayZoomLevel, applyZoom }: Props = $props();
+  let { displayZoomLevel, applyZoom, zoomMin, zoomMax }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
 
   // Constants
-  const MIN_ZOOM = 1;
-  const MAX_ZOOM = 40;
-  const ZOOM_STEP = (MAX_ZOOM - MIN_ZOOM) * 0.1; // 3.9
+  const ZOOM_STEP = 0.1;
 
   // Functions
   function zoomOut() {
-    const newZoom = Math.max(Math.round((displayZoomLevel - ZOOM_STEP) * 10) / 10, MIN_ZOOM);
+    const newZoom = Math.max(Math.round((displayZoomLevel - ZOOM_STEP) * 10) / 10, zoomMin);
     applyZoom(newZoom);
   }
 
   function zoomIn() {
-    const newZoom = Math.min(Math.round((displayZoomLevel + ZOOM_STEP) * 10) / 10, MAX_ZOOM);
+    const newZoom = Math.min(Math.round((displayZoomLevel + ZOOM_STEP) * 10) / 10, zoomMax);
     applyZoom(newZoom);
   }
 </script>
@@ -49,7 +49,7 @@
     {/snippet}
   </ToolTooltip>
 
-  <Slider type="single" class="w-40" min={1} max={40} step={0.1} value={displayZoomLevel} onValueChange={applyZoom} />
+  <Slider type="single" class="w-40" min={zoomMin} max={zoomMax} step={0.1} value={displayZoomLevel} onValueChange={applyZoom} />
 
   <ToolTooltip label="Zoom In" shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"].keyCombinations)}>
     {#snippet trigger()}

@@ -30,25 +30,19 @@
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
+  import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
   import {
-    currentFrame,
     isVideoPlaying,
     selectedAnnotation,
     totalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import {
-    currentFrameRange,
-    framePerScale,
-    setCurrentFrameRange,
-    timelineCellWidth,
-    timelineRulerWidth,
-  } from "$lib/plugin/video-annotation-activity/timeline/store";
+
 
   import type { IActivityContext } from "$idah/context/activity-context";
 
   // Props
   interface Props {
-    video: Video;
+    video: Video | undefined;
     volume: { level: number; muted: boolean };
     zoom: number;
     // onZoomChange: (zoom: number) => void;
@@ -78,17 +72,17 @@
 
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
-  let frameInputValue = $state<number>($currentFrame);
+  let frameInputValue = $state<number>(viewport.currentFrame.value);
   let sliderValue: number = $derived(max - (zoom - min));
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
     if ($selectedAnnotation.locked) return true;
-    if ($selectedAnnotation.shape.end < $currentFrame) return true;
+    if ($selectedAnnotation.shape.end < viewport.currentFrame.value) return true;
   });
 
-  // Sync frameInputValue with $currentFrame when it changes externally
+  // Sync frameInputValue with viewport.currentFrame when it changes externally
   $effect(() => {
-    frameInputValue = $currentFrame;
+    frameInputValue = viewport.currentFrame.value;
   });
 
   // TODO: @audi ideally, these should call commands ?
@@ -104,24 +98,8 @@
       return;
     }
 
-    /** If value is out of current frame range, set a new frame range */
-    const [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $currentFrameRange;
-    const rulerScale = Math.floor($timelineRulerWidth / $timelineCellWidth);
-    const halfOfRulerScale = Math.floor(rulerScale / 2) * $framePerScale;
-    const newStart = Math.max((frameNumber - halfOfRulerScale) / $framePerScale, 0);
-    const newEnd = Math.max((frameNumber + halfOfRulerScale) / $framePerScale, rulerScale);
-
-    if (newEnd * $framePerScale > $totalFrames) {
-      /** Note:: if new end is greater than total frames, set new end to total frames */
-      setCurrentFrameRange([frameNumber / $framePerScale - rulerScale, frameNumber / $framePerScale]);
-    } else {
-      if (frameNumber >= endFrameIndexOfCurrentFrameRange || frameNumber <= startFrameIndexOfCurrentFrameRange) {
-        /** Note:: if new end is greater than total frames, set new end to total frames */
-        setCurrentFrameRange([newStart, newEnd]);
-      }
-    }
-
-    video.seekToFrame(frameNumber);
+    viewport.currentFrame.value = frameNumber;
+    video?.seekToFrame(frameNumber);
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {
@@ -142,7 +120,7 @@
 
   function selectVideoSpeed(selectedSpeed: number): void {
     currentSpeed = selectedSpeed;
-    video.playbackRate(currentSpeed);
+    if (video) video.playbackRate(currentSpeed);
   }
 
   // function onSliderChange(value: number): void {
@@ -160,17 +138,14 @@
   //   // onZoomChange(Math.max(min, zoom - 1));
   // }
 
+  function goFrame(direction: "prev" | "next", step: number = 1) {
+    const delta = direction === "prev" ? -step : step;
+    viewport.currentFrame.value = Math.max(1, Math.min($totalFrames, viewport.currentFrame.value + delta));
+    video?.seekToFrame(viewport.currentFrame.value);
+  }
+
   function gotoFrameStep(direction: "prev" | "next") {
-    switch (direction) {
-      case "prev": {
-        video.previousFrame(frameStep);
-        break;
-      }
-      case "next": {
-        video.nextFrame(frameStep);
-        break;
-      }
-    }
+    goFrame(direction, frameStep);
   }
 
   function getFrameStepFromLocalStorage() {
@@ -212,7 +187,7 @@
       shortcut={getShortcut(context.shortcutReferences?.["player.previous_frame"].keyCombinations)}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
+        <Button variant="outline" size="icon-sm" onclick={() => goFrame("prev")}>
           <ChevronLeftIcon />
         </Button>
       {/snippet}
@@ -228,7 +203,7 @@
           variant="outline"
           size="icon-sm"
           onclick={() => {
-            video.togglePlay();
+            video?.togglePlay();
           }}
         >
           {#if $isVideoPlaying}
@@ -246,7 +221,7 @@
       shortcut={getShortcut(context.shortcutReferences?.["player.next_frame"].keyCombinations)}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => video.nextFrame()}>
+        <Button variant="outline" size="icon-sm" onclick={() => goFrame("next")}>
           <ChevronRightIcon />
         </Button>
       {/snippet}
@@ -284,7 +259,7 @@
           min={0}
           max={100}
           step={1}
-          onValueChange={video.setVolume}
+          onValueChange={(v) => video?.setVolume(v)}
           value={volume.level}
         />
       </PopoverContent>
@@ -339,7 +314,7 @@
             $selectedAnnotation &&
             context.commands.run("annotation.split", {
               id: $selectedAnnotation.metadata.id,
-              at: $currentFrame,
+              at: viewport.currentFrame.value,
             })}
         >
           <SquareSplitHorizontalIcon />

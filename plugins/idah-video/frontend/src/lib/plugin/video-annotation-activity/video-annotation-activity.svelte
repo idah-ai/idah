@@ -54,6 +54,8 @@
     totalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
+  import DebugConsole from "$lib/plugin/video-annotation-activity/components/DebugConsole.svelte";
+  import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -83,7 +85,6 @@
 
   import type { IActivityContext, IMedia } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
-  import type { Viewport } from "$lib/plugin/video-annotation-activity/timeline/types";
 
   // Props
   interface Props {
@@ -98,7 +99,9 @@
   const editableWorkflowSteps = ["annotate", "review"];
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
-  let { id: entryId, mediaUrl, workflowStep } = $derived(context);
+  let entryId = $derived(context.id);
+  let mediaUrl = $derived(context.mediaUrl);
+  let workflowStep = $derived(context.workflowStep);
   let mediaInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
@@ -119,15 +122,19 @@
   let zoom = $state(85);
 
   let length = $state(0);
-  let viewport: Viewport = $state({
-    startRange: 0,
-    endRange: 0,
-  });
-
-  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
-  const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
 
   // Variables::Timeline Container width for calculating dynamic ruler steps
+  let viewportContainerWidth = $state<number>(1000); // default value until measured
+
+  // Min zoom: show all frames → range = length → zoom = 1
+  const zoomMin = 1;
+  // Max zoom: 80px per frame → range = containerWidth / 80 → zoom = length * 80 / containerWidth
+  const zoomMax = $derived(Math.max(zoomMin, (length * 80) / Math.max(1, viewportContainerWidth)));
+
+  // Zoom level: ratio of total length over visible range
+  const zoomLevel = $derived(length / (viewport.timeline.range.endRange - viewport.timeline.range.startRange));
+  const displayZoomLevel = $derived(Math.max(zoomMin, Math.min(zoomMax, zoomLevel)));
+
   const TARGET_MAJOR_STEP_PX = 80; // pixels per major step
   const TARGET_MINOR_STEP_PX = 20; // pixels per minor step
 
@@ -159,15 +166,14 @@
     return Math.abs(target - closest) <= Math.abs(target - nextVal) ? closest : nextVal;
   }
 
-  let viewportContainerWidth = $state<number>(1000); // default value until measured
   const effectiveRulerMajorStep = $derived.by<number>(() => {
     if (viewportContainerWidth <= 0) return 50;
-    const target = (TARGET_MAJOR_STEP_PX * (viewport.endRange - viewport.startRange)) / viewportContainerWidth;
+    const target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
     return Math.max(1, roundToSeries(Math.max(1, target)));
   });
   const effectiveRulerMinorStep = $derived.by<number>(() => {
     if (viewportContainerWidth <= 0) return 10;
-    const target = (TARGET_MINOR_STEP_PX * (viewport.endRange - viewport.startRange)) / viewportContainerWidth;
+    const target = (TARGET_MINOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
     const rounded = roundToSeries(Math.max(1, target));
     return rounded === effectiveRulerMajorStep ? 0 : rounded;
   });
@@ -183,7 +189,7 @@
     handleClick: () => void;
   }[] = $state([]);
 
-  let overlay: SvgOverlay;
+  let overlay: SvgOverlay | undefined = $state();
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
 
@@ -241,10 +247,8 @@
     const totalFrames = Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number));
     setTotalFrames(totalFrames);
     length = totalFrames;
-    viewport = {
-      startRange: 0,
-      endRange: totalFrames,
-    };
+    viewport.timeline.range.startRange = 0;
+    viewport.timeline.range.endRange = totalFrames;
     // setAnnotationFrame(1);
 
     // Generate the full static reference list of shortcuts and register them to the shared context
@@ -343,7 +347,7 @@
         const config = toolConfig.find((c) => c.type === mode) || toolListConfig[0];
         context.commands.run(config.command);
       },
-      zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
+      zoom: { in: () => overlay?.zoomIn?.(), out: () => overlay?.zoomOut?.() },
     });
 
     function fetchAnnotations(db: AnnotationBackend, page = 1, itemsPerPage = 100): Promise<void> {
@@ -703,7 +707,7 @@
   function applyZoom(newZoom: number) {
     // Keep the center of current viewport when zooming
     // TODO: Need to calculate from the hovered / selection caret instead of the center of viewport
-    const centerOfViewport = (viewport.startRange + viewport.endRange) / 2;
+    const centerOfViewport = (viewport.timeline.range.startRange + viewport.timeline.range.endRange) / 2;
     const newRange = length / newZoom;
 
     let newStart = centerOfViewport - newRange / 2;
@@ -720,8 +724,8 @@
       newStart = length - newRange;
     }
 
-    viewport.startRange = newStart;
-    viewport.endRange = newEnd;
+    viewport.timeline.range.startRange = newStart;
+    viewport.timeline.range.endRange = newEnd;
   }
 </script>
 
@@ -903,12 +907,12 @@
             <VideoController {zoom} {volume} bind:video={player} />
 
             <!-- <TimelineControllerLegacy /> -->
-            <TimelineZoom {displayZoomLevel} {applyZoom} />
+            <TimelineZoom {displayZoomLevel} {applyZoom} zoomMin={zoomMin} zoomMax={zoomMax} />
           </AnnotationFooterToolbar>
 
           {#if annotationsIDB}
             <Timeline
-              bind:viewport
+              bind:viewport={viewport.timeline.range}
               items={transformAnnotationsToTracks({
                 annotations: annotationsIDB.annotations,
                 labelConfig: context.config,
@@ -917,6 +921,7 @@
               remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
               rulerSmallStep={effectiveRulerMinorStep}
               rulerBigStep={effectiveRulerMajorStep}
+              bind:currentFrame={viewport.currentFrame.value}
               oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
             >
               {#snippet TrackInfoHeaderSlot()}
@@ -942,4 +947,5 @@
   </div>
 </div>
 
+<DebugConsole />
 <ContextMenu />

@@ -9,7 +9,7 @@ import {
   IDAH_VIDEO_POLYGON,
   IDAH_VISUAL,
 } from "$lib/plugin/type";
-import { paginateCurrentFrameRange } from "$lib/plugin/video-annotation-activity/timeline/utils";
+
 
 import type { IActivityContext, ICommands } from "$idah/context/activity-context";
 import type Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
@@ -79,15 +79,9 @@ const buildVisualModeShortcuts = (context: KeyMapContext) => {
   };
   const nextFrame = () => {
     context.player()?.nextFrame();
-
-    /** Shift current frame range to the right by 1, when nextFrame is executed */
-    paginateCurrentFrameRange({ frameStep: 1 });
   };
   const previousFrame = () => {
     context.player()?.previousFrame();
-
-    /** Shift current frame range to the left by 1, when previousFrame is executed */
-    paginateCurrentFrameRange({ frameStep: -1 });
   };
 
   const getFrameStep = () => Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10;
@@ -95,17 +89,11 @@ const buildVisualModeShortcuts = (context: KeyMapContext) => {
   const nextMultipleFrames = () => {
     const frameStep = getFrameStep();
     context.player()?.nextFrame(frameStep);
-
-    /** Shift current frame range to the right by `frameStep`, when nextFrame is executed */
-    paginateCurrentFrameRange({ frameStep: frameStep });
   };
 
   const previousMultipleFrames = () => {
     const frameStep = getFrameStep();
     context.player()?.previousFrame(frameStep);
-
-    /** Shift current frame range to the left by `-frameStep`, when previousFrame is executed */
-    paginateCurrentFrameRange({ frameStep: -frameStep });
   };
 
   const startFrame = () => {
