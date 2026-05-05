@@ -2,6 +2,7 @@
   import TrackItem from "$lib/plugin/video-annotation-activity/timelines/_TrackItem.svelte";
 
   import { isInViewport } from "$lib/plugin/video-annotation-activity/timelines/utils";
+  import { cn } from "$lib/utils";
 
   import type { TimelineItem, Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
 
@@ -10,9 +11,10 @@
     items: TimelineItem[];
     scale: number;
     top: number;
+    isSelected: boolean;
   }
 
-  let { viewport, items, scale, top }: Props = $props();
+  let { viewport, items, scale, top, isSelected }: Props = $props();
 
   // Only render items visible in the viewport
   const visibleItems = $derived(
@@ -20,7 +22,12 @@
   );
 </script>
 
-<div class="track border-b" style="top: {top}px;">
+<div
+  class={cn("track border-b", {
+    "border-primary bg-primary/10 border-t border-b": isSelected,
+  })}
+  style="top: {top}px;"
+>
   {#each visibleItems as item, itemIndex (itemIndex)}
     <TrackItem {item} {scale} />
   {/each}

@@ -7,6 +7,7 @@
   import Track from "$lib/plugin/video-annotation-activity/timelines/_Track.svelte";
   import TrackInfo from "$lib/plugin/video-annotation-activity/timelines/_TrackInfo.svelte";
 
+  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/timelines/constants";
 
   import type { TimelineProps, Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
@@ -386,6 +387,7 @@
           value={caretValue}
           labelFormatter={rulerLabelFormatter}
           height={30}
+          color="orangered"
           showLine={false}
         />
       {/if}
@@ -400,7 +402,7 @@
     onscroll={handleBodyScroll}
   >
     <div class="timeline-main">
-      <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
+      <div class="timeline-trackinfos-body" onwheel={handleBodyScroll} style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
           {#if TrackInfoSlot}
             {@render TrackInfoSlot({ track })}
@@ -442,7 +444,13 @@
             />
           {/if}
           {#each visibleTracks as track (track.id)}
-            <Track {viewport} {scale} items={track.items} top={track.top} />
+            <Track
+              {viewport}
+              {scale}
+              items={track.items}
+              top={track.top}
+              isSelected={$selectedAnnotationGroup?.groupId === track.id}
+            />
           {/each}
           {#if showCaret && caretX >= 0 && caretX <= contentWidth}
             <Caret
@@ -450,6 +458,7 @@
               value={caretValue}
               labelFormatter={rulerLabelFormatter}
               height={tracksHeight}
+              color="orangered"
               showLabel={false}
             />
           {/if}
