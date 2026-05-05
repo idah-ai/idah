@@ -25,6 +25,7 @@ export interface TimelineProps extends RulerProps {
   items: TrackData[];
   length: number;
 
+  TrackInfoHeaderSlot?: Snippet<[]>;
   TrackInfoSlot?: Snippet<[{ track: TrackData }]>;
 }
 

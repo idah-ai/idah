@@ -1,1 +1,1 @@
-export const TRACK_HEIGHT = 50;
+export const TRACK_HEIGHT = 45;

@@ -67,17 +67,17 @@
 >
   <!-- KEYFRAMES -->
   {#each keyframes as keyframe (keyframe)}
-    {@const padding = 2}
     {@const position = ((keyframe - startRange) / rangeSize) * 100}
-    {@const width = 100 / rangeSize}
+    <!-- Width of keyframe need to less than rangeSize to show padding -->
+    {@const width = (100 / rangeSize) * 0.9}
     <div
       role="button"
       tabindex="-1"
-      class="absolute rounded-sm focus:outline-none"
+      class="absolute translate-x-[5%] rounded-sm focus:outline-none"
       style:top="6px"
       style:height="calc(100% - {6 * 2}px)"
-      style:left="{position + padding}%"
-      style:width="{width - padding * 2}%"
+      style:left="{position}%"
+      style:width="{width}%"
       style:background-color={category ? category.color : DEFAULT_BG_COLOR}
       onclick={(e) => handleKeyframeClick(e, keyframe)}
       onkeypress={() => {}}

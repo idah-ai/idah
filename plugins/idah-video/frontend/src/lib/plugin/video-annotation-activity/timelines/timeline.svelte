@@ -33,6 +33,7 @@
     onViewportChange,
     onselectionchange,
 
+    TrackInfoHeaderSlot,
     TrackInfoSlot,
   }: Props = $props();
 
@@ -348,7 +349,12 @@
   {/if}
 
   <div class="timeline-ruler-wrapper">
-    <div class="timeline-ruler-spacer" aria-hidden="true"></div>
+    <div class="timeline-ruler-spacer" aria-hidden="true">
+      {#if TrackInfoHeaderSlot}
+        {@render TrackInfoHeaderSlot()}
+      {/if}
+    </div>
+
     <div
       role="button"
       tabindex="0"

@@ -68,6 +68,7 @@
   import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
   import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/_AnnotationTrackInfo.svelte";
+  import TrackInfoHeader from "$lib/plugin/video-annotation-activity/timelines/annotations/_TrackInfoHeader.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timelines/Timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
@@ -122,7 +123,7 @@
     endRange: 0,
   });
 
-  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
+  const zoomLevel = $derived(Math.min(40, length / (viewport.endRange - viewport.startRange)));
   const displayZoomLevel = $derived(Math.max(1, Math.min(40, zoomLevel)));
 
   // Variables::Timeline Container width for calculating dynamic ruler steps
@@ -934,9 +935,9 @@
               rulerBigStep={effectiveRulerMajorStep}
               oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
             >
-              <!-- {#snippet TrackInfoHeaderSlot()}
-              <TrackInfoHeader />
-             {/snippet} -->
+              {#snippet TrackInfoHeaderSlot()}
+                <TrackInfoHeader annotations={annotationsIDB?.annotations ?? []} />
+              {/snippet}
 
               {#snippet TrackInfoSlot({ track })}
                 <AnnotationTrackInfo {track} onClick={selectAnnotation} />

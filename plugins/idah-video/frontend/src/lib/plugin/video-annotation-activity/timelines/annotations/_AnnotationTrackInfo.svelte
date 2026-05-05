@@ -35,8 +35,17 @@
   const menus = $derived(getGroupContextMenus({ context, track }));
 
   // Functions
+  function selectAnnotationGroup() {
+    $selectedAnnotationGroup = {
+      groupId: id,
+      annotations: items.map((item) => item.rawData),
+    };
+  }
+
   function handleOnContextMenu(e: MouseEvent) {
     e.preventDefault();
+
+    selectAnnotationGroup();
 
     const contextMenuProps: ContextMenuComponentProps = {
       track,
@@ -46,6 +55,7 @@
   }
 
   function handleClick() {
+    selectAnnotationGroup();
     /**
      * Select annotation group
      * 1. If there is no selectedCurrentFrame, select the first frame of the annotation group
