@@ -60,7 +60,7 @@
       role="menu"
       tabindex="-1"
       bind:this={contextMenuEl}
-      class="bg-popover text-popover-foreground absolute z-50 min-w-40 overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md"
+      class="bg-popover text-popover-foreground absolute z-50 min-w-40 overflow-x-hidden overflow-y-auto rounded-md border shadow-md"
       style:left="{clampedX}px"
       style:top="{clampedY}px"
     >

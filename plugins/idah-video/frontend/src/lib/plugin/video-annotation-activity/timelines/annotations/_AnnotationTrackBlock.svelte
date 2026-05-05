@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import TimelineContextMenu from "$lib/plugin/video-annotation-activity/timelines/annotations/_TimelineContextMenu.svelte";
+  import TrackBlockContextMenu from "$lib/plugin/video-annotation-activity/timelines/annotations/_TrackBlockContextMenu.svelte";
 
   import {
     showContextMenu,
@@ -39,18 +39,30 @@
   function handleOnContextMenu(e: MouseEvent) {
     e.preventDefault();
 
-    const contextMenuProps: ContextMenuComponentProps = {};
+    const contextMenuProps: ContextMenuComponentProps = {
+      item,
+    };
 
-    showContextMenu(TimelineContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
+    showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
+  }
+
+  function handleAnnotationClick(e: MouseEvent) {
+    e.preventDefault();
+    console.log("TODO:: Select annotation", trackId);
+  }
+
+  function handleKeyframeClick(e: MouseEvent, keyframe: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("TODO:: Select keyframe", keyframe);
   }
 </script>
 
-<div
-  role="button"
-  tabindex="0"
-  class="box-border h-full w-full overflow-hidden rounded-lg border p-2 focus:outline-none"
+<button
+  class="box-border h-full w-full cursor-pointer overflow-hidden rounded-lg border p-2 focus:outline-none"
   style:background-color="{category ? category.color : DEFAULT_BG_COLOR}70"
   style:border-color={category ? category.color : DEFAULT_BG_COLOR}
+  onclick={handleAnnotationClick}
   oncontextmenu={handleOnContextMenu}
 >
   <!-- KEYFRAMES -->
@@ -59,12 +71,16 @@
     {@const position = ((keyframe - startRange) / rangeSize) * 100}
     {@const width = 100 / rangeSize}
     <div
-      class="absolute rounded-sm"
+      role="button"
+      tabindex="-1"
+      class="absolute rounded-sm focus:outline-none"
       style:top="6px"
       style:height="calc(100% - {6 * 2}px)"
       style:left="{position + padding}%"
       style:width="{width - padding * 2}%"
       style:background-color={category ? category.color : DEFAULT_BG_COLOR}
+      onclick={(e) => handleKeyframeClick(e, keyframe)}
+      onkeypress={() => {}}
     ></div>
   {/each}
-</div>
+</button>
