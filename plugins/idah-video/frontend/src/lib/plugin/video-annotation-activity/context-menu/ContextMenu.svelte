@@ -1,19 +1,19 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import {
     contextMenuState,
     hideContextMenu,
   } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
 
   // Variables
-  let contextMenuWidth = $state<number>(0);
-  let contextMenuHeight = $state<number>(0);
-
-  let { visible, component, props, x, y } = $derived($contextMenuState);
+  let { visible, component: ContextMenuComponent, props } = $derived($contextMenuState);
 
   // Calculate if menu should be positioned to the left/bottom to stay in viewport
   const [offsetX, offsetY] = [16, 16];
-  const realX = $derived(Math.min(x, window.innerWidth - contextMenuWidth - offsetX));
-  const realY = $derived(Math.min(y, window.innerHeight - contextMenuHeight - offsetY));
+  let contextMenuEl = $state<HTMLDivElement | null>(null);
+  let clampedX = $state(0);
+  let clampedY = $state(0);
 
   // Functions
   function handleOnContextMenu(e: MouseEvent) {
@@ -26,16 +26,32 @@
       hideContextMenu();
     }
   }
+
+  $effect(() => {
+    const { visible, x, y } = $contextMenuState;
+
+    if (visible) {
+      // Wait for DOM to paint so we can measure contextMenuEl
+      tick().then(() => {
+        if (!contextMenuEl) return;
+
+        const { offsetWidth: contextMenuWidth, offsetHeight: contextMenuHeight } = contextMenuEl;
+
+        clampedX = Math.max(0, Math.min(x, window.innerWidth - contextMenuWidth - offsetX));
+        clampedY = Math.max(0, Math.min(y, window.innerHeight - contextMenuHeight - offsetY));
+      });
+    }
+  });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if visible && component}
+{#if visible && ContextMenuComponent}
   <div
     role="dialog"
     aria-modal="true"
     tabindex="0"
-    class="absolute top-0 left-0 z-100 h-full w-full overflow-hidden bg-transparent"
+    class="fixed top-0 left-0 z-100 h-full w-full overflow-hidden bg-transparent"
     onclick={hideContextMenu}
     oncontextmenu={handleOnContextMenu}
     onkeypress={() => {}}
@@ -43,13 +59,12 @@
     <div
       role="menu"
       tabindex="-1"
-      bind:clientWidth={contextMenuWidth}
-      bind:clientHeight={contextMenuHeight}
+      bind:this={contextMenuEl}
       class="bg-popover text-popover-foreground absolute z-50 min-w-40 overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md"
-      style:left="{realX}px"
-      style:top="{realY}px"
+      style:left="{clampedX}px"
+      style:top="{clampedY}px"
     >
-      {@render component({ ...props })}
+      <ContextMenuComponent {...props} />
     </div>
   </div>
 {/if}
