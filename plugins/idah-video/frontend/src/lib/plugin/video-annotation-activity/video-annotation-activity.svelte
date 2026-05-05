@@ -67,10 +67,10 @@
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timelines/annotations/_AnnotationTrackInfo.svelte";
-  import TrackInfoHeader from "$lib/plugin/video-annotation-activity/timelines/annotations/_TrackInfoHeader.svelte";
-  import Timeline from "$lib/plugin/video-annotation-activity/timelines/Timeline.svelte";
-  import TimelineZoom from "$lib/plugin/video-annotation-activity/timelines/TimelineZoom.svelte";
+  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/timeline/annotations/_AnnotationTrackInfo.svelte";
+  import TrackInfoHeader from "$lib/plugin/video-annotation-activity/timeline/annotations/_TrackInfoHeader.svelte";
+  import Timeline from "$lib/plugin/video-annotation-activity/timeline/Timeline.svelte";
+  import TimelineZoom from "$lib/plugin/video-annotation-activity/timeline/TimelineZoom.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
@@ -83,7 +83,7 @@
 
   import type { IActivityContext, IMedia } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
-  import type { Viewport } from "$lib/plugin/video-annotation-activity/timelines/types";
+  import type { Viewport } from "$lib/plugin/video-annotation-activity/timeline/types";
 
   // Props
   interface Props {

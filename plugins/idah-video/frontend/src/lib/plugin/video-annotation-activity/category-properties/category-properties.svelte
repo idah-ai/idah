@@ -34,6 +34,10 @@
   };
 
   let {
+    selection
+  } : Props = $props
+
+  let {
     selectedCategory,
     annotationId,
     annotationValue,

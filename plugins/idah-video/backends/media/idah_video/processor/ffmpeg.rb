@@ -38,7 +38,7 @@ module IdahVideo
 
         # Logging and progress reporting
         args += ["-y"]                       # Overwrite output files without asking
-        args += ["-v", "quiet"]              # Suppress console output
+        args += ["-v", "error"]              # Suppress console output unless error
         args += ["-progress", "pipe:1"]      # Send progress info to stdout for monitoring
 
         # Input handling flags (must come before -i)
@@ -56,13 +56,14 @@ module IdahVideo
         # Each variant needs both video and audio mapped
         variants.each do |variant|
           args += ["-map", "[v#{variant.name}]"] # Map scaled video stream
-          args += ["-map", "0:a"] # Map original audio stream
+          args += ["-map", "0:a"] if variant.audiobitrate # Map original audio stream if present
         end
 
         # Global video encoding settings (apply to all outputs)
         args += ["-c:v", "libx264"]          # Use H.264 video codec
         args += ["-preset", "veryfast"]      # Encoding speed preset
         args += ["-profile:v", "main"]       # H.264 profile for compatibility
+        args += ["-pix_fmt", "yuv420p"]      # force 4:2:0 mode (won't work with 4:4:4)
         args += ["-crf", "20"]               # Constant Rate Factor for quality
 
         # Calculate keyframe interval (keyint = fps * segment_duration)
@@ -73,8 +74,10 @@ module IdahVideo
         args += ["-force_key_frames", "expr:gte(t,n_forced*#{streaming_time_per_segment})"]
 
         # Global audio encoding settings (apply to all outputs)
-        args += ["-c:a", "aac"]              # Use AAC audio codec
-        args += ["-ar", "48000"]             # Audio sample rate: 48kHz
+        if variants.any?(&:audiobitrate)
+          args += ["-c:a", "aac"]              # Use AAC audio codec
+          args += ["-ar", "48000"]             # Audio sample rate: 48kHz
+        end
 
         # HLS output format and settings
         args += ["-f", "hls"] # Output format: HLS
@@ -87,7 +90,11 @@ module IdahVideo
         # Build var_stream_map: defines which video/audio pairs go to which variant
         # Format: "v:0,a:0,name:240p v:1,a:1,name:360p ..."
         var_stream_map = variants.each_with_index.map do |variant, index|
-          "v:#{index},a:#{index},name:#{variant.name}"
+          if variant.audiobitrate
+            "v:#{index},a:#{index},name:#{variant.name}"
+          else
+            "v:#{index},name:#{variant.name}"
+          end
         end.join(" ")
         args += ["-var_stream_map", var_stream_map]
 
