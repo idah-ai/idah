@@ -8,6 +8,7 @@
 // in memory, merges new items, and optionally cleans up old ones when the
 // collection grows beyond a threshold.
 // ---------------------------------------------------------------------------
+import { uuidv7 } from "uuidv7";
 
 /** Minimum interface an item must expose. */
 export interface DataItem {
@@ -82,6 +83,21 @@ export interface DataStore<T extends DataItem> {
   reset(items: T[], range: [number, number]): void;
   clear(): void;
 
+  /**
+   * Create a new item: generate an id, insert locally, then persist on the driver.
+   */
+  create(data: T): Promise<T>;
+
+  /**
+   * Delete an item by id on the driver, then remove it from the local store.
+   */
+  delete(id: string): Promise<void>;
+
+  /**
+   * Update an item on the driver, then replace it in the local store.
+   */
+  update(item: T): Promise<void>;
+
   /** Configurable threshold — when item count exceeds this, cleanup runs. */
   maxItems: number;
 
@@ -97,6 +113,13 @@ export interface DataStore<T extends DataItem> {
 export type AnnotationItem = {
   id: string;
   shape: { type: string; start: number; end: number } & Record<string, unknown>;
+  value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
+  metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
+  category?: string;
+  label?: string;
+  hidden?: boolean;
+  locked?: boolean;
+  synced?: boolean;
   [key: string]: unknown;
 };
 
@@ -110,9 +133,14 @@ export type AnnotationItem = {
  *                `IAnnotationsDriverV2`.
  * @returns       A DataStore wired up for annotations.
  */
-export function createAnnotationStore(driver: {
+export interface AnnotationDriver {
   fetch(filter?: Record<string, unknown>): Promise<{ id: string; [key: string]: unknown }[]>;
-}): DataStore<AnnotationItem> {
+  create(data: Partial<AnnotationItem>): Promise<{ id: string; [key: string]: unknown }>;
+  update(id: string, data: Partial<AnnotationItem>): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
   const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
       "frame.start": { lte: rangeEnd },
@@ -129,7 +157,57 @@ export function createAnnotationStore(driver: {
     return null;
   };
 
-  return store;
+  const originalUpsert = store.upsert.bind(store);
+
+  return {
+    ...store,
+
+    async create(data: AnnotationItem): Promise<AnnotationItem> {
+      const id = uuidv7();
+      const item = { ...data, id } as AnnotationItem;
+      // Optimistic: insert locally first
+      originalUpsert(item);
+      try {
+        await driver.create(data);
+      } catch {
+        // Rollback on failure
+        store.remove(id);
+        throw new Error("Failed to create annotation");
+      }
+      return item;
+    },
+
+    async delete(id: string): Promise<void> {
+      const item = store.items.find((i) => i.id === id);
+      // Optimistic: remove locally first
+      store.remove(id);
+      try {
+        await driver.delete(id);
+      } catch {
+        // Rollback
+        if (item) originalUpsert(item);
+        throw new Error("Failed to delete annotation");
+      }
+    },
+
+    async update(item: AnnotationItem): Promise<void> {
+      const old = store.items.find((i) => i.id === item.id);
+      // Optimistic: update locally first
+      originalUpsert(item);
+      try {
+        await driver.update(item.id, item);
+      } catch {
+        // Rollback
+        if (old) originalUpsert(old);
+        throw new Error("Failed to update annotation");
+      }
+    },
+
+    upsert(item: AnnotationItem): void {
+      // Local-only upsert — used for bulk initial load; doesn't call driver.
+      originalUpsert(item);
+    },
+  };
 }
 
 // ─── Note store factory ─────────────────────────────────────────────────
@@ -150,12 +228,15 @@ export type NoteItem = {
  *                `INotesDriverV2`.
  * @returns       A DataStore wired up for notes.
  */
-export function createNoteStore(driver: {
+export interface NoteDriver {
   fetch(filter?: Record<string, unknown>): Promise<{ id: string; [key: string]: unknown }[]>;
-}): DataStore<NoteItem> {
+  create(data: Partial<NoteItem>): Promise<{ id: string; [key: string]: unknown }>;
+  update(id: string, data: Partial<NoteItem>): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
   const store = createDataStore<NoteItem>(async (rangeStart, rangeEnd) => {
-    // Notes are associated with annotations; fetch notes tied to annotations
-    // that overlap the requested frame range.
     const items = await driver.fetch({
       "frame.start": { lte: rangeEnd },
       "frame.end": { gte: rangeStart },
@@ -166,7 +247,50 @@ export function createNoteStore(driver: {
   // Notes have no frame range — always keep them during cleanup
   store.getItemRange = () => null;
 
-  return store;
+  const originalUpsert = store.upsert.bind(store);
+
+  return {
+    ...store,
+
+    async create(data: NoteItem): Promise<NoteItem> {
+      const id = uuidv7();
+      const item = { ...data, id } as NoteItem;
+      originalUpsert(item);
+      try {
+        await driver.create(data);
+      } catch {
+        store.remove(id);
+        throw new Error("Failed to create note");
+      }
+      return item;
+    },
+
+    async delete(id: string): Promise<void> {
+      const item = store.items.find((i) => i.id === id);
+      store.remove(id);
+      try {
+        await driver.delete(id);
+      } catch {
+        if (item) originalUpsert(item);
+        throw new Error("Failed to delete note");
+      }
+    },
+
+    async update(item: NoteItem): Promise<void> {
+      const old = store.items.find((i) => i.id === item.id);
+      originalUpsert(item);
+      try {
+        await driver.update(item.id, item);
+      } catch {
+        if (old) originalUpsert(old);
+        throw new Error("Failed to update note");
+      }
+    },
+
+    upsert(item: NoteItem): void {
+      originalUpsert(item);
+    },
+  };
 }
 
 export function createDataStore<T extends DataItem>(
@@ -305,6 +429,19 @@ export function createDataStore<T extends DataItem>(
     reset,
     clear,
 
+    async delete(_id: string): Promise<void> {
+      // Base store has no driver; specialized stores override this.
+      throw new Error("delete not implemented — use createAnnotationStore or createNoteStore");
+    },
+
+    async update(_item: T): Promise<void> {
+      throw new Error("update not implemented — use createAnnotationStore or createNoteStore");
+    },
+
+    async create(data: T): Promise<T> {
+      throw new Error("create not implemented — use createAnnotationStore or createNoteStore");
+    },
+
     get maxItems() { return maxItems; },
     set maxItems(v: number) { maxItems = v; },
 
@@ -315,3 +452,22 @@ export function createDataStore<T extends DataItem>(
     set getItemRange(v) { getItemRange = v; },
   };
 }
+
+// ─── Global singleton stores ─────────────────────────────────────────────-
+//
+// These are the single source of truth for annotations and notes.
+// They must be initialised by the application before use.
+//
+// Usage:
+//   import { data } from "$lib/state/data.svelte";
+//   data.annotations.preloadRange(-Infinity, Infinity);
+//   console.log(data.annotations.items);
+
+/** Global stores — initialised by the host application. */
+export const data: {
+  annotations: DataStore<AnnotationItem> | null;
+  notes: DataStore<NoteItem> | null;
+} = {
+  annotations: null,
+  notes: null,
+};

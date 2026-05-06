@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -20,6 +20,8 @@
     onViewportChange?: (viewport: Viewport, zoomLevel: number) => void;
     onselectionchange?: (offset: number, length: number) => void;
     onDimensionsChange?: (width: number, height: number) => void;
+    /** Register a zoom function for external callers (e.g. TimelineZoom). */
+    onZoom?: (zoomFn: (newZoom: number) => void) => void;
   }
 
   let {
@@ -36,6 +38,7 @@
     onViewportChange,
     onselectionchange,
     onDimensionsChange,
+    onZoom,
 
     TrackInfoHeaderSlot,
     TrackInfoSlot,
@@ -62,25 +65,65 @@
   // Derive zoom level from viewport range
   const zoomLevel = $derived(length / viewportRange);
 
-  // Notify parent of layout changes only when container dimensions actually change
-  // (separate from viewport-change to avoid cascading parent re-renders on every zoom event)
-  $effect(() => {
-    if (oncontainerWidthChange && containerWidth > 0) {
-      oncontainerWidthChange(containerWidth);
+  // Called whenever containerWidth actually changes
+  function notifyContainerSize(w: number) {
+    if (oncontainerWidthChange && w > 0) {
+      oncontainerWidthChange(w);
     }
-    if (onDimensionsChange && containerWidth > 0 && remainingHeight > 0) {
-      onDimensionsChange(containerWidth, remainingHeight);
+    if (onDimensionsChange && w > 0 && remainingHeight > 0) {
+      onDimensionsChange(w, remainingHeight);
     }
-  });
+  }
 
-  // Notify parent of viewport changes (zoom/pan) — a no-op in practice since no callback is bound
-  $effect(() => {
-    if (onViewportChange) {
-      onViewportChange({ startRange: viewport.startRange, endRange: viewport.endRange }, zoomLevel);
+  onMount(() => {
+    // Sync containerWidth and notify parent on resize (no $effect)
+    function onResize() {
+      if (!tracksViewportEl) return;
+      const w = tracksViewportEl.clientWidth;
+      if (w !== containerWidth) {
+        containerWidth = w;
+        notifyContainerSize(w);
+      }
     }
+
+    onResize();
+    const ro = new ResizeObserver(onResize);
+    if (tracksViewportEl) ro.observe(tracksViewportEl);
+
+    return () => ro.disconnect();
   });
 
   // Helpers: convert between mouse x (content-space) and frame value
+  function applyZoom(newZoom: number) {
+    // Keep the current frame (caret/selection) fixed when zooming
+    const frame = Math.floor(selectionOffset);
+    const newRange = length / newZoom;
+
+    let newStart = frame - (frame - viewport.startRange) * (newRange / (viewport.endRange - viewport.startRange));
+    let newEnd = newStart + newRange;
+
+    if (newStart < 0) {
+      newStart = 0;
+      newEnd = newRange;
+    }
+    if (newEnd > length) {
+      newEnd = length;
+      newStart = length - newRange;
+    }
+
+    viewport.startRange = newStart;
+    viewport.endRange = newEnd;
+    clampViewport();
+
+    // Sync DOM scroll positions immediately after viewport change
+    setScrollLeft(viewport.startRange * scale);
+  }
+
+  // Expose zoom function to parent on mount
+  onMount(() => {
+    onZoom?.(applyZoom);
+  });
+
   function mouseXToFrame(mouseXInContent: number): number {
     return Math.floor(mouseXInContent / scale);
   }
@@ -423,7 +466,6 @@
         tabindex="0"
         class="timeline-tracks-viewport focus:outline-none"
         bind:this={tracksViewportEl}
-        bind:clientWidth={containerWidth}
         onscroll={handleTracksScroll}
         onwheel={handleWheel}
         onmousemove={handleMouseMove}

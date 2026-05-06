@@ -156,7 +156,7 @@
     <!-- VIDEO::PREVIOUS FRAME STEP -->
     <ToolTooltip
       label={`Previous ${frameStep} frames`}
-      shortcut={getShortcut(context.shortcutReferences?.["player.previous_multiple_frames"].keyCombinations)}
+      shortcut={getShortcut(context.shortcutReferences?.["player.previous_multiple_frames"]?.keyCombinations)}
       onOpenChange={fetchFrameStepFromLocalStorage}
     >
       {#snippet trigger()}
@@ -169,7 +169,7 @@
     <!-- VIDEO::PREVIOUS FRAME -->
     <ToolTooltip
       label="Previous frame"
-      shortcut={getShortcut(context.shortcutReferences?.["player.previous_frame"].keyCombinations)}
+      shortcut={getShortcut(context.shortcutReferences?.["player.previous_frame"]?.keyCombinations)}
     >
       {#snippet trigger()}
         <Button variant="outline" size="icon-sm" onclick={() => goFrame("prev")}>
@@ -181,7 +181,7 @@
     <!-- VIDEO::PLAY / PAUSE -->
     <ToolTooltip
       label={$isVideoPlaying ? "Pause" : "Play"}
-      shortcut={getShortcut(context.shortcutReferences?.["player.toggle_play"].keyCombinations)}
+      shortcut={getShortcut(context.shortcutReferences?.["player.toggle_play"]?.keyCombinations)}
     >
       {#snippet trigger()}
         <Button
@@ -203,7 +203,7 @@
     <!-- VIDEO::NEXT FRAME -->
     <ToolTooltip
       label="Next frame"
-      shortcut={getShortcut(context.shortcutReferences?.["player.next_frame"].keyCombinations)}
+      shortcut={getShortcut(context.shortcutReferences?.["player.next_frame"]?.keyCombinations)}
     >
       {#snippet trigger()}
         <Button variant="outline" size="icon-sm" onclick={() => goFrame("next")}>
@@ -215,7 +215,7 @@
     <!-- VIDEO::NEXT FRAME STEP -->
     <ToolTooltip
       label={`Next ${frameStep} frames`}
-      shortcut={getShortcut(context.shortcutReferences?.["player.next_multiple_frames"].keyCombinations)}
+      shortcut={getShortcut(context.shortcutReferences?.["player.next_multiple_frames"]?.keyCombinations)}
       onOpenChange={fetchFrameStepFromLocalStorage}
     >
       {#snippet trigger()}
@@ -288,7 +288,7 @@
     <!-- ANNOTATION::SPLIT -->
     <ToolTooltip
       label="Split annotation"
-      shortcut={getShortcut(context.shortcutReferences?.["selected.split"].keyCombinations)}
+      shortcut={getShortcut(context.shortcutReferences?.["selected.split"]?.keyCombinations)}
     >
       {#snippet trigger()}
         <Button

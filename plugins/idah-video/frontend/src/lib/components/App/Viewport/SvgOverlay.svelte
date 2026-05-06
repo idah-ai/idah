@@ -31,7 +31,7 @@
     type VideoShape,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-  import { boundingBoxes } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { data } from "$lib/state/data.svelte";
   import {
     currentMode,
     deselectAnnotationGroup,
@@ -93,6 +93,27 @@
   });
 
   let svgEl: SVGSVGElement | undefined = $state();
+
+  // Derive viewport annotations from the global store
+  let viewportItems = $derived.by<VideoAnnotationObject[]>(() => {
+    const raw = data.annotations?.items ?? [];
+    return raw.map((ann) => ({
+      shape: ann.shape as VideoShape,
+      value: {
+        category: (ann.category ?? ann.value?.category) || "null",
+        attributes: ann.value?.attributes ?? {},
+      },
+      metadata: ann.metadata ?? {
+        id: ann.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metadata: {},
+      },
+      hidden: ann.hidden ?? false,
+      locked: ann.locked ?? false,
+      synced: ann.synced ?? true,
+    })) as VideoAnnotationObject[];
+  });
 
   // Sync transform to viewport on zoom change
   function syncTransform(s: number, o: Point) {
@@ -373,7 +394,7 @@
     <!-- eslint-disable-next-line -->
     <!-- Here we await the first window's annotations (the ones in IDB), then handle them -->
     {#await annotations_promise}
-      {#each $boundingBoxes as annotation (annotation.metadata.id)}
+      {#each viewportItems as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
           {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}

@@ -13,11 +13,11 @@
   // Props
   interface Props {
     displayZoomLevel: number;
-    applyZoom: (zoom: number) => void;
+    zoomFn: ((zoom: number) => void) | undefined;
     zoomMin: number;
     zoomMax: number;
   }
-  let { displayZoomLevel, applyZoom, zoomMin, zoomMax }: Props = $props();
+  let { displayZoomLevel, zoomFn, zoomMin, zoomMax }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -39,27 +39,27 @@
   function handleSliderChange(value: number) {
     localZoom = value;
     if (Math.abs(value - displayZoomLevel) > 0.001) {
-      applyZoom(value);
+      zoomFn?.(value);
     }
   }
 
   function zoomOut() {
     const newZoom = Math.max(Math.round((localZoom - ZOOM_STEP) * 10) / 10, zoomMin);
     localZoom = newZoom;
-    applyZoom(newZoom);
+    zoomFn?.(newZoom);
   }
 
   function zoomIn() {
     const newZoom = Math.min(Math.round((localZoom + ZOOM_STEP) * 10) / 10, zoomMax);
     localZoom = newZoom;
-    applyZoom(newZoom);
+    zoomFn?.(newZoom);
   }
 </script>
 
 <div id="timeline-controller" class="flex items-center gap-2">
   <ToolTooltip
     label="Zoom Out"
-    shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_out"].keyCombinations)}
+    shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_out"]?.keyCombinations)}
   >
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomOut}>
@@ -70,7 +70,7 @@
 
   <Slider type="single" class="w-40" min={zoomMin} max={zoomMax} step={0.1} value={localZoom} onValueChange={handleSliderChange} />
 
-  <ToolTooltip label="Zoom In" shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"].keyCombinations)}>
+  <ToolTooltip label="Zoom In" shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"]?.keyCombinations)}>
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomIn}>
         <ZoomInIcon />

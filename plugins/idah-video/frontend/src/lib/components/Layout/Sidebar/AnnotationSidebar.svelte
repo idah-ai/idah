@@ -21,7 +21,7 @@
   import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
+  import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   // Props
   let {
@@ -34,6 +34,7 @@
     onDeleteAnnotation,
     context,
     db,
+    items,
     class: className,
   }: {
     view: "sidebar" | "popover";
@@ -44,7 +45,8 @@
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
     context: IActivityContext;
-    db?: AnnotationBackend;
+    db?: DataStore<AnnotationItem> | null;
+    items: VideoAnnotationObject[];
     class?: string | null;
   } = $props();
 
@@ -134,6 +136,7 @@
         <CategorySidebar
           {view}
           {db}
+          {items}
           modalityShape={tool}
           {categories}
           selectedCategory={tool == ENTRY_ROOT && !(tool == $currentMode)

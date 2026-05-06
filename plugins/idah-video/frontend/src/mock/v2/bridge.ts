@@ -30,6 +30,7 @@ interface IUser {
 }
 import type { IdahDriverV2 } from "$mock/v2/idah-driver";
 import type { IAnnotationRecord, ICommandAction, ICommandDescriptor } from "$mock/v2/types";
+import { createAnnotationStore, createNoteStore, data, type AnnotationItem, type NoteItem } from "$lib/state/data.svelte";
 
 // ─── Sample config (needed by the editor) ────────────────────────────────
 
@@ -95,6 +96,15 @@ const SAMPLE_CONFIG: IConfig = {
 // ─── Bridge ──────────────────────────────────────────────────────────────
 
 export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
+  // ── Initialise global stores backed by the V2 driver ────────────────
+  data.annotations = createAnnotationStore(driver.annotations);
+  data.notes = createNoteStore(driver.notes);
+
+  // Preload all data immediately
+  data.annotations.preloadRange(-Infinity, Infinity);
+  data.notes.preloadRange(-Infinity, Infinity);
+
+  const annotationStore = data.annotations;
   // ── V2 → V1 annotation mapper ───────────────────────────────────────
   function toV1Annotation(rec: IAnnotationRecord): IAnnotation {
     return {
@@ -135,9 +145,8 @@ export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
     async delete(id: string): Promise<void> {
       await driver.annotations.delete(id);
     },
-    async list(filter: any, pagination: any): Promise<IAnnotation[]> {
-      const records = await driver.annotations.fetch(filter ?? {});
-      return records.map(toV1Annotation);
+    async list(_filter: any, _pagination: any): Promise<IAnnotation[]> {
+      return annotationStore.items.map(toV1Annotation);
     },
     flush() {
       // no-op in-memory
@@ -151,8 +160,7 @@ export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
     requireNoteFeedPosition() {},
     onRequireNoteFeedPosition() {},
     gotoFeed() {},
-    onNoteSelected() {},
-  };
+    onNoteSelected() {},  };
 
   // ── Icon driver ───────────────────────────────────────────────────
   const iconDriver: IIconDriver = {

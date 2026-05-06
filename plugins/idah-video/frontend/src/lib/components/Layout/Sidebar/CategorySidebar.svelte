@@ -24,12 +24,13 @@
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
+  import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   // Props
   interface Props {
     view: "sidebar" | "popover";
-    db?: AnnotationBackend;
+    db?: DataStore<AnnotationItem> | null;
+    items: VideoAnnotationObject[];
 
     modalityShape: string;
     categories: IConfigValue[];
@@ -43,6 +44,7 @@
   let {
     view,
     db,
+    items,
     modalityShape,
     categories,
     onSelectCategory,
@@ -205,7 +207,7 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = db.annotationsForCategory(category.id)}
+      {@const annotations = items.filter((a) => a.value.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
       {@const hasAnnotations = count > 0}
 
@@ -312,7 +314,7 @@
 
       <CollapsibleContent hidden={!openStates[category.id]}>
         {#if !currentModeIsSameAsShape && db && category}
-          {@const categoryAnnotations = db.annotationsByCategory(category.id)}
+          {@const categoryAnnotations = items.filter((a) => a.value.category === category.id)}
           {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
           {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
             <AnnotationGroupNode

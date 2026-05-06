@@ -29,15 +29,11 @@
   import { requiredFullfilled } from "$lib/components/App/PropertySelector";
   import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
-    annotationsIndexedDB,
-    type AnnotationBackend,
-  } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
-  import {
     registerOnSelectShortcuts,
     registerShortcuts,
     registerShortcutsReference,
   } from "$lib/plugin/video-annotation-activity/shortcut";
-  import { boundingBoxes, entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
     currentFrame,
     currentMode,
@@ -54,8 +50,9 @@
     totalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
-  import DebugConsole from "$lib/plugin/video-annotation-activity/components/DebugConsole.svelte";
+  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { data } from "$lib/state/data.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -178,7 +175,8 @@
     return rounded === effectiveRulerMajorStep ? 0 : rounded;
   });
 
-  let annotationsIDB: AnnotationBackend | undefined = $state();
+  let annotationsLoading = $state(true);
+  let zoomFn: ((newZoom: number) => void) | undefined = $state();
   let volume = $state({ level: 0, muted: true });
   let tools: {
     name: string;
@@ -254,32 +252,58 @@
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
 
-    $boundingBoxes = [];
+    // annotations are now derived from the global store
 
-    try {
-      annotationsIDB = await annotationsIndexedDB(["idah-video", "entry", entryId].join(":"));
-
-      /** Register commands */
-      registerCommands({
-        context,
-        getDb: () => annotationsIDB,
-        updaters: {
-          setAnnotationValue: (v) => {
-            annotationValue = v;
-          },
-          selectAnnotation: (v) => {
-            selectAnnotation(v);
-          },
+    /** Register commands (pass a stub DB that delegates to context) */
+    const stubDb = {
+      get annotations() { return []; },
+      async upsertAnnotations() {},
+      async reload() {},
+      annotationsByCategory() { return []; },
+      async deleteAnnotation() {},
+    };
+    registerCommands({
+      context,
+      getDb: () => stubDb as never,
+      updaters: {
+        setAnnotationValue: (v) => {
+          annotationValue = v;
         },
+        selectAnnotation: (v) => {
+          selectAnnotation(v);
+        },
+      },
+    });
+
+    // Load annotations directly from the context (V2 data-store backed)
+    try {
+      const v1Annotations = await context.annotations.list({}, { page: 1, itemsPerPage: 10000 });
+      const annotations = v1Annotations.map((ann) => {
+        const v2shape = ann.dimensions as VideoShape;
+        return {
+          shape: {
+            ...v2shape,
+            frames: v2shape.frames ?? [],
+            range: [ann.dimensions.start, ann.dimensions.end],
+          },
+          value: {
+            ...ann.annotation,
+            category: ann.annotation.category || "null",
+          },
+          metadata: {
+            id: ann.id,
+            updatedAt: ann.updated_at || new Date(),
+            createdAt: ann.created_at || new Date(),
+            metadata: ann.metadata || {},
+          },
+          hidden: false,
+          locked: false,
+          synced: true,
+        } as VideoAnnotationObject;
       });
 
-      fetchAnnotations(annotationsIDB).then(() => {
-        if (!annotationsIDB) return;
-
-        // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-        const entryRootAnnotation = annotationsIDB.annotations.find((a) => a.shape.type === ENTRY_ROOT);
-        if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
-      });
+      const entryRootAnnotation = annotations.find((a) => a.shape.type === ENTRY_ROOT);
+      if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
     } catch (e) {
       console.error(e);
     }
@@ -349,44 +373,6 @@
       },
       zoom: { in: () => overlay?.zoomIn?.(), out: () => overlay?.zoomOut?.() },
     });
-
-    function fetchAnnotations(db: AnnotationBackend, page = 1, itemsPerPage = 100): Promise<void> {
-      return new Promise<void>((resolve, reject) => {
-        context.annotations.list({ entry_id: entryId }, { page, itemsPerPage }).then((res) => {
-          let d = res.map((ann) => {
-            const annotation: VideoAnnotationObject = {
-              shape: {
-                ...(ann.dimensions as VideoShape),
-                range: [ann.dimensions.start, ann.dimensions.end],
-              },
-              value: {
-                ...ann.annotation,
-                category: ann.annotation.category || "null",
-              },
-              metadata: {
-                id: ann.id,
-                updatedAt: ann.updated_at || new Date(),
-                createdAt: ann.created_at || new Date(),
-                metadata: ann.metadata || {},
-              },
-              hidden: false,
-              locked: false,
-              synced: true,
-            };
-            if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-            return annotation;
-          });
-
-          if (d.length) {
-            db.upsertAnnotations(d).then(() => {
-              fetchAnnotations(db, page + 1).then(resolve, reject);
-            });
-          } else {
-            resolve();
-          }
-        });
-      });
-    }
   });
 
   function seekToFrame(frame: number) {
@@ -632,9 +618,9 @@
   }
 
   function setAnnotationFrame(frame: number) {
-    if (!$selectedAnnotationGroup || !annotationsIDB) return;
+    if (!$selectedAnnotationGroup) return;
 
-    const annotationGroups = groupAnnotations(annotationsIDB.annotations);
+    const annotationGroups = groupAnnotations(viewportAnnotations);
 
     // Find the annotation group to get all annotations in the group
     const newSelectedAnnotationGroup = annotationGroups.find(
@@ -659,19 +645,30 @@
     }
   }
 
-  // Sync annotations to boundingBoxes whenever they change
-  $effect(() => {
-    if (annotationsIDB) {
-      $boundingBoxes = annotationsIDB.annotations;
-    }
+  // Derive viewport annotations from the global store
+  let viewportAnnotations = $derived.by<VideoAnnotationObject[]>(() => {
+    const raw = data.annotations?.items ?? [];
+    return raw.map((ann) => ({
+      shape: ann.shape as VideoShape,
+      value: {
+        category: (ann.category ?? ann.value?.category) || "null",
+        attributes: ann.value?.attributes ?? {},
+      },
+      metadata: ann.metadata ?? {
+        id: ann.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metadata: {},
+      },
+      hidden: ann.hidden ?? false,
+      locked: ann.locked ?? false,
+      synced: ann.synced ?? true,
+    })) as VideoAnnotationObject[];
   });
 
   let annotations_promise: Promise<VideoAnnotationObject[]> = $derived.by(() => {
-    if (!annotationsIDB) return new Promise(() => {});
-
-    // Return reactive annotations from the IndexedDB instance
-    const annotations = annotationsIDB.annotations;
-    return Promise.resolve(annotations);
+    if (!data.annotations) return new Promise(() => {});
+    return Promise.resolve(viewportAnnotations);
   });
 
   function showNewNotePopup(params: OnAddNewNoteParams) {
@@ -702,29 +699,6 @@
 
     // Update the currently selected annotation value to reflect the category change in the properties sidebar
     onEditValue({ category: reselectedCategoryId }, $currentMode);
-  }
-
-  function applyZoom(newZoom: number) {
-    // Keep the current frame (caret/selection) fixed when zooming
-    const frame = viewport.video.currentFrame.value;
-    const newRange = length / newZoom;
-
-    let newStart = frame - (frame - viewport.timeline.range.startRange) * (newRange / (viewport.timeline.range.endRange - viewport.timeline.range.startRange));
-    let newEnd = newStart + newRange;
-
-    // Clamp within [0, length]
-    if (newStart < 0) {
-      newStart = 0;
-      newEnd = newRange;
-    }
-
-    if (newEnd > length) {
-      newEnd = length;
-      newStart = length - newRange;
-    }
-
-    viewport.timeline.range.startRange = newStart;
-    viewport.timeline.range.endRange = newEnd;
   }
 </script>
 
@@ -782,7 +756,8 @@
             view="popover"
             sidebarWidthRem={annotationSidebarWidthRem}
             class="rounded-t-lg"
-            db={annotationsIDB}
+            db={data.annotations}
+            items={viewportAnnotations}
             {annotationValue}
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
@@ -834,7 +809,8 @@
             <AnnotationSidebar
               view="sidebar"
               sidebarWidthRem={annotationSidebarWidthRem}
-              db={annotationsIDB}
+              db={data.annotations}
+              items={viewportAnnotations}
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
@@ -906,14 +882,15 @@
             <VideoController {zoom} {volume} bind:video={player} />
 
             <!-- <TimelineControllerLegacy /> -->
-            <TimelineZoom {displayZoomLevel} {applyZoom} zoomMin={zoomMin} zoomMax={zoomMax} />
+            <TimelineZoom {displayZoomLevel} zoomFn={zoomFn} zoomMin={zoomMin} zoomMax={zoomMax} />
           </AnnotationFooterToolbar>
 
-          {#if annotationsIDB}
+          {#if viewportAnnotations.length}
             <Timeline
+              onZoom={(fn) => (zoomFn = fn)}
               bind:viewport={viewport.timeline.range}
               items={transformAnnotationsToTracks({
-                annotations: annotationsIDB.annotations,
+                annotations: viewportAnnotations,
                 labelConfig: context.config,
               })}
               {length}
@@ -927,21 +904,13 @@
               }}
             >
               {#snippet TrackInfoHeaderSlot()}
-                <TrackInfoHeader annotations={annotationsIDB?.annotations ?? []} />
+                <TrackInfoHeader annotations={viewportAnnotations} />
               {/snippet}
 
               {#snippet TrackInfoSlot({ track })}
                 <AnnotationTrackInfo {track} onClick={selectAnnotation} />
               {/snippet}
             </Timeline>
-
-            <!-- TODO: Will be remove after finish on new timeline -->
-            <!-- <TimelineLegacy
-              annotations={annotationsIDB.annotations}
-              {annotationFooterHeight}
-              onSeekFrame={seekToFrame}
-              onSelectAnnotationGroup={selectAnnotationGroup}
-            /> -->
           {/if}
         </AnnotationFooter>
       </ResizablePane>
