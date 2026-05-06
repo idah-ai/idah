@@ -27,7 +27,7 @@
   import { getShortcut } from "$lib/components/ui/kbd/utils";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
   import Slider from "$lib/components/ui/slider/slider.svelte";
-  import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
+  import Video from "./_Video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
   import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
@@ -72,17 +72,17 @@
 
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
-  let frameInputValue = $state<number>(viewport.currentFrame.value);
+  let frameInputValue = $state<number>(viewport.video.currentFrame.value);
   let sliderValue: number = $derived(max - (zoom - min));
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
     if ($selectedAnnotation.locked) return true;
-    if ($selectedAnnotation.shape.end < viewport.currentFrame.value) return true;
+    if ($selectedAnnotation.shape.end < viewport.video.currentFrame.value) return true;
   });
 
-  // Sync frameInputValue with viewport.currentFrame when it changes externally
+  // Sync frameInputValue with viewport.video.currentFrame when it changes externally
   $effect(() => {
-    frameInputValue = viewport.currentFrame.value;
+    frameInputValue = viewport.video.currentFrame.value;
   });
 
   // TODO: @audi ideally, these should call commands ?
@@ -98,7 +98,7 @@
       return;
     }
 
-    viewport.currentFrame.value = frameNumber;
+    viewport.video.currentFrame.value = frameNumber;
     video?.seekToFrame(frameNumber);
   };
 
@@ -123,25 +123,10 @@
     if (video) video.playbackRate(currentSpeed);
   }
 
-  // function onSliderChange(value: number): void {
-  //   zoom = max - (value - min); // flip value
-  //   // onZoomChange(zoom);
-  // }
-
-  // function zoomIn(): void {
-  //   zoom = zoom - 5;
-  //   // onZoomChange(Math.min(max, zoom + 1));
-  // }
-
-  // function zoomOut(): void {
-  //   zoom = zoom + 5;
-  //   // onZoomChange(Math.max(min, zoom - 1));
-  // }
-
   function goFrame(direction: "prev" | "next", step: number = 1) {
     const delta = direction === "prev" ? -step : step;
-    viewport.currentFrame.value = Math.max(1, Math.min($totalFrames, viewport.currentFrame.value + delta));
-    video?.seekToFrame(viewport.currentFrame.value);
+    viewport.video.currentFrame.value = Math.max(1, Math.min($totalFrames, viewport.video.currentFrame.value + delta));
+    video?.seekToFrame(viewport.video.currentFrame.value);
   }
 
   function gotoFrameStep(direction: "prev" | "next") {
@@ -312,10 +297,10 @@
           disabled={disabledSplitButton}
           onclick={() =>
             $selectedAnnotation &&
-            context.commands.run("annotation.split", {
-              id: $selectedAnnotation.metadata.id,
-              at: viewport.currentFrame.value,
-            })}
+                    context.commands.run("annotation.split", {
+                      id: $selectedAnnotation.metadata.id,
+                      at: viewport.video.currentFrame.value,
+                    })}
         >
           <SquareSplitHorizontalIcon />
         </Button>

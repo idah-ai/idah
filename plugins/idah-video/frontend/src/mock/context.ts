@@ -103,7 +103,8 @@ const SAMPLE_ANNOTATIONS: IAnnotation[] = [
       ],
     },
     annotation: {
-      category: "person",
+      category: "pedestrian",
+      attributes: { occluded: false },
     },
     created_by_id: "1",
     created_at: new Date("2025-01-01T10:02:00Z"),

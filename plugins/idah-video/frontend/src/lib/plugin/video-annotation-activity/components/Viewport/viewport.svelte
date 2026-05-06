@@ -149,7 +149,7 @@
 </script>
 
 <div
-  class="zoomable bg-secondary h-full w-full"
+  class="viewport bg-secondary h-full w-full"
   role="grid"
   tabindex="-1"
   bind:clientHeight={size[HEIGHT]}
@@ -165,13 +165,9 @@
 </div>
 
 <style>
-  .zoomable {
+  .viewport {
     position: absolute;
     display: flexbox;
     overflow: hidden;
   }
-
-  /* .target {
-    background-color: chartreuse;
-  } */
 </style>

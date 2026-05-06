@@ -12,7 +12,7 @@ import {
 
 
 import type { IActivityContext, ICommands } from "$idah/context/activity-context";
-import type Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
+import type Video from "$lib/plugin/video-annotation-activity/components/Viewport/_Video.svelte";
 
 // Mode-related shortcut context
 type KeyMapContext = {

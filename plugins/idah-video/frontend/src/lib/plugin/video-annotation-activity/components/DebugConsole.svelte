@@ -28,11 +28,22 @@
 {#if visible}
   <div class="debug-console">
     <button class="debug-close" onclick={() => (visible = false)}>✕</button>
-    <pre class="debug-content">viewport.timeline.range {viewport.timeline.range.startRange.toFixed(1)} → {viewport.timeline.range.endRange.toFixed(1)}
-viewport.currentFrame  {viewport.currentFrame.value}
-currentFrame (legacy)  {$currentFrame}
-totalFrames            {$totalFrames}
-isVideoPlaying         {$isVideoPlaying}
+    <pre class="debug-content"><span class="section">── TIMELINE ──</span>
+range      {viewport.timeline.range.startRange.toFixed(1)} → {viewport.timeline.range.endRange.toFixed(1)}
+dimensions {viewport.timeline.dimensions[0]} × {viewport.timeline.dimensions[1]} px
+
+<span class="section">── WORKSPACE ──</span>
+dimensions {viewport.workspace.dimensions[0]} × {viewport.workspace.dimensions[1]} px
+transform  translate({viewport.workspace.transform.translate[0].toFixed(1)}, {viewport.workspace.transform.translate[1].toFixed(1)}) rotate({viewport.workspace.transform.rotate}) scale({viewport.workspace.transform.scale.toFixed(2)})
+
+<span class="section">── VIDEO ──</span>
+frame      {viewport.video.currentFrame.value}
+status     {viewport.video.status}
+
+<span class="section">── STORE (legacy) ──</span>
+current    {$currentFrame}
+total      {$totalFrames}
+playing    {$isVideoPlaying}
 </pre>
   </div>
 {/if}
@@ -79,5 +90,16 @@ isVideoPlaying         {$isVideoPlaying}
   .debug-content {
     margin: 0;
     padding: 0;
+  }
+
+  .debug-content .section {
+    color: #4fc3f7;
+    font-weight: bold;
+    display: block;
+    margin-top: 4px;
+  }
+
+  .debug-content .section:first-child {
+    margin-top: 0;
   }
 </style>

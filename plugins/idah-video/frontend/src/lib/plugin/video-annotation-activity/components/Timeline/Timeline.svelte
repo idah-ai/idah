@@ -19,6 +19,7 @@
     oncontainerWidthChange?: (width: number) => void;
     onViewportChange?: (viewport: Viewport, zoomLevel: number) => void;
     onselectionchange?: (offset: number, length: number) => void;
+    onDimensionsChange?: (width: number, height: number) => void;
   }
 
   let {
@@ -34,6 +35,7 @@
     oncontainerWidthChange,
     onViewportChange,
     onselectionchange,
+    onDimensionsChange,
 
     TrackInfoHeaderSlot,
     TrackInfoSlot,
@@ -46,17 +48,32 @@
   // Derive selectionOffset from currentFrame
   const selectionOffset = $derived(currentFrame);
 
-  // Emit containerWidth changes to parent
+  // Bind to actual container pixel width
+  let containerWidth = $state(0);
+
+  // Scale: pixels per one unit of the timeline
+  // The viewport range always fills the whole container
+  const viewportRange = $derived(viewport.endRange - viewport.startRange);
+  const scale = $derived(containerWidth > 0 ? containerWidth / viewportRange : 1);
+
+  // Total content pixel width
+  const contentWidth = $derived(length * scale);
+
+  // Derive zoom level from viewport range
+  const zoomLevel = $derived(length / viewportRange);
+
+  // Notify parent of layout changes only when container dimensions actually change
+  // (separate from viewport-change to avoid cascading parent re-renders on every zoom event)
   $effect(() => {
     if (oncontainerWidthChange && containerWidth > 0) {
       oncontainerWidthChange(containerWidth);
     }
+    if (onDimensionsChange && containerWidth > 0 && remainingHeight > 0) {
+      onDimensionsChange(containerWidth, remainingHeight);
+    }
   });
 
-  // Derive zoom level from viewport range
-  const zoomLevel = $derived(length / (viewport.endRange - viewport.startRange));
-
-  // Notify parent of viewport changes (including zoom level)
+  // Notify parent of viewport changes (zoom/pan) — a no-op in practice since no callback is bound
   $effect(() => {
     if (onViewportChange) {
       onViewportChange({ startRange: viewport.startRange, endRange: viewport.endRange }, zoomLevel);
@@ -72,49 +89,34 @@
     return frame * scale;
   }
 
-  // Clamp viewport to valid bounds whenever it changes from any source.
-  // Preserves range width when only translating; shrinks to [0, length] if range exceeds length.
-  $effect(() => {
-    const rangeWidth = viewport.endRange - viewport.startRange;
-    if (rangeWidth <= 0) return;
-
-    let newStart = viewport.startRange;
-    let newEnd = viewport.endRange;
-
-    if (rangeWidth >= length) {
-      // Range wider than (or equal to) the entire content — show everything
-      newStart = 0;
-      newEnd = length;
-    } else if (newStart < 0) {
-      // Slide right to the start, keep width
-      newStart = 0;
-      newEnd = rangeWidth;
-    } else if (newEnd > length) {
-      // Slide left to the end, keep width
-      newEnd = length;
-      newStart = length - rangeWidth;
+  // Inline clamp helper — call at every mutation site instead of relying on an $effect
+  // that writes to the same bindable state it depends on (which creates reactivity cycles).
+  function clampViewport() {
+    const sw = viewport.endRange - viewport.startRange;
+    if (sw <= 0) return;
+    let clamped = false;
+    let ns = viewport.startRange;
+    let ne = viewport.endRange;
+    if (sw >= length) {
+      ns = 0; ne = length; clamped = true;
+    } else if (ns < 0) {
+      ns = 0; ne = sw; clamped = true;
+    } else if (ne > length) {
+      ne = length; ns = length - sw; clamped = true;
     }
+    if (clamped) {
+      viewport.startRange = ns;
+      viewport.endRange = ne;
+    }
+  }
 
-    if (newStart !== viewport.startRange) viewport.startRange = newStart;
-    if (newEnd !== viewport.endRange) viewport.endRange = newEnd;
-  });
-
-  // Bind to actual container pixel width
-  let containerWidth = $state(0);
-
-  // Scale: pixels per one unit of the timeline
-  // The viewport range always fills the whole container
-  const viewportRange = $derived(viewport.endRange - viewport.startRange);
-  const scale = $derived(containerWidth > 0 ? containerWidth / viewportRange : 1);
-
-  // Total content pixel width
-  const contentWidth = $derived(length * scale);
-
-  // Caret state (snapped to frame grid — shows where a click would land)
+  // Caret state
+  // The frame under the cursor is stored directly (not derived from scale) so that
+  // it stays frozen during zoom — only updated on actual mouse move.
   let showCaret = $state(false);
-  let caretFrame = $state(0);
-  let caretPixelX = $state(0);
-  let lastMouseX = $state(0);
+  let hoveredFrame = $state(0);
+  const caretFrame = $derived(hoveredFrame);
+  const caretPixelX = $derived(hoveredFrame * scale);
 
   let rulerViewportEl = $state<HTMLDivElement | null>(null);
   let tracksViewportEl = $state<HTMLDivElement | null>(null);
@@ -124,43 +126,35 @@
   // Using a Set so ruler, tracks and hscrollbar can all be pending simultaneously.
   const pendingProgrammatic = new Set<"ruler" | "tracks" | "hscrollbar">();
 
-  // Sync scrollLeft whenever viewport.startRange or scale changes (e.g. from zoom)
-  $effect(() => {
-    const targetScrollLeft = viewport.startRange * scale;
-
-    if (rulerViewportEl && Math.abs(rulerViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
+  // Set scrollLeft on all viewport elements (except the one that triggered the event).
+  // Both syncScrollLeft and setScrollLeft are called synchronously at mutation sites
+  // instead of relying on a reactive $effect (which would fire on every zoom event
+  // and thrash layout by setting 3× scrollLeft per wheel tick).
+  function setScrollLeft(targetScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar" | null = null) {
+    if (skip !== "ruler" && rulerViewportEl && Math.abs(rulerViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("ruler");
       rulerViewportEl.scrollLeft = targetScrollLeft;
     }
-    if (tracksViewportEl && Math.abs(tracksViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
+    if (skip !== "tracks" && tracksViewportEl && Math.abs(tracksViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("tracks");
       tracksViewportEl.scrollLeft = targetScrollLeft;
     }
-    if (hScrollbarEl && Math.abs(hScrollbarEl.scrollLeft - targetScrollLeft) > 0.5) {
+    if (skip !== "hscrollbar" && hScrollbarEl && Math.abs(hScrollbarEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("hscrollbar");
       hScrollbarEl.scrollLeft = targetScrollLeft;
     }
-  });
+  }
 
   function syncScrollLeft(newScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar") {
-    if (skip !== "ruler" && rulerViewportEl && rulerViewportEl.scrollLeft !== newScrollLeft) {
-      pendingProgrammatic.add("ruler");
-      rulerViewportEl.scrollLeft = newScrollLeft;
-    }
-    if (skip !== "tracks" && tracksViewportEl && tracksViewportEl.scrollLeft !== newScrollLeft) {
-      pendingProgrammatic.add("tracks");
-      tracksViewportEl.scrollLeft = newScrollLeft;
-    }
-    if (skip !== "hscrollbar" && hScrollbarEl && hScrollbarEl.scrollLeft !== newScrollLeft) {
-      pendingProgrammatic.add("hscrollbar");
-      hScrollbarEl.scrollLeft = newScrollLeft;
-    }
-
     const rangeWidth = viewport.endRange - viewport.startRange;
     // Clamp startRange so the viewport stays within [0, length] without changing rangeWidth
     const clampedStartRange = Math.max(0, Math.min(newScrollLeft / scale, length - rangeWidth));
     viewport.startRange = clampedStartRange;
     viewport.endRange = clampedStartRange + rangeWidth;
+
+    clampViewport();
+
+    setScrollLeft(viewport.startRange * scale, skip);
   }
 
   function handleRulerScroll() {
@@ -260,6 +254,11 @@
     // Update viewport values
     viewport.startRange = newStartRange;
     viewport.endRange = newEndRange;
+
+    clampViewport();
+
+    // Sync scrollLeft synchronously in the wheel handler instead of waiting for a reactive effect
+    setScrollLeft(viewport.startRange * scale);
   }
 
   // Compute content-space x from a mouse event relative to a given scrollable element
@@ -268,39 +267,26 @@
     return e.clientX - rect.left + el.scrollLeft;
   }
 
-  // Shared: snap mouse to frame grid (same logic as applyClickSelect)
-  function updateHoverCaret(mouseXInContent: number) {
-    caretFrame = mouseXToFrame(mouseXInContent);
-    caretPixelX = frameToPixelX(caretFrame);
-    showCaret = true;
-  }
-
   // Handle mouse move for caret (works for both ruler and tracks viewport)
+  // The frame is computed eagerly and stored so it stays fixed during zoom.
   function handleMouseMove(e: MouseEvent) {
     const el = tracksViewportEl ?? rulerViewportEl;
     if (!el || scale <= 0) return;
-    const mouseXInContent = contentXFromEvent(e, el);
-    lastMouseX = mouseXInContent;
-    updateHoverCaret(mouseXInContent);
+    const mouseX = contentXFromEvent(e, el);
+    hoveredFrame = Math.floor(mouseX / scale);
+    showCaret = true;
   }
 
   function handleRulerMouseMove(e: MouseEvent) {
     if (!rulerViewportEl || scale <= 0) return;
-    const mouseXInContent = contentXFromEvent(e, rulerViewportEl);
-    lastMouseX = mouseXInContent;
-    updateHoverCaret(mouseXInContent);
+    const mouseX = contentXFromEvent(e, rulerViewportEl);
+    hoveredFrame = Math.floor(mouseX / scale);
+    showCaret = true;
   }
 
   function handleMouseLeave() {
     showCaret = false;
   }
-
-  // Update hover caret when scale changes (e.g., during zoom)
-  $effect(() => {
-    if (showCaret && lastMouseX > 0) {
-      updateHoverCaret(lastMouseX);
-    }
-  });
 
   // Common click-to-select logic
   function applyClickSelect(mouseXInContent: number) {

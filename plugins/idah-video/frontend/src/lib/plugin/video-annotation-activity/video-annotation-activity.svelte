@@ -68,13 +68,13 @@
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import PropertySelector from "$lib/plugin/video-annotation-activity/components/PropertySelector/PropertySelector.svelte";
   import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
-  import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
+  import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/components/Viewport/_SvgOverlay.svelte";
   import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_AnnotationTrackInfo.svelte";
   import TrackInfoHeader from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_TrackInfoHeader.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/components/Timeline/Timeline.svelte";
   import TimelineZoom from "$lib/plugin/video-annotation-activity/components/Timeline/TimelineZoom.svelte";
-  import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
-  import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
+  import VideoController from "$lib/plugin/video-annotation-activity/components/Viewport/_VideoController.svelte";
+  import Video from "$lib/plugin/video-annotation-activity/components/Viewport/_Video.svelte";
 
   import {
     type Point,
@@ -705,13 +705,12 @@
   }
 
   function applyZoom(newZoom: number) {
-    // Keep the center of current viewport when zooming
-    // TODO: Need to calculate from the hovered / selection caret instead of the center of viewport
-    const centerOfViewport = (viewport.timeline.range.startRange + viewport.timeline.range.endRange) / 2;
+    // Keep the current frame (caret/selection) fixed when zooming
+    const frame = viewport.video.currentFrame.value;
     const newRange = length / newZoom;
 
-    let newStart = centerOfViewport - newRange / 2;
-    let newEnd = centerOfViewport + newRange / 2;
+    let newStart = frame - (frame - viewport.timeline.range.startRange) * (newRange / (viewport.timeline.range.endRange - viewport.timeline.range.startRange));
+    let newEnd = newStart + newRange;
 
     // Clamp within [0, length]
     if (newStart < 0) {
@@ -921,8 +920,11 @@
               remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
               rulerSmallStep={effectiveRulerMinorStep}
               rulerBigStep={effectiveRulerMajorStep}
-              bind:currentFrame={viewport.currentFrame.value}
+              bind:currentFrame={viewport.video.currentFrame.value}
               oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
+              onDimensionsChange={(w, h) => {
+                viewport.timeline.dimensions = [w, h];
+              }}
             >
               {#snippet TrackInfoHeaderSlot()}
                 <TrackInfoHeader annotations={annotationsIDB?.annotations ?? []} />

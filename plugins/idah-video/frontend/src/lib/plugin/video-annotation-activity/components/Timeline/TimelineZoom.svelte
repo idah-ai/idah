@@ -25,14 +25,33 @@
   // Constants
   const ZOOM_STEP = 0.1;
 
-  // Functions
+  // Local slider state — decoupled from the prop to prevent
+  // two-way binding cycles (prop update → slider update → onValueChange → applyZoom → prop update).
+  // Synced from the prop only when it changes externally (e.g., wheel zoom from the timeline).
+  let localZoom = $state(displayZoomLevel);
+
+  $effect(() => {
+    if (Math.abs(localZoom - displayZoomLevel) > 0.001) {
+      localZoom = displayZoomLevel;
+    }
+  });
+
+  function handleSliderChange(value: number) {
+    localZoom = value;
+    if (Math.abs(value - displayZoomLevel) > 0.001) {
+      applyZoom(value);
+    }
+  }
+
   function zoomOut() {
-    const newZoom = Math.max(Math.round((displayZoomLevel - ZOOM_STEP) * 10) / 10, zoomMin);
+    const newZoom = Math.max(Math.round((localZoom - ZOOM_STEP) * 10) / 10, zoomMin);
+    localZoom = newZoom;
     applyZoom(newZoom);
   }
 
   function zoomIn() {
-    const newZoom = Math.min(Math.round((displayZoomLevel + ZOOM_STEP) * 10) / 10, zoomMax);
+    const newZoom = Math.min(Math.round((localZoom + ZOOM_STEP) * 10) / 10, zoomMax);
+    localZoom = newZoom;
     applyZoom(newZoom);
   }
 </script>
@@ -49,7 +68,7 @@
     {/snippet}
   </ToolTooltip>
 
-  <Slider type="single" class="w-40" min={zoomMin} max={zoomMax} step={0.1} value={displayZoomLevel} onValueChange={applyZoom} />
+  <Slider type="single" class="w-40" min={zoomMin} max={zoomMax} step={0.1} value={localZoom} onValueChange={handleSliderChange} />
 
   <ToolTooltip label="Zoom In" shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"].keyCombinations)}>
     {#snippet trigger()}

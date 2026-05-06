@@ -21,6 +21,9 @@
   const marks = $derived.by(() => {
     const result: Array<{ position: number; value: number; isBig: boolean }> = [];
 
+    // Cap total marks to prevent DOM explosion at extreme zoom-out
+    const MAX_MARKS = 200;
+
     // If both steps are 0, no marks to generate
     if (smallStep === 0 && bigStep === 0) {
       return result;
@@ -28,15 +31,19 @@
 
     const { startRange, endRange } = viewport;
 
-    // If smallStep is 0, only generate big marks (at bigStep intervals)
-    if (smallStep === 0) {
+    // Compute effective step, promoting to bigStep only if smallStep would overflow the cap
+    const estimatedCount = smallStep > 0 ? (endRange - startRange) / smallStep : 0;
+    const useSmallStep = smallStep > 0 && bigStep > 0 && estimatedCount <= MAX_MARKS;
+
+    if (!useSmallStep && bigStep > 0) {
+      // Only big marks
       const firstMark = Math.ceil(startRange / bigStep) * bigStep;
       for (let value = firstMark; value <= endRange; value += bigStep) {
         const position = (value - viewport.startRange) * scale;
         result.push({ position, value, isBig: true });
       }
-    } else {
-      // Normal case: generate all marks
+    } else if (smallStep > 0) {
+      // Small + big marks (bigStep + smallStep composite)
       const firstMark = Math.ceil(startRange / smallStep) * smallStep;
       for (let value = firstMark; value <= endRange; value += smallStep) {
         const position = (value - viewport.startRange) * scale;
