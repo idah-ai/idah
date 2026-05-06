@@ -9,7 +9,7 @@
   import { deselectAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { Menus } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.types";
+  import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props

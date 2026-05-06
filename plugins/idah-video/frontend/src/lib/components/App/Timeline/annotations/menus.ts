@@ -1,7 +1,7 @@
 import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
 import type { IActivityContext } from "$idah/context/activity-context";
-import type { Menus } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.types";
+import type { Menus } from "$lib/components/App/ContextMenu/types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
 
 export function getGroupContextMenus(props: { context: IActivityContext; track: TrackData }): Menus {

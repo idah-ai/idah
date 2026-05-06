@@ -5,9 +5,9 @@
 
   import BoundingBox, {
     type ToolSelection,
-  } from "$lib/plugin/video-annotation-activity/shape/bounding-box/bounding-box.svelte";
-  import Polygon from "$lib/plugin/video-annotation-activity/shape/polygon/polygon.svelte";
-  import Viewport from "./viewport.svelte";
+  } from "$lib/components/App/Viewport/Shapes/BoundingBox/BoundingBox.svelte";
+  import Polygon from "$lib/components/App/Viewport/Shapes/Polygon/Polygon.svelte";
+  import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
 
   import {
     DEFAULT_MODE,

@@ -67,14 +67,14 @@
   import AnnotationSidebar from "$lib/components/Layout/Sidebar/AnnotationSidebar.svelte";
   import PropertiesSidebar from "$lib/components/Layout/Sidebar/PropertiesSidebar.svelte";
   import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
-  import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
-  import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/components/Viewport/_SvgOverlay.svelte";
+  import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
+  import SvgOverlay, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/SvgOverlay.svelte";
   import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
   import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
   import Timeline from "$lib/components/App/Timeline/Timeline.svelte";
   import TimelineZoom from "$lib/components/App/Timeline/TimelineZoom.svelte";
-  import VideoController from "$lib/plugin/video-annotation-activity/components/Viewport/_VideoController.svelte";
-  import Video from "$lib/plugin/video-annotation-activity/components/Viewport/_Video.svelte";
+  import VideoController from "$lib/components/App/Viewport/VideoController.svelte";
+  import Video from "$lib/components/App/Viewport/Video.svelte";
 
   import {
     type Point,

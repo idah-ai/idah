@@ -4,7 +4,7 @@
   import {
     contextMenuState,
     hideContextMenu,
-  } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
+  } from "$lib/components/App/ContextMenu/store";
 
   // Variables
   let { visible, component: ContextMenuComponent, props } = $derived($contextMenuState);

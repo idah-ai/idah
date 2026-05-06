@@ -27,7 +27,7 @@
   import { getShortcut } from "$lib/components/ui/Kbd/utils";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
-  import Video from "./_Video.svelte";
+  import Video from "./Video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
   import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";

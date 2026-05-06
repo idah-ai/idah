@@ -3,7 +3,7 @@ import {
   distance,
   midpoint,
   projectPointOnSegment,
-} from "$lib/plugin/video-annotation-activity/shape/geometry-utils";
+} from "$lib/components/App/Viewport/Shapes/geometry-utils";
 
 import {
   type InterpolatedVertex,

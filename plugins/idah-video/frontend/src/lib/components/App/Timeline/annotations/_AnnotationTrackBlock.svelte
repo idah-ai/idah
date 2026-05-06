@@ -7,7 +7,7 @@
     showContextMenu,
     type ContextMenuComponent,
     type ContextMenuComponentProps,
-  } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
+  } from "$lib/components/App/ContextMenu/store";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
   import type { IActivityContext } from "$idah/context/activity-context";

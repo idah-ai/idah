@@ -7,7 +7,7 @@
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { ContextMenuComponentProps } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
+  import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
   // Contexts

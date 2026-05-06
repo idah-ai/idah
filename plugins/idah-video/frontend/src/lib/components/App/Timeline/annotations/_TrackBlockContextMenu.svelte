@@ -6,8 +6,8 @@
   import Separator from "$lib/components/ui/Separator/Separator.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { ContextMenuComponentProps } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
-  import type { Menus } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.types";
+  import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
+  import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
   // Props

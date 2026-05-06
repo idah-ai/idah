@@ -9,7 +9,7 @@
     showContextMenu,
     type ContextMenuComponent,
     type ContextMenuComponentProps,
-  } from "$lib/plugin/video-annotation-activity/context-menu/context-menu.store";
+  } from "$lib/components/App/ContextMenu/store";
   import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
