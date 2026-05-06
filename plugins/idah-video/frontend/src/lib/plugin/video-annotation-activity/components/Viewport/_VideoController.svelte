@@ -13,9 +13,9 @@
   } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
-  import NumberField from "$lib/components/app/forms/fields/input/number-field.svelte";
-  import ToolTooltip from "$lib/components/app/tooltips/tool-tooltip.svelte";
-  import Button from "$lib/components/ui/button/button.svelte";
+  import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
+  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import Button from "$lib/components/ui/Button/Button.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,10 +23,10 @@
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
-  } from "$lib/components/ui/dropdown-menu";
-  import { getShortcut } from "$lib/components/ui/kbd/utils";
-  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
-  import Slider from "$lib/components/ui/slider/slider.svelte";
+  } from "$lib/components/ui/DropdownMenu";
+  import { getShortcut } from "$lib/components/ui/Kbd/utils";
+  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
+  import Slider from "$lib/components/ui/Slider/Slider.svelte";
   import Video from "./_Video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";

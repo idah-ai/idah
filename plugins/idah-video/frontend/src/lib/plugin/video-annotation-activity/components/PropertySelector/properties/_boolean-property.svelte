@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Label } from "$lib/components/ui/label";
-  import { Switch } from "$lib/components/ui/switch";
+  import { Label } from "$lib/components/ui/Label";
+  import { Switch } from "$lib/components/ui/Switch";
 
   import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
 

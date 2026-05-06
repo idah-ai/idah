@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Label from "$lib/components/ui/label/label.svelte";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
+  import Label from "$lib/components/ui/Label/Label.svelte";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
 
   import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
 

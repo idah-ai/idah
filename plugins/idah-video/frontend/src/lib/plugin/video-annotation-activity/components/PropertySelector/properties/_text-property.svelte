@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Input from "$lib/components/ui/input/input.svelte";
-  import Label from "$lib/components/ui/label/label.svelte";
+  import Input from "$lib/components/ui/Input/Input.svelte";
+  import Label from "$lib/components/ui/Label/Label.svelte";
 
   import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
 

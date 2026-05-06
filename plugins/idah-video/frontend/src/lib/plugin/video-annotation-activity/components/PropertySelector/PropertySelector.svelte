@@ -1,13 +1,15 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/select";
-  import SelectGroup from "$lib/components/ui/select/select-group.svelte";
-  import { Separator } from "$lib/components/ui/separator";
-  import Text from "$lib/components/ui/text/Text.svelte";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
+  import SelectGroup from "$lib/components/ui/Select/SelectGroup.svelte";
+  import { Separator } from "$lib/components/ui/Separator";
+  import Text from "$lib/components/ui/Text/Text.svelte";
 
-  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
-  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
+  import Icon from "$lib/components/ui/Icon";
+
+  import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
+  import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
   import BooleanProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_boolean-property.svelte";
   import IntegerProperty from "$lib/plugin/video-annotation-activity/components/PropertySelector/properties/_integer-property.svelte";
@@ -21,7 +23,7 @@
 
   import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
   import type { AnnotationValue } from "$idah/context/annotation-context";
-  import Badge from "$lib/components/ui/badge/badge.svelte";
+  import Badge from "$lib/components/ui/Badge/Badge.svelte";
 
   type Props = {
     selectedCategory: string;
@@ -151,9 +153,9 @@
                 <div class="flex items-center justify-start gap-1">
                   <!-- TO FIX: firstAnnotationInGroup does not have value -->
                   {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_POLYGON}
-                    <PolygonCircleIcon color={category.color} />
+                    <Icon src={polygonIconSvg} color={category.color} />
                   {:else}
-                    <VectorSquareIcon color={category.color} />
+                    <Icon src={vectorSquareIconSvg} color={category.color} />
                   {/if}
                   <b>{category.label}</b>
                 </div>
@@ -173,9 +175,9 @@
                 >
                   <!-- TO FIX: firstAnnotationInGroup does not have value -->
                   {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_POLYGON}
-                    <PolygonCircleIcon {color} />
+                    <Icon src={polygonIconSvg} {color} />
                   {:else}
-                    <VectorSquareIcon {color} />
+                    <Icon src={vectorSquareIconSvg} {color} />
                   {/if}
                   {valueLabel}
                 </SelectItem>
@@ -237,9 +239,9 @@
               {/if}
               <div class="flex items-center justify-start gap-1">
                 {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-                  <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
+                  <Icon src={vectorSquareIconSvg} color={foundAnnotationInGroupCategory.color} />
                 {:else}
-                  <PolygonCircleIcon color={foundAnnotationInGroupCategory.color} />
+                  <Icon src={polygonIconSvg} color={foundAnnotationInGroupCategory.color} />
                 {/if}
                 <b>{foundAnnotationInGroupCategory.label}</b>
               </div>
@@ -260,9 +262,9 @@
                 disabled={firstAnnotationInGroupCategory == value}
               >
                 {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-                  <VectorSquareIcon {color} />
+                  <Icon src={vectorSquareIconSvg} {color} />
                 {:else}
-                  <PolygonCircleIcon {color} />
+                  <Icon src={polygonIconSvg} {color} />
                 {/if}
                 {valueLabel}
               </SelectItem>

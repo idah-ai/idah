@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { uuidv7 } from "uuidv7";
 
-import { showToast } from "$lib/components/ui/toast/index.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 import {
   DEFAULT_MODE,
   ENTRY_ROOT,

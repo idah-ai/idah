@@ -1,5 +1,5 @@
 import { errorClasses } from "$lib/utils/error/error.classes";
-import { showToast } from "$lib/components/ui/toast/index.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 import type { JsonApiErrorResponse } from "$idah/data/types";
 import type { ErrorClassDetail } from "$lib/utils/error/error.classes.types";

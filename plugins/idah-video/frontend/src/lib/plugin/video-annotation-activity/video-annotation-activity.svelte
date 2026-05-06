@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, setContext } from "svelte";
 
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from "$lib/components/ui/Button";
   import {
     CommandDialog,
     CommandEmpty,
@@ -11,10 +11,10 @@
     CommandList,
     CommandSeparator,
     CommandShortcut,
-  } from "$lib/components/ui/command";
-  import { getShortcuts } from "$lib/components/ui/kbd/utils";
-  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
-  import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/resizable";
+  } from "$lib/components/ui/Command";
+  import { getShortcuts } from "$lib/components/ui/Kbd/utils";
+  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
+  import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
 
@@ -62,17 +62,17 @@
     transformAnnotationsToTracks,
   } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
-  import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
-  import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
-  import AnnotationSidebar from "$lib/plugin/layout/sidebar/annotation-sidebar.svelte";
-  import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
+  import AnnotationFooterToolbar from "$lib/components/Layout/Footer/AnnotationFooterToolbar.svelte";
+  import AnnotationFooter from "$lib/components/Layout/Footer/AnnotationFooter.svelte";
+  import AnnotationSidebar from "$lib/components/Layout/Sidebar/AnnotationSidebar.svelte";
+  import PropertiesSidebar from "$lib/components/Layout/Sidebar/PropertiesSidebar.svelte";
   import PropertySelector from "$lib/plugin/video-annotation-activity/components/PropertySelector/PropertySelector.svelte";
   import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/components/Viewport/_SvgOverlay.svelte";
-  import AnnotationTrackInfo from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_AnnotationTrackInfo.svelte";
-  import TrackInfoHeader from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_TrackInfoHeader.svelte";
-  import Timeline from "$lib/plugin/video-annotation-activity/components/Timeline/Timeline.svelte";
-  import TimelineZoom from "$lib/plugin/video-annotation-activity/components/Timeline/TimelineZoom.svelte";
+  import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
+  import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
+  import Timeline from "$lib/components/App/Timeline/Timeline.svelte";
+  import TimelineZoom from "$lib/components/App/Timeline/TimelineZoom.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/components/Viewport/_VideoController.svelte";
   import Video from "$lib/plugin/video-annotation-activity/components/Viewport/_Video.svelte";
 

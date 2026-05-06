@@ -1,14 +1,14 @@
 import { SvelteMap } from "svelte/reactivity";
 
-import AnnotationTrackBlock from "$lib/plugin/video-annotation-activity/components/Timeline/annotations/_AnnotationTrackBlock.svelte";
+import AnnotationTrackBlock from "$lib/components/App/Timeline/annotations/_AnnotationTrackBlock.svelte";
 
-import { TRACK_HEIGHT } from "$lib/plugin/video-annotation-activity/components/Timeline/constants";
+import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
 import type { IConfig } from "$idah/context/activity-context";
 import type { AnnotationGroup } from "$idah/context/annotation-context";
 import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-import type { TrackData } from "$lib/plugin/video-annotation-activity/components/Timeline/types";
+import type { TrackData } from "$lib/components/App/Timeline/types";
 
 export function groupAnnotations(annotations: VideoAnnotationObject[]): AnnotationGroup<VideoAnnotationObject>[] {
   const map = new SvelteMap<string, VideoAnnotationObject[]>();
