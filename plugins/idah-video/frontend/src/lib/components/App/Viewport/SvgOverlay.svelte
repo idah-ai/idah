@@ -82,16 +82,6 @@
   // Contexts
   let context = getContext<IActivityContext>("context");
 
-  // Variables
-  interface ZoomInfo {
-    scale: number;
-    offset: Point;
-  }
-  let zoomInfo: ZoomInfo = $state({
-    scale: 1,
-    offset: [0, 0],
-  });
-
   let svgEl: SVGSVGElement | undefined = $state();
 
   // Derive viewport annotations from the global store
@@ -115,14 +105,6 @@
     })) as VideoAnnotationObject[];
   });
 
-  // Sync transform to viewport on zoom change
-  function syncTransform(s: number, o: Point) {
-    zoomInfo = { scale: s, offset: o };
-    viewport.workspace.transform.scale = s;
-    viewport.workspace.transform.translate[0] = o[0];
-    viewport.workspace.transform.translate[1] = o[1];
-  }
-
   // Sync dimensions using ResizeObserver (no $effect)
   function syncDimensions() {
     if (!svgEl) return;
@@ -141,7 +123,7 @@
   let points: Point[] | undefined = $state();
   let angle: number | undefined = $state();
 
-  // Reste shape when we are not editing
+  // Reset shape when we are not editing
   $effect(() => {
     if (!$selectedAnnotation) {
       current_shape = undefined;
@@ -152,13 +134,10 @@
   let cursor = $derived(mouse);
   let target: Point = $derived([cursor[X] * target_size[X], cursor[Y] * target_size[Y]]);
 
+  // Crosshair lines in scene (un-transformed) space
   let target_line: Point = $derived.by(() => {
-    let tl: Point = [0, 0];
-
-    tl[X] = (mouse[X] - zoomInfo.offset[X]) / zoomInfo.scale;
-    tl[Y] = (mouse[Y] - zoomInfo.offset[Y]) / zoomInfo.scale;
-
-    return tl;
+    const sv = viewport.workspace.screenToScene(mouse[X], mouse[Y]);
+    return [sv.x, sv.y] as Point;
   });
 
   let cursor_downscaled: Point = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]);
@@ -221,7 +200,10 @@
           start: frame,
           end: frame,
           target_size,
-          zoom_info: zoomInfo,
+          zoom_info: {
+            scale: viewport.workspace.transform.scale,
+            offset: viewport.workspace.transform.translate,
+          },
         },
         annotationId: annotation?.metadata.id || null,
       });
@@ -247,8 +229,10 @@
        * 3. Make the viewport at the same position from reviewer fow now
        * and will centered on the note feed later
        */
-      const noteFeedZoomScale = (noteFeed.position.zoom_info as ZoomInfo)?.scale || 1;
-      const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [0, 0];
+      const noteFeedZoomScale = ((noteFeed.position.zoom_info as { scale: number; offset: Point })
+        ?.scale) || 1;
+      const noteFeedOffset = ((noteFeed.position.zoom_info as { scale: number; offset: Point })
+        ?.offset) || [0, 0];
       zoomableElement.setZoom(noteFeedZoomScale);
       zoomableElement.setOffset(noteFeedOffset);
 
@@ -278,6 +262,7 @@
 
   let isEditing = $state(false);
   let editionCursor: string | undefined = $state(undefined);
+  let isPanning = $state(false);
 
   // Reset editionCursor when switching to visual mode without selection
   $effect(() => {
@@ -290,6 +275,7 @@
     if ($currentMode == IDAH_NOTE) return "cursor-note";
     if (editionCursor) return editionCursor;
     if ($selectedAnnotation) return "cursor-pointer";
+    if (isPanning) return "cursor-grabbing";
     return "cursor-grab";
   });
 
@@ -339,7 +325,11 @@
 
 <div class={cn("svg-overlay flex-1", pointer)}>
   <div>
-    <Viewport bind:this={zoomableElement} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
+    <Viewport
+      bind:this={zoomableElement}
+      onPanStart={() => (isPanning = true)}
+      onPanStop={() => (isPanning = false)}
+    >
       {@render children?.()}
     </Viewport>
   </div>

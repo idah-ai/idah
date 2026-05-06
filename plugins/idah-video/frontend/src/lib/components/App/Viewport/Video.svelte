@@ -209,6 +209,11 @@
 </script>
 
 <div class="video-wrapper" bind:this={element}>
+  <!-- Red placeholder div: visible when video hasn't loaded -->
+  <div class="video-placeholder">
+    <span class="placeholder-label">Video Preview</span>
+  </div>
+
   <video bind:this={videoElement}>
     <track kind="captions" />
     Your browser does not support the video tag.
@@ -227,11 +232,38 @@
   video {
     width: 100%;
     max-width: 100%;
+    position: relative;
+    z-index: 1;
   }
 
   .video-wrapper {
     position: relative;
     width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #cc3333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .video-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 0;
+  }
+
+  .placeholder-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
   .loader-overlay {

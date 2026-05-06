@@ -14,7 +14,7 @@
     scale,
     smallStep = 10,
     bigStep = 50,
-    labelFormatter = (value: number) => String(Math.floor(value)),
+    labelFormatter = (value: number) => String(Math.floor(value) + 1),
   }: Props = $props();
 
   // Generate all marks (small and big) within the viewport range
