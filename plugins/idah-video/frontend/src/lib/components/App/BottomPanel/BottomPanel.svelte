@@ -1,0 +1,122 @@
+<script lang="ts">
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { transformAnnotationsToTracks } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+
+  import TimelinePanel from "$lib/components/App/BottomPanel/_TimelinePanel.svelte";
+  import TimelineToolbar from "$lib/components/App/BottomPanel/_TimelineToolbar.svelte";
+  import Timeline from "$lib/components/App/Timeline/Timeline.svelte";
+  import TimelineZoom from "$lib/components/App/Timeline/TimelineZoom.svelte";
+  import VideoController from "$lib/components/App/Viewport/VideoController.svelte";
+  import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
+  import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
+
+  import type { IActivityContext } from "$idah/context/activity-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type Video from "$lib/components/App/Viewport/Video.svelte";
+
+  // Props
+  interface Props {
+    context: IActivityContext;
+    viewportAnnotations: VideoAnnotationObject[];
+    length: number;
+    player: Video | undefined;
+    volume: { level: number; muted: boolean };
+    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
+  }
+  let {
+    context,
+    viewportAnnotations,
+    length,
+    player = $bindable(),
+    volume,
+    onSelectAnnotation,
+  }: Props = $props();
+
+  // Internal state
+  let panelHeight: number = $state(0);
+  let toolbarHeight: number = $state(0);
+  let zoom = $state(85);
+  let viewportContainerWidth = $state<number>(1000);
+  let zoomFn: ((newZoom: number) => void) | undefined = $state();
+
+  // Zoom calculations
+  const zoomMin = 1;
+  const zoomMax = $derived(Math.max(zoomMin, (length * 80) / Math.max(1, viewportContainerWidth)));
+  const zoomLevel = $derived(length / (viewport.timeline.range.endRange - viewport.timeline.range.startRange));
+  const displayZoomLevel = $derived(Math.max(zoomMin, Math.min(zoomMax, zoomLevel)));
+
+  const TARGET_MAJOR_STEP_PX = 80;
+  const TARGET_MINOR_STEP_PX = 20;
+
+  function generateSeriesUpTo(target: number): number[] {
+    const series: number[] = [1];
+    let current = 1;
+    let idx = 1;
+    while (current < target) {
+      idx++;
+      current = series[idx - 2] * (idx % 2 === 0 ? 2 : 5);
+      series.push(current);
+    }
+    return series;
+  }
+
+  function roundToSeries(target: number): number {
+    if (target <= 1) return 1;
+    const series = generateSeriesUpTo(target);
+    let closest = series[0];
+    for (const val of series) {
+      if (val <= target) closest = val;
+    }
+    const nextIdx = series.indexOf(closest) + 1;
+    const nextVal = nextIdx < series.length ? series[nextIdx] : Infinity;
+    return Math.abs(target - closest) <= Math.abs(target - nextVal) ? closest : nextVal;
+  }
+
+  const effectiveRulerMajorStep = $derived.by<number>(() => {
+    if (viewportContainerWidth <= 0) return 50;
+    const target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
+    return Math.max(1, roundToSeries(Math.max(1, target)));
+  });
+
+  const effectiveRulerMinorStep = $derived.by<number>(() => {
+    if (viewportContainerWidth <= 0) return 10;
+    const target = (TARGET_MINOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
+    const rounded = roundToSeries(Math.max(1, target));
+    return rounded === effectiveRulerMajorStep ? 0 : rounded;
+  });
+</script>
+
+<TimelinePanel bind:panelHeight>
+  <TimelineToolbar bind:toolbarHeight>
+    <VideoController {zoom} {volume} bind:video={player} />
+    <TimelineZoom {displayZoomLevel} zoomFn={zoomFn} zoomMin={zoomMin} zoomMax={zoomMax} />
+  </TimelineToolbar>
+
+    {#if viewportAnnotations.length}
+    <Timeline
+      onZoom={(fn) => (zoomFn = fn)}
+      bind:viewport={viewport.timeline.range}
+      items={transformAnnotationsToTracks({
+        annotations: viewportAnnotations,
+        labelConfig: context.config,
+      })}
+      {length}
+      remainingHeight={panelHeight - toolbarHeight}
+      rulerSmallStep={effectiveRulerMinorStep}
+      rulerBigStep={effectiveRulerMajorStep}
+      bind:currentFrame={viewport.video.currentFrame.value}
+      oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
+      onDimensionsChange={(w, h) => {
+        viewport.timeline.dimensions = [w, h];
+      }}
+    >
+      {#snippet TrackInfoHeaderSlot()}
+        <TrackInfoHeader annotations={viewportAnnotations} />
+      {/snippet}
+
+      {#snippet TrackInfoSlot({ track })}
+        <AnnotationTrackInfo {track} onClick={onSelectAnnotation} />
+      {/snippet}
+    </Timeline>
+  {/if}
+</TimelinePanel>

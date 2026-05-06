@@ -107,7 +107,6 @@
   let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
 
   let length = $state(0);
-  let volume = $state({ level: 0, muted: true });
   let tools: {
     name: string;
     label: string;
@@ -177,7 +176,8 @@
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
-    // setAnnotationFrame(1);
+    setCurrentFrame(1);
+    viewport.video.currentFrame.value = 1;
 
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
@@ -786,7 +786,7 @@
                       setAnnotationFrame(currentFrame);
                     }}
                     onVolumeChange={(level: number, muted: boolean) => {
-                      volume = { level, muted };
+                      viewport.video.sound = { level: level, muted };
                     }}
                   />
                 </SvgOverlay>
@@ -812,7 +812,7 @@
           {viewportAnnotations}
           {length}
           bind:player
-          {volume}
+          volume={viewport.video.sound}
           onSelectAnnotation={selectAnnotation}
         />
       </ResizablePane>
