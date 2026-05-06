@@ -24,6 +24,7 @@ export class DatasetRecord extends Record {
   @field() public modality!: string;
   @field() public labeling_configuration!: IConfig;
   @field() public workflow_configuration!: Hash;
+  @field() public workflow_name!: string | null;
   @field() public status!: string;
   @field() public progress!: number;
   @field() public updated_at!: Date;

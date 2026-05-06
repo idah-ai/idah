@@ -75,6 +75,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     id: entry.id,
     type: entry.dataset.modality,
     workflowStep: entry.wf_step,
+    workflowName: entry.dataset.workflow_name,
     status: entry.status,
     config: entry.dataset.labeling_configuration,
     mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),
@@ -116,7 +117,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
         }),
       );
     },
-    submit(opts?: { approved: boolean }) {
+    submit(opts?: { [key: string]: boolean }) {
       return new Promise<void>((res, rej) => {
         entriesBackendDataSource
           .submit(entry.id, opts)

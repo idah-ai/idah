@@ -166,7 +166,10 @@ export interface IActivityContext {
   get type(): string;
 
   // Returns the current workflow step
-  get workflowStep(): "start" | "annotate" | "review" | "done" | "export";
+  get workflowStep(): string;
+
+  // Returns the workflow name of the dataset
+  get workflowName(): string | null;
 
   // Returns the current status of the entry
   get status(): "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
@@ -201,7 +204,8 @@ export interface IActivityContext {
   back(): void;
 
   // Submit to the next step of the workflow
-  submit(opts?: { approved: boolean }): Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  submit(opts?: { [key: string]: any }): Promise<void>;
 
   // Mark this activity as errored
   error(message: string): Promise<void>;

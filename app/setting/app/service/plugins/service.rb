@@ -109,7 +109,6 @@ module Plugins
           return nil unless entry_plugin
 
           is_style = filename.end_with?(".css")
-
           if is_style
             entry_plugin.style
           else
@@ -136,6 +135,7 @@ module Plugins
 
       return unless file_path
 
+      # binding.pry
       File.read(
         File.join(plugin.path, file_path)
       )

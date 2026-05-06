@@ -34,7 +34,7 @@ export const entryPriorities: EntryPriorityBadgeProps[] = [
   },
 ];
 
-export type EntryWorkflowStep = "start" | "annotate" | "review" | "done" | "export";
+export type EntryWorkflowStep = string;
 export type EntryStatus = "pending" | "processing" | "ready" | "assigned" | "in_progress" | "completed" | "errored";
 
 export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
