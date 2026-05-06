@@ -9,6 +9,15 @@
 		class: className,
 		...restProps
 	}: WithoutChildrenOrChild<SliderPrimitive.RootProps> = $props();
+
+	// bits-ui uses bind:value to get a writable reactive ref.
+	// We use an internal state so the thumb updates when the parent's
+	// `value` prop changes (e.g. wheel zoom on the timeline).
+	let internalValue = $state(value);
+
+	$effect(() => {
+		internalValue = value;
+	});
 </script>
 
 <!--
@@ -17,7 +26,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 -->
 <SliderPrimitive.Root
 	bind:ref
-	bind:value={value as never}
+	bind:value={internalValue as never}
 	data-slot="slider"
 	{orientation}
 	class={cn(

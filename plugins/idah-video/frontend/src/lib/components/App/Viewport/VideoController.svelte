@@ -44,10 +44,8 @@
   interface Props {
     video: Video | undefined;
     volume: { level: number; muted: boolean };
-    zoom: number;
-    // onZoomChange: (zoom: number) => void;
   }
-  let { video = $bindable(), volume, zoom }: Props = $props();
+  let { video = $bindable(), volume }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -67,13 +65,10 @@
     { label: "3 X", value: 3 },
     { label: "5 X", value: 5 },
   ];
-  const min = 20;
-  const max = 150;
-
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
   let frameInputValue = $state<number>(viewport.video.currentFrame.value);
-  let sliderValue: number = $derived(max - (zoom - min));
+
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
     if ($selectedAnnotation.locked) return true;

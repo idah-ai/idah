@@ -16,7 +16,6 @@
     toolbar?: Snippet;
     remainingHeight: number;
     currentFrame?: number;
-    oncontainerWidthChange?: (width: number) => void;
     onViewportChange?: (viewport: Viewport, zoomLevel: number) => void;
     onselectionchange?: (offset: number, length: number) => void;
     onDimensionsChange?: (width: number, height: number) => void;
@@ -34,7 +33,6 @@
     toolbar,
     remainingHeight,
     currentFrame = $bindable(0),
-    oncontainerWidthChange,
     onViewportChange,
     onselectionchange,
     onDimensionsChange,
@@ -65,16 +63,6 @@
   // Derive zoom level from viewport range
   const zoomLevel = $derived(length / viewportRange);
 
-  // Called whenever containerWidth actually changes
-  function notifyContainerSize(w: number) {
-    if (oncontainerWidthChange && w > 0) {
-      oncontainerWidthChange(w);
-    }
-    if (onDimensionsChange && w > 0 && remainingHeight > 0) {
-      onDimensionsChange(w, remainingHeight);
-    }
-  }
-
   onMount(() => {
     // Sync containerWidth and notify parent on resize (no $effect)
     function onResize() {
@@ -82,7 +70,9 @@
       const w = tracksViewportEl.clientWidth;
       if (w !== containerWidth) {
         containerWidth = w;
-        notifyContainerSize(w);
+        if (onDimensionsChange && w > 0 && remainingHeight > 0) {
+          onDimensionsChange(w, remainingHeight);
+        }
       }
     }
 
@@ -95,12 +85,13 @@
 
   // Helpers: convert between mouse x (content-space) and frame value
   function applyZoom(newZoom: number) {
-    // Keep the current frame (caret/selection) fixed when zooming
-    const frame = Math.floor(selectionOffset);
     const newRange = length / newZoom;
 
-    let newStart = frame - (frame - viewport.startRange) * (newRange / (viewport.endRange - viewport.startRange));
-    let newEnd = newStart + newRange;
+    // Zoom from the center of the current viewport
+    const center = (viewport.startRange + viewport.endRange) / 2;
+
+    let newStart = center - newRange / 2;
+    let newEnd = center + newRange / 2;
 
     if (newStart < 0) {
       newStart = 0;

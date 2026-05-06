@@ -9,7 +9,7 @@ export type IShortcut = [string | null, string];
 
 export interface IMediaInfo {
   id: string;
-  metadata: Record<string, unknown>;
+  meta: Record<string, unknown>;
 }
 
 // ─── Sync event ───────────────────────────────────────────────────────────

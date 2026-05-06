@@ -8,16 +8,16 @@
   import Button from "$lib/components/ui/Button/Button.svelte";
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
 
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { media } from "$lib/state/media.svelte";
+
   import type { IActivityContext } from "$idah/context/activity-context";
 
   // Props
   interface Props {
-    displayZoomLevel: number;
     zoomFn: ((zoom: number) => void) | undefined;
-    zoomMin: number;
-    zoomMax: number;
   }
-  let { displayZoomLevel, zoomFn, zoomMin, zoomMax }: Props = $props();
+  let { zoomFn }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -25,33 +25,59 @@
   // Constants
   const ZOOM_STEP = 0.1;
 
-  // Local slider state — decoupled from the prop to prevent
-  // two-way binding cycles (prop update → slider update → onValueChange → applyZoom → prop update).
-  // Synced from the prop only when it changes externally (e.g., wheel zoom from the timeline).
-  let localZoom = $state(displayZoomLevel);
+  // --- Everything derived from global state ---
+  // No local state, no $effect — the slider reads from the global viewport reactively.
 
+  const totalFrames = $derived(media.totalFrames > 0 ? media.totalFrames : 1);
+  const containerWidth = $derived(viewport.timeline.dimensions[0]);
+  const rangeWidth = $derived(
+    viewport.timeline.range.endRange - viewport.timeline.range.startRange,
+  );
+
+  /** Current zoom level: total-frames / visible-range. */
+  const currentZoom = $derived(totalFrames / (rangeWidth > 0 ? rangeWidth : 1));
+
+  /** Min zoom = show the entire video. */
+  const zoomMin = 1;
+
+  /** Max zoom = 80px per frame. */
+  const zoomMax = $derived(
+    containerWidth > 0
+      ? Math.max(zoomMin, (totalFrames * 80) / containerWidth)
+      : zoomMin,
+  );
+
+  /** Clamped display value for the slider. */
+  const displayZoom = $derived(
+    Math.max(zoomMin, Math.min(zoomMax, currentZoom)),
+  );
+
+  let stupidValue = $state(0);
   $effect(() => {
-    if (Math.abs(localZoom - displayZoomLevel) > 0.001) {
-      localZoom = displayZoomLevel;
-    }
-  });
+    console.log("frames", totalFrames)
+    console.log(zoomMin);
+    console.log(zoomMax);
+    console.log(currentZoom);
 
-  function handleSliderChange(value: number) {
-    localZoom = value;
-    if (Math.abs(value - displayZoomLevel) > 0.001) {
-      zoomFn?.(value);
-    }
-  }
+    stupidValue = Math.max(zoomMin, Math.min(zoomMax, currentZoom))
+    console.log(stupidValue);
+  })
+
+  // --- Actions ---
 
   function zoomOut() {
-    const newZoom = Math.max(Math.round((localZoom - ZOOM_STEP) * 10) / 10, zoomMin);
-    localZoom = newZoom;
+    const newZoom = Math.max(
+      Math.round((displayZoom - ZOOM_STEP) * 10) / 10,
+      zoomMin,
+    );
     zoomFn?.(newZoom);
   }
 
   function zoomIn() {
-    const newZoom = Math.min(Math.round((localZoom + ZOOM_STEP) * 10) / 10, zoomMax);
-    localZoom = newZoom;
+    const newZoom = Math.min(
+      Math.round((displayZoom + ZOOM_STEP) * 10) / 10,
+      zoomMax,
+    );
     zoomFn?.(newZoom);
   }
 </script>
@@ -68,9 +94,20 @@
     {/snippet}
   </ToolTooltip>
 
-  <Slider type="single" class="w-40" min={zoomMin} max={zoomMax} step={0.1} value={localZoom} onValueChange={handleSliderChange} />
+  <Slider
+    type="single"
+    class="w-40"
+    min={0}
+    max={100}
+    step={0.1}
+    value={stupidValue}
+    onValueChange={(v) => zoomFn?.(v)}
+  />
 
-  <ToolTooltip label="Zoom In" shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"]?.keyCombinations)}>
+  <ToolTooltip
+    label="Zoom In"
+    shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"]?.keyCombinations)}
+  >
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomIn}>
         <ZoomInIcon />

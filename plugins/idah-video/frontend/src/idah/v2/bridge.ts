@@ -96,9 +96,12 @@ const SAMPLE_CONFIG: IConfig = {
 // ─── Bridge ──────────────────────────────────────────────────────────────
 
 export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
-  // Stores are auto-initialised from the global driver in data.svelte.ts;
-  // here we just grab a local reference.
-  const annotationStore = data.annotations!;
+  // Lazy accessor: data.annotations is initialised after the driver is set up,
+  // so we must read it lazily inside each method rather than capturing at module scope.
+  function getAnnotations() {
+    if (!data.annotations) throw new Error("data.annotations not initialised");
+    return data.annotations;
+  }
   // ── V2 → V1 annotation mapper ───────────────────────────────────────
   function toV1Annotation(rec: IAnnotationRecord): IAnnotation {
     return {
@@ -140,7 +143,7 @@ export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
       await driver.annotations.delete(id);
     },
     async list(_filter: any, _pagination: any): Promise<IAnnotation[]> {
-      return annotationStore.items.map(toV1Annotation);
+      return getAnnotations().items.map(toV1Annotation);
     },
     flush() {
       // no-op in-memory

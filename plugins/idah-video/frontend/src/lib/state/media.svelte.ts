@@ -13,16 +13,24 @@ function readMeta(): Record<string, unknown> {
 
 export const media = {
   get duration(): number {
-    return (readMeta().duration as number) ?? 0;
+    let val;
+    if (val = (readMeta().duration as number)) { return val; }
+    throw 'duration not set in metadata';
   },
   get fps(): number {
-    return (readMeta().fps as number) ?? 25;
+    let val;
+    if (val = (readMeta().fps as number) ) { return val; }
+    throw 'fps not set in metadata'
   },
   get width(): number {
-    return (readMeta().width as number) ?? 0;
+    let val;
+    if (val = (readMeta().width as number)) { return val; }
+    throw 'width not set in metadata';
   },
   get height(): number {
-    return (readMeta().height as number) ?? 0;
+    let val;
+    if (val = (readMeta().height as number)) { return val; }
+    throw 'height not set in metadata';
   },
   get totalFrames(): number {
     return Math.round(this.duration * this.fps);

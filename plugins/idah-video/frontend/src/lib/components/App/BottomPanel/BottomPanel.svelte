@@ -35,15 +35,7 @@
   // Internal state
   let panelHeight: number = $state(0);
   let toolbarHeight: number = $state(0);
-  let zoom = $state(85);
-  let viewportContainerWidth = $state<number>(1000);
   let zoomFn: ((newZoom: number) => void) | undefined = $state();
-
-  // Zoom calculations
-  const zoomMin = 1;
-  const zoomMax = $derived(Math.max(zoomMin, (length * 80) / Math.max(1, viewportContainerWidth)));
-  const zoomLevel = $derived(length / (viewport.timeline.range.endRange - viewport.timeline.range.startRange));
-  const displayZoomLevel = $derived(Math.max(zoomMin, Math.min(zoomMax, zoomLevel)));
 
   const TARGET_MAJOR_STEP_PX = 80;
   const TARGET_MINOR_STEP_PX = 20;
@@ -72,15 +64,17 @@
     return Math.abs(target - closest) <= Math.abs(target - nextVal) ? closest : nextVal;
   }
 
+  const containerWidth = $derived(viewport.timeline.dimensions[0]);
+
   const effectiveRulerMajorStep = $derived.by<number>(() => {
-    if (viewportContainerWidth <= 0) return 50;
-    const target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
+    if (containerWidth <= 0) return 50;
+    const target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / containerWidth;
     return Math.max(1, roundToSeries(Math.max(1, target)));
   });
 
   const effectiveRulerMinorStep = $derived.by<number>(() => {
-    if (viewportContainerWidth <= 0) return 10;
-    const target = (TARGET_MINOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
+    if (containerWidth <= 0) return 10;
+    const target = (TARGET_MINOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / containerWidth;
     const rounded = roundToSeries(Math.max(1, target));
     return rounded === effectiveRulerMajorStep ? 0 : rounded;
   });
@@ -88,8 +82,8 @@
 
 <TimelinePanel bind:panelHeight>
   <TimelineToolbar bind:toolbarHeight>
-    <VideoController {zoom} {volume} bind:video={player} />
-    <TimelineZoom {displayZoomLevel} zoomFn={zoomFn} zoomMin={zoomMin} zoomMax={zoomMax} />
+    <VideoController {volume} bind:video={player} />
+    <TimelineZoom {zoomFn} />
   </TimelineToolbar>
 
     {#if viewportAnnotations.length}
@@ -105,7 +99,6 @@
       rulerSmallStep={effectiveRulerMinorStep}
       rulerBigStep={effectiveRulerMajorStep}
       bind:currentFrame={viewport.video.currentFrame.value}
-      oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
       onDimensionsChange={(w, h) => {
         viewport.timeline.dimensions = [w, h];
       }}
