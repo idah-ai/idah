@@ -1,8 +1,8 @@
 <script lang="ts">
+  import Input from "$lib/components/ui/Input/Input.svelte";
   import Label from "$lib/components/ui/Label/Label.svelte";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 
@@ -13,16 +13,17 @@
     disabled,
   }: {
     property: IConfigProperty;
-    value: string;
-    onValueChange: (v: string) => void;
+    value: number;
+    onValueChange: (v: number) => void;
     disabled: boolean;
   } = $props();
 
-  const options = $derived(property.format.options);
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+    ["minimum", (v: number) => [property.label, "minimum value:", v].join(" ")],
+    ["maximum", (v: number) => [property.label, "maximum value:", v].join(" ")],
     ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
@@ -35,21 +36,17 @@
     {/if}
   </Label>
 
-  <Select type="single" {value} {onValueChange} {disabled}>
-    <SelectTrigger
-      class="data-placeholder:text-secondary-foreground bg-secondary w-full text-xs"
-      aria-invalid={invalid}
-    >
-      {options?.find(({ id }) => id == value)?.label || "Select property"}
-    </SelectTrigger>
-    <SelectContent>
-      <SelectGroup>
-        {#each options as option (option.id)}
-          <SelectItem value={option.id} label={option.label} class="text-xs" />
-        {/each}
-      </SelectGroup>
-    </SelectContent>
-  </Select>
+  <Input
+    aria-invalid={invalid}
+    id={property.id}
+    type="number"
+    min={property.format?.minimum}
+    max={property.format?.maximum}
+    step={property.format?.step || "1"}
+    {value}
+    onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
+    {disabled}
+  />
   {#if invalid}
     <ul class="text-xs">
       {#each format as [k, v] (k)}

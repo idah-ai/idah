@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent } from "$lib/components/ui/Sidebar";
 
-  import PropertySelector from "$lib/plugin/video-annotation-activity/components/PropertySelector/PropertySelector.svelte";
+  import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";

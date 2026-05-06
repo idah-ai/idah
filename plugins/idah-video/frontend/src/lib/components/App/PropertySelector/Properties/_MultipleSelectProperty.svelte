@@ -2,7 +2,7 @@
   import Label from "$lib/components/ui/Label/Label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 

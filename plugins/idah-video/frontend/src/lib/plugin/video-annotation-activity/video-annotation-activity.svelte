@@ -26,7 +26,7 @@
     IDAH_VIDEO_BOUNDING_BOX,
     IDAH_VIDEO_POLYGON,
   } from "$lib/plugin/type";
-  import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
+  import { requiredFullfilled } from "$lib/components/App/PropertySelector";
   import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
     annotationsIndexedDB,
@@ -66,7 +66,7 @@
   import AnnotationFooter from "$lib/components/Layout/Footer/AnnotationFooter.svelte";
   import AnnotationSidebar from "$lib/components/Layout/Sidebar/AnnotationSidebar.svelte";
   import PropertiesSidebar from "$lib/components/Layout/Sidebar/PropertiesSidebar.svelte";
-  import PropertySelector from "$lib/plugin/video-annotation-activity/components/PropertySelector/PropertySelector.svelte";
+  import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
   import ContextMenu from "$lib/plugin/video-annotation-activity/context-menu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/components/Viewport/_SvgOverlay.svelte";
   import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";

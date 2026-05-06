@@ -2,7 +2,7 @@
   import Input from "$lib/components/ui/Input/Input.svelte";
   import Label from "$lib/components/ui/Label/Label.svelte";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 
@@ -13,17 +13,26 @@
     disabled,
   }: {
     property: IConfigProperty;
-    value: number;
-    onValueChange: (v: number) => void;
+    value: string;
+    onValueChange: (v: string) => void;
     disabled: boolean;
   } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
+
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
-    ["minimum", (v: number) => [property.label, "minimum value:", v].join(" ")],
-    ["maximum", (v: number) => [property.label, "maximum value:", v].join(" ")],
+    [
+      "minimum",
+      (v: number) =>
+        [property.label, "should contains at least", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
+    ],
+    [
+      "maximum",
+      (v: number) =>
+        [property.label, "should contains no more than", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
+    ],
     ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
@@ -36,17 +45,7 @@
     {/if}
   </Label>
 
-  <Input
-    aria-invalid={invalid}
-    id={property.id}
-    type="number"
-    min={property.format?.minimum}
-    max={property.format?.maximum}
-    step={property.format?.step || "1"}
-    {value}
-    onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
-    {disabled}
-  />
+  <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.currentTarget.value)} {disabled} />
   {#if invalid}
     <ul class="text-xs">
       {#each format as [k, v] (k)}

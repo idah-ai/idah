@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Input from "$lib/components/ui/Input/Input.svelte";
   import Label from "$lib/components/ui/Label/Label.svelte";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
 
-  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/components/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
   import type { IConfigProperty } from "$idah/context/activity-context";
 
@@ -18,21 +18,11 @@
     disabled: boolean;
   } = $props();
 
+  const options = $derived(property.format.options);
   const invalid = $derived(!propertyFullfilled(value, property));
-
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
-    [
-      "minimum",
-      (v: number) =>
-        [property.label, "should contains at least", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
-    ],
-    [
-      "maximum",
-      (v: number) =>
-        [property.label, "should contains no more than", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
-    ],
     ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
@@ -45,7 +35,21 @@
     {/if}
   </Label>
 
-  <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.currentTarget.value)} {disabled} />
+  <Select type="single" {value} {onValueChange} {disabled}>
+    <SelectTrigger
+      class="data-placeholder:text-secondary-foreground bg-secondary w-full text-xs"
+      aria-invalid={invalid}
+    >
+      {options?.find(({ id }) => id == value)?.label || "Select property"}
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        {#each options as option (option.id)}
+          <SelectItem value={option.id} label={option.label} class="text-xs" />
+        {/each}
+      </SelectGroup>
+    </SelectContent>
+  </Select>
   {#if invalid}
     <ul class="text-xs">
       {#each format as [k, v] (k)}
