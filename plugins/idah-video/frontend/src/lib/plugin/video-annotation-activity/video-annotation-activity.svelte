@@ -56,21 +56,14 @@
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
-    transformAnnotationsToTracks,
   } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
-  import AnnotationFooterToolbar from "$lib/components/Layout/Footer/AnnotationFooterToolbar.svelte";
-  import AnnotationFooter from "$lib/components/Layout/Footer/AnnotationFooter.svelte";
-  import AnnotationSidebar from "$lib/components/Layout/Sidebar/AnnotationSidebar.svelte";
-  import PropertiesSidebar from "$lib/components/Layout/Sidebar/PropertiesSidebar.svelte";
+  import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
+  import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
+  import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
   import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/SvgOverlay.svelte";
-  import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
-  import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
-  import Timeline from "$lib/components/App/Timeline/Timeline.svelte";
-  import TimelineZoom from "$lib/components/App/Timeline/TimelineZoom.svelte";
-  import VideoController from "$lib/components/App/Viewport/VideoController.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
   import {
@@ -113,70 +106,7 @@
   let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
   let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
 
-  // Variables::Timeline
-  let annotationFooterHeight: number = $state(0);
-  let annotationFooterToolbarHeight: number = $state(0);
-  let zoom = $state(85);
-
   let length = $state(0);
-
-  // Variables::Timeline Container width for calculating dynamic ruler steps
-  let viewportContainerWidth = $state<number>(1000); // default value until measured
-
-  // Min zoom: show all frames → range = length → zoom = 1
-  const zoomMin = 1;
-  // Max zoom: 80px per frame → range = containerWidth / 80 → zoom = length * 80 / containerWidth
-  const zoomMax = $derived(Math.max(zoomMin, (length * 80) / Math.max(1, viewportContainerWidth)));
-
-  // Zoom level: ratio of total length over visible range
-  const zoomLevel = $derived(length / (viewport.timeline.range.endRange - viewport.timeline.range.startRange));
-  const displayZoomLevel = $derived(Math.max(zoomMin, Math.min(zoomMax, zoomLevel)));
-
-  const TARGET_MAJOR_STEP_PX = 80; // pixels per major step
-  const TARGET_MINOR_STEP_PX = 20; // pixels per minor step
-
-  // Dynamic ruler step calculation: round to series 1, 2, 10, 20, 100, 200, 1000, 2000...
-  // serie(x) => x.odd ? serie(x-1)*5 : serie(x-1) * 2, with serie(1) = 1
-  function generateSeriesUpTo(target: number): number[] {
-    const series: number[] = [1]; // serie(1) = 1
-    let current = 1;
-    let idx = 1;
-    while (current < target) {
-      idx++;
-      current = series[idx - 2] * (idx % 2 === 0 ? 2 : 5);
-      series.push(current);
-    }
-    return series;
-  }
-
-  function roundToSeries(target: number): number {
-    if (target <= 1) return 1;
-    const series = generateSeriesUpTo(target);
-    // Check values around target to find closest
-    let closest = series[0];
-    for (const val of series) {
-      if (val <= target) closest = val;
-    }
-    // Find the next value to check if it's closer
-    const nextIdx = series.indexOf(closest) + 1;
-    const nextVal = nextIdx < series.length ? series[nextIdx] : Infinity;
-    return Math.abs(target - closest) <= Math.abs(target - nextVal) ? closest : nextVal;
-  }
-
-  const effectiveRulerMajorStep = $derived.by<number>(() => {
-    if (viewportContainerWidth <= 0) return 50;
-    const target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
-    return Math.max(1, roundToSeries(Math.max(1, target)));
-  });
-  const effectiveRulerMinorStep = $derived.by<number>(() => {
-    if (viewportContainerWidth <= 0) return 10;
-    const target = (TARGET_MINOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / viewportContainerWidth;
-    const rounded = roundToSeries(Math.max(1, target));
-    return rounded === effectiveRulerMajorStep ? 0 : rounded;
-  });
-
-  let annotationsLoading = $state(true);
-  let zoomFn: ((newZoom: number) => void) | undefined = $state();
   let volume = $state({ level: 0, muted: true });
   let tools: {
     name: string;
@@ -877,42 +807,14 @@
       <ResizableHandle withHandle />
 
       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
-        <AnnotationFooter bind:annotationFooterHeight>
-          <AnnotationFooterToolbar bind:annotationFooterToolbarHeight>
-            <VideoController {zoom} {volume} bind:video={player} />
-
-            <!-- <TimelineControllerLegacy /> -->
-            <TimelineZoom {displayZoomLevel} zoomFn={zoomFn} zoomMin={zoomMin} zoomMax={zoomMax} />
-          </AnnotationFooterToolbar>
-
-          {#if viewportAnnotations.length}
-            <Timeline
-              onZoom={(fn) => (zoomFn = fn)}
-              bind:viewport={viewport.timeline.range}
-              items={transformAnnotationsToTracks({
-                annotations: viewportAnnotations,
-                labelConfig: context.config,
-              })}
-              {length}
-              remainingHeight={annotationFooterHeight - annotationFooterToolbarHeight}
-              rulerSmallStep={effectiveRulerMinorStep}
-              rulerBigStep={effectiveRulerMajorStep}
-              bind:currentFrame={viewport.video.currentFrame.value}
-              oncontainerWidthChange={(newWidth) => (viewportContainerWidth = newWidth)}
-              onDimensionsChange={(w, h) => {
-                viewport.timeline.dimensions = [w, h];
-              }}
-            >
-              {#snippet TrackInfoHeaderSlot()}
-                <TrackInfoHeader annotations={viewportAnnotations} />
-              {/snippet}
-
-              {#snippet TrackInfoSlot({ track })}
-                <AnnotationTrackInfo {track} onClick={selectAnnotation} />
-              {/snippet}
-            </Timeline>
-          {/if}
-        </AnnotationFooter>
+        <BottomPanel
+          {context}
+          {viewportAnnotations}
+          {length}
+          bind:player
+          {volume}
+          onSelectAnnotation={selectAnnotation}
+        />
       </ResizablePane>
     </ResizablePaneGroup>
   </div>
