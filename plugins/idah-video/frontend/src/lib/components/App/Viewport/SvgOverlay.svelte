@@ -37,7 +37,7 @@
     deselectAnnotationGroup,
     selectedAnnotation,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$idah/context/activity-context";
   import type { AnnotationShape } from "$idah/context/annotation-context";
@@ -92,22 +92,23 @@
     offset: [0, 0],
   });
 
-  let height = $state(0);
-  let width = $state(0);
+  let svgEl: SVGSVGElement | undefined = $state();
 
-  // Sync workspace dimensions with viewport state
-  $effect(() => {
-    viewport.workspace.dimensions = [width, height];
-  });
+  // Sync transform to viewport on zoom change
+  function syncTransform(s: number, o: Point) {
+    zoomInfo = { scale: s, offset: o };
+    viewport.workspace.transform.scale = s;
+    viewport.workspace.transform.translate[0] = o[0];
+    viewport.workspace.transform.translate[1] = o[1];
+  }
 
-  // Sync workspace transform with viewport state
-  $effect(() => {
-    viewport.workspace.transform = {
-      ...viewport.workspace.transform,
-      scale: zoomInfo.scale,
-      translate: zoomInfo.offset,
-    };
-  });
+  // Sync dimensions using ResizeObserver (no $effect)
+  function syncDimensions() {
+    if (!svgEl) return;
+    const rect = svgEl.getBoundingClientRect();
+    viewport.workspace.dimensions[0] = rect.width;
+    viewport.workspace.dimensions[1] = rect.height;
+  }
 
   let mouse: Point = $state([0, 0]);
 
@@ -125,13 +126,6 @@
       current_shape = undefined;
     }
   });
-
-  function updatedSize() {
-    if (!target_container()) return;
-    let target_dom_rect = target_container()!.getBoundingClientRect();
-    height = target_dom_rect.height;
-    width = target_dom_rect.width;
-  }
 
   let target_size: Point = $state([0, 0]);
   let cursor = $derived(mouse);
@@ -214,6 +208,11 @@
   }
 
   onMount(() => {
+    // Sync dimensions on mount and on resize (no $effect)
+    const ro = new ResizeObserver(() => syncDimensions());
+    if (svgEl) ro.observe(svgEl);
+    syncDimensions();
+
     context.notes.onRequireNoteFeedPosition(async (noteFeed: INoteFeed) => {
       // 1. Check the frame
       const noteFeedStartFrame = (noteFeed.position.start as number) || 0;
@@ -228,7 +227,7 @@
        * and will centered on the note feed later
        */
       const noteFeedZoomScale = (noteFeed.position.zoom_info as ZoomInfo)?.scale || 1;
-      const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [height / 2, -(width / 2)];
+      const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [0, 0];
       zoomableElement.setZoom(noteFeedZoomScale);
       zoomableElement.setOffset(noteFeedOffset);
 
@@ -252,6 +251,8 @@
     }
 
     setNoteModeCursor();
+
+    return () => ro.disconnect();
   });
 
   let isEditing = $state(false);
@@ -272,8 +273,8 @@
   });
 
   let showCrosshair = $derived(
-    width > 0 &&
-      height > 0 &&
+    viewport.workspace.dimensions[0] > 0 &&
+      viewport.workspace.dimensions[1] > 0 &&
       !isPlaying &&
       ![IDAH_NOTE, DEFAULT_MODE].includes($currentMode) && // TODO:: Change to check set of editing mode @audi
       (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
@@ -327,8 +328,7 @@
     width="100%"
     height="100%"
     onkeydown={() => {}}
-    bind:clientHeight={height}
-    bind:clientWidth={width}
+    bind:this={svgEl}
     onmousedown={(e) => {
       selectionStart(e);
     }}

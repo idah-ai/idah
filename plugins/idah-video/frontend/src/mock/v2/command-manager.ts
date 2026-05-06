@@ -1,0 +1,148 @@
+// ---------------------------------------------------------------------------
+// V2 Command Manager — register, call, undo / redo
+// ---------------------------------------------------------------------------
+import type {
+  ICommandDescriptor,
+  ICommandAction,
+  ICommandStackEntry,
+  IShortcut,
+} from "$mock/v2/types";
+
+export class CommandManagerV2 {
+  /** Registered commands keyed by name. */
+  private registry = new Map<string, ICommandDescriptor & { callback: () => ICommandAction }>();
+
+  /** Undo stack (most recent at end). */
+  private undoStack: ICommandStackEntry[] = [];
+  /** Redo stack (most recent at end). */
+  private redoStack: ICommandStackEntry[] = [];
+
+  /** Maximum undo depth. */
+  private maxStack = 200;
+  /** Time window (ms) for auto-combine. */
+  private combineWindow = 5000;
+
+  /** Current driver mode, used by getActiveCommands(). Updated externally. */
+  currentMode: string = "default";
+
+  // ── Registration ──────────────────────────────────────────────────────
+
+  register(
+    name: string,
+    modes: string[],
+    shortcut: IShortcut | null,
+    shortDescription: string | null,
+    longDescription: string | null,
+    callback: () => ICommandAction,
+  ): void {
+    if (this.registry.has(name)) {
+      throw new Error(`Command already registered: "${name}"`);
+    }
+    this.registry.set(name, {
+      name,
+      modes,
+      shortcut,
+      shortDescription,
+      longDescription,
+      callback,
+    });
+  }
+
+  // ── Execution ──────────────────────────────────────────────────────────
+
+  call(name: string, ..._opts: unknown[]): void {
+    const entry = this.registry.get(name);
+    if (!entry) {
+      console.error(`[command] unknown command: "${name}"`);
+      return;
+    }
+
+    const action = entry.callback();
+
+    // Clear redo on new action
+    this.redoStack = [];
+
+    if (action.undo) {
+      // Attempt combine with the previous action in the stack
+      const last = this.undoStack[this.undoStack.length - 1];
+      if (last) {
+        const diff = Date.now() - last.timestamp;
+        if (diff < this.combineWindow && action.isCombinable(last.action)) {
+          const combined = action.combine(last.action);
+          // Replace the last entry with the combined action
+          this.undoStack[this.undoStack.length - 1] = {
+            action: combined,
+            timestamp: Date.now(),
+          };
+          combined.do();
+          return;
+        }
+      }
+
+      // Normal push
+      this.undoStack.push({ action, timestamp: Date.now() });
+      if (this.undoStack.length > this.maxStack) {
+        this.undoStack.shift();
+      }
+    }
+
+    action.do();
+  }
+
+  // ── Undo / Redo ────────────────────────────────────────────────────────
+
+  undo(count: number = 1): boolean {
+    let did = false;
+    for (let i = 0; i < count; i++) {
+      const entry = this.undoStack.pop();
+      if (!entry) break;
+      entry.action.undo?.();
+      this.redoStack.push(entry);
+      did = true;
+    }
+    return did;
+  }
+
+  redo(count: number = 1): boolean {
+    let did = false;
+    for (let i = 0; i < count; i++) {
+      const entry = this.redoStack.pop();
+      if (!entry) break;
+      entry.action.do();
+      this.undoStack.push(entry);
+      did = true;
+    }
+    return did;
+  }
+
+  // ── Listing ────────────────────────────────────────────────────────────
+
+  list(n: number = 50): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
+    return {
+      undo: this.undoStack.slice(-n),
+      redo: this.redoStack.slice(-n),
+    };
+  }
+
+  /** Return commands that are available in the currentMode. */
+  getActiveCommands(): ICommandDescriptor[] {
+    const result: ICommandDescriptor[] = [];
+    for (const entry of this.registry.values()) {
+      if (entry.modes.includes(this.currentMode)) {
+        result.push({
+          name: entry.name,
+          modes: entry.modes,
+          shortcut: entry.shortcut,
+          shortDescription: entry.shortDescription,
+          longDescription: entry.longDescription,
+        });
+      }
+    }
+    return result;
+  }
+
+  /** Get a registered callback by name (for tests). */
+  getCallback(name: string): (() => ICommandAction) | undefined {
+    return this.registry.get(name)?.callback;
+  }
+}

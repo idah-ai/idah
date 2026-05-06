@@ -30,7 +30,7 @@
   import Video from "./Video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
-  import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
   import {
     isVideoPlaying,
     selectedAnnotation,

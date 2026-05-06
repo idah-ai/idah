@@ -55,7 +55,7 @@
   } from "$lib/plugin/video-annotation-activity/store/store";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
   import DebugConsole from "$lib/plugin/video-annotation-activity/components/DebugConsole.svelte";
-  import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,

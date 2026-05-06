@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { viewport } from "$lib/plugin/video-annotation-activity/state/viewport.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
   import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
 
   let visible = $state(false);
