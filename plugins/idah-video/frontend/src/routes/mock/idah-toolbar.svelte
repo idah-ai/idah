@@ -2,7 +2,7 @@
   // -----------------------------------------------------------------------
   // IdahToolbar.svelte — Renders toolbar items from the V2 toolbar manager
   // -----------------------------------------------------------------------
-  import type { IToolbarItem } from "$mock/v2/types";
+  import type { IToolbarItem } from "$idah/v2/types";
 
   interface Props {
     items: IToolbarItem[];

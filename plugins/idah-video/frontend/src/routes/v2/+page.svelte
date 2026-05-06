@@ -3,8 +3,8 @@
   // V2 Mock Page — Demonstrates the V2 IdahDriver in isolation
   // -----------------------------------------------------------------------
   import IdahToolbar from "./idah-toolbar.svelte";
-  import { IdahDriverV2 } from "$mock/v2/idah-driver";
-  import type { IToolbarItem, IAnnotationRecord, INoteRecord, ICommandAction } from "$mock/v2/types";
+  import { IdahDriverV2 } from "$idah/v2/idah-driver";
+  import type { IToolbarItem, IAnnotationRecord, INoteRecord, ICommandAction } from "$idah/v2/types";
 
   // ── Create the driver ──────────────────────────────────────────────────
   const driver = new IdahDriverV2();

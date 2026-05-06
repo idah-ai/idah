@@ -84,9 +84,9 @@ export interface DataStore<T extends DataItem> {
   clear(): void;
 
   /**
-   * Create a new item: generate an id, insert locally, then persist on the driver.
+   * Create a new item: generate an id (or use the one provided), insert locally, then persist.
    */
-  create(data: T): Promise<T>;
+  create(data: Partial<T> & { id?: string }): Promise<T>;
 
   /**
    * Delete an item by id on the driver, then remove it from the local store.
@@ -134,9 +134,9 @@ export type AnnotationItem = {
  * @returns       A DataStore wired up for annotations.
  */
 export interface AnnotationDriver {
-  fetch(filter?: Record<string, unknown>): Promise<{ id: string; [key: string]: unknown }[]>;
-  create(data: Partial<AnnotationItem>): Promise<{ id: string; [key: string]: unknown }>;
-  update(id: string, data: Partial<AnnotationItem>): Promise<void>;
+  fetch(filter?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
+  update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
 }
 
@@ -162,8 +162,8 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
   return {
     ...store,
 
-    async create(data: AnnotationItem): Promise<AnnotationItem> {
-      const id = uuidv7();
+    async create(data: Partial<AnnotationItem> & { id?: string }): Promise<AnnotationItem> {
+      const id = data.id ?? uuidv7();
       const item = { ...data, id } as AnnotationItem;
       // Optimistic: insert locally first
       originalUpsert(item);
@@ -229,9 +229,9 @@ export type NoteItem = {
  * @returns       A DataStore wired up for notes.
  */
 export interface NoteDriver {
-  fetch(filter?: Record<string, unknown>): Promise<{ id: string; [key: string]: unknown }[]>;
-  create(data: Partial<NoteItem>): Promise<{ id: string; [key: string]: unknown }>;
-  update(id: string, data: Partial<NoteItem>): Promise<void>;
+  fetch(filter?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
+  update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
 }
 
@@ -252,8 +252,8 @@ export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
   return {
     ...store,
 
-    async create(data: NoteItem): Promise<NoteItem> {
-      const id = uuidv7();
+    async create(data: Partial<NoteItem> & { id?: string }): Promise<NoteItem> {
+      const id = data.id ?? uuidv7();
       const item = { ...data, id } as NoteItem;
       originalUpsert(item);
       try {
@@ -438,9 +438,9 @@ export function createDataStore<T extends DataItem>(
       throw new Error("update not implemented — use createAnnotationStore or createNoteStore");
     },
 
-    async create(data: T): Promise<T> {
-      throw new Error("create not implemented — use createAnnotationStore or createNoteStore");
-    },
+    async create(data: Partial<T> & { id?: string }): Promise<T> {
+        throw new Error("create not implemented — use createAnnotationStore or createNoteStore");
+      },
 
     get maxItems() { return maxItems; },
     set maxItems(v: number) { maxItems = v; },
@@ -455,19 +455,34 @@ export function createDataStore<T extends DataItem>(
 
 // ─── Global singleton stores ─────────────────────────────────────────────-
 //
-// These are the single source of truth for annotations and notes.
-// They must be initialised by the application before use.
+// These automatically initialise from the global V2 driver as soon as it
+// becomes available (set by idah-video-plugin.svelte on mount).
 //
 // Usage:
 //   import { data } from "$lib/state/data.svelte";
 //   data.annotations.preloadRange(-Infinity, Infinity);
 //   console.log(data.annotations.items);
 
-/** Global stores — initialised by the host application. */
+import { driver } from "$lib/state/driver.svelte";
+
+let _annotations: DataStore<AnnotationItem> | null = $state(null);
+let _notes: DataStore<NoteItem> | null = $state(null);
+
+/** Initialise the stores from the global driver. Call once after initDriver(). */
+export function initDataStores(): void {
+  const d = driver;
+  if (!d) throw new Error("Driver not initialized — call initDriver() first");
+  _annotations = createAnnotationStore(d.annotations);
+  _notes = createNoteStore(d.notes);
+  _annotations.preloadRange(-Infinity, Infinity);
+  _notes.preloadRange(-Infinity, Infinity);
+}
+
+/** Global stores — auto-initialised from the V2 driver. */
 export const data: {
   annotations: DataStore<AnnotationItem> | null;
   notes: DataStore<NoteItem> | null;
 } = {
-  annotations: null,
-  notes: null,
+  get annotations() { return _annotations; },
+  get notes() { return _notes; },
 };

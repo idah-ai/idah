@@ -316,11 +316,11 @@ export interface ICommandDriverV2 {
     shortcut: IShortcut | null,
     shortDescription: string | null,
     longDescription: string | null,
-    callback: () => ICommandAction,
+    callback: (opts?: Record<string, unknown>) => ICommandAction,
   ): void;
 
   /** Execute a registered command by name. Adds it to the undo stack if `undo` is present. */
-  call(name: string, ...opts: unknown[]): void;
+  call(name: string, ...opts: Record<string, unknown>[]): void;
 
   /** Undo the last `count` commands (default 1). Returns true if anything was undone. */
   undo(count?: number): boolean;

@@ -6,11 +6,11 @@ import type {
   ICommandAction,
   ICommandStackEntry,
   IShortcut,
-} from "$mock/v2/types";
+} from "$idah/v2/types";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */
-  private registry = new Map<string, ICommandDescriptor & { callback: () => ICommandAction }>();
+  private registry = new Map<string, ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction }>();
 
   /** Undo stack (most recent at end). */
   private undoStack: ICommandStackEntry[] = [];
@@ -33,7 +33,7 @@ export class CommandManagerV2 {
     shortcut: IShortcut | null,
     shortDescription: string | null,
     longDescription: string | null,
-    callback: () => ICommandAction,
+    callback: (opts?: Record<string, unknown>) => ICommandAction,
   ): void {
     if (this.registry.has(name)) {
       throw new Error(`Command already registered: "${name}"`);
@@ -50,14 +50,15 @@ export class CommandManagerV2 {
 
   // ── Execution ──────────────────────────────────────────────────────────
 
-  call(name: string, ..._opts: unknown[]): void {
+  call(name: string, ...opts: Record<string, unknown>[]): void {
     const entry = this.registry.get(name);
     if (!entry) {
       console.error(`[command] unknown command: "${name}"`);
       return;
     }
 
-    const action = entry.callback();
+    const props = opts.length > 0 ? opts[0] : undefined;
+    const action = entry.callback(props);
 
     // Clear redo on new action
     this.redoStack = [];
@@ -142,7 +143,7 @@ export class CommandManagerV2 {
   }
 
   /** Get a registered callback by name (for tests). */
-  getCallback(name: string): (() => ICommandAction) | undefined {
+  getCallback(name: string): ((opts?: Record<string, unknown>) => ICommandAction) | undefined {
     return this.registry.get(name)?.callback;
   }
 }

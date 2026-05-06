@@ -21,11 +21,11 @@ import type {
   ICommandStackEntry,
   IToolbarItem,
   Unsubscribe,
-} from "$mock/v2/types";
+} from "$idah/v2/types";
 
-import { InMemoryStore } from "$mock/v2/in-memory-store";
-import { CommandManagerV2 } from "$mock/v2/command-manager";
-import { ToolbarManagerV2 } from "$mock/v2/toolbar-manager";
+import { InMemoryStore } from "$idah/v2/in-memory-store";
+import { CommandManagerV2 } from "$idah/v2/command-manager";
+import { ToolbarManagerV2 } from "$idah/v2/toolbar-manager";
 
 // ---------------------------------------------------------------------------
 // Sample data

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // V2 Toolbar Manager — items, groups, ordering
 // ---------------------------------------------------------------------------
-import type { IToolbarItem } from "$mock/v2/types";
+import type { IToolbarItem } from "$idah/v2/types";
 
 export class ToolbarManagerV2 {
   /** All registered items. */

@@ -28,9 +28,9 @@ interface IUser {
   name: string;
   pictureUrl: string;
 }
-import type { IdahDriverV2 } from "$mock/v2/idah-driver";
-import type { IAnnotationRecord, ICommandAction, ICommandDescriptor } from "$mock/v2/types";
-import { createAnnotationStore, createNoteStore, data, type AnnotationItem, type NoteItem } from "$lib/state/data.svelte";
+import type { IdahDriverV2 } from "$idah/v2/idah-driver";
+import type { IAnnotationRecord, ICommandAction, ICommandDescriptor } from "$idah/v2/types";
+import { data, type AnnotationItem, type NoteItem } from "$lib/state/data.svelte";
 
 // ─── Sample config (needed by the editor) ────────────────────────────────
 
@@ -96,15 +96,9 @@ const SAMPLE_CONFIG: IConfig = {
 // ─── Bridge ──────────────────────────────────────────────────────────────
 
 export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
-  // ── Initialise global stores backed by the V2 driver ────────────────
-  data.annotations = createAnnotationStore(driver.annotations);
-  data.notes = createNoteStore(driver.notes);
-
-  // Preload all data immediately
-  data.annotations.preloadRange(-Infinity, Infinity);
-  data.notes.preloadRange(-Infinity, Infinity);
-
-  const annotationStore = data.annotations;
+  // Stores are auto-initialised from the global driver in data.svelte.ts;
+  // here we just grab a local reference.
+  const annotationStore = data.annotations!;
   // ── V2 → V1 annotation mapper ───────────────────────────────────────
   function toV1Annotation(rec: IAnnotationRecord): IAnnotation {
     return {

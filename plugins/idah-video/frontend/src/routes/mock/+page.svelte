@@ -5,9 +5,9 @@
   import { mount, unmount } from "svelte";
   import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
   import IdahToolbar from "./idah-toolbar.svelte";
-  import { IdahDriverV2 } from "$mock/v2/idah-driver";
-  import { createV1Bridge } from "$mock/v2/bridge";
-  import type { IToolbarItem } from "$mock/v2/types";
+  import { IdahDriverV2 } from "$idah/v2/idah-driver";
+  import { createV1Bridge } from "$idah/v2/bridge";
+  import type { IToolbarItem } from "$idah/v2/types";
 
   // ── Create V2 driver ──────────────────────────────────────────────────
   const driver = new IdahDriverV2();
@@ -67,7 +67,7 @@
 
     mountedPlugin = mount(IdahVideoPlugin, {
       target: targetElement,
-      props: { context },
+      props: { context, driver },
     });
 
     return () => {

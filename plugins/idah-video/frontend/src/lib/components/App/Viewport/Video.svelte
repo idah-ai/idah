@@ -240,7 +240,7 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    background-color: #cc3333;
+    background-color: #e5e7eb;
     display: flex;
     align-items: center;
     justify-content: center;

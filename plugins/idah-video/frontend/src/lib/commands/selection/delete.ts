@@ -1,0 +1,64 @@
+// ---------------------------------------------------------------------------
+// selection.delete — Delete whatever is currently selected
+// Undoable: restores the annotation(s).
+// Shortcut: Delete / Backspace
+// ---------------------------------------------------------------------------
+import { selection } from "$lib/state/selection.svelte";
+import { data, type AnnotationItem } from "$lib/state/data.svelte";
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import { noopAction } from "..";
+
+export const command = {
+  name: "selection.delete",
+  modes: ["default", "review"],
+  shortcut: [null, "Delete"] as [string | null, string],
+  shortDescription: "Delete selected",
+  longDescription: null,
+};
+
+export function register(driver: IIdahDriverV2): void {
+  driver.command.register(
+    command.name, command.modes, command.shortcut,
+    command.shortDescription, command.longDescription,
+    () => {
+      const sel = selection.value;
+      if (!sel || !data.annotations) return noopAction(command);
+
+      if (sel.type === "annotation") {
+        const record = sel.annotation as AnnotationItem;
+        return {
+          command: { ...command },
+          async do() {
+            selection.deselect();
+            await data.annotations!.delete(record.id);
+          },
+          async undo() {
+            if (!data.annotations) return;
+            await data.annotations!.create({ ...record, id: record.id });
+          },
+          isCombinable() { return false; },
+          combine(p) { return p; },
+        };
+      }
+
+      const records = (sel as any).annotations as AnnotationItem[];
+      return {
+        command: { ...command },
+        async do() {
+          selection.deselect();
+          for (const r of records) {
+            await data.annotations!.delete(r.id);
+          }
+        },
+        async undo() {
+          if (!data.annotations) return;
+          for (const r of records) {
+            await data.annotations!.create({ ...r, id: r.id });
+          }
+        },
+        isCombinable() { return false; },
+        combine(p) { return p; },
+      };
+    },
+  );
+}
