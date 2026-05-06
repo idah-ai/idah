@@ -6,7 +6,8 @@ module IdahVideo
       context.register_processor(
         "idah-video",
         class_name: "IdahVideo::Processor::Video",
-        options_class_name: "IdahVideo::Processor::Options"
+        options_class_name: "IdahVideo::Processor::Options",
+        mime_types: ["^video/.*$"]
       )
     end
   end

@@ -116,8 +116,10 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         original_filename: "sample.mp4"
       )
     end
+
     it "without key" do
-      expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:, project_id:|
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
         expect(file.filename).to eq("sample.mp4")
         expect(file.type).to eq("video/mp4")
         expect(file.name).to eq("file")
@@ -125,7 +127,7 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         expect(key).to eq("")
         expect(project_id).to eq("mocked_project_id")
 
-        media
+        { processed: [media], skipped: [] }
       end
 
       post "/medias/files/some-resource", { file: file, project_id: "mocked_project_id" }
@@ -134,7 +136,8 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
     end
 
     it "with key" do
-      expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:, project_id:|
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
         expect(file.filename).to eq("sample.mp4")
         expect(file.type).to eq("video/mp4")
         expect(file.name).to eq("file")
@@ -142,8 +145,8 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         expect(key).to eq("some-key")
         expect(project_id).to eq("mocked_project_id")
 
-        media
-      end.and_return(media)
+        { processed: [media], skipped: [] }
+      end
 
       post "/medias/files/some-resource/some-key", { file: file, project_id: "mocked_project_id" }
 

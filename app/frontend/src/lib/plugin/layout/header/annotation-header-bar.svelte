@@ -25,14 +25,16 @@
 
 <nav bind:this={ref} id="annotation-header-bar" class="grid grid-cols-3 border-b p-1">
   <!-- LEFT::NAVIGATIONS -->
-  <div id="navigations" class="flex h-full items-center gap-2">
+  <div id="navigations" class="flex h-full min-w-0 items-center gap-2 overflow-hidden">
     <!-- BACK BUTTON -->
     <AnnotationHeaderBarBackButton {context} />
 
-    <Separator orientation="vertical" />
+    <Separator orientation="vertical" class="flex-shrink-0" />
 
     <!-- MEDIA NAME -->
-    <AnnotationHeaderBarMediaName name={context.mediaUrl} />
+    <div class="min-w-0 overflow-hidden">
+      <AnnotationHeaderBarMediaName name={context.mediaUrl} />
+    </div>
   </div>
 
   <!-- CENTER::TOOLS -->

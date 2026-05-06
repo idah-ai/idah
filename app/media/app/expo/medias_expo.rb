@@ -75,17 +75,26 @@ class MediasExpo < BaseExpo
       field?(:key, [String, NilClass]).transform { |v| v || "" }.meta(
         desc: "The key of the media; optional, default to empty string"
       )
+
+      field?(:modality, [String, NilClass]).meta(
+        desc: "The modality of the media; optional"
+      )
     end
     output Verse::JsonApi::Util.jsonapi_record(
       Medias::Record
     )
   end
   def upload
-    service.upload(
+    result = service.upload(
       params[:file],
       resource: params[:resource],
       key: params[:key],
-      project_id: params[:project_id]
+      project_id: params[:project_id],
+      modality: params[:modality]
     )
+
+    renderer.meta = { skipped: result[:skipped] } if result[:skipped].any?
+
+    result[:processed]
   end
 end

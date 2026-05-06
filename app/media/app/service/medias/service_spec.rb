@@ -37,10 +37,11 @@ RSpec.describe Medias::Service, as: :system, database: true do
         project_id: "mocked_project_id"
       )
 
-      expect(result).to be_truthy
-      expect(result.resource).to eq("test_resource")
-      expect(result.key).to eq("test_key")
-      expect(result.filename).to eq("test.mp4")
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.resource).to eq("test_resource")
+      expect(result[:processed].first.key).to eq("test_key")
+      expect(result[:processed].first.filename).to eq("test.mp4")
     ensure
       file&.close
     end
@@ -96,11 +97,44 @@ RSpec.describe Medias::Service, as: :system, database: true do
         project_id: "mocked_project_id"
       )
 
-      expect(result).to be_truthy
-      expect(result.resource).to eq("test_resource_no_key")
-      expect(result.key).to eq("")
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.resource).to eq("test_resource_no_key")
+      expect(result[:processed].first.key).to eq("")
     ensure
       file&.close
+    end
+
+    it "extracts zip and returns multiple records" do
+      require "zip"
+
+      zip_path = Tempfile.create(["sample", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("photo1.jpg")
+        zip.write("fake-jpg-content-1")
+        zip.put_next_entry("photo2.jpg")
+        zip.write("fake-jpg-content-2")
+        zip.put_next_entry("subfolder/")
+        # directory entry — should be skipped
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "batch.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "ignored_for_zip", project_id: "mocked_project_id")
+
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(2)
+      expect(result[:processed].map(&:filename)).to contain_exactly("photo1.jpg", "photo2.jpg")
+      expect(result[:processed].map(&:key).uniq).to eq([""])
+      expect(result[:processed].map(&:resource).uniq.length).to eq(2) # each image gets its own resource
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
   end
 

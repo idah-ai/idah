@@ -9,30 +9,30 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
+
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
+  import { truncateFront } from "@/utils/string";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
-  // Props
-  let { action, title, open = $bindable() }: FormModalBaseProps = $props();
-
   // Types
-  interface UploadMedia {
-    uuid: string;
-    media: File;
-    status: "uploading" | "retrying" | "success" | "error";
-    retryCount: number; // auto-retry attemps consumed
-    errorMessage?: string; // last error message for display
-    /**
-     * uploadedResource is critical;
-     * If media upload succeeds but entry create fails,
-     * the retry must skip straight to entry creation. (the backend rejects duplicate resource keys)
-     */
-    uploadedResource?: string; // set once media upload succeeds - skip on retry
+  interface CreateEntryFormModalProps extends FormModalBaseProps {
+    modality: string;
+  }
+
+  // Props
+  let { action, title, open = $bindable(), modality }: CreateEntryFormModalProps = $props();
+
+  // Variables
+  interface UploadStatuses {
+    name: string;
+    compressedName: string | null;
+    status: "uploading" | "success" | "error" | "skipped" | "archive";
   }
 
   // Variables
@@ -54,6 +54,11 @@
 
     return false;
   });
+
+  const acceptedFileTypes =
+    modality === "idah-video"
+      ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".zip"]
+      : [".jpg", ".jpeg", ".png", ".zip"];
 
   // Functions
   const MAX_RETRIES = 3;
@@ -85,54 +90,8 @@
     return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
   }
 
-  async function uploadSingleMedia(media: UploadMedia): Promise<void> {
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      if (attempt > 0) {
-        media.status = "retrying";
-        media.retryCount = attempt;
-        await sleep(retryDelay(attempt - 1));
-      }
-
-      try {
-        // Skip media upload if prior attempt already succeeded
-        if (!media.uploadedResource) {
-          const fileExtension = getFileExtension(media.media.name);
-          const resourceKey = `${media.uuid}${fileExtension}`;
-          const createdMedia = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
-
-          if (!("data" in createdMedia)) throw new Error("Media upload failed");
-
-          media.uploadedResource = createdMedia.data.resource;
-
-          await entriesBackendDataSource.create(
-            {
-              attributes: {
-                resource: media.uploadedResource,
-                name: createdMedia.data.filename,
-                status: "pending",
-              },
-              relationships: {
-                dataset: {
-                  data: {
-                    type: "datasets:datasets",
-                    id: datasetId,
-                  },
-                },
-              },
-            },
-            { showErrorToast: false },
-          );
-
-          media.status = "success";
-          media.errorMessage = undefined;
-          return; // done
-        }
-      } catch (error) {
-        media.errorMessage = error instanceof Error ? error.message : "Upload failed";
-      }
-    }
-
-    media.status = "error"; // exhausted all retries
+  function isZipFile(filename: string): boolean {
+    return filename.toLowerCase().endsWith(".zip");
   }
 
   async function uploadMedia(): Promise<void> {
@@ -141,56 +100,67 @@
       return;
     }
 
-    /** Generate an upload statuses */
-    uploadMedias = Array.from(selectedMedias).map((media) => ({
-      uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
-      media,
-      status: "uploading" as const,
-      retryCount: 0,
-    }));
+    const allSkippedFiles: string[] = [];
+    let processedCount = 0;
 
-    for (const media of uploadMedias) {
-      media.status = "uploading";
-      await uploadSingleMedia(media); // never throws — loop always continues
+    for (const media of selectedMedias) {
+      const uuid = crypto.randomUUID().replace(/-/g, "").substring(0, 16);
+      const fileExtension = getFileExtension(media.name);
+      const resourceKey = `${uuid}${fileExtension}`;
+      const isZip = isZipFile(media.name);
+
+      try {
+        const createdMedias = await mediaBackendDataSource.upload(media, resourceKey, projectId, "", modality);
+
+        if (!("data" in createdMedias)) {
+          throw new Error("Media upload failed");
+        }
+
+        if (isZip) {
+          uploadStatuses.push({ name: media.name, compressedName: null, status: "archive" });
+        }
+
+        if (createdMedias.meta?.skipped) {
+          for (const skippedFile of createdMedias.meta.skipped as string[]) {
+            allSkippedFiles.push(skippedFile);
+            uploadStatuses.push({ name: skippedFile, compressedName: isZip ? media.name : null, status: "skipped" });
+          }
+        }
+
+        for (const createdMedia of createdMedias.data) {
+          await entriesBackendDataSource.create(
+            {
+              attributes: { resource: createdMedia.resource, name: createdMedia.filename, status: "pending" },
+              relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
+            },
+            { showErrorToast: false },
+          );
+          processedCount++;
+          uploadStatuses.push({
+            name: createdMedia.filename,
+            compressedName: isZip ? media.name : null,
+            status: "success",
+          });
+        }
+      } catch (error) {
+        uploadStatuses.push({ name: media.name, compressedName: null, status: "error" });
+        throw error;
+      }
     }
 
-    const failed = uploadMedias.filter((s) => s.status === "error").length;
-    const succeeded = uploadMedias.filter((s) => s.status === "success").length;
-
-    if (failed === 0) {
-      showToast.success({ title: "All entries uploaded successfully." });
-      $refetches.entries.list = new Date();
-    } else if (succeeded > 0) {
-      showToast.warning({ title: `${succeeded} uploaded, ${failed} failed after ${MAX_RETRIES} retries.` });
-      $refetches.entries.list = new Date();
+    if (allSkippedFiles.length > 0) {
+      showToast.success({
+        title: "Entries uploaded with skips",
+        description: `Successfully uploaded ${processedCount} entries. ${allSkippedFiles.length} files were skipped.`,
+      });
     } else {
-      showToast.error({ title: "All uploads failed." });
-    }
-  }
-
-  async function retryFailedUploads(): Promise<void> {
-    const failedItems = uploadMedias.filter((s) => s.status === "error");
-    if (!failedItems.length) return;
-
-    uploading = true;
-    // Reset retry counter so they get MAX_RETRIES fresh attempts
-    failedItems.forEach((item) => {
-      item.retryCount = 0;
-      item.errorMessage = undefined;
-    });
-
-    for (const media of failedItems) {
-      media.status = "uploading";
-      await uploadSingleMedia(media);
+      showToast.success({
+        title: "Entries uploaded",
+        description: `Successfully uploaded ${processedCount} entries.`,
+      });
     }
 
-    const stillFailed = uploadMedias.filter((s) => s.status === "error").length;
-    if (stillFailed === 0) {
-      showToast.success({ title: "All failed uploads retried successfully." });
-      $refetches.entries.list = new Date();
-    }
-
-    uploading = false;
+    $refetches.entries.list = new Date();
   }
 
   async function submit(): Promise<void> {
@@ -217,11 +187,21 @@
 >
   {#if showUploadStatus}
     <div class="flex w-full flex-col gap-4">
-      {#each uploadMedias as { uuid, media, status, retryCount, errorMessage } (uuid)}
+      {#each uploadStatuses as { name, compressedName, status }, i (i)}
+        {@const displayName = truncateFront(name, 35)}
         <div class="flex w-full items-center gap-4">
-          <Text size="sm" class="truncate">{media.name}</Text>
+          {#if compressedName !== null}
+            <ChevronRightIcon class="text-muted-foreground size-4 shrink-0" />
+          {/if}
 
-          <div class="ml-auto flex shrink-0 items-center gap-2">
+          <Text size="sm">
+            {#if status === "archive"}
+              <strong>{displayName}</strong>
+            {:else}
+              {displayName}
+            {/if}
+          </Text>
+          <div class="ml-auto">
             {#if status === "uploading"}
               <Spinner size="sm" />
             {:else if status === "retrying"}
@@ -229,6 +209,8 @@
               <Badge variant="secondary">Retry {retryCount}/{MAX_RETRIES}</Badge>
             {:else if status === "success"}
               <Badge>Uploaded</Badge>
+            {:else if status === "skipped"}
+              <Badge variant="secondary">Incorrect File Type</Badge>
             {:else if status === "error"}
               <Badge variant="destructive" title={errorMessage}>Failed</Badge>
             {/if}
@@ -242,15 +224,10 @@
       {/if}
     </div>
   {:else}
-    <FileUpload
-      class="py-12"
-      acceptedFileTypes={[".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"]}
-      onFilesSelected={handleFilesSelected}
-    />
+    <FileUpload class="py-12" {acceptedFileTypes} onFilesSelected={handleFilesSelected} />
   {/if}
 
   {#snippet actions()}
-    <!-- Only show actions when not uploading -->
     {#if !showUploadStatus}
       <DialogClose>
         <Button variant="outline" class="w-full lg:w-auto" onclick={resetForm}>Cancel</Button>

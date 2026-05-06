@@ -35,7 +35,7 @@
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMemberAccountId) return;
 
-    let projectMemberRecord: ProjectMemberRecord | undefined = $state(undefined);
+    let projectMemberRecord: ProjectMemberRecord | undefined = undefined;
 
     for (const entryId of entryIds) {
       await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMemberAccountId });
