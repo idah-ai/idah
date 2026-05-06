@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { VideoStreamHandler } from "./video-stream-handler.ts";
-  import { totalFrames } from "../../store/store.ts";
+  import { totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
 
   let {
     src = undefined,
