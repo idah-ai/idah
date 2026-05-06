@@ -34,18 +34,9 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
   }
-  let {
-    view,
-    db,
-    modalityShape,
-    categories,
-    onSelectCategory,
-    selectedCategory,
-    onSelectAnnotationGroup,
-    onDeleteAnnotation,
-  }: Props = $props();
+  let { view, db, modalityShape, categories, onSelectCategory, selectedCategory, onSelectAnnotationGroup }: Props =
+    $props();
 
   // Variables
   let openCategory = $state(true);
@@ -340,13 +331,7 @@
           {@const categoryAnnotations = db.annotationsByCategory(category.id)}
           {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
           {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
-            <ImageAnnotationGroupNode
-              {category}
-              {annotationGroup}
-              level={level + 1}
-              {onSelectAnnotationGroup}
-              {onDeleteAnnotation}
-            />
+            <ImageAnnotationGroupNode {category} {annotationGroup} level={level + 1} {onSelectAnnotationGroup} />
           {/each}
         {/if}
 

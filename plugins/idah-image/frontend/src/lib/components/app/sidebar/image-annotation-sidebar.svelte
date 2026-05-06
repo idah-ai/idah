@@ -28,7 +28,6 @@
     onEditValue,
     onSelectAnnotation,
     onSelectAnnotationGroup,
-    onDeleteAnnotation,
     context,
     db,
     class: className,
@@ -39,7 +38,6 @@
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: ImageAnnotationObject) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationBackend;
     class?: string | null;
@@ -131,7 +129,6 @@
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
-          {onDeleteAnnotation}
         ></ImageCategorySidebar>
       {/if}
     {/each}

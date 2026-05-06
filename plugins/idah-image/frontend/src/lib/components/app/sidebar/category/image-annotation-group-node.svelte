@@ -25,9 +25,8 @@
     annotationGroup: AnnotationGroup<ImageAnnotationObject>;
     level: number;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
   }
-  let { category, annotationGroup, level, onSelectAnnotationGroup, onDeleteAnnotation }: Props = $props();
+  let { category, annotationGroup, level, onSelectAnnotationGroup }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");

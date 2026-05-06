@@ -332,22 +332,10 @@
     context.commands.run("annotation.add", { shape: imageShape, value });
   }
 
-  async function removeAnnotation(annotationId: string) {
-    if (!editable) return;
-
-    context.commands.run("annotation.delete", { annotationId });
-  }
-
   async function addSelection(id: string, selection: ImageFrameSelection) {
     if (!editable) return;
 
     context.commands.run("keyframe.add", { id, selection });
-  }
-
-  function deleteAnnotation(annotation: ImageAnnotationObject) {
-    if (!editable) return;
-
-    removeAnnotation(annotation.metadata.id);
   }
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
@@ -573,7 +561,6 @@
             {context}
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={selectAnnotationGroup}
-            onDeleteAnnotation={deleteAnnotation}
           />
         {/if}
       </div>
@@ -626,7 +613,6 @@
               {annotationValue}
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
-              onDeleteAnnotation={deleteAnnotation}
               {onEditValue}
             />
           </ResizablePane>
