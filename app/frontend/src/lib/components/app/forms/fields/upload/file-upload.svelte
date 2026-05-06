@@ -87,7 +87,7 @@
         <span class="line-clamp-1">{selectedFile.name}</span>
       {/each}
     {:else}
-      <span class="font-medium underline underline-offset-2">Click to upload</span>
+      <span class="font-medium underline underline-offset-2">Click to select files</span>
       <span class="text-muted-foreground">or drag and drop</span>
     {/if}
   </Text>

@@ -12,7 +12,7 @@
   let { name, onDelete }: Props = $props();
 </script>
 
-<Item variant="outline">
+<Item variant="outline" class="rounded-xl">
   <ItemContent class="text-sm font-semibold">
     {name}
   </ItemContent>
