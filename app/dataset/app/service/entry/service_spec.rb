@@ -667,4 +667,115 @@ RSpec.describe Entry::Service, database: true do
       expect(project2_assigned.count).to eq(1)
     end
   end
+
+  describe "#duplicate_entries" do
+    let(:new_dataset_id) do
+      dataset_repo.create(
+        modality: "video",
+        labels: ["cat", "dog"],
+        labeling_configuration: { "width" => 100, "height" => 100 },
+        workflow_configuration: {},
+        project_id: project_id
+      )
+    end
+
+    let!(:entry_ready) do
+      repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        resource: "http://example.com/ready.mp4",
+        status: "ready",
+        wf_step: "start"
+      )
+    end
+
+    let!(:entry_pending) do
+      repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        resource: "http://example.com/pending.mp4",
+        status: "pending",
+        wf_step: "start"
+      )
+    end
+
+    it "duplicates ready entries without emitting events" do
+      allow(subject.send(:entries)).to receive(:no_event).and_call_original
+
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_ready])
+
+      expect(subject.send(:entries)).to have_received(:no_event)
+      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+      expect(duplicated_entries.count).to eq(1)
+      expect(duplicated_entries.first.status).to eq("ready")
+      expect(duplicated_entries.first.resource).to eq("http://example.com/ready.mp4")
+    end
+
+    it "duplicates pending entries by emitting events" do
+      allow(subject.send(:entries)).to receive(:no_event).and_call_original
+
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_pending])
+
+      expect(subject.send(:entries)).not_to have_received(:no_event)
+      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+      expect(duplicated_entries.count).to eq(1)
+      expect(duplicated_entries.first.status).to eq("pending")
+      expect(duplicated_entries.first.resource).to eq("http://example.com/pending.mp4")
+    end
+
+    it "duplicates all entries when entry_ids is nil" do
+      original_count = repo.index({ dataset_id: dataset_id }).count
+
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id)
+
+      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+      expect(duplicated_entries.count).to eq(original_count)
+    end
+
+    context "with annotations" do
+      let(:annotation_repo) { Annotation::Repository.new(auth_context) }
+
+      before do
+        annotation_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          entry_id: entry_ready,
+          dimensions: { x: 10, y: 20, width: 30, height: 40 },
+          annotation: { label: "cat" },
+          created_by_email: "user@example.com"
+        )
+      end
+
+      it "duplicates annotations when with_annotations is true" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_ready],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        expect(duplicated_entries.count).to eq(1)
+
+        duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
+        expect(duplicated_annotations.count).to eq(1)
+        expect(duplicated_annotations.first.created_by_email).to eq("user@example.com")
+      end
+
+      it "does not duplicate annotations when with_annotations is false" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_ready],
+          with_annotations: false
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        expect(duplicated_entries.count).to eq(1)
+
+        duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
+        expect(duplicated_annotations.count).to eq(0)
+      end
+    end
+  end
 end

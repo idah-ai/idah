@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { cn } from "$lib/utils.js";
 
   import Button from "@/components/ui/button/button.svelte";
   import {
@@ -21,6 +22,7 @@
     title,
     description,
     loading,
+    disabled,
     onCancel,
     onConfirm,
     modalTitle,
@@ -28,6 +30,7 @@
     actions,
     confirm,
     children,
+    class: className,
   }: FormModalBaseProps = $props();
 
   // Types
@@ -87,7 +90,7 @@
 </script>
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
-  <DialogContent>
+  <DialogContent class={cn(className)}>
     {#if modalTitle}
       {@render modalTitle()}
     {:else}
@@ -116,7 +119,7 @@
           {#if confirm}
             {@render confirm()}
           {:else}
-            <Button {loading} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
+            <Button {loading} {disabled} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
               {confirmButtonProps.label}
             </Button>
           {/if}
