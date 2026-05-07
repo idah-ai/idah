@@ -194,8 +194,12 @@ export interface IAnnotationFrame {
  */
 export interface IVideoFrameSelection {
   frame: number;
+  /** Rotation angle in radians (optional). */
   angle: number;
-  points: [number, number][];
+  /** AABB in [x1, y1, x2, y2] format for bounding boxes (normalised 0-1). */
+  aabb?: [number, number, number, number];
+  /** Polygon vertexes for polygon shapes. */
+  points?: [number, number][];
 }
 
 /**

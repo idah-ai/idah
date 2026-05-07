@@ -12,20 +12,14 @@
   import {
     DEFAULT_MODE,
     EDITOR_MODE_TOOLS,
-    ENTRY_ROOT,
     IDAH_NOTE,
     IDAH_VIDEO_BOUNDING_BOX,
     IDAH_VIDEO_POLYGON,
-    type EntryRoot,
   } from "$lib/plugin/type";
   import {
     getInterpolatedFrame,
-    HEIGHT,
-    ORIGIN,
-    WIDTH,
     X,
     Y,
-    type InterpolatedVertex,
     type Point,
     type VideoAnnotationObject,
     type VideoShape,
@@ -52,7 +46,6 @@
 
   type Props = {
     frame: number;
-    target_container: () => HTMLDivElement | undefined; // ..
     annotations_promise: Promise<VideoAnnotationObject[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
@@ -63,21 +56,17 @@
     onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
-    videoResizedAt: Date;
     isPlaying: boolean;
   };
   let {
     frame,
-    target_container,
     annotations_promise,
     onSelectAnnotation,
-    onSelection, // valid shape output
+    onSelection,
     onAddNewNote,
     onChangeFrame,
     children,
-    videoResizedAt,
     isPlaying,
-    ...restProps
   }: Props = $props();
 
   // Contexts
@@ -88,22 +77,25 @@
   // Derive viewport annotations from the global store
   let viewportItems = $derived.by<VideoAnnotationObject[]>(() => {
     const raw = data.annotations?.items ?? [];
-    return raw.map((ann) => ({
-      shape: ann.shape as VideoShape,
-      value: {
-        category: (ann.category ?? ann.value?.category) || "null",
-        attributes: ann.value?.attributes ?? {},
-      },
-      metadata: ann.metadata ?? {
-        id: ann.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        metadata: {},
-      },
-      hidden: ann.hidden ?? false,
-      locked: ann.locked ?? false,
-      synced: ann.synced ?? true,
-    })) as VideoAnnotationObject[];
+    return raw.map((ann) => {
+      const shape = ann.shape as VideoShape;
+      return {
+        shape,
+        value: {
+          category: (ann.category ?? ann.value?.category) || "null",
+          attributes: ann.value?.attributes ?? {},
+        },
+        metadata: ann.metadata ?? {
+          id: ann.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          metadata: {},
+        },
+        hidden: ann.hidden ?? false,
+        locked: ann.locked ?? false,
+        synced: ann.synced ?? true,
+      } as VideoAnnotationObject;
+    });
   });
 
   // Sync dimensions using ResizeObserver (no $effect)
@@ -114,34 +106,26 @@
     viewport.workspace.dimensions[1] = rect.height;
   }
 
-  let mouse: Point = $state([0, 0]);
+  let mousePosition: Point = $state([0, 0]);
+
+  let screenDimensions: Point = $derived<Point>(viewport.workspace.dimensions);
 
   // TODO: find a better way to pass shape initialization
 
-  let shape: AnnotationShape | undefined = $state();
-  let current_shape: VideoShape | undefined = $state();
+  let pendingShape: AnnotationShape | undefined = $state();
 
-  let points: Point[] | undefined = $state();
-  let angle: number | undefined = $state();
+  let activePoints: Point[] | undefined = $state();
+  let activeAngle: number | undefined = $state();
 
-  // Reset shape when we are not editing
-  $effect(() => {
-    if (!selAnnotation) {
-      current_shape = undefined;
-    }
-  });
-
-  let target_size: Point = $state([0, 0]);
-  let cursor = $derived(mouse);
-  let target: Point = $derived([cursor[X] * target_size[X], cursor[Y] * target_size[Y]]);
-
-  // Crosshair lines in scene (un-transformed) space
-  let target_line: Point = $derived.by(() => {
-    const sv = viewport.workspace.screenToScene(mouse[X], mouse[Y]);
+  let sceneMousePosition: Point = $derived.by(() => {
+    const sv = viewport.workspace.screenToScene(mousePosition[X], mousePosition[Y]);
     return [sv.x, sv.y] as Point;
   });
 
-  let cursor_downscaled: Point = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]);
+  let normalizedMousePosition: Point = $derived([
+    mousePosition[X] / screenDimensions[X],
+    mousePosition[Y] / screenDimensions[Y],
+  ] as Point);
 
   // let svg: SVGElement
   let zoomableElement: Viewport;
@@ -158,13 +142,13 @@
   export function selectionStart(e: MouseEvent) {
     const isDrawingMode = EDITOR_MODE_TOOLS.includes(viewport.mode) && viewport.mode !== DEFAULT_MODE;
 
-    if (!shape && !isDrawingMode) {
+    if (!pendingShape && !isDrawingMode) {
       selection.deselect();
       zoomableElement.mouseDown(e);
       return;
     }
 
-    toolSelection?.startSelection(cursor_downscaled);
+    toolSelection?.startSelection(normalizedMousePosition);
 
     if (!isEditing && EDITOR_MODE_TOOLS.includes(viewport.mode)) {
       if (!toolSelection) {
@@ -184,7 +168,7 @@
   }
 
   export function selectionEnd(e: MouseEvent) {
-    toolSelection?.endSelection(cursor_downscaled);
+    toolSelection?.endSelection(normalizedMousePosition);
 
     showNewNoteFeedPopup();
 
@@ -199,11 +183,11 @@
       onAddNewNote({
         anchorType: annotation ? "annotation" : "entry",
         position: {
-          x: cursor_downscaled[X],
-          y: cursor_downscaled[Y],
+          x: normalizedMousePosition[X],
+          y: normalizedMousePosition[Y],
           start: frame,
           end: frame,
-          target_size,
+          target_size: screenDimensions,
           zoom_info: {
             scale: viewport.workspace.transform.scale,
             offset: viewport.workspace.transform.translate,
@@ -284,8 +268,8 @@
   });
 
   let showCrosshair = $derived(
-    viewport.workspace.dimensions[0] > 0 &&
-      viewport.workspace.dimensions[1] > 0 &&
+    screenDimensions[0] > 0 &&
+      screenDimensions[1] > 0 &&
       !isPlaying &&
       ![IDAH_NOTE, DEFAULT_MODE].includes(viewport.mode) && // TODO:: Change to check set of editing mode @audi
       (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
@@ -325,6 +309,11 @@
 
     return lastAssignedAttributeStyle;
   }
+
+  // Workspace transform for the SVG overlay
+  let svgTransform = $derived(
+    `translate(${viewport.workspace.transform.translate[0]}px, ${viewport.workspace.transform.translate[1]}px) scale(${viewport.workspace.transform.scale})`,
+  );
 </script>
 
 <div class={cn("svg-overlay flex-1", pointer)}>
@@ -354,7 +343,7 @@
       // const elementRect = svg.getBoundingClientRect();
 
       // mouse = [e.layerX, e.layerY] //..
-      mouse = [e.offsetX, e.offsetY]; //..
+      mousePosition = [e.offsetX, e.offsetY]; //..
       // mouse[0] = e.pageX - (Math.round(elementRect.left) + window.scrollX);
       // mouse[1] = e.pageY - (Math.round(elementRect.top) + window.scrollY);
       // console.log({mouse:{x: mouse[X], y:mouse[Y]}, e})
@@ -368,23 +357,24 @@
     {#if showCrosshair}
       <!-- Crosshair is an SVG group with infinite width lines -->
       <line
-        x1={target_line[X] - 10000}
-        y1={target_line[Y]}
-        x2={target_line[X] + 10000}
-        y2={target_line[Y]}
+        x1={sceneMousePosition[X] - 10000}
+        y1={sceneMousePosition[Y]}
+        x2={sceneMousePosition[X] + 10000}
+        y2={sceneMousePosition[Y]}
         stroke="rgba(100,100,100,0.25)"
         stroke-width="1"
       />
       <line
-        x1={target_line[X]}
-        y1={target_line[Y] - 10000}
-        x2={target_line[X]}
-        y2={target_line[Y] + 10000}
+        x1={sceneMousePosition[X]}
+        y1={sceneMousePosition[Y] - 10000}
+        x2={sceneMousePosition[X]}
+        y2={sceneMousePosition[Y] + 10000}
         stroke="rgba(100,100,100,0.25)"
         stroke-width="1"
       />
     {/if}
 
+    <g style:transform-origin="top left" style:transform={svgTransform}>
     <!-- eslint-disable-next-line -->
     <!-- Here we await the first window's annotations (the ones in IDB), then handle them -->
     {#await annotations_promise}
@@ -398,15 +388,22 @@
             <BoundingBox
               points={current_annotation_points}
               angle={current_annotation_angle}
+              ratio={screenDimensions}
+              offset={[0, 0]}
               {frame}
               hidden={annotation.hidden}
               id={annotation.metadata.id}
               {propertyStyle}
             />
           {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
+            {@const current_polygon_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
+            {@const current_polygon_points = current_polygon_shape?.points || []}
+            {@const current_polygon_angle = current_polygon_shape?.angle || 0}
             <Polygon
-              points={annotation.shape.frames[frame]?.points || []}
-              angle={annotation.shape.frames[frame]?.angle || 0}
+              points={current_polygon_points}
+              angle={current_polygon_angle}
+              ratio={screenDimensions}
+              offset={[0, 0]}
               {frame}
               hidden={annotation.hidden}
               id={annotation.metadata.id}
@@ -426,15 +423,22 @@
             <BoundingBox
               points={current_annotation_points}
               angle={current_annotation_angle}
+              ratio={screenDimensions}
+              offset={[0, 0]}
               {frame}
               hidden={annotation.hidden}
               id={annotation.metadata.id}
               {propertyStyle}
             />
           {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
+            {@const current_polygon_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
+            {@const current_polygon_points = current_polygon_shape?.points || []}
+            {@const current_polygon_angle = current_polygon_shape?.angle || 0}
             <Polygon
-              points={annotation.shape.frames[frame]?.points || []}
-              angle={annotation.shape.frames[frame]?.angle || 0}
+              points={current_polygon_points}
+              angle={current_polygon_angle}
+              ratio={screenDimensions}
+              offset={[0, 0]}
               {frame}
               hidden={annotation.hidden}
               id={annotation.metadata.id}
@@ -447,38 +451,42 @@
 
     {#if selAnnotation || viewport.mode != DEFAULT_MODE}
       {@const propertyStyle = getAnnotationPropertyStyle(selAnnotation)}
-      {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || viewport.mode == IDAH_VIDEO_BOUNDING_BOX}
+      {#if pendingShape?.type == IDAH_VIDEO_BOUNDING_BOX || viewport.mode == IDAH_VIDEO_BOUNDING_BOX}
         <BoundingBox
           bind:this={toolSelection}
-          points={points || []}
-          {angle}
+          points={activePoints || []}
+          angle={activeAngle ?? 0}
+          ratio={screenDimensions}
+          offset={[0, 0]}
           {frame}
-          {cursor}
+          cursor={normalizedMousePosition}
           active={true}
-          {shape}
+          {pendingShape}
           {propertyStyle}
           onEdit={(pointsUpdated: Point[], angleUpdated: number) => {
-            points = pointsUpdated;
-            angle = angleUpdated;
+            activePoints = pointsUpdated;
+            activeAngle = angleUpdated;
           }}
           onEditStop={({ points: editedPoints, angle: editedAngle }: { points: Point[]; angle: number }) => {
             onSelection(viewport.mode, frame, editedPoints, editedAngle, selAnnotation?.metadata?.id);
           }}
         />
       {/if}
-      {#if shape?.type == IDAH_VIDEO_POLYGON || viewport.mode == IDAH_VIDEO_POLYGON}
+      {#if pendingShape?.type == IDAH_VIDEO_POLYGON || viewport.mode == IDAH_VIDEO_POLYGON}
         <Polygon
           bind:this={toolSelection}
-          points={points || []}
-          {angle}
+          points={activePoints || []}
+          angle={activeAngle ?? 0}
+          ratio={screenDimensions}
+          offset={[0, 0]}
           {frame}
-          {cursor}
+          cursor={normalizedMousePosition}
           active={true}
-          {shape}
+          {pendingShape}
           {propertyStyle}
           onEdit={(pointsUpdated: Point[], angleUpdated: number) => {
-            points = pointsUpdated;
-            angle = angleUpdated;
+            activePoints = pointsUpdated;
+            activeAngle = angleUpdated;
           }}
           onEditStop={({ points: editedPoints, angle: editedAngle }: { points: Point[]; angle: number }) => {
             onSelection(viewport.mode, frame, editedPoints, editedAngle, selAnnotation?.metadata?.id);
@@ -486,6 +494,7 @@
         />
       {/if}
     {/if}
+    </g>
   </svg>
 </div>
 

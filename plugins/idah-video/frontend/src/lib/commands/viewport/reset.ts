@@ -20,7 +20,6 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         viewport.workspace.transform.translate = [0, 0];
-        viewport.workspace.transform.rotate = 0;
         viewport.workspace.transform.scale = 1.0;
       },
       isCombinable() { return false; },

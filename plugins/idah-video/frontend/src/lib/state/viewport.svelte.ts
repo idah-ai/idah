@@ -27,7 +27,6 @@ class Viewport {
   workspace = $state({
     transform: {
       translate: [0, 0] as [number, number],
-      rotate: 0,
       scale: 1.0,
     },
     dimensions: [0, 0] as [number, number],

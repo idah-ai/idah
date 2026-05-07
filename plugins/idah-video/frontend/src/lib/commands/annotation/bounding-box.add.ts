@@ -20,7 +20,7 @@ export const command = {
 };
 
 export interface BoundingBoxAddProps {
-  points: [number, number][];
+  aabb: [number, number, number, number];
   angle?: number;
   value?: { category?: string; label?: string; [key: string]: unknown };
   start: number;
@@ -38,7 +38,7 @@ export function register(driver: IIdahDriverV2): void {
       const frameSelection = {
         frame: props.start,
         angle: props.angle ?? 0,
-        points: props.points,
+        aabb: props.aabb,
       };
 
       return {

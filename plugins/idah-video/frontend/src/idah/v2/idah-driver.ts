@@ -16,11 +16,10 @@ const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
     shape: {
       type: "idah-video:bounding-box",
       start: 0, end: 120,
-      x: 10, y: 20, w: 100, h: 50,
       frames: [
-        { frame: 0,   angle: 0, points: [[0.2, 0.3], [0.45, 0.5]] },
-        { frame: 60,  angle: 2, points: [[0.22, 0.28], [0.48, 0.52]] },
-        { frame: 120, angle: 3, points: [[0.25, 0.25], [0.50, 0.55]] },
+        { frame: 0,   aabb: [0.2, 0.3, 0.45, 0.5], angle: 0 },
+        { frame: 60,  aabb: [0.22, 0.28, 0.48, 0.52], angle: 2 },
+        { frame: 120, aabb: [0.25, 0.25, 0.50, 0.55], angle: 3 },
       ],
     },
     label: "car",
@@ -32,11 +31,10 @@ const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
     shape: {
       type: "idah-video:bounding-box",
       start: 50, end: 300,
-      x: 200, y: 100, w: 80, h: 60,
       frames: [
-        { frame: 50,  angle: 0, points: [[0.6, 0.4], [0.8, 0.7]] },
-        { frame: 150, angle: -1, points: [[0.58, 0.38], [0.78, 0.68]] },
-        { frame: 300, angle: -2, points: [[0.55, 0.35], [0.75, 0.65]] },
+        { frame: 50,  aabb: [0.6, 0.4, 0.8, 0.7], angle: 0 },
+        { frame: 150, aabb: [0.58, 0.38, 0.78, 0.68], angle: -1 },
+        { frame: 300, aabb: [0.55, 0.35, 0.75, 0.65], angle: -2 },
       ],
     },
     label: "bus",
@@ -48,7 +46,6 @@ const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
     shape: {
       type: "idah-video:polygon",
       start: 30, end: 80,
-      points: [[10, 10], [50, 10], [50, 50], [10, 50]],
       frames: [
         { frame: 30,  angle: 0, points: [[0.1, 0.1], [0.3, 0.05], [0.35, 0.2], [0.15, 0.25]] },
         { frame: 55,  angle: 0, points: [[0.12, 0.08], [0.32, 0.04], [0.37, 0.18], [0.17, 0.23]] },

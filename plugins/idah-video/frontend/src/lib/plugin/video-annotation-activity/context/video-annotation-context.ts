@@ -23,6 +23,7 @@ export type VideoAnnotationObject = AnnotationObj<VideoShape, AnnotationValue, A
 export type VideoFrameSelection = {
   frame: number;
   angle: number;
+  aabb?: [number, number, number, number];
   points: Point[];
 };
 
@@ -80,7 +81,7 @@ export function getInterpolatedFrame(
   current_frame: number,
   interpolate: boolean = true,
 ):
-  | { points: Point[] | undefined; angle: number }
+  | { points: Point[] | undefined; angle: number; aabb?: [number, number, number, number] }
   | { points: InterpolatedVertex[] | undefined; angle: number }
   | undefined {
   if (!shape.frames || shape.frames.length === 0) return; // no render (eg. entry:root)
@@ -94,6 +95,15 @@ export function getInterpolatedFrame(
       return {
         points: foundFrame.points.map((point: Point) => ({ point, matched: true })),
         angle: foundFrame.angle || 0,
+      };
+    }
+    // For bounding box, convert AABB to 4 corner points
+    if (shape.type == IDAH_VIDEO_BOUNDING_BOX && foundFrame?.aabb) {
+      const [x1, y1, x2, y2] = foundFrame.aabb;
+      return {
+        points: [[x1, y1], [x2, y1], [x2, y2], [x1, y2]] as Point[],
+        angle: foundFrame.angle || 0,
+        aabb: foundFrame.aabb,
       };
     }
     return { points: foundFrame?.points, angle: foundFrame?.angle || 0 }; // exists!
@@ -114,13 +124,18 @@ export function getInterpolatedFrame(
   if (!frame_start || !frame_end) return;
 
   if (shape.type == IDAH_VIDEO_BOUNDING_BOX) {
-    // interpolate from within bounds
+    // interpolate AABB + angle between two frames
     const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
+    const aabb: [number, number, number, number] = [
+      frame_start.aabb![0] + (frame_end.aabb![0] - frame_start.aabb![0]) * ratio,
+      frame_start.aabb![1] + (frame_end.aabb![1] - frame_start.aabb![1]) * ratio,
+      frame_start.aabb![2] + (frame_end.aabb![2] - frame_start.aabb![2]) * ratio,
+      frame_start.aabb![3] + (frame_end.aabb![3] - frame_start.aabb![3]) * ratio,
+    ];
+    const [x1, y1, x2, y2] = aabb;
     return {
-      points: frame_end.points.map((point, i) => [
-        frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-        frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
-      ]),
+      aabb,
+      points: [[x1, y1], [x2, y1], [x2, y2], [x1, y2]] as Point[],
       angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
     };
   } else if (shape.type == IDAH_VIDEO_POLYGON) {
