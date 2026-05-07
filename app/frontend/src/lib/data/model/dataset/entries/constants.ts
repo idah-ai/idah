@@ -34,8 +34,8 @@ export const entryPriorities: EntryPriorityBadgeProps[] = [
   },
 ];
 
-export type EntryWorkflowStep = "start" | "annotate" | "review" | "done" | "export";
-export type EntryStatus = "pending" | "processing" | "ready" | "assigned" | "in_progress" | "completed" | "errored";
+export type EntryWorkflowStep = "annotate" | "review" | "done" | "export";
+export type EntryStatus = "pending" | "processing" | "assigned" | "in_progress" | "completed" | "errored";
 
 export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
   variant: BadgeVariant;
@@ -43,8 +43,7 @@ export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
 
 export const entryStatuses: EntryStatusBadgeProps[] = [
   { label: "Processing", value: "processing", variant: "gray" },
-  { label: "Pending", value: "pending", variant: "gray" },
-  { label: "Ready", value: "ready", variant: "default" },
+  { label: "Pending", value: "pending", variant: "default" },
   { label: "In Progress", value: "in_progress", variant: "warning" },
   { label: "Completed", value: "completed", variant: "success" },
   { label: "Errored", value: "errored", variant: "destructive" },
@@ -54,7 +53,6 @@ interface EntryWorkflowStepBadgeProps extends LabelValue<string, EntryRecord> {
   variant?: BadgeVariant;
 }
 export const entryWorkflowSteps: EntryWorkflowStepBadgeProps[] = [
-  { label: "Start", value: "start" },
   { label: "Annotate", value: "annotate" },
   { label: "Review", value: "review" },
   { label: "Export", value: "export" },
