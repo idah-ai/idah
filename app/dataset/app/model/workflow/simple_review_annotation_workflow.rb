@@ -5,16 +5,13 @@ require_relative "base"
 module Workflow
   class SimpleReviewAnnotationWorkflow < Workflow::Base
     aasm do
-      state :start, initial: true
-      state :annotate
+      state :annotate, initial: true
       state :review
       state :done
       state :error
 
-      # Transition from start to annotation phase
+      # Transitions
       event :submit, after: :on_submit do
-        transitions from: :start, to: :annotate
-
         transitions from: :annotate, to: :review, if: :should_sample?
         transitions from: :annotate, to: :done, unless: :should_sample?
 
@@ -59,8 +56,6 @@ module Workflow
 
       assigned_to_id =
         case from_state
-        when :start
-          account_id
         when :annotate
           # If moving to review step, assign to reviewer (nil for unassigned)
           @entry.reviewed_by_id
@@ -75,11 +70,18 @@ module Workflow
       # Set reviewed_by_id coming from review step
       reviewed_by_id = from_state == :review ? account_id : @entry.reviewed_by_id
 
+      status =
+        if current_state == :done
+          "completed"
+        else
+          assigned_to_id ? "in_progress" : "pending"
+        end
+
       entries.submit(
         entry.id,
         {
           wf_step: current_state.to_s,
-          status: current_state == :done ? "completed" : "in_progress",
+          status:,
           assigned_to_id:,
           submitted_by_id:,
           reviewed_by_id:,

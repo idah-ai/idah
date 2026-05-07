@@ -5,7 +5,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import IdahPlugin from "@/plugin/IdahPlugin.svelte";
 
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { activityContextForEntry } from "@/plugin/ActivityContext.svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
@@ -18,21 +18,6 @@
   onMount(() => {
     // eslint-disable-next-line no-async-promise-executor
     context_promise = new Promise<IActivityContext>(async (ok, ko) => {
-      const checkEntryRes = await entriesBackendDataSource.get(entryId, {
-        fields: {
-          [EntryRecord.type]: ["wf_step"],
-        },
-        noCache: true,
-      });
-
-      /**
-       * Start workflow event for an entry
-       * If entry wf_step is not ['annotate', 'review', 'done', 'export']
-       */
-      if (checkEntryRes.data.wf_step === "start") {
-        await entriesBackendDataSource.submit(entryId);
-      }
-
       /** Get the lastest entry record with dataset */
       const latestEntryRes = await entriesBackendDataSource.get(entryId, {
         included: ["dataset", "dataset.project"],
