@@ -18,8 +18,6 @@
   } from "$lib/plugin/type";
   import {
     getInterpolatedFrame,
-    X,
-    Y,
     type Point,
     type VideoAnnotationObject,
     type VideoShape,
@@ -118,13 +116,13 @@
   let activeAngle: number | undefined = $state();
 
   let sceneMousePosition: Point = $derived.by(() => {
-    const sv = viewport.workspace.screenToScene(mousePosition[X], mousePosition[Y]);
+    const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
     return [sv.x, sv.y] as Point;
   });
 
   let normalizedMousePosition: Point = $derived([
-    mousePosition[X] / screenDimensions[X],
-    mousePosition[Y] / screenDimensions[Y],
+    mousePosition[0] / screenDimensions[0],
+    mousePosition[1] / screenDimensions[1],
   ] as Point);
 
   // let svg: SVGElement
@@ -183,8 +181,8 @@
       onAddNewNote({
         anchorType: annotation ? "annotation" : "entry",
         position: {
-          x: normalizedMousePosition[X],
-          y: normalizedMousePosition[Y],
+          x: normalizedMousePosition[0],
+          y: normalizedMousePosition[1],
           start: frame,
           end: frame,
           target_size: screenDimensions,
@@ -346,7 +344,7 @@
       mousePosition = [e.offsetX, e.offsetY]; //..
       // mouse[0] = e.pageX - (Math.round(elementRect.left) + window.scrollX);
       // mouse[1] = e.pageY - (Math.round(elementRect.top) + window.scrollY);
-      // console.log({mouse:{x: mouse[X], y:mouse[Y]}, e})
+      // console.log({mouse:{x: mouse[0], y:mouse[1]}, e})
       zoomableElement.mouseMove(e);
     }}
     onwheel={(e) => {
@@ -357,18 +355,18 @@
     {#if showCrosshair}
       <!-- Crosshair is an SVG group with infinite width lines -->
       <line
-        x1={sceneMousePosition[X] - 10000}
-        y1={sceneMousePosition[Y]}
-        x2={sceneMousePosition[X] + 10000}
-        y2={sceneMousePosition[Y]}
+        x1={sceneMousePosition[0] - 10000}
+        y1={sceneMousePosition[1]}
+        x2={sceneMousePosition[0] + 10000}
+        y2={sceneMousePosition[1]}
         stroke="rgba(100,100,100,0.25)"
         stroke-width="1"
       />
       <line
-        x1={sceneMousePosition[X]}
-        y1={sceneMousePosition[Y] - 10000}
-        x2={sceneMousePosition[X]}
-        y2={sceneMousePosition[Y] + 10000}
+        x1={sceneMousePosition[0]}
+        y1={sceneMousePosition[1] - 10000}
+        x2={sceneMousePosition[0]}
+        y2={sceneMousePosition[1] + 10000}
         stroke="rgba(100,100,100,0.25)"
         stroke-width="1"
       />

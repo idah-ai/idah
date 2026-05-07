@@ -1,6 +1,6 @@
 <script lang="ts">
   import { IDAH_NOTE } from "$lib/plugin/type";
-  import { X, Y, type Point } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { type Point } from "$lib/utils/math/point";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";
 
@@ -72,7 +72,7 @@
 
   let cursor_pixel: Point = $derived.by(() => {
     if (!cursor) return [0, 0];
-    return [cursor[X] * ratio[X], cursor[Y] * ratio[Y]];
+    return [cursor[0] * ratio[0], cursor[1] * ratio[1]];
   });
 
   let centroid: Point = $derived.by(() => {
@@ -83,7 +83,7 @@
   // Calculate pan offset for rendering
   let panOffset: Point = $derived.by(() => {
     if (panStart && cursor_pixel) {
-      return [(cursor_pixel[X] - panStart[X]) / ratio[X], (cursor_pixel[Y] - panStart[Y]) / ratio[Y]];
+      return [(cursor_pixel[0] - panStart[0]) / ratio[0], (cursor_pixel[1] - panStart[1]) / ratio[1]];
     }
     return [0, 0];
   });
@@ -103,8 +103,8 @@
 
   // Update points based on cursor movement (pan)
   let updatedPoints = $derived.by(() => {
-    if (panOffset[X] !== 0 || panOffset[Y] !== 0) {
-      return points.map((p) => [p[X] + panOffset[X], p[Y] + panOffset[Y]]) as Point[];
+    if (panOffset[0] !== 0 || panOffset[1] !== 0) {
+      return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
     }
     return points;
   });
@@ -113,10 +113,10 @@
   let displayPoints = $derived.by(() => {
     if (points.length === 1 && cursor) {
       // Show live preview of rectangle while drawing
-      const topLeft: Point = [Math.min(points[0][X], cursor[X]), Math.min(points[0][Y], cursor[Y])];
-      const bottomRight: Point = [Math.max(points[0][X], cursor[X]), Math.max(points[0][Y], cursor[Y])];
+      const topLeft: Point = [Math.min(points[0][0], cursor[0]), Math.min(points[0][1], cursor[1])];
+      const bottomRight: Point = [Math.max(points[0][0], cursor[0]), Math.max(points[0][1], cursor[1])];
 
-      return [topLeft, [bottomRight[X], topLeft[Y]], bottomRight, [topLeft[X], bottomRight[Y]]] as Point[];
+      return [topLeft, [bottomRight[0], topLeft[1]], bottomRight, [topLeft[0], bottomRight[1]]] as Point[];
     }
     // Use updatedPoints (which handles pan) for display
     return updatedPoints;
@@ -130,7 +130,7 @@
 
     if (points.length === 4 && resizeHandleIndex !== undefined) {
       // Only update if cursor actually moved
-      if (currentCursor[X] !== lastResizeCursor[X] || currentCursor[Y] !== lastResizeCursor[Y]) {
+      if (currentCursor[0] !== lastResizeCursor[0] || currentCursor[1] !== lastResizeCursor[1]) {
         lastResizeCursor = currentCursor;
         handleResize(resizeHandleIndex, currentCursor);
       }
@@ -139,7 +139,7 @@
 
   function draw_cmd(path: Point[]) {
     if (path.length === 0) return "";
-    return [...path.map((p, i) => `${i === 0 ? "M" : "L"}${p[X] * ratio[X]} ${p[Y] * ratio[Y]}`), "Z"].join(" ");
+    return [...path.map((p, i) => `${i === 0 ? "M" : "L"}${p[0] * ratio[0]} ${p[1] * ratio[1]}`), "Z"].join(" ");
   }
 
   // Derive the centroid with pan offset applied for rendering rotation handle
@@ -150,28 +150,28 @@
 
   function getCentroid(pts: Point[]): Point {
     if (pts.length === 0) return [0, 0];
-    return pts.reduce((acc, p) => [acc[X] + p[X], acc[Y] + p[Y]], [0, 0]).map((c) => c / pts.length) as Point;
+    return pts.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]).map((c) => c / pts.length) as Point;
   }
 
   function rotatePoint(point: Point, center: Point, angle: number): Point {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    const dx = point[X] - center[X];
-    const dy = point[Y] - center[Y];
-    return [center[X] + dx * cos - dy * sin, center[Y] + dx * sin + dy * cos];
+    const dx = point[0] - center[0];
+    const dy = point[1] - center[1];
+    return [center[0] + dx * cos - dy * sin, center[1] + dx * sin + dy * cos];
   }
 
   // Rotation in normalized space (accounting for non-uniform scaling)
   function rotatePointNormalized(point: Point, center: Point, angle: number, ratio: Point): Point {
     // Convert to pixel space
-    const pointPixel: Point = [point[X] * ratio[X], point[Y] * ratio[Y]];
-    const centerPixel: Point = [center[X] * ratio[X], center[Y] * ratio[Y]];
+    const pointPixel: Point = [point[0] * ratio[0], point[1] * ratio[1]];
+    const centerPixel: Point = [center[0] * ratio[0], center[1] * ratio[1]];
 
     // Rotate in pixel space
     const rotated = rotatePoint(pointPixel, centerPixel, angle);
 
     // Convert back to normalized space
-    return [rotated[X] / ratio[X], rotated[Y] / ratio[Y]];
+    return [rotated[0] / ratio[0], rotated[1] / ratio[1]];
   }
 
   function inverseRotatePointNormalized(point: Point, center: Point, angle: number, ratio: Point): Point {
@@ -182,12 +182,12 @@
     if (rotateStart && cursor_pixel && rotateStartAngle !== undefined && rotateStartRevolutions !== undefined) {
       // Calculate angle directly in PIXEL space (not normalized)
       // This matches the visual rotation which happens in screen/pixel space
-      const centroidPixel: Point = [centroid[X] * ratio[X], centroid[Y] * ratio[Y]];
+      const centroidPixel: Point = [centroid[0] * ratio[0], centroid[1] * ratio[1]];
 
-      const rel: Point = [cursor_pixel[X] - centroidPixel[X], cursor_pixel[Y] - centroidPixel[Y]];
+      const rel: Point = [cursor_pixel[0] - centroidPixel[0], cursor_pixel[1] - centroidPixel[1]];
 
       // Measure angle from north (up), clockwise: atan2(X, -Y)
-      const currentCursorAngle = Math.atan2(rel[X], -rel[Y]);
+      const currentCursorAngle = Math.atan2(rel[0], -rel[1]);
 
       // Preserve the revolution count by adding it back
       return currentCursorAngle + rotateStartRevolutions * 2 * Math.PI;
@@ -205,11 +205,11 @@
   export function endSelection(end: Point) {
     if (points.length === 1) {
       // Create a proper rectangle from two diagonal corners
-      const topLeft: Point = [Math.min(points[0][X], end[X]), Math.min(points[0][Y], end[Y])];
-      const bottomRight: Point = [Math.max(points[0][X], end[X]), Math.max(points[0][Y], end[Y])];
+      const topLeft: Point = [Math.min(points[0][0], end[0]), Math.min(points[0][1], end[1])];
+      const bottomRight: Point = [Math.max(points[0][0], end[0]), Math.max(points[0][1], end[1])];
 
       // Create rectangle: top-left, top-right, bottom-right, bottom-left
-      points = [topLeft, [bottomRight[X], topLeft[Y]], bottomRight, [topLeft[X], bottomRight[Y]]];
+      points = [topLeft, [bottomRight[0], topLeft[1]], bottomRight, [topLeft[0], bottomRight[1]]];
       onChange?.(points, angle);
     } else if (points.length === 4) {
       if (panStart) {
@@ -252,10 +252,10 @@
     if (pts.length !== 4) return pts;
 
     // Find min/max coordinates
-    const minX = Math.min(pts[0][X], pts[1][X], pts[2][X], pts[3][X]);
-    const maxX = Math.max(pts[0][X], pts[1][X], pts[2][X], pts[3][X]);
-    const minY = Math.min(pts[0][Y], pts[1][Y], pts[2][Y], pts[3][Y]);
-    const maxY = Math.max(pts[0][Y], pts[1][Y], pts[2][Y], pts[3][Y]);
+    const minX = Math.min(pts[0][0], pts[1][0], pts[2][0], pts[3][0]);
+    const maxX = Math.max(pts[0][0], pts[1][0], pts[2][0], pts[3][0]);
+    const minY = Math.min(pts[0][1], pts[1][1], pts[2][1], pts[3][1]);
+    const maxY = Math.max(pts[0][1], pts[1][1], pts[2][1], pts[3][1]);
 
     // Return in canonical order: top-left, top-right, bottom-right, bottom-left
     return [
@@ -337,7 +337,7 @@
     for (let i = 0; i < 4; i++) {
       const next = (i + 1) % 4;
       handles.push(p[i]); // Corner handle
-      handles.push([(p[i][X] + p[next][X]) / 2, (p[i][Y] + p[next][Y]) / 2]); // Edge handle
+      handles.push([(p[i][0] + p[next][0]) / 2, (p[i][1] + p[next][1]) / 2]); // Edge handle
     }
     return handles;
   }
@@ -346,7 +346,7 @@
     if (points.length !== 4 || resizeInitialPoints.length !== 4) return;
 
     const currentAngle = getAngle();
-    const cursorNormalized: Point = [cursorPos[X] / ratio[X], cursorPos[Y] / ratio[Y]];
+    const cursorNormalized: Point = [cursorPos[0] / ratio[0], cursorPos[1] / ratio[1]];
 
     // IMPORTANT: Points are stored in UNROTATED space
     // The visual rotation is applied via CSS transform
@@ -365,10 +365,10 @@
     const initialBottomLeft = resizeInitialPoints[3];
 
     // Define new bounds starting from initial
-    let newTopLeftX = initialTopLeft[X];
-    let newTopLeftY = initialTopLeft[Y];
-    let newBottomRightX = initialBottomRight[X];
-    let newBottomRightY = initialBottomRight[Y];
+    let newTopLeftX = initialTopLeft[0];
+    let newTopLeftY = initialTopLeft[1];
+    let newBottomRightX = initialBottomRight[0];
+    let newBottomRightY = initialBottomRight[1];
 
     // Determine which point/edge to keep fixed (in unrotated space)
     let fixedPointUnrotated: Point = [0, 0];
@@ -379,23 +379,23 @@
 
       switch (cornerIndex) {
         case 0: // top-left corner
-          newTopLeftX = unrotatedCursor[X];
-          newTopLeftY = unrotatedCursor[Y];
+          newTopLeftX = unrotatedCursor[0];
+          newTopLeftY = unrotatedCursor[1];
           fixedPointUnrotated = initialBottomRight;
           break;
         case 1: // top-right corner
-          newBottomRightX = unrotatedCursor[X];
-          newTopLeftY = unrotatedCursor[Y];
+          newBottomRightX = unrotatedCursor[0];
+          newTopLeftY = unrotatedCursor[1];
           fixedPointUnrotated = initialBottomLeft;
           break;
         case 2: // bottom-right corner
-          newBottomRightX = unrotatedCursor[X];
-          newBottomRightY = unrotatedCursor[Y];
+          newBottomRightX = unrotatedCursor[0];
+          newBottomRightY = unrotatedCursor[1];
           fixedPointUnrotated = initialTopLeft;
           break;
         case 3: // bottom-left corner
-          newTopLeftX = unrotatedCursor[X];
-          newBottomRightY = unrotatedCursor[Y];
+          newTopLeftX = unrotatedCursor[0];
+          newBottomRightY = unrotatedCursor[1];
           fixedPointUnrotated = initialTopRight;
           break;
       }
@@ -406,20 +406,20 @@
 
       switch (edgeIndex) {
         case 0: // top edge
-          newTopLeftY = unrotatedCursor[Y];
-          fixedPointUnrotated = [(initialTopLeft[X] + initialBottomRight[X]) / 2, initialBottomRight[Y]];
+          newTopLeftY = unrotatedCursor[1];
+          fixedPointUnrotated = [(initialTopLeft[0] + initialBottomRight[0]) / 2, initialBottomRight[1]];
           break;
         case 1: // right edge
-          newBottomRightX = unrotatedCursor[X];
-          fixedPointUnrotated = [initialTopLeft[X], (initialTopLeft[Y] + initialBottomRight[Y]) / 2];
+          newBottomRightX = unrotatedCursor[0];
+          fixedPointUnrotated = [initialTopLeft[0], (initialTopLeft[1] + initialBottomRight[1]) / 2];
           break;
         case 2: // bottom edge
-          newBottomRightY = unrotatedCursor[Y];
-          fixedPointUnrotated = [(initialTopLeft[X] + initialBottomRight[X]) / 2, initialTopLeft[Y]];
+          newBottomRightY = unrotatedCursor[1];
+          fixedPointUnrotated = [(initialTopLeft[0] + initialBottomRight[0]) / 2, initialTopLeft[1]];
           break;
         case 3: // left edge
-          newTopLeftX = unrotatedCursor[X];
-          fixedPointUnrotated = [initialBottomRight[X], (initialTopLeft[Y] + initialBottomRight[Y]) / 2];
+          newTopLeftX = unrotatedCursor[0];
+          fixedPointUnrotated = [initialBottomRight[0], (initialTopLeft[1] + initialBottomRight[1]) / 2];
           break;
       }
     }
@@ -448,8 +448,8 @@
       const oppositeEdge = (edgeIndex + 2) % 4;
       const nextCorner = (oppositeEdge + 1) % 4;
       newFixedPointUnrotated = [
-        (newUnrotatedPoints[oppositeEdge][X] + newUnrotatedPoints[nextCorner][X]) / 2,
-        (newUnrotatedPoints[oppositeEdge][Y] + newUnrotatedPoints[nextCorner][Y]) / 2,
+        (newUnrotatedPoints[oppositeEdge][0] + newUnrotatedPoints[nextCorner][0]) / 2,
+        (newUnrotatedPoints[oppositeEdge][1] + newUnrotatedPoints[nextCorner][1]) / 2,
       ];
     }
 
@@ -458,11 +458,11 @@
     const newFixedPointScreen = rotatePointNormalized(newFixedPointUnrotated, newCentroid, currentAngle, ratio);
 
     // 4. Calculate the difference
-    const shiftX = fixedPointScreen[X] - newFixedPointScreen[X];
-    const shiftY = fixedPointScreen[Y] - newFixedPointScreen[Y];
+    const shiftX = fixedPointScreen[0] - newFixedPointScreen[0];
+    const shiftY = fixedPointScreen[1] - newFixedPointScreen[1];
 
     // 5. Shift all points (in unrotated space) to compensate
-    points = newUnrotatedPoints.map((p) => [p[X] + shiftX, p[Y] + shiftY]) as Point[];
+    points = newUnrotatedPoints.map((p) => [p[0] + shiftX, p[1] + shiftY]) as Point[];
   }
 
   // Create SVG cursor for rotation handle with curved arrows
@@ -524,7 +524,7 @@
   }
 </script>
 
-<g transform={`translate(${offset[X]}, ${offset[Y]})`}>
+<g transform={`translate(${offset[0]}, ${offset[1]})`}>
   {#if !hidden}
     <!-- Bounding Box -->
     {#if displayPoints.length > 0}
@@ -536,7 +536,7 @@
         d={draw_cmd(displayPoints)}
         onmouseenter={() => (over = true)}
         onmouseleave={() => (over = false)}
-        style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+        style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
         style:transform={`rotate(${getAngle()}rad)`}
         vector-effect="non-scaling-stroke"
         class={isEditing ? "cursor-none" : edition_cursor}
@@ -560,19 +560,19 @@
         <!-- Debug: Show line from centroid to cursor when rotating -->
         {#if rotateStart && cursor_pixel}
           <line
-            x1={displayCentroid[X] * ratio[X]}
-            y1={displayCentroid[Y] * ratio[Y]}
-            x2={cursor_pixel[X]}
-            y2={cursor_pixel[Y]}
+            x1={displayCentroid[0] * ratio[0]}
+            y1={displayCentroid[1] * ratio[1]}
+            x2={cursor_pixel[0]}
+            y2={cursor_pixel[1]}
             stroke={color}
             stroke-width="2"
             stroke-dasharray="5,5"
           />
           <circle
-            cx={displayCentroid[X] * ratio[X]}
-            cy={displayCentroid[Y] * ratio[Y]}
+            cx={displayCentroid[0] * ratio[0]}
+            cy={displayCentroid[1] * ratio[1]}
             r={4}
-            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
             vector-effect="non-scaling-stroke"
             style:stroke={color}
@@ -583,32 +583,32 @@
 
         <!-- Rotation handle (above top edge) -->
         {#if editable && points.length === 4}
-          {@const minY = Math.min(updatedPoints[0][Y], updatedPoints[1][Y], updatedPoints[2][Y], updatedPoints[3][Y])}
-          {@const minX = Math.min(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
-          {@const maxX = Math.max(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
+          {@const minY = Math.min(updatedPoints[0][1], updatedPoints[1][1], updatedPoints[2][1], updatedPoints[3][1])}
+          {@const minX = Math.min(updatedPoints[0][0], updatedPoints[1][0], updatedPoints[2][0], updatedPoints[3][0])}
+          {@const maxX = Math.max(updatedPoints[0][0], updatedPoints[1][0], updatedPoints[2][0], updatedPoints[3][0])}
 
           {@const topEdgeMidpoint = [(minX + maxX) / 2, minY]}
           {@const handleDistance = 60}
-          {@const handleOffset = handleDistance / Math.max(ratio[X], ratio[Y])}
+          {@const handleOffset = handleDistance / Math.max(ratio[0], ratio[1])}
 
           <line
-            x1={topEdgeMidpoint[X] * ratio[X]}
-            y1={topEdgeMidpoint[Y] * ratio[Y]}
-            x2={topEdgeMidpoint[X] * ratio[X]}
-            y2={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+            x1={topEdgeMidpoint[0] * ratio[0]}
+            y1={topEdgeMidpoint[1] * ratio[1]}
+            x2={topEdgeMidpoint[0] * ratio[0]}
+            y2={(topEdgeMidpoint[1] - handleOffset) * ratio[1]}
             stroke={color}
             stroke-width="2"
-            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
             pointer-events="none"
           />
 
           <!-- Rotation handle circle with custom cursor -->
           <circle
-            cx={topEdgeMidpoint[X] * ratio[X]}
-            cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+            cx={topEdgeMidpoint[0] * ratio[0]}
+            cy={(topEdgeMidpoint[1] - handleOffset) * ratio[1]}
             r={2}
-            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
             style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
             style:fill={color}
@@ -625,16 +625,16 @@
                 rotateStartRevolutions = revolutionCount;
                 activeCursor = getRotateCursorSVG();
 
-                const centroidPixel: Point = [displayCentroid[X] * ratio[X], displayCentroid[Y] * ratio[Y]];
-                const rel: Point = [cursor_pixel[X] - centroidPixel[X], cursor_pixel[Y] - centroidPixel[Y]];
-                rotateStartAngle = Math.atan2(rel[X], -rel[Y]);
+                const centroidPixel: Point = [displayCentroid[0] * ratio[0], displayCentroid[1] * ratio[1]];
+                const rel: Point = [cursor_pixel[0] - centroidPixel[0], cursor_pixel[1] - centroidPixel[1]];
+                rotateStartAngle = Math.atan2(rel[0], -rel[1]);
               }
               onmousedown?.(e);
             }}
-            cx={topEdgeMidpoint[X] * ratio[X]}
-            cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+            cx={topEdgeMidpoint[0] * ratio[0]}
+            cy={(topEdgeMidpoint[1] - handleOffset) * ratio[1]}
             r={6}
-            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
             style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
             style:fill={color}
@@ -642,10 +642,10 @@
           />
 
           <!-- Revolution counter (not rotated, always horizontal) -->
-          {@const handleX = topEdgeMidpoint[X] * ratio[X]}
-          {@const handleY = (topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
-          {@const centroidPixelX = displayCentroid[X] * ratio[X]}
-          {@const centroidPixelY = displayCentroid[Y] * ratio[Y]}
+          {@const handleX = topEdgeMidpoint[0] * ratio[0]}
+          {@const handleY = (topEdgeMidpoint[1] - handleOffset) * ratio[1]}
+          {@const centroidPixelX = displayCentroid[0] * ratio[0]}
+          {@const centroidPixelY = displayCentroid[1] * ratio[1]}
           {@const currentAngle = getAngle()}
           {@const dx = handleX - centroidPixelX}
           {@const dy = handleY - centroidPixelY}
@@ -735,10 +735,10 @@
         <!-- Resize handles with rotated cursors -->
         {#each boundingBoxHandle(updatedPoints) as point, handle (handle)}
           <circle
-            cx={point[X] * ratio[X]}
-            cy={point[Y] * ratio[Y]}
+            cx={point[0] * ratio[0]}
+            cy={point[1] * ratio[1]}
             r={2}
-            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
             style:cursor={isEditing
               ? "none"
@@ -759,10 +759,10 @@
                 activeCursor = getRotatedCursorSVG(handle);
               }
             }}
-            cx={point[X] * ratio[X]}
-            cy={point[Y] * ratio[Y]}
+            cx={point[0] * ratio[0]}
+            cy={point[1] * ratio[1]}
             r={5}
-            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform-origin={`${displayCentroid[0] * ratio[0]}px ${displayCentroid[1] * ratio[1]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
             style:cursor={isEditing
               ? "none"
@@ -779,7 +779,7 @@
     <!-- Active cursor overlay that persists during drag operations -->
     {#if activeCursor && cursor_pixel}
       <g style="pointer-events: none;">
-        <image href={activeCursor} x={cursor_pixel[X] - 18} y={cursor_pixel[Y] - 18} width="36" height="36" />
+        <image href={activeCursor} x={cursor_pixel[0] - 18} y={cursor_pixel[1] - 18} width="36" height="36" />
       </g>
     {/if}
   {/if}

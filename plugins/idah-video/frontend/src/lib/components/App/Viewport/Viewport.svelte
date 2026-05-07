@@ -2,13 +2,7 @@
   import { type Snippet } from "svelte";
 
   import { DEFAULT_MODE, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
-  import {
-    HEIGHT,
-    WIDTH,
-    X,
-    Y,
-    type Point,
-  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { type Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
 
   // Props
@@ -30,11 +24,11 @@
   function panTo(x: number, y: number) {
     if (!panOrigin) return;
 
-    viewport.workspace.transform.translate = [x - panOrigin[X], y - panOrigin[Y]];
+    viewport.workspace.transform.translate = [x - panOrigin[0], y - panOrigin[1]];
   }
 
   function panStart(x: number, y: number) {
-    panOrigin = [x - viewport.workspace.transform.translate[X], y - viewport.workspace.transform.translate[Y]];
+    panOrigin = [x - viewport.workspace.transform.translate[0], y - viewport.workspace.transform.translate[1]];
   }
 
   function panStop() {
@@ -46,8 +40,8 @@
     const curTranslate = viewport.workspace.transform.translate;
     let [ox, oy] = curTranslate;
     let [sx, sy] = size;
-    ox = curTranslate[X] / curScale;
-    oy = curTranslate[Y] / curScale;
+    ox = curTranslate[0] / curScale;
+    oy = curTranslate[1] / curScale;
 
     let dsx = sx - (sx * scopedZoom(curScale + 0.1)) / curScale;
     let dsy = sy - (sy * scopedZoom(curScale + 0.1)) / curScale;
@@ -60,8 +54,8 @@
     const curTranslate = viewport.workspace.transform.translate;
     let [ox, oy] = curTranslate;
     let [sx, sy] = size;
-    ox = curTranslate[X] / curScale;
-    oy = curTranslate[Y] / curScale;
+    ox = curTranslate[0] / curScale;
+    oy = curTranslate[1] / curScale;
 
     let dsx = sx - (sx * scopedZoom(curScale - 0.1)) / curScale;
     let dsy = sy - (sy * scopedZoom(curScale - 0.1)) / curScale;
@@ -112,8 +106,8 @@
         if (Math.abs(newScale - curScale) < 0.001) return;
 
         // Zoom towards the cursor position
-        let ox = (e.offsetX - curTranslate[X]) / curScale;
-        let oy = (e.offsetY - curTranslate[Y]) / curScale;
+        let ox = (e.offsetX - curTranslate[0]) / curScale;
+        let oy = (e.offsetY - curTranslate[1]) / curScale;
         viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
         viewport.workspace.transform.scale = newScale;
       }
@@ -121,8 +115,8 @@
       // Scroll / two-finger drag → translate
       const curTranslate = viewport.workspace.transform.translate;
       viewport.workspace.transform.translate = [
-        curTranslate[X] - e.deltaX,
-        curTranslate[Y] - e.deltaY,
+        curTranslate[0] - e.deltaX,
+        curTranslate[1] - e.deltaY,
       ];
     }
   }
@@ -168,13 +162,13 @@
   class="viewport bg-secondary h-full w-full"
   role="grid"
   tabindex="-1"
-  bind:clientHeight={size[HEIGHT]}
-  bind:clientWidth={size[WIDTH]}
+  bind:clientHeight={size[1]}
+  bind:clientWidth={size[0]}
 >
   <div
     class="target"
     style:transform-origin="top left"
-    style:transform={`translate(${viewport.workspace.transform.translate[X]}px, ${viewport.workspace.transform.translate[Y]}px)  scale(${viewport.workspace.transform.scale})`}
+    style:transform={`translate(${viewport.workspace.transform.translate[0]}px, ${viewport.workspace.transform.translate[1]}px)  scale(${viewport.workspace.transform.scale})`}
   >
     {@render children()}
   </div>

@@ -1,11 +1,9 @@
 <script lang="ts">
   import { IDAH_NOTE } from "$lib/plugin/type";
   import {
-    X,
-    Y,
     type InterpolatedVertex,
     type Point,
-  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  } from "$lib/utils/math/point";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";
 
@@ -181,7 +179,7 @@
     if (path.length == 0) return;
 
     return [
-      ...path.map((p, i) => `${i == 0 ? "M" : "L"}${p[X]} ${p[Y]}`),
+      ...path.map((p, i) => `${i == 0 ? "M" : "L"}${p[0]} ${p[1]}`),
       "Z", // close path
     ].join(" ");
   }
@@ -189,14 +187,14 @@
   function draw_preview_cmd(path: Point[], cursorPoint: Point) {
     if (path.length == 0) return;
 
-    return [...path.map((p, i) => `${i == 0 ? "M" : "L"}${p[X]} ${p[Y]}`), `L${cursorPoint[X]} ${cursorPoint[Y]}`].join(
+    return [...path.map((p, i) => `${i == 0 ? "M" : "L"}${p[0]} ${p[1]}`), `L${cursorPoint[0]} ${cursorPoint[1]}`].join(
       " ",
     );
   }
 
   function pan(points: Point[], from: Point, to: Point): Point[] {
-    const delta = [to[X] - from[X], to[Y] - from[Y]];
-    return points.map((p) => [p[X] + delta[X], p[Y] + delta[Y]]) as Point[];
+    const delta = [to[0] - from[0], to[1] - from[1]];
+    return points.map((p) => [p[0] + delta[0], p[1] + delta[1]]) as Point[];
   }
 
   function moveVertex(points: Point[], vertexIndex: number, newPosition: Point): Point[] {
@@ -208,10 +206,10 @@
   function isNearPoint(point: Point, target: Point, thresholdPixels: number = 10): boolean {
     // Convert pixel threshold to normalized coordinates
     // Use average of X and Y ratios for threshold conversion
-    const avgRatio = (ratio[X] + ratio[Y]) / 2;
+    const avgRatio = (ratio[0] + ratio[1]) / 2;
     const threshold = thresholdPixels / avgRatio;
 
-    const distance = Math.sqrt((point[X] - target[X]) ** 2 + (point[Y] - target[Y]) ** 2);
+    const distance = Math.sqrt((point[0] - target[0]) ** 2 + (point[1] - target[1]) ** 2);
 
     return distance < threshold;
   }
@@ -221,15 +219,15 @@
   function isOnLineSegment(point: Point, lineStart: Point, lineEnd: Point, thresholdPixels: number = 10): boolean {
     // Convert pixel threshold to normalized coordinates
     // Use average of X and Y ratios for threshold conversion
-    const avgRatio = (ratio[X] + ratio[Y]) / 2;
+    const avgRatio = (ratio[0] + ratio[1]) / 2;
     const threshold = thresholdPixels / avgRatio;
 
-    const x = point[X];
-    const y = point[Y];
-    const x1 = lineStart[X];
-    const y1 = lineStart[Y];
-    const x2 = lineEnd[X];
-    const y2 = lineEnd[Y];
+    const x = point[0];
+    const y = point[1];
+    const x1 = lineStart[0];
+    const y1 = lineStart[1];
+    const x2 = lineEnd[0];
+    const y2 = lineEnd[1];
 
     const A = x - x1;
     const B = y - y1;
@@ -409,11 +407,11 @@
     {@const isMatched = typeof vertexData === "object" && "matched" in vertexData ? vertexData.matched : true}
 
     <circle
-      cx={point[X] * ratio[X]}
-      cy={point[Y] * ratio[Y]}
+      cx={point[0] * ratio[0]}
+      cy={point[1] * ratio[1]}
       r={2}
       style:transform-origin="top left"
-      style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+      style:transform={`translate(${offset[0]}px, ${offset[1]}px)`}
       style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
       style:stroke={color}
@@ -436,11 +434,11 @@
           editingVertexIndex = index;
         }
       }}
-      cx={point[X] * ratio[X]}
-      cy={point[Y] * ratio[Y]}
+      cx={point[0] * ratio[0]}
+      cy={point[1] * ratio[1]}
       r={5}
       style:transform-origin="top left"
-      style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+      style:transform={`translate(${offset[0]}px, ${offset[1]}px)`}
       class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-minus-icon" : ""}
       style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
@@ -460,7 +458,7 @@
     <path
       d={path}
       style:transform-origin="top left"
-      style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
+      style:transform={`translate(${offset[0]}px, ${offset[1]}px) scale(${ratio[0]}, ${ratio[1]})`}
       vector-effect="non-scaling-stroke"
       class={isEditing ? "cursor-none" : edition_cursor}
       fill-opacity={getPolygonStyles(styles).opacity}
@@ -485,8 +483,8 @@
   <g style="pointer-events: none;">
     <image
       href={getResizeCursorSVG()}
-      x={cursor[X] * ratio[X] + offset[X] - 18}
-      y={cursor[Y] * ratio[Y] + offset[Y] - 18}
+      x={cursor[0] * ratio[0] + offset[0] - 18}
+      y={cursor[1] * ratio[1] + offset[1] - 18}
       width="36"
       height="36"
     />
@@ -502,7 +500,7 @@
     <path
       d={draw_preview_cmd(polygon_points, cursor)}
       style:transform-origin="top left"
-      style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
+      style:transform={`translate(${offset[0]}px, ${offset[1]}px) scale(${ratio[0]}, ${ratio[1]})`}
       vector-effect="non-scaling-stroke"
       class={isEditing ? "cursor-none" : edition_cursor}
       fill-opacity={getPolygonStyles(styles).opacity}
@@ -516,11 +514,11 @@
     <!-- Draw existing vertices while creating -->
     {#each polygon_points as point, index (index)}
       <circle
-        cx={point[X] * ratio[X]}
-        cy={point[Y] * ratio[Y]}
+        cx={point[0] * ratio[0]}
+        cy={point[1] * ratio[1]}
         r={5}
         style:transform-origin="top left"
-        style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+        style:transform={`translate(${offset[0]}px, ${offset[1]}px)`}
         style:cursor={index === 0 && polygon_points.length >= 3 ? "pointer" : "default"}
         vector-effect="non-scaling-stroke"
         style:stroke={index === 0 && isHoveringOverFirstPoint ? "#22c55e" : color}

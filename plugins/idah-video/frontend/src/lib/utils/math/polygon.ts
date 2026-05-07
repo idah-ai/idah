@@ -3,13 +3,9 @@ import {
   distance,
   midpoint,
   projectPointOnSegment,
-} from "$lib/components/App/Viewport/Shapes/geometry-utils";
+} from "$lib/utils/math/geometry";
 
-import {
-  type InterpolatedVertex,
-  type Point,
-  type VideoFrameSelection,
-} from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type { InterpolatedVertex, Point } from "$lib/utils/math/point";
 
 // -----------------
 // Polygon helper functions
@@ -373,33 +369,25 @@ function lerpVertices(A: InterpolatedVertex[], B: InterpolatedVertex[] | Point[]
   });
 }
 
-export function interpolatePolygonAtFrame(
-  frameStartPoly: VideoFrameSelection,
-  frameEndPoly: VideoFrameSelection,
-  current_frame: number,
+export function interpolatePolygon(
+  polyFrom: Point[],
+  polyTo: Point[],
+  t: number,
 ): InterpolatedVertex[] {
-  let maxFrame;
-  let minFrame;
+  let minPoints: Point[];
+  let maxPoints: Point[];
 
-  if (frameStartPoly.points.length < frameEndPoly.points.length) {
-    minFrame = frameStartPoly;
-    maxFrame = frameEndPoly;
+  if (polyFrom.length < polyTo.length) {
+    minPoints = polyFrom;
+    maxPoints = polyTo;
   } else {
-    minFrame = frameEndPoly;
-    maxFrame = frameStartPoly;
+    minPoints = polyTo;
+    maxPoints = polyFrom;
   }
 
-  const [frameStartReordered, frameEndReordered, matches] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
-
-  // Expand both polygons using matches
+  const [frameStartReordered, frameEndReordered, matches] = matchVerticesByBarycenter(minPoints, maxPoints);
   const [expandedPolyMin, expandedPolyMax] = expandPolygonUsingMatches(frameStartReordered, frameEndReordered, matches);
 
-  // linear interpolation
-  const alpha = (current_frame - minFrame.frame) / (maxFrame.frame - minFrame.frame);
-
-  const t = Math.min(Math.max(alpha, 0), 1);
-
-  const interpolated = lerpVertices(expandedPolyMin, expandedPolyMax, t);
-
-  return interpolated;
+  const clamped = Math.min(Math.max(t, 0), 1);
+  return lerpVertices(expandedPolyMin, expandedPolyMax, clamped);
 }

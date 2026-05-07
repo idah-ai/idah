@@ -10,9 +10,8 @@ import {
   IDAH_VIDEO_POLYGON,
   IDAH_VISUAL,
 } from "$lib/plugin/type";
+import type { InterpolatedVertex, Point } from "$lib/utils/math/point";
 import {
-  type InterpolatedVertex,
-  type Point,
   type VideoAnnotationObject,
   type VideoFrameSelection,
   type VideoShape,
