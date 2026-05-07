@@ -95,7 +95,13 @@
       const isZip = isZipFile(media.name);
 
       try {
-        const createdMedias = await mediaBackendDataSource.upload(media, resourceKey, projectId, "", modality);
+        const createdMedias = await mediaBackendDataSource.upload({
+          file: media,
+          resource: resourceKey,
+          projectId,
+          key: "",
+          modality,
+        });
 
         if (!("data" in createdMedias)) {
           throw new Error("Media upload failed");

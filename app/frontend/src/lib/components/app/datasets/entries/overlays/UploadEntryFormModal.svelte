@@ -8,16 +8,16 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import PreviewUploadMediaItem from "./_PreviewUploadMediaItem.svelte";
+  import UploadMediaItem from "./_UploadMediaItem.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
-  import { truncateFront } from "@/utils/string";
 
+  import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import UploadMediaItem from "./_UploadMediaItem.svelte";
 
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
@@ -38,29 +38,28 @@
     any(): boolean;
   }
 
-  interface UploadItem {
-    uuid: string;
-    media: File;
-    status: "uploading" | "success" | "error" | "skipped" | "archive";
-    retryCount: number; // auto-retry attempts consumed
-    errorMessage?: string; // last error for display
-    uploadedResource?: string; // set once media upload succeeds — skip on retry
-  }
-
   interface Upload {
     items: Array<UploadItem>;
-    success(): Array<UploadItem>;
-    successCount(): number;
-
-    error(): Array<UploadItem>;
-    errorCount(): number;
+    uploadedFiles(): number;
+    skippedFiles(): number;
+    totalFiles(): number;
   }
 
   // Variables
-  const acceptedFileTypes =
-    modality === "idah-video"
-      ? [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".zip"]
-      : [".zip", ".jpg", ".jpeg", ".png", ".zip"];
+  const acceptedFileTypes = $derived.by(() => {
+    switch (modality) {
+      case "idah-video": {
+        return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"];
+      }
+      case "idah-image": {
+        return [".zip", ".jpg", ".jpeg", ".png"];
+      }
+      default: {
+        return [];
+      }
+    }
+  });
+
   let projectId = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
 
@@ -86,19 +85,16 @@
 
   let upload = $state<Upload>({
     items: [],
-
-    success() {
-      return this.items.filter((item) => item.status === "success");
+    uploadedFiles() {
+      return this.items.map((item) => item.uploadedMedias.length).reduce((a, b) => a + b, 0);
     },
-    successCount() {
-      return this.success().length;
+    skippedFiles() {
+      return this.items.map((item) => item.skippedMedias.length).reduce((a, b) => a + b, 0);
     },
-
-    error() {
-      return this.items.filter((item) => item.status === "error");
-    },
-    errorCount() {
-      return this.error().length;
+    totalFiles() {
+      return this.items
+        .map((item) => item.uploadedMedias.length + item.skippedMedias.length)
+        .reduce((a, b) => a + b, 0);
     },
   });
   let uploading: boolean = $state(false);
@@ -160,27 +156,42 @@
 
       try {
         // Skip media upload if a prior attempt already succeeded
-        if (!media.uploadedResource) {
+        // If the media has already been uploaded, we don't need to upload it again
+        if (!media.isUploaded()) {
           const fileExtension = getFileExtension(media.media.name);
           const resourceKey = `${media.uuid}${fileExtension}`;
-          const createdMedia = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
-          if (!("data" in createdMedia)) throw new Error("Media upload failed");
-          media.uploadedResource = createdMedia.data.resource; // ← checkpoint
+
+          const createdMedias = await mediaBackendDataSource.upload({
+            file: media.media,
+            resource: resourceKey,
+            projectId,
+            key: "",
+            modality,
+          });
+
+          if (!("data" in createdMedias)) throw new Error("Media upload failed");
+
+          media.uploadedMedias = createdMedias.data;
+          media.status = "success";
+
+          if (createdMedias.meta?.skipped) {
+            media.status = "skipped";
+            for (const skippedFilename of createdMedias.meta.skipped as string[]) {
+              media.skippedMedias.push(skippedFilename);
+            }
+          }
         }
 
-        await entriesBackendDataSource.create(
-          {
-            attributes: {
-              resource: media.uploadedResource,
-              name: media.media.name,
-              status: "pending",
+        for (const uploadedMedia of media.uploadedMedias) {
+          await entriesBackendDataSource.create(
+            {
+              attributes: { resource: uploadedMedia.resource, name: uploadedMedia.filename, status: "pending" },
+              relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
             },
-            relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
-          },
-          { showErrorToast: false },
-        );
+            { showErrorToast: false },
+          );
+        }
 
-        media.status = "success";
         media.errorMessage = undefined;
         return; // done
       } catch (error) {
@@ -199,13 +210,21 @@
 
     upload.items = Array.from(media.selected!).map((media) => ({
       uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
-      media,
-      status: "uploading" as const,
+      name: media.name,
+      isZip() {
+        return isZipFile(this.name);
+      },
+      media: media,
+      status: "uploading",
       retryCount: 0,
+      uploadedMedias: [],
+      isUploaded() {
+        return this.uploadedMedias.length > 0;
+      },
+      skippedMedias: [],
     }));
 
     for (const media of upload.items) {
-      media.status = "uploading";
       await uploadSingleMedia(media); // never throws — loop always continues
     }
 
@@ -227,13 +246,13 @@
     uploading = true;
     view.current = "upload";
 
-    // try {
-    //   await uploadMedia();
-    // } catch (error) {
-    //   showActionFailedToast(error);
-    // } finally {
-    //   uploading = false;
-    // }
+    try {
+      await uploadMedia();
+    } catch (error) {
+      showActionFailedToast(error);
+    } finally {
+      uploading = false;
+    }
   }
 </script>
 
@@ -267,8 +286,8 @@
 
   {#if view.isUpload()}
     <section class="flex h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
-      {#each Array.from({ length: 8 }) as _, i (i)}
-        <UploadMediaItem name="Media 0{i + 1}" info="12 MB" />
+      {#each upload.items as uploadItem, uploadItemIndex (uploadItemIndex)}
+        <UploadMediaItem {uploadItem} />
       {/each}
     </section>
   {/if}
@@ -281,7 +300,7 @@
         {/if}
 
         {#if view.isUpload()}
-          {upload.successCount()} of {media.count()} files uploaded
+          {upload.uploadedFiles()} of {upload.totalFiles()} files uploaded
         {/if}
       </Text>
 

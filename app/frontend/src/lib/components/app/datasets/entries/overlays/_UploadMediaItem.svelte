@@ -1,22 +1,52 @@
 <script lang="ts">
   import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
 
-  import Badge from "@/components/ui/badge/badge.svelte";
+  import Badge, { type BadgeVariant } from "@/components/ui/badge/badge.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { Item, ItemContent } from "@/components/ui/item";
   import { Progress } from "@/components/ui/progress";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
+  import { humanize } from "@/utils/string";
+
+  import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
 
   // Props
   interface Props {
-    name: string;
-    info: string;
+    uploadItem: UploadItem;
   }
-  let { name, info }: Props = $props();
+  let { uploadItem }: Props = $props();
 
   // Variables
+  const { name, uploadedMedias, skippedMedias, status } = $derived(uploadItem);
+
+  const totalUploadMedias = $derived(uploadedMedias.length);
+  const totalSkippedMedias = $derived(skippedMedias.length);
+  const totalMedias = $derived(totalUploadMedias + totalSkippedMedias);
+  const hasMultipleMedias = $derived(totalMedias > 1);
+
+  const progress = $derived((totalUploadMedias / totalMedias) * 100);
+
+  const badgeInfo = $derived.by<{ variant: BadgeVariant }>(() => {
+    switch (status) {
+      case "success": {
+        return { variant: "success" };
+      }
+      case "error": {
+        return { variant: "destructive" };
+      }
+      case "skipped": {
+        return { variant: "warning" };
+      }
+      case "archive": {
+        return { variant: "outline" };
+      }
+      default:
+        return { variant: "secondary" };
+    }
+  });
+
   let openCollapsible = $state(false);
 </script>
 
@@ -25,54 +55,57 @@
     <div class="flex w-full items-start gap-4">
       <div class="flex flex-col gap-0">
         <Text size="sm" weight="semibold">{name}</Text>
-        <Text size="sm" weight="normal" class="text-muted-foreground">{info}</Text>
+        <Text size="sm" weight="normal" class="text-muted-foreground">Info</Text>
       </div>
 
       <div class="ml-auto">
-        <!-- ICON::SUCCESS::CHECK -->
-        <Badge variant="success" rounded="full" class="text-xs">Success</Badge>
-
-        <!-- ICON::WARNING::ALERT TRIANGLE -->
-        <Badge variant="warning" rounded="full" class="text-xs">Some are failes</Badge>
-
-        <!-- ICON::ERROR::X CIRCLE -->
-        <Badge variant="destructive" rounded="full" class="text-xs">Error</Badge>
+        <Badge variant={badgeInfo.variant} rounded="full" class="text-xs">{humanize(status)}</Badge>
       </div>
     </div>
 
     <div class="flex items-center gap-2">
       <!-- PROGRESS BAR -->
-      <Progress value={100} />
+      <Progress value={progress} />
       <!-- PROGRESS COUNT -->
-      <Text size="sm" class="text-muted-foreground whitespace-nowrap">1/8</Text>
+      <Text size="sm" class="text-muted-foreground whitespace-nowrap">
+        {#if hasMultipleMedias}
+          {totalUploadMedias}/{totalMedias}
+        {:else}
+          10%
+        {/if}
+      </Text>
     </div>
 
-    <Collapsible bind:open={openCollapsible}>
-      <CollapsibleTrigger
-        class={cn(
-          "flex w-full cursor-pointer items-center rounded-sm p-2 hover:bg-amber-100 focus:outline-none hover:dark:bg-amber-900",
-          {
-            "rounded-br-none rounded-bl-none dark:bg-amber-900": openCollapsible,
-          },
-        )}
-      >
-        Failed files
+    {#if ["skipped", "archive"].includes(status)}
+      <Collapsible bind:open={openCollapsible}>
+        <CollapsibleTrigger
+          class={cn(
+            "mt-2 flex w-full cursor-pointer items-center rounded-sm bg-red-100 p-2 focus:outline-none dark:bg-red-900/50",
+            {
+              "rounded-br-none rounded-bl-none bg-red-100 dark:bg-red-900/50": openCollapsible,
+            },
+          )}
+        >
+          Failed files
 
-        <div class="ml-auto">
-          {#if openCollapsible}
-            <ChevronDownIcon class="size-4" />
-          {:else}
-            <ChevronRightIcon class="size-4" />
-          {/if}
-        </div>
-      </CollapsibleTrigger>
+          <div class="ml-auto">
+            {#if openCollapsible}
+              <ChevronDownIcon class="size-4" />
+            {:else}
+              <ChevronRightIcon class="size-4" />
+            {/if}
+          </div>
+        </CollapsibleTrigger>
 
-      <CollapsibleContent class="flex flex-col gap-2 rounded-br-sm rounded-bl-sm p-2 dark:bg-amber-900">
-        <div class="flex flex-col gap-0">
-          <Text size="xs">video.mp4</Text>
-          <Text size="xs" class="text-destructive">File type not supported</Text>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+        <CollapsibleContent class="flex flex-col gap-2 rounded-br-sm rounded-bl-sm bg-red-100 p-2 dark:bg-red-900/50">
+          <div class="flex flex-col gap-0 px-2">
+            {#each skippedMedias as skippedMedia, skippedMediaIndex (skippedMediaIndex)}
+              <Text size="xs">{skippedMedia}</Text>
+              <Text size="xs" class="text-destructive">TODO: skippedMedia.message</Text>
+            {/each}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    {/if}
   </ItemContent>
 </Item>
