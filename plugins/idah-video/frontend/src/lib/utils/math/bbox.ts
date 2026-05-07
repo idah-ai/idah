@@ -45,3 +45,8 @@ export function interpolateBBox(a: BBox, b: BBox, t: number): BBox {
     a[3] + (b[3] - a[3]) * t,
   ];
 }
+
+/** Linearly interpolate an angle (radians) without wrap-around (supports revolutions). */
+export function interpolateAngle(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}

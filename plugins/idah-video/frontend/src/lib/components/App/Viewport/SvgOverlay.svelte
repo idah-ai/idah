@@ -3,32 +3,24 @@
 
   import { cn } from "$lib/utils";
 
-  import BoundingBox, {
-    type ToolSelection,
-  } from "$lib/components/App/Viewport/Shapes/BoundingBox/BoundingBox.svelte";
-  import Polygon from "$lib/components/App/Viewport/Shapes/Polygon/Polygon.svelte";
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
+  import ShapeContainer from "$lib/components/App/Viewport/ShapesV2/ShapeContainer.svelte";
 
   import {
     DEFAULT_MODE,
     EDITOR_MODE_TOOLS,
     IDAH_NOTE,
-    IDAH_VIDEO_BOUNDING_BOX,
-    IDAH_VIDEO_POLYGON,
   } from "$lib/plugin/type";
-  import {
-    getInterpolatedFrame,
-    type Point,
-    type VideoAnnotationObject,
-    type VideoShape,
-  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-  import { data } from "$lib/state/data.svelte";
-  import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-
+  import { selection } from "$lib/state/selection.svelte";
+  import { data } from "$lib/state/data.svelte";
+  import type { ToolSelection } from "$lib/components/App/Viewport/Shapes/BoundingBox/BoundingBox.svelte";
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$idah/context/activity-context";
   import type { AnnotationShape } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { VideoShape } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { Point } from "$lib/utils/math/point";
 
   // Local derived aliases for V2 state (used in templates)
   let selAnnotation = $derived(
@@ -373,124 +365,7 @@
     {/if}
 
     <g style:transform-origin="top left" style:transform={svgTransform}>
-    <!-- eslint-disable-next-line -->
-    <!-- Here we await the first window's annotations (the ones in IDB), then handle them -->
-    {#await annotations_promise}
-      {#each viewportItems as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != selAnnotation?.metadata?.id}
-          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
-            {@const current_annotation_points = current_annotation_shape?.points || []}
-            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-            <BoundingBox
-              points={current_annotation_points}
-              angle={current_annotation_angle}
-              ratio={screenDimensions}
-              offset={[0, 0]}
-              {frame}
-              hidden={annotation.hidden}
-              id={annotation.metadata.id}
-              {propertyStyle}
-            />
-          {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
-            {@const current_polygon_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
-            {@const current_polygon_points = current_polygon_shape?.points || []}
-            {@const current_polygon_angle = current_polygon_shape?.angle || 0}
-            <Polygon
-              points={current_polygon_points}
-              ratio={screenDimensions}
-              offset={[0, 0]}
-              {frame}
-              hidden={annotation.hidden}
-              id={annotation.metadata.id}
-              {propertyStyle}
-            />
-          {/if}
-        {/if}
-      {/each}
-    {:then annotations}
-      {#each annotations as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != selAnnotation?.metadata?.id}
-          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
-            {@const current_annotation_points = current_annotation_shape?.points || []}
-            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-            <BoundingBox
-              points={current_annotation_points}
-              angle={current_annotation_angle}
-              ratio={screenDimensions}
-              offset={[0, 0]}
-              {frame}
-              hidden={annotation.hidden}
-              id={annotation.metadata.id}
-              {propertyStyle}
-            />
-          {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
-            {@const current_polygon_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
-            {@const current_polygon_points = current_polygon_shape?.points || []}
-            {@const current_polygon_angle = current_polygon_shape?.angle || 0}
-            <Polygon
-              points={current_polygon_points}
-              angle={current_polygon_angle}
-              ratio={screenDimensions}
-              offset={[0, 0]}
-              {frame}
-              hidden={annotation.hidden}
-              id={annotation.metadata.id}
-              {propertyStyle}
-            />
-          {/if}
-        {/if}
-      {/each}
-    {/await}
-
-    {#if selAnnotation || viewport.mode != DEFAULT_MODE}
-      {@const propertyStyle = getAnnotationPropertyStyle(selAnnotation)}
-      {#if pendingShape?.type == IDAH_VIDEO_BOUNDING_BOX || viewport.mode == IDAH_VIDEO_BOUNDING_BOX}
-        <BoundingBox
-          bind:this={toolSelection}
-          points={activePoints || []}
-          angle={activeAngle ?? 0}
-          ratio={screenDimensions}
-          offset={[0, 0]}
-          {frame}
-          cursor={normalizedMousePosition}
-          active={true}
-          {pendingShape}
-          {propertyStyle}
-          onEdit={(pointsUpdated: Point[], angleUpdated: number) => {
-            activePoints = pointsUpdated;
-            activeAngle = angleUpdated;
-          }}
-          onEditStop={({ points: editedPoints, angle: editedAngle }: { points: Point[]; angle: number }) => {
-            onSelection(viewport.mode, frame, editedPoints, editedAngle, selAnnotation?.metadata?.id);
-          }}
-        />
-      {/if}
-      {#if pendingShape?.type == IDAH_VIDEO_POLYGON || viewport.mode == IDAH_VIDEO_POLYGON}
-        <Polygon
-          bind:this={toolSelection}
-          points={activePoints || []}
-          angle={activeAngle ?? 0}
-          ratio={screenDimensions}
-          offset={[0, 0]}
-          {frame}
-          cursor={normalizedMousePosition}
-          active={true}
-          {pendingShape}
-          {propertyStyle}
-          onEdit={(pointsUpdated: Point[], angleUpdated: number) => {
-            activePoints = pointsUpdated;
-            activeAngle = angleUpdated;
-          }}
-          onEditStop={({ points: editedPoints, angle: editedAngle }: { points: Point[]; angle: number }) => {
-            onSelection(viewport.mode, frame, editedPoints, editedAngle, selAnnotation?.metadata?.id);
-          }}
-        />
-      {/if}
-    {/if}
+      <ShapeContainer />
     </g>
   </svg>
 </div>
