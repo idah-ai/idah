@@ -230,16 +230,10 @@
   let isEditing = $state(false);
   let editionCursor: string | undefined = $state(undefined);
 
-  // Reset editionCursor when switching to visual mode without selection
-  $effect(() => {
-    if ($currentMode === DEFAULT_MODE && !$selectedAnnotation) {
-      editionCursor = undefined;
-    }
-  });
-
   let pointer = $derived.by(() => {
     if ($currentMode == IMAGE_NOTE) return "cursor-note";
-    if (editionCursor) return editionCursor;
+    // Reset editionCursor logic: only use it when not in DEFAULT_MODE or when there's a selection
+    if (editionCursor && !($currentMode === DEFAULT_MODE && !$selectedAnnotation)) return editionCursor;
     if ($selectedAnnotation) return "cursor-pointer";
     return "cursor-grab";
   });
