@@ -88,9 +88,10 @@
       videoElement.play().then(() => {
         videoElement.currentTime = frameToTime(frame);
         videoElement.pause();
+      }).catch(() => {
+        // No video source or playback not supported — frame value is already updated
       });
 
-      console.log("Video not ready, playing briefly to seek to frame:", frame);
       return;
     }
 

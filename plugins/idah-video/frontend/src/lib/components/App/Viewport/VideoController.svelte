@@ -93,7 +93,6 @@
     }
 
     viewport.video.currentFrame.value = frameNumber;
-    video?.seekToFrame(frameNumber);
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {
@@ -120,7 +119,6 @@
   function goFrame(direction: "prev" | "next", step: number = 1) {
     const delta = direction === "prev" ? -step : step;
     viewport.video.currentFrame.value = Math.max(1, Math.min(media.totalFrames, viewport.video.currentFrame.value + delta));
-    video?.seekToFrame(viewport.video.currentFrame.value);
   }
 
   function gotoFrameStep(direction: "prev" | "next") {

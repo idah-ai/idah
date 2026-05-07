@@ -399,7 +399,6 @@
             {@const current_polygon_angle = current_polygon_shape?.angle || 0}
             <Polygon
               points={current_polygon_points}
-              angle={current_polygon_angle}
               ratio={screenDimensions}
               offset={[0, 0]}
               {frame}

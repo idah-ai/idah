@@ -25,6 +25,22 @@ export interface VideoShape extends AnnotationShape {
   frames: VideoFrameSelection[];
 }
 
+/** Given a list of keyframes and a frame number, return [frame_before, frame_after]. */
+function getSurroundingKeyFrames(
+  frames: VideoFrameSelection[],
+  current: number,
+): [VideoFrameSelection, VideoFrameSelection] | null {
+  let before: VideoFrameSelection | null = null;
+  let after: VideoFrameSelection | null = null;
+
+  for (const f of frames) {
+    if (f.frame < current && (!before || f.frame > before.frame)) before = f;
+    if (f.frame > current && (!after || f.frame < after.frame)) after = f;
+  }
+
+  return before && after ? [before, after] : null;
+}
+
 export function getInterpolatedFrame(
   shape: VideoShape,
   current_frame: number,
@@ -45,25 +61,14 @@ export function getInterpolatedFrame(
       };
     }
     if (shape.type === IDAH_VIDEO_BOUNDING_BOX && exact?.aabb) {
-      return {
-        points: bboxToPoints(exact.aabb),
-        angle: exact.angle || 0,
-        aabb: exact.aabb,
-      };
+      return { points: bboxToPoints(exact.aabb), angle: exact.angle || 0, aabb: exact.aabb };
     }
     return { points: exact?.points, angle: exact?.angle || 0 };
   }
 
-  // Find surrounding keyframes for interpolation
-  const before = shape.frames.reduce(
-    (best, v) => (!best || best.frame < v.frame) && v.frame < current_frame ? v : best,
-    null as VideoFrameSelection | null,
-  );
-  const after = shape.frames.reduce(
-    (best, v) => (!best || best.frame > v.frame) && v.frame > current_frame ? v : best,
-    null as VideoFrameSelection | null,
-  );
-  if (!before || !after) return;
+  const surrounding = getSurroundingKeyFrames(shape.frames, current_frame);
+  if (!surrounding) return;
+  const [before, after] = surrounding;
 
   const t = (current_frame - before.frame) / (after.frame - before.frame);
 

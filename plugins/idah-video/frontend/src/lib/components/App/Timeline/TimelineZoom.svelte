@@ -52,16 +52,7 @@
     Math.max(zoomMin, Math.min(zoomMax, currentZoom)),
   );
 
-  let stupidValue = $state(0);
-  $effect(() => {
-    console.log("frames", totalFrames)
-    console.log(zoomMin);
-    console.log(zoomMax);
-    console.log(currentZoom);
-
-    stupidValue = Math.max(zoomMin, Math.min(zoomMax, currentZoom))
-    console.log(stupidValue);
-  })
+  const sliderValue = $derived(Math.max(zoomMin, Math.min(zoomMax, currentZoom)));
 
   // --- Actions ---
 
@@ -100,7 +91,7 @@
     min={0}
     max={100}
     step={0.1}
-    value={stupidValue}
+    value={sliderValue}
     onValueChange={(v) => zoomFn?.(v)}
   />
 
