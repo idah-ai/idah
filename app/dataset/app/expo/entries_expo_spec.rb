@@ -189,7 +189,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       expect(
         service
       ).to(
-        receive(:mark_entries_status_as).with(job_id, "ready")
+        receive(:mark_entries_status_as).with(job_id, "pending")
       )
 
       Verse.publish_resource_event(

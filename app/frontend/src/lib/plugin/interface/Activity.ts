@@ -169,7 +169,7 @@ export interface IActivityContext {
   get workflowStep(): "start" | "annotate" | "review" | "done" | "export";
 
   // Returns the current status of the entry
-  get status(): "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
+  get status(): "processing" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
 
   // Get the dataset configuration
   get config(): IConfig;
