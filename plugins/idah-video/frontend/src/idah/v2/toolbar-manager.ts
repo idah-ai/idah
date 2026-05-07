@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // V2 Toolbar Manager — items, groups, ordering
 // ---------------------------------------------------------------------------
-import type { IToolbarItem } from "$idah/v2/types";
+import type { IToolbarItem, ToolbarItemOptions } from "$idah/v2/types";
 
 export class ToolbarManagerV2 {
   /** All registered items. */
@@ -12,22 +12,19 @@ export class ToolbarManagerV2 {
 
   // ── Registration ──────────────────────────────────────────────────────
 
-  add(
-    icon: string,
-    mode: string,
-    group: string | null,
-    onClick: () => void,
-    whenActive?: () => boolean,
-    whenToggled?: () => boolean,
-  ): void {
-    this.items.push({
-      icon,
-      mode,
-      group,
-      onClick,
-      whenActive: whenActive ?? (() => true),
-      whenToggled: whenToggled ?? (() => false),
-    });
+  add(opts: ToolbarItemOptions): void {
+    const modes = Array.isArray(opts.modes) ? opts.modes : [opts.modes];
+    for (const mode of modes) {
+      this.items.push({
+        icon: opts.icon,
+        label: opts.label,
+        mode,
+        group: opts.group,
+        onClick: opts.onClick,
+        visibleWhen: opts.visibleWhen,
+        whenToggled: opts.whenToggled ?? (() => false),
+      });
+    }
   }
 
   /** Define group display order for a mode. */
@@ -43,7 +40,9 @@ export class ToolbarManagerV2 {
    */
   getItemsForMode(mode: string): IToolbarItem[] {
     // Filter by mode and whenActive
-    const visible = this.items.filter((it) => it.mode === mode && it.whenActive());
+    const visible = this.items.filter(
+      (it) => it.mode === mode && (it.visibleWhen?.() ?? true),
+    );
 
     // Group ordering
     const order = this.groupOrders.get(mode);

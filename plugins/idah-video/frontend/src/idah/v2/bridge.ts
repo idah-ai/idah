@@ -245,7 +245,7 @@ export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
       return "/sample.m3u8";
     },
     async mediaInfo(key?: string): Promise<IMedia> {
-      const meta = driver.media.metadata;
+      const meta = driver.media.meta;
       return {
         resource: driver.media.id,
         key: key ?? driver.media.id,

@@ -31,11 +31,8 @@
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
   import { viewport } from "$lib/state/viewport.svelte";
-  import {
-    isVideoPlaying,
-    selectedAnnotation,
-    totalFrames,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { media } from "$lib/state/media.svelte";
+  import { selection } from "$lib/state/selection.svelte";
 
 
   import type { IActivityContext } from "$idah/context/activity-context";
@@ -70,9 +67,11 @@
   let frameInputValue = $state<number>(viewport.video.currentFrame.value);
 
   let disabledSplitButton = $derived.by(() => {
-    if (!$selectedAnnotation) return true;
-    if ($selectedAnnotation.locked) return true;
-    if ($selectedAnnotation.shape.end < viewport.video.currentFrame.value) return true;
+    const ann =
+      selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+    if (!ann) return true;
+    if (ann.locked) return true;
+    if (ann.shape?.end < viewport.video.currentFrame.value) return true;
   });
 
   // Sync frameInputValue with viewport.video.currentFrame when it changes externally
@@ -89,7 +88,7 @@
     const frameNumber = Number(value);
 
     // Validate frame number
-    if (isNaN(frameNumber) || frameNumber < 1 || frameNumber > $totalFrames) {
+    if (isNaN(frameNumber) || frameNumber < 1 || frameNumber > media.totalFrames) {
       return;
     }
 
@@ -120,7 +119,7 @@
 
   function goFrame(direction: "prev" | "next", step: number = 1) {
     const delta = direction === "prev" ? -step : step;
-    viewport.video.currentFrame.value = Math.max(1, Math.min($totalFrames, viewport.video.currentFrame.value + delta));
+    viewport.video.currentFrame.value = Math.max(1, Math.min(media.totalFrames, viewport.video.currentFrame.value + delta));
     video?.seekToFrame(viewport.video.currentFrame.value);
   }
 
@@ -175,7 +174,7 @@
 
     <!-- VIDEO::PLAY / PAUSE -->
     <ToolTooltip
-      label={$isVideoPlaying ? "Pause" : "Play"}
+      label={viewport.video.status === "play" ? "Pause" : "Play"}
       shortcut={getShortcut(context.shortcutReferences?.["player.toggle_play"]?.keyCombinations)}
     >
       {#snippet trigger()}
@@ -186,7 +185,7 @@
             video?.togglePlay();
           }}
         >
-          {#if $isVideoPlaying}
+          {#if viewport.video.status === "play"}
             <PauseIcon />
           {:else}
             <PlayIcon />
@@ -271,8 +270,8 @@
         class="min-w-24"
         placeholder="Frame"
         min={1}
-        max={Math.max(0, $totalFrames)}
-        suffix={`/ ${Math.max(0, $totalFrames)}`}
+        max={Math.max(0, media.totalFrames)}
+        suffix={`/ ${Math.max(0, media.totalFrames)}`}
         bind:value={frameInputValue}
         onkeyup={handleKeyUp}
         onblur={handleBlur}
@@ -290,12 +289,16 @@
           variant="outline"
           size="icon-sm"
           disabled={disabledSplitButton}
-          onclick={() =>
-            $selectedAnnotation &&
-                    context.commands.run("annotation.split", {
-                      id: $selectedAnnotation.metadata.id,
-                      at: viewport.video.currentFrame.value,
-                    })}
+          onclick={() => {
+            const ann =
+              selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+            if (ann)
+              context.commands.run("annotation.split", {
+                id: ann.metadata?.id ?? ann.id,
+                at: viewport.video.currentFrame.value,
+              }
+            );
+          }}
         >
           <SquareSplitHorizontalIcon />
         </Button>

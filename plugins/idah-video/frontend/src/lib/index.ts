@@ -23,6 +23,9 @@ const idahVideoPlugin: IActivityView = {
     if (!parent || !context) return console.error("Missing:", { parent, context });
 
     parent.innerHTML = "";
+    // NOTE: The V2 driver is expected to be set up externally via
+    //   initDriver(driver); initDataStores();
+    // before render() is called. The IdahVideoPlugin no longer wires them.
     mounted = mount(IdahVideoPlugin, { target: parent, props: { context } });
   },
 

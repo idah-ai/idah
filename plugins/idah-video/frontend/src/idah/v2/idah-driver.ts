@@ -1,27 +1,7 @@
 // ---------------------------------------------------------------------------
 // V2 IdahDriver — the main in-memory mock driver hub
 // ---------------------------------------------------------------------------
-import type {
-  IIdahDriverV2,
-  IMediaInfo,
-  IConfig,
-  IAnnotationsDriverV2,
-  INotesDriverV2,
-  ICommandDriverV2,
-  IToolbarDriverV2,
-  IAnnotationRecord,
-  INoteRecord,
-  IFilter,
-  ICommandAction,
-  ICommandDescriptor,
-  IModeEvent,
-  ISyncEvent,
-  ISyncErrorEvent,
-  IShortcut,
-  ICommandStackEntry,
-  IToolbarItem,
-  Unsubscribe,
-} from "$idah/v2/types";
+import type { IIdahDriverV2, IMediaInfo, IConfig, IAnnotationsDriverV2, INotesDriverV2, ICommandDriverV2, IToolbarDriverV2, IAnnotationRecord, INoteRecord, IFilter, ICommandAction, ICommandDescriptor, IModeEvent, ISyncEvent, ISyncErrorEvent, IShortcut, ICommandStackEntry, IToolbarItem, ToolbarItemOptions, Unsubscribe, } from "$idah/v2/types";
 
 import { InMemoryStore } from "$idah/v2/in-memory-store";
 import { CommandManagerV2 } from "$idah/v2/command-manager";
@@ -115,12 +95,16 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     return this.mgr.redo(count);
   }
 
-  list(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
-    return this.mgr.list(n);
+  history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
+    return this.mgr.history(n);
   }
 
   getActiveCommands(): ICommandDescriptor[] {
     return this.mgr.getActiveCommands();
+  }
+
+  getCommand(name: string): ICommandDescriptor | undefined {
+    return this.mgr.getCommand(name);
   }
 }
 
@@ -130,15 +114,8 @@ class CommandDriverAdapter implements ICommandDriverV2 {
 class ToolbarDriverAdapter implements IToolbarDriverV2 {
   constructor(private mgr: ToolbarManagerV2) {}
 
-  add(
-    icon: string,
-    mode: string,
-    group: string | null,
-    onClick: () => void,
-    whenActive?: () => boolean,
-    whenToggled?: () => boolean,
-  ): void {
-    this.mgr.add(icon, mode, group, onClick, whenActive, whenToggled);
+  add(options: ToolbarItemOptions): void {
+    this.mgr.add(options);
   }
 
   orderGroups(mode: string, groups: string[]): void {
@@ -287,7 +264,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _id = "mock-entry-v2-001";
   private _media: IMediaInfo = {
     id: "mock-entry-v2-001",
-    metadata: { duration: 100, fps: 25, width: 1920, height: 1080 },
+    meta: { duration: 100, fps: 25, width: 1920, height: 1080 },
   };
   private _status = "annotation";
   private _mode = "default";

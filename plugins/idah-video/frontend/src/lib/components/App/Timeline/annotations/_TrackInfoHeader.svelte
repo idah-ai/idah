@@ -6,7 +6,7 @@
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
 
-  import { deselectAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -65,8 +65,8 @@
   role="button"
   tabindex="-1"
   class="flex h-full cursor-pointer items-center px-2 select-none"
-  onclick={deselectAnnotationGroup}
-  onkeypress={deselectAnnotationGroup}
+  onclick={selection.deselect}
+  onkeypress={selection.deselect}
 >
   <p class="text-xs font-medium">Annotations</p>
 

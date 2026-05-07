@@ -17,7 +17,8 @@
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/context/activity-context";
@@ -55,7 +56,11 @@
 
   // Variables
   let openCategory = $state(true);
-  let currentModeIsSameAsShape = $derived($currentMode == modalityShape && !$selectedAnnotation);
+  let mode = $derived(viewport.mode);
+  let selAnnotation = $derived(
+    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
+  );
+  let currentModeIsSameAsShape = $derived(mode == modalityShape && !selAnnotation);
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
@@ -155,8 +160,8 @@
   } {
     const filteredAnnotations = annotations.filter(
       (annotation) =>
-        $currentFrame >= annotation.shape.start &&
-        $currentFrame <= annotation.shape.end &&
+    viewport.video.currentFrame.value >= annotation.shape.start &&
+        viewport.video.currentFrame.value <= annotation.shape.end &&
         annotation.shape.type == modalityShape,
     );
     const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
@@ -213,7 +218,7 @@
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-          "bg-secondary border-primary border": !$selectedAnnotation && selectedCategory == category.id,
+          "bg-secondary border-primary border": !selAnnotation && selectedCategory == category.id,
           "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
           "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
         })}
@@ -244,7 +249,7 @@
               }}
             >
               {#if view === "sidebar"}
-                {#if currentModeIsSameAsShape && !$selectedAnnotation}
+                {#if currentModeIsSameAsShape && !selAnnotation}
                   <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
                   {#if isSelectingCategory}
                     <PlusIcon class="text-primary" strokeWidth={4} />
@@ -263,10 +268,10 @@
                   <!-- TOOLS::VISUAL -->
                   <ChevronRightIcon
                     class={cn({
-                      "opacity-0": !showChevronRightIcon && !$selectedAnnotation,
+                      "opacity-0": !showChevronRightIcon && !selAnnotation,
                       "rotate-90": openStates[category.id],
-                      "stroke-blue-300": isSelectingCategory && !$selectedAnnotation,
-                      "stroke-gray-500": !isSelectingCategory || $selectedAnnotation,
+                      "stroke-blue-300": isSelectingCategory && !selAnnotation,
+                      "stroke-gray-500": !isSelectingCategory || selAnnotation,
                     })}
                   />
                 {/if}

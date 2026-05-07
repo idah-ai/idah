@@ -5,37 +5,37 @@
 //   import { media } from "$lib/state/media.svelte";
 //   console.log(media.fps, media.totalFrames);
 // ---------------------------------------------------------------------------
-import { driver } from "$lib/state/driver.svelte";
+import { getDriver } from "$lib/state/driver.svelte";
 
 function readMeta(): Record<string, unknown> {
-  return driver?.media?.metadata ?? {};
+  return getDriver()?.media?.meta ?? {};
 }
 
 export const media = {
   get duration(): number {
-    let val;
-    if (val = (readMeta().duration as number)) { return val; }
-    throw 'duration not set in metadata';
+    const val = readMeta().duration as number;
+    if (val) return val;
+    throw new Error("duration not set in metadata — is the driver initialized?");
   },
   get fps(): number {
-    let val;
-    if (val = (readMeta().fps as number) ) { return val; }
-    throw 'fps not set in metadata'
+    const val = readMeta().fps as number;
+    if (val) return val;
+    throw new Error("fps not set in metadata — is the driver initialized?");
   },
   get width(): number {
-    let val;
-    if (val = (readMeta().width as number)) { return val; }
-    throw 'width not set in metadata';
+    const val = readMeta().width as number;
+    if (val) return val;
+    throw new Error("width not set in metadata — is the driver initialized?");
   },
   get height(): number {
-    let val;
-    if (val = (readMeta().height as number)) { return val; }
-    throw 'height not set in metadata';
+    const val = readMeta().height as number;
+    if (val) return val;
+    throw new Error("height not set in metadata — is the driver initialized?");
   },
   get totalFrames(): number {
     return Math.round(this.duration * this.fps);
   },
   get id(): string {
-    return driver?.media?.id ?? "";
+    return getDriver()?.media?.id ?? "";
   },
 };

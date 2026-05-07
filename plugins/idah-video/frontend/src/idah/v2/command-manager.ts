@@ -118,7 +118,7 @@ export class CommandManagerV2 {
 
   // ── Listing ────────────────────────────────────────────────────────────
 
-  list(n: number = 50): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
+  history(n: number = 50): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
     return {
       undo: this.undoStack.slice(-n),
       redo: this.redoStack.slice(-n),
@@ -145,5 +145,18 @@ export class CommandManagerV2 {
   /** Get a registered callback by name (for tests). */
   getCallback(name: string): ((opts?: Record<string, unknown>) => ICommandAction) | undefined {
     return this.registry.get(name)?.callback;
+  }
+
+  /** Return a single command descriptor by name. */
+  getCommand(name: string): ICommandDescriptor | undefined {
+    const entry = this.registry.get(name);
+    if (!entry) return undefined;
+    return {
+      name: entry.name,
+      modes: entry.modes,
+      shortcut: entry.shortcut,
+      shortDescription: entry.shortDescription,
+      longDescription: entry.longDescription,
+    };
   }
 }

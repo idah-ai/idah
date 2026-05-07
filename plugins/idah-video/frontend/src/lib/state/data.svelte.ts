@@ -463,14 +463,14 @@ export function createDataStore<T extends DataItem>(
 //   data.annotations.preloadRange(-Infinity, Infinity);
 //   console.log(data.annotations.items);
 
-import { driver } from "$lib/state/driver.svelte";
+import { getDriver } from "$lib/state/driver.svelte";
 
 let _annotations: DataStore<AnnotationItem> | null = $state(null);
 let _notes: DataStore<NoteItem> | null = $state(null);
 
 /** Initialise the stores from the global driver. Call once after initDriver(). */
 export function initDataStores(): void {
-  const d = driver;
+  const d = getDriver();
   if (!d) throw new Error("Driver not initialized — call initDriver() first");
   _annotations = createAnnotationStore(d.annotations);
   _notes = createNoteStore(d.notes);

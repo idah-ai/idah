@@ -17,9 +17,10 @@
   import SingleSelectProperty from "$lib/components/App/PropertySelector/Properties/_SingleSelectProperty.svelte";
   import TextProperty from "$lib/components/App/PropertySelector/Properties/_TextProperty.svelte";
 
-  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
+  import { DEFAULT_MODE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { visibilityFullfilled } from "$lib/components/App/PropertySelector";
-  import { currentMode, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
   import type { AnnotationValue } from "$idah/context/annotation-context";
@@ -49,11 +50,15 @@
   const context: IActivityContext = getContext("context");
 
   // Variables
-  let configByMode = $derived(context.config[$currentMode]);
+  let mode = $derived(viewport.mode);
+  let configByMode = $derived(context.config[mode]);
   let category = $derived(configByMode?.values?.find((c) => c.id == selectedCategory));
   let properties = $derived(configByMode?.properties?.filter((p) => visibilityFullfilled(annotationValue, p)));
 
-  let firstAnnotationInGroup = $derived($selectedAnnotationGroup?.annotations[0]);
+  let firstAnnotationInGroup = $derived.by(() => {
+    const v = selection.value;
+    return v?.type === "group" ? (v as any).annotations?.[0] : undefined;
+  });
   let configByGroup = $derived(
     firstAnnotationInGroup ? context.config[firstAnnotationInGroup.shape.type] : { values: [], properties: [] },
   );
@@ -78,9 +83,9 @@
     { type: "multi-select", component: MultipleSelectProperty },
   ];
 
-  function getModeTitle() {
+    function getModeTitle() {
     return ((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
-      $currentMode.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
+      mode.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
     );
   }
 
@@ -102,9 +107,12 @@
   }
 
   function reselectCategory(reselectedCategoryId: string) {
-    $selectedAnnotationGroup?.annotations.forEach((annotation) => {
-      annotation.value.category = reselectedCategoryId;
-    });
+    const v = selection.value;
+    if (v?.type === "group") {
+      (v as any).annotations.forEach((annotation: any) => {
+        if (annotation.value) annotation.value.category = reselectedCategoryId;
+      });
+    }
     onReSelectCategory?.(reselectedCategoryId);
   }
 

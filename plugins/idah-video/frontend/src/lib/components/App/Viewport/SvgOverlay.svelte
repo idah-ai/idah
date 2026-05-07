@@ -32,15 +32,16 @@
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   import { data } from "$lib/state/data.svelte";
-  import {
-    currentMode,
-    deselectAnnotationGroup,
-    selectedAnnotation,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$idah/context/activity-context";
   import type { AnnotationShape } from "$idah/context/annotation-context";
+
+  // Local derived aliases for V2 state (used in templates)
+  let selAnnotation = $derived(
+    selection.value?.type === "annotation" ? (selection.value.annotation as any) : undefined,
+  );
 
   // Types
   export interface OnAddNewNoteParams {
@@ -125,7 +126,7 @@
 
   // Reset shape when we are not editing
   $effect(() => {
-    if (!$selectedAnnotation) {
+    if (!selAnnotation) {
       current_shape = undefined;
     }
   });
@@ -155,28 +156,31 @@
   let toolSelection: ToolSelection | undefined = $state();
 
   export function selectionStart(e: MouseEvent) {
-    if (!shape) {
-      deselectAnnotationGroup();
+    const isDrawingMode = EDITOR_MODE_TOOLS.includes(viewport.mode) && viewport.mode !== DEFAULT_MODE;
+
+    if (!shape && !isDrawingMode) {
+      selection.deselect();
       zoomableElement.mouseDown(e);
       return;
     }
 
     toolSelection?.startSelection(cursor_downscaled);
 
-    if (!isEditing && EDITOR_MODE_TOOLS.includes($currentMode)) {
+    if (!isEditing && EDITOR_MODE_TOOLS.includes(viewport.mode)) {
       if (!toolSelection) {
         console.error(
           "no tool for mode: ",
-          $currentMode,
+          viewport.mode,
           " is found, deselecting annotation and reverting to mode: ",
           DEFAULT_MODE,
         );
       }
-
-      onSelectAnnotation();
-      zoomableElement.mouseDown(e);
-      deselectAnnotationGroup();
+      return;
     }
+
+    onSelectAnnotation();
+    zoomableElement.mouseDown(e);
+    selection.deselect();
   }
 
   export function selectionEnd(e: MouseEvent) {
@@ -191,7 +195,7 @@
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
-    if ($currentMode === IDAH_NOTE) {
+    if (viewport.mode === IDAH_NOTE) {
       onAddNewNote({
         anchorType: annotation ? "annotation" : "entry",
         position: {
@@ -266,15 +270,15 @@
 
   // Reset editionCursor when switching to visual mode without selection
   $effect(() => {
-    if ($currentMode === DEFAULT_MODE && !$selectedAnnotation) {
+    if (viewport.mode === DEFAULT_MODE && !selAnnotation) {
       editionCursor = undefined;
     }
   });
 
   let pointer = $derived.by(() => {
-    if ($currentMode == IDAH_NOTE) return "cursor-note";
+    if (viewport.mode == IDAH_NOTE) return "cursor-note";
     if (editionCursor) return editionCursor;
-    if ($selectedAnnotation) return "cursor-pointer";
+    if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
     return "cursor-grab";
   });
@@ -283,7 +287,7 @@
     viewport.workspace.dimensions[0] > 0 &&
       viewport.workspace.dimensions[1] > 0 &&
       !isPlaying &&
-      ![IDAH_NOTE, DEFAULT_MODE].includes($currentMode) && // TODO:: Change to check set of editing mode @audi
+      ![IDAH_NOTE, DEFAULT_MODE].includes(viewport.mode) && // TODO:: Change to check set of editing mode @audi
       (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
   );
 
@@ -385,7 +389,7 @@
     <!-- Here we await the first window's annotations (the ones in IDB), then handle them -->
     {#await annotations_promise}
       {#each viewportItems as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+        {#if annotation.metadata.id != selAnnotation?.metadata?.id}
           {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
@@ -413,7 +417,7 @@
       {/each}
     {:then annotations}
       {#each annotations as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+        {#if annotation.metadata.id != selAnnotation?.metadata?.id}
           {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
@@ -441,10 +445,11 @@
       {/each}
     {/await}
 
-    {#if $selectedAnnotation || $currentMode != DEFAULT_MODE}
-      {@const propertyStyle = getAnnotationPropertyStyle($selectedAnnotation)}
-      {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || $currentMode == IDAH_VIDEO_BOUNDING_BOX}
+    {#if selAnnotation || viewport.mode != DEFAULT_MODE}
+      {@const propertyStyle = getAnnotationPropertyStyle(selAnnotation)}
+      {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || viewport.mode == IDAH_VIDEO_BOUNDING_BOX}
         <BoundingBox
+          bind:this={toolSelection}
           points={points || []}
           {angle}
           {frame}
@@ -456,12 +461,13 @@
             angle = angleUpdated;
           }}
           onEditStop={({ points: editedPoints, angle: editedAngle }: { points: Point[]; angle: number }) => {
-            onSelection($currentMode, frame, editedPoints, editedAngle, $selectedAnnotation?.metadata.id);
+            onSelection(viewport.mode, frame, editedPoints, editedAngle, selAnnotation?.metadata?.id);
           }}
         />
       {/if}
-      {#if shape?.type == IDAH_VIDEO_POLYGON || $currentMode == IDAH_VIDEO_POLYGON}
+      {#if shape?.type == IDAH_VIDEO_POLYGON || viewport.mode == IDAH_VIDEO_POLYGON}
         <Polygon
+          bind:this={toolSelection}
           points={points || []}
           {angle}
           {frame}
@@ -473,7 +479,7 @@
             angle = angleUpdated;
           }}
           onEditStop={({ points: editedPoints, angle: editedAngle }: { points: Point[]; angle: number }) => {
-            onSelection($currentMode, frame, editedPoints, editedAngle, $selectedAnnotation?.metadata.id);
+            onSelection(viewport.mode, frame, editedPoints, editedAngle, selAnnotation?.metadata?.id);
           }}
         />
       {/if}

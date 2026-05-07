@@ -12,8 +12,8 @@ export const IDAH_NOTE = "note";
 export type IdahNote = "note";
 
 /** DEFAULT MODE */
-export const DEFAULT_MODE = IDAH_VISUAL;
-export type DefaultMode = IdahVisual;
+export const DEFAULT_MODE = "default";
+export type DefaultMode = "default";
 
 /** EDITOR MODE */
 export const EDITOR_MODE_TOOLS = [IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON];

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { VideoStreamHandler } from "./video-stream-handler.ts";
-  import { totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import { media } from "$lib/state/media.svelte";
 
   let {
     src = undefined,
@@ -74,7 +74,7 @@
     if (!videoElement) return;
 
     if (frame <= 0) frame = 1;
-    if (frame >= $totalFrames) frame = $totalFrames;
+    if (frame >= media.totalFrames) frame = media.totalFrames;
 
     const wasPaused = videoElement.paused;
 
@@ -128,7 +128,7 @@
   }
 
   export function getFrames() {
-    return $totalFrames;
+    return media.totalFrames;
   }
 
   // Expose video element to parent

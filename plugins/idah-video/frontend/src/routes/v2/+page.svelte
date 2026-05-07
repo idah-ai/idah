@@ -197,8 +197,8 @@
 
   function refreshCommandStack() {
     commandStack = {
-      undo: driver.commandMgr.list(10).undo,
-      redo: driver.commandMgr.list(10).redo,
+      undo: driver.commandMgr.history(10).undo,
+      redo: driver.commandMgr.history(10).redo,
     };
   }
 

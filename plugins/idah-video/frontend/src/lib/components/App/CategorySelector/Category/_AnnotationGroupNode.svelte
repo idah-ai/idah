@@ -14,7 +14,7 @@
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
   import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
@@ -37,13 +37,16 @@
   // Variables
   let { groupId, annotations } = $derived(annotationGroup);
   let lastPartOfGroupId = $derived(groupId.split("-").reverse()[0]);
-  let isSelected = $derived($selectedAnnotationGroup?.groupId == groupId);
+  let isSelected = $derived.by(() => {
+    const v = selection.value;
+    return v?.type === "group" && v.groupId === groupId;
+  });
   let isAllHidden = $derived(annotations.map((annotation) => annotation.hidden).every((hidden) => hidden));
   let isAllLocked = $derived(annotations.map((annotation) => annotation.locked).every((locked) => locked));
 
   // function
   function selectAnnotationGroup() {
-    $selectedAnnotationGroup = annotationGroup;
+    selection.selectGroup(groupId);
     onSelectAnnotationGroup(annotationGroup);
   }
 

@@ -9,7 +9,7 @@ export type IShortcut = [string | null, string];
 
 export interface IMediaInfo {
   id: string;
-  meta: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 // ─── Sync event ───────────────────────────────────────────────────────────
@@ -141,16 +141,24 @@ export interface IConfig {
 export interface IToolbarItem {
   /** Raw HTML/SVG string for the icon. */
   icon: string;
+  /** Label for tooltips. */
+  label: string;
   /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
   mode: string;
   /** Optional group name (items in the same group are rendered together; `null` => always first). */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
-  /** Optional predicate — toolbar hides the item when `whenActive` returns `false`. Default: always true. */
-  whenActive: () => boolean;
-  /** Optional predicate — when true, the item is rendered in a "toggled" (pressed) state. Default: false. */
-  whenToggled: () => boolean;
+  /**
+   * Predicate — toolbar hides the item when `visibleWhen` returns `false`.
+   * Default: always true.
+   */
+  visibleWhen?: () => boolean;
+  /**
+   * Predicate — when true the item is rendered in a "pressed" (active) state.
+   * Default: false.
+   */
+  whenToggled?: () => boolean;
 }
 
 // ─── Annotation / Notes ───────────────────────────────────────────────────
@@ -329,32 +337,48 @@ export interface ICommandDriverV2 {
   redo(count?: number): boolean;
 
   /** Return the current undo / redo stacks (each up to `n` entries). */
-  list(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
+  history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
 
   /** Return commands whose mode list includes the current mode. */
   getActiveCommands(): ICommandDescriptor[];
+
+  /** Return a single command descriptor by name, or undefined if not found. */
+  getCommand(name: string): ICommandDescriptor | undefined;
 }
 
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
 
+export interface ToolbarItemOptions {
+  /** Raw HTML/SVG string for the icon. */
+  icon: string;
+  /** Label for tooltips. */
+  label: string;
+  /**
+   * One or more modes this item belongs to.
+   * The item will be visible in any matching mode.
+   */
+  modes: string | string[];
+  /** Optional group name (items in the same group render together; `null` => always first). */
+  group: string | null;
+  /** Click handler. */
+  onClick: Unsubscribe;
+  /**
+   * Optional predicate — when returns `false`, the item is hidden.
+   * Default: always visible.
+   */
+  visibleWhen?: () => boolean;
+  /**
+   * Optional predicate — when `true` the item renders in a "pressed" (active) state.
+   * Default: `false`.
+   */
+  whenToggled?: () => boolean;
+}
+
 export interface IToolbarDriverV2 {
   /**
-   * Add a toolbar item.
-   * @param icon       SVG / HTML string for the icon.
-   * @param mode       The mode this item belongs to.
-   * @param group      Optional group name; null = always first. Items with same group render together.
-   * @param onClick    Click handler.
-   * @param whenActive Optional predicate; when returns false the item is hidden. Default: always true.
-   * @param whenToggled Optional predicate; when true the item appears "pressed". Default: false.
+   * Add a toolbar item using a descriptor object.
    */
-  add(
-    icon: string,
-    mode: string,
-    group: string | null,
-    onClick: Unsubscribe,
-    whenActive?: () => boolean,
-    whenToggled?: () => boolean,
-  ): void;
+  add(options: ToolbarItemOptions): void;
 
   /** Define the display order of groups for a given mode. */
   orderGroups(mode: string, groups: string[]): void;

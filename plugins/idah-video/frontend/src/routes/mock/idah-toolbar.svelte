@@ -1,26 +1,44 @@
 <script lang="ts">
   // -----------------------------------------------------------------------
-  // IdahToolbar.svelte — Renders toolbar items from the V2 toolbar manager
+  // IdahToolbar.svelte — Renders V2 toolbar items + built-in undo/redo
   // -----------------------------------------------------------------------
   import type { IToolbarItem } from "$idah/v2/types";
 
+  import undoIcon from "$lib/assets/icons/undo.svg?raw";
+  import redoIcon from "$lib/assets/icons/redo.svg?raw";
+
   interface Props {
     items: IToolbarItem[];
+    onUndo?: () => void;
+    onRedo?: () => void;
   }
-  let { items }: Props = $props();
+  let { items, onUndo, onRedo }: Props = $props();
 </script>
 
 <div class="mock-toolbar">
-  {#each items as item}
-    <button
-      class="toolbar-btn"
-      class:toggled={item.whenToggled()}
-      onclick={item.onClick}
-      title="Mode: {item.mode} | Group: {item.group ?? '(always)'}"
-    >
-      {@html item.icon}
+  <div class="toolbar-group">
+    <button class="toolbar-btn" onclick={onUndo} title="Undo">
+      {@html undoIcon}
     </button>
-  {/each}
+    <button class="toolbar-btn" onclick={onRedo} title="Redo">
+      {@html redoIcon}
+    </button>
+  </div>
+
+  <div class="toolbar-divider"></div>
+
+  <div class="toolbar-group">
+    {#each items as item}
+      <button
+        class="toolbar-btn"
+        class:toggled={item.whenToggled?.() ?? false}
+        onclick={item.onClick}
+        title={item.label}
+      >
+        {@html item.icon}
+      </button>
+    {/each}
+  </div>
 </div>
 
 <style>
@@ -31,7 +49,17 @@
     padding: 4px 8px;
     background: var(--background, #f8f9fa);
     border-bottom: 1px solid var(--border, #dee2e6);
-    flex-wrap: wrap;
+  }
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border, #dee2e6);
+    margin: 0 4px;
   }
   .toolbar-btn {
     display: inline-flex;

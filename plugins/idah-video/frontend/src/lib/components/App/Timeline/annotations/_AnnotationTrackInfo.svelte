@@ -10,7 +10,7 @@
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { cn } from "$lib/utils";
@@ -31,15 +31,15 @@
 
   // Variables
   let { id, title, subtitle, top, items } = $derived(track);
-  let isGroupSelected = $derived($selectedAnnotationGroup?.groupId === id);
+  let isGroupSelected = $derived.by(() => {
+    const v = selection.value;
+    return v?.type === "group" && v.groupId === id;
+  });
   const menus = $derived(getGroupContextMenus({ context, track }));
 
   // Functions
   function selectAnnotationGroup() {
-    $selectedAnnotationGroup = {
-      groupId: id,
-      annotations: items.map((item) => item.rawData),
-    };
+    selection.selectGroup(id);
   }
 
   function handleOnContextMenu(e: MouseEvent) {

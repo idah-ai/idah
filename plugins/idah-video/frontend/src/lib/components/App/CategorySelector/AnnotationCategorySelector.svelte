@@ -10,15 +10,17 @@
 
   import CategoryTree from "$lib/components/App/CategorySelector/_CategoryTree.svelte";
 
-  import { ENTRY_ROOT } from "$lib/plugin/type";
+  import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import {
-    currentMode,
-    deselectAnnotationGroup,
-    selectedAnnotation,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+
+  let mode = $derived(viewport.mode);
+  let selAnnotation = $derived(
+    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
+  );
   import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
@@ -82,7 +84,7 @@
   // Functions
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      deselectAnnotationGroup();
+      selection.deselect();
       onSelectAnnotation();
       onEditValue({ category }, shape_type);
     } // else {
@@ -113,7 +115,7 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
-  {#if !tools.has($currentMode) || $selectedAnnotation}
+  {#if !tools.has(mode) || selAnnotation}
     <SidebarHeader>
       <InputField
         name="input/plugin/search"
@@ -132,14 +134,14 @@
 
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
-      {#if !filteredTools.has($currentMode) || (filteredTools.has($currentMode) && tool == $currentMode) || $currentMode == ENTRY_ROOT}
+      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <CategoryTree
           {view}
           {db}
           {items}
           modalityShape={tool}
           {categories}
-          selectedCategory={tool == ENTRY_ROOT && !(tool == $currentMode)
+          selectedCategory={tool == ENTRY_ROOT && !(tool == mode)
             ? $entryRoot?.value.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}

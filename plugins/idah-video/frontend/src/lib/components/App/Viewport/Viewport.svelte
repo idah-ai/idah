@@ -9,7 +9,6 @@
     Y,
     type Point,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import { currentMode } from "$lib/plugin/video-annotation-activity/store/store";
   import { viewport } from "$lib/state/viewport.svelte";
 
   // Props
@@ -84,7 +83,7 @@
   }
 
   export function onWheel(e: WheelEvent) {
-    if ($currentMode === IDAH_NOTE) return;
+    if (viewport.mode === IDAH_NOTE) return;
     e.preventDefault();
 
     // Touchpad pinch-to-zoom sets ctrlKey on most platforms, or metaKey on Mac.
@@ -129,7 +128,7 @@
   }
 
   export function mouseDown(e: MouseEvent) {
-    switch ($currentMode) {
+    switch (viewport.mode) {
       case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
@@ -150,7 +149,7 @@
   }
 
   export function mouseMove(e: MouseEvent) {
-    switch ($currentMode) {
+    switch (viewport.mode) {
       case IDAH_NOTE: {
         break; // Do not pan in note mode
       }

@@ -2,6 +2,17 @@
   import { mount, unmount } from "svelte";
   import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
   import { mockContext } from "$mock/context";
+  // ── TODO: Use real V2 driver here once integrated ─────────────────────
+  import { IdahDriverV2 } from "$idah/v2/idah-driver";
+  import { createV1Bridge } from "$idah/v2/bridge";
+  import { initDriver } from "$lib/state/driver.svelte";
+  import { initDataStores } from "$lib/state/data.svelte";
+
+  const driver = new IdahDriverV2();
+  initDriver(driver);
+  initDataStores();
+
+  const v2context = createV1Bridge(driver);
 
   let targetElement: HTMLDivElement;
   let mounted: object | undefined = $state();
@@ -11,7 +22,7 @@
 
     mounted = mount(IdahVideoPlugin, {
       target: targetElement,
-      props: { context: mockContext },
+      props: { context: v2context },
     });
 
     return () => {

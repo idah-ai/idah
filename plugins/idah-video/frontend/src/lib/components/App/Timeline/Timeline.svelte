@@ -7,7 +7,7 @@
   import Track from "$lib/components/App/Timeline/_Track.svelte";
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
 
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selection } from "$lib/state/selection.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
@@ -48,6 +48,11 @@
 
   // Derive selectionOffset from currentFrame
   const selectionOffset = $derived(currentFrame);
+
+  let selectedGroupId = $derived.by(() => {
+    const v = selection.value;
+    return v?.type === "group" ? v.groupId : undefined;
+  });
 
   // Bind to actual container pixel width
   let containerWidth = $state(0);
@@ -488,7 +493,7 @@
               {scale}
               items={track.items}
               top={track.top}
-              isSelected={$selectedAnnotationGroup?.groupId === track.id}
+              isSelected={selectedGroupId === track.id}
             />
           {/each}
           {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}

@@ -27,31 +27,18 @@
     IDAH_VIDEO_POLYGON,
   } from "$lib/plugin/type";
   import { requiredFullfilled } from "$lib/components/App/PropertySelector";
-  import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
     registerOnSelectShortcuts,
     registerShortcuts,
     registerShortcutsReference,
   } from "$lib/plugin/video-annotation-activity/shortcut";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import {
-    currentFrame,
-    currentMode,
-    deselectAnnotation,
-    isVideoPlaying,
-    selectedAnnotation,
-    selectedAnnotationGroup,
-    setCurrentFrame,
-    setCurrentModeTo,
-    setSelectedAnnotation,
-    setSelectedAnnotationGroup,
-    setTotalFrames,
-    setVideoIsPlaying,
-    totalFrames,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { media } from "$lib/state/media.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
   import { data } from "$lib/state/data.svelte";
   import {
     findClosestAnnotationInGroup,
@@ -85,6 +72,15 @@
   // Contexts
   setContext("context", context);
 
+  // Local derived aliases for V2 state
+  let mode = $derived(viewport.mode);
+  let selAnnotation = $derived(
+    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
+  );
+  let selGroup = $derived(
+    selection.value?.type === "group" ? selection.value : undefined,
+  );
+
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
   const notableWorkflowSteps = ["annotate", "review", "done"];
@@ -95,7 +91,7 @@
   let mediaInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
-  let isNoteMode = $derived($currentMode === IDAH_NOTE);
+  let isNoteMode = $derived(mode === IDAH_NOTE);
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
@@ -103,8 +99,8 @@
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
-  let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
-  let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
+  let annotationId = $derived<string | undefined>(selAnnotation ? selAnnotation.metadata.id : undefined);
+  let annotationValue: AnnotationValue = $derived(selAnnotation?.value || {});
 
   let length = $state(0);
   let tools: {
@@ -165,45 +161,22 @@
   });
 
   $effect(() => {
-    context.tools.setTool($currentMode);
+    context.tools.setTool(mode);
   });
 
   onMount(async () => {
     mediaInfo = await context.mediaInfo();
 
     const totalFrames = Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number));
-    setTotalFrames(totalFrames);
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
-    setCurrentFrame(1);
     viewport.video.currentFrame.value = 1;
 
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
 
     // annotations are now derived from the global store
-
-    /** Register commands (pass a stub DB that delegates to context) */
-    const stubDb = {
-      get annotations() { return []; },
-      async upsertAnnotations() {},
-      async reload() {},
-      annotationsByCategory() { return []; },
-      async deleteAnnotation() {},
-    };
-    registerCommands({
-      context,
-      getDb: () => stubDb as never,
-      updaters: {
-        setAnnotationValue: (v) => {
-          annotationValue = v;
-        },
-        selectAnnotation: (v) => {
-          selectAnnotation(v);
-        },
-      },
-    });
 
     // Load annotations directly from the context (V2 data-store backed)
     try {
@@ -369,26 +342,20 @@
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
-    setCurrentModeTo(valueMode);
-    if (valueMode == ENTRY_ROOT && !$selectedAnnotation && $entryRoot?.metadata.id) setSelectedAnnotation($entryRoot);
+    getDriver()?.setMode(valueMode);
+    if (valueMode == ENTRY_ROOT && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
 
     // wait for confirmation
     if (showPopOver) {
-      if ($selectedAnnotation)
-        setSelectedAnnotation({
-          ...$selectedAnnotation,
-          value: annotationValue,
-        });
+      if (selAnnotation)
+        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
     } else {
-      if (valueMode == ENTRY_ROOT && !$selectedAnnotation) {
+      if (valueMode == ENTRY_ROOT && !selAnnotation) {
         if (value.category && value.category != "" && requirementFullfilled)
           addAnnotation({ type: valueMode }, $state.snapshot(value));
-      } else if ($selectedAnnotation) {
-        setSelectedAnnotation({
-          ...$selectedAnnotation,
-          value: annotationValue,
-        });
-        if (requirementFullfilled) updateAnnotationValue($state.snapshot($selectedAnnotation), $state.snapshot(value));
+      } else if (selAnnotation) {
+        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+        if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
       } else if (shapeSelectionArgs && requirementFullfilled) {
         showPopOver = false;
         onShapeSelection(...shapeSelectionArgs);
@@ -411,8 +378,8 @@
        * If no selectedId, check if we have an active group selection.
        * If yes, we try to find the closest annotation in that group to add a keyframe to.
        */
-      if ($selectedAnnotationGroup) {
-        const closest = selectClosestAnnotation($selectedAnnotationGroup, frame);
+      if (selGroup) {
+        const closest = selectClosestAnnotation(selGroup as any, frame);
         addSelection(closest.metadata.id, { frame, angle, points });
         return;
       }
@@ -466,7 +433,11 @@
   }
 
   function selectAnnotation(annotation?: VideoAnnotationObject) {
-    setSelectedAnnotation(annotation);
+    if (annotation) {
+      selection.selectAnnotation(annotation as any);
+    } else {
+      selection.deselect();
+    }
 
     /**
      * Set mode to the annotation shape type when selecting an annotation
@@ -474,27 +445,24 @@
     if (isNoteMode) {
       return;
     } else if (annotation?.shape.type && editable) {
-      setCurrentModeTo(annotation.shape.type);
+      getDriver()?.setMode(annotation.shape.type);
       // Register selection-specific shortcuts for the current mode
       registerOnSelectShortcuts(annotation.shape.type, {
         commands: context.commands,
         selectedId: annotation.metadata.id,
-        selectedGroupId: annotation.metadata.metadata?.group_id || $selectedAnnotationGroup?.groupId,
-        getCurrentFrame: () => $currentFrame,
+        selectedGroupId: annotation.metadata.metadata?.group_id || selGroup?.groupId,
+        getCurrentFrame: () => viewport.video.currentFrame.value,
       });
     } else {
-      setCurrentModeTo(DEFAULT_MODE);
+      getDriver()?.setMode(DEFAULT_MODE);
     }
-    if ($selectedAnnotation) {
-      setSelectedAnnotationGroup({
-        groupId: $selectedAnnotation.metadata.metadata?.group_id || $selectedAnnotation.metadata.id,
-        annotations: [$selectedAnnotation],
-      });
+    if (selAnnotation) {
+      selection.selectGroup(selAnnotation.metadata.metadata?.group_id || selAnnotation.metadata.id);
     }
   }
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) {
-    setSelectedAnnotationGroup(annotationGroup);
+    selection.selectGroup(annotationGroup.groupId);
 
     const firstAnnotation = annotationGroup.annotations[0];
     /**
@@ -509,7 +477,7 @@
        */
       if (selectedFrame) {
         /** Set current mode and select closest annotation when selectedFrame is exitsts */
-        setCurrentModeTo(firstAnnotation.shape.type);
+        getDriver()?.setMode(firstAnnotation.shape.type);
         const closestAnnotation = selectClosestAnnotation(annotationGroup, selectedFrame);
 
         /** Register selection-specific shortcuts for the current mode with closest annotation id */
@@ -517,22 +485,22 @@
           commands: context.commands,
           selectedId: closestAnnotation.metadata.id,
           selectedGroupId: annotationGroup.groupId,
-          getCurrentFrame: () => $currentFrame,
+          getCurrentFrame: () => viewport.video.currentFrame.value,
         });
       } else {
-        setCurrentModeTo(DEFAULT_MODE);
-        deselectAnnotation();
+        getDriver()?.setMode(DEFAULT_MODE);
+        selection.deselect();
         /** Register selection-specific shortcuts for the current mode with non selectedId */
         registerOnSelectShortcuts(firstAnnotation.shape.type, {
           commands: context.commands,
           selectedId: undefined,
           selectedGroupId: annotationGroup.groupId,
-          getCurrentFrame: () => $currentFrame,
+          getCurrentFrame: () => viewport.video.currentFrame.value,
         });
       }
     } else {
       selectAnnotation(undefined);
-      setCurrentModeTo(DEFAULT_MODE);
+      getDriver()?.setMode(DEFAULT_MODE);
     }
   }
 
@@ -541,20 +509,20 @@
       annotationGroup,
       frame,
     });
-    setCurrentModeTo(closestAnnotation.shape.type);
+    getDriver()?.setMode(closestAnnotation.shape.type);
     selectAnnotation(closestAnnotation);
 
     return closestAnnotation;
   }
 
   function setAnnotationFrame(frame: number) {
-    if (!$selectedAnnotationGroup) return;
+    if (!selGroup) return;
 
     const annotationGroups = groupAnnotations(viewportAnnotations);
 
     // Find the annotation group to get all annotations in the group
     const newSelectedAnnotationGroup = annotationGroups.find(
-      (group) => group.groupId === $selectedAnnotationGroup?.groupId,
+      (group) => group.groupId === selGroup?.groupId,
     );
 
     if (newSelectedAnnotationGroup) {
@@ -563,15 +531,12 @@
         frame: frame,
       });
 
-      if (closestAnnotation.metadata.id === $selectedAnnotation?.metadata.id) {
+      if (closestAnnotation.metadata.id === selAnnotation?.metadata.id) {
         return;
       }
 
-      setSelectedAnnotation(closestAnnotation);
-      setSelectedAnnotationGroup({
-        groupId: newSelectedAnnotationGroup.groupId,
-        annotations: [closestAnnotation],
-      });
+      selection.selectAnnotation(closestAnnotation as any);
+      selection.selectGroup(newSelectedAnnotationGroup.groupId);
     }
   }
 
@@ -619,21 +584,21 @@
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
-    if (!$selectedAnnotationGroup) return;
+    if (!selGroup) return;
 
     /** Update annotation group category */
     context.commands.run("annotation.updateGroupCategory", {
-      groupId: $selectedAnnotationGroup.groupId,
+      groupId: selGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
 
     // Update the currently selected annotation value to reflect the category change in the properties sidebar
-    onEditValue({ category: reselectedCategoryId }, $currentMode);
+    onEditValue({ category: reselectedCategoryId }, mode);
   }
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), $selectedAnnotation]}
+  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selAnnotation]}
     <!-- All available shortcuts list -->
     <CommandDialog bind:open={uiStore.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
@@ -676,9 +641,9 @@
                 ...annotationValue,
                 category: selectedCategory,
               };
-              onEditValue({ category: annotationValue.category }, $currentMode);
+              onEditValue({ category: annotationValue.category }, mode);
             }}
-            onEditValue={(value) => value && onEditValue(value, $currentMode)}
+            onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
           />
         {:else}
@@ -715,15 +680,15 @@
           size="sm"
           onclick={() => {
             showPopOver = false;
-            switch ($currentMode) {
+            switch (mode) {
               case ENTRY_ROOT:
-                onShapeSelection(ENTRY_ROOT, $currentFrame);
+                onShapeSelection(ENTRY_ROOT, viewport.video.currentFrame.value);
                 break;
               default:
                 if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
             }
           }}
-          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != $currentMode}
+          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != mode}
         >
           Confirm
         </Button>
@@ -744,7 +709,7 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, $currentFrame)}
+              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, viewport.video.currentFrame.value)}
               onDeleteAnnotation={deleteAnnotation}
               {context}
             />
@@ -762,14 +727,14 @@
                 <SvgOverlay
                   bind:this={overlay}
                   {annotations_promise}
-                  frame={$currentFrame}
+                  frame={viewport.video.currentFrame.value}
                   onSelectAnnotation={selectAnnotation}
                   onSelection={onShapeSelection}
                   onAddNewNote={showNewNotePopup}
                   onChangeFrame={seekToFrame}
                   target_container={() => player_container}
                   {videoResizedAt}
-                  isPlaying={$isVideoPlaying}
+                  isPlaying={viewport.video.status === "play"}
                 >
                   <!-- container context ?-->
                   <Video
@@ -777,12 +742,12 @@
                     bind:element={player_container}
                     src={mediaUrl}
                     fps={mediaInfo.meta.fps as number}
-                    onTogglePlay={(isPlaying: boolean) => setVideoIsPlaying(isPlaying)}
+                    onTogglePlay={(_isPlaying: boolean) => {}}
                     onResize={() => {
                       videoResizedAt = new Date();
                     }}
                     onFrameUpdate={(currentFrame: number) => {
-                      setCurrentFrame(currentFrame);
+                      viewport.video.currentFrame.value = currentFrame;
                       setAnnotationFrame(currentFrame);
                     }}
                     onVolumeChange={(level: number, muted: boolean) => {

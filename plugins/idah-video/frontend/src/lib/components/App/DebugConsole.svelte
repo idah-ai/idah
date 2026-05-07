@@ -1,6 +1,6 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import { media } from "$lib/state/media.svelte";
 
   let visible = $state(false);
 
@@ -39,11 +39,9 @@ transform  translate({viewport.workspace.transform.translate[0].toFixed(1)}, {vi
 <span class="section">── VIDEO ──</span>
 frame      {viewport.video.currentFrame.value}
 status     {viewport.video.status}
-
-<span class="section">── STORE (legacy) ──</span>
-current    {$currentFrame}
-total      {$totalFrames}
-playing    {$isVideoPlaying}
+mode       {viewport.mode}
+total      {media.totalFrames}
+playing    {viewport.video.status === "play"}
 </pre>
   </div>
 {/if}
