@@ -218,6 +218,7 @@ RSpec.describe Exports::Upd::Exporter do
             if json_match
               metadata = JSON.parse(json_match[1])
               entry_metadata_valid = metadata.key?("Priority") &&
+                                     metadata.key?("Name") &&
                                      metadata.key?("Wf-Step") &&
                                      metadata.key?("Status") &&
                                      metadata.key?("Resource") &&

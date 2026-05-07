@@ -17,6 +17,8 @@ module Entry
 
     field :resource, type: String
 
+    field :name, type: String
+
     field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
     field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
     field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
@@ -57,18 +59,35 @@ module Entry
       collection.where(Sequel.lit(where_fragment, account_id: value))
     end
 
+    custom_filter :assigned do |collection, value|
+      assigned = value.to_s.downcase == "true"
+
+      if assigned
+        collection.where(Sequel.lit("assigned_to_id IS NOT NULL"))
+      else
+        collection.where(Sequel.lit("assigned_to_id IS NULL"))
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
         scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
-          table.where(
-            table.db[:projects]
-              .where(organization_id: org_ids)
-              .where(id: Sequel[:entries][:project_id])
-              .select(1).exists
-          )
+          project_ids = auth_context.custom_scopes[:project]
+          if org_ids
+            table.where(
+              table.db[:projects]
+                .where(organization_id: org_ids)
+                .where(id: Sequel[:entries][:project_id])
+                .select(1).exists
+            )
+          elsif project_ids
+            table.where(project_id: project_ids)
+          else
+            table.where(Sequel.lit("false"))
+          end
         end
 
         scope.as_user? { user_project_scoped_query(action) }
