@@ -453,6 +453,7 @@
           points={points || []}
           {angle}
           {frame}
+          {cursor}
           active={true}
           {shape}
           {propertyStyle}
@@ -471,6 +472,7 @@
           points={points || []}
           {angle}
           {frame}
+          {cursor}
           active={true}
           {shape}
           {propertyStyle}

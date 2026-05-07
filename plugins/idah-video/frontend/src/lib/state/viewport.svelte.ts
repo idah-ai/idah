@@ -11,7 +11,6 @@ class Viewport {
     getDriver().setMode(val);
   }
 
-  // Everything else unchanged
   timeline = $state({
     range: { startRange: 0, endRange: 0 },
     dimensions: [0, 0] as [number, number],
