@@ -24,15 +24,12 @@
     step: 0.1,
   });
 
-  $effect(() => {
-    onZoomChange(zoom.current, offset);
-  });
-
   // Functions
   function panTo(x: number, y: number) {
     if (!panOrigin) return;
 
     offset = [x - panOrigin[X], y - panOrigin[Y]];
+    onZoomChange(zoom.current, offset);
   }
 
   function panStart(x: number, y: number) {
@@ -73,10 +70,12 @@
 
   export function setZoom(newZoom: number) {
     zoom = { ...zoom, current: scopedZoom(newZoom) };
+    onZoomChange(zoom.current, offset);
   }
 
   export function setOffset(newOffset: Point) {
     offset = newOffset;
+    onZoomChange(zoom.current, offset);
   }
 
   function zoomAt(x: number, y: number, step: number) {
@@ -87,6 +86,7 @@
 
     offset = offset_to;
     zoom = { ...zoom, current: scale_to };
+    onZoomChange(zoom.current, offset);
   }
 
   export function onWheel(e: WheelEvent) {
