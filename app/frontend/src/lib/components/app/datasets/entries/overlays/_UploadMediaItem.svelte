@@ -9,6 +9,7 @@
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
+  import { pluralizeUnit } from "@/utils/unit";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
 
@@ -25,6 +26,7 @@
   const totalSkippedMedias = $derived(skippedMedias.length);
   const totalMedias = $derived(totalUploadMedias + totalSkippedMedias);
   const hasMultipleMedias = $derived(totalMedias > 1);
+  const hasSkippedMedias = $derived(totalSkippedMedias > 0);
 
   const progress = $derived((totalUploadMedias / totalMedias) * 100);
 
@@ -55,7 +57,18 @@
     <div class="flex w-full items-start gap-4">
       <div class="flex flex-col gap-0">
         <Text size="sm" weight="semibold">{name}</Text>
-        <Text size="sm" weight="normal" class="text-muted-foreground">Info</Text>
+        <Text size="sm" weight="normal" class="text-muted-foreground">
+          {#if totalMedias === totalUploadMedias}
+            {totalUploadMedias} {pluralizeUnit(totalUploadMedias, "file")} uploaded successfully
+          {:else if hasSkippedMedias}
+            {totalUploadMedias}
+            {pluralizeUnit(totalUploadMedias, "file")} uploaded,
+            {totalSkippedMedias}
+            {pluralizeUnit(totalSkippedMedias, "file")} skipped
+          {:else}
+            {totalUploadMedias} {pluralizeUnit(totalUploadMedias, "file")} uploaded
+          {/if}
+        </Text>
       </div>
 
       <div class="ml-auto">
