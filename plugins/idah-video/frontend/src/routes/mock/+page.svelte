@@ -41,22 +41,15 @@
   // ── Listen to mode changes to refresh toolbar ────────────────────────
   driver.onModeChange(() => { refreshToolbar(); });
 
-  // ── Global keyboard shortcut: Ctrl+Space toggles command palette ─────
+  // ── Ctrl+Space toggles command palette (other shortcuts handled by the editor) ─
   $effect(() => {
     if (typeof window === "undefined") return;
 
     const handler = (e: KeyboardEvent) => {
-      // Let the editor handle its own keyboard events first
-      // Only intercept Ctrl+Space for the palette toggle
       if (e.ctrlKey && e.code === "Space") {
         e.preventDefault();
+        e.stopPropagation();
         isCommandDialogOpen = !isCommandDialogOpen;
-        return;
-      }
-
-      // Delegate other keyboard events to the driver
-      if (driver.handleKeydown(e)) {
-        e.preventDefault();
       }
     };
 

@@ -10,6 +10,7 @@ import { noopAction } from "..";
 
 export const command = {
   name: "selection.delete",
+  group: "Selection",
   modes: ["default", "review"],
   shortcut: "Delete",
   shortDescription: "Delete selected",
@@ -60,5 +61,6 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
+    command.group,
   );
 }

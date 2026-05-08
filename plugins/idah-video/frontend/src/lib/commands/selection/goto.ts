@@ -8,6 +8,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
   name: "selection.goto",
+  group: "Selection",
   modes: ["default", "review"],
   shortcut: null as string | null,
   shortDescription: "Go to selection",
@@ -41,5 +42,6 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
+    command.group,
   );
 }

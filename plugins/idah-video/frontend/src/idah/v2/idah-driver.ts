@@ -82,8 +82,9 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     shortDescription: string | null,
     longDescription: string | null,
     callback: () => ICommandAction,
+    group?: string,
   ): void {
-    this.mgr.register(name, modes, shortcut, shortDescription, longDescription, callback);
+    this.mgr.register(name, modes, shortcut, shortDescription, longDescription, callback, group);
   }
 
   call(name: string, ...opts: Record<string, unknown>[]): void {
@@ -108,6 +109,14 @@ class CommandDriverAdapter implements ICommandDriverV2 {
 
   getCommand(name: string): ICommandDescriptor | undefined {
     return this.mgr.getCommand(name);
+  }
+
+  getShortcut(name: string): string | undefined {
+    return this.mgr.getShortcut(name);
+  }
+
+  getAllCommands(): Map<string, ICommandDescriptor[]> {
+    return this.mgr.getAllCommands();
   }
 
   resolveKeyEvent(event: KeyboardEvent, mode: string): boolean {

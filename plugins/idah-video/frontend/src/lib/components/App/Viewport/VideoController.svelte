@@ -24,7 +24,6 @@
     DropdownMenuLabel,
     DropdownMenuTrigger,
   } from "$lib/components/ui/DropdownMenu";
-  import { getShortcut } from "$lib/components/ui/Kbd/utils";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
   import Video from "./Video.svelte";
@@ -32,9 +31,15 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-
+  import { getDriver } from "$lib/state/driver.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
+  import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
+
+  function cmdShortcut(name: string): string | undefined {
+    const s = getDriver().command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
+  }
 
   // Props
   interface Props {
@@ -147,11 +152,11 @@
     <!-- VIDEO::PREVIOUS FRAME STEP -->
     <ToolTooltip
       label={`Previous ${frameStep} frames`}
-      shortcut={getShortcut(context.shortcutReferences?.["player.previous_multiple_frames"]?.keyCombinations)}
+      shortcut={cmdShortcut("viewport.skip_backward")}
       onOpenChange={fetchFrameStepFromLocalStorage}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("prev")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip_backward")}>
           <ChevronsLeftIcon />
         </Button>
       {/snippet}
@@ -160,10 +165,10 @@
     <!-- VIDEO::PREVIOUS FRAME -->
     <ToolTooltip
       label="Previous frame"
-      shortcut={getShortcut(context.shortcutReferences?.["player.previous_frame"]?.keyCombinations)}
+      shortcut={cmdShortcut("viewport.previous_frame")}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => goFrame("prev")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.previous_frame")}>
           <ChevronLeftIcon />
         </Button>
       {/snippet}
@@ -172,15 +177,13 @@
     <!-- VIDEO::PLAY / PAUSE -->
     <ToolTooltip
       label={viewport.video.status === "play" ? "Pause" : "Play"}
-      shortcut={getShortcut(context.shortcutReferences?.["player.toggle_play"]?.keyCombinations)}
+      shortcut={cmdShortcut("viewport.play")}
     >
       {#snippet trigger()}
         <Button
           variant="outline"
           size="icon-sm"
-          onclick={() => {
-            video?.togglePlay();
-          }}
+          onclick={() => getDriver().command.call("viewport.play")}
         >
           {#if viewport.video.status === "play"}
             <PauseIcon />
@@ -194,10 +197,10 @@
     <!-- VIDEO::NEXT FRAME -->
     <ToolTooltip
       label="Next frame"
-      shortcut={getShortcut(context.shortcutReferences?.["player.next_frame"]?.keyCombinations)}
+      shortcut={cmdShortcut("viewport.next_frame")}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => goFrame("next")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.next_frame")}>
           <ChevronRightIcon />
         </Button>
       {/snippet}
@@ -206,11 +209,11 @@
     <!-- VIDEO::NEXT FRAME STEP -->
     <ToolTooltip
       label={`Next ${frameStep} frames`}
-      shortcut={getShortcut(context.shortcutReferences?.["player.next_multiple_frames"]?.keyCombinations)}
+      shortcut={cmdShortcut("viewport.skip_forward")}
       onOpenChange={fetchFrameStepFromLocalStorage}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("next")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip_forward")}>
           <ChevronsRightIcon />
         </Button>
       {/snippet}
@@ -279,7 +282,6 @@
     <!-- ANNOTATION::SPLIT -->
     <ToolTooltip
       label="Split annotation"
-      shortcut={getShortcut(context.shortcutReferences?.["selected.split"]?.keyCombinations)}
     >
       {#snippet trigger()}
         <Button

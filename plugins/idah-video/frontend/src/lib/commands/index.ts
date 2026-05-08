@@ -18,6 +18,14 @@ export function noopAction(command: { name: string; modes: string[]; shortcut: s
 import { register as registerViewportPlay } from "./viewport/play";
 import { register as registerViewportGoto } from "./viewport/goto";
 import { register as registerViewportReset } from "./viewport/reset";
+import { register as registerViewportNextFrame } from "./viewport/next-frame";
+import { register as registerViewportPreviousFrame } from "./viewport/previous-frame";
+import { register as registerViewportSkipForward } from "./viewport/skip-forward";
+import { register as registerViewportSkipBackward } from "./viewport/skip-backward";
+import { register as registerViewportGoToStart } from "./viewport/go-to-start";
+import { register as registerViewportGoToEnd } from "./viewport/go-to-end";
+import { register as registerViewportZoomIn } from "./viewport/zoom-in";
+import { register as registerViewportZoomOut } from "./viewport/zoom-out";
 
 import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
@@ -45,6 +53,14 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerViewportPlay(driver);
   registerViewportGoto(driver);
   registerViewportReset(driver);
+  registerViewportNextFrame(driver);
+  registerViewportPreviousFrame(driver);
+  registerViewportSkipForward(driver);
+  registerViewportSkipBackward(driver);
+  registerViewportGoToStart(driver);
+  registerViewportGoToEnd(driver);
+  registerViewportZoomIn(driver);
+  registerViewportZoomOut(driver);
 
   // ── Selection ─────────────────────────────────────────────────────────
   registerSelectionDelete(driver);

@@ -7,16 +7,13 @@
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
-export interface ViewportGotoProps {
-  frame: number;
-}
-
 export const command = {
   name: "viewport.goto",
+  group: "Viewport",
   modes: [] as string[],
   shortcut: null as string | null,
-  shortDescription: null,
-  longDescription: null,
+  shortDescription: "Go to frame",
+  longDescription: "Jump to a specific frame",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -34,5 +31,6 @@ export function register(driver: IIdahDriverV2): void {
         combine(prev) { return prev; },
       };
     },
+    command.group,
   );
 }

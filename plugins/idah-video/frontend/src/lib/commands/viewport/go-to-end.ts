@@ -1,16 +1,19 @@
 // ---------------------------------------------------------------------------
-// viewport.reset — Reset viewport zoom/pan to fit the video (non-undoable)
+// viewport.go_to_end — Jump to the last frame
+// Shortcut: Ctrl+Alt+ArrowRight
+// Not undoable.
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
+import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.reset",
+  name: "viewport.go_to_end",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: null as string | null,
-  shortDescription: "Reset view",
-  longDescription: "Reset zoom and pan to fit the full video",
+  shortcut: "Control+Alt+ArrowRight" as string | null,
+  shortDescription: "Go to end",
+  longDescription: "Jump to the last frame",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -20,8 +23,7 @@ export function register(driver: IIdahDriverV2): void {
     () => ({
       command: { ...command },
       do() {
-        viewport.workspace.transform.translate = [0, 0];
-        viewport.workspace.transform.scale = 1.0;
+        viewport.video.currentFrame.value = media.totalFrames - 1;
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

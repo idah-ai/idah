@@ -35,12 +35,14 @@ export class CommandManagerV2 {
     shortDescription: string | null,
     longDescription: string | null,
     callback: (opts?: Record<string, unknown>) => ICommandAction,
+    group?: string,
   ): void {
     if (this.registry.has(name)) {
       throw new Error(`Command already registered: "${name}"`);
     }
     this.registry.set(name, {
       name,
+      group,
       modes,
       shortcut,
       shortDescription,
@@ -126,13 +128,14 @@ export class CommandManagerV2 {
     };
   }
 
-  /** Return commands that are available in the currentMode. */
+  /** Return commands that are available in the currentMode, with group info. */
   getActiveCommands(): ICommandDescriptor[] {
     const result: ICommandDescriptor[] = [];
     for (const entry of this.registry.values()) {
       if (entry.modes.includes(this.currentMode)) {
         result.push({
           name: entry.name,
+          group: entry.group,
           modes: entry.modes,
           shortcut: entry.shortcut,
           shortDescription: entry.shortDescription,
@@ -143,9 +146,44 @@ export class CommandManagerV2 {
     return result;
   }
 
+  /**
+   * Return ALL registered commands (regardless of mode or shortcut),
+   * grouped by their `group` field for display in the command palette.
+   * Commands without a group are placed under "General".
+   */
+  getAllCommands(): Map<string, ICommandDescriptor[]> {
+    const groups = new Map<string, ICommandDescriptor[]>();
+    for (const entry of this.registry.values()) {
+      const desc: ICommandDescriptor = {
+        name: entry.name,
+        group: entry.group,
+        modes: entry.modes,
+        shortcut: entry.shortcut,
+        shortDescription: entry.shortDescription,
+        longDescription: entry.longDescription,
+      };
+      const groupName = entry.group || "General";
+      if (!groups.has(groupName)) {
+        groups.set(groupName, []);
+      }
+      groups.get(groupName)!.push(desc);
+    }
+    return groups;
+  }
+
   /** Get a registered callback by name (for tests). */
   getCallback(name: string): ((opts?: Record<string, unknown>) => ICommandAction) | undefined {
     return this.registry.get(name)?.callback;
+  }
+
+  /**
+   * Return the human-readable shortcut label for a command name, or undefined
+   * if the command has no shortcut or doesn't exist.
+   */
+  getShortcut(name: string): string | undefined {
+    const entry = this.registry.get(name);
+    if (!entry || !entry.shortcut) return undefined;
+    return entry.shortcut;
   }
 
   /** Return a single command descriptor by name. */
@@ -154,6 +192,7 @@ export class CommandManagerV2 {
     if (!entry) return undefined;
     return {
       name: entry.name,
+      group: entry.group,
       modes: entry.modes,
       shortcut: entry.shortcut,
       shortDescription: entry.shortDescription,

@@ -1,16 +1,19 @@
 // ---------------------------------------------------------------------------
-// viewport.reset — Reset viewport zoom/pan to fit the video (non-undoable)
+// viewport.next_frame — Advance one frame forward
+// Shortcut: ArrowRight
+// Not undoable.
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
+import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.reset",
+  name: "viewport.next_frame",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: null as string | null,
-  shortDescription: "Reset view",
-  longDescription: "Reset zoom and pan to fit the full video",
+  shortcut: "ArrowRight" as string | null,
+  shortDescription: "Next frame",
+  longDescription: "Move forward one frame",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -20,8 +23,8 @@ export function register(driver: IIdahDriverV2): void {
     () => ({
       command: { ...command },
       do() {
-        viewport.workspace.transform.translate = [0, 0];
-        viewport.workspace.transform.scale = 1.0;
+        const current = viewport.video.currentFrame.value;
+        viewport.video.currentFrame.value = Math.min(current + 1, media.totalFrames - 1);
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

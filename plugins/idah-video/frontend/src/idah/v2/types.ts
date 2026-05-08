@@ -383,6 +383,7 @@ export interface ICommandDriverV2 {
     shortDescription: string | null,
     longDescription: string | null,
     callback: (opts?: Record<string, unknown>) => ICommandAction,
+    group?: string,
   ): void;
 
   /** Execute a registered command by name. Adds it to the undo stack if `undo` is present. */
@@ -402,6 +403,20 @@ export interface ICommandDriverV2 {
 
   /** Return a single command descriptor by name, or undefined if not found. */
   getCommand(name: string): ICommandDescriptor | undefined;
+
+  /**
+   * Return the human-readable shortcut label for a command name, or undefined
+   * if the command has no shortcut or doesn't exist.
+   */
+  getShortcut(name: string): string | undefined;
+
+  /**
+   * Return ALL registered commands grouped by their `group` field,
+   * regardless of mode or shortcut. Commands without a group are placed
+   * under "General". Used by the command palette to display every available
+   * command.
+   */
+  getAllCommands(): Map<string, ICommandDescriptor[]>;
 
   // ── Keyboard resolution ────────────────────────────────────────────────
 

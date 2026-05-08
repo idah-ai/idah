@@ -9,28 +9,21 @@
     CommandInput,
     CommandItem,
     CommandList,
-    CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/Command";
   import { getShortcuts } from "$lib/components/ui/Kbd/utils";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
-  import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
-
   import { requiredFullfilled } from "$lib/components/App/PropertySelector";
-  import {
-    registerOnSelectShortcuts,
-    registerShortcuts,
-    registerShortcutsReference,
-  } from "$lib/plugin/video-annotation-activity/shortcut";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { ui } from "$lib/state/ui.svelte";
+  import Highlight from "$lib/components/ui/Highlight.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import { data } from "$lib/state/data.svelte";
   import {
@@ -104,6 +97,7 @@
   let overlay: SvgOverlay | undefined = $state();
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
+  let paletteSearchValue = $state("");
 
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -115,30 +109,10 @@
 
       if (isTyping) return;
 
-      const current_mode = ShortcutManager.getCurrentMode();
-      const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
-
-      if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found");
-
-      const modifier_keys = [
-        e.altKey && "Alt",
-        e.ctrlKey && "Control",
-        e.metaKey && "Meta",
-        e.shiftKey && "Shift",
-      ].sort();
-
-      const shortcut_keys = (
-        ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-          ? [undefined]
-          : e.code.startsWith("Key")
-            ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-            : [e.code]
-      ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
-
-      const matched_key = shortcut_keys.find((key) => keymap[key]);
-      if (matched_key) {
+      // Delegate to the V2 driver's keyboard resolution
+      const consumed = getDriver().handleKeydown(e);
+      if (consumed) {
         e.preventDefault();
-        keymap[matched_key].action();
       }
     };
 
@@ -161,9 +135,6 @@
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
     viewport.video.currentFrame.value = 1;
-
-    // Generate the full static reference list of shortcuts and register them to the shared context
-    registerShortcutsReference(context);
 
     // annotations are now derived from the global store
 
@@ -254,17 +225,6 @@
     });
 
     context.tools.setTools(tools);
-
-    registerShortcuts({
-      commands: context.commands,
-      player: () => player,
-      flush: () => context.annotations.flush(),
-      switch_mode: (mode: string) => {
-        const config = toolConfig.find((c) => c.type === mode) || toolListConfig[0];
-        context.commands.run(config.command);
-      },
-      zoom: { in: () => overlay?.zoomIn?.(), out: () => overlay?.zoomOut?.() },
-    });
   });
 
   function seekToFrame(frame: number) {
@@ -435,13 +395,6 @@
       return;
     } else if (annotation?.shape.type && editable) {
       getDriver()?.setMode(annotation.shape.type);
-      // Register selection-specific shortcuts for the current mode
-      registerOnSelectShortcuts(annotation.shape.type, {
-        commands: context.commands,
-        selectedId: annotation.metadata.id,
-        selectedGroupId: annotation.metadata.metadata?.group_id || selGroup?.groupId,
-        getCurrentFrame: () => viewport.video.currentFrame.value,
-      });
     } else {
       getDriver()?.setMode("default");
     }
@@ -468,24 +421,9 @@
         /** Set current mode and select closest annotation when selectedFrame is exitsts */
         getDriver()?.setMode(firstAnnotation.shape.type);
         const closestAnnotation = selectClosestAnnotation(annotationGroup, selectedFrame);
-
-        /** Register selection-specific shortcuts for the current mode with closest annotation id */
-        registerOnSelectShortcuts(firstAnnotation.shape.type, {
-          commands: context.commands,
-          selectedId: closestAnnotation.metadata.id,
-          selectedGroupId: annotationGroup.groupId,
-          getCurrentFrame: () => viewport.video.currentFrame.value,
-        });
       } else {
         getDriver()?.setMode("default");
         selection.deselect();
-        /** Register selection-specific shortcuts for the current mode with non selectedId */
-        registerOnSelectShortcuts(firstAnnotation.shape.type, {
-          commands: context.commands,
-          selectedId: undefined,
-          selectedGroupId: annotationGroup.groupId,
-          getCurrentFrame: () => viewport.video.currentFrame.value,
-        });
       }
     } else {
       selectAnnotation(undefined);
@@ -587,25 +525,30 @@
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selAnnotation]}
-    <!-- All available shortcuts list -->
-    <CommandDialog bind:open={ui.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
+  {#key [selAnnotation]}
+    <!-- All available commands -->
+    <CommandDialog bind:open={ui.isCommandDialogOpen} accesskey={mode} bind:value={paletteSearchValue}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="All Shortcuts">
-          <!-- Get shortcuts from reference list -->
-          {#each Object.entries(context.shortcutReferences || {}) as [name, value] (name)}
-            <CommandItem>
-              <span>{value.label} ({value.description})</span>
-              <CommandShortcut>
-                <!-- Get humanized key combinations, with symbols, join if multiple is available for an action  -->
-                {getShortcuts(value.keyCombinations)?.join(" or ")}
-              </CommandShortcut>
-            </CommandItem>
-          {/each}
-        </CommandGroup>
-        <CommandSeparator />
+        {#each Array.from(getDriver().command.getAllCommands().entries()) as [groupName, cmds]}
+          <CommandGroup heading={groupName}>
+            {#each cmds.filter((c) => c.shortDescription) as cmd (cmd.name)}
+              <CommandItem
+                onSelect={() => { getDriver().command.call(cmd.name); ui.isCommandDialogOpen = false; }}
+              >
+                <span>
+                  <Highlight text={cmd.shortDescription} query={paletteSearchValue} />
+                </span>
+                <CommandShortcut>
+                  {#if cmd.shortcut}
+                    {getShortcuts([cmd.shortcut])?.join(" or ")}
+                  {/if}
+                </CommandShortcut>
+              </CommandItem>
+            {/each}
+          </CommandGroup>
+        {/each}
       </CommandList>
     </CommandDialog>
   {/key}

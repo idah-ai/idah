@@ -7,10 +7,12 @@
   import { createV1Bridge } from "$idah/v2/bridge";
   import { initDriver } from "$lib/state/driver.svelte";
   import { initDataStores } from "$lib/state/data.svelte";
+  import { registerAllCommands } from "$lib/commands";
 
   const driver = new IdahDriverV2();
   initDriver(driver);
   initDataStores();
+  registerAllCommands(driver);
 
   const v2context = createV1Bridge(driver);
 

@@ -8,6 +8,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
   name: "viewport.play",
+  group: "Viewport",
   modes: ["default", "review"],
   shortcut: "Space",
   shortDescription: "Play / Pause",
@@ -30,5 +31,6 @@ export function register(driver: IIdahDriverV2): void {
       isCombinable() { return false; },
       combine(prev) { return prev; },
     }),
+    command.group,
   );
 }

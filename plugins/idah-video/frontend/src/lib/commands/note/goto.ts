@@ -42,5 +42,6 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
+    command.group,
   );
 }

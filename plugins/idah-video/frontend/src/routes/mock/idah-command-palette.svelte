@@ -12,9 +12,9 @@
     CommandInput,
     CommandItem,
     CommandList,
-    CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/Command";
+  import Highlight from "$lib/components/ui/Highlight.svelte";
   import { getShortcuts } from "$lib/components/ui/Kbd/utils";
   import type { ICommandDriverV2 } from "$idah/v2/types";
 
@@ -23,27 +23,33 @@
     onOpenChange?: (open: boolean) => void;
     commandManager: ICommandDriverV2;
     mode: string;
+    searchValue?: string;
   }
 
-  let { open = $bindable(false), onOpenChange, commandManager, mode }: Props = $props();
+  let { open = $bindable(false), onOpenChange, commandManager, mode, searchValue = $bindable("") }: Props = $props();
 </script>
 
-<CommandDialog bind:open {onOpenChange} accesskey={mode}>
+<CommandDialog bind:open {onOpenChange} accesskey={mode} bind:value={searchValue}>
   <CommandInput placeholder="Type a command or search..." />
   <CommandList>
     <CommandEmpty>No results found.</CommandEmpty>
-    <CommandGroup heading={mode}>
-      {#each Object.entries(commandManager.getShortcutReferences()) as [name, value] (name)}
-        {#if commandManager.getCommand(name)?.modes.includes(mode)}
-          <CommandItem>
-            <span>{value.label}</span>
+    {#each Array.from(commandManager.getAllCommands().entries()) as [groupName, cmds]}
+      <CommandGroup heading={groupName}>
+        {#each cmds.filter((c) => c.shortDescription) as cmd (cmd.name)}
+          <CommandItem
+            onSelect={() => { commandManager.call(cmd.name); open = false; }}
+          >
+            <span>
+              <Highlight text={cmd.shortDescription} query={searchValue} />
+            </span>
             <CommandShortcut>
-              {getShortcuts(value.keyCombinations)?.join(" or ")}
+              {#if cmd.shortcut}
+                {getShortcuts([cmd.shortcut])?.join(" or ")}
+              {/if}
             </CommandShortcut>
           </CommandItem>
-        {/if}
-      {/each}
-    </CommandGroup>
-    <CommandSeparator />
+        {/each}
+      </CommandGroup>
+    {/each}
   </CommandList>
 </CommandDialog>
