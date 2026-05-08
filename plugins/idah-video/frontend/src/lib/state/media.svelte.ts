@@ -28,6 +28,9 @@ export const media = {
     if (val) return val;
     throw new Error("fps not set in metadata — is the driver initialized?");
   },
+  get dimensions(): number[] {
+    return [this.width, this.height];
+  },
   get width(): number {
     const val = readMeta().width as number;
     if (val) return val;

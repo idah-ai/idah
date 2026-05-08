@@ -209,13 +209,12 @@
   });
 </script>
 
-<div class="video-wrapper" bind:this={element}>
-  <!-- Red placeholder div: visible when video hasn't loaded -->
+<div class="video-wrapper" style="width: {media.width}px; height: {media.height}px;" bind:this={element}>
   <div class="video-placeholder">
     <span class="placeholder-label">Video Preview</span>
   </div>
 
-  <video bind:this={videoElement}>
+  <video class="video-element" bind:this={videoElement}>
     <track kind="captions" />
     Your browser does not support the video tag.
   </video>
@@ -230,23 +229,25 @@
 </div>
 
 <style>
-  video {
+  .video-element {
     width: 100%;
+    height: 100%;
     max-width: 100%;
+    max-height: 100%;
     position: relative;
     z-index: 1;
+    object-fit: fill;
   }
 
   .video-wrapper {
     position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
     background-color: #e5e7eb;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 2px;
     overflow: hidden;
+    flex-shrink: 0;
   }
 
   .video-placeholder {

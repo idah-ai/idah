@@ -4,6 +4,9 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 /** @type {import('@sveltejs/vite-plugin-svelte').Options} */
 const config = {
   preprocess: vitePreprocess(),
+  compilerOptions: {
+    preserveComments: false,
+  },
   onwarn: (warning, handler) => {
     if (warning.code.startsWith('a11y')) return;
     handler(warning);

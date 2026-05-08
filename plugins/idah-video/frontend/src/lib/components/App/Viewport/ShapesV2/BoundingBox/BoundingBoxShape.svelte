@@ -1,0 +1,432 @@
+<script lang="ts">
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { interpolateBBox, bboxToPoints, interpolateAngle, normalizeRect } from "$lib/utils/math/bbox";
+  import { centroid, type Point } from "$lib/utils/math/point";
+  import type { IVideoFrameSelection } from "$idah/v2/video-types";
+  import type { BBox } from "$lib/utils/math/bbox";
+  import { media } from "$lib/state/media.svelte";
+  import {
+    boundingBoxHandle,
+    rotatePointN,
+    inverseRotatePointN,
+    rotatedCursorSVG,
+    rotateCursorSVG,
+  } from "./bbox-utils";
+  import BBoxHandler from "./_BBoxHandler.svelte";
+
+  // ── Props ──────────────────────────────────────────────────────────────
+  type Props = {
+    annotation: any;
+    selected?: boolean;
+    editable?: boolean;
+    cursor?: Point;
+    mode?: string;
+    onClick?: (e: MouseEvent) => void;
+    onEditComplete?: (aabb: [number, number, number, number], angle: number) => void;
+  };
+
+  let {
+    annotation,
+    selected = false,
+    editable = false,
+    cursor,
+    mode = "default",
+    onClick,
+    onEditComplete,
+  }: Props = $props();
+
+  let color = $derived("rgba(246, 64, 43, 0.5)");
+
+  // ── Media dimensions (pixel space) ─────────────────────────────────────
+  let w = $derived(media.width);
+  let h = $derived(media.height);
+
+  // ── Frame data ────────────────────────────────────────────────────────
+  let frame = $derived(viewport.video.currentFrame.value);
+  let frames = $derived((annotation?.shape?.frames ?? []) as IVideoFrameSelection[]);
+
+  // ── Interpolation helpers ─────────────────────────────────────────────
+  function interpolatedAngle(frame: number, framesList: IVideoFrameSelection[]): number {
+    if (framesList.length === 0) return 0;
+    const exact = framesList.find((f) => f.frame === frame);
+    if (exact) return exact.angle || 0;
+
+    let before: IVideoFrameSelection | null = null;
+    let after: IVideoFrameSelection | null = null;
+    for (const f of framesList) {
+      if (f.frame < frame && (!before || f.frame > before.frame)) before = f;
+      if (f.frame > frame && (!after || f.frame < after.frame)) after = f;
+    }
+    if (!before || !after) return 0;
+
+    const t = (frame - before.frame) / (after.frame - before.frame);
+    return interpolateAngle(before.angle || 0, after.angle || 0, t);
+  }
+
+  function interpolatedPoints(frame: number, framesList: IVideoFrameSelection[]): Point[] {
+    if (framesList.length === 0) return [];
+
+    const exact = framesList.find((f) => f.frame === frame);
+    if (exact && exact.aabb) return bboxToPoints(exact.aabb);
+    if (exact && exact.points && exact.points.length === 4) return exact.points as Point[];
+
+    let before: IVideoFrameSelection | null = null;
+    let after: IVideoFrameSelection | null = null;
+    for (const f of framesList) {
+      if (f.frame < frame && (!before || f.frame > before.frame)) before = f;
+      if (f.frame > frame && (!after || f.frame < after.frame)) after = f;
+    }
+    if (!before || !after || !before.aabb || !after.aabb) return [];
+
+    const t = (frame - before.frame) / (after.frame - before.frame);
+    const aabb = interpolateBBox(before.aabb as BBox, after.aabb as BBox, t);
+    return bboxToPoints(aabb);
+  }
+
+  // ── Editing state ───────────────────────────────────────────────────────
+  let _localPoints: Point[] | undefined = $state();
+  let _localAngle: number | undefined = $state();
+
+  let panStart: Point | undefined = $state();
+  let rotateStart: Point | undefined = $state();
+  let rotateStartAngle: number | undefined = $state();
+  let rotateStartRevolutions: number | undefined = $state();
+  let resizeHandleIndex: number | undefined = $state();
+  let resizeInitialPoints: Point[] = $state([]);
+  let activeCursor: string | undefined = $state();
+
+  let isEditing = $derived(editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined));
+
+  // ── Base (interpolated) values ─────────────────────────────────────────
+  let baseAngle = $derived(interpolatedAngle(frame, frames));
+  let basePoints = $derived(interpolatedPoints(frame, frames));
+
+  let angle = $derived(_localAngle ?? baseAngle);
+  let points: Point[] = $derived(_localPoints ?? basePoints);
+
+  // ── Pixel-space cursor ────────────────────────────────────────────────
+  let cursorPx = $derived.by((): Point | undefined => {
+    if (!cursor) return undefined;
+    return [cursor[0] * w, cursor[1] * h];
+  });
+
+  // ── Centroid (normalized) ─────────────────────────────────────────────
+  let centroidN = $derived.by((): Point => {
+    if (points.length === 0) return [0, 0];
+    return centroid(points);
+  });
+
+  let centroidPx = $derived.by((): Point => {
+    if (points.length === 0) return [0, 0];
+    return [centroidN[0] * w, centroidN[1] * h];
+  });
+
+  // ── Pan offset (normalized) ──────────────────────────────────────────
+  let panOffset = $derived.by((): Point => {
+    if (panStart && cursorPx) {
+      return [
+        (cursorPx[0] - panStart[0]) / w,
+        (cursorPx[1] - panStart[1]) / h,
+      ];
+    }
+    return [0, 0];
+  });
+
+  // ── Display points ────────────────────────────────────────────────────
+  let displayPoints = $derived.by((): Point[] => {
+    if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+    }
+    return points;
+  });
+
+  let displayCentroid = $derived.by((): Point => {
+    if (displayPoints.length === 0) return [0, 0];
+    return centroid(displayPoints);
+  });
+
+  // ── SVG path (pixel space) ────────────────────────────────────────────
+  let pathD = $derived.by(() => {
+    if (displayPoints.length < 4) return "";
+    return (
+      displayPoints
+        .map((p, i) => `${i === 0 ? "M" : "L"}${p[0] * w} ${p[1] * h}`)
+        .join(" ") + " Z"
+    );
+  });
+
+  // ── Resize effect ─────────────────────────────────────────────────────
+  let lastResizeCursor: Point = $state([-1, -1]);
+
+  $effect(() => {
+    if (!cursorPx || resizeHandleIndex === undefined || resizeInitialPoints.length !== 4) return;
+    if (cursorPx[0] === lastResizeCursor[0] && cursorPx[1] === lastResizeCursor[1]) return;
+    lastResizeCursor = cursorPx;
+    handleResize(resizeHandleIndex, cursorPx);
+  });
+
+  // ── Utility ───────────────────────────────────────────────────────────
+  function getCentroid(pts: Point[]): Point {
+    if (pts.length === 0) return [0, 0];
+    const sum = pts.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]);
+    return [sum[0] / pts.length, sum[1] / pts.length];
+  }
+
+  function currentAngle(): number {
+    if (rotateStart && rotateStartAngle !== undefined && rotateStartRevolutions !== undefined && cursorPx) {
+      const cp: Point = [centroidN[0] * w, centroidN[1] * h];
+      const rel: Point = [cursorPx[0] - cp[0], cursorPx[1] - cp[1]];
+      const cursorAngle = Math.atan2(rel[0], -rel[1]);
+      return cursorAngle + rotateStartRevolutions * 2 * Math.PI;
+    }
+    return angle;
+  }
+
+  // ── Resize logic ──────────────────────────────────────────────────────
+  function handleResize(handleIndex: number, cursorPosPx: Point) {
+    if (resizeInitialPoints.length !== 4) return;
+
+    const curAngle = currentAngle();
+    const cursorN: Point = [cursorPosPx[0] / w, cursorPosPx[1] / h];
+    const initCentroid = getCentroid(resizeInitialPoints);
+
+    const unrotatedCursor = inverseRotatePointN(cursorN, initCentroid, curAngle, w, h);
+
+    const [tl, tr, br, bl] = resizeInitialPoints;
+
+    let nx1 = tl[0], ny1 = tl[1], nx2 = br[0], ny2 = br[1];
+    let fixedPoint: Point;
+
+    if (handleIndex % 2 === 0) {
+      const cornerIdx = handleIndex / 2;
+      switch (cornerIdx) {
+        case 0: nx1 = unrotatedCursor[0]; ny1 = unrotatedCursor[1]; fixedPoint = br; break;
+        case 1: nx2 = unrotatedCursor[0]; ny1 = unrotatedCursor[1]; fixedPoint = bl; break;
+        case 2: nx2 = unrotatedCursor[0]; ny2 = unrotatedCursor[1]; fixedPoint = tl; break;
+        default: nx1 = unrotatedCursor[0]; ny2 = unrotatedCursor[1]; fixedPoint = tr; break;
+      }
+    } else {
+      const edgeIdx = Math.floor(handleIndex / 2);
+      switch (edgeIdx) {
+        case 0: ny1 = unrotatedCursor[1]; fixedPoint = [(tl[0] + br[0]) / 2, br[1]]; break;
+        case 1: nx2 = unrotatedCursor[0]; fixedPoint = [tl[0], (tl[1] + br[1]) / 2]; break;
+        case 2: ny2 = unrotatedCursor[1]; fixedPoint = [(tl[0] + br[0]) / 2, tl[1]]; break;
+        default: nx1 = unrotatedCursor[0]; fixedPoint = [br[0], (tl[1] + br[1]) / 2]; break;
+      }
+    }
+
+    const newPts: Point[] = [
+      [nx1, ny1], [nx2, ny1], [nx2, ny2], [nx1, ny2],
+    ];
+
+    let newFixedPoint: Point;
+    if (handleIndex % 2 === 0) {
+      const oppositeCorner = ((handleIndex / 2) + 2) % 4;
+      newFixedPoint = newPts[oppositeCorner];
+    } else {
+      const oppositeEdge = (Math.floor(handleIndex / 2) + 2) % 4;
+      const next = (oppositeEdge + 1) % 4;
+      newFixedPoint = [
+        (newPts[oppositeEdge][0] + newPts[next][0]) / 2,
+        (newPts[oppositeEdge][1] + newPts[next][1]) / 2,
+      ];
+    }
+
+    const fixedScreen = rotatePointN(fixedPoint, initCentroid, curAngle, w, h);
+    const newCentroid = getCentroid(newPts);
+    const newFixedScreen = rotatePointN(newFixedPoint, newCentroid, curAngle, w, h);
+
+    _localPoints = newPts.map((p) => [
+      p[0] + (fixedScreen[0] - newFixedScreen[0]),
+      p[1] + (fixedScreen[1] - newFixedScreen[1]),
+    ]) as Point[];
+  }
+
+  // ── Emit complete ─────────────────────────────────────────────────────
+  function emitComplete() {
+    const pts = _localPoints ?? points;
+    const ang = _localAngle ?? angle;
+    if (pts.length < 4) return;
+
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const aabb: [number, number, number, number] = [
+      Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys),
+    ];
+    onEditComplete?.(aabb, ang);
+  }
+
+  // ── Selection API ─────────────────────────────────────────────────────
+  const HANDLE_RADIUS_PX = 8;
+  const ROTATE_RADIUS_PX = 16;
+
+  export function startSelection(start: Point): boolean {
+    if (!editable || points.length !== 4) return false;
+
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const isInside = start[0] >= minX && start[0] <= maxX && start[1] >= minY && start[1] <= maxY;
+    if (!isInside) return false;
+
+    // 1. Check resize handles (nearest-first)
+    const handles = boundingBoxHandle(points);
+    for (let i = 0; i < handles.length; i++) {
+      const h = handles[i];
+      const dx = Math.abs(start[0] - h[0]) * w;
+      const dy = Math.abs(start[1] - h[1]) * h;
+      if (Math.sqrt(dx * dx + dy * dy) < HANDLE_RADIUS_PX) {
+        resizeHandleIndex = i;
+        resizeInitialPoints = [...points];
+        _localPoints = [...points];
+        activeCursor = rotatedCursorSVG(i, currentAngle(), color);
+        return true;
+      }
+    }
+
+    // 2. Check rotation handle
+    {
+      const allY = points.map((p) => p[1]);
+      const allX = points.map((p) => p[0]);
+      const minYVal = Math.min(...allY);
+      const minXVal = Math.min(...allX);
+      const maxXVal = Math.max(...allX);
+      const topMidN: Point = [(minXVal + maxXVal) / 2, minYVal];
+      const handleDist = 60;
+      const handleOffset = handleDist / Math.max(w, h);
+      const rotHandleN: Point = [topMidN[0], topMidN[1] - handleOffset];
+      const rotHandleRotated = rotatePointN(rotHandleN, centroidN, currentAngle(), w, h);
+
+      const rdx = Math.abs(start[0] - rotHandleRotated[0]) * w;
+      const rdy = Math.abs(start[1] - rotHandleRotated[1]) * h;
+      if (Math.sqrt(rdx * rdx + rdy * rdy) < ROTATE_RADIUS_PX) {
+        rotateStart = centroidN;
+        rotateStartRevolutions = Math.round(currentAngle() / (2 * Math.PI));
+        const cp: Point = [centroidN[0] * w, centroidN[1] * h];
+        const rel: Point = [start[0] * w - cp[0], start[1] * h - cp[1]];
+        rotateStartAngle = Math.atan2(rel[0], -rel[1]);
+        activeCursor = rotateCursorSVG(color);
+        return true;
+      }
+    }
+
+    // 3. Bbox body → start pan
+    panStart = [start[0] * w, start[1] * h];
+    _localPoints = [...points];
+    return true;
+  }
+
+  export function endSelection(_end: Point) {
+    let changed = false;
+    if (panStart) {
+      if (panOffset[0] !== 0 || panOffset[1] !== 0) {
+        _localPoints = points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point);
+        changed = true;
+      }
+      panStart = undefined;
+    } else if (rotateStart) {
+      _localAngle = currentAngle();
+      rotateStart = undefined;
+      rotateStartAngle = undefined;
+      rotateStartRevolutions = undefined;
+      activeCursor = undefined;
+      changed = true;
+    } else if (resizeHandleIndex !== undefined) {
+      if (_localPoints && _localPoints.length === 4) {
+        _localPoints = normalizeRect(_localPoints);
+        changed = true;
+      }
+      resizeHandleIndex = undefined;
+      resizeInitialPoints = [];
+      activeCursor = undefined;
+    }
+    if (changed) {
+      emitComplete();
+    }
+    _localAngle = undefined;
+    _localPoints = undefined;
+  }
+
+  // ── Hover state for body cursor ───────────────────────────────────────
+  let over = $state(false);
+</script>
+
+{#if pathD}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <path
+    d={pathD}
+    fill={color}
+    fill-opacity={selected ? 0.6 : 0.3}
+    stroke={color.replace("0.5", "1")}
+    stroke-width={selected ? 3 : 1.5}
+    style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px"
+    style:transform="rotate({currentAngle()}rad)"
+    vector-effect="non-scaling-stroke"
+    onmouseenter={() => (over = true)}
+    onmouseleave={() => (over = false)}
+    class={editable && selected ? "cursor-none" : ""}
+    role="button"
+    tabindex="-1"
+    onclick={onClick}
+    onmousedown={(e) => {
+      if (editable && selected && cursor) {
+        startSelection(cursor);
+      }
+      e.stopPropagation();
+    }}
+  />
+
+  {#if editable && selected && displayPoints.length === 4}
+    <BBoxHandler
+      {displayPoints}
+      {centroidN}
+      {centroidPx}
+      currentAngle={currentAngle()}
+      {color}
+      {isEditing}
+      {cursorPx}
+      onStartResize={(idx) => {
+        resizeHandleIndex = idx;
+        resizeInitialPoints = [...points];
+        _localPoints = [...points];
+        activeCursor = rotatedCursorSVG(idx, currentAngle(), color);
+      }}
+      onStartRotate={(cp) => {
+        rotateStart = centroidN;
+        rotateStartRevolutions = Math.round(currentAngle() / (2 * Math.PI));
+        const rel: Point = [cp[0] - centroidPx[0], cp[1] - centroidPx[1]];
+        rotateStartAngle = Math.atan2(rel[0], -rel[1]);
+        activeCursor = rotateCursorSVG(color);
+      }}
+      onDecrementRevolution={() => {
+        _localAngle = (angle ?? 0) - 2 * Math.PI;
+        emitComplete();
+      }}
+      onIncrementRevolution={() => {
+        _localAngle = (angle ?? 0) + 2 * Math.PI;
+        emitComplete();
+      }}
+      revolutionDisplay={
+        rotateStartRevolutions !== undefined
+          ? `(${rotateStartRevolutions > 0 ? "+" : ""}${rotateStartRevolutions} rev)`
+          : ""
+      }
+      rotateStart={!!rotateStart}
+    />
+  {/if}
+
+  {#if activeCursor && cursorPx && isEditing}
+    <g style="pointer-events: none;">
+      <image
+        href={activeCursor}
+        x={cursorPx[0] - 18}
+        y={cursorPx[1] - 18}
+        width="36"
+        height="36"
+      />
+    </g>
+  {/if}
+{/if}

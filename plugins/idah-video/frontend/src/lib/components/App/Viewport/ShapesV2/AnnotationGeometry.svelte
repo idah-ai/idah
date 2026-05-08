@@ -1,16 +1,70 @@
-// ---------------------------------------------------------------------------
-// AnnotationGeometry.svelte — routes to the correct shape renderer
-// ---------------------------------------------------------------------------
 <script lang="ts">
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
-  import BoundingBoxShape from "./BoundingBoxShape.svelte";
+  import BoundingBoxShape from "./BoundingBox/BoundingBoxShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
+  import type { Point } from "$lib/utils/math/point";
 
-  let { annotation, selected = false, onClick }: { annotation: any; selected?: boolean; onClick?: any } = $props();
+  type Props = {
+    annotation: any;
+    selected?: boolean;
+    editable?: boolean;
+    cursor?: Point;
+    mode?: string;
+    onClick?: (e: MouseEvent) => void;
+    onEditComplete?: (aabb: [number, number, number, number], angle: number) => void;
+  };
+
+  let {
+    annotation,
+    selected = false,
+    editable = false,
+    cursor,
+    mode = "default",
+    onClick,
+    onEditComplete,
+  }: Props = $props();
+
+  /** Component refs (any type because Svelte5 component instances). */
+  let _bboxComp: any = $state();
+  let _polyComp: any = $state();
+
+  /** Expose the active tool selection to parents. */
+  let _toolSelection = $derived.by<{ startSelection: (p: Point) => boolean; endSelection: (p: Point) => void } | undefined>(() => {
+    const comp = annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
+    if (comp?.startSelection && comp?.endSelection) {
+      return {
+        startSelection: (p: Point) => comp.startSelection(p),
+        endSelection: (p: Point) => comp.endSelection(p),
+      };
+    }
+    return undefined;
+  });
+
+  export function getToolSelection(): { startSelection: (p: Point) => boolean; endSelection: (p: Point) => void } | undefined {
+    return _toolSelection;
+  }
 </script>
 
 {#if annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX}
-  <BoundingBoxShape {annotation} {selected} {onClick} />
+  <BoundingBoxShape
+    bind:this={_bboxComp}
+    {annotation}
+    {selected}
+    {editable}
+    {cursor}
+    {mode}
+    {onClick}
+    {onEditComplete}
+  />
 {:else if annotation?.shape?.type === IDAH_VIDEO_POLYGON}
-  <PolygonShape {annotation} {selected} {onClick} />
+  <PolygonShape
+    bind:this={_polyComp}
+    {annotation}
+    {selected}
+    {editable}
+    {cursor}
+    {mode}
+    {onClick}
+    {onEditComplete}
+  />
 {/if}

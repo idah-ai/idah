@@ -1,4 +1,5 @@
 import { getDriver } from "./driver.svelte";
+import { media } from "./media.svelte";
 
 class Viewport {
   // Only mode needs special handling
@@ -38,6 +39,19 @@ class Viewport {
       const t = this.transform;
       return { x: x * t.scale + t.translate[0], y: y * t.scale + t.translate[1] };
     },
+    get viewportSize(): number[] {
+      const t = this.transform;
+      const d = this.dimensions;
+      const m = media.dimensions;
+      const s = t.scale
+
+      return [
+        -t.translate[0] / (s * m[0]),
+        -t.translate[1] / (s * m[1]),
+        (-t.translate[0] + d[0]) / (s * m[0]),
+        (-t.translate[1] + d[1]) / (s * m[1])
+      ]
+    }
   });
 }
 

@@ -176,8 +176,10 @@
 
 <style>
   .viewport {
-    position: absolute;
-    display: flexbox;
-    overflow: hidden;
-  }
+      position: absolute;
+      display: flexbox;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
 </style>

@@ -36,7 +36,7 @@
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
   import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
-  import SvgOverlay, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/SvgOverlay.svelte";
+  import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/ShapesV2/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
@@ -90,7 +90,7 @@
     handleClick: () => void;
   }[] = $state([]);
 
-  let overlay: SvgOverlay | undefined = $state();
+  let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
   let paletteSearchValue = $state("");
 
@@ -624,7 +624,7 @@
           <ResizablePane defaultSize={75}>
             <section id="video-section" class="flex h-full w-full flex-1">
               {#if mediaInfo}
-                <SvgOverlay
+                <ShapesContainer
                   bind:this={overlay}
                   {annotations_promise}
                   frame={viewport.video.currentFrame.value}
@@ -652,7 +652,7 @@
                       viewport.video.sound = { level: level, muted };
                     }}
                   />
-                </SvgOverlay>
+                </ShapesContainer>
               {/if}
 
               <PropertiesSidebar

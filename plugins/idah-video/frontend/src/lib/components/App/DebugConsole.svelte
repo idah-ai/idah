@@ -34,6 +34,7 @@ dimensions {viewport.timeline.dimensions[0]} × {viewport.timeline.dimensions[1]
 
 <span class="section">── WORKSPACE ──</span>
 dimensions {viewport.workspace.dimensions[0]} × {viewport.workspace.dimensions[1]} px
+--viewport [{ viewport.workspace.viewportSize[0] } × {viewport.workspace.viewportSize[1]}] - { viewport.workspace.viewportSize[2] } × {viewport.workspace.viewportSize[3]}
 transform  translate({viewport.workspace.transform.translate[0].toFixed(1)}, {viewport.workspace.transform.translate[1].toFixed(1)}) scale({viewport.workspace.transform.scale.toFixed(2)})
 
 <span class="section">── VIDEO ──</span>
