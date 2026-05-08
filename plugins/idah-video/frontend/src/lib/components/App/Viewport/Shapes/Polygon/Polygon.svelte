@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    type InterpolatedVertex,
-    type Point,
-  } from "$lib/utils/math/point";
+  import type { Point } from "$lib/utils/math/point";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";
 
@@ -24,7 +21,7 @@
   }: {
     ratio: Point;
     offset: Point;
-    points: Point[] | InterpolatedVertex[];
+    points: Point[];
     editable?: boolean;
     cursor?: Point;
     color: string;
@@ -157,11 +154,7 @@
   let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
   let isHoveringOverFirstPoint: boolean = $state(false); // track if cursor is near first point during creation
 
-  // Convert InterpolatedVertex[] to Point[] for internal operations
   let rawPoints: Point[] = $derived.by(() => {
-    if (Array.isArray(points) && points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
-      return (points as InterpolatedVertex[]).map((v) => v.point);
-    }
     return points as Point[];
   });
 
@@ -400,10 +393,9 @@
   }
 </script>
 
-{#snippet PolygonVertices(vertexPoints: Point[] | InterpolatedVertex[])}
-  {#each vertexPoints as vertexData, index (index)}
-    {@const point = typeof vertexData === "object" && "point" in vertexData ? vertexData.point : vertexData}
-    {@const isMatched = typeof vertexData === "object" && "matched" in vertexData ? vertexData.matched : true}
+{#snippet PolygonVertices(vertexPoints: Point[])}
+  {#each vertexPoints as point, index (index)}
+    {@const isMatched = true}
 
     <circle
       cx={point[0] * ratio[0]}
@@ -441,12 +433,12 @@
       class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-minus-icon" : ""}
       style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
-      style:stroke={isMatched ? color : "orange"}
-      style:stroke-width={isMatched ? 1 : 3}
-      style:stroke-dasharray={isMatched ? "none" : "3,3"}
-      style:fill={isMatched ? color : "orange"}
-      fill-opacity={isMatched ? 1 : 0}
-      style:opacity={isMatched ? 0.5 : 1}
+      style:stroke={color}
+      style:stroke-width={1}
+      style:stroke-dasharray="none"
+      style:fill={color}
+      fill-opacity={1}
+      style:opacity={0.5}
     />
   {/each}
 {/snippet}

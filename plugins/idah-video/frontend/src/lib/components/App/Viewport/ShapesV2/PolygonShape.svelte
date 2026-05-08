@@ -36,7 +36,7 @@
     if (!before || !after || !before.points || !after.points) return [];
 
     const t = (frame - before.frame) / (after.frame - before.frame);
-    return interpolatePolygon(before.points as Point[], after.points as Point[], t).map((v) => v.point);
+    return interpolatePolygon(before.points as Point[], after.points as Point[], t);
   });
 
   let pathD = $derived.by(() => {

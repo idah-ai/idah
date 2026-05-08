@@ -5,12 +5,6 @@
 /** 2D point represented as [x, y]. */
 export type Point = [number, number];
 
-/** A vertex with a match flag used during polygon interpolation. */
-export type InterpolatedVertex = {
-  point: Point;
-  matched: boolean | null;
-};
-
 /** Dot product of two vectors. */
 export function dot(a: Point, b: Point): number {
   return a[0] * b[0] + a[1] * b[1];

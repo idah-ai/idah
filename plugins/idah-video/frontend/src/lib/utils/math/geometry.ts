@@ -7,7 +7,7 @@
 
 export { centroid } from "$lib/utils/math/point";
 
-export type { Point, InterpolatedVertex } from "$lib/utils/math/point";
+export type { Point } from "$lib/utils/math/point";
 export {
   dot,
   sub,

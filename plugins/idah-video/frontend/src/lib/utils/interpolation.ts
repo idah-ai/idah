@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
-import type { Point, InterpolatedVertex } from "$lib/utils/math/point";
+import type { Point } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
 import { interpolateBBox, bboxToPoints } from "$lib/utils/math/bbox";
 
@@ -37,7 +37,6 @@ export function getInterpolatedFrame(
   interpolate: boolean = true,
 ):
   | { points: Point[] | undefined; angle: number; aabb?: [number, number, number, number] }
-  | { points: InterpolatedVertex[] | undefined; angle: number }
   | undefined {
   if (!shape.frames?.length) return;
   if (shape.start > current_frame || shape.end < current_frame) return;
@@ -45,10 +44,7 @@ export function getInterpolatedFrame(
   const exact = shape.frames.find((v) => v.frame === current_frame);
   if (exact || !interpolate) {
     if (shape.type === VIDEO_POLYGON && exact?.points) {
-      return {
-        points: exact.points.map((p) => ({ point: p, matched: true })),
-        angle: exact.angle || 0,
-      };
+      return { points: exact.points, angle: exact.angle || 0 };
     }
     if (shape.type === VIDEO_BOUNDING_BOX && exact?.aabb) {
       return { points: bboxToPoints(exact.aabb), angle: exact.angle || 0, aabb: exact.aabb };

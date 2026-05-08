@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [tailwindcss(), isProduction ? svelte() : sveltekit()],
+    optimizeDeps: {
+      include: ["flubber"],
+    },
     resolve: {
       alias: {
         "$lib": new URL("./src/lib", import.meta.url).pathname,
