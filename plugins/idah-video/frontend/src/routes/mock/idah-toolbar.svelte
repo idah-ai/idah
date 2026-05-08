@@ -11,16 +11,18 @@
     items: IToolbarItem[];
     onUndo?: () => void;
     onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
   }
-  let { items, onUndo, onRedo }: Props = $props();
+  let { items, onUndo, onRedo, canUndo = false, canRedo = false }: Props = $props();
 </script>
 
 <div class="mock-toolbar">
   <div class="toolbar-group">
-    <button class="toolbar-btn" onclick={onUndo} title="Undo">
+    <button class="toolbar-btn" disabled={!canUndo} onclick={onUndo} title="Undo">
       {@html undoIcon}
     </button>
-    <button class="toolbar-btn" onclick={onRedo} title="Redo">
+    <button class="toolbar-btn" disabled={!canRedo} onclick={onRedo} title="Redo">
       {@html redoIcon}
     </button>
   </div>

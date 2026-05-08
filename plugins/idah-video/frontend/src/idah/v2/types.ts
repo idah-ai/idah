@@ -412,6 +412,12 @@ export interface ICommandDriverV2 {
   /** Redo the last `count` commands (default 1). Returns true if anything was redone. */
   redo(count?: number): boolean;
 
+  /** Whether there are actions to undo. */
+  canUndo(): boolean;
+
+  /** Whether there are actions to redo. */
+  canRedo(): boolean;
+
   /** Return the current undo / redo stacks (each up to `n` entries). */
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
 

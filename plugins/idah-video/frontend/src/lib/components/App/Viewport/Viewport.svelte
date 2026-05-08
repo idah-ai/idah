@@ -15,6 +15,7 @@
 
   // Variables
   let size: Point = $state([0, 0]);
+  let sizeElement: HTMLDivElement;
   let panOrigin: Point | undefined = $state();
 
   /** Zoom delta accumulator for smooth touchpad / mouse wheel zooming. */
@@ -28,12 +29,32 @@
     viewport.workspace.clampTranslate();
   }
 
-  function panStart(x: number, y: number) {
-    panOrigin = [x - viewport.workspace.transform.translate[0], y - viewport.workspace.transform.translate[1]];
+  function panStart(offsetX: number, offsetY: number) {
+    panOrigin = [offsetX - viewport.workspace.transform.translate[0], offsetY - viewport.workspace.transform.translate[1]];
+    // Track mouse at document level during drag so we don't lose it outside the viewport
+    document.addEventListener("mousemove", onDocMouseMove);
+    document.addEventListener("mouseup", onDocMouseUp);
   }
 
   function panStop() {
     panOrigin = undefined;
+    document.removeEventListener("mousemove", onDocMouseMove);
+    document.removeEventListener("mouseup", onDocMouseUp);
+  }
+
+  function onDocMouseMove(e: MouseEvent) {
+    if (!panOrigin) return;
+    // Convert client coords to element-relative using the element's bounding rect
+    const rect = sizeElement.getBoundingClientRect();
+    viewport.workspace.transform.translate = [(e.clientX - rect.left) - panOrigin[0], (e.clientY - rect.top) - panOrigin[1]];
+    viewport.workspace.clampTranslate();
+  }
+
+  function onDocMouseUp(_e: MouseEvent) {
+    if (panOrigin) {
+      panStop();
+      onPanStop?.();
+    }
   }
 
   export function zoomIn() {
@@ -167,6 +188,7 @@
   class="viewport bg-secondary h-full w-full"
   role="grid"
   tabindex="-1"
+  bind:this={sizeElement}
   bind:clientHeight={size[1]}
   bind:clientWidth={size[0]}
 >

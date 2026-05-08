@@ -66,10 +66,9 @@ export class CommandManagerV2 {
     const props = opts.length > 0 ? opts[0] : undefined;
     const action = entry.callback(props);
 
-    // Clear redo on new action
-    this.redoStack = [];
-
     if (action.undo) {
+      // Clear redo stack — we're creating a new undoable action
+      this.redoStack = [];
       // Attempt combine with the previous action in the stack
       const last = this.undoStack[this.undoStack.length - 1];
       if (last) {
@@ -97,6 +96,14 @@ export class CommandManagerV2 {
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
+
+  canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
 
   undo(count: number = 1): boolean {
     let did = false;

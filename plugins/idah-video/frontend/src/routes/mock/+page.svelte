@@ -30,14 +30,21 @@
   let currentMode = $state(driver.mode);
   let mountedPlugin: object | undefined = $state();
   let paletteOpen = $state(driver.command.isPaletteOpen());
+  let canUndo = $state(driver.command.canUndo());
+  let canRedo = $state(driver.command.canRedo());
 
   function refreshToolbar() {
     toolbarItems = driver.toolbarMgr.getItemsForMode(driver.mode);
     currentMode = driver.mode;
+    canUndo = driver.command.canUndo();
+    canRedo = driver.command.canRedo();
   }
 
   // ── Listen to mode changes to refresh toolbar ────────────────────────
   driver.onModeChange(() => { refreshToolbar(); });
+
+  // Refresh toolbar after any command (for undo/redo state)
+  driver.command.onPaletteChange(() => { refreshToolbar(); });
 
   // ── Sync palette state from driver ────────────────────────────────────
   $effect(() => {
@@ -75,7 +82,13 @@
   />
 
   <!-- V2 Toolbar — simulates the outer IDAH toolbar -->
-  <IdahToolbar items={toolbarItems} onUndo={() => driver.command.undo()} onRedo={() => driver.command.redo()} />
+  <IdahToolbar
+    items={toolbarItems}
+    onUndo={() => { driver.command.undo(); refreshToolbar(); }}
+    onRedo={() => { driver.command.redo(); refreshToolbar(); }}
+    {canUndo}
+    {canRedo}
+  />
 
   <!-- Editor area — the actual VideoAnnotationActivity -->
   <div bind:this={targetElement} class="editor-area"></div>

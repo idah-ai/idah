@@ -137,6 +137,7 @@
 
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
+  let isDragging = $state(false);
 
   // ── Resize observer to sync dimensions ────────────────────────────────
   function syncDimensions() {
@@ -255,6 +256,13 @@
     zoomableElement.mouseDown(e);
   }
 
+  function onMouseLeave(_e: MouseEvent) {
+    // Cancel any active tool edit (bounding box drag, resize, rotate)
+    toolSelection?.endSelection(sceneNormalizedCursor);
+    // Stop viewport panning
+    zoomableElement.mouseUp(new MouseEvent("mouseup"));
+  }
+
   function onMouseUp(e: MouseEvent) {
     const isBuildMode = viewport.mode === BUILD_MODE;
 
@@ -355,6 +363,7 @@
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
     onmousemove={onMouseMove}
+    onmouseleave={onMouseLeave}
     onwheel={onWheel}
   >
     <!-- Crosshair (for build modes) -->

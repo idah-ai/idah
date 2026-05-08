@@ -142,6 +142,14 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     return this.mgr.redo(count);
   }
 
+  canUndo(): boolean {
+    return this.mgr.canUndo();
+  }
+
+  canRedo(): boolean {
+    return this.mgr.canRedo();
+  }
+
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
     return this.mgr.history(n);
   }

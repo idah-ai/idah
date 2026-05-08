@@ -343,12 +343,13 @@
     fill-opacity={selected ? 0.6 : 0.3}
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 3 : 1.5}
-    style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px"
+    style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
     class={editable && selected ? "cursor-grab" : "cursor-pointer"}
+    style:outline="none"
     role="button"
     tabindex="-1"
     onclick={onClick}
@@ -360,7 +361,7 @@
     }}
   />
 
-  {#if editable && selected && displayPoints.length === 4}
+  {#if editable && selected && !isEditing && displayPoints.length === 4}
     <BBoxHandler
       {displayPoints}
       {centroidN}
