@@ -9,6 +9,7 @@
 // collection grows beyond a threshold.
 // ---------------------------------------------------------------------------
 import { uuidv7 } from "uuidv7";
+import { selection } from "$lib/state/selection.svelte";
 
 /** Minimum interface an item must expose. */
 export interface DataItem {
@@ -138,6 +139,21 @@ export interface AnnotationDriver {
   delete(id: string): Promise<void>;
 }
 
+function syncSelectionOnUpdate(updatedId: string): void {
+  if (selection.value?.type === "annotation" && selection.value.annotation?.id === updatedId) {
+    const store = data.annotations;
+    if (!store) return;
+    const fresh = store.items.find((i) => i.id === updatedId);
+    if (fresh) selection.selectAnnotation(fresh);
+  }
+}
+
+function syncSelectionOnDelete(deletedId: string): void {
+  if (selection.value?.type === "annotation" && selection.value.annotation?.id === deletedId) {
+    selection.deselect();
+  }
+}
+
 export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
   const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
@@ -192,7 +208,8 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
 
     async delete(id: string): Promise<void> {
       const item = store.items.find((i) => i.id === id);
-      // Optimistic: remove locally first
+      // Optimistic: remove locally first + deselect if it was selected
+      syncSelectionOnDelete(id);
       store.remove(id);
       try {
         await driver.delete(id);
@@ -205,8 +222,9 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
 
     async update(item: AnnotationItem): Promise<void> {
       const old = store.items.find((i) => i.id === item.id);
-      // Optimistic: update locally first
+      // Optimistic: update locally first + refresh selection reference
       originalUpsert(item);
+      syncSelectionOnUpdate(item.id);
       try {
         await driver.update(item.id, item);
       } catch {

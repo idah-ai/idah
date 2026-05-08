@@ -1,10 +1,9 @@
 <script lang="ts">
 
   import { viewport } from "$lib/state/viewport.svelte";
-  import { interpolatePolygon } from "$lib/utils/math/polygon";
   import type { BBox } from "$lib/utils/math/bbox";
-  import type { IVideoFrameSelection } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
 
   let {
     annotation,
@@ -33,23 +32,10 @@
   });
 
   let vertices = $derived.by<Point[]>(() => {
-    const frame = viewport.video.currentFrame.value;
-    const frames = (annotation?.shape?.frames ?? []) as IVideoFrameSelection[];
-    if (frames.length === 0) return [];
-
-    const exact = frames.find((f) => f.frame === frame);
-    if (exact && exact.points) return exact.points as Point[];
-
-    let before: IVideoFrameSelection | null = null;
-    let after: IVideoFrameSelection | null = null;
-    for (const f of frames) {
-      if (f.frame < frame && (!before || f.frame > before.frame)) before = f;
-      if (f.frame > frame && (!after || f.frame < after.frame)) after = f;
-    }
-    if (!before || !after || !before.points || !after.points) return [];
-
-    const t = (frame - before.frame) / (after.frame - before.frame);
-    return interpolatePolygon(before.points as Point[], after.points as Point[], t);
+    const shape = annotation?.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; start: number; end: number; type: string } | undefined;
+    if (!shape?.frames) return [];
+    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    return result?.points ?? [];
   });
 
   let pathD = $derived.by(() => {

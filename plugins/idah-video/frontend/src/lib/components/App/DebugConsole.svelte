@@ -1,6 +1,7 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { selection } from "$lib/state/selection.svelte";
 
   let visible = $state(false);
 
@@ -33,8 +34,8 @@ range      {viewport.timeline.range.startRange.toFixed(1)} → {viewport.timelin
 dimensions {viewport.timeline.dimensions[0]} × {viewport.timeline.dimensions[1]} px
 
 <span class="section">── WORKSPACE ──</span>
-dimensions {viewport.workspace.dimensions[0]} × {viewport.workspace.dimensions[1]} px
---viewport [{ viewport.workspace.viewportSize[0] } × {viewport.workspace.viewportSize[1]}] - { viewport.workspace.viewportSize[2] } × {viewport.workspace.viewportSize[3]}
+dimensions {viewport.workspace.dimensions[0].toFixed(0)} × {viewport.workspace.dimensions[1].toFixed(0)} px
+viewport   [{ viewport.workspace.viewportSize[0].toFixed(3) }, {viewport.workspace.viewportSize[1].toFixed(3)}] → [{ viewport.workspace.viewportSize[2].toFixed(3) }, {viewport.workspace.viewportSize[3].toFixed(3)}]
 transform  translate({viewport.workspace.transform.translate[0].toFixed(1)}, {viewport.workspace.transform.translate[1].toFixed(1)}) scale({viewport.workspace.transform.scale.toFixed(2)})
 
 <span class="section">── VIDEO ──</span>
@@ -42,7 +43,16 @@ frame      {viewport.video.currentFrame.value}
 status     {viewport.video.status}
 mode       {viewport.mode}
 total      {media.totalFrames}
-playing    {viewport.video.status === "play"}
+fps        {media.fps}
+duration   {media.duration.toFixed(1)}s
+
+<span class="section">── SELECTION ──</span>
+{selection.value ? selection.value.type : "none"}
+{#if selection.value?.type === "annotation"}
+{selection.value.annotation.id ?? "—"}
+{:else if selection.value?.type === "group"}
+{selection.value.groupId}
+{/if}
 </pre>
   </div>
 {/if}

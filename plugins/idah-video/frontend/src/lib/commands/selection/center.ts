@@ -4,18 +4,24 @@
 // ---------------------------------------------------------------------------
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { media } from "$lib/state/media.svelte";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoFrameSelection } from "$idah/v2/video-types";
 
-function hasAnnotationSelection(): boolean {
-  return selection.value?.type === "annotation";
+function hasAnnotationAtCurrentFrame(): boolean {
+  const sel = selection.value;
+  if (sel?.type !== "annotation") return false;
+  const shape = (sel.annotation as any).shape as { start?: number; end?: number; frames?: unknown[] } | undefined;
+  if (!shape?.frames || shape.frames.length === 0) return false;
+  const frame = viewport.video.currentFrame.value;
+  return frame >= (shape.start ?? 0) && frame <= (shape.end ?? 0);
 }
 
 export const command = {
   name: "selection.center",
   group: "Selection",
   modes: ["default", "review"],
-  shortcut: null as string | null,
+  shortcut: "Control+Shift+C",
   shortDescription: "Center on selection",
   longDescription: "Pan and zoom to fit the selected annotation in the viewport",
 };
@@ -41,11 +47,12 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (sel?.type !== "annotation") return;
           const record = sel.annotation as any;
-          const shape = record.shape as { frames?: IVideoFrameSelection[]; type: string; [key: string]: unknown };
+          const shape = record.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; type: string };
+          if (!shape.frames || shape.frames.length === 0) return;
           const currentFrame = viewport.video.currentFrame.value;
-          const frameData = shape.frames?.find((f) => f.frame === currentFrame);
-          const points = frameData?.points;
-          if (!points || points.length === 0) return;
+          const interpolated = getInterpolatedFrame(shape, currentFrame);
+          if (!interpolated || !interpolated.points || interpolated.points.length === 0) return;
+          const points = interpolated.points;
 
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
           for (const [px, py] of points) {
@@ -55,20 +62,25 @@ export function register(driver: IIdahDriverV2): void {
             if (py > maxY) maxY = py;
           }
 
+          const mw = media.width;
+          const mh = media.height;
+          if (mw === 0 || mh === 0) return;
+
+          // Convert from normalized media space (0-1) to scene pixel space
+          const sx = minX * mw, sy = minY * mh;
+          const sw = (maxX - minX) * mw, sh = (maxY - minY) * mh;
+
           const vpW = viewport.workspace.dimensions[0];
           const vpH = viewport.workspace.dimensions[1];
           if (vpW === 0 || vpH === 0) return;
 
-          const bboxW = (maxX - minX);
-          const bboxH = (maxY - minY);
-          const padding = 0.1;
-
-          const scaleX = vpW / (bboxW * (1 + padding * 2));
-          const scaleY = vpH / (bboxH * (1 + padding * 2));
+          const padding = 0.2;
+          const scaleX = vpW / (sw * (1 + padding * 2));
+          const scaleY = vpH / (sh * (1 + padding * 2));
           const newScale = Math.min(scaleX, scaleY, 10);
 
-          const centerX = (minX + maxX) / 2;
-          const centerY = (minY + maxY) / 2;
+          const centerX = sx + sw / 2;
+          const centerY = sy + sh / 2;
 
           _previousTransform = prev;
           viewport.workspace.transform.translate = [
@@ -77,15 +89,11 @@ export function register(driver: IIdahDriverV2): void {
           ];
           viewport.workspace.transform.scale = newScale;
         },
-        undo() {
-          viewport.workspace.transform.translate = _previousTransform.translate;
-          viewport.workspace.transform.scale = _previousTransform.scale;
-        },
         isCombinable() { return false; },
         combine(p) { return p; },
       };
     },
     group: command.group,
-    activeWhen: hasAnnotationSelection,
+    activeWhen: hasAnnotationAtCurrentFrame,
   });
 }

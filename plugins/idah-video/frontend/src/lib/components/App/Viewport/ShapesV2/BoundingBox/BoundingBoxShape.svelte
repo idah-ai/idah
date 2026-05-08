@@ -1,10 +1,9 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import { interpolateAngle, normalizeRect } from "$lib/utils/math/bbox";
+  import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
-  import type { IVideoFrameSelection } from "$idah/v2/video-types";
-  import { interpolatePolygon } from "$lib/utils/math/polygon";
   import { media } from "$lib/state/media.svelte";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import {
     boundingBoxHandle,
     rotatePointN,
@@ -41,45 +40,13 @@
   let w = $derived(media.width);
   let h = $derived(media.height);
 
-  // ── Frame data ────────────────────────────────────────────────────────
-  let frame = $derived(viewport.video.currentFrame.value);
-  let frames = $derived((annotation?.shape?.frames ?? []) as IVideoFrameSelection[]);
-
-  // ── Interpolation helpers ─────────────────────────────────────────────
-  function interpolatedAngle(frame: number, framesList: IVideoFrameSelection[]): number {
-    if (framesList.length === 0) return 0;
-    const exact = framesList.find((f) => f.frame === frame);
-    if (exact) return exact.angle || 0;
-
-    let before: IVideoFrameSelection | null = null;
-    let after: IVideoFrameSelection | null = null;
-    for (const f of framesList) {
-      if (f.frame < frame && (!before || f.frame > before.frame)) before = f;
-      if (f.frame > frame && (!after || f.frame < after.frame)) after = f;
-    }
-    if (!before || !after) return 0;
-
-    const t = (frame - before.frame) / (after.frame - before.frame);
-    return interpolateAngle(before.angle || 0, after.angle || 0, t);
-  }
-
-  function interpolatedPoints(frame: number, framesList: IVideoFrameSelection[]): Point[] {
-    if (framesList.length === 0) return [];
-
-    const exact = framesList.find((f) => f.frame === frame);
-    if (exact && exact.points) return exact.points as Point[];
-
-    let before: IVideoFrameSelection | null = null;
-    let after: IVideoFrameSelection | null = null;
-    for (const f of framesList) {
-      if (f.frame < frame && (!before || f.frame > before.frame)) before = f;
-      if (f.frame > frame && (!after || f.frame < after.frame)) after = f;
-    }
-    if (!before || !after || !before.points || !after.points) return [];
-
-    const t = (frame - before.frame) / (after.frame - before.frame);
-    return interpolatePolygon(before.points, after.points, t) as Point[];
-  }
+  // ── Interpolated values ──────────────────────────────────────────────
+  let baseAngle = $derived.by((): number => {
+    const shape = annotation?.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; start: number; end: number; type: string } | undefined;
+    if (!shape?.frames) return 0;
+    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    return result?.angle ?? 0;
+  });
 
   // ── Editing state ───────────────────────────────────────────────────────
   let _localPoints: Point[] | undefined = $state();
@@ -95,9 +62,12 @@
 
   let isEditing = $derived(editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined));
 
-  // ── Base (interpolated) values ─────────────────────────────────────────
-  let baseAngle = $derived(interpolatedAngle(frame, frames));
-  let basePoints = $derived(interpolatedPoints(frame, frames));
+  let basePoints = $derived.by((): Point[] => {
+    const shape = annotation?.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; start: number; end: number; type: string } | undefined;
+    if (!shape?.frames) return [];
+    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    return result?.points ?? [];
+  });
 
   let angle = $derived(_localAngle ?? baseAngle);
   let points: Point[] = $derived(_localPoints ?? basePoints);
