@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount, type Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
   import { cn } from "$lib/utils";
 
@@ -9,9 +9,8 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import type { ToolSelection } from "$lib/components/App/Viewport/Shapes/BoundingBox/BoundingBox.svelte";
-  import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$idah/context/activity-context";
-  import type { AnnotationShape } from "$idah/context/annotation-context";
   import type { IVideoAnnotationRecord, IVideoAnnotationShape } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
 
@@ -51,9 +50,6 @@
     children,
     isPlaying,
   }: Props = $props();
-
-  // Contexts
-  let context = getContext<IActivityContext>("context");
 
   let svgEl: SVGSVGElement | undefined = $state();
 
@@ -95,7 +91,7 @@
 
   // TODO: find a better way to pass shape initialization
 
-  let pendingShape: AnnotationShape | undefined = $state();
+  let pendingShape: Record<string, unknown> | undefined = $state();
 
   let activePoints: Point[] | undefined = $state();
   let activeAngle: number | undefined = $state();
@@ -188,42 +184,14 @@
     if (svgEl) ro.observe(svgEl);
     syncDimensions();
 
-    context.notes.onRequireNoteFeedPosition(async (noteFeed: INoteFeed) => {
-      // 1. Check the frame
-      const noteFeedStartFrame = (noteFeed.position.start as number) || 0;
-
-      // 2. Go to the frame
-      if (noteFeedStartFrame != frame) {
-        onChangeFrame?.(noteFeedStartFrame);
-      }
-
-      /**
-       * 3. Make the viewport at the same position from reviewer fow now
-       * and will centered on the note feed later
-       */
-      const noteFeedZoomScale = ((noteFeed.position.zoom_info as { scale: number; offset: Point })
-        ?.scale) || 1;
-      const noteFeedOffset = ((noteFeed.position.zoom_info as { scale: number; offset: Point })
-        ?.offset) || [0, 0];
-      zoomableElement.setZoom(noteFeedZoomScale);
-      zoomableElement.setOffset(noteFeedOffset);
-
-      // 4. Return the absolute position for the top left corner of the note feed.
-    });
-
     async function setNoteModeCursor() {
-      const cursorNoteSvgText = await context.icons.get("cursor-note");
-      const encoded = encodeURIComponent(cursorNoteSvgText);
-      const dataUrl = `data:image/svg+xml,${encoded}`;
-
+      // Use a simple fallback cursor for note mode
       const style = document.createElement("style");
       style.textContent = `
         .cursor-note {
-          cursor: url(${dataUrl}) 0 20, auto;
+          cursor: crosshair;
         }
       `;
-      /** Note: 20 is the height need to shift the svg icon to the tip of mouse arrow cursor */
-
       document.head.appendChild(style);
     }
 
@@ -259,9 +227,9 @@
       (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
   );
 
-  function getAnnotationPropertyStyle(annotation?: IVideoAnnotationRecord): IConfigPropertyStyles {
-    const defaultStyle: IConfigPropertyStyles = {
-      border: "solid",
+  function getAnnotationPropertyStyle(annotation?: IVideoAnnotationRecord): { border?: string; opacity?: number } {
+    const defaultStyle = {
+      border: "solid" as const,
       opacity: 100,
     };
     if (!annotation) return defaultStyle;
@@ -272,7 +240,7 @@
     const configKey = annotation.shape.type;
 
     const assignedAttributeProperties =
-      Object.entries(context.config)
+      Object.entries(getDriver().config)
         .find(([k, _]) => k == configKey)?.[1]
         .properties.filter((property) => property.id in assignedAttributes) || [];
 

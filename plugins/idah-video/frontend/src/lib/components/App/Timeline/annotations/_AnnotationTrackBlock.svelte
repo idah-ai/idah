@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-
   import TrackBlockContextMenu from "$lib/components/App/Timeline/annotations/_TrackBlockContextMenu.svelte";
 
   import {
@@ -9,12 +7,9 @@
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
+  import { getDriver } from "$lib/state/driver.svelte";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
 
   // Props
   interface Props {
@@ -28,7 +23,7 @@
   const rangeSize = $derived(Number(endRange - startRange) + 1);
   const category = $derived(
     findCategory({
-      labelConfig: context.config,
+      labelConfig: getDriver().config,
       categoryId: annotation.value.category,
       shapeType: annotation.shape.type,
     }),

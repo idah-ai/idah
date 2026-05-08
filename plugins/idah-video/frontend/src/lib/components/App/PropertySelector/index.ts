@@ -1,6 +1,6 @@
 import { AstProcessor, objectVariables } from "./ast";
 
-import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "$idah/context/activity-context";
+import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "$idah/v2/types";
 import type { AnnotationValue } from "$idah/context/annotation-context";
 
 export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {

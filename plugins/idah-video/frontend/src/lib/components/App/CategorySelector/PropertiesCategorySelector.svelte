@@ -6,8 +6,9 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
 
-  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+  import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationValue } from "$idah/context/annotation-context";
 
   // Props
@@ -17,20 +18,18 @@
     annotationValue,
     onEditValue,
     onReSelectCategory,
-    context,
   }: {
     sidebarWidthRem?: number;
     annotationId?: string;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
-    context: IActivityContext;
   } = $props();
 
   // Variables
   let tools = $derived(
     new Map<string, IConfigValue[]>(
-      Object.entries(context.config)
+      Object.entries(getDriver().config)
         .filter(([shapeType, _]) => shapeType != "entry:root")
         .map(([shapeType, { values }]) => [shapeType, values]),
     ),
@@ -68,7 +67,7 @@
             onEditValue={(value) => value && onEditValue(value, defaultMode ? "entry:root" : mode)}
             disabled={selAnnotation?.locked ||
               (defaultMode || mode == "entry:root" ? !!$entryRoot?.locked : false) ||
-              !["annotate", "review"].includes(context.workflowStep)}
+              !["annotate", "review"].includes(getDriver().workflowStep)}
           />
         {/key}
       </SidebarGroupContent>

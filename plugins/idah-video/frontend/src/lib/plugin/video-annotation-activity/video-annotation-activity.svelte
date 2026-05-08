@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, setContext } from "svelte";
+  import { onMount } from "svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import {
@@ -42,17 +42,13 @@
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
 
-  import type { IActivityContext, IMedia } from "$idah/context/activity-context";
-  import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
-
-  // Props
-  interface Props {
-    context: IActivityContext;
+  // Local type aliases for V1-compatible annotation shapes/values
+  type AnnotationShape = Record<string, unknown> & { type: string; start?: number; end?: number };
+  type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
+  interface AnnotationGroup<T> {
+    groupId: string;
+    annotations: T[];
   }
-  let { context }: Props = $props();
-
-  // Contexts
-  setContext("context", context);
 
   // Local derived aliases for V2 state
   let mode = $derived(viewport.mode);
@@ -67,10 +63,10 @@
   const editableWorkflowSteps = ["annotate", "review"];
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
-  let entryId = $derived(context.id);
-  let mediaUrl = $derived(context.mediaUrl);
-  let workflowStep = $derived(context.workflowStep);
-  let mediaInfo: IMedia | undefined = $state(undefined);
+  let entryId = $derived(getDriver().id);
+  let mediaUrl = $derived(media.url);
+  let workflowStep = $derived(getDriver().workflowStep);
+  let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === "note");
@@ -81,7 +77,7 @@
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
-  let annotationId = $derived<string | undefined>(selAnnotation ? selAnnotation.metadata.id : undefined);
+  let annotationId = $derived<string | undefined>(selAnnotation ? selAnnotation.metadata?.id : undefined);
   let annotationValue: AnnotationValue = $derived(selAnnotation?.value || {});
 
   let length = $state(0);
@@ -96,7 +92,6 @@
 
   let overlay: SvgOverlay | undefined = $state();
   let showPopOver = $state(false);
-  let videoResizedAt = $state(new Date());
   let paletteSearchValue = $state("");
 
   $effect(() => {
@@ -124,52 +119,28 @@
   });
 
   $effect(() => {
-    context.tools.setTool(mode);
+    getDriver().setMode(viewport.mode);
   });
 
   onMount(async () => {
-    mediaInfo = await context.mediaInfo();
+    const driver = getDriver();
+    const meta = driver.media.meta;
+    mediaInfo = { meta };
 
-    const totalFrames = Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number));
+    const totalFrames = Math.round((meta.duration as number) * (meta.fps as number));
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
     viewport.video.currentFrame.value = 1;
 
-    // annotations are now derived from the global store
+    // annotations are now derived from the global data store
+    // The store is already preloaded in initDataStores()
 
-    // Load annotations directly from the context (V2 data-store backed)
-    try {
-      const v1Annotations = await context.annotations.list({}, { page: 1, itemsPerPage: 10000 });
-      const annotations = v1Annotations.map((ann) => {
-        const v2shape = ann.dimensions as IVideoAnnotationShape;
-        return {
-          shape: {
-            ...v2shape,
-            frames: v2shape.frames ?? [],
-            range: [ann.dimensions.start, ann.dimensions.end],
-          },
-          value: {
-            ...ann.annotation,
-            category: ann.annotation.category || "null",
-          },
-          metadata: {
-            id: ann.id,
-            updatedAt: ann.updated_at || new Date(),
-            createdAt: ann.created_at || new Date(),
-            metadata: ann.metadata || {},
-          },
-          hidden: false,
-          locked: false,
-          synced: true,
-        } as IVideoAnnotationRecord;
-      });
-
-      const entryRootAnnotation = annotations.find((a) => a.shape.type === "entry:root");
-      if (entryRootAnnotation) entryRoot.set(entryRootAnnotation);
-    } catch (e) {
-      console.error(e);
-    }
+    // Find entry-root annotation from the global store
+    const entryRootAnnotation = (data.annotations?.items ?? []).find(
+      (ann) => (ann.shape as any).type === "entry:root",
+    );
+    if (entryRootAnnotation) entryRoot.set(entryRootAnnotation);
 
     /** TOOLS CONFIGURATION */
     const toolListConfig = [
@@ -208,7 +179,7 @@
 
     const toolConfig = toolListConfig.filter((tool) => {
       if (["idah-video:bounding-box", "idah-video:polygon"].includes(tool.type)) {
-        return !!context.config[tool.type];
+        return !!getDriver().config[tool.type];
       }
       return true;
     });
@@ -220,11 +191,12 @@
         type: tool.type,
         iconName: tool.iconName,
         disabled: tool.disabled,
-        handleClick: () => context.commands.run(tool.command),
+        handleClick: () => getDriver().command.call(tool.command),
       };
     });
 
-    context.tools.setTools(tools);
+    // Set toolbar tools on the driver — the mock page's toolbar manager reads them
+    // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
   function seekToFrame(frame: number) {
@@ -237,7 +209,7 @@
     const { type, start, end, frames } = shape;
     const videoShape: IVideoAnnotationShape = { type, start, end, frames };
 
-    context.commands.run("annotation.add", { shape: videoShape, value });
+    getDriver().command.call("annotation.add", { shape: videoShape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -257,19 +229,19 @@
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
 
-    context.commands.run("annotation.delete", { annotationId });
+    getDriver().command.call("annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
-    context.commands.run("keyframe.add", { id, selection });
+    getDriver().command.call("keyframe.add", { id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
     if (!editable) return;
 
-    context.commands.run("keyframe.delete", { annotationId, frame });
+    getDriver().command.call("keyframe.delete", { annotationId, frame });
   }
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
@@ -289,7 +261,7 @@
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
-    let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
+    let requirementFullfilled = requiredFullfilled(value, getDriver().config[valueMode]?.properties);
     annotationValue = value;
     getDriver()?.setMode(valueMode);
     if (valueMode == "entry:root" && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
@@ -361,8 +333,8 @@
       }
 
       if (
-        context.config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
-        requiredFullfilled(annotation_value_from, context.config[type]?.properties)
+        getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
+        requiredFullfilled(annotation_value_from, getDriver().config[type]?.properties)
       ) {
         shapeSelectionArgs = undefined;
         addAnnotation(shape, annotation_value_from);
@@ -378,7 +350,7 @@
   function updateAnnotationValue(annotation: IVideoAnnotationRecord, value: AnnotationValue) {
     if (annotation?.locked || !editable) return;
 
-    context.commands.run("annotation.update", { annotation, value });
+    getDriver().command.call("annotation.update", { annotation, value });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
@@ -495,18 +467,16 @@
 
   function showNewNotePopup(params: OnAddNewNoteParams) {
     const { anchorType, position, annotationId } = params;
-    context.notes.showNewNoteFeedPopup({
+    getDriver().notes.create({
+      id: "",
+      annotation_id: annotationId ?? null,
+      content_md: "",
       anchor_type: anchorType,
       position: {
         ...position,
-        /**
-         * Need to be sent in pixels
-         * Need to be sent the sidebar width to position the note correctly
-         * Otherwise the note will be positioned left to the sidebar
-         */
         sidebar_width: annotationSidebarWidthRem * 16,
       },
-      annotation_id: annotationId,
+      resolved: false,
     });
   }
 
@@ -514,7 +484,7 @@
     if (!selGroup) return;
 
     /** Update annotation group category */
-    context.commands.run("annotation.updateGroupCategory", {
+    getDriver().command.call("annotation.updateGroupCategory", {
       groupId: selGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
@@ -590,7 +560,6 @@
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={() => {}}
             onDeleteAnnotation={deleteAnnotation}
-            {context}
           />
         {/if}
       </div>
@@ -643,7 +612,6 @@
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, viewport.video.currentFrame.value)}
               onDeleteAnnotation={deleteAnnotation}
-              {context}
             />
           </ResizablePane>
 
@@ -664,8 +632,6 @@
                   onSelection={onShapeSelection}
                   onAddNewNote={showNewNotePopup}
                   onChangeFrame={seekToFrame}
-                  target_container={() => player_container}
-                  {videoResizedAt}
                   isPlaying={viewport.video.status === "play"}
                 >
                   <!-- container context ?-->
@@ -676,7 +642,7 @@
                     fps={mediaInfo.meta.fps as number}
                     onTogglePlay={(_isPlaying: boolean) => {}}
                     onResize={() => {
-                      videoResizedAt = new Date();
+                      // video resized
                     }}
                     onFrameUpdate={(currentFrame: number) => {
                       viewport.video.currentFrame.value = currentFrame;
@@ -694,7 +660,6 @@
                 {annotationValue}
                 {onEditValue}
                 onReSelectCategory={reSelectCategory}
-                {context}
               />
             </section>
           </ResizablePane>
@@ -705,7 +670,6 @@
 
       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
         <BottomPanel
-          {context}
           {viewportAnnotations}
           {length}
           bind:player

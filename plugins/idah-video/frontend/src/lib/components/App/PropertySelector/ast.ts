@@ -22,7 +22,7 @@
 //   in    – value in array (binary)
 // ---------------------------------------------------------------------------
 
-import type { ASTNode } from "$idah/context/activity-context";
+import type { ASTNode } from "$idah/v2/types";
 
 export type ASTValue = string | number | string[] | boolean | undefined;
 export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];

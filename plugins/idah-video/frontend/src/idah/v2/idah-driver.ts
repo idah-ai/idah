@@ -293,9 +293,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   private _id = "mock-entry-v2-001";
   private _media: IMediaInfo = {
     id: "mock-entry-v2-001",
+    resource: "mock-entry-v2-001",
+    key: "",
+    mime_type: "video/mp4",
+    filename: "sample.mp4",
     meta: { duration: 100, fps: 25, width: 1920, height: 1080 },
   };
-  private _status = "annotation";
+  private _workflowStep = "annotate";
   private _mode = "default";
   private _ready = false;
 
@@ -334,8 +338,8 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     return { ...this._media };
   }
 
-  get status(): string {
-    return this._status;
+  get workflowStep(): string {
+    return this._workflowStep;
   }
 
   get mode(): string {

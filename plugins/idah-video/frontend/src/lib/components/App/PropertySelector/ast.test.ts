@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { AstProcessor, objectVariables } from "./ast";
 
-import type { ASTNode } from "$idah/context/activity-context";
+import type { ASTNode } from "$idah/v2/types";
 
 // ─── objectVariables ──────────────────────────────────────────────────────
 

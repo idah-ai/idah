@@ -1,4 +1,4 @@
-import type { IConfig, IConfigValue } from "$idah/context/activity-context";
+import type { IConfig, IConfigValue } from "$idah/v2/types";
 
 export function findCategory(props: {
   labelConfig: IConfig;

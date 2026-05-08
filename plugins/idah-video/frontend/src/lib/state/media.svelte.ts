@@ -7,9 +7,15 @@
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
 
-function readMeta(): Record<string, unknown> {
-  return getDriver()?.media?.meta ?? {};
+function readMedia() {
+  return getDriver()?.media;
 }
+
+function readMeta(): Record<string, unknown> {
+  return readMedia()?.meta ?? {};
+}
+
+const MEDIA_BASE = "/medias/files";
 
 export const media = {
   get duration(): number {
@@ -36,6 +42,13 @@ export const media = {
     return Math.round(this.duration * this.fps);
   },
   get id(): string {
-    return getDriver()?.media?.id ?? "";
+    return readMedia()?.id ?? "";
+  },
+  /** Construct the download URL from the media's resource and key. */
+  get url(): string {
+    const m = readMedia();
+    if (!m) return "";
+    const path = m.key ? `${m.resource}/${m.key}` : m.resource;
+    return `${MEDIA_BASE}/${path}`;
   },
 };

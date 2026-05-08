@@ -14,13 +14,14 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
-  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+  import type { IConfigValue } from "$idah/v2/types";
+  import { getDriver } from "$lib/state/driver.svelte";
 
   let mode = $derived(viewport.mode);
   let selAnnotation = $derived(
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
-  import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
+  import type { AnnotationValue } from "$idah/context/annotation-context";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
@@ -33,7 +34,6 @@
     onSelectAnnotation,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
-    context,
     db,
     items,
     class: className,
@@ -43,9 +43,8 @@
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<IVideoAnnotationRecord>) => void;
+    onSelectAnnotationGroup: (annotationGroup: { groupId: string; annotations: IVideoAnnotationRecord[] }) => void;
     onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
-    context: IActivityContext;
     db?: DataStore<AnnotationItem> | null;
     items: IVideoAnnotationRecord[];
     class?: string | null;
@@ -53,7 +52,7 @@
 
   let tools = $derived(
     new Map<string, IConfigValue[]>(
-      Object.entries(context.config)
+      Object.entries(getDriver().config)
         .filter(([shapeType, _]) => shapeType != "entry:root")
         .map(([shapeType, { values }]) => [shapeType, values]),
     ),

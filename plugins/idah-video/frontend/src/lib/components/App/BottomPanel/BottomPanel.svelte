@@ -10,13 +10,12 @@
   import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
   import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
+  import { getDriver } from "$lib/state/driver.svelte";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
 
   // Props
   interface Props {
-    context: IActivityContext;
     viewportAnnotations: IVideoAnnotationRecord[];
     length: number;
     player: Video | undefined;
@@ -24,7 +23,6 @@
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
   }
   let {
-    context,
     viewportAnnotations,
     length,
     player = $bindable(),
@@ -92,7 +90,7 @@
       bind:viewport={viewport.timeline.range}
       items={transformAnnotationsToTracks({
         annotations: viewportAnnotations,
-        labelConfig: context.config,
+        labelConfig: getDriver().config,
       })}
       {length}
       remainingHeight={panelHeight - toolbarHeight}

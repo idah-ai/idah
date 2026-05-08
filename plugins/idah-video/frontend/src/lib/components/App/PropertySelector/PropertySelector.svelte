@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-
   import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
   import SelectGroup from "$lib/components/ui/Select/SelectGroup.svelte";
   import { Separator } from "$lib/components/ui/Separator";
@@ -21,8 +19,9 @@
   import { visibilityFullfilled } from "$lib/components/App/PropertySelector";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
 
-  import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
+  import type { IConfigProperty } from "$idah/v2/types";
   import type { AnnotationValue } from "$idah/context/annotation-context";
   import Badge from "$lib/components/ui/Badge/Badge.svelte";
 
@@ -46,12 +45,9 @@
     disabled,
   }: Props = $props();
 
-  // Contexts
-  const context: IActivityContext = getContext("context");
-
   // Variables
   let mode = $derived(viewport.mode);
-  let configByMode = $derived(context.config[mode]);
+  let configByMode = $derived(getDriver().config[mode]);
   let category = $derived(configByMode?.values?.find((c) => c.id == selectedCategory));
   let properties = $derived(configByMode?.properties?.filter((p) => visibilityFullfilled(annotationValue, p)));
 
@@ -60,7 +56,7 @@
     return v?.type === "group" ? (v as any).annotations?.[0] : undefined;
   });
   let configByGroup = $derived(
-    firstAnnotationInGroup ? context.config[firstAnnotationInGroup.shape.type] : { values: [], properties: [] },
+    firstAnnotationInGroup ? getDriver().config[firstAnnotationInGroup.shape.type] : { values: [], properties: [] },
   );
   let firstAnnotationInGroupCategory = $derived(firstAnnotationInGroup?.value.category);
   let foundAnnotationInGroupCategory = $derived(

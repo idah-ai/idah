@@ -5,8 +5,12 @@ import AnnotationTrackBlock from "$lib/components/App/Timeline/annotations/_Anno
 import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
-import type { IConfig } from "$idah/context/activity-context";
-import type { AnnotationGroup } from "$idah/context/annotation-context";
+import type { IConfig } from "$idah/v2/types";
+
+interface AnnotationGroup<T> {
+  groupId: string;
+  annotations: T[];
+}
 import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
 

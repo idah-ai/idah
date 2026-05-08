@@ -28,6 +28,10 @@ export type IShortcut = string;
 
 export interface IMediaInfo {
   id: string;
+  resource: string;
+  key: string;
+  mime_type: string;
+  filename: string;
   meta: Record<string, unknown>;
 }
 
@@ -140,10 +144,7 @@ export interface IConfigProperty {
   format: IConfigPropertyFormat;
 }
 
-/**
- * Per-shape-type configuration: what labels (values) and properties
- * are available for annotations of that shape type.
- */
+/** Shape config for a single shape type (values + properties). */
 export interface IShapeConfig {
   values: IConfigValue[];
   properties: IConfigProperty[];
@@ -156,6 +157,12 @@ export interface IShapeConfig {
 export interface IConfig {
   [shape_type: string]: IShapeConfig;
 }
+
+// ─── AST (conditional visibility) ────────────────────────────────────────
+
+export type ASTValue = string | number | string[] | boolean | undefined;
+export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
+export type ASTNode = [string, ASTNodeValue[]];
 
 // ─── Toolbar ──────────────────────────────────────────────────────────────
 
@@ -502,7 +509,7 @@ export interface IIdahDriverV2<
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly media: IMediaInfo;
-  readonly status: string;
+  readonly workflowStep: string;
   readonly mode: string;
 
   setMode(mode: string): void;

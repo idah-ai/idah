@@ -7,12 +7,10 @@
   import IdahToolbar from "./idah-toolbar.svelte";
   import IdahCommandPalette from "./idah-command-palette.svelte";
   import { IdahDriverV2 } from "$idah/v2/idah-driver";
-  import { createV1Bridge } from "$idah/v2/bridge";
   import type { IToolbarItem } from "$idah/v2/types";
 
   // ── Create V2 driver ──────────────────────────────────────────────────
   const driver = new IdahDriverV2();
-  const context = createV1Bridge(driver);
 
   // ── Wire global singletons BEFORE any component mounts ────────────────
   import { initDriver } from "$lib/state/driver.svelte";
@@ -63,7 +61,6 @@
 
     mountedPlugin = mount(IdahVideoPlugin, {
       target: targetElement,
-      props: { context },
     });
 
     return () => {
