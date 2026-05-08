@@ -2,9 +2,6 @@
 // annotation.add — Create a new annotation (bounding box or polygon)
 // Undoable: deletes the created annotation.
 //
-// Accepts a full shape (IVideoAnnotationShape) with the correct type,
-// so the caller determines whether it's a bounding-box or polygon.
-//
 // Usage:
 //   driver.command.call("annotation.add", {
 //     shape: { type: "idah-video:bounding-box", start: 1, end: 100, frames: [...] },
@@ -47,14 +44,7 @@ export function register(driver: IIdahDriverV2): void {
           const created = await data.annotations!.create({
             shape: props.shape,
             value: props.value,
-            metadata: {
-              id: "", // will be replaced by the store-generated id
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              metadata: {},
-            },
           });
-          // Set the group id to the annotation's own id so it renders as its own track
           (this as any)._createdId = created.id;
           // Exit drawing mode after successful creation
           driver.setMode("default");

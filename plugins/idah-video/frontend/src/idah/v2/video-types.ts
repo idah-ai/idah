@@ -88,10 +88,10 @@ export interface IVideoAnnotationRecord extends IAnnotationRecord<
 /**
  * Extract the group identifier from an annotation record's metadata.
  *
- * The group is stored at `metadata.metadata.group_id`.
+ * The group is stored at `metadata.group_id`.
  * When absent, falls back to the annotation's own id (making each annotation
  * its own group).
  */
 export function getAnnotationGroupId(ann: { id?: string; metadata?: IAnnotationMetadata }): string {
-  return ann.metadata?.metadata?.group_id ?? ann.metadata?.id ?? ann.id ?? "";
+  return ann.metadata?.group_id ?? ann.id ?? "";
 }

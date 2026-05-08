@@ -358,7 +358,7 @@
       getDriver()?.setMode("default");
     }
     if (selAnnotation) {
-      selection.selectGroup(selAnnotation.metadata.metadata?.group_id || selAnnotation.metadata.id);
+      selection.selectGroup(selAnnotation.metadata?.group_id || selAnnotation.metadata?.id);
     }
   }
 
@@ -435,12 +435,7 @@
         category: ann.value?.category || "null",
         attributes: ann.value?.attributes ?? {},
       },
-      metadata: ann.metadata ?? {
-        id: ann.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        metadata: {},
-      },
+      metadata: ann.metadata ?? {},
       hidden: ann.hidden ?? false,
       locked: ann.locked ?? false,
       synced: ann.synced ?? true,

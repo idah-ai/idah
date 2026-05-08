@@ -216,38 +216,14 @@ export interface IFilter {
 // ─── Annotation metadata ────────────────────────────────────────────────
 
 /**
- * Annotation metadata wrapper, mirroring the DB `annotations` table.
+ * Annotation metadata — flat wrapper for the DB `metadata` JSONB column.
  *
- * DB columns:
- *   - `dimensions` (JSONB)  → `shape`
- *   - `annotation` (JSONB)  → `value`
- *   - `metadata`  (JSONB)   → `metadata.metadata` (nested!)
- *
- * The **group** key lives at `metadata.metadata.group_id`.
  * Annotations sharing the same `group_id` are rendered as a single track
  * in the timeline. When absent, the annotation's own `id` is used as fallback.
  */
 export interface IAnnotationMetadata {
-  /** Unique identifier for the annotation. */
-  id: string;
-  /** Timestamp of when the annotation was created. */
-  createdAt: Date;
-  /** Timestamp of when the annotation was last updated. */
-  updatedAt: Date;
-  /** ID of the user who created the annotation. */
-  userId?: string;
-  /** Comments or notes associated with the annotation. */
-  comments?: string[];
-  /**
-   * Arbitrary metadata (maps to DB `metadata` JSONB column).
-   * The `group_id` field within this object controls timeline grouping.
-   */
-  metadata?: {
-    group_id?: string;
-    parent_id?: string;
-    [key: string]: unknown;
-  };
-  /** Allow extensibility. */
+  group_id?: string;
+  parent_id?: string;
   [key: string]: unknown;
 }
 
@@ -290,9 +266,7 @@ export interface IAnnotationRecord<
   value?: Annotation;
 
   /**
-   * Annotation metadata wrapper.
-   * The nested `metadata.metadata` field maps to the DB `metadata` JSONB column
-   * and stores the `group_id` for timeline grouping.
+   * Annotation metadata — corresponds to the DB `metadata` JSONB column.
    */
   metadata?: IAnnotationMetadata;
 
@@ -412,12 +386,6 @@ export interface ICommandDriverV2 {
   /** Redo the last `count` commands (default 1). Returns true if anything was redone. */
   redo(count?: number): boolean;
 
-  /** Whether there are actions to undo. */
-  canUndo(): boolean;
-
-  /** Whether there are actions to redo. */
-  canRedo(): boolean;
-
   /** Return the current undo / redo stacks (each up to `n` entries). */
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
 
@@ -449,9 +417,6 @@ export interface ICommandDriverV2 {
 
   /** Open or close the command palette. Omit value to toggle. */
   openPalette(open?: boolean): void;
-
-  /** Subscribe to palette open/close changes. Returns an unsubscribe function. */
-  onPaletteChange(cb: (open: boolean) => void): () => void;
 
   // ── Keyboard resolution ────────────────────────────────────────────────
 

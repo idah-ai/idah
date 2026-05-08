@@ -206,7 +206,7 @@
       </div>
 
       {#if firstAnnotationInGroup}
-        {@const groupId = firstAnnotationInGroup.metadata.metadata?.group_id ?? firstAnnotationInGroup.metadata.id}
+        {@const groupId = firstAnnotationInGroup.metadata?.group_id ?? firstAnnotationInGroup.metadata?.id}
         {@const splittedGroupId = groupId?.split("-")}
         {@const lastPartOfGroupId = splittedGroupId ? splittedGroupId[splittedGroupId.length - 1] : ""}
         {@const fallbackGroupTitle = `Group-${lastPartOfGroupId}`}
