@@ -3,7 +3,7 @@
   import FormFieldInfo from "$lib/components/ui/Forms/FormFieldInfo.svelte";
   import FormFieldLabel from "$lib/components/ui/Forms/FormFieldLabel.svelte";
   import FormField from "$lib/components/ui/Forms/FormField.svelte";
-  import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
+  import Checkbox from "$lib/components/ui/Checkbox/Checkbox.svelte";
 
   import { cn } from "$lib/utils";
 

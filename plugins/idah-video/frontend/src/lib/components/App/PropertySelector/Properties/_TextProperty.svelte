@@ -4,7 +4,7 @@
 
   import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
-  import type { IConfigProperty } from "$idah/context/activity-context";
+  import type { IConfigProperty } from "$idah/v2/types";
 
   let {
     property,
@@ -21,19 +21,19 @@
   const invalid = $derived(!propertyFullfilled(value, property));
 
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
-    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+  const formatters = new Map<string, (v: unknown) => string>([
+    ["required", (_: unknown) => [property.label, "is required"].join(" ")],
     [
       "minimum",
-      (v: number) =>
-        [property.label, "should contains at least", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
+      (v: unknown) =>
+        [property.label, "should contains at least", v, ["character", Number(v) > 1 ? "s" : ""].join("")].join(" "),
     ],
     [
       "maximum",
-      (v: number) =>
-        [property.label, "should contains no more than", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
+      (v: unknown) =>
+        [property.label, "should contains no more than", v, ["character", Number(v) > 1 ? "s" : ""].join("")].join(" "),
     ],
-    ["step", (v: number) => [property.label, "required step", v].join(" ")],
+    ["step", (v: unknown) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
 
@@ -48,7 +48,8 @@
   <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.currentTarget.value)} {disabled} />
   {#if invalid}
     <ul class="text-xs">
-      {#each format as [k, v] (k)}
+      {#each format as entry, index (index)}
+        {@const [k, v] = entry}
         {@const formatter = formatters.get(k)}
 
         {#if formatter && formatter(v)}

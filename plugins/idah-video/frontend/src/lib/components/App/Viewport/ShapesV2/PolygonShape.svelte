@@ -3,6 +3,7 @@
 //                        frame using vertex interpolation
 // ---------------------------------------------------------------------------
 <script lang="ts">
+
   import { viewport } from "$lib/state/viewport.svelte";
   import { interpolatePolygon } from "$lib/utils/math/polygon";
   import type { IVideoFrameSelection } from "$idah/v2/video-types";

@@ -24,7 +24,7 @@
   const category = $derived(
     findCategory({
       labelConfig: getDriver().config,
-      categoryId: annotation.value.category,
+      categoryId: annotation.value?.category,
       shapeType: annotation.shape.type,
     }),
   );

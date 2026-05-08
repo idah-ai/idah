@@ -308,20 +308,44 @@
       </div>
 
       {#each properties as property, index (`${property.id}-${index}`)}
-        {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
-
-        {#if foundPropertyComponent}
-          <div class="flex flex-col gap-1">
-            <foundPropertyComponent.component
-              {...{
-                property,
-                value: annotationValue.attributes?.[property.id],
-                onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
-                disabled,
-              }}
+        <div class="flex flex-col gap-1">
+          {#if property.type === "text"}
+            <TextProperty
+              {property}
+              value={annotationValue.attributes?.[property.id] as any}
+              onValueChange={(v: any) => onValueChange(property, v)}
+              {disabled}
             />
-          </div>
-        {/if}
+          {:else if property.type === "integer"}
+            <IntegerProperty
+              {property}
+              value={annotationValue.attributes?.[property.id] as any}
+              onValueChange={(v: any) => onValueChange(property, v)}
+              {disabled}
+            />
+          {:else if property.type === "boolean"}
+            <BooleanProperty
+              {property}
+              value={annotationValue.attributes?.[property.id] as any}
+              onValueChange={(v: any) => onValueChange(property, v)}
+              {disabled}
+            />
+          {:else if property.type === "single-select"}
+            <SingleSelectProperty
+              {property}
+              value={annotationValue.attributes?.[property.id] as any}
+              onValueChange={(v: any) => onValueChange(property, v)}
+              {disabled}
+            />
+          {:else if property.type === "multi-select"}
+            <MultipleSelectProperty
+              {property}
+              value={annotationValue.attributes?.[property.id] as any}
+              onValueChange={(v: any) => onValueChange(property, v)}
+              {disabled}
+            />
+          {/if}
+        </div>
       {/each}
     </section>
   {/if}

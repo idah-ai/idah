@@ -3,6 +3,7 @@
 //                            current frame using AABB interpolation
 // ---------------------------------------------------------------------------
 <script lang="ts">
+
   import { viewport } from "$lib/state/viewport.svelte";
   import { interpolateBBox, bboxToPoints, interpolateAngle } from "$lib/utils/math/bbox";
   import { centroid } from "$lib/utils/math/point";

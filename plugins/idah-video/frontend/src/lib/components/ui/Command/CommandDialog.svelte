@@ -33,7 +33,7 @@
   </Dialog.Header>
   <Dialog.Content class="overflow-hidden p-0" {portalProps}>
     <Command
-      **:data-[slot=command-input-wrapper]:h-8 [&_[data-command-group]:not([hidden])_~[data-command-group]]:pt-0 [&_[data-command-group]]:px-1 [&_[data-command-input-wrapper]_svg]:h-3.5 [&_[data-command-input-wrapper]_svg]:w-3.5 [&_[data-command-input]]:h-8 [&_[data-command-input]]:text-xs [&_[data-command-item]]:px-1.5 [&_[data-command-item]]:py-1 [&_[data-command-item]_svg]:h-4 [&_[data-command-item]_svg]:w-4
+      class="**:data-[slot=command-input-wrapper]:h-8 [&_[data-command-group]:not([hidden])_~[data-command-group]]:pt-0 [&_[data-command-group]]:px-1 [&_[data-command-input-wrapper]_svg]:h-3.5 [&_[data-command-input-wrapper]_svg]:w-3.5 [&_[data-command-input]]:h-8 [&_[data-command-input]]:text-xs [&_[data-command-item]]:px-1.5 [&_[data-command-item]]:py-1 [&_[data-command-item]_svg]:h-4 [&_[data-command-item]_svg]:w-4"
       {...restProps}
       bind:value
       bind:ref

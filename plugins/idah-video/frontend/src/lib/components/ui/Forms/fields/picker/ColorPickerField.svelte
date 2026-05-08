@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import ColorPicker from "$lib/components/ui/color-picker/color-picker.svelte";
+  import ColorPicker from "$lib/components/ui/ColorPicker/ColorPicker.svelte";
   import FormFieldErrors from "$lib/components/ui/Forms/FormFieldErrors.svelte";
   import FormFieldInfo from "$lib/components/ui/Forms/FormFieldInfo.svelte";
   import FormFieldLabel from "$lib/components/ui/Forms/FormFieldLabel.svelte";
@@ -41,7 +41,7 @@
   }: Props = $props();
 
   // Functions
-  function handleValueChange(newValue: string | null | undefined) {
+  function handleValueChange(newValue: string | null) {
     onValueChange?.(newValue);
   }
 

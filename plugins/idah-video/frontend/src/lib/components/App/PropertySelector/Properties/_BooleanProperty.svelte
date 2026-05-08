@@ -4,7 +4,7 @@
 
   import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
-  import type { IConfigProperty } from "$idah/context/activity-context";
+  import type { IConfigProperty } from "$idah/v2/types";
 
   let {
     property,
@@ -24,8 +24,8 @@
   // set default value to false if boolean is required
   if (value == undefined && property.required) onValueChange(false);
 
-  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
-    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+  const formatters = new Map<string, (v: unknown) => string>([
+    ["required", (_: unknown) => [property.label, "is required"].join(" ")],
   ]);
 </script>
 
@@ -43,7 +43,8 @@
 
   {#if invalid}
     <ul class="text-xs">
-      {#each format as [k, v] (k)}
+      {#each format as entry, index (index)}
+        {@const [k, v] = entry}
         {@const formatter = formatters.get(k)}
 
         {#if formatter && formatter(v)}

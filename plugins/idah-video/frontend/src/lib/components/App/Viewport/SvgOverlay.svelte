@@ -173,7 +173,7 @@
             offset: viewport.workspace.transform.translate,
           },
         },
-        annotationId: annotation?.metadata.id || null,
+        annotationId: annotation?.metadata?.id || null,
       });
     }
   }
@@ -234,7 +234,7 @@
     };
     if (!annotation) return defaultStyle;
 
-    const assignedAttributes = annotation.value.attributes || {};
+    const assignedAttributes = annotation.value?.attributes || {};
 
     // Determine which config to use based on annotation shape type
     const configKey = annotation.shape.type;

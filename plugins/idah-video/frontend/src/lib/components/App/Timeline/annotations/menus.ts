@@ -17,7 +17,7 @@ export function getGroupContextMenus(props: { context: IActivityContext; track: 
           icon: isSomeHidden ? EyeIcon : EyeOffIcon,
           alwaysShow: isSomeHidden,
           onClick: () => {
-            context.commands.run("annotation.toggleGroupVisibility", { groupId: track.id });
+            context.commands!.run("annotation.toggleGroupVisibility", { groupId: track.id });
           },
         },
         editability: {
@@ -25,7 +25,7 @@ export function getGroupContextMenus(props: { context: IActivityContext; track: 
           icon: isSomeLocked ? LockOpenIcon : LockIcon,
           alwaysShow: isSomeLocked,
           onClick: () => {
-            context.commands.run("annotation.toggleGroupEditability", { groupId: track.id });
+            context.commands!.run("annotation.toggleGroupEditability", { groupId: track.id });
           },
         },
         delete: {
@@ -33,7 +33,7 @@ export function getGroupContextMenus(props: { context: IActivityContext; track: 
           icon: Trash2Icon,
           destructive: true,
           onClick: () => {
-            context.commands.run("annotation.deleteGroup", { groupId: track.id });
+            context.commands!.run("annotation.deleteGroup", { groupId: track.id });
           },
         },
       },

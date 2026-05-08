@@ -4,7 +4,7 @@
 
   import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
 
-  import type { IConfigProperty } from "$idah/context/activity-context";
+  import type { IConfigProperty } from "$idah/v2/types";
 
   let {
     property,
@@ -20,11 +20,11 @@
 
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
-    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
-    ["minimum", (v: number) => [property.label, "minimum value:", v].join(" ")],
-    ["maximum", (v: number) => [property.label, "maximum value:", v].join(" ")],
-    ["step", (v: number) => [property.label, "required step", v].join(" ")],
+  const formatters = new Map<string, (v: unknown) => string>([
+    ["required", (_: unknown) => [property.label, "is required"].join(" ")],
+    ["minimum", (v: unknown) => [property.label, "minimum value:", v].join(" ")],
+    ["maximum", (v: unknown) => [property.label, "maximum value:", v].join(" ")],
+    ["step", (v: unknown) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
 
@@ -44,12 +44,13 @@
     max={property.format?.maximum}
     step={property.format?.step || "1"}
     {value}
-    onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
+    onchange={(e) => onValueChange(Number.parseInt((e.target as HTMLInputElement).value || ""))}
     {disabled}
   />
   {#if invalid}
     <ul class="text-xs">
-      {#each format as [k, v] (k)}
+      {#each format as entry, index (index)}
+        {@const [k, v] = entry}
         {@const formatter = formatters.get(k)}
 
         {#if formatter && formatter(v)}

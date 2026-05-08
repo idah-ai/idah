@@ -13,7 +13,7 @@
   import FormFieldLabel from "$lib/components/ui/Forms/FormFieldLabel.svelte";
   import FormField from "$lib/components/ui/Forms/FormField.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
-  import Calendar from "$lib/components/ui/calendar/calendar.svelte";
+  import Calendar from "$lib/components/ui/Calendar/Calendar.svelte";
   import {
     Popover,
     PopoverContent,

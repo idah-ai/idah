@@ -11,7 +11,7 @@ export function visibilityFullfilled(value: AnnotationValue, field: IConfigPrope
 export function requiredFullfilled(value: AnnotationValue, properties: IConfigProperty[] = []): boolean {
   return properties
     .filter((p) => visibilityFullfilled(value, p) && p.required)
-    .every((p) => value.attributes?.[p.id] != undefined && conformToformat(value.attributes?.[p.id], p));
+    .every((p) => (value.attributes?.[p.id] as string | number | boolean | string[] | undefined) != undefined && conformToformat(value.attributes?.[p.id] as string | number | boolean | string[] | undefined, p));
 }
 
 export function propertyFullfilled(value: string | number | string[] | boolean | undefined, property: IConfigProperty) {
@@ -88,7 +88,9 @@ function conformToformat(
 
   return Object.entries(propertyField.format).every(
     ([k, _v]: [k: string, _v: string | number | Array<IConfigPropertyOption>]) => {
-      return validator[k as keyof IConfigPropertyFormat](value, propertyField.format);
+      const fn = (validator as Record<string, any>)[k];
+      if (!fn) return true;
+      return (fn as (v: any, fmt: IConfigPropertyFormat) => boolean)(value, propertyField.format);
     },
   );
 }
@@ -96,21 +98,25 @@ function conformToformat(
 export function formatConformity(
   value: string | number | string[] | boolean | undefined,
   propertyField: IConfigProperty,
-) {
+): [string, unknown][] {
   const validator = formatValidators.get(propertyField.type);
 
-  return [
-    [["required", propertyField.required], propertyField.required ? value != undefined : true],
-    ...Object.entries(propertyField.format).map(([k, _]) => [
-      [
-        k,
-        k == "options"
-          ? propertyField.format[k as "options"]?.map((o) => o.label)
-          : propertyField.format[k as keyof IConfigPropertyFormat],
-      ],
-      !validator ? false : validator[k as keyof IConfigPropertyFormat](value, propertyField.format),
-    ]),
-  ]
-    .filter(([_, b]) => !b)
-    .map(([a, _]) => a);
+  const result: [string, unknown][] = [];
+
+  if (propertyField.required && value == undefined) {
+    result.push(["required", propertyField.required]);
+  }
+
+  for (const [k] of Object.entries(propertyField.format)) {
+    const fn = validator?.[k as keyof typeof validator];
+    if (!fn || !(fn as (v: any, fmt: IConfigPropertyFormat) => boolean)(value, propertyField.format)) {
+      if (k === "options") {
+        result.push([k, propertyField.format[k as "options"]?.map((o) => o.label)]);
+      } else {
+        result.push([k, propertyField.format[k as keyof IConfigPropertyFormat]]);
+      }
+    }
+  }
+
+  return result;
 }

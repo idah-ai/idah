@@ -18,7 +18,7 @@ export function groupAnnotations(annotations: IVideoAnnotationRecord[]): Annotat
   const map = new SvelteMap<string, IVideoAnnotationRecord[]>();
 
   for (const ann of annotations) {
-    const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
+    const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id ?? ann.id;
 
     if (!map.has(gid)) {
       map.set(gid, []);
@@ -105,7 +105,7 @@ export function getGroupTitle(props: {
   const fallbackGroupTitle = `Group-${lastPartOfGroupId}`;
 
   const firstAnnotationInGroup = anns[0];
-  const firstAnnotationCategoryId = firstAnnotationInGroup.value.category;
+  const firstAnnotationCategoryId = firstAnnotationInGroup.value?.category;
   if (!firstAnnotationCategoryId) return ["", fallbackGroupTitle];
 
   const foundCategory = findCategory({
@@ -135,7 +135,7 @@ export function transformAnnotationsToTracks(props: {
       subtitle: groupTitle,
       top: groupIndex * TRACK_HEIGHT,
       items: group.annotations.map((annotation) => ({
-        trackId: annotation.metadata.id,
+        trackId: annotation.metadata?.id ?? annotation.id,
         startRange: annotation.shape.start,
         endRange: annotation.shape.end,
         rawData: annotation,

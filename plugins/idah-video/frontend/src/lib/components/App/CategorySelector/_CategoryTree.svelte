@@ -24,6 +24,8 @@
   import type { IConfigValue } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
+  import type { CategoryDefinition } from "$idah/context/category-context";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
 
   // Props
   interface Props {
@@ -100,25 +102,33 @@
       fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
 
       // find if node exists at this level
-      let existingNode = currentLevel.find((current) => current.id === fullPath);
+      let existingNode: CategoryDefinition | undefined = currentLevel.find((current) => current.id === fullPath);
       if (!existingNode) {
-        existingNode = {
+        const newNode: CategoryDefinition = {
           id: fullPath,
           name: humanize(ids[i]),
+          label: humanize(ids[i]),
+          color: "#ffffff",
+          text_color: null,
           requiredNested: i < ids.length - 1,
-          // only create nestedCategories if this node will have children
-          ...(i < ids.length - 1 ? { nestedCategories: [] } : {}),
           data:
             i < ids.length - 1
               ? ({
                   id: fullPath,
                   label: humanize(ids[i]),
-                  color: "#ffff",
+                  color: "#ffffff",
+                  text_color: null,
                 } as IConfigValue)
-              : configuration, // leaf gets real configuration
+              : configuration,
         };
 
-        currentLevel.push(existingNode);
+        // only create nestedCategories if this node will have children
+        if (i < ids.length - 1) {
+          newNode.nestedCategories = [];
+        }
+
+        currentLevel.push(newNode);
+        existingNode = newNode;
       }
 
       // go deeper only if not a leaf
@@ -210,7 +220,7 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = items.filter((a) => a.value.category?.startsWith(category.id))}
+      {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
       {@const hasAnnotations = count > 0}
 
@@ -317,7 +327,7 @@
 
       <CollapsibleContent hidden={!openStates[category.id]}>
         {#if !currentModeIsSameAsShape && db && category}
-          {@const categoryAnnotations = items.filter((a) => a.value.category === category.id)}
+          {@const categoryAnnotations = items.filter((a) => a.value?.category === category.id)}
           {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
           {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
             <AnnotationGroupNode

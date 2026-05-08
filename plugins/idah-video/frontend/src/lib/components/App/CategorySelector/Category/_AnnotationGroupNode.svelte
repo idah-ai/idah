@@ -51,15 +51,15 @@
   }
 
   function toggleAnnotationGroupVisibility() {
-    context.commands.run("annotation.toggleGroupVisibility", { groupId });
+    context.commands!.run("annotation.toggleGroupVisibility", { groupId });
   }
 
   function toggleAnnotationGroupEditability() {
-    context.commands.run("annotation.toggleGroupEditability", { groupId });
+    context.commands!.run("annotation.toggleGroupEditability", { groupId });
   }
 
   function deleteAnnotationGroup() {
-    context.commands.run("annotation.deleteGroup", { groupId });
+    context.commands!.run("annotation.deleteGroup", { groupId });
   }
 </script>
 

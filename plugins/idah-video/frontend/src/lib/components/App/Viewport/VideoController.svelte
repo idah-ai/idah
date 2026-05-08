@@ -292,7 +292,7 @@
             const ann =
               selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
             if (ann)
-              context.commands.run("annotation.split", {
+              context.commands!.run("annotation.split", {
                 id: ann.metadata?.id ?? ann.id,
                 at: viewport.video.currentFrame.value,
               }

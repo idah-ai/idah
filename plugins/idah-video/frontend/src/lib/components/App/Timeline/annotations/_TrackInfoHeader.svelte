@@ -33,14 +33,14 @@
           label: isAllHidden ? "Show all" : "Hide all",
           icon: isAllHidden ? EyeIcon : EyeOffIcon,
           onClick: () => {
-            context.commands.run("annotation.toggleAllVisibility");
+            context.commands!.run("annotation.toggleAllVisibility");
           },
         },
         "editability-all": {
           label: isAllLocked ? "Unlock all" : "Lock all",
           icon: isAllLocked ? LockOpenIcon : LockIcon,
           onClick: () => {
-            context.commands.run("annotation.toggleAllEditability");
+            context.commands!.run("annotation.toggleAllEditability");
           },
         },
         "delete-all": {
@@ -56,7 +56,7 @@
 
   // Functions
   function deleteAllAnnotations() {
-    context.commands.run("annotation.deleteAll");
+    context.commands!.run("annotation.deleteAll");
     openConfirmDeleteAllDialog = false;
   }
 </script>

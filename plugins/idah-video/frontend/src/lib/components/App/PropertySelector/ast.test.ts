@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { AstProcessor, objectVariables } from "./ast";
 
-import type { ASTNode } from "$idah/v2/types";
+import type { ASTNode, ASTNodeValue, ASTValue } from "$idah/v2/types";
 
 // ─── objectVariables ──────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ describe("objectVariables", () => {
 
 describe("AstProcessor", () => {
   function proc(variables: Record<string, unknown>): AstProcessor {
-    return new AstProcessor(new Map(Object.entries(variables)));
+    return new AstProcessor(new Map(Object.entries(variables)) as Map<string, ASTValue>);
   }
 
   // ── get ──────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ describe("AstProcessor", () => {
   describe("gt", () => {
     it("returns true when left > right", () => expect(proc({}).processAST(["gt", [5, 3]])).toBe(true));
     it("returns false when left <= right", () => expect(proc({}).processAST(["gt", [3, 5]])).toBe(false));
-    it("returns false on null", () => expect(proc({}).processAST(["gt", [null, 5]])).toBe(false));
+    it("returns false on null", () => expect(proc({}).processAST(["gt", [null as unknown as ASTNodeValue, 5]])).toBe(false));
   });
 
   describe("lt", () => {
@@ -187,7 +187,7 @@ describe("AstProcessor", () => {
     });
 
     it("works with numbers", () => {
-      expect(proc({}).processAST(["in", [42, [[1, 42, 3]]]])).toBe(true);
+      expect(proc({}).processAST(["in", [42, [[1, 42, 3]]]] as unknown as ASTNode)).toBe(true);
     });
   });
 

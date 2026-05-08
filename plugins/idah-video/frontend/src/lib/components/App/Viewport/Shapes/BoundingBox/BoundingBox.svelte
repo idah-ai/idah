@@ -1,4 +1,5 @@
 <script lang="ts">
+
   import { type Point } from "$lib/utils/math/point";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";

@@ -7,7 +7,8 @@
   let { text = "", query }: Props = $props();
 
   const parts = $derived.by<Array<{ value: string; highlight: boolean }>>(() => {
-    if (!query || query.trim() === "") return [{ value: text, highlight: false }];
+    const t = text ?? "";
+    if (!query || query.trim() === "") return [{ value: t, highlight: false }];
 
     const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`(${escaped})`, "gi");
@@ -15,19 +16,19 @@
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(t)) !== null) {
       if (match.index > lastIndex) {
-        result.push({ value: text.slice(lastIndex, match.index), highlight: false });
+        result.push({ value: t.slice(lastIndex, match.index), highlight: false });
       }
       result.push({ value: match[0], highlight: true });
       lastIndex = regex.lastIndex;
     }
 
-    if (lastIndex < text.length) {
-      result.push({ value: text.slice(lastIndex), highlight: false });
+    if (lastIndex < t.length) {
+      result.push({ value: t.slice(lastIndex), highlight: false });
     }
 
-    return result.length > 0 ? result : [{ value: text, highlight: false }];
+    return result.length > 0 ? result : [{ value: t, highlight: false }];
   });
 </script>
 

@@ -13,6 +13,7 @@ import { noopAction } from "..";
 
 export const command = {
   name: "keyframe.delete",
+  group: undefined,
   modes: [] as string[],
   shortcut: null as string | null,
   shortDescription: null,

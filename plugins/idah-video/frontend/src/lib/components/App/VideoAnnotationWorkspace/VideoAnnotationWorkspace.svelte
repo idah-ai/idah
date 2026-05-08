@@ -207,7 +207,7 @@
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
-    const videoShape: IVideoAnnotationShape = { type, start, end, frames };
+    const videoShape: IVideoAnnotationShape = { type, start: start!, end: end!, frames: frames as IVideoFrameSelection[] };
 
     getDriver().command.call("annotation.add", { shape: videoShape, value });
 
@@ -248,9 +248,9 @@
     if (!editable) return;
 
     if (frame != undefined) {
-      deleteSelection(annotation.metadata.id, frame);
+      deleteSelection(annotation.metadata!.id, frame);
     } else {
-      removeAnnotation(annotation.metadata.id);
+      removeAnnotation(annotation.metadata!.id);
     }
   }
 
@@ -301,7 +301,7 @@
        */
       if (selGroup) {
         const closest = selectClosestAnnotation(selGroup as any, frame);
-        addSelection(closest.metadata.id, { frame, angle, points });
+        addSelection(closest.metadata!.id, { frame, angle, points });
         return;
       }
 
@@ -430,7 +430,7 @@
         frame: frame,
       });
 
-      if (closestAnnotation.metadata.id === selAnnotation?.metadata.id) {
+      if (closestAnnotation.metadata!.id === selAnnotation?.metadata?.id) {
         return;
       }
 

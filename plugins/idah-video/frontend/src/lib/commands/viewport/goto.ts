@@ -16,6 +16,10 @@ export const command = {
   longDescription: "Jump to a specific frame",
 };
 
+interface ViewportGotoProps {
+  frame: number;
+}
+
 export function register(driver: IIdahDriverV2): void {
   driver.command.register(
     command.name, command.modes, command.shortcut,
