@@ -104,6 +104,13 @@
 
       if (isTyping) return;
 
+      // Ctrl+Space / Cmd+Space → toggle command palette
+      if ((e.ctrlKey || e.metaKey) && e.code === "Space") {
+        e.preventDefault();
+        ui.isCommandDialogOpen = !ui.isCommandDialogOpen;
+        return;
+      }
+
       // Delegate to the V2 driver's keyboard resolution
       const consumed = getDriver().handleKeydown(e);
       if (consumed) {
@@ -235,7 +242,7 @@
   async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
-    getDriver().command.call("keyframe.add", { id, selection });
+    getDriver().command.call("keyframe.add", { annotationId: id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
@@ -501,7 +508,7 @@
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        {#each Array.from(getDriver().command.getAllCommands().entries()) as [groupName, cmds]}
+        {#each Array.from(getDriver().command.getAllCommands(mode).entries()) as [groupName, cmds]}
           <CommandGroup heading={groupName}>
             {#each cmds.filter((c) => c.shortDescription) as cmd (cmd.name)}
               <CommandItem

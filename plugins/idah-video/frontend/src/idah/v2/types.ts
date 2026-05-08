@@ -76,6 +76,12 @@ export interface ICommandDescriptor {
   shortDescription: string | null;
   /** Long description. */
   longDescription: string | null;
+  /**
+   * Optional predicate: when present, the command is only considered active
+   * (e.g. for shortcut execution or palette display) if this returns true.
+   * For the palette, it's only evaluated when the current mode matches.
+   */
+  activeWhen?: () => boolean;
 }
 
 /** The action returned by a command callback. */
@@ -381,17 +387,21 @@ export interface ICommandDriverV2 {
    * @param shortDesc Short description (displayed in menus).
    * @param longDesc  Long description.
    * @param callback  Factory that returns an ICommandAction when called.
+   * @param group     Optional group/category label for the palette.
+   * @param activeWhen Optional predicate: only active when returns true.
+   *                   Evaluated for shortcuts and palette visibility.
    * @throws If a command with the same name is already registered.
    */
-  register(
-    name: string,
-    modes: string[],
-    shortcut: IShortcut | null,
-    shortDescription: string | null,
-    longDescription: string | null,
-    callback: (opts?: Record<string, unknown>) => ICommandAction,
-    group?: string,
-  ): void;
+  register(opts: {
+    name: string;
+    modes: string[];
+    shortcut: IShortcut | null;
+    shortDescription: string | null;
+    longDescription: string | null;
+    callback: (opts?: Record<string, unknown>) => ICommandAction;
+    group?: string;
+    activeWhen?: () => boolean;
+  }): void;
 
   /** Execute a registered command by name. Adds it to the undo stack if `undo` is present. */
   call(name: string, ...opts: Record<string, unknown>[]): void;
@@ -422,8 +432,11 @@ export interface ICommandDriverV2 {
    * regardless of mode or shortcut. Commands without a group are placed
    * under "General". Used by the command palette to display every available
    * command.
+   *
+   * @param currentMode When provided, only commands matching this mode
+   *                    (and passing activeWhen) are returned.
    */
-  getAllCommands(): Map<string, ICommandDescriptor[]>;
+  getAllCommands(currentMode?: string): Map<string, ICommandDescriptor[]>;
 
   // ── Keyboard resolution ────────────────────────────────────────────────
 

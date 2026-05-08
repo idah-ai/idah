@@ -31,10 +31,13 @@ export const draft = {
 };
 
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    (opts?: Record<string, unknown>) => {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as PolygonAddPointProps | undefined;
       if (!props) return noopAction(command);
 
@@ -56,6 +59,6 @@ export function register(driver: IIdahDriverV2): void {
         },
       };
     },
-    command.group,
-  );
+    group: command.group,
+  });
 }

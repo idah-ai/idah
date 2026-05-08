@@ -100,16 +100,17 @@ const SAMPLE_NOTES: INoteRecord[] = [
 class CommandDriverAdapter implements ICommandDriverV2 {
   constructor(private mgr: CommandManagerV2) {}
 
-  register(
-    name: string,
-    modes: string[],
-    shortcut: IShortcut | null,
-    shortDescription: string | null,
-    longDescription: string | null,
-    callback: () => ICommandAction,
-    group?: string,
-  ): void {
-    this.mgr.register(name, modes, shortcut, shortDescription, longDescription, callback, group);
+  register(opts: {
+    name: string;
+    modes: string[];
+    shortcut: IShortcut | null;
+    shortDescription: string | null;
+    longDescription: string | null;
+    callback: (opts?: Record<string, unknown>) => ICommandAction;
+    group?: string;
+    activeWhen?: () => boolean;
+  }): void {
+    this.mgr.register(opts);
   }
 
   call(name: string, ...opts: Record<string, unknown>[]): void {
@@ -140,8 +141,8 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     return this.mgr.getShortcut(name);
   }
 
-  getAllCommands(): Map<string, ICommandDescriptor[]> {
-    return this.mgr.getAllCommands();
+  getAllCommands(currentMode?: string): Map<string, ICommandDescriptor[]> {
+    return this.mgr.getAllCommands(currentMode);
   }
 
   resolveKeyEvent(event: KeyboardEvent, mode: string): boolean {

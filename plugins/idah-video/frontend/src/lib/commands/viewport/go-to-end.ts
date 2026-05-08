@@ -17,10 +17,13 @@ export const command = {
 };
 
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    () => ({
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: () => ({
       command: { ...command },
       do() {
         viewport.video.currentFrame.value = media.totalFrames - 1;
@@ -28,6 +31,6 @@ export function register(driver: IIdahDriverV2): void {
       isCombinable() { return false; },
       combine(prev) { return prev; },
     }),
-    command.group,
-  );
+    group: command.group,
+  });
 }

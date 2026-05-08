@@ -29,10 +29,13 @@ export interface BoundingBoxAddProps {
 }
 
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    (opts?: Record<string, unknown>) => {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as BoundingBoxAddProps | undefined;
       if (!props || !data.annotations) return noopAction(command);
 
@@ -66,6 +69,6 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
-    command.group,
-  );
+    group: command.group,
+  });
 }

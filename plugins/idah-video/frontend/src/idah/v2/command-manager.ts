@@ -11,7 +11,7 @@ import { buildKeyCombination } from "$idah/v2/shortcut-utils";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */
-  private registry = new Map<string, ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction }>();
+  private registry = new Map<string, ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction; activeWhen?: () => boolean }>();
 
   /** Undo stack (most recent at end). */
   private undoStack: ICommandStackEntry[] = [];
@@ -28,15 +28,17 @@ export class CommandManagerV2 {
 
   // ── Registration ──────────────────────────────────────────────────────
 
-  register(
-    name: string,
-    modes: string[],
-    shortcut: IShortcut | null,
-    shortDescription: string | null,
-    longDescription: string | null,
-    callback: (opts?: Record<string, unknown>) => ICommandAction,
-    group?: string,
-  ): void {
+  register(opts: {
+    name: string;
+    modes: string[];
+    shortcut: IShortcut | null;
+    shortDescription: string | null;
+    longDescription: string | null;
+    callback: (opts?: Record<string, unknown>) => ICommandAction;
+    group?: string;
+    activeWhen?: () => boolean;
+  }): void {
+    const { name, modes, shortcut, shortDescription, longDescription, callback, group, activeWhen } = opts;
     if (this.registry.has(name)) {
       throw new Error(`Command already registered: "${name}"`);
     }
@@ -47,6 +49,7 @@ export class CommandManagerV2 {
       shortcut,
       shortDescription,
       longDescription,
+      activeWhen,
       callback,
     });
   }
@@ -132,36 +135,43 @@ export class CommandManagerV2 {
   getActiveCommands(): ICommandDescriptor[] {
     const result: ICommandDescriptor[] = [];
     for (const entry of this.registry.values()) {
-      if (entry.modes.includes(this.currentMode)) {
-        result.push({
-          name: entry.name,
-          group: entry.group,
-          modes: entry.modes,
-          shortcut: entry.shortcut,
-          shortDescription: entry.shortDescription,
-          longDescription: entry.longDescription,
-        });
-      }
+      if (!entry.modes.includes(this.currentMode)) continue;
+      if (entry.activeWhen && !entry.activeWhen()) continue;
+      result.push(this._toDescriptor(entry));
     }
     return result;
   }
 
+  private _toDescriptor(entry: typeof this.registry extends Map<string, infer V> ? V : never): ICommandDescriptor {
+    return {
+      name: entry.name,
+      group: entry.group,
+      modes: entry.modes,
+      shortcut: entry.shortcut,
+      shortDescription: entry.shortDescription,
+      longDescription: entry.longDescription,
+      activeWhen: entry.activeWhen,
+    };
+  }
+
   /**
-   * Return ALL registered commands (regardless of mode or shortcut),
-   * grouped by their `group` field for display in the command palette.
-   * Commands without a group are placed under "General".
+   * Return ALL registered commands grouped by their `group` field,
+   * regardless of mode or shortcut. Commands without a group are placed
+   * under "General".
+   *
+   * For palette display: commands whose mode does NOT include the given
+   * `currentMode` are excluded. If a command's mode matches, `activeWhen`
+   * is also evaluated (commands that don't pass are hidden from the palette).
    */
-  getAllCommands(): Map<string, ICommandDescriptor[]> {
+  getAllCommands(currentMode?: string): Map<string, ICommandDescriptor[]> {
     const groups = new Map<string, ICommandDescriptor[]>();
     for (const entry of this.registry.values()) {
-      const desc: ICommandDescriptor = {
-        name: entry.name,
-        group: entry.group,
-        modes: entry.modes,
-        shortcut: entry.shortcut,
-        shortDescription: entry.shortDescription,
-        longDescription: entry.longDescription,
-      };
+      // If currentMode is provided, filter by mode match + activeWhen
+      if (currentMode !== undefined) {
+        if (!entry.modes.includes(currentMode)) continue;
+        if (entry.activeWhen && !entry.activeWhen()) continue;
+      }
+      const desc = this._toDescriptor(entry);
       const groupName = entry.group || "General";
       if (!groups.has(groupName)) {
         groups.set(groupName, []);
@@ -190,45 +200,53 @@ export class CommandManagerV2 {
   getCommand(name: string): ICommandDescriptor | undefined {
     const entry = this.registry.get(name);
     if (!entry) return undefined;
-    return {
-      name: entry.name,
-      group: entry.group,
-      modes: entry.modes,
-      shortcut: entry.shortcut,
-      shortDescription: entry.shortDescription,
-      longDescription: entry.longDescription,
-    };
+    return this._toDescriptor(entry);
   }
 
   // ── Keyboard resolution ────────────────────────────────────────────────
 
   /**
    * Resolve a KeyboardEvent against the registered shortcuts for a given mode.
-   * If a matching command is found, it is executed via `call()`.
+   * If a matching command is found (with activeWhen passing), it is executed
+   * via `call()`. When multiple commands share the same shortcut, the most
+   * specific one wins (activeWhen commands take priority over those without).
    * Returns `true` if a shortcut was matched (event should be consumed),
    * `false` otherwise.
    */
   resolveKeyEvent(event: KeyboardEvent, mode: string): boolean {
-    const keyMap = this.getKeyMapForMode(mode);
     const combo = buildKeyCombination(event);
-    const commandName = keyMap[combo];
-    if (commandName) {
-      this.call(commandName);
-      return true;
+    // First pass: look for a command with activeWhen that passes
+    for (const entry of this.registry.values()) {
+      if (!entry.shortcut || entry.shortcut !== combo) continue;
+      if (!entry.modes.includes(mode)) continue;
+      if (entry.activeWhen && entry.activeWhen()) {
+        this.call(entry.name);
+        return true;
+      }
+    }
+    // Second pass: look for a matching command without activeWhen (or whose activeWhen is null)
+    for (const entry of this.registry.values()) {
+      if (!entry.shortcut || entry.shortcut !== combo) continue;
+      if (!entry.modes.includes(mode)) continue;
+      if (!entry.activeWhen) {
+        this.call(entry.name);
+        return true;
+      }
     }
     return false;
   }
 
   /**
    * Return the flat key-combination → command name map for a given mode.
-   * This is what the keyboard handler uses for O(1) event dispatch.
+   * Commands with activeWhen are skipped — they are resolved dynamically
+   * in resolveKeyEvent instead.
    */
   getKeyMapForMode(mode: string): Record<string, string> {
     const map: Record<string, string> = {};
     for (const entry of this.registry.values()) {
-      if (entry.shortcut && entry.modes.includes(mode)) {
-        map[entry.shortcut] = entry.name;
-      }
+      if (!entry.shortcut || !entry.modes.includes(mode)) continue;
+      if (entry.activeWhen) continue; // resolved dynamically
+      map[entry.shortcut] = entry.name;
     }
     return map;
   }
@@ -245,6 +263,7 @@ export class CommandManagerV2 {
     const refs: Record<string, { label: string; description: string; keyCombinations: string[] }> = {};
     for (const entry of this.registry.values()) {
       if (!entry.shortcut) continue;
+      if (entry.activeWhen && !entry.activeWhen()) continue;
       if (!refs[entry.name]) {
         refs[entry.name] = {
           label: entry.shortDescription ?? entry.name,

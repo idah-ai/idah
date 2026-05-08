@@ -4,20 +4,26 @@
 //
 // Usage:
 //   driver.command.call("keyframe.delete", { annotationId: "...", frame: 42 });
+//
+// Shortcut: Delete
+// Active only when there's a selected annotation and the current frame
+// is a keyframe of that annotation.
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoFrameSelection } from "$idah/v2/video-types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { selection } from "$lib/state/selection.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 import { noopAction } from "..";
 
 export const command = {
   name: "keyframe.delete",
-  group: undefined,
-  modes: [] as string[],
-  shortcut: null as string | null,
-  shortDescription: null,
-  longDescription: null,
+  group: "Keyframe",
+  modes: ["default", "review"],
+  shortcut: "Control+Delete",
+  shortDescription: "Delete keyframe",
+  longDescription: "Remove the selected keyframe from the annotation",
 };
 
 export interface KeyframeDeleteProps {
@@ -25,19 +31,46 @@ export interface KeyframeDeleteProps {
   frame: number;
 }
 
-export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as KeyframeDeleteProps | undefined;
-      if (!props || !data.annotations) return noopAction(command);
+function isCurrentFrameKeyframe(): boolean {
+  const sel = selection.value;
+  if (!sel || sel.type !== "annotation") return false;
+  const frames = (sel.annotation.shape?.frames as IVideoFrameSelection[]) ?? [];
+  const currentFrame = viewport.video.currentFrame.value;
+  return frames.some((f) => f.frame === currentFrame);
+}
 
-      const record = data.annotations.items.find((r) => r.id === props.annotationId);
+export function register(driver: IIdahDriverV2): void {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: (opts?: Record<string, unknown>) => {
+      // Derive annotationId + frame from opts (programmatic call) or from current selection (shortcut invocation)
+      let annotationId: string | undefined;
+      let frame: number | undefined;
+
+      if (opts) {
+        const props = opts as unknown as KeyframeDeleteProps;
+        annotationId = props.annotationId;
+        frame = props.frame;
+      } else {
+        // Shortcut invocation — derive from current selection and viewport
+        const sel = selection.value;
+        if (sel && sel.type === "annotation") {
+          annotationId = sel.annotation.id;
+          frame = viewport.video.currentFrame.value;
+        }
+      }
+
+      if (!annotationId || frame === undefined || !data.annotations) return noopAction(command);
+
+      const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
       const frames = (record.shape.frames as IVideoFrameSelection[]) ?? [];
-      const idx = frames.findIndex((f) => f.frame === props.frame);
+      const idx = frames.findIndex((f) => f.frame === frame);
       if (idx === -1) return noopAction(command);
 
       const snapshot: AnnotationItem = { ...record, shape: { ...record.shape, frames: [...frames] } };
@@ -45,7 +78,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          const newFrames = frames.filter((f) => f.frame !== props.frame);
+          const newFrames = frames.filter((f) => f.frame !== frame);
           const min = newFrames.length > 0 ? newFrames.reduce((m, f) => Math.min(m, f.frame), Infinity) : 0;
           const max = newFrames.length > 0 ? newFrames.reduce((m, f) => Math.max(m, f.frame), -Infinity) : 0;
 
@@ -62,6 +95,7 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
-    command.group,
-  );
+    group: command.group,
+    activeWhen: isCurrentFrameKeyframe,
+  });
 }

@@ -32,10 +32,13 @@ export const command = {
 };
 
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    () => makeAction(),
-    command.group,
-  );
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: () => makeAction(),
+    group: command.group,
+  });
 }

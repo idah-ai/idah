@@ -250,6 +250,7 @@
   // ── Selection API ─────────────────────────────────────────────────────
   const HANDLE_RADIUS_PX = 8;
   const ROTATE_RADIUS_PX = 16;
+  const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX*HANDLE_RADIUS_PX;
 
   export function startSelection(start: Point): boolean {
     if (!editable || points.length !== 4) return false;
@@ -266,10 +267,10 @@
     // 1. Check resize handles (nearest-first)
     const handles = boundingBoxHandle(points);
     for (let i = 0; i < handles.length; i++) {
-      const h = handles[i];
-      const dx = Math.abs(start[0] - h[0]) * w;
-      const dy = Math.abs(start[1] - h[1]) * h;
-      if (dx * dx + dy * dy < HANDLE_RADIUS_PX * HANDLE_RADIUS_PX) {
+      const handle = handles[i];
+      const dx = Math.abs(start[0] - handle[0]) * w;
+      const dy = Math.abs(start[1] - handle[1]) * h;
+      if (dx * dx + dy * dy < HANDLE_RADIUS_PX_SQR) {
         resizeHandleIndex = i;
         resizeInitialPoints = [...points];
         _localPoints = [...points];
@@ -293,7 +294,7 @@
 
       const rdx = Math.abs(start[0] - rotHandleRotated[0]) * w;
       const rdy = Math.abs(start[1] - rotHandleRotated[1]) * h;
-      if (rdx * rdx + rdy * rdy < ROTATE_RADIUS_PX * ROTATE_RADIUS_PX) {
+      if (rdx * rdx + rdy * rdy < HANDLE_RADIUS_PX_SQR) {
         rotateStart = centroidN;
         rotateStartRevolutions = Math.round(currentAngle() / (2 * Math.PI));
         const cp: Point = [centroidN[0] * w, centroidN[1] * h];

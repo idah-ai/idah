@@ -33,7 +33,7 @@
   <CommandInput placeholder="Type a command or search..." />
   <CommandList>
     <CommandEmpty>No results found.</CommandEmpty>
-    {#each Array.from(commandManager.getAllCommands().entries()) as [groupName, cmds]}
+    {#each Array.from(commandManager.getAllCommands(mode).entries()) as [groupName, cmds]}
       <CommandGroup heading={groupName}>
         {#each cmds.filter((c) => c.shortDescription) as cmd (cmd.name)}
           <CommandItem

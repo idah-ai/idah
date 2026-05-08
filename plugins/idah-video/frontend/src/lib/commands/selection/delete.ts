@@ -17,11 +17,18 @@ export const command = {
   longDescription: null,
 };
 
+function hasSelection(): boolean {
+  return selection.value !== null;
+}
+
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    () => {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: () => {
       const sel = selection.value;
       if (!sel || !data.annotations) return noopAction(command);
 
@@ -61,6 +68,7 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
-    command.group,
-  );
+    group: command.group,
+    activeWhen: hasSelection,
+  });
 }

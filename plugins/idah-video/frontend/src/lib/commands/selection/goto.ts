@@ -6,6 +6,10 @@ import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
+function hasAnnotationSelection(): boolean {
+  return selection.value?.type === "annotation";
+}
+
 export const command = {
   name: "selection.goto",
   group: "Selection",
@@ -18,10 +22,13 @@ export const command = {
 let _previousFrame = 1;
 
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    () => {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: () => {
       const sel = selection.value;
       const previousFrame = viewport.video.currentFrame.value;
 
@@ -42,6 +49,7 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
-    command.group,
-  );
+    group: command.group,
+    activeWhen: hasAnnotationSelection,
+  });
 }

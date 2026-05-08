@@ -7,6 +7,10 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoFrameSelection } from "$idah/v2/video-types";
 
+function hasAnnotationSelection(): boolean {
+  return selection.value?.type === "annotation";
+}
+
 export const command = {
   name: "selection.center",
   group: "Selection",
@@ -19,10 +23,13 @@ export const command = {
 let _previousTransform = { translate: [0, 0] as [number, number], scale: 1 };
 
 export function register(driver: IIdahDriverV2): void {
-  driver.command.register(
-    command.name, command.modes, command.shortcut,
-    command.shortDescription, command.longDescription,
-    () => {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: () => {
       const sel = selection.value;
       const prev = {
         translate: [...viewport.workspace.transform.translate] as [number, number],
@@ -78,6 +85,7 @@ export function register(driver: IIdahDriverV2): void {
         combine(p) { return p; },
       };
     },
-    command.group,
-  );
+    group: command.group,
+    activeWhen: hasAnnotationSelection,
+  });
 }
