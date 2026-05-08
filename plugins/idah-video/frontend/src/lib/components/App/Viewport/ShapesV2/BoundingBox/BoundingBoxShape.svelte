@@ -1,16 +1,19 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import { normalizeRect } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
-  import { media } from "$lib/state/media.svelte";
-  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+      import { normalizeRect } from "$lib/utils/math/bbox";
+      import { centroid as centroidUtil, rotatePoint, type Point } from "$lib/utils/math/point";
+    import { media } from "$lib/state/media.svelte";
+    import { getInterpolatedFrame } from "$lib/utils/interpolation";
+    import { ui } from "$lib/state/ui.svelte";
+    import { getDriver } from "$lib/state/driver.svelte";
+    import { annotationColor } from "$lib/utils/color";
   import {
-    boundingBoxHandle,
-    rotatePointN,
-    inverseRotatePointN,
-    rotatedCursorSVG,
-    rotateCursorSVG,
-  } from "./utils";
+      boundingBoxHandle,
+      rotatePointN,
+      inverseRotatePointN,
+      rotatedCursorSVG,
+      rotateCursorSVG,
+    } from "./utils";
   import BBoxHandler from "./_BBoxHandler.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -34,7 +37,13 @@
     onEditComplete,
   }: Props = $props();
 
-  let color = $derived("rgba(246, 64, 43, 0.5)");
+  let color = $derived.by(() => {
+    const baseColor = annotationColor(ui.colorMode, annotation, (catId: string) => {
+      const config = getDriver().config[annotation?.shape?.type ?? ""];
+      return config?.values?.find((v) => v.id === catId)?.color ?? null;
+    });
+    return baseColor;
+  });
 
   // ── Media dimensions (pixel space) ─────────────────────────────────────
   let w = $derived(media.width);
@@ -90,12 +99,22 @@
   });
 
   // ── Pan offset (normalized) ──────────────────────────────────────────
+  //
+  // Because the bbox <path> is visually rotated via CSS transform:
+  //   style:transform="rotate({currentAngle()}rad)"
+  // a mouse delta must be un-rotated before being added to the points,
+  // so that after CSS rotates it back, the visual movement matches the mouse.
   let panOffset = $derived.by((): Point => {
     if (panStart && cursorPx) {
-      return [
+      const rawDeltaN: Point = [
         (cursorPx[0] - panStart[0]) / w,
         (cursorPx[1] - panStart[1]) / h,
       ];
+      // Rotate the delta *against* the bbox angle so that after CSS
+      // rotation the visual displacement is correct.
+      const rotDelta = rotatePoint(rawDeltaN, [0, 0], -currentAngle());
+      // Scale back to normalized space
+      return rotDelta;
     }
     return [0, 0];
   });

@@ -4,6 +4,9 @@
   import type { BBox } from "$lib/utils/math/bbox";
   import type { Point } from "$lib/utils/math/point";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { ui } from "$lib/state/ui.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+  import { annotationColor } from "$lib/utils/color";
 
   let {
     annotation,
@@ -23,7 +26,13 @@
     onEditComplete?: (aabb: BBox, angle: number) => void;
   } = $props();
 
-  let color = $derived("rgba(100, 100, 255, 0.5)");
+  let color = $derived.by(() => {
+    const baseColor = annotationColor(ui.colorMode, annotation, (catId: string) => {
+      const config = getDriver().config[annotation?.shape?.type ?? ""];
+      return config?.values?.find((v) => v.id === catId)?.color ?? null;
+    });
+    return baseColor;
+  });
   let ratio = $derived.by((): [number, number] => {
     const w = viewport.workspace.dimensions[0];
     const h = viewport.workspace.dimensions[1];

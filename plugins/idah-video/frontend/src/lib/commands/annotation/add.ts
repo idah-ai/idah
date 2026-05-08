@@ -47,7 +47,14 @@ export function register(driver: IIdahDriverV2): void {
           const created = await data.annotations!.create({
             shape: props.shape,
             value: props.value,
+            metadata: {
+              id: "", // will be replaced by the store-generated id
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              metadata: {},
+            },
           });
+          // Set the group id to the annotation's own id so it renders as its own track
           (this as any)._createdId = created.id;
           // Exit drawing mode after successful creation
           driver.setMode("default");

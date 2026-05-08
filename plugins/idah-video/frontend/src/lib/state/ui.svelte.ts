@@ -30,18 +30,26 @@ function createLocalStorageStore<T>(key: string, defaultValue: T) {
   };
 }
 
-/** Frame step for skip-forward/backward. */
-export const frameStep = createLocalStorageStore("idah-video:settings:frame-step", 10);
+export type ColorMode = "category" | "random";
 
 /**
  * UI state — dialogs, panels, etc.
  */
 class UIState {
+  #frameStep = createLocalStorageStore("idah-video:settings:frame-step", 10);
+  #colorMode = createLocalStorageStore<ColorMode>("idah-video:settings:color-mode", "category");
+
   isCommandDialogOpen = $state(false);
 
   toggleCommandDialog() {
     this.isCommandDialogOpen = !this.isCommandDialogOpen;
   }
+
+  get frameStep() { return this.#frameStep.value; }
+  set frameStep(value) { this.#frameStep.value = value }
+
+  get colorMode(): ColorMode { return this.#colorMode.value; }
+  set colorMode(value: ColorMode) { this.#colorMode.value = value }
 }
 
 export const ui = new UIState();

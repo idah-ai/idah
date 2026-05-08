@@ -6,12 +6,12 @@
 import type { ICommandAction, IIdahDriverV2 } from "$idah/v2/types";
 import { viewport } from "$lib/state/viewport.svelte";
 import { media } from "$lib/state/media.svelte";
-import { frameStep } from "$lib/state/ui.svelte";
+import { ui } from "$lib/state/ui.svelte";
 
 function makeAction(): ICommandAction {
   const current = viewport.video.currentFrame.value;
   const max = media.totalFrames;
-  const step = frameStep.value;
+  const step = ui.frameStep;
   return {
     command: { name: "viewport.skip_forward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip forward", longDescription: "Jump forward by the configured number of frames" },
     do() {

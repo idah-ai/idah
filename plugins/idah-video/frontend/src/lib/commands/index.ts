@@ -42,6 +42,8 @@ import { register as registerNoteGoto } from "./note/goto";
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 
+import { register as registerToggleColorMode } from "./toggle-color-mode";
+
 /**
  * Register all commands on the given V2 driver.
  * Safe to call multiple times (the V2 command manager throws on duplicate
@@ -80,4 +82,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Annotation ────────────────────────────────────────────────────────
   registerAnnotationAdd(driver);
   registerAnnotationPolygonAddPoint(driver);
+
+  // ── UI / Display ─────────────────────────────────────────────────────
+  registerToggleColorMode(driver);
 }

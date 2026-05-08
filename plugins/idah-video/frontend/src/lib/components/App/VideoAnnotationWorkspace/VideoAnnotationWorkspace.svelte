@@ -538,7 +538,23 @@
   >
     <PopoverTrigger></PopoverTrigger>
 
-    <PopoverContent class="min-w-80 p-0">
+    <PopoverContent
+      class="min-w-80 p-0"
+      onkeydown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          // Same logic as the Confirm button
+          const canConfirm = shapeSelectionArgs !== undefined || mode === "entry:root";
+          if (!canConfirm) return;
+          showPopOver = false;
+          if (mode === "entry:root") {
+            onShapeSelection("entry:root", viewport.video.currentFrame.value);
+          } else if (shapeSelectionArgs) {
+            onShapeSelection(...shapeSelectionArgs);
+          }
+        }
+      }}
+    >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
           <PropertySelector
