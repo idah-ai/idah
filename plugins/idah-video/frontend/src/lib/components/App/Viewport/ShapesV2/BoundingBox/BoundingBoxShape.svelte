@@ -24,7 +24,7 @@
     cursor?: Point;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
-    onEditComplete?: (aabb: [number, number, number, number], angle: number) => void;
+    onEditComplete?: (points: Point[], angle: number) => void;
   };
 
   let {
@@ -227,13 +227,7 @@
     const pts = _localPoints ?? points;
     const ang = _localAngle ?? angle;
     if (pts.length < 4) return;
-
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    const aabb: [number, number, number, number] = [
-      Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys),
-    ];
-    onEditComplete?.(aabb, ang);
+    onEditComplete?.(pts as Point[], ang);
   }
 
   // ── Selection API ─────────────────────────────────────────────────────

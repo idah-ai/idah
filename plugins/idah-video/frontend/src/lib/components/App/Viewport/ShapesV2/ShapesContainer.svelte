@@ -23,10 +23,11 @@
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+  import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
-  import type { BBox } from "$lib/utils/math/bbox";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
@@ -133,8 +134,10 @@
 
   // ── Build mode state ─────────────────────────────────────────────────
   const BUILD_MODE = "idah-video:bounding-box";
+  const POLYGON_MODE = "idah-video:polygon";
   let buildStart: Point | undefined = $state();
 
+  // ── Polygon build state ──────────────────────────────────────────────
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
   let isDragging = $state(false);
@@ -231,6 +234,43 @@
 
   function onMouseDown(e: MouseEvent) {
     const isBuildMode = viewport.mode === BUILD_MODE;
+    const isPolyMode = viewport.mode === POLYGON_MODE;
+
+    // If an annotation is already selected, try editing it regardless of mode
+    if (toolSelection) {
+      const consumed = toolSelection.startSelection(sceneNormalizedCursor);
+      if (consumed) {
+        e.stopPropagation();
+        return;
+      }
+    }
+
+    // ── Polygon creation mode (no annotation selected) ────────────────
+    if (isPolyMode) {
+      e.stopPropagation();
+      if (polygonDraft.points.length >= 3) {
+        const first = polygonDraft.points[0];
+        const dx = Math.abs(sceneNormalizedCursor[0] - first[0]) * media.width;
+        const dy = Math.abs(sceneNormalizedCursor[1] - first[1]) * media.height;
+        if (dx * dx + dy * dy < 400) {
+          const pts = [...polygonDraft.points];
+          polygonDraft.reset();
+          getDriver().command.call("annotation.add", {
+            shape: {
+              type: "idah-video:polygon",
+              start: frame,
+              end: frame,
+              frames: [{ frame, points: pts }],
+            },
+            value: {},
+          });
+          getDriver().setMode("default");
+          return;
+        }
+      }
+      getDriver().command.call("annotation.polygon.add_point", { point: sceneNormalizedCursor });
+      return;
+    }
 
     if (isBuildMode) {
       buildStart = sceneNormalizedCursor;
@@ -238,17 +278,7 @@
     }
 
     if (viewport.mode === "note") {
-      // Note mode: do nothing on mousedown (creation happens on mouseup)
       return;
-    }
-
-    // Default mode: try editing first, fall back to pan
-    if (toolSelection) {
-      const consumed = toolSelection.startSelection(sceneNormalizedCursor);
-      if (consumed) {
-        e.stopPropagation();
-        return;
-      }
     }
 
     // Nothing hit — deselect and start panning
@@ -320,13 +350,7 @@
     }
   }
 
-  function handleEditComplete(annId: string, aabb: BBox, angle: number) {
-    const points: Point[] = [
-      [aabb[0], aabb[1]],
-      [aabb[2], aabb[1]],
-      [aabb[2], aabb[3]],
-      [aabb[0], aabb[3]],
-    ];
+  function handleEditComplete(annId: string, points: Point[], angle: number) {
     onSelection(viewport.mode, frame, points, angle, annId);
   }
 
@@ -402,6 +426,57 @@
           stroke="rgba(246, 64, 43, 0.8)"
           stroke-width="2"
           stroke-dasharray="6,3"
+          vector-effect="non-scaling-stroke"
+        />
+      {/if}
+
+      <!-- Polygon draft preview: lines connecting placed points + line to cursor -->
+      {#if viewport.mode === POLYGON_MODE && polygonDraft.points.length > 0}
+        {@const pts = polygonDraft.points}
+        {@const cursorPos = sceneNormalizedCursor}
+        <!-- Draw path connecting all placed points -->
+        <polyline
+          points={pts.map((p) => `${p[0] * media.width},${p[1] * media.height}`).join(" ")}
+          fill="none"
+          stroke="rgba(246, 64, 43, 0.8)"
+          stroke-width="2"
+          stroke-dasharray="4,2"
+          vector-effect="non-scaling-stroke"
+        />
+        <!-- Line from last point to cursor -->
+        {#if pts.length > 0}
+          <line
+            x1={pts[pts.length - 1][0] * media.width}
+            y1={pts[pts.length - 1][1] * media.height}
+            x2={cursorPos[0] * media.width}
+            y2={cursorPos[1] * media.height}
+            stroke="rgba(246, 64, 43, 0.4)"
+            stroke-width="1.5"
+            stroke-dasharray="3,3"
+            vector-effect="non-scaling-stroke"
+          />
+        {/if}
+        <!-- Vertex dots at each placed point -->
+        {#each pts as p}
+          <circle
+            cx={p[0] * media.width}
+            cy={p[1] * media.height}
+            r={4}
+            fill="rgba(246, 64, 43, 0.9)"
+            stroke="white"
+            stroke-width="1.5"
+            vector-effect="non-scaling-stroke"
+          />
+        {/each}
+        <!-- Highlight first point (close target) -->
+        <circle
+          cx={pts[0][0] * media.width}
+          cy={pts[0][1] * media.height}
+          r={6}
+          fill="none"
+          stroke="rgba(246, 64, 43, 0.9)"
+          stroke-width="2"
+          stroke-dasharray="2,2"
           vector-effect="non-scaling-stroke"
         />
       {/if}

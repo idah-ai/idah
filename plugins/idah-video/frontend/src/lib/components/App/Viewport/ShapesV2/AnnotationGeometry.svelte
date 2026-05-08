@@ -11,7 +11,7 @@
     cursor?: Point;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
-    onEditComplete?: (aabb: [number, number, number, number], angle: number) => void;
+    onEditComplete?: (points: Point[], angle: number) => void;
   };
 
   let {
