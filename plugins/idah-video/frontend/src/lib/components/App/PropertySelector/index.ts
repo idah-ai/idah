@@ -1,4 +1,4 @@
-import { AstProcessor, objectVariables } from "$lib/plugin/test_ast_resolution";
+import { AstProcessor, objectVariables } from "./ast";
 
 import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "$idah/context/activity-context";
 import type { AnnotationValue } from "$idah/context/annotation-context";

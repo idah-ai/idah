@@ -20,7 +20,7 @@ type Action = () => void;
 export class KeyMapBuilder {
   // Modifier key constants
   readonly Shift: ModifierKey = "Shift";
-  readonly Ctrl: ModifierKey = "Control";
+  readonly Ctrl: ModifierKey = "Ctrl";
   readonly Alt: ModifierKey = "Alt";
   readonly Meta: ModifierKey = "Meta"; // Command key on Mac, Windows key on Windows
 
@@ -32,15 +32,14 @@ export class KeyMapBuilder {
    * @param key The main key of the shortcut
    * @param action The action to execute when the shortcut is triggered
    * @param name Name for the shortcut
-   * @param label Label for the shortcut
    * @param description Description for the shortcut
    */
-  on(modifiers: ModifierKey[] | null, key: ActionKey, action: Action, name: string, label: string, description: string): KeyMapBuilder {
+  on(modifiers: ModifierKey[] | null, key: ActionKey, action: Action, name: string, description: string): KeyMapBuilder {
     const keyCombination = this.buildKeyCombination(modifiers, key);
 
     this.keyMap[keyCombination] = {
       name,
-      label,
+      label: description,
       description,
       action,
     };
