@@ -7,9 +7,6 @@
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
 import type { Point } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
-import { interpolateBBox, bboxToPoints } from "$lib/utils/math/bbox";
-
-import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$idah/v2/video-types";
 
 /** Given a list of keyframes and a frame number, return [frame_before, frame_after]. */
 function getSurroundingKeyFrames(
@@ -36,19 +33,13 @@ export function getInterpolatedFrame(
   current_frame: number,
   interpolate: boolean = true,
 ):
-  | { points: Point[] | undefined; angle: number; aabb?: [number, number, number, number] }
+  | { points: Point[] | undefined; angle: number }
   | undefined {
   if (!shape.frames?.length) return;
   if (shape.start > current_frame || shape.end < current_frame) return;
 
   const exact = shape.frames.find((v) => v.frame === current_frame);
   if (exact || !interpolate) {
-    if (shape.type === VIDEO_POLYGON && exact?.points) {
-      return { points: exact.points, angle: exact.angle || 0 };
-    }
-    if (shape.type === VIDEO_BOUNDING_BOX && exact?.aabb) {
-      return { points: bboxToPoints(exact.aabb), angle: exact.angle || 0, aabb: exact.aabb };
-    }
     return { points: exact?.points, angle: exact?.angle || 0 };
   }
 
@@ -57,16 +48,7 @@ export function getInterpolatedFrame(
   const [before, after] = surrounding;
 
   const t = (current_frame - before.frame) / (after.frame - before.frame);
+  const angle = ((after.angle || 0) - (before.angle || 0)) * t + (before.angle || 0);
 
-  if (shape.type === VIDEO_BOUNDING_BOX) {
-    const aabb = interpolateBBox(before.aabb!, after.aabb!, t);
-    const angle = ((after.angle || 0) - (before.angle || 0)) * t + before.angle;
-    return { aabb, points: bboxToPoints(aabb), angle };
-  }
-
-  if (shape.type === VIDEO_POLYGON) {
-    return { points: interpolatePolygon(before.points!, after.points!, t), angle: 0 };
-  }
-
-  return;
+  return { points: interpolatePolygon(before.points!, after.points!, t), angle };
 }

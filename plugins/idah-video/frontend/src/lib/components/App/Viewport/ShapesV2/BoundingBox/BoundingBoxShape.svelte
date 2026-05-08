@@ -1,9 +1,9 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import { interpolateBBox, bboxToPoints, interpolateAngle, normalizeRect } from "$lib/utils/math/bbox";
-  import { centroid, type Point } from "$lib/utils/math/point";
+  import { interpolateAngle, normalizeRect } from "$lib/utils/math/bbox";
+  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import type { IVideoFrameSelection } from "$idah/v2/video-types";
-  import type { BBox } from "$lib/utils/math/bbox";
+  import { interpolatePolygon } from "$lib/utils/math/polygon";
   import { media } from "$lib/state/media.svelte";
   import {
     boundingBoxHandle,
@@ -11,7 +11,7 @@
     inverseRotatePointN,
     rotatedCursorSVG,
     rotateCursorSVG,
-  } from "./bbox-utils";
+  } from "./utils";
   import BBoxHandler from "./_BBoxHandler.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -67,8 +67,7 @@
     if (framesList.length === 0) return [];
 
     const exact = framesList.find((f) => f.frame === frame);
-    if (exact && exact.aabb) return bboxToPoints(exact.aabb);
-    if (exact && exact.points && exact.points.length === 4) return exact.points as Point[];
+    if (exact && exact.points) return exact.points as Point[];
 
     let before: IVideoFrameSelection | null = null;
     let after: IVideoFrameSelection | null = null;
@@ -76,11 +75,10 @@
       if (f.frame < frame && (!before || f.frame > before.frame)) before = f;
       if (f.frame > frame && (!after || f.frame < after.frame)) after = f;
     }
-    if (!before || !after || !before.aabb || !after.aabb) return [];
+    if (!before || !after || !before.points || !after.points) return [];
 
     const t = (frame - before.frame) / (after.frame - before.frame);
-    const aabb = interpolateBBox(before.aabb as BBox, after.aabb as BBox, t);
-    return bboxToPoints(aabb);
+    return interpolatePolygon(before.points, after.points, t) as Point[];
   }
 
   // ── Editing state ───────────────────────────────────────────────────────
@@ -113,7 +111,7 @@
   // ── Centroid (normalized) ─────────────────────────────────────────────
   let centroidN = $derived.by((): Point => {
     if (points.length === 0) return [0, 0];
-    return centroid(points);
+    return centroidUtil(points);
   });
 
   let centroidPx = $derived.by((): Point => {
@@ -142,7 +140,7 @@
 
   let displayCentroid = $derived.by((): Point => {
     if (displayPoints.length === 0) return [0, 0];
-    return centroid(displayPoints);
+    return centroidUtil(displayPoints);
   });
 
   // ── SVG path (pixel space) ────────────────────────────────────────────
@@ -165,13 +163,6 @@
     handleResize(resizeHandleIndex, cursorPx);
   });
 
-  // ── Utility ───────────────────────────────────────────────────────────
-  function getCentroid(pts: Point[]): Point {
-    if (pts.length === 0) return [0, 0];
-    const sum = pts.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]);
-    return [sum[0] / pts.length, sum[1] / pts.length];
-  }
-
   function currentAngle(): number {
     if (rotateStart && rotateStartAngle !== undefined && rotateStartRevolutions !== undefined && cursorPx) {
       const cp: Point = [centroidN[0] * w, centroidN[1] * h];
@@ -188,7 +179,7 @@
 
     const curAngle = currentAngle();
     const cursorN: Point = [cursorPosPx[0] / w, cursorPosPx[1] / h];
-    const initCentroid = getCentroid(resizeInitialPoints);
+    const initCentroid = centroidUtil(resizeInitialPoints);
 
     const unrotatedCursor = inverseRotatePointN(cursorN, initCentroid, curAngle, w, h);
 
@@ -233,7 +224,7 @@
     }
 
     const fixedScreen = rotatePointN(fixedPoint, initCentroid, curAngle, w, h);
-    const newCentroid = getCentroid(newPts);
+    const newCentroid = centroidUtil(newPts);
     const newFixedScreen = rotatePointN(newFixedPoint, newCentroid, curAngle, w, h);
 
     _localPoints = newPts.map((p) => [
@@ -278,7 +269,7 @@
       const h = handles[i];
       const dx = Math.abs(start[0] - h[0]) * w;
       const dy = Math.abs(start[1] - h[1]) * h;
-      if (Math.sqrt(dx * dx + dy * dy) < HANDLE_RADIUS_PX) {
+      if (dx * dx + dy * dy < HANDLE_RADIUS_PX * HANDLE_RADIUS_PX) {
         resizeHandleIndex = i;
         resizeInitialPoints = [...points];
         _localPoints = [...points];
@@ -302,7 +293,7 @@
 
       const rdx = Math.abs(start[0] - rotHandleRotated[0]) * w;
       const rdy = Math.abs(start[1] - rotHandleRotated[1]) * h;
-      if (Math.sqrt(rdx * rdx + rdy * rdy) < ROTATE_RADIUS_PX) {
+      if (rdx * rdx + rdy * rdy < ROTATE_RADIUS_PX * ROTATE_RADIUS_PX) {
         rotateStart = centroidN;
         rotateStartRevolutions = Math.round(currentAngle() / (2 * Math.PI));
         const cp: Point = [centroidN[0] * w, centroidN[1] * h];

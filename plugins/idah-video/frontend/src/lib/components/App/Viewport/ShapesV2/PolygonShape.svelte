@@ -2,10 +2,9 @@
 
   import { viewport } from "$lib/state/viewport.svelte";
   import { interpolatePolygon } from "$lib/utils/math/polygon";
+  import type { BBox } from "$lib/utils/math/bbox";
   import type { IVideoFrameSelection } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
-
-  import type { BBox } from "$lib/utils/math/bbox";
 
   let {
     annotation,

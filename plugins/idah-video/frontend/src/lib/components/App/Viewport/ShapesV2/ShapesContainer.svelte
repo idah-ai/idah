@@ -22,6 +22,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
+  import { media } from "$lib/state/media.svelte";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
@@ -76,6 +77,17 @@
   let sceneMousePosition: Point = $derived.by(() => {
     const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
     return [sv.x, sv.y] as Point;
+  });
+
+  // Cursor in normalized media space (0-1 relative to media dimensions)
+  // This is the correct coordinate space for annotation shapes — passes through
+  // scene transform (zoom/pan) so it always stays aligned with the content.
+  let sceneNormalizedCursor: Point = $derived.by((): Point => {
+    const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
+    return [
+      media.width > 0 ? sv.x / media.width : 0,
+      media.height > 0 ? sv.y / media.height : 0,
+    ];
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
@@ -217,7 +229,7 @@
     const isBuildMode = viewport.mode === BUILD_MODE;
 
     if (isBuildMode) {
-      buildStart = normalizedMousePosition;
+      buildStart = sceneNormalizedCursor;
       return;
     }
 
@@ -228,7 +240,7 @@
 
     // Default mode: try editing first, fall back to pan
     if (toolSelection) {
-      const consumed = toolSelection.startSelection(normalizedMousePosition);
+      const consumed = toolSelection.startSelection(sceneNormalizedCursor);
       if (consumed) {
         e.stopPropagation();
         return;
@@ -245,7 +257,7 @@
 
     if (isBuildMode && buildStart) {
       // Finalize new bounding box
-      const end = normalizedMousePosition;
+      const end = sceneNormalizedCursor;
       const x1 = Math.min(buildStart[0], end[0]);
       const y1 = Math.min(buildStart[1], end[1]);
       const x2 = Math.max(buildStart[0], end[0]);
@@ -271,7 +283,7 @@
     }
 
     // Default mode: finalize edit operation
-    toolSelection?.endSelection(normalizedMousePosition);
+    toolSelection?.endSelection(sceneNormalizedCursor);
 
     // Only pan on mouseup if we were panning
     zoomableElement.mouseUp(e);
@@ -365,10 +377,10 @@
     <g>
       <!-- Build mode preview: dashed rectangle from start to current cursor -->
       {#if viewport.mode === BUILD_MODE && buildStart}
-        {@const sx = buildStart[0] * screenDimensions[0]}
-        {@const sy = buildStart[1] * screenDimensions[1]}
-        {@const cx = normalizedMousePosition[0] * screenDimensions[0]}
-        {@const cy = normalizedMousePosition[1] * screenDimensions[1]}
+        {@const sx = buildStart[0] * media.width}
+        {@const sy = buildStart[1] * media.height}
+        {@const cx = sceneNormalizedCursor[0] * media.width}
+        {@const cy = sceneNormalizedCursor[1] * media.height}
         <rect
           x={Math.min(sx, cx)}
           y={Math.min(sy, cy)}
@@ -395,7 +407,7 @@
             selection.value?.type === "annotation" &&
             selection.value.annotation?.id === ann.id
           }
-          cursor={normalizedMousePosition}
+          cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
           onEditComplete={(aabb: BBox, angle: number) =>

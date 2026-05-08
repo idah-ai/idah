@@ -31,19 +31,7 @@ export interface IVideoFrameSelection {
   frame: number;
   /** Rotation angle in radians (optional). */
   angle: number;
-  /** AABB in [x1, y1, x2, y2] format for bounding boxes (normalised 0-1). */
-  aabb?: [number, number, number, number];
-  /** Polygon vertexes for polygon shapes. */
-  points?: [number, number][];
-}
-
-/** Bounding-box keyframe selection (requires aabb). */
-export interface IVideoBBoxFrameSelection extends IVideoFrameSelection {
-  aabb: [number, number, number, number];
-}
-
-/** Polygon keyframe selection (requires points). */
-export interface IVideoPolygonFrameSelection extends IVideoFrameSelection {
+  /** Polygon points for the frame selection. */
   points: [number, number][];
 }
 
