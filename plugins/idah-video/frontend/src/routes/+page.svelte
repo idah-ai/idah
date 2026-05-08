@@ -1,6 +1,6 @@
 <script lang="ts">
   import { mount, unmount } from "svelte";
-  import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
+  import Plugin from "$lib/components/Plugin.svelte";
   // ── TODO: Use real V2 driver here once integrated ─────────────────────
   import { IdahDriverV2 } from "$idah/v2/idah-driver";
   import { initDriver } from "$lib/state/driver.svelte";
@@ -18,7 +18,7 @@
   $effect(() => {
     if (!targetElement) return;
 
-    mounted = mount(IdahVideoPlugin, {
+    mounted = mount(Plugin, {
       target: targetElement,
     });
 

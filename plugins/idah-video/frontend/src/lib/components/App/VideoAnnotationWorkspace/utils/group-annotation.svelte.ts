@@ -3,7 +3,7 @@ import { SvelteMap } from "svelte/reactivity";
 import AnnotationTrackBlock from "$lib/components/App/Timeline/annotations/_AnnotationTrackBlock.svelte";
 
 import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
-import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
+import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
 
 import type { IConfig } from "$idah/v2/types";
 

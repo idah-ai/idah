@@ -19,11 +19,9 @@
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
 
-  import type { IConfigValue } from "$idah/context/activity-context";
-  import type { AnnotationGroup } from "$idah/context/annotation-context";
-  import type { CategoryDefinition } from "$idah/context/category-context";
+  import type { IConfigValue } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 

@@ -3,7 +3,7 @@
   // /mock — V2 mock page showing the toolbar above the actual editor
   // -----------------------------------------------------------------------
   import { mount, unmount } from "svelte";
-  import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
+  import Plugin from "$lib/components/Plugin.svelte";
   import IdahToolbar from "./idah-toolbar.svelte";
   import IdahCommandPalette from "./idah-command-palette.svelte";
   import { IdahDriverV2 } from "$idah/v2/idah-driver";
@@ -59,7 +59,7 @@
   $effect(() => {
     if (!targetElement) return;
 
-    mountedPlugin = mount(IdahVideoPlugin, {
+    mountedPlugin = mount(Plugin, {
       target: targetElement,
     });
 

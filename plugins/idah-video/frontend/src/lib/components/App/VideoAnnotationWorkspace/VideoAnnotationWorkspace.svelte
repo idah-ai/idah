@@ -29,7 +29,7 @@
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
-  } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
 
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";

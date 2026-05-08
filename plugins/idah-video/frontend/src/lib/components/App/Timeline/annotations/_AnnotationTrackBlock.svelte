@@ -6,7 +6,7 @@
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
-  import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
+  import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
   import { getDriver } from "$lib/state/driver.svelte";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";

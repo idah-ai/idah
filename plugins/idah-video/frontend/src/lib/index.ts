@@ -1,7 +1,7 @@
 // place files you want to import through the `$lib` alias in this folder.
 import { mount, unmount } from "svelte";
 
-import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
+import Plugin from "$lib/components/Plugin.svelte";
 
 interface IActivityView {
   name: string;
@@ -35,7 +35,7 @@ const idahVideoPlugin: IActivityView = {
     // NOTE: The V2 driver is expected to be set up externally via
     //   initDriver(driver); initDataStores();
     // before render() is called. The IdahVideoPlugin no longer wires them.
-    mounted = mount(IdahVideoPlugin, { target: parent });
+    mounted = mount(Plugin, { target: parent });
   },
 
   close() {

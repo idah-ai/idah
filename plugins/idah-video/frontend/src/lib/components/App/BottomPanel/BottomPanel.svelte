@@ -1,6 +1,6 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import { transformAnnotationsToTracks } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  import { transformAnnotationsToTracks } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
 
   import TimelinePanel from "$lib/components/App/BottomPanel/_TimelinePanel.svelte";
   import TimelineToolbar from "$lib/components/App/BottomPanel/_TimelineToolbar.svelte";
