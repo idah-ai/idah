@@ -6,20 +6,13 @@
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
   import ShapeContainer from "$lib/components/App/Viewport/ShapesV2/ShapeContainer.svelte";
 
-  import {
-    DEFAULT_MODE,
-    EDITOR_MODE_TOOLS,
-    IDAH_NOTE,
-  } from "$lib/plugin/type";
-
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import type { ToolSelection } from "$lib/components/App/Viewport/Shapes/BoundingBox/BoundingBox.svelte";
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$idah/context/activity-context";
   import type { AnnotationShape } from "$idah/context/annotation-context";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { VideoShape } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord, IVideoAnnotationShape } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
 
   // Local derived aliases for V2 state (used in templates)
@@ -36,9 +29,9 @@
 
   type Props = {
     frame: number;
-    annotations_promise: Promise<VideoAnnotationObject[]>;
+    annotations_promise: Promise<IVideoAnnotationRecord[]>;
     children: Snippet;
-    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
+    onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
@@ -65,10 +58,10 @@
   let svgEl: SVGSVGElement | undefined = $state();
 
   // Derive viewport annotations from the global store
-  let viewportItems = $derived.by<VideoAnnotationObject[]>(() => {
+  let viewportItems = $derived.by<IVideoAnnotationRecord[]>(() => {
     const raw = data.annotations?.items ?? [];
     return raw.map((ann) => {
-      const shape = ann.shape as VideoShape;
+      const shape = ann.shape as IVideoAnnotationShape;
       return {
         shape,
         value: {
@@ -84,7 +77,7 @@
         hidden: ann.hidden ?? false,
         locked: ann.locked ?? false,
         synced: ann.synced ?? true,
-      } as VideoAnnotationObject;
+      } as IVideoAnnotationRecord;
     });
   });
 
@@ -130,7 +123,8 @@
   let toolSelection: ToolSelection | undefined = $state();
 
   export function selectionStart(e: MouseEvent) {
-    const isDrawingMode = EDITOR_MODE_TOOLS.includes(viewport.mode) && viewport.mode !== DEFAULT_MODE;
+    const EDITOR_MODE_TOOLS = ["idah-video:bounding-box", "idah-video:polygon"];
+    const isDrawingMode = EDITOR_MODE_TOOLS.includes(viewport.mode) && viewport.mode !== "default";
 
     if (!pendingShape && !isDrawingMode) {
       selection.deselect();
@@ -146,7 +140,7 @@
           "no tool for mode: ",
           viewport.mode,
           " is found, deselecting annotation and reverting to mode: ",
-          DEFAULT_MODE,
+          "default",
         );
       }
       return;
@@ -165,11 +159,11 @@
     zoomableElement.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: VideoAnnotationObject) {
+  function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
-    if (viewport.mode === IDAH_NOTE) {
+    if (viewport.mode === "note") {
       onAddNewNote({
         anchorType: annotation ? "annotation" : "entry",
         position: {
@@ -244,13 +238,13 @@
 
   // Reset editionCursor when switching to visual mode without selection
   $effect(() => {
-    if (viewport.mode === DEFAULT_MODE && !selAnnotation) {
+    if (viewport.mode === "default" && !selAnnotation) {
       editionCursor = undefined;
     }
   });
 
   let pointer = $derived.by(() => {
-    if (viewport.mode == IDAH_NOTE) return "cursor-note";
+    if (viewport.mode == "note") return "cursor-note";
     if (editionCursor) return editionCursor;
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
@@ -261,11 +255,11 @@
     screenDimensions[0] > 0 &&
       screenDimensions[1] > 0 &&
       !isPlaying &&
-      ![IDAH_NOTE, DEFAULT_MODE].includes(viewport.mode) && // TODO:: Change to check set of editing mode @audi
+      !["note", "default"].includes(viewport.mode) && // TODO:: Change to check set of editing mode @audi
       (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
   );
 
-  function getAnnotationPropertyStyle(annotation?: VideoAnnotationObject): IConfigPropertyStyles {
+  function getAnnotationPropertyStyle(annotation?: IVideoAnnotationRecord): IConfigPropertyStyles {
     const defaultStyle: IConfigPropertyStyles = {
       border: "solid",
       opacity: 100,

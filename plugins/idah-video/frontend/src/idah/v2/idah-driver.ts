@@ -1,7 +1,17 @@
 // ---------------------------------------------------------------------------
 // V2 IdahDriver — the main in-memory mock driver hub
 // ---------------------------------------------------------------------------
-import type { IIdahDriverV2, IMediaInfo, IConfig, IAnnotationsDriverV2, INotesDriverV2, ICommandDriverV2, IToolbarDriverV2, IAnnotationRecord, INoteRecord, IFilter, ICommandAction, ICommandDescriptor, IModeEvent, ISyncEvent, ISyncErrorEvent, IShortcut, ICommandStackEntry, IToolbarItem, ToolbarItemOptions, Unsubscribe, } from "$idah/v2/types";
+import type {
+  IIdahDriverV2, IMediaInfo, IConfig,
+  IAnnotationsDriverV2, INotesDriverV2, ICommandDriverV2,
+  IToolbarDriverV2, IAnnotationRecord, INoteRecord, IFilter,
+  ICommandAction, ICommandDescriptor, IModeEvent, ISyncEvent,
+  ISyncErrorEvent, IShortcut, ICommandStackEntry, IToolbarItem,
+  ToolbarItemOptions, Unsubscribe,
+} from "$idah/v2/types";
+import type {
+  IVideoAnnotationShape, IVideoAnnotationValue, IVideoFrameSelection,
+} from "$idah/v2/video-types";
 
 import { InMemoryStore } from "$idah/v2/in-memory-store";
 import { CommandManagerV2 } from "$idah/v2/command-manager";
@@ -10,7 +20,9 @@ import { ToolbarManagerV2 } from "$idah/v2/toolbar-manager";
 // ---------------------------------------------------------------------------
 // Sample data
 // ---------------------------------------------------------------------------
-const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
+type SampleAnnotation = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue>;
+
+const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
   {
     id: "ann-v2-001",
     shape: {
@@ -21,10 +33,8 @@ const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
         { frame: 60,  aabb: [0.22, 0.28, 0.48, 0.52], angle: 2 },
         { frame: 120, aabb: [0.25, 0.25, 0.50, 0.55], angle: 3 },
       ],
-    },
-    label: "car",
-    category: "vehicles/car",
-    frame: { start: 0, end: 120 },
+    } as IVideoAnnotationShape,
+    value: { category: "vehicles/car", label: "car" },
   },
   {
     id: "ann-v2-002",
@@ -36,10 +46,8 @@ const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
         { frame: 150, aabb: [0.58, 0.38, 0.78, 0.68], angle: -1 },
         { frame: 300, aabb: [0.55, 0.35, 0.75, 0.65], angle: -2 },
       ],
-    },
-    label: "bus",
-    category: "vehicles/bus",
-    frame: { start: 50, end: 300 },
+    } as IVideoAnnotationShape,
+    value: { category: "vehicles/bus", label: "bus" },
   },
   {
     id: "ann-v2-003",
@@ -51,10 +59,8 @@ const SAMPLE_ANNOTATIONS: IAnnotationRecord[] = [
         { frame: 55,  angle: 0, points: [[0.12, 0.08], [0.32, 0.04], [0.37, 0.18], [0.17, 0.23]] },
         { frame: 80,  angle: 0, points: [[0.15, 0.05], [0.35, 0.02], [0.40, 0.15], [0.20, 0.20]] },
       ],
-    },
-    label: "pedestrian",
-    category: "pedestrian",
-    frame: { start: 30, end: 80 },
+    } as IVideoAnnotationShape,
+    value: { category: "pedestrian", label: "pedestrian" },
   },
 ];
 
@@ -80,7 +86,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     this.mgr.register(name, modes, shortcut, shortDescription, longDescription, callback);
   }
 
-  call(name: string, ...opts: unknown[]): void {
+  call(name: string, ...opts: Record<string, unknown>[]): void {
     this.mgr.call(name, ...opts);
   }
 
@@ -123,18 +129,20 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
 // ---------------------------------------------------------------------------
 // Adapter: annotations
 // ---------------------------------------------------------------------------
-class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
-  constructor(private store: InMemoryStore<IAnnotationRecord>) {}
+type Annot = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue>;
 
-  registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void {
+class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue> {
+  constructor(private store: InMemoryStore<Annot>) {}
+
+  registerField(name: string, fn: (ann: Annot) => unknown): void {
     this.store.registerField(name, fn);
   }
 
-  async fetch(filter?: IFilter): Promise<IAnnotationRecord[]> {
+  async fetch(filter?: IFilter): Promise<Annot[]> {
     return this.store.fetch(filter);
   }
 
-  async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
+  async update(id: string, data: Partial<Annot>): Promise<void> {
     return this.store.update(id, data);
   }
 
@@ -142,7 +150,7 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
     return this.store.delete(id);
   }
 
-  async create(data: IAnnotationRecord): Promise<IAnnotationRecord> {
+  async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
   }
 }
@@ -177,9 +185,9 @@ class NotesDriverAdapter implements INotesDriverV2 {
 // ---------------------------------------------------------------------------
 // Main IdahDriverV2
 // ---------------------------------------------------------------------------
-export class IdahDriverV2 implements IIdahDriverV2 {
+export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideoAnnotationValue> {
   /** Annotation store */
-  readonly annotationStore = new InMemoryStore<IAnnotationRecord>();
+  readonly annotationStore = new InMemoryStore<Annot>();
   /** Note store */
   readonly noteStore = new InMemoryStore<INoteRecord>();
 
@@ -253,7 +261,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   readonly command: ICommandDriverV2;
   readonly toolbar: IToolbarDriverV2;
-  readonly annotations: IAnnotationsDriverV2;
+  readonly annotations: IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue>;
   readonly notes: INotesDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────

@@ -11,17 +11,17 @@
   import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
 
   // Props
   interface Props {
     context: IActivityContext;
-    viewportAnnotations: VideoAnnotationObject[];
+    viewportAnnotations: IVideoAnnotationRecord[];
     length: number;
     player: Video | undefined;
     volume: { level: number; muted: boolean };
-    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
+    onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
   }
   let {
     context,

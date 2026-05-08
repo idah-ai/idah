@@ -7,11 +7,11 @@ import { findCategory } from "$lib/plugin/video-annotation-activity/utils/catego
 
 import type { IConfig } from "$idah/context/activity-context";
 import type { AnnotationGroup } from "$idah/context/annotation-context";
-import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
 
-export function groupAnnotations(annotations: VideoAnnotationObject[]): AnnotationGroup<VideoAnnotationObject>[] {
-  const map = new SvelteMap<string, VideoAnnotationObject[]>();
+export function groupAnnotations(annotations: IVideoAnnotationRecord[]): AnnotationGroup<IVideoAnnotationRecord>[] {
+  const map = new SvelteMap<string, IVideoAnnotationRecord[]>();
 
   for (const ann of annotations) {
     const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
@@ -45,7 +45,7 @@ export function groupAnnotations(annotations: VideoAnnotationObject[]): Annotati
 }
 
 export function findClosestAnnotationInGroup(props: {
-  annotationGroup: AnnotationGroup<VideoAnnotationObject>;
+  annotationGroup: AnnotationGroup<IVideoAnnotationRecord>;
   frame: number;
 }) {
   const { annotationGroup, frame } = props;
@@ -91,7 +91,7 @@ function categoryValueToLabel(value?: string) {
 }
 
 export function getGroupTitle(props: {
-  annotationGroup: AnnotationGroup<VideoAnnotationObject>;
+  annotationGroup: AnnotationGroup<IVideoAnnotationRecord>;
   labelConfig: IConfig;
 }): [string, string] {
   const { annotationGroup, labelConfig } = props;
@@ -116,7 +116,7 @@ export function getGroupTitle(props: {
 }
 
 export function transformAnnotationsToTracks(props: {
-  annotations: VideoAnnotationObject[];
+  annotations: IVideoAnnotationRecord[];
   labelConfig: IConfig;
 }): TrackData[] {
   const { annotations, labelConfig } = props;

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // In-memory annotation store with filter support
 // ---------------------------------------------------------------------------
-import type { IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "$idah/v2/types";
+import type { IFilter, IFilterValue, IRangeOp } from "$idah/v2/types";
 import { uuidv7 } from "uuidv7";
 
 // ---------------------------------------------------------------------------

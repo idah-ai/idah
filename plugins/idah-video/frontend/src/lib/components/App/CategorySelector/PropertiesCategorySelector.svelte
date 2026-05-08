@@ -3,8 +3,7 @@
 
   import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
-  import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -32,7 +31,7 @@
   let tools = $derived(
     new Map<string, IConfigValue[]>(
       Object.entries(context.config)
-        .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
+        .filter(([shapeType, _]) => shapeType != "entry:root")
         .map(([shapeType, { values }]) => [shapeType, values]),
     ),
   );
@@ -40,7 +39,7 @@
   let selAnnotation = $derived(
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
-  let defaultMode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
+  let defaultMode = $derived(mode == "default" || !tools.has(mode));
 
   // Functions
   function categorySelection(shape_type: string, categoryId?: string) {
@@ -64,11 +63,11 @@
                 : $entryRoot?.value
               : annotationValue) || {}}
             onSelectCategory={(selectedCategoryId) =>
-              categorySelection(defaultMode ? ENTRY_ROOT : mode, selectedCategoryId)}
+              categorySelection(defaultMode ? "entry:root" : mode, selectedCategoryId)}
             onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
-            onEditValue={(value) => value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
+            onEditValue={(value) => value && onEditValue(value, defaultMode ? "entry:root" : mode)}
             disabled={selAnnotation?.locked ||
-              (defaultMode || mode == ENTRY_ROOT ? !!$entryRoot?.locked : false) ||
+              (defaultMode || mode == "entry:root" ? !!$entryRoot?.locked : false) ||
               !["annotate", "review"].includes(context.workflowStep)}
           />
         {/key}

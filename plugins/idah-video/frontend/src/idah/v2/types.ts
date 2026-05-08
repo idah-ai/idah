@@ -179,59 +179,88 @@ export interface IFilter {
   [field: string]: IFilterValue;
 }
 
+// ─── Annotation metadata ────────────────────────────────────────────────
+
+/**
+ * Annotation metadata wrapper, mirroring the DB `annotations` table.
+ *
+ * DB columns:
+ *   - `dimensions` (JSONB)  → `shape`
+ *   - `annotation` (JSONB)  → `value`
+ *   - `metadata`  (JSONB)   → `metadata.metadata` (nested!)
+ *
+ * The **group** key lives at `metadata.metadata.group_id`.
+ * Annotations sharing the same `group_id` are rendered as a single track
+ * in the timeline. When absent, the annotation's own `id` is used as fallback.
+ */
+export interface IAnnotationMetadata {
+  /** Unique identifier for the annotation. */
+  id: string;
+  /** Timestamp of when the annotation was created. */
+  createdAt: Date;
+  /** Timestamp of when the annotation was last updated. */
+  updatedAt: Date;
+  /** ID of the user who created the annotation. */
+  userId?: string;
+  /** Comments or notes associated with the annotation. */
+  comments?: string[];
+  /**
+   * Arbitrary metadata (maps to DB `metadata` JSONB column).
+   * The `group_id` field within this object controls timeline grouping.
+   */
+  metadata?: {
+    group_id?: string;
+    parent_id?: string;
+    [key: string]: unknown;
+  };
+  /** Allow extensibility. */
+  [key: string]: unknown;
+}
+
+// ─── Annotation value ──────────────────────────────────────────────────
+
+/**
+ * Base annotation value payload (maps to DB `annotation` JSONB column).
+ * This is a generic base; specific modalities extend it
+ * (e.g. IVideoAnnotationValue for video).
+ */
+export interface IAnnotationValue {
+  [key: string]: unknown;
+}
+
 // ─── Annotation record ─────────────────────────────────────────────────
 
 /**
- * Frame range for an annotation.
- */
-export interface IAnnotationFrame {
-  start: number;
-  end: number;
-}
-
-/**
- * A single keyframe selection within an annotation's shape.
- */
-export interface IVideoFrameSelection {
-  frame: number;
-  /** Rotation angle in radians (optional). */
-  angle: number;
-  /** AABB in [x1, y1, x2, y2] format for bounding boxes (normalised 0-1). */
-  aabb?: [number, number, number, number];
-  /** Polygon vertexes for polygon shapes. */
-  points?: [number, number][];
-}
-
-/**
  * A raw annotation record as stored and returned by the driver.
+ *
+ * Generic over two type parameters to mirror the DB structure:
+ * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
+ * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
  */
-export interface IAnnotationRecord {
+export interface IAnnotationRecord<
+  Shape = Record<string, unknown>,
+  Annotation = Record<string, unknown>,
+> {
   id: string;
 
-  /** Shape geometry + frame range (start/end/frames etc.). */
-  shape: {
-    type: string;
-    start: number;
-    end: number;
-    frames?: IVideoFrameSelection[];
-    /** Bounding-box or polygon points, etc. */
-    [key: string]: unknown;
-  };
-
-  /** Human-readable label (e.g. "car", "bus"). */
-  label?: string;
-
-  /** Category path (e.g. "vehicles/car"). */
-  category?: string;
+  /**
+   * Shape geometry — corresponds to the DB `dimensions` JSONB column.
+   * Type-specific (e.g. IVideoAnnotationShape for video).
+   */
+  shape: Shape;
 
   /**
-   * Flat frame-range object, separate from `shape.start`/`shape.end`.
-   * Used by the filter system (e.g. `frame.start: { gte: ... }`).
+   * The annotation payload — corresponds to the DB `annotation` JSONB column.
+   * Contains category, label, attributes, etc.
    */
-  frame?: IAnnotationFrame;
+  value?: Annotation;
 
-  /** Arbitrary metadata attached to the annotation. */
-  metadata?: Record<string, unknown>;
+  /**
+   * Annotation metadata wrapper.
+   * The nested `metadata.metadata` field maps to the DB `metadata` JSONB column
+   * and stores the `group_id` for timeline grouping.
+   */
+  metadata?: IAnnotationMetadata;
 
   created_by_id?: string;
   created_at?: Date;
@@ -279,24 +308,27 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2 {
+export interface IAnnotationsDriverV2<
+  Shape = Record<string, unknown>,
+  Annotation = Record<string, unknown>,
+> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
    */
-  registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void;
+  registerField(name: string, fn: (ann: IAnnotationRecord<Shape, Annotation>) => unknown): void;
 
   /** Fetch annotations, optionally filtered. */
-  fetch(filter?: IFilter): Promise<IAnnotationRecord[]>;
+  fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]>;
 
   /** Update a single annotation. */
-  update(id: string, data: Partial<IAnnotationRecord>): Promise<void>;
+  update(id: string, data: Partial<IAnnotationRecord<Shape, Annotation>>): Promise<void>;
 
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
-  create(data: IAnnotationRecord): Promise<IAnnotationRecord>;
+  create(data: IAnnotationRecord<Shape, Annotation>): Promise<IAnnotationRecord<Shape, Annotation>>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -390,7 +422,10 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2 {
+export interface IIdahDriverV2<
+  Shape = Record<string, unknown>,
+  Annotation = Record<string, unknown>,
+> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly media: IMediaInfo;
@@ -411,7 +446,7 @@ export interface IIdahDriverV2 {
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
   readonly toolbar: IToolbarDriverV2;
-  readonly annotations: IAnnotationsDriverV2;
+  readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
 }
 

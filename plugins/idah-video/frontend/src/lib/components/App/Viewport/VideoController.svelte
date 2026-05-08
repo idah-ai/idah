@@ -29,7 +29,6 @@
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
   import Video from "./Video.svelte";
 
-  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -126,7 +125,7 @@
   }
 
   function getFrameStepFromLocalStorage() {
-    const localStorageFrameStep = localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP);
+    const localStorageFrameStep = localStorage.getItem("idah-video:settings:frame-step");
 
     if (localStorageFrameStep) {
       frameStep = Number(localStorageFrameStep);

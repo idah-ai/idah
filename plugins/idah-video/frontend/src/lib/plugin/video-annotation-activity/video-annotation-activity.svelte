@@ -17,27 +17,20 @@
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
 
-  import {
-    DEFAULT_MODE,
-    EDITOR_MODE_TOOLS,
-    ENTRY_ROOT,
-    IDAH_NOTE,
-    IDAH_VIDEO_BOUNDING_BOX,
-    IDAH_VIDEO_POLYGON,
-  } from "$lib/plugin/type";
   import { requiredFullfilled } from "$lib/components/App/PropertySelector";
   import {
     registerOnSelectShortcuts,
     registerShortcuts,
     registerShortcutsReference,
   } from "$lib/plugin/video-annotation-activity/shortcut";
-  import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
+  import { entryRoot } from "$lib/state/entry-root.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import { data } from "$lib/state/data.svelte";
   import {
@@ -53,12 +46,8 @@
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/SvgOverlay.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
-  import {
-    type Point,
-    type VideoAnnotationObject,
-    type VideoFrameSelection,
-    type VideoShape,
-  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
+  import type { Point } from "$lib/utils/math/point";
 
   import type { IActivityContext, IMedia } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
@@ -91,7 +80,7 @@
   let mediaInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
-  let isNoteMode = $derived(mode === IDAH_NOTE);
+  let isNoteMode = $derived(mode === "note");
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
@@ -182,7 +171,7 @@
     try {
       const v1Annotations = await context.annotations.list({}, { page: 1, itemsPerPage: 10000 });
       const annotations = v1Annotations.map((ann) => {
-        const v2shape = ann.dimensions as VideoShape;
+        const v2shape = ann.dimensions as IVideoAnnotationShape;
         return {
           shape: {
             ...v2shape,
@@ -202,11 +191,11 @@
           hidden: false,
           locked: false,
           synced: true,
-        } as VideoAnnotationObject;
+        } as IVideoAnnotationRecord;
       });
 
-      const entryRootAnnotation = annotations.find((a) => a.shape.type === ENTRY_ROOT);
-      if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
+      const entryRootAnnotation = annotations.find((a) => a.shape.type === "entry:root");
+      if (entryRootAnnotation) entryRoot.set(entryRootAnnotation);
     } catch (e) {
       console.error(e);
     }
@@ -216,7 +205,7 @@
       {
         name: "tools.visual",
         label: "Visual",
-        type: DEFAULT_MODE,
+        type: "default",
         iconName: "mouse-pointer-2",
         command: "tools.visual",
       },
@@ -239,7 +228,7 @@
       {
         name: "tools.note",
         label: "Add Note",
-        type: IDAH_NOTE,
+        type: "note",
         iconName: "message-circle",
         disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
         command: "tools.note",
@@ -247,7 +236,7 @@
     ];
 
     const toolConfig = toolListConfig.filter((tool) => {
-      if (EDITOR_MODE_TOOLS.includes(tool.type)) {
+      if (["idah-video:bounding-box", "idah-video:polygon"].includes(tool.type)) {
         return !!context.config[tool.type];
       }
       return true;
@@ -286,7 +275,7 @@
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
-    const videoShape: VideoShape = { type, start, end, frames };
+    const videoShape: IVideoAnnotationShape = { type, start, end, frames };
 
     context.commands.run("annotation.add", { shape: videoShape, value });
 
@@ -311,7 +300,7 @@
     context.commands.run("annotation.delete", { annotationId });
   }
 
-  async function addSelection(id: string, selection: VideoFrameSelection) {
+  async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
     context.commands.run("keyframe.add", { id, selection });
@@ -323,7 +312,7 @@
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
-  function deleteAnnotation(annotation: VideoAnnotationObject, frame?: number) {
+  function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
     if (!editable) return;
 
     if (frame != undefined) {
@@ -343,14 +332,14 @@
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
     getDriver()?.setMode(valueMode);
-    if (valueMode == ENTRY_ROOT && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
+    if (valueMode == "entry:root" && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
 
     // wait for confirmation
     if (showPopOver) {
       if (selAnnotation)
         selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
     } else {
-      if (valueMode == ENTRY_ROOT && !selAnnotation) {
+      if (valueMode == "entry:root" && !selAnnotation) {
         if (value.category && value.category != "" && requirementFullfilled)
           addAnnotation({ type: valueMode }, $state.snapshot(value));
       } else if (selAnnotation) {
@@ -389,7 +378,7 @@
       // todo proper validation
       let shape: AnnotationShape = { type };
       switch (type) {
-        case DEFAULT_MODE:
+        case "default":
           break;
         case IDAH_VIDEO_BOUNDING_BOX:
           shape = {
@@ -426,13 +415,13 @@
     }
   }
 
-  function updateAnnotationValue(annotation: VideoAnnotationObject, value: AnnotationValue) {
+  function updateAnnotationValue(annotation: IVideoAnnotationRecord, value: AnnotationValue) {
     if (annotation?.locked || !editable) return;
 
     context.commands.run("annotation.update", { annotation, value });
   }
 
-  function selectAnnotation(annotation?: VideoAnnotationObject) {
+  function selectAnnotation(annotation?: IVideoAnnotationRecord) {
     if (annotation) {
       selection.selectAnnotation(annotation as any);
     } else {
@@ -454,14 +443,14 @@
         getCurrentFrame: () => viewport.video.currentFrame.value,
       });
     } else {
-      getDriver()?.setMode(DEFAULT_MODE);
+      getDriver()?.setMode("default");
     }
     if (selAnnotation) {
       selection.selectGroup(selAnnotation.metadata.metadata?.group_id || selAnnotation.metadata.id);
     }
   }
 
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, selectedFrame?: number) {
     selection.selectGroup(annotationGroup.groupId);
 
     const firstAnnotation = annotationGroup.annotations[0];
@@ -488,7 +477,7 @@
           getCurrentFrame: () => viewport.video.currentFrame.value,
         });
       } else {
-        getDriver()?.setMode(DEFAULT_MODE);
+        getDriver()?.setMode("default");
         selection.deselect();
         /** Register selection-specific shortcuts for the current mode with non selectedId */
         registerOnSelectShortcuts(firstAnnotation.shape.type, {
@@ -500,11 +489,11 @@
       }
     } else {
       selectAnnotation(undefined);
-      getDriver()?.setMode(DEFAULT_MODE);
+      getDriver()?.setMode("default");
     }
   }
 
-  function selectClosestAnnotation(annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame: number) {
+  function selectClosestAnnotation(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, frame: number) {
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup,
       frame,
@@ -541,12 +530,12 @@
   }
 
   // Derive viewport annotations from the global store
-  let viewportAnnotations = $derived.by<VideoAnnotationObject[]>(() => {
+  let viewportAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     const raw = data.annotations?.items ?? [];
     return raw.map((ann) => ({
-      shape: ann.shape as VideoShape,
+      shape: ann.shape as IVideoAnnotationShape,
       value: {
-        category: (ann.category ?? ann.value?.category) || "null",
+        category: ann.value?.category || "null",
         attributes: ann.value?.attributes ?? {},
       },
       metadata: ann.metadata ?? {
@@ -558,10 +547,10 @@
       hidden: ann.hidden ?? false,
       locked: ann.locked ?? false,
       synced: ann.synced ?? true,
-    })) as VideoAnnotationObject[];
+    })) as IVideoAnnotationRecord[];
   });
 
-  let annotations_promise: Promise<VideoAnnotationObject[]> = $derived.by(() => {
+  let annotations_promise: Promise<IVideoAnnotationRecord[]> = $derived.by(() => {
     if (!data.annotations) return new Promise(() => {});
     return Promise.resolve(viewportAnnotations);
   });
@@ -600,7 +589,7 @@
 <div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selAnnotation]}
     <!-- All available shortcuts list -->
-    <CommandDialog bind:open={uiStore.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
+    <CommandDialog bind:open={ui.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -681,14 +670,14 @@
           onclick={() => {
             showPopOver = false;
             switch (mode) {
-              case ENTRY_ROOT:
-                onShapeSelection(ENTRY_ROOT, viewport.video.currentFrame.value);
+              case "entry:root":
+                onShapeSelection("entry:root", viewport.video.currentFrame.value);
                 break;
               default:
                 if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
             }
           }}
-          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != mode}
+          disabled={shapeSelectionArgs == undefined && "entry:root" != mode}
         >
           Confirm
         </Button>

@@ -6,7 +6,8 @@
 //   driver.command.call("keyframe.delete", { annotationId: "...", frame: 42 });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
-import type { IIdahDriverV2, IVideoFrameSelection } from "$idah/v2/types";
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { IVideoFrameSelection } from "$idah/v2/video-types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 

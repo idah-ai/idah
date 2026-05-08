@@ -1,14 +1,7 @@
 import { BuildKeymap, KeyMapBuilder } from "$idah/shortcut/key-map-builder";
 import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
-
-import {
-  DEFAULT_MODE,
-  IDAH_NOTE,
-  IDAH_VIDEO_BOUNDING_BOX,
-  IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP,
-  IDAH_VIDEO_POLYGON,
-  IDAH_VISUAL,
-} from "$lib/plugin/type";
+import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
+import { ui, frameStep } from "$lib/state/ui.svelte";
 
 
 import type { IActivityContext, ICommands } from "$idah/context/activity-context";
@@ -68,7 +61,7 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
     b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "tools.visual", "Default View", "Default View");
     b.on(null, "B", enterMode(IDAH_VIDEO_BOUNDING_BOX), "tools.bounding_box", "Bounding Box mode", "Enter Bounding box mode");
     b.on(null, "P", enterMode(IDAH_VIDEO_POLYGON), "tools.polygon", "Polygon mode", "Enter Polygon mode");
-    b.on(null, "N", enterMode(IDAH_NOTE), "tools.note", "Note mode", "Enter Note mode");
+    b.on(null, "N", enterMode("note"), "tools.note", "Note mode", "Enter Note mode");
     b.on(null, "Escape", resetMode, "reset_view", "Reset View", "Reset View");
   };
 };
@@ -84,7 +77,7 @@ const buildVisualModeShortcuts = (context: KeyMapContext) => {
     context.player()?.previousFrame();
   };
 
-  const getFrameStep = () => Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10;
+  const getFrameStep = () => frameStep.value;
 
   const nextMultipleFrames = () => {
     const frameStep = getFrameStep();
@@ -140,10 +133,10 @@ const buildNoteModeShortcuts = (context: KeyMapContext) => {
 
 // Add mode and shortcut definitions here.
 const MODE_BUILDERS: Record<string, (context: KeyMapContext) => (b: KeyMapBuilder) => void> = {
-  [IDAH_VISUAL]: buildVisualModeShortcuts,
+  ["default"]: buildVisualModeShortcuts,
   [IDAH_VIDEO_BOUNDING_BOX]: buildBoundingBoxModeShortcuts,
   [IDAH_VIDEO_POLYGON]: buildPolygonModeShortcuts,
-  [IDAH_NOTE]: buildNoteModeShortcuts,
+  ["note"]: buildNoteModeShortcuts,
 };
 
 /**
@@ -199,11 +192,11 @@ export function registerShortcuts(context: KeyMapContext) {
   });
 
   // set and enter default mode
-  ShortcutManager.defaultMode = DEFAULT_MODE;
-  ShortcutManager.enterMode(DEFAULT_MODE);
-  context.switch_mode(DEFAULT_MODE);
+  ShortcutManager.defaultMode = "default";
+  ShortcutManager.enterMode("default");
+  context.switch_mode("default");
 
-  return ShortcutManager.getEffectiveKeyMap(DEFAULT_MODE);
+  return ShortcutManager.getEffectiveKeyMap("default");
 }
 
 const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) => {

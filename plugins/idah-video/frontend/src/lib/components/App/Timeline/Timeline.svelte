@@ -311,15 +311,15 @@
   function handleMouseMove(e: MouseEvent) {
     const el = tracksViewportEl ?? rulerViewportEl;
     if (!el || scale <= 0) return;
-    const mouseX = contentXFromEvent(e, el);
-    hoveredFrame = Math.floor(mouseX / scale);
+    const rect = el.getBoundingClientRect();
+    hoveredFrame = Math.floor((e.clientX - rect.left + viewport.startRange * scale) / scale);
     showCaret = true;
   }
 
   function handleRulerMouseMove(e: MouseEvent) {
     if (!rulerViewportEl || scale <= 0) return;
-    const mouseX = contentXFromEvent(e, rulerViewportEl);
-    hoveredFrame = Math.floor(mouseX / scale);
+    const rect = rulerViewportEl.getBoundingClientRect();
+    hoveredFrame = Math.floor((e.clientX - rect.left + viewport.startRange * scale) / scale);
     showCaret = true;
   }
 
@@ -341,13 +341,15 @@
   // Handle click to set selection (tracks viewport)
   function handleClick(e: MouseEvent) {
     if (!tracksViewportEl || scale <= 0) return;
-    applyClickSelect(contentXFromEvent(e, tracksViewportEl));
+    const rect = tracksViewportEl.getBoundingClientRect();
+    applyClickSelect(e.clientX - rect.left + viewport.startRange * scale);
   }
 
   // Handle click to set selection (ruler viewport)
   function handleRulerClick(e: MouseEvent) {
     if (!rulerViewportEl || scale <= 0) return;
-    applyClickSelect(contentXFromEvent(e, rulerViewportEl));
+    const rect = rulerViewportEl.getBoundingClientRect();
+    applyClickSelect(e.clientX - rect.left + viewport.startRange * scale);
   }
 
   // Viewport-relative x positions for caret labels (so they don't need to scroll)

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
-  import { DEFAULT_MODE, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
   import { type Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -77,7 +77,7 @@
   }
 
   export function onWheel(e: WheelEvent) {
-    if (viewport.mode === IDAH_NOTE) return;
+    if (viewport.mode === "note") return;
     e.preventDefault();
 
     // Touchpad pinch-to-zoom sets ctrlKey on most platforms, or metaKey on Mac.
@@ -88,7 +88,7 @@
       // Pinch zoom: Ctrl/meta + wheel → scale
       // Cap per-tick delta so a single mouse tick doesn't over-zoom,
       // while touchpad's many small deltas accumulate naturally.
-      zoomAccumulator += Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 40);
+      zoomAccumulator += Math.sign(-e.deltaY) * Math.min(Math.abs(e.deltaY), 40);
 
       const THRESHOLD = 15;
       const steps = Math.trunc(zoomAccumulator / THRESHOLD);
@@ -98,8 +98,8 @@
         const curScale = viewport.workspace.transform.scale;
         const curTranslate = viewport.workspace.transform.translate;
 
-        // steps > 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
-        // steps < 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
+        // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
+        // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
         const newScale = Math.max(0.4, Math.min(100, curScale * factor));
 
@@ -123,7 +123,7 @@
 
   export function mouseDown(e: MouseEvent) {
     switch (viewport.mode) {
-      case IDAH_NOTE: {
+      case "note": {
         break; // Do not pan in note mode
       }
       default:
@@ -144,11 +144,11 @@
 
   export function mouseMove(e: MouseEvent) {
     switch (viewport.mode) {
-      case IDAH_NOTE: {
+      case "note": {
         break; // Do not pan in note mode
       }
 
-      case DEFAULT_MODE:
+      case "default":
       case IDAH_VIDEO_BOUNDING_BOX:
       case "bounding-polygon":
       default: {

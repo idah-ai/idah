@@ -13,21 +13,21 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
   import { selection } from "$lib/state/selection.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
 
   // Props
   interface Props {
     category: CategoryDefinition;
-    annotationGroup: AnnotationGroup<VideoAnnotationObject>;
+    annotationGroup: AnnotationGroup<IVideoAnnotationRecord>;
     level: number;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<IVideoAnnotationRecord>) => void;
+    onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
   }
   let { category, annotationGroup, level, onSelectAnnotationGroup, onDeleteAnnotation }: Props = $props();
 

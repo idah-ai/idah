@@ -5,7 +5,7 @@
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoFrameSelection } from "$idah/v2/types";
+import type { IVideoFrameSelection } from "$idah/v2/video-types";
 
 export const command = {
   name: "selection.center",

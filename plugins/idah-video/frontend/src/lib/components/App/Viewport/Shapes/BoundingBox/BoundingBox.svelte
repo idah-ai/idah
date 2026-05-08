@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { IDAH_NOTE } from "$lib/plugin/type";
   import { type Point } from "$lib/utils/math/point";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";
@@ -327,7 +326,7 @@
 
   let edition_cursor = $derived.by(() => {
     if (isEditing) return "cursor-crosshair";
-    if (mode === IDAH_NOTE) return "cursor-note";
+    if (mode === "note") return "cursor-note";
     if (over) return editable ? "cursor-grab" : "cursor-pointer";
   });
 

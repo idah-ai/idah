@@ -19,6 +19,7 @@ import type {
   HeaderBarModeTool,
   ICommand,
 } from "$idah/context/activity-context";
+import type { AnnotationShape } from "$idah/context/annotation-context";
 import type { Hash } from "$idah/utils/types";
 
 // IUser is not exported from the V1 context, define it locally
@@ -29,7 +30,8 @@ interface IUser {
   pictureUrl: string;
 }
 import type { IdahDriverV2 } from "$idah/v2/idah-driver";
-import type { IAnnotationRecord, ICommandAction, ICommandDescriptor } from "$idah/v2/types";
+import type { ICommandAction, ICommandDescriptor } from "$idah/v2/types";
+import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
 import { data, type AnnotationItem, type NoteItem } from "$lib/state/data.svelte";
 
 // ─── Sample config (needed by the editor) ────────────────────────────────
@@ -103,15 +105,18 @@ export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
     return data.annotations;
   }
   // ── V2 → V1 annotation mapper ───────────────────────────────────────
-  function toV1Annotation(rec: IAnnotationRecord): IAnnotation {
+  function toV1Annotation(rec: Record<string, unknown>): IAnnotation {
+    const shape = rec.shape as Record<string, unknown> | undefined;
+    const value = rec.value as Record<string, unknown> | undefined;
+    const meta = rec.metadata as Record<string, unknown> | undefined;
     return {
       id: rec.id as string,
-      dimensions: (rec.shape as any) ?? { type: "unknown" },
+      dimensions: (shape ?? { type: "unknown" }) as AnnotationShape,
       annotation: {
-        category: (rec.category as string) ?? "unlabeled",
-        attributes: {},
+        category: (value?.category as string) ?? "unlabeled",
+        attributes: (value?.attributes as Record<string, unknown>) ?? {},
       },
-      metadata: rec.metadata as Record<string, unknown> | undefined,
+      metadata: meta,
       created_by_id: rec.created_by_id as string | undefined,
       created_at: rec.created_at as Date | undefined,
       updated_at: rec.updated_at as Date | undefined,
@@ -191,7 +196,7 @@ export function createV1Bridge(driver: IdahDriverV2): IActivityContext {
     async run<T>(name: string, props?: T) {
       const cb = driver.commandMgr.getCallback(name);
       if (cb) {
-        driver.commandMgr.call(name, props);
+        driver.commandMgr.call(name, props as Record<string, unknown>);
         return;
       }
       console.warn(`[bridge] command not found: ${name}`);

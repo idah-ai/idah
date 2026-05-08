@@ -16,13 +16,13 @@
   import { cn } from "$lib/utils";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
   // Props
   interface Props {
     track: TrackData;
-    onClick: (annotation?: VideoAnnotationObject) => void;
+    onClick: (annotation?: IVideoAnnotationRecord) => void;
   }
   let { track, onClick }: Props = $props();
 

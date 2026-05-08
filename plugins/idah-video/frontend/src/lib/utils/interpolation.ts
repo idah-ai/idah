@@ -1,37 +1,23 @@
-import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
+// ---------------------------------------------------------------------------
+// Video interpolation helpers
+// Given a list of keyframes and a frame number, returns the interpolated
+// geometry (points & angle) at that frame.
+// ---------------------------------------------------------------------------
+
+import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
+import type { Point, InterpolatedVertex } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
 import { interpolateBBox, bboxToPoints } from "$lib/utils/math/bbox";
-import type { Point, InterpolatedVertex } from "$lib/utils/math/point";
 
-import type {
-  AnnotationMetadata,
-  AnnotationObj,
-  AnnotationShape,
-  AnnotationValue,
-} from "$idah/context/annotation-context";
-
-export type VideoAnnotationObject = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
-export type VideoFrameSelection = {
-  frame: number;
-  angle: number;
-  aabb?: [number, number, number, number];
-  points: Point[];
-};
-
-export interface VideoShape extends AnnotationShape {
-  type: string;
-  start: number;
-  end: number;
-  frames: VideoFrameSelection[];
-}
+import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$idah/v2/video-types";
 
 /** Given a list of keyframes and a frame number, return [frame_before, frame_after]. */
 function getSurroundingKeyFrames(
-  frames: VideoFrameSelection[],
+  frames: IVideoFrameSelection[],
   current: number,
-): [VideoFrameSelection, VideoFrameSelection] | null {
-  let before: VideoFrameSelection | null = null;
-  let after: VideoFrameSelection | null = null;
+): [IVideoFrameSelection, IVideoFrameSelection] | null {
+  let before: IVideoFrameSelection | null = null;
+  let after: IVideoFrameSelection | null = null;
 
   for (const f of frames) {
     if (f.frame < current && (!before || f.frame > before.frame)) before = f;
@@ -41,8 +27,12 @@ function getSurroundingKeyFrames(
   return before && after ? [before, after] : null;
 }
 
+/**
+ * Given an annotation shape and a frame number, return the interpolated
+ * geometry (points & angle) at that frame.
+ */
 export function getInterpolatedFrame(
-  shape: VideoShape,
+  shape: IVideoAnnotationShape,
   current_frame: number,
   interpolate: boolean = true,
 ):
@@ -54,13 +44,13 @@ export function getInterpolatedFrame(
 
   const exact = shape.frames.find((v) => v.frame === current_frame);
   if (exact || !interpolate) {
-    if (shape.type === IDAH_VIDEO_POLYGON && exact?.points) {
+    if (shape.type === VIDEO_POLYGON && exact?.points) {
       return {
         points: exact.points.map((p) => ({ point: p, matched: true })),
         angle: exact.angle || 0,
       };
     }
-    if (shape.type === IDAH_VIDEO_BOUNDING_BOX && exact?.aabb) {
+    if (shape.type === VIDEO_BOUNDING_BOX && exact?.aabb) {
       return { points: bboxToPoints(exact.aabb), angle: exact.angle || 0, aabb: exact.aabb };
     }
     return { points: exact?.points, angle: exact?.angle || 0 };
@@ -72,14 +62,14 @@ export function getInterpolatedFrame(
 
   const t = (current_frame - before.frame) / (after.frame - before.frame);
 
-  if (shape.type === IDAH_VIDEO_BOUNDING_BOX) {
+  if (shape.type === VIDEO_BOUNDING_BOX) {
     const aabb = interpolateBBox(before.aabb!, after.aabb!, t);
     const angle = ((after.angle || 0) - (before.angle || 0)) * t + before.angle;
     return { aabb, points: bboxToPoints(aabb), angle };
   }
 
-  if (shape.type === IDAH_VIDEO_POLYGON) {
-    return { points: interpolatePolygon(before.points, after.points, t), angle: 0 };
+  if (shape.type === VIDEO_POLYGON) {
+    return { points: interpolatePolygon(before.points!, after.points!, t), angle: 0 };
   }
 
   return;

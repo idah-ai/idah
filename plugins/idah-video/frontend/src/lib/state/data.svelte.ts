@@ -115,8 +115,6 @@ export type AnnotationItem = {
   shape: { type: string; start: number; end: number } & Record<string, unknown>;
   value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
   metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
-  category?: string;
-  label?: string;
   hidden?: boolean;
   locked?: boolean;
   synced?: boolean;
@@ -143,8 +141,8 @@ export interface AnnotationDriver {
 export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
   const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
-      "frame.start": { lte: rangeEnd },
-      "frame.end": { gte: rangeStart },
+      "shape.start": { lte: rangeEnd },
+      "shape.end": { gte: rangeStart },
     });
     return items as AnnotationItem[];
   });
@@ -160,7 +158,22 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
   const originalUpsert = store.upsert.bind(store);
 
   return {
-    ...store,
+    // ── Delegate getters/setters directly (NOT via spread, which would
+    //     evaluate $state getters once and lose reactivity) ──────────
+    get items() { return store.items; },
+    get loadedRange() { return store.loadedRange; },
+    get pending() { return store.pending; },
+    get maxItems() { return store.maxItems; },
+    set maxItems(v) { store.maxItems = v; },
+    get onCleanup() { return store.onCleanup; },
+    set onCleanup(v) { store.onCleanup = v; },
+    get getItemRange() { return store.getItemRange; },
+    set getItemRange(v) { store.getItemRange = v; },
+    preloadRange: (s: number, e: number) => store.preloadRange(s, e),
+    remove: (id: string) => store.remove(id),
+    upsert: (item: AnnotationItem) => { originalUpsert(item); },
+    reset: (items: AnnotationItem[], range: [number, number]) => store.reset(items, range),
+    clear: () => store.clear(),
 
     async create(data: Partial<AnnotationItem> & { id?: string }): Promise<AnnotationItem> {
       const id = data.id ?? uuidv7();
@@ -202,11 +215,6 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
         throw new Error("Failed to update annotation");
       }
     },
-
-    upsert(item: AnnotationItem): void {
-      // Local-only upsert — used for bulk initial load; doesn't call driver.
-      originalUpsert(item);
-    },
   };
 }
 
@@ -238,8 +246,8 @@ export interface NoteDriver {
 export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
   const store = createDataStore<NoteItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
-      "frame.start": { lte: rangeEnd },
-      "frame.end": { gte: rangeStart },
+      "shape.start": { lte: rangeEnd },
+      "shape.end": { gte: rangeStart },
     });
     return items as NoteItem[];
   });
@@ -250,7 +258,21 @@ export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
   const originalUpsert = store.upsert.bind(store);
 
   return {
-    ...store,
+    // ── Delegate getters/setters directly ───────────────────────────
+    get items() { return store.items; },
+    get loadedRange() { return store.loadedRange; },
+    get pending() { return store.pending; },
+    get maxItems() { return store.maxItems; },
+    set maxItems(v) { store.maxItems = v; },
+    get onCleanup() { return store.onCleanup; },
+    set onCleanup(v) { store.onCleanup = v; },
+    get getItemRange() { return store.getItemRange; },
+    set getItemRange(v) { store.getItemRange = v; },
+    preloadRange: (s: number, e: number) => store.preloadRange(s, e),
+    remove: (id: string) => store.remove(id),
+    upsert: (item: NoteItem) => { originalUpsert(item); },
+    reset: (items: NoteItem[], range: [number, number]) => store.reset(items, range),
+    clear: () => store.clear(),
 
     async create(data: Partial<NoteItem> & { id?: string }): Promise<NoteItem> {
       const id = data.id ?? uuidv7();
@@ -285,10 +307,6 @@ export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
         if (old) originalUpsert(old);
         throw new Error("Failed to update note");
       }
-    },
-
-    upsert(item: NoteItem): void {
-      originalUpsert(item);
     },
   };
 }

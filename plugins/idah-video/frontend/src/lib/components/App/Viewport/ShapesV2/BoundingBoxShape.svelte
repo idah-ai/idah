@@ -6,7 +6,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { interpolateBBox, bboxToPoints, interpolateAngle } from "$lib/utils/math/bbox";
   import { centroid } from "$lib/utils/math/point";
-  import type { IVideoFrameSelection } from "$idah/v2/types";
+  import type { IVideoFrameSelection } from "$idah/v2/video-types";
   import type { BBox } from "$lib/utils/math/bbox";
 
   let { annotation, selected = false, onClick }: { annotation: any; selected?: boolean; onClick?: any } = $props();

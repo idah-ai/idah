@@ -10,8 +10,7 @@
 
   import CategoryTree from "$lib/components/App/CategorySelector/_CategoryTree.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
-  import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -22,7 +21,7 @@
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
   import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   // Props
@@ -43,19 +42,19 @@
     sidebarWidthRem: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
-    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
+    onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<IVideoAnnotationRecord>) => void;
+    onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
     context: IActivityContext;
     db?: DataStore<AnnotationItem> | null;
-    items: VideoAnnotationObject[];
+    items: IVideoAnnotationRecord[];
     class?: string | null;
   } = $props();
 
   let tools = $derived(
     new Map<string, IConfigValue[]>(
       Object.entries(context.config)
-        .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
+        .filter(([shapeType, _]) => shapeType != "entry:root")
         .map(([shapeType, { values }]) => [shapeType, values]),
     ),
   );
@@ -134,15 +133,15 @@
 
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
-      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
+      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == "entry:root"}
         <CategoryTree
           {view}
           {db}
           {items}
           modalityShape={tool}
           {categories}
-          selectedCategory={tool == ENTRY_ROOT && !(tool == mode)
-            ? $entryRoot?.value.category
+          selectedCategory={tool == "entry:root" && !(tool == mode)
+            ? ($entryRoot as any)?.value?.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}

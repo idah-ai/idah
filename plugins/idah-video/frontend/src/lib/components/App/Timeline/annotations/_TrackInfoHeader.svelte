@@ -10,11 +10,11 @@
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { Menus } from "$lib/components/App/ContextMenu/types";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
 
   // Props
   interface Props {
-    annotations: VideoAnnotationObject[];
+    annotations: IVideoAnnotationRecord[];
   }
   let { annotations }: Props = $props();
 

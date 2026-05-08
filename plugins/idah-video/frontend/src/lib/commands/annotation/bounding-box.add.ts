@@ -51,8 +51,6 @@ export function register(driver: IIdahDriverV2): void {
               end: props.end,
               frames: [frameSelection],
             },
-            category: props.value?.category,
-            label: props.value?.label,
             value: props.value,
           });
           (this as any)._createdId = created.id;

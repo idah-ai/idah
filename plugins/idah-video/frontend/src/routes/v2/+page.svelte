@@ -52,11 +52,9 @@
       do() {
         const ann = driver.annotationStore.create({
           id: "",
-          shape: { type: "idah-video:bounding-box", x: 50, y: 50, w: 30, h: 30 },
-          label: "new",
-          category: "unlabeled",
-          frame: { start: 0, end: 30 },
-        });
+          shape: { type: "idah-video:bounding-box", start: 0, end: 30, frames: [{ frame: 0, angle: 0, aabb: [50, 50, 80, 80] }] },
+          value: { label: "new", category: "unlabeled" },
+        } as any);
         console.log("[v2] annotation created:", ann.id);
         refreshAnnotations();
       },
@@ -97,83 +95,83 @@
     const redoIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>`;
 
     // ── Items for "default" mode ─────────────────────────────────────
-    driver.toolbarMgr.add(
-      cursorIcon, "default", "selection", () => {
+    driver.toolbarMgr.add({
+      icon: cursorIcon,
+      label: "Select",
+      modes: "default",
+      group: "selection",
+      onClick: () => {
         driver.setMode("default");
         refreshToolbar();
         refreshAnnotations();
       },
-      () => true,
-      () => driver.mode === "default",
-    );
+      visibleWhen: () => true,
+      whenToggled: () => driver.mode === "default",
+    });
 
     // ── Items for "idah-video:bounding-box" mode ─────────────────────
-    driver.toolbarMgr.add(
-      rectIcon, "idah-video:bounding-box", "selection", () => {
+    driver.toolbarMgr.add({
+      icon: rectIcon,
+      label: "Bounding Box",
+      modes: "idah-video:bounding-box",
+      group: "selection",
+      onClick: () => {
         driver.setMode("idah-video:bounding-box");
         refreshToolbar();
       },
-      () => true,
-      () => driver.mode === "idah-video:bounding-box",
-    );
+      visibleWhen: () => true,
+      whenToggled: () => driver.mode === "idah-video:bounding-box",
+    });
 
     // ── Items for "idah-video:polygon" mode ──────────────────────────
-    driver.toolbarMgr.add(
-      polyIcon, "idah-video:polygon", "selection", () => {
+    driver.toolbarMgr.add({
+      icon: polyIcon,
+      label: "Polygon",
+      modes: "idah-video:polygon",
+      group: "selection",
+      onClick: () => {
         driver.setMode("idah-video:polygon");
         refreshToolbar();
       },
-      () => true,
-      () => driver.mode === "idah-video:polygon",
-    );
+      visibleWhen: () => true,
+      whenToggled: () => driver.mode === "idah-video:polygon",
+    });
 
     // ── Items for "note" mode ────────────────────────────────────────
-    driver.toolbarMgr.add(
-      noteIcon, "note", "selection", () => {
+    driver.toolbarMgr.add({
+      icon: noteIcon,
+      label: "Note",
+      modes: "note",
+      group: "selection",
+      onClick: () => {
         driver.setMode("note");
         refreshToolbar();
       },
-      () => true,
-      () => driver.mode === "note",
-    );
+      visibleWhen: () => true,
+      whenToggled: () => driver.mode === "note",
+    });
 
     // ── Undo / Redo for all modes ────────────────────────────────────
-    driver.toolbarMgr.add(
-      undoIcon, "default", "history", () => {
+    driver.toolbarMgr.add({
+      icon: undoIcon,
+      label: "Undo",
+      modes: ["default", "idah-video:bounding-box", "idah-video:polygon"],
+      group: "history",
+      onClick: () => {
         driver.commandMgr.undo();
         refreshCommandStack();
       },
-    );
-    driver.toolbarMgr.add(
-      undoIcon, "idah-video:bounding-box", "history", () => {
-        driver.commandMgr.undo();
-        refreshCommandStack();
-      },
-    );
-    driver.toolbarMgr.add(
-      undoIcon, "idah-video:polygon", "history", () => {
-        driver.commandMgr.undo();
-        refreshCommandStack();
-      },
-    );
-    driver.toolbarMgr.add(
-      redoIcon, "default", "history", () => {
+    });
+    driver.toolbarMgr.add({
+      icon: redoIcon,
+      label: "Redo",
+      modes: ["default", "idah-video:bounding-box", "idah-video:polygon"],
+      group: "history",
+      onClick: () => {
         driver.commandMgr.redo();
         refreshCommandStack();
       },
-    );
-    driver.toolbarMgr.add(
-      redoIcon, "idah-video:bounding-box", "history", () => {
-        driver.commandMgr.redo();
-        refreshCommandStack();
-      },
-    );
-    driver.toolbarMgr.add(
-      redoIcon, "idah-video:polygon", "history", () => {
-        driver.commandMgr.redo();
-        refreshCommandStack();
-      },
-    );
+    });
 
     // Set group order
     driver.toolbarMgr.orderGroups("default", ["selection", "history"]);
@@ -231,11 +229,9 @@
   async function createAnnotation() {
     await driver.annotations.create({
       id: "",
-      shape: { type: "idah-video:bounding-box", x: 10, y: 10, w: 50, h: 40 },
-      label: newAnnLabel || "auto-created",
-      category: newAnnCategory,
-      frame: { start: 0, end: 60 },
-    });
+      shape: { type: "idah-video:bounding-box", start: 0, end: 60, frames: [{ frame: 0, angle: 0, aabb: [10, 10, 60, 50] }] },
+      value: { label: newAnnLabel || "auto-created", category: newAnnCategory },
+    } as any);
     refreshAnnotations();
     newAnnLabel = "";
   }
@@ -247,7 +243,7 @@
 
   async function updateAnnotation(id: string) {
     if (editLabel) {
-      await driver.annotations.update(id, { label: editLabel } as Partial<IAnnotationRecord>);
+      await driver.annotations.update(id, { value: { label: editLabel } } as any);
       editLabel = "";
       refreshAnnotations();
     }
@@ -277,11 +273,11 @@
   let virtualDemoResult = $state("");
 
   function demoVirtualField() {
-    // Register a virtual field that computes "frameSpan"
+    // Register a virtual field that computes "frameSpan" from shape.start / shape.end
     driver.annotations.registerField("frameSpan", (ann) => {
-      const f = ann.frame as { start?: number; end?: number } | undefined;
-      if (f && f.start !== undefined && f.end !== undefined) {
-        return f.end - f.start;
+      const shape = ann.shape as { start?: number; end?: number } | undefined;
+      if (shape && shape.start !== undefined && shape.end !== undefined) {
+        return shape.end - shape.start;
       }
       return undefined;
     });
@@ -353,7 +349,7 @@
     </div>
 
     <div class="group-info">
-      <strong>Media metadata:</strong> {JSON.stringify(driverMedia.metadata)}
+      <strong>Media metadata:</strong> {JSON.stringify(driverMedia.meta)}
     </div>
   </div>
 
@@ -403,13 +399,13 @@
         {#each annotations as ann (ann.id)}
           <div class="item" class:selected={selectedAnnotationId === ann.id}>
             <div class="item-header">
-              <strong>{ann.label as string}</strong>
-              <span class="tag">{ann.category as string}</span>
+              <strong>{(ann.value as any)?.label ?? "unlabeled"}</strong>
+              <span class="tag">{(ann.value as any)?.category ?? "uncategorized"}</span>
               <span class="id">({ann.id as string})</span>
             </div>
             <pre>{JSON.stringify(ann.shape, null, 2)}</pre>
             <div class="item-actions">
-              <button onclick={() => { selectedAnnotationId = ann.id; editLabel = ann.label as string; }}>Edit</button>
+              <button onclick={() => { selectedAnnotationId = ann.id; editLabel = (ann.value as any)?.label ?? ""; }}>Edit</button>
               <button onclick={() => deleteAnnotation(ann.id)}>Delete</button>
               <button onclick={() => updateAnnotation(ann.id)}>Update Label</button>
             </div>

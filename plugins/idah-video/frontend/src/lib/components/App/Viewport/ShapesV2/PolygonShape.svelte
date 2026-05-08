@@ -5,7 +5,7 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
   import { interpolatePolygon } from "$lib/utils/math/polygon";
-  import type { IVideoFrameSelection } from "$idah/v2/types";
+  import type { IVideoFrameSelection } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
 
   let { annotation, selected = false, onClick }: { annotation: any; selected?: boolean; onClick?: any } = $props();

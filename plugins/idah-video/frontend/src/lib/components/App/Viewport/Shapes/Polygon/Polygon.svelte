@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { IDAH_NOTE } from "$lib/plugin/type";
   import {
     type InterpolatedVertex,
     type Point,
@@ -128,7 +127,7 @@
       return "cursor-crosshair";
     } else if (isHoveringOverEdge && editable && isPolygonComplete) {
       return "cursor-pen-plus";
-    } else if (mode === IDAH_NOTE) {
+    } else if (mode === "note") {
       return "cursor-note";
     }
   });

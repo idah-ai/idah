@@ -17,7 +17,7 @@
   import SingleSelectProperty from "$lib/components/App/PropertySelector/Properties/_SingleSelectProperty.svelte";
   import TextProperty from "$lib/components/App/PropertySelector/Properties/_TextProperty.svelte";
 
-  import { DEFAULT_MODE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
   import { visibilityFullfilled } from "$lib/components/App/PropertySelector";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";

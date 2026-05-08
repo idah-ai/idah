@@ -1,4 +1,4 @@
-import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
 import type { Component, Snippet } from "svelte";
 
 export interface Viewport {
@@ -10,7 +10,7 @@ export interface TimelineItem<T extends Record<string, unknown> = Record<string,
   trackId: string;
   startRange: number;
   endRange: number;
-  rawData: VideoAnnotationObject;
+  rawData: IVideoAnnotationRecord;
   component: Component<{ item: TimelineItem<T> }>;
 }
 

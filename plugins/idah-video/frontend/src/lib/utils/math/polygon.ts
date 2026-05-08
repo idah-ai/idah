@@ -358,9 +358,11 @@ function toPoint(v: InterpolatedVertex | Point): Point {
   return "point" in v ? v.point : v;
 }
 
-function lerpVertices(A: InterpolatedVertex[], B: InterpolatedVertex[] | Point[], t: number): InterpolatedVertex[] {
+function lerpVertices(A: InterpolatedVertex[], B: (InterpolatedVertex | Point)[], t: number): InterpolatedVertex[] {
   return A.map((a, i) => {
-    const [bx, by] = toPoint(B[i]);
+    const b = B[i];
+    if (!b) return a;
+    const [bx, by] = toPoint(b);
 
     return {
       point: [(1 - t) * a.point[0] + t * bx, (1 - t) * a.point[1] + t * by],
@@ -374,20 +376,38 @@ export function interpolatePolygon(
   polyTo: Point[],
   t: number,
 ): InterpolatedVertex[] {
-  let minPoints: Point[];
-  let maxPoints: Point[];
-
-  if (polyFrom.length < polyTo.length) {
-    minPoints = polyFrom;
-    maxPoints = polyTo;
-  } else {
-    minPoints = polyTo;
-    maxPoints = polyFrom;
-  }
+  // min = smaller or polyTo when equal, max = larger or polyFrom when equal
+  const swap = polyFrom.length > polyTo.length;
+  const minPoints = swap ? polyTo : polyFrom;
+  const maxPoints = swap ? polyFrom : polyTo;
 
   const [frameStartReordered, frameEndReordered, matches] = matchVerticesByBarycenter(minPoints, maxPoints);
-  const [expandedPolyMin, expandedPolyMax] = expandPolygonUsingMatches(frameStartReordered, frameEndReordered, matches);
+  const [expandedMin, expandedMax] = expandPolygonUsingMatches(frameStartReordered, frameEndReordered, matches);
+
+  // expandedMin = min's points in max's vertex count, expandedMax = max's points
+  // We want polyFrom at t=0, polyTo at t=1
+  // If polyFrom is min: from = expandedMin, to = expandedMax
+  // If polyFrom is max: from = expandedMax, to = expandedMin
+  const fromPoints = swap ? expandedMax : expandedMin;
+  const toPoints = swap ? expandedMin : expandedMax;
+
+  // Build clean arrays without nulls, same length
+  const clean: { from: InterpolatedVertex[]; to: (InterpolatedVertex | Point)[] } = {
+    from: [],
+    to: [],
+  };
+  for (let i = 0; i < Math.min(fromPoints.length, toPoints.length); i++) {
+    const fp = fromPoints[i];
+    const tp = toPoints[i];
+    if (fp && tp) {
+      // expandedMax contains plain Point[] — wrap in InterpolatedVertex
+      clean.from.push("point" in fp ? fp as InterpolatedVertex : { point: fp as Point, matched: true });
+      clean.to.push("point" in tp ? tp as InterpolatedVertex : tp as Point);
+    } else {
+      console.log('skip', { i, f: fromPoints[i], t: toPoints[i] });
+    }
+  }
 
   const clamped = Math.min(Math.max(t, 0), 1);
-  return lerpVertices(expandedPolyMin, expandedPolyMax, clamped);
+  return lerpVertices(clean.from, clean.to, clamped);
 }

@@ -16,7 +16,7 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
@@ -24,14 +24,14 @@
   import type { IConfigValue } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   // Props
   interface Props {
     view: "sidebar" | "popover";
     db?: DataStore<AnnotationItem> | null;
-    items: VideoAnnotationObject[];
+    items: IVideoAnnotationRecord[];
 
     modalityShape: string;
     categories: IConfigValue[];
@@ -39,8 +39,8 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
 
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<IVideoAnnotationRecord>) => void;
+    onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
   }
   let {
     view,
@@ -154,8 +154,8 @@
     }
   }
 
-  function groupFilteredAnnotations(annotations: Array<VideoAnnotationObject>): {
-    groups: Array<AnnotationGroup<VideoAnnotationObject>>;
+  function groupFilteredAnnotations(annotations: Array<IVideoAnnotationRecord>): {
+    groups: Array<AnnotationGroup<IVideoAnnotationRecord>>;
     count: number;
   } {
     const filteredAnnotations = annotations.filter(
