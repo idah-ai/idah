@@ -1,17 +1,11 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-
   import Button from "$lib/components/ui/Button/Button.svelte";
   import Separator from "$lib/components/ui/Separator/Separator.svelte";
 
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { TrackData } from "$lib/components/App/Timeline/types";
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
 
   // Props
   interface Props extends ContextMenuComponentProps {
@@ -20,7 +14,7 @@
   let { track }: Props = $props();
 
   // Variables
-  let menus = $derived(getGroupContextMenus({ context, track }));
+  let menus = $derived(getGroupContextMenus({ track }));
 </script>
 
 <div class="bg-background my-1 flex flex-col">

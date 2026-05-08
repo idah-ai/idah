@@ -29,7 +29,7 @@
   let toolbarItems = $state<IToolbarItem[]>([]);
   let currentMode = $state(driver.mode);
   let mountedPlugin: object | undefined = $state();
-  let isCommandDialogOpen = $state(false);
+  let paletteOpen = $state(driver.command.isPaletteOpen());
 
   function refreshToolbar() {
     toolbarItems = driver.toolbarMgr.getItemsForMode(driver.mode);
@@ -39,20 +39,10 @@
   // ── Listen to mode changes to refresh toolbar ────────────────────────
   driver.onModeChange(() => { refreshToolbar(); });
 
-  // ── Ctrl+Space toggles command palette (other shortcuts handled by the editor) ─
+  // ── Sync palette state from driver ────────────────────────────────────
   $effect(() => {
-    if (typeof window === "undefined") return;
-
-    const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.code === "Space") {
-        e.preventDefault();
-        e.stopPropagation();
-        isCommandDialogOpen = !isCommandDialogOpen;
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const unsub = driver.command.onPaletteChange((open) => { paletteOpen = open; });
+    return unsub;
   });
 
   // ── Mount the editor when the target element is ready ─────────────────
@@ -77,7 +67,12 @@
 
 <div class="mock-shell">
   <!-- Command Palette — driven by V2 driver shortcut references -->
-  <IdahCommandPalette bind:open={isCommandDialogOpen} commandManager={driver.command} mode={currentMode} />
+  <IdahCommandPalette
+    open={paletteOpen}
+    onOpenChange={(o) => driver.command.openPalette(o)}
+    commandManager={driver.command}
+    mode={currentMode}
+  />
 
   <!-- V2 Toolbar — simulates the outer IDAH toolbar -->
   <IdahToolbar items={toolbarItems} onUndo={() => driver.command.undo()} onRedo={() => driver.command.redo()} />

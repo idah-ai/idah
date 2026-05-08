@@ -2,16 +2,6 @@
   import { onMount } from "svelte";
 
   import { Button } from "$lib/components/ui/Button";
-  import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandShortcut,
-  } from "$lib/components/ui/Command";
-  import { getShortcuts } from "$lib/components/ui/Kbd/utils";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
@@ -23,7 +13,6 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { ui } from "$lib/state/ui.svelte";
-  import Highlight from "$lib/components/ui/Highlight.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import { data } from "$lib/state/data.svelte";
   import {
@@ -92,8 +81,6 @@
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
-  let paletteSearchValue = $state("");
-
   $effect(() => {
     if (typeof window === "undefined") return;
 
@@ -103,13 +90,6 @@
         activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA" || activeElement?.isContentEditable;
 
       if (isTyping) return;
-
-      // Ctrl+Space / Cmd+Space → toggle command palette
-      if ((e.ctrlKey || e.metaKey) && e.code === "Space") {
-        e.preventDefault();
-        ui.isCommandDialogOpen = !ui.isCommandDialogOpen;
-        return;
-      }
 
       // Delegate to the V2 driver's keyboard resolution
       const consumed = getDriver().handleKeydown(e);
@@ -502,34 +482,6 @@
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-  {#key [selAnnotation]}
-    <!-- All available commands -->
-    <CommandDialog bind:open={ui.isCommandDialogOpen} accesskey={mode} bind:value={paletteSearchValue}>
-      <CommandInput placeholder="Type a command or search..." />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        {#each Array.from(getDriver().command.getAllCommands(mode).entries()) as [groupName, cmds]}
-          <CommandGroup heading={groupName}>
-            {#each cmds.filter((c) => c.shortDescription) as cmd (cmd.name)}
-              <CommandItem
-                onSelect={() => { getDriver().command.call(cmd.name); ui.isCommandDialogOpen = false; }}
-              >
-                <span>
-                  <Highlight text={cmd.shortDescription} query={paletteSearchValue} />
-                </span>
-                <CommandShortcut>
-                  {#if cmd.shortcut}
-                    {getShortcuts([cmd.shortcut])?.join(" or ")}
-                  {/if}
-                </CommandShortcut>
-              </CommandItem>
-            {/each}
-          </CommandGroup>
-        {/each}
-      </CommandList>
-    </CommandDialog>
-  {/key}
-
   <Popover
     open={showPopOver}
     onOpenChange={(open: boolean) => {

@@ -33,14 +33,19 @@
   <CommandInput placeholder="Type a command or search..." />
   <CommandList>
     <CommandEmpty>No results found.</CommandEmpty>
-    {#each Array.from(commandManager.getAllCommands(mode).entries()) as [groupName, cmds]}
+    {#each Array.from(commandManager.getAllCommands(mode).entries()).sort(([a], [b]) => a.localeCompare(b)) as [groupName, cmds]}
       <CommandGroup heading={groupName}>
-        {#each cmds.filter((c) => c.shortDescription) as cmd (cmd.name)}
+        {#each cmds.filter((c) => c.shortDescription).sort((a, b) => (a.shortDescription ?? a.name).localeCompare(b.shortDescription ?? b.name)) as cmd (cmd.name)}
           <CommandItem
+            value={cmd.shortDescription ?? cmd.name}
+            title={cmd.longDescription ?? cmd.shortDescription ?? ""}
             onSelect={() => { commandManager.call(cmd.name); open = false; }}
           >
-            <span>
+            <span class="palette-item-label">
               <Highlight text={cmd.shortDescription} query={searchValue} />
+              {#if cmd.longDescription}
+                <span class="palette-item-desc">{cmd.longDescription}</span>
+              {/if}
             </span>
             <CommandShortcut>
               {#if cmd.shortcut}
@@ -53,3 +58,16 @@
     {/each}
   </CommandList>
 </CommandDialog>
+
+<style>
+  :global(.palette-item-label) {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  :global(.palette-item-desc) {
+    font-size: 0.65rem;
+    opacity: 0.6;
+    margin-left: 0.5rem;
+  }
+</style>

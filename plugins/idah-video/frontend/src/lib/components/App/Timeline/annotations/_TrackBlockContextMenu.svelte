@@ -1,11 +1,9 @@
 <script lang="ts">
   import { SquareSplitHorizontalIcon, Trash2Icon, type Icon as IconType } from "@lucide/svelte";
-  import { getContext } from "svelte";
 
   import Button from "$lib/components/ui/Button/Button.svelte";
   import Separator from "$lib/components/ui/Separator/Separator.svelte";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
@@ -15,9 +13,6 @@
     item: TimelineItem;
   }
   let { item }: Props = $props();
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
 
   // Variables
   let menus = $state<Menus>({

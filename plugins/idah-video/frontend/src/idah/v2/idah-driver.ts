@@ -98,7 +98,24 @@ const SAMPLE_NOTES: INoteRecord[] = [
 // Adapter: command driver → ICommandDriverV2
 // ---------------------------------------------------------------------------
 class CommandDriverAdapter implements ICommandDriverV2 {
+  #paletteOpen = false;
+  #paletteListeners: Set<(open: boolean) => void> = new Set();
+
   constructor(private mgr: CommandManagerV2) {}
+
+  isPaletteOpen(): boolean {
+    return this.#paletteOpen;
+  }
+
+  openPalette(open?: boolean): void {
+    this.#paletteOpen = open !== undefined ? open : !this.#paletteOpen;
+    for (const cb of this.#paletteListeners) cb(this.#paletteOpen);
+  }
+
+  onPaletteChange(cb: (open: boolean) => void): () => void {
+    this.#paletteListeners.add(cb);
+    return () => this.#paletteListeners.delete(cb);
+  }
 
   register(opts: {
     name: string;
@@ -382,6 +399,22 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       }),
     });
 
+    // Register command palette toggle — Ctrl+Space
+    this.command.register({
+      name: "core.palette",
+      group: "General",
+      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+      shortcut: "Control+Space",
+      shortDescription: null,
+      longDescription: null,
+      callback: () => ({
+        command: { name: "core.palette", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
+        do() {},
+        isCombinable() { return false; },
+        combine(p) { return p; },
+      }),
+    });
+
     this.command.register({
       name: "core.exit_mode",
       group: "General",
@@ -480,6 +513,11 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 
   handleKeydown(event: KeyboardEvent): boolean {
+    // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
+    if ((event.ctrlKey || event.metaKey) && event.code === "Space") {
+      (this.command as CommandDriverAdapter).openPalette();
+      return true;
+    }
     return this.commandMgr.resolveKeyEvent(event, this._mode);
   }
 }

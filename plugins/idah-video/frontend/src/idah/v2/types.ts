@@ -438,6 +438,15 @@ export interface ICommandDriverV2 {
    */
   getAllCommands(currentMode?: string): Map<string, ICommandDescriptor[]>;
 
+  /** Whether the command palette dialog is currently open. */
+  isPaletteOpen(): boolean;
+
+  /** Open or close the command palette. Omit value to toggle. */
+  openPalette(open?: boolean): void;
+
+  /** Subscribe to palette open/close changes. Returns an unsubscribe function. */
+  onPaletteChange(cb: (open: boolean) => void): () => void;
+
   // ── Keyboard resolution ────────────────────────────────────────────────
 
   /**

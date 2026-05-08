@@ -151,6 +151,9 @@
     if (svgEl) ro.observe(svgEl);
     syncDimensions();
 
+    // Fit video to viewport on initial load
+    requestAnimationFrame(() => viewport.workspace.fitToViewport());
+
     // Add a tiny stylesheet for cursor classes
     const style = document.createElement("style");
     style.textContent = `

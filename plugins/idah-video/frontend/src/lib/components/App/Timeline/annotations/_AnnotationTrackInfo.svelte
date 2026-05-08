@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
@@ -15,7 +13,6 @@
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { cn } from "$lib/utils";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -26,16 +23,13 @@
   }
   let { track, onClick }: Props = $props();
 
-  // Contexts
-  const context: IActivityContext = getContext("context");
-
   // Variables
   let { id, title, subtitle, top, items } = $derived(track);
   let isGroupSelected = $derived.by(() => {
     const v = selection.value;
     return v?.type === "group" && v.groupId === id;
   });
-  const menus = $derived(getGroupContextMenus({ context, track }));
+  const menus = $derived(getGroupContextMenus({ track }));
 
   // Functions
   function selectAnnotationGroup() {

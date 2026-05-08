@@ -1,6 +1,5 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
-  import { getContext } from "svelte";
 
   import { SidebarMenuButton, SidebarMenuItem } from "$lib/components/ui/Sidebar";
 
@@ -15,8 +14,8 @@
 
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
   import { selection } from "$lib/state/selection.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
@@ -30,9 +29,6 @@
     onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
   }
   let { category, annotationGroup, level, onSelectAnnotationGroup, onDeleteAnnotation }: Props = $props();
-
-  // Context
-  let context: IActivityContext = getContext("context");
 
   // Variables
   let { groupId, annotations } = $derived(annotationGroup);
@@ -51,15 +47,15 @@
   }
 
   function toggleAnnotationGroupVisibility() {
-    context.commands!.run("annotation.toggleGroupVisibility", { groupId });
+    getDriver().command.call("annotation.toggleGroupVisibility", { groupId });
   }
 
   function toggleAnnotationGroupEditability() {
-    context.commands!.run("annotation.toggleGroupEditability", { groupId });
+    getDriver().command.call("annotation.toggleGroupEditability", { groupId });
   }
 
   function deleteAnnotationGroup() {
-    context.commands!.run("annotation.deleteGroup", { groupId });
+    getDriver().command.call("annotation.deleteGroup", { groupId });
   }
 </script>
 

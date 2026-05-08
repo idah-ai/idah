@@ -1,16 +1,18 @@
 // ---------------------------------------------------------------------------
-// viewport.reset — Reset viewport zoom/pan to fit the video (non-undoable)
+// toggle-render-mode — Switch between "bilinear" and "nearest-neighbor" video rendering
+// Shortcut: None (available in the command palette)
+// Not undoable.
 // ---------------------------------------------------------------------------
-import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { ui, type RenderMode } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "viewport.reset",
-  group: "Viewport",
-  modes: ["default", "review"],
+  name: "ui.toggle_render_mode",
+  group: "Display",
+  modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null as string | null,
-  shortDescription: "Reset view",
-  longDescription: "Reset zoom and pan to fit the full video",
+  shortDescription: "Toggle video render mode",
+  longDescription: "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video and placeholder",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -23,10 +25,10 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        viewport.workspace.fitToViewport();
+        ui.renderMode = (ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode;
       },
       isCombinable() { return false; },
-      combine(prev) { return prev; },
+      combine(p) { return p; },
     }),
     group: command.group,
   });

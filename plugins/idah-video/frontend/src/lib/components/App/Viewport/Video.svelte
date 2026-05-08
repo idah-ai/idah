@@ -3,6 +3,9 @@
   import { VideoStreamHandler } from "./video-stream-handler.ts";
   import { media } from "$lib/state/media.svelte";
 
+  import placeholderUrl from "$lib/assets/placeholder.webp";
+  import { ui } from "$lib/state/ui.svelte";
+
   let {
     src = undefined,
     fps,
@@ -211,10 +214,17 @@
 
 <div class="video-wrapper" style="width: {media.width}px; height: {media.height}px;" bind:this={element}>
   <div class="video-placeholder">
-    <span class="placeholder-label">Video Preview</span>
+    <img
+      src={placeholderUrl}
+      alt="Video placeholder"
+      class={["placeholder-image", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
+    />
   </div>
 
-  <video class="video-element" bind:this={videoElement}>
+  <video
+    class={["video-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
+    bind:this={videoElement}
+  >
     <track kind="captions" />
     Your browser does not support the video tag.
   </video>
@@ -239,6 +249,12 @@
     object-fit: fill;
   }
 
+  .video-element.nearest,
+  .placeholder-image.nearest {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
   .video-wrapper {
     position: relative;
     background-color: #e5e7eb;
@@ -259,13 +275,10 @@
     z-index: 0;
   }
 
-  .placeholder-label {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 14px;
-    font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+  .placeholder-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .loader-overlay {

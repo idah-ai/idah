@@ -25,6 +25,7 @@
     if (!panOrigin) return;
 
     viewport.workspace.transform.translate = [x - panOrigin[0], y - panOrigin[1]];
+    viewport.workspace.clampTranslate();
   }
 
   function panStart(x: number, y: number) {
@@ -47,6 +48,7 @@
     let dsy = sy - (sy * scopedZoom(curScale + 0.1)) / curScale;
     setZoom(curScale + 0.1);
     setOffset([ox * viewport.workspace.transform.scale + dsx / 2, oy * viewport.workspace.transform.scale + dsy / 2]);
+    viewport.workspace.clampTranslate();
   }
 
   export function zoomOut() {
@@ -61,6 +63,7 @@
     let dsy = sy - (sy * scopedZoom(curScale - 0.1)) / curScale;
     setZoom(curScale - 0.1);
     setOffset([ox * viewport.workspace.transform.scale + dsx / 2, oy * viewport.workspace.transform.scale + dsy / 2]);
+    viewport.workspace.clampTranslate();
   }
 
   function scopedZoom(value: number) {
@@ -105,12 +108,13 @@
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
-        // Zoom towards the cursor position
-        let ox = (e.offsetX - curTranslate[0]) / curScale;
-        let oy = (e.offsetY - curTranslate[1]) / curScale;
-        viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
-        viewport.workspace.transform.scale = newScale;
-      }
+            // Zoom towards the cursor position
+            let ox = (e.offsetX - curTranslate[0]) / curScale;
+            let oy = (e.offsetY - curTranslate[1]) / curScale;
+            viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
+            viewport.workspace.transform.scale = newScale;
+            viewport.workspace.clampTranslate();
+          }
     } else {
       // Scroll / two-finger drag → translate
       const curTranslate = viewport.workspace.transform.translate;
@@ -118,6 +122,7 @@
         curTranslate[0] - e.deltaX,
         curTranslate[1] - e.deltaY,
       ];
+      viewport.workspace.clampTranslate();
     }
   }
 

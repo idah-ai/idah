@@ -31,6 +31,64 @@ class Viewport {
       scale: 1.0,
     },
     dimensions: [0, 0] as [number, number],
+
+    /**
+     * Fit the video to fill the viewport while maintaining aspect ratio.
+     * Call this when dimensions are first known or after a resize.
+     */
+    fitToViewport() {
+      const [vw, vh] = this.dimensions;
+      const [mw, mh] = media.dimensions;
+      if (vw <= 0 || vh <= 0 || mw <= 0 || mh <= 0) return;
+      const scaleX = vw / mw;
+      const scaleY = vh / mh;
+      const scale = Math.min(scaleX, scaleY);
+      this.transform = {
+        translate: [
+          (vw - mw * scale) / 2,
+          (vh - mh * scale) / 2,
+        ],
+        scale,
+      };
+    },
+
+    /**
+     * Clamp translation so the video never fully leaves the viewport.
+     * At least 20px of the video content will always be visible on each axis.
+     * Call this after any translate/scale change.
+     */
+    clampTranslate() {
+      const [vw, vh] = this.dimensions;
+      const [mw, mh] = media.dimensions;
+      if (vw <= 0 || vh <= 0 || mw <= 0 || mh <= 0) return;
+      const { translate, scale } = this.transform;
+      const scaledW = mw * scale;
+      const scaledH = mh * scale;
+      const MARGIN = 20;
+
+      let [tx, ty] = translate;
+
+      // If the content fits in the viewport, keep it centered (as fitToViewport set it)
+      if (scaledW <= vw) {
+        tx = (vw - scaledW) / 2;
+      } else {
+        // Content is larger — prevent each edge from going past the opposite edge
+        // Right edge must be at least MARGIN from right viewport edge
+        if (tx + scaledW < MARGIN) tx = MARGIN - scaledW;
+        // Left edge must be at most (vw - MARGIN)
+        if (tx > vw - MARGIN) tx = vw - MARGIN;
+      }
+
+      if (scaledH <= vh) {
+        ty = (vh - scaledH) / 2;
+      } else {
+        if (ty + scaledH < MARGIN) ty = MARGIN - scaledH;
+        if (ty > vh - MARGIN) ty = vh - MARGIN;
+      }
+
+      this.transform.translate = [tx, ty];
+    },
+
     screenToScene(sx: number, sy: number) {
       const t = this.transform;
       return { x: (sx - t.translate[0]) / t.scale, y: (sy - t.translate[1]) / t.scale };

@@ -11,7 +11,7 @@
     Volume2Icon,
     VolumeXIcon,
   } from "@lucide/svelte";
-  import { getContext, onMount } from "svelte";
+  import { onMount } from "svelte";
 
   import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
@@ -33,7 +33,6 @@
   import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
   import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
 
   function cmdShortcut(name: string): string | undefined {
@@ -47,9 +46,6 @@
     volume: { level: number; muted: boolean };
   }
   let { video = $bindable(), volume }: Props = $props();
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
 
   // Variables
   interface VideoSpeedMenuItem {
@@ -292,7 +288,7 @@
             const ann =
               selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
             if (ann)
-              context.commands!.run("annotation.split", {
+              getDriver().command.call("annotation.split", {
                 id: ann.metadata?.id ?? ann.id,
                 at: viewport.video.currentFrame.value,
               }

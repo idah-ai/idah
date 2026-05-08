@@ -10,17 +10,13 @@
 
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
-
-  import type { IActivityContext } from "$idah/context/activity-context";
+  import { getDriver } from "$lib/state/driver.svelte";
 
   // Props
   interface Props {
     zoomFn: ((zoom: number) => void) | undefined;
   }
   let { zoomFn }: Props = $props();
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
 
   // Constants
   const ZOOM_STEP = 0.1;
@@ -76,7 +72,7 @@
 <div id="timeline-controller" class="flex items-center gap-2">
   <ToolTooltip
     label="Zoom Out"
-    shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_out"]?.keyCombinations)}
+    shortcut={getShortcut(getDriver().command.getShortcutReferences()?.["timeline.zoom_out"]?.keyCombinations)}
   >
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomOut}>
@@ -97,7 +93,7 @@
 
   <ToolTooltip
     label="Zoom In"
-    shortcut={getShortcut(context.shortcutReferences?.["timeline.zoom_in"]?.keyCombinations)}
+    shortcut={getShortcut(getDriver().command.getShortcutReferences()?.["timeline.zoom_in"]?.keyCombinations)}
   >
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomIn}>
