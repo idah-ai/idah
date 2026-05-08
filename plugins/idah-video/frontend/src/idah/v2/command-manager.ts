@@ -7,7 +7,7 @@ import type {
   ICommandStackEntry,
   IShortcut,
 } from "$idah/v2/types";
-import { buildKeyCombination } from "$idah/utils/shortcut-utils";
+import { buildKeyCombination } from "$idah/v2/shortcut-utils";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */

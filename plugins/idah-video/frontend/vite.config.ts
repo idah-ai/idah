@@ -13,7 +13,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         "$lib": path.resolve("./src/lib"),
         "$idah": path.resolve("./src/idah"),
-        "$mock": path.resolve("./src/mock"),
       },
     },
     build: {
