@@ -329,7 +329,7 @@
     vector-effect="non-scaling-stroke"
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
-    class={editable && selected ? "cursor-none" : ""}
+    class={editable && selected ? "cursor-grab" : "cursor-pointer"}
     role="button"
     tabindex="-1"
     onclick={onClick}

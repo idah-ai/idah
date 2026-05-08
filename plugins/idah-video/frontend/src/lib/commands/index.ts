@@ -39,8 +39,7 @@ import { register as registerGroupDelete } from "./group/delete";
 import { register as registerNoteAdd } from "./note/add";
 import { register as registerNoteGoto } from "./note/goto";
 
-import { register as registerAnnotationBoundingBoxAdd } from "./annotation/bounding-box.add";
-import { register as registerAnnotationPolygonAdd } from "./annotation/polygon.add";
+import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 
 /**
@@ -79,7 +78,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerNoteGoto(driver);
 
   // ── Annotation ────────────────────────────────────────────────────────
-  registerAnnotationBoundingBoxAdd(driver);
-  registerAnnotationPolygonAdd(driver);
+  registerAnnotationAdd(driver);
   registerAnnotationPolygonAddPoint(driver);
 }

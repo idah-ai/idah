@@ -7,6 +7,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { media } from "$lib/state/media.svelte";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { IVideoAnnotationShape } from "$idah/v2/video-types";
 
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;
@@ -47,7 +48,7 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (sel?.type !== "annotation") return;
           const record = sel.annotation as any;
-          const shape = record.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; type: string };
+          const shape = record.shape as IVideoAnnotationShape;
           if (!shape.frames || shape.frames.length === 0) return;
           const currentFrame = viewport.video.currentFrame.value;
           const interpolated = getInterpolatedFrame(shape, currentFrame);

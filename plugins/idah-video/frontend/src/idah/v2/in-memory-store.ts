@@ -111,7 +111,7 @@ export class InMemoryStore<T extends { id: string }> {
   }
 
   create(data: T): T {
-    const id = uuidv7();
+    const id = (data as { id?: string }).id ?? uuidv7();
     const record = { ...data, id } as T;
     this.records.push(record);
     return { ...record };

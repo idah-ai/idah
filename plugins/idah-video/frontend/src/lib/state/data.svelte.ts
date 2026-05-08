@@ -197,7 +197,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       // Optimistic: insert locally first
       originalUpsert(item);
       try {
-        await driver.create(data);
+        await driver.create({ ...data, id });
       } catch {
         // Rollback on failure
         store.remove(id);

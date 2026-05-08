@@ -347,6 +347,58 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     this.annotations = new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
 
+    // ── Register default idah commands ────────────────────────────────
+
+    const cmdMgr = this.commandMgr;
+    const driver = this;
+
+    this.command.register({
+      name: "core.undo",
+      group: "General",
+      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+      shortcut: "Control+Z",
+      shortDescription: "Undo",
+      longDescription: "Undo the last action",
+      callback: () => ({
+        command: { name: "core.undo", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
+        do() { cmdMgr.undo(); },
+        isCombinable() { return false; },
+        combine(p) { return p; },
+      }),
+    });
+
+    this.command.register({
+      name: "core.redo",
+      group: "General",
+      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+      shortcut: "Control+Shift+Z",
+      shortDescription: "Redo",
+      longDescription: "Redo the last undone action",
+      callback: () => ({
+        command: { name: "core.redo", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
+        do() { cmdMgr.redo(); },
+        isCombinable() { return false; },
+        combine(p) { return p; },
+      }),
+    });
+
+    this.command.register({
+      name: "core.exit_mode",
+      group: "General",
+      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+      shortcut: "Escape",
+      shortDescription: "Exit current mode",
+      longDescription: "Return to the default selection mode",
+      callback: () => ({
+        command: { name: "core.exit_mode", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
+        do() {
+          driver.setMode("default");
+        },
+        isCombinable() { return false; },
+        combine(p) { return p; },
+      }),
+    });
+
     // Mark ready after a microtask (simulate async init)
     queueMicrotask(() => {
       this._ready = true;

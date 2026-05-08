@@ -1,18 +1,23 @@
 // ---------------------------------------------------------------------------
-// annotation.bounding_box.add — Create a new bounding box annotation
+// annotation.add — Create a new annotation (bounding box or polygon)
 // Undoable: deletes the created annotation.
 //
+// Accepts a full shape (IVideoAnnotationShape) with the correct type,
+// so the caller determines whether it's a bounding-box or polygon.
+//
 // Usage:
-//   driver.command.call("annotation.bounding_box.add", {
-//     points: [[0.1,0.2],[0.3,0.4]], start: 1, end: 100, value: { category: "car" }
+//   driver.command.call("annotation.add", {
+//     shape: { type: "idah-video:bounding-box", start: 1, end: 100, frames: [...] },
+//     value: { category: "car" }
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { IVideoAnnotationShape } from "$idah/v2/video-types";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.bounding_box.add",
+  name: "annotation.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null as string | null,
@@ -20,12 +25,9 @@ export const command = {
   longDescription: null,
 };
 
-export interface BoundingBoxAddProps {
-  aabb: [number, number, number, number];
-  angle?: number;
+export interface AnnotationAddProps {
+  shape: IVideoAnnotationShape;
   value?: { category?: string; label?: string; [key: string]: unknown };
-  start: number;
-  end: number;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -36,28 +38,19 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as BoundingBoxAddProps | undefined;
+      const props = opts as unknown as AnnotationAddProps | undefined;
       if (!props || !data.annotations) return noopAction(command);
-
-      const frameSelection = {
-        frame: props.start,
-        angle: props.angle ?? 0,
-        aabb: props.aabb,
-      };
 
       return {
         command: { ...command },
         async do() {
           const created = await data.annotations!.create({
-            shape: {
-              type: "idah-video:bounding-box",
-              start: props.start,
-              end: props.end,
-              frames: [frameSelection],
-            },
+            shape: props.shape,
             value: props.value,
           });
           (this as any)._createdId = created.id;
+          // Exit drawing mode after successful creation
+          driver.setMode("default");
         },
         async undo() {
           const id = (this as any)._createdId;
