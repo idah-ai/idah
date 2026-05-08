@@ -14,7 +14,7 @@ import { noopAction } from "..";
 export const command = {
   name: "annotation.bounding_box.add",
   modes: [] as string[],
-  shortcut: null as [string | null, string] | null,
+  shortcut: null as string | null,
   shortDescription: null,
   longDescription: null,
 };

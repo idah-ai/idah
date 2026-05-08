@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "viewport.play",
   modes: ["default", "review"],
-  shortcut: [null, "Space"] as [string | null, string],
+  shortcut: "Space",
   shortDescription: "Play / Pause",
   longDescription: "Toggle video playback",
 };

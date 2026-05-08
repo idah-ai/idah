@@ -43,8 +43,9 @@
   }: Props = $props();
 
   // Selection state (selectionLength is always 1 — single frame)
+  // Starts as true so the selection caret is visible from the beginning at frame 0
   let selectionLength = $state(1);
-  let hasSelection = $state(false);
+  let hasSelection = $state(true);
 
   // Derive selectionOffset from currentFrame
   const selectionOffset = $derived(currentFrame);

@@ -2,8 +2,27 @@
 // V2 Driver — Type definitions
 // ---------------------------------------------------------------------------
 
-/** A keyboard shortcut described as [modifier | null, character]. */
-export type IShortcut = [string | null, string];
+/**
+ * A keyboard shortcut expressed as a canonical key-combination string.
+ *
+ * Format: `"ModifierA+ModifierB+Key"` where modifiers are sorted alphabetically.
+ * When there are no modifiers, it's just the key name.
+ *
+ * Examples:
+ *   - `"Delete"`
+ *   - `"Control+Z"`
+ *   - `"Control+Shift+Z"`
+ *   - `"Control+Alt+ArrowRight"`
+ *   - `"B"`
+ *
+ * Modifier names (matching KeyboardEvent properties):
+ *   `"Alt"`, `"Control"`, `"Meta"`, `"Shift"`
+ *
+ * Key names use `KeyboardEvent.code` for non-letter keys
+ * (`"Space"`, `"ArrowRight"`, `"Delete"`, …) and the uppercase letter
+ * for letter keys (`"A"`, `"B"`, …).
+ */
+export type IShortcut = string;
 
 // ─── Media ────────────────────────────────────────────────────────────────
 
@@ -43,9 +62,11 @@ export interface IModeEvent {
 export interface ICommandDescriptor {
   /** Unique name of the command. */
   name: string;
+  /** Group/category label for organising commands in the palette (e.g. "Viewport", "Selection"). */
+  group?: string;
   /** Modes in which this command is available. */
   modes: string[];
-  /** Optional keyboard shortcut. */
+  /** Optional keyboard shortcut — a canonical key-combination string. */
   shortcut: IShortcut | null;
   /** One-line description. */
   shortDescription: string | null;
@@ -348,7 +369,8 @@ export interface ICommandDriverV2 {
    * Register a command.
    * @param name      Unique command name.
    * @param modes     Array of mode names where this command is active.
-   * @param shortcut  Optional keyboard shortcut [modifier, key].
+   * @param shortcut  Optional keyboard shortcut — a canonical key-combination string
+   *                  (e.g. `"Control+Z"`, `"Delete"`, `"Control+Shift+Z"`).
    * @param shortDesc Short description (displayed in menus).
    * @param longDesc  Long description.
    * @param callback  Factory that returns an ICommandAction when called.
@@ -380,6 +402,42 @@ export interface ICommandDriverV2 {
 
   /** Return a single command descriptor by name, or undefined if not found. */
   getCommand(name: string): ICommandDescriptor | undefined;
+
+  // ── Keyboard resolution ────────────────────────────────────────────────
+
+  /**
+   * Resolve a KeyboardEvent against the registered shortcuts for a given mode.
+   * If a matching command is found, it is executed via `call()`.
+   * Returns `true` if a shortcut was matched (event should be consumed),
+   * `false` otherwise.
+   */
+  resolveKeyEvent(event: KeyboardEvent, mode: string): boolean;
+
+  /**
+   * Return the flat key-combination → command name map for a given mode.
+   * This is what the keyboard handler uses for O(1) event dispatch.
+   *
+   * Example return value:
+   * ```json
+   * {
+   *   "Control+Z": "undo",
+   *   "Control+Shift+Z": "redo",
+   *   "Space": "viewport.play",
+   *   "Delete": "selection.delete"
+   * }
+   * ```
+   */
+  getKeyMapForMode(mode: string): Record<string, string>;
+
+  /**
+   * Return a consolidated reference list of all registered shortcuts
+   * across all modes, for use in the command palette.
+   * Same shape as `IActivityContext.shortcutReferences`.
+   */
+  getShortcutReferences(): Record<
+    string,
+    { label: string; description: string; keyCombinations: string[] }
+  >;
 }
 
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
@@ -448,6 +506,16 @@ export interface IIdahDriverV2<
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
+
+  // ── Keyboard dispatch ──────────────────────────────────────────────────
+
+  /**
+   * Top-level keyboard event dispatcher.
+   * Delegates to `command.resolveKeyEvent()` using the current mode.
+   * The Svelte component should call this from its `keydown` handler.
+   * Returns `true` if the event was handled (caller should `preventDefault`).
+   */
+  handleKeydown(event: KeyboardEvent): boolean;
 }
 
 // ─── Utility ──────────────────────────────────────────────────────────────

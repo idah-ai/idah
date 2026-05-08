@@ -7,6 +7,7 @@ import type {
   ICommandStackEntry,
   IShortcut,
 } from "$idah/v2/types";
+import { buildKeyCombination } from "$idah/utils/shortcut-utils";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */
@@ -158,5 +159,63 @@ export class CommandManagerV2 {
       shortDescription: entry.shortDescription,
       longDescription: entry.longDescription,
     };
+  }
+
+  // ── Keyboard resolution ────────────────────────────────────────────────
+
+  /**
+   * Resolve a KeyboardEvent against the registered shortcuts for a given mode.
+   * If a matching command is found, it is executed via `call()`.
+   * Returns `true` if a shortcut was matched (event should be consumed),
+   * `false` otherwise.
+   */
+  resolveKeyEvent(event: KeyboardEvent, mode: string): boolean {
+    const keyMap = this.getKeyMapForMode(mode);
+    const combo = buildKeyCombination(event);
+    const commandName = keyMap[combo];
+    if (commandName) {
+      this.call(commandName);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Return the flat key-combination → command name map for a given mode.
+   * This is what the keyboard handler uses for O(1) event dispatch.
+   */
+  getKeyMapForMode(mode: string): Record<string, string> {
+    const map: Record<string, string> = {};
+    for (const entry of this.registry.values()) {
+      if (entry.shortcut && entry.modes.includes(mode)) {
+        map[entry.shortcut] = entry.name;
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Return a consolidated reference list of all registered shortcuts
+   * across all modes, for use in the command palette.
+   * Same shape as `IActivityContext.shortcutReferences`.
+   */
+  getShortcutReferences(): Record<
+    string,
+    { label: string; description: string; keyCombinations: string[] }
+  > {
+    const refs: Record<string, { label: string; description: string; keyCombinations: string[] }> = {};
+    for (const entry of this.registry.values()) {
+      if (!entry.shortcut) continue;
+      if (!refs[entry.name]) {
+        refs[entry.name] = {
+          label: entry.shortDescription ?? entry.name,
+          description: entry.longDescription ?? "",
+          keyCombinations: [entry.shortcut],
+        };
+      } else if (!refs[entry.name].keyCombinations.includes(entry.shortcut)) {
+        refs[entry.name].keyCombinations.push(entry.shortcut);
+      }
+    }
+    return refs;
   }
 }

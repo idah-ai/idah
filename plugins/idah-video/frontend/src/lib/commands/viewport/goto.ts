@@ -14,7 +14,7 @@ export interface ViewportGotoProps {
 export const command = {
   name: "viewport.goto",
   modes: [] as string[],
-  shortcut: null as [string | null, string] | null,
+  shortcut: null as string | null,
   shortDescription: null,
   longDescription: null,
 };

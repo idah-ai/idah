@@ -109,6 +109,21 @@ class CommandDriverAdapter implements ICommandDriverV2 {
   getCommand(name: string): ICommandDescriptor | undefined {
     return this.mgr.getCommand(name);
   }
+
+  resolveKeyEvent(event: KeyboardEvent, mode: string): boolean {
+    return this.mgr.resolveKeyEvent(event, mode);
+  }
+
+  getKeyMapForMode(mode: string): Record<string, string> {
+    return this.mgr.getKeyMapForMode(mode);
+  }
+
+  getShortcutReferences(): Record<
+    string,
+    { label: string; description: string; keyCombinations: string[] }
+  > {
+    return this.mgr.getShortcutReferences();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -369,5 +384,11 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   notifySyncError(message: string, code?: string, failedCount?: number): void {
     const event: ISyncErrorEvent = { message, code, failedCount };
     for (const cb of this.syncErrorListeners) cb(event);
+  }
+
+  // ── Keyboard dispatch ──────────────────────────────────────────────────
+
+  handleKeydown(event: KeyboardEvent): boolean {
+    return this.commandMgr.resolveKeyEvent(event, this._mode);
   }
 }

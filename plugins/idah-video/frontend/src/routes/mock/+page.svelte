@@ -5,6 +5,7 @@
   import { mount, unmount } from "svelte";
   import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
   import IdahToolbar from "./idah-toolbar.svelte";
+  import IdahCommandPalette from "./idah-command-palette.svelte";
   import { IdahDriverV2 } from "$idah/v2/idah-driver";
   import { createV1Bridge } from "$idah/v2/bridge";
   import type { IToolbarItem } from "$idah/v2/types";
@@ -30,6 +31,7 @@
   let toolbarItems = $state<IToolbarItem[]>([]);
   let currentMode = $state(driver.mode);
   let mountedPlugin: object | undefined = $state();
+  let isCommandDialogOpen = $state(false);
 
   function refreshToolbar() {
     toolbarItems = driver.toolbarMgr.getItemsForMode(driver.mode);
@@ -38,6 +40,29 @@
 
   // ── Listen to mode changes to refresh toolbar ────────────────────────
   driver.onModeChange(() => { refreshToolbar(); });
+
+  // ── Global keyboard shortcut: Ctrl+Space toggles command palette ─────
+  $effect(() => {
+    if (typeof window === "undefined") return;
+
+    const handler = (e: KeyboardEvent) => {
+      // Let the editor handle its own keyboard events first
+      // Only intercept Ctrl+Space for the palette toggle
+      if (e.ctrlKey && e.code === "Space") {
+        e.preventDefault();
+        isCommandDialogOpen = !isCommandDialogOpen;
+        return;
+      }
+
+      // Delegate other keyboard events to the driver
+      if (driver.handleKeydown(e)) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
 
   // ── Mount the editor when the target element is ready ─────────────────
   $effect(() => {
@@ -61,6 +86,9 @@
 </script>
 
 <div class="mock-shell">
+  <!-- Command Palette — driven by V2 driver shortcut references -->
+  <IdahCommandPalette bind:open={isCommandDialogOpen} commandManager={driver.command} mode={currentMode} />
+
   <!-- V2 Toolbar — simulates the outer IDAH toolbar -->
   <IdahToolbar items={toolbarItems} onUndo={() => driver.command.undo()} onRedo={() => driver.command.redo()} />
 

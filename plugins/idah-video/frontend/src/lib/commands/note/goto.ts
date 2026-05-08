@@ -11,7 +11,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "note.goto",
   modes: [] as string[],
-  shortcut: null as [string | null, string] | null,
+  shortcut: null as string | null,
   shortDescription: null,
   longDescription: null,
 };

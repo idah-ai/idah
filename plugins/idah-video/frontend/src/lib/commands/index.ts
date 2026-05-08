@@ -6,7 +6,7 @@
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 
 /** Noop action — returned when pre-conditions fail so the command is not stacked. */
-export function noopAction(command: { name: string; modes: string[]; shortcut: [string | null, string] | null; shortDescription: string | null; longDescription: string | null }): ICommandAction {
+export function noopAction(command: { name: string; modes: string[]; shortcut: string | null; shortDescription: string | null; longDescription: string | null }): ICommandAction {
   return {
     command: { ...command },
     do() {},

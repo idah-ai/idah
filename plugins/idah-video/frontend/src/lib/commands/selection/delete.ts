@@ -11,7 +11,7 @@ import { noopAction } from "..";
 export const command = {
   name: "selection.delete",
   modes: ["default", "review"],
-  shortcut: [null, "Delete"] as [string | null, string],
+  shortcut: "Delete",
   shortDescription: "Delete selected",
   longDescription: null,
 };

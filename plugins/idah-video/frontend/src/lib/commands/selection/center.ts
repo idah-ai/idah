@@ -10,7 +10,7 @@ import type { IVideoFrameSelection } from "$idah/v2/video-types";
 export const command = {
   name: "selection.center",
   modes: ["default", "review"],
-  shortcut: null as [string | null, string] | null,
+  shortcut: null as string | null,
   shortDescription: "Center on selection",
   longDescription: "Pan and zoom to fit the selected annotation in the viewport",
 };

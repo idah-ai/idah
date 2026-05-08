@@ -17,7 +17,7 @@ class Viewport {
   });
 
   video = $state({
-    currentFrame: { value: 1 },
+    currentFrame: { value: 0 },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
     play() { this.status = "play"; },

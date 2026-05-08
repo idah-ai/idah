@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "selection.goto",
   modes: ["default", "review"],
-  shortcut: null as [string | null, string] | null,
+  shortcut: null as string | null,
   shortDescription: "Go to selection",
   longDescription: "Jump to the first frame of the selected annotation",
 };
