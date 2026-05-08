@@ -156,6 +156,16 @@
       .values.find((c) => c.id == annotationValue?.category)?.color || "grey",
   );
 
+  let crosshairColor = $derived(
+    $selectedAnnotation?.synced
+      ? Object.entries(context.config)
+          .find(([k, _]) => k == $currentMode)?.[1]
+          .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+      : annotationValue?.category
+        ? annotationValueColor
+        : "grey",
+  );
+
   export function zoomIn() {
     zoomableElement.zoomIn();
   }
@@ -277,7 +287,7 @@
 
     const lastAssignedAttributeStyle = assignedAttributesStyles[assignedAttributesStyles.length - 1];
 
-    return lastAssignedAttributeStyle;
+    return lastAssignedAttributeStyle || defaultStyle;
   }
 </script>
 
@@ -307,32 +317,8 @@
   >
     {#if showCrosshair}
       <!-- prevent display issue on load for now -->
-      <line
-        x1={0}
-        y1={target_line[Y]}
-        x2={width}
-        y2={target_line[Y]}
-        stroke={$selectedAnnotation?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == $currentMode)?.[1]
-              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-          : annotationValue?.category
-            ? annotationValueColor
-            : "grey"}
-      />
-      <line
-        x1={target_line[X]}
-        y1={0}
-        x2={target_line[X]}
-        y2={height}
-        stroke={$selectedAnnotation?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == $currentMode)?.[1]
-              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-          : annotationValue?.category
-            ? annotationValueColor
-            : "grey"}
-      />
+      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke={crosshairColor} />
+      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke={crosshairColor} />
     {/if}
 
     <!-- draw annotation context -->
