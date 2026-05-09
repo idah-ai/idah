@@ -29,7 +29,6 @@
   let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
   let isKeyframe = $derived(annotation.shape.frames.some((f) => f.frame === frame));
-  let isStartOrEnd = $derived(frame === annotation.shape.start || frame === annotation.shape.end);
 
   // Focus: adjust viewport to show only this annotation's range, then seek if needed
   function focusOnAnnotation() {
@@ -60,8 +59,8 @@
                 icon: Trash2Icon,
                 destructive: true,
                 onClick: () => {
-                  getDriver().command.call("annotation.deleteKeyframe", {
-                    id: annotation.id,
+                  getDriver().command.call("annotation.keyframe_delete", {
+                    annotationId: annotation.id,
                     frame,
                   });
                 },
@@ -72,27 +71,27 @@
                 label: `Add keyframe`,
                 icon: FramerIcon,
                 onClick: () => {
-                  getDriver().command.call("annotation.addKeyframe", {
-                    id: annotation.id,
-                    frame,
+                  getDriver().command.call("annotation.keyframe_add", {
+                    annotationId: annotation.id,
+                    selection: {
+                      frame,
+                      angle: 0,
+                      points: [],
+                    },
                   });
                 },
               },
             }),
-        ...(!isStartOrEnd
-          ? {
-              split: {
-                label: `Split at frame ${frame}`,
-                icon: SquareSplitHorizontalIcon,
-                onClick: () => {
-                  getDriver().command.call("annotation.split", {
-                    id: annotation.id,
-                    at: frame,
-                  });
-                },
-              },
-            }
-          : {}),
+      split: {
+        label: `Split at frame ${frame}`,
+        icon: SquareSplitHorizontalIcon,
+        onClick: () => {
+          getDriver().command.call("annotation.split", {
+            annotationId: annotation.id,
+            at: frame,
+          });
+        },
+      },
       },
     },
     danger: {
@@ -102,9 +101,8 @@
           icon: Trash2Icon,
           destructive: true,
           onClick: () => {
-            getDriver().command.call("annotation.delete", {
-              id: annotation.id,
-            });
+            selection.selectAnnotation(annotation);
+            getDriver().command.call("selection.delete", {});
           },
         },
       },

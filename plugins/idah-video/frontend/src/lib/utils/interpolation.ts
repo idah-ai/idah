@@ -5,8 +5,20 @@
 // ---------------------------------------------------------------------------
 
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
+import { VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
 import type { Point } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
+
+/**
+ * Simple per-point linear interpolation (lerp).
+ * Assumes both arrays have the same length.
+ */
+function lerpPoints(a: Point[], b: Point[], t: number): Point[] {
+  return a.map((p, i) => [
+    p[0] + (b[i][0] - p[0]) * t,
+    p[1] + (b[i][1] - p[1]) * t,
+  ] as Point);
+}
 
 /** Given a list of keyframes and a frame number, return [frame_before, frame_after]. */
 function getSurroundingKeyFrames(
@@ -49,6 +61,10 @@ export function getInterpolatedFrame(
 
   const t = (current_frame - before.frame) / (after.frame - before.frame);
   const angle = ((after.angle || 0) - (before.angle || 0)) * t + (before.angle || 0);
+
+  if (shape.type === VIDEO_BOUNDING_BOX) {
+    return { points: lerpPoints(before.points!, after.points!, t), angle };
+  }
 
   return { points: interpolatePolygon(before.points!, after.points!, t), angle };
 }

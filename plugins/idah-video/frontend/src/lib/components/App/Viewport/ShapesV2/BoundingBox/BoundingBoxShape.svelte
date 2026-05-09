@@ -100,21 +100,19 @@
 
   // ── Pan offset (normalized) ──────────────────────────────────────────
   //
-  // Because the bbox <path> is visually rotated via CSS transform:
+  // The bbox <path> is visually rotated via CSS transform:
   //   style:transform="rotate({currentAngle()}rad)"
-  // a mouse delta must be un-rotated before being added to the points,
-  // so that after CSS rotates it back, the visual movement matches the mouse.
+  //   style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
+  //
+  // Because transform-origin follows the centroid (which includes the offset),
+  // a simple screen-space delta added to all points produces the correct
+  // visual translation — no inverse rotation needed.
   let panOffset = $derived.by((): Point => {
     if (panStart && cursorPx) {
-      const rawDeltaN: Point = [
+      return [
         (cursorPx[0] - panStart[0]) / w,
         (cursorPx[1] - panStart[1]) / h,
       ];
-      // Rotate the delta *against* the bbox angle so that after CSS
-      // rotation the visual displacement is correct.
-      const rotDelta = rotatePoint(rawDeltaN, [0, 0], -currentAngle());
-      // Scale back to normalized space
-      return rotDelta;
     }
     return [0, 0];
   });

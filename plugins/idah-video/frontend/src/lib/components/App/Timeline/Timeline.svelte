@@ -497,6 +497,7 @@
               items={track.items}
               top={track.top}
               isSelected={selectedGroupId === track.id}
+              trackId={track.id}
             />
           {/each}
           {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}

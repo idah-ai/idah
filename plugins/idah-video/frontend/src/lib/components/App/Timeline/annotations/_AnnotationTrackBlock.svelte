@@ -51,8 +51,15 @@
   function handleOnContextMenu(e: MouseEvent) {
     e.preventDefault();
 
+    // Compute the frame under the cursor from the mouse position within the block
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const rangeSpan = endRange - startRange + 1;
+    const hoverFrame = Math.round(startRange + (relX / rect.width) * rangeSpan);
+
     const contextMenuProps: ContextMenuComponentProps = {
       item,
+      currentFrame: hoverFrame,
     };
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
