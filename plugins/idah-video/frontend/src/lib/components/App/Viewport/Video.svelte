@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { VideoStreamHandler } from "./video-stream-handler.ts";
   import { media } from "$lib/state/media.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import { ui } from "$lib/state/ui.svelte";
 
@@ -11,116 +12,133 @@
     initialFragments = 3,
     bind: videoRef = undefined,
     element = $bindable(),
-    onFrameUpdate = (currentFrame: number) => {},
-    onTogglePlay = (playing: boolean) => {},
+    onFrameUpdate = (_currentFrame: number) => {},
+    onTogglePlay = (_playing: boolean) => {},
     onResize = () => {},
-    onVolumeChange = (level: number, muted: boolean) => {},
+    onVolumeChange = (_level: number, _muted: boolean) => {},
   } = $props();
 
+  // ── Element refs ──────────────────────────────────────────────────
   let videoElement: HTMLVideoElement;
   let streamHandler: VideoStreamHandler | undefined;
+
+  // ── UI state ───────────────────────────────────────────────────────
   let isLoadingHighQuality = $state(false);
   let qualityLabel = $state("");
-  let animationFrameId: number | null = null;
   let isPlaying = $state(false);
+  let animationFrameId: number | null = $state(null);
 
-  function updateFrameCounter() {
-    if (videoElement && onFrameUpdate) {
-      frameUpdate();
+  // ── Loop guard ─────────────────────────────────────────────────────
+  // Tracks the last frame that was actually seeked to on the <video> element.
+  // Prevents the seek effect from re-triggering when handleSeeked writes back
+  // the (slightly rounded) frame from videoElement.currentTime.
+  let lastSeekedFrame = $state(-1);
+  let hlsReloadTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // ── Helpers ────────────────────────────────────────────────────────
+  function timeToFrame(t: number) { return Math.round(t * fps); }
+  function frameToTime(f: number) { return (f + 0.001) / fps; }
+
+  // ── RAF loop (only runs while playing) ─────────────────────────────
+  function startRAF() {
+    const tick = () => {
+      if (!videoElement) return;
+      const frame = timeToFrame(videoElement.currentTime);
+      viewport.video.currentFrame.value = frame;
+      onFrameUpdate?.(frame);
+      animationFrameId = requestAnimationFrame(tick);
+    };
+    animationFrameId = requestAnimationFrame(tick);
+  }
+
+  function stopRAF() {
+    if (animationFrameId != null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  }
+
+  // ── Derived play/pause requests ───────────────────────────────────
+  const requestPlay  = $derived(!isPlaying && viewport.video.status === "play");
+  const requestPause = $derived( isPlaying && viewport.video.status === "pause");
+
+  // ── Effect: play/pause ────────────────────────────────────────────
+  $effect(() => {
+    if (!videoElement) return;
+
+    if (requestPlay) {
+      videoElement.play();
+      isPlaying = true;
+      onTogglePlay(true);
+      startRAF();
     }
 
-    // Continue animation loop if playing
-    if (isPlaying) {
-      animationFrameId = requestAnimationFrame(updateFrameCounter);
+    if (requestPause) {
+      videoElement.pause();
+      isPlaying = false;
+      onTogglePlay(false);
+      stopRAF();
+      // Final frame read (exact post-pause position)
+      if (videoElement) {
+        const frame = timeToFrame(videoElement.currentTime);
+        viewport.video.currentFrame.value = frame;
+        onFrameUpdate?.(frame);
+      }
     }
+  });
+
+  // ── Effect: seek ──────────────────────────────────────────────────
+  // When paused and the user changes viewport.video.currentFrame.value
+  // (timeline click, keyboard shortcut, etc.), seek the <video> element.
+  // Guarded by lastSeekedFrame to ignore writebacks from handleSeeked.
+  // During playback the RAF loop owns the frame position — bail out.
+  $effect(() => {
+    if (!videoElement || isPlaying) return;
+
+    let target = viewport.video.currentFrame.value;
+    if (target === lastSeekedFrame) return;
+
+    const delta = Math.abs(target - lastSeekedFrame);
+    lastSeekedFrame = target;
+
+    if (target <= 0) target = 1;
+    if (target >= media.totalFrames) target = media.totalFrames;
+    videoElement.currentTime = frameToTime(target);
+
+    if (streamHandler) {
+      clearTimeout(hlsReloadTimer);
+      // Single-step (keyboard arrow, nextFrame/prevFrame): reload quickly.
+      // Rapid scrub (slider drag, large jump): wait for activity to settle.
+      const debounceMs = delta <= 2 ? 10 : 150;
+      hlsReloadTimer = setTimeout(() => {
+        if (videoElement.paused) streamHandler!.reloadCurrentQuality();
+      }, debounceMs);
+    }
+  });
+
+  // ── Exported API ─────────────────────────────────────────────────
+  export function seekToFrame(frame: number) {
+    viewport.video.currentFrame.value = frame;
   }
 
   export function togglePlay() {
     if (!videoElement) return;
-    if (videoElement.paused) {
-      videoElement.play();
-      isPlaying = true;
-      onTogglePlay(true);
-      updateFrameCounter(); // Start RAF loop
-    } else {
-      videoElement.pause();
-      isPlaying = false;
-      onTogglePlay(false);
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-      // Update once more for accuracy
-      if (onFrameUpdate) {
-        frameUpdate();
-      }
-    }
+    if (videoElement.paused) viewport.video.play();
+    else                    viewport.video.pause();
   }
 
-  function frameUpdate() {
-    if (videoElement && onFrameUpdate) {
-      onFrameUpdate(timeToFrame(videoElement.currentTime));
-    }
+  export function nextFrame(step = 1) {
+    const current = viewport.video.currentFrame.value;
+    viewport.video.currentFrame.value = current + step;
   }
 
-  function timeToFrame(time: number) {
-    return Math.round(time * fps);
-  }
-
-  function frameToTime(frame: number) {
-    // + 0.001 to account for browser rounding difference
-    return (frame + 0.001) / fps;
-  }
-
-  export function seekToFrame(frame: number) {
-    if (!videoElement) return;
-
-    if (frame <= 0) frame = 1;
-    if (frame >= media.totalFrames) frame = media.totalFrames;
-
-    const wasPaused = videoElement.paused;
-
-    // Pause if playing
-    if (!videoElement.paused) {
-      videoElement.pause();
-    }
-
-    // If video hasn't started yet, play briefly to load then pause
-    if (videoElement.readyState < 2) {
-      videoElement.play().then(() => {
-        videoElement.currentTime = frameToTime(frame);
-        videoElement.pause();
-      }).catch(() => {
-        // No video source or playback not supported — frame value is already updated
-      });
-
-      return;
-    }
-
-    // Seek to frame time
-    videoElement.currentTime = frameToTime(frame);
-
-    console.log("Seeking to frame:", frame);
-
-    // If video was already paused, reload the current quality at the new position
-    if (wasPaused && streamHandler) {
-      streamHandler.reloadCurrentQuality();
-    }
-  }
-
-  export function nextFrame(step: number = 1) {
-    if (!videoElement) return;
-    seekToFrame(Math.round(videoElement.currentTime * fps) + step);
-  }
-
-  export function previousFrame(step: number = 1) {
-    if (!videoElement) return;
-    seekToFrame(Math.round(videoElement.currentTime * fps) - step);
+  export function previousFrame(step = 1) {
+    const current = viewport.video.currentFrame.value;
+    viewport.video.currentFrame.value = current - step;
   }
 
   export function playbackRate(rate: number) {
-    if (!videoElement) return;
-    videoElement.playbackRate = rate;
+    if (videoElement) videoElement.playbackRate = rate;
   }
 
   export function setVolume(level: number) {
@@ -130,83 +148,75 @@
     onVolumeChange(level, level === 0);
   }
 
-  export function getFrames() {
-    return media.totalFrames;
-  }
+  export function getFrames() { return media.totalFrames; }
 
-  // Expose video element to parent
+  // Expose raw <video> element to parent
   $effect(() => {
-    if (videoRef && videoElement) {
-      videoRef.value = videoElement;
-    }
+    if (videoRef && videoElement) videoRef.value = videoElement;
   });
 
+  // ── Mount ─────────────────────────────────────────────────────────
   onMount(() => {
-    // Set default volume to 0 (muted)
     videoElement.volume = 0;
     videoElement.muted = true;
 
-    // Listen for play/pause events from video element
     const handlePlay = () => {
+      // Browser initiated play (e.g. right-click → play). Sync upward.
       isPlaying = true;
+      viewport.video.status = "play";
       onTogglePlay(true);
-      updateFrameCounter(); // Start RAF loop
+      startRAF();
     };
 
     const handlePause = () => {
       isPlaying = false;
+      viewport.video.status = "pause";
       onTogglePlay(false);
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-      // Update once more for accuracy
-      if (onFrameUpdate) {
-        frameUpdate();
+      stopRAF();
+      // Final frame read
+      if (videoElement) {
+        const frame = timeToFrame(videoElement.currentTime);
+        viewport.video.currentFrame.value = frame;
+        onFrameUpdate?.(frame);
       }
     };
 
     const handleSeeked = () => {
-      // Update frame counter after seek completes
-      if (onFrameUpdate) {
-        frameUpdate();
+      // Only write back when paused — during play the RAF loop owns the frame.
+      if (!isPlaying && videoElement) {
+        const frame = timeToFrame(videoElement.currentTime);
+        viewport.video.currentFrame.value = frame;
+        lastSeekedFrame = frame; // keep guard in sync
+        onFrameUpdate?.(frame);
       }
     };
 
-    videoElement.addEventListener("play", handlePlay);
-    videoElement.addEventListener("pause", handlePause);
+    videoElement.addEventListener("play",   handlePlay);
+    videoElement.addEventListener("pause",  handlePause);
     videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("resize", () => onResize());
 
-    // Check if source is HLS (m3u8)
-    const isHLS = src.toLowerCase().includes(".m3u8");
+    const isHLS = src?.toLowerCase().includes(".m3u8");
 
     if (isHLS) {
-      // Initialize the video stream handler for HLS
       streamHandler = new VideoStreamHandler(videoElement, src, {
         initialFragmentCount: initialFragments,
-        onLoadingChange: (loading: boolean, qualityInfo?: { label: string; height: number; width: number }) => {
+        onLoadingChange: (loading, info) => {
           isLoadingHighQuality = loading;
-          if (qualityInfo) {
-            qualityLabel = qualityInfo.label;
-          }
+          if (info) qualityLabel = info.label;
         },
       });
     } else {
-      // For non-HLS sources, use native video element
       videoElement.src = src;
     }
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-      videoElement.removeEventListener("play", handlePlay);
-      videoElement.removeEventListener("pause", handlePause);
+      stopRAF();
+      clearTimeout(hlsReloadTimer);
+      videoElement.removeEventListener("play",   handlePlay);
+      videoElement.removeEventListener("pause",  handlePause);
       videoElement.removeEventListener("seeked", handleSeeked);
-      if (streamHandler) {
-        streamHandler.destroy();
-      }
+      streamHandler?.destroy();
     };
   });
 </script>
@@ -307,30 +317,19 @@
   }
 
   .quality-label::before {
-    content: "●";
+    content: "\25CF";
     color: rgba(255, 255, 255, 0.9);
     font-size: 8px;
     animation: pulse 2s ease-in-out infinite;
   }
 
   @keyframes slideIn {
-    from {
-      transform: translateY(-10px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    from { transform: translateY(-10px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
   }
 
   @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
-    }
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
   }
 </style>

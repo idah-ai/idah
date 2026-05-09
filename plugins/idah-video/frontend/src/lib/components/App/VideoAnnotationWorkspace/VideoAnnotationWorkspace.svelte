@@ -632,7 +632,6 @@
                       // video resized
                     }}
                     onFrameUpdate={(currentFrame: number) => {
-                      viewport.video.currentFrame.value = currentFrame;
                       setAnnotationFrame(currentFrame);
                     }}
                     onVolumeChange={(level: number, muted: boolean) => {

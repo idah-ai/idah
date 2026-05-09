@@ -25,10 +25,10 @@ ffmpeg \
   -profile:v main \
   -pix_fmt yuv420p \
   -crf 20 \
-  -g 60 \
-  -keyint_min 60 \
+  -g 6 \
+  -keyint_min 6 \
   -sc_threshold 0 \
-  -force_key_frames "expr:gte(t,n_forced*2)" \
+  -force_key_frames "expr:gte(t,n_forced*0.2)" \
   -f hls \
   -hls_time 2 \
   -hls_playlist_type vod \
