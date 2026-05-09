@@ -8,7 +8,6 @@
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { TrackData, TimelineItem } from "$lib/components/App/Timeline/types";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { getInterpolatedFrame } from "$lib/utils/interpolation";
 
   // Props — either `track` (title right-click) or `trackId`/`frame`/`items` (empty area right-click)
   interface Props extends ContextMenuComponentProps {
@@ -83,15 +82,18 @@
         class="mx-1 justify-start"
         onclick={() => {
           const shape = prevAnnotation.rawData.shape;
-          const interp = shape.frames?.length
-            ? getInterpolatedFrame(shape, frame)
-            : undefined;
+          // The clicked frame is outside the annotation's current range,
+          // so getInterpolatedFrame will return undefined. Use the nearest
+          // existing keyframe's points instead.
+          const nearest = shape.frames?.slice().sort((a, b) =>
+            Math.abs(a.frame - frame) - Math.abs(b.frame - frame)
+          )[0];
           getDriver().command.call("annotation.keyframe_add", {
             annotationId: prevAnnotation.rawData.id,
             selection: {
               frame,
-              angle: interp?.angle ?? 0,
-              points: interp?.points ?? [],
+              angle: nearest?.angle ?? 0,
+              points: nearest?.points ?? [],
             },
           });
         }}
@@ -108,15 +110,16 @@
         class="mx-1 justify-start"
         onclick={() => {
           const shape = nextAnnotation.rawData.shape;
-          const interp = shape.frames?.length
-            ? getInterpolatedFrame(shape, frame)
-            : undefined;
+          // Use the nearest existing keyframe's points when extending.
+          const nearest = shape.frames?.slice().sort((a, b) =>
+            Math.abs(a.frame - frame) - Math.abs(b.frame - frame)
+          )[0];
           getDriver().command.call("annotation.keyframe_add", {
             annotationId: nextAnnotation.rawData.id,
             selection: {
               frame,
-              angle: interp?.angle ?? 0,
-              points: interp?.points ?? [],
+              angle: nearest?.angle ?? 0,
+              points: nearest?.points ?? [],
             },
           });
         }}

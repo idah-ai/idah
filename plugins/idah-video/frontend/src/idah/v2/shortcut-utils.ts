@@ -2,6 +2,8 @@
 // Shortcut utility functions
 // ---------------------------------------------------------------------------
 
+import { isMac } from "$lib/utils/browser";
+
 /**
  * Build the canonical key-combination string from a KeyboardEvent.
  *
@@ -9,14 +11,15 @@
  * When there are no modifiers, it's just the key name.
  *
  * Examples:
- *   - `buildKeyCombination({ ctrlKey: true, key: "z", code: "KeyZ" })` → `"Control+Z"`
- *   - `buildKeyCombination({ key: "Delete", code: "Delete" })` → `"Delete"`
+ *   - On non-Mac: `buildKeyCombination({ ctrlKey: true, key: "z", code: "KeyZ" })` → `"Control+Z"`
+ *   - On Mac:     `buildKeyCombination({ metaKey: true, key: "z", code: "KeyZ" })` → `"Meta+Z"`
  */
 export function buildKeyCombination(e: KeyboardEvent): string {
+  const isMacPlatform = isMac();
   const modifiers = [
     e.altKey && "Alt",
-    e.ctrlKey && "Control",
-    e.metaKey && "Meta",
+    !isMacPlatform && e.ctrlKey && "Control",
+    isMacPlatform && e.metaKey && "Meta",
     e.shiftKey && "Shift",
   ]
     .filter(Boolean)

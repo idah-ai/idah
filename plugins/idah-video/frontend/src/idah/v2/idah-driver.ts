@@ -16,6 +16,7 @@ import type {
 import { InMemoryStore } from "$idah/v2/in-memory-store";
 import { CommandManagerV2 } from "$idah/v2/command-manager";
 import { ToolbarManagerV2 } from "$idah/v2/toolbar-manager";
+import { modKey, platformShortcut } from "$lib/utils/browser";
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -381,7 +382,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       name: "core.undo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Z",
+      shortcut: platformShortcut("Control+Z"),
       shortDescription: "Undo",
       longDescription: "Undo the last action",
       callback: () => ({
@@ -396,7 +397,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       name: "core.redo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Shift+Z",
+      shortcut: platformShortcut("Control+Shift+Z"),
       shortDescription: "Redo",
       longDescription: "Redo the last undone action",
       callback: () => ({
@@ -412,7 +413,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       name: "core.palette",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Space",
+      shortcut: platformShortcut("Control+Space"),
       shortDescription: null,
       longDescription: null,
       callback: () => ({
@@ -522,7 +523,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
 
   handleKeydown(event: KeyboardEvent): boolean {
     // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
-    if ((event.ctrlKey || event.metaKey) && event.code === "Space") {
+    if (modKey(event) && event.code === "Space") {
       (this.command as CommandDriverAdapter).openPalette();
       return true;
     }

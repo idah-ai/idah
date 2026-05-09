@@ -10,6 +10,7 @@
 // is a keyframe of that annotation.
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
+import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoFrameSelection } from "$idah/v2/video-types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
@@ -21,7 +22,7 @@ export const command = {
   name: "annotation.keyframe_delete",
   group: "Annotation",
   modes: ["default", "review"],
-  shortcut: "Control+Delete",
+  shortcut: platformShortcut("Control+Delete"),
   shortDescription: "Delete keyframe",
   longDescription: "Remove the selected keyframe from the annotation",
 };

@@ -3,6 +3,7 @@
 
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
   import { type Point } from "$lib/utils/math/point";
+  import { modKey } from "$lib/utils/browser";
   import { viewport } from "$lib/state/viewport.svelte";
 
   // Props
@@ -106,7 +107,7 @@
 
     // Touchpad pinch-to-zoom sets ctrlKey on most platforms, or metaKey on Mac.
     // Plain two-finger pan (any direction) and mouse wheel do NOT set ctrlKey.
-    const isZoom = e.ctrlKey || e.metaKey;
+    const isZoom = modKey(e);
 
     if (isZoom) {
       // Pinch zoom: Ctrl/meta + wheel → scale

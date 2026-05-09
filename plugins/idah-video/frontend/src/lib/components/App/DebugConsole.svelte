@@ -2,6 +2,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
+  import { modKey } from "$lib/utils/browser";
 
   let visible = $state(false);
 
@@ -13,7 +14,7 @@
     if (typeof window === "undefined") return;
 
     function handler(e: KeyboardEvent) {
-      if (e.ctrlKey && e.key === "~") {
+      if (modKey(e) && e.key === "~") {
         e.preventDefault();
         e.stopPropagation();
         toggle();

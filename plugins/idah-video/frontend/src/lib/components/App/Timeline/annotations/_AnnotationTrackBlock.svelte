@@ -80,7 +80,7 @@
   class="box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
   class:ring-2={isSelected}
   class:ring-offset-1={isSelected}
-  style:background-color="{color}30"
+  style:background-color={color + "30"}
   style:border-color={color}
   style:--tw-ring-color={isSelected ? color : "transparent"}
   onclick={handleAnnotationClick}

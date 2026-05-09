@@ -5,13 +5,14 @@
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
 import { media } from "$lib/state/media.svelte";
+import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
   name: "viewport.go_to_end",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: "Control+Alt+ArrowRight" as string | null,
+  shortcut: platformShortcut("Control+Alt+ArrowRight") as string | null,
   shortDescription: "Go to end",
   longDescription: "Jump to the last frame",
 };

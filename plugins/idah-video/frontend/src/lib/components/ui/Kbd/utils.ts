@@ -2,6 +2,8 @@
 // Kbd utils — Maps key-combination strings to human-readable labels
 // ---------------------------------------------------------------------------
 
+import { isMac, modKeyLabel } from "$lib/utils/browser";
+
 const MODIFIER_SYMBOLS: Record<string, string> = {
   Control: "⌃",
   Alt: "⌥",
@@ -9,7 +11,7 @@ const MODIFIER_SYMBOLS: Record<string, string> = {
   Meta: "⌘",
 };
 
-const isMac = typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC");
+const _isMac = isMac();
 
 /**
  * Convert a canonical key-combination string to a human-readable label.
@@ -25,12 +27,12 @@ export function getShortcutLabel(shortcut: string): string {
   const modifiers = parts.slice(0, -1);
 
   const modLabel = modifiers
-    .map((m) => (isMac ? MODIFIER_SYMBOLS[m] ?? m : m === "Control" ? "Ctrl" : m))
-    .join(isMac ? "" : "+");
+    .map((m) => (_isMac ? MODIFIER_SYMBOLS[m] ?? m : m === "Control" ? modKeyLabel() : m))
+    .join(_isMac ? "" : "+");
 
   const keyLabel = key === "Space" ? "␣" : key === "ArrowRight" ? "→" : key === "ArrowLeft" ? "←" : key;
 
-  return isMac ? `${modLabel}${keyLabel}` : modLabel ? `${modLabel}+${keyLabel}` : keyLabel;
+  return _isMac ? `${modLabel}${keyLabel}` : modLabel ? `${modLabel}+${keyLabel}` : keyLabel;
 }
 
 /**

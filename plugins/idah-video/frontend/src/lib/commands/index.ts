@@ -42,6 +42,7 @@ import { register as registerNoteGoto } from "./note/goto";
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { register as registerAnnotationUpdate } from "./annotation/update";
+import { register as registerAnnotationSplit } from "./annotation/split";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
@@ -85,6 +86,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationAdd(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
+  registerAnnotationSplit(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

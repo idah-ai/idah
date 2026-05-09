@@ -7,6 +7,7 @@
   import Track from "$lib/components/App/Timeline/_Track.svelte";
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
 
+  import { modKey } from "$lib/utils/browser";
   import { selection } from "$lib/state/selection.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 
@@ -230,11 +231,14 @@
     syncScrollLeft(hScrollbarEl.scrollLeft, "hscrollbar");
   }
 
-  // Handle wheel on the ruler: non-Ctrl → horizontal pan, Ctrl → zoom
+  /** Zoom delta accumulator for smooth touchpad / mouse wheel zooming. */
+  let zoomAccumulator = 0;
+
+  // Handle wheel on the ruler: non-pinch → horizontal pan, pinch → zoom
   function handleRulerWheel(e: WheelEvent) {
     e.preventDefault();
-    if (e.ctrlKey) {
-      handleWheel(e);
+    if (modKey(e)) {
+      handleZoom(e);
       return;
     }
     if (scale <= 0) return;
@@ -247,31 +251,44 @@
     syncScrollLeft(newScrollLeft, "ruler");
   }
 
-  // Handle Ctrl+scroll zoom
-  function handleWheel(e: WheelEvent) {
-    if (!e.metaKey || scale <= 0) return;
+  // Wheel on the tracks viewport: pinch/ctrl+meta → zoom, otherwise let scroll pass
+  function handleTracksWheel(e: WheelEvent) {
+    if (modKey(e)) {
+      handleZoom(e);
+    }
+    // Otherwise let default scroll behavior handle vertical scroll
+  }
 
+  // Handle zoom (pinch gesture on trackpad, or Ctrl/Meta+scroll).
+  // Zoom is centered on the mouse cursor position.
+  function handleZoom(e: WheelEvent) {
+    if (scale <= 0) return;
     e.preventDefault();
 
-    // Use tracks viewport for wheel events
+    // Cap per-tick delta so a single mouse tick doesn't over-zoom,
+    // while touchpad's many small deltas accumulate naturally.
+    zoomAccumulator += Math.sign(-e.deltaY) * Math.min(Math.abs(e.deltaY), 40);
+
+    const THRESHOLD = 10;
+    const steps = Math.trunc(zoomAccumulator / THRESHOLD);
+    if (steps === 0) return;
+    zoomAccumulator -= steps * THRESHOLD;
+
+    // Use tracks viewport for coordinate reference
     const el = tracksViewportEl || rulerViewportEl;
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
-    const mouseXInViewport = e.clientX - rect.left;
-    const mouseXInContent = mouseXInViewport + el.scrollLeft;
+    const mouseXInContent = e.clientX - rect.left + el.scrollLeft;
 
     // Convert mouse position to timeline range value
     const mouseRangeValue = mouseXInContent / scale;
     const currentRangeWidth = viewport.endRange - viewport.startRange;
 
-    // Calculate zoom factor (zoom in = smaller range, zoom out = larger range)
-    // Use a constant factor for smooth zooming
-    const ZOOM_SENSITIVITY = 0.1;
-    const zoomFactor = 1 - Math.sign(e.deltaY) * ZOOM_SENSITIVITY;
-
-    // Calculate new range width, clamped to reasonable bounds
-    const newRangeWidth = Math.max(1, currentRangeWidth * zoomFactor);
+    // steps > 0 (deltaY < 0 → scroll up) → zoom in (range shrinks)
+    // steps < 0 (deltaY > 0 → scroll down) → zoom out (range grows)
+    const factor = Math.pow(1.12, steps);
+    const newRangeWidth = Math.max(1, currentRangeWidth / factor);
 
     // Calculate the mouse position as a ratio within the current range
     const mouseRatio = (mouseRangeValue - viewport.startRange) / currentRangeWidth;
@@ -297,7 +314,7 @@
 
     clampViewport();
 
-    // Sync scrollLeft synchronously in the wheel handler instead of waiting for a reactive effect
+    // Sync scrollLeft synchronously in the wheel handler
     setScrollLeft(viewport.startRange * scale);
   }
 
@@ -356,6 +373,34 @@
   // Viewport-relative x positions for caret labels (so they don't need to scroll)
   const selectionCaretViewportX = $derived((selectionOffset - viewport.startRange) * scale);
   const hoverCaretViewportX = $derived(caretPixelX - viewport.startRange * scale);
+
+  // Auto-pan when the current frame reaches the right 25% of the viewport.
+  // Shifts the viewport so the frame ends up at 75% from the left edge.
+  $effect(() => {
+    const cf = currentFrame;
+    if (scale <= 0 || length <= 0) return;
+    const rangeWidth = viewport.endRange - viewport.startRange;
+    if (rangeWidth <= 0) return;
+    const thresholdRight = viewport.startRange + rangeWidth * 0.85;
+    const thresholdLeft = viewport.startRange + rangeWidth * 0.15;
+    if (cf > thresholdRight) {
+      // Shift right by exactly the overflow amount — seamless one-frame-at-a-time
+      const overflow = cf - thresholdRight;
+      const newStart = viewport.startRange + overflow;
+      const clampedStart = Math.max(0, Math.min(newStart, length - rangeWidth));
+      viewport.startRange = clampedStart;
+      viewport.endRange = clampedStart + rangeWidth;
+      setScrollLeft(viewport.startRange * scale);
+    } else if (cf < thresholdLeft) {
+      // Shift left by exactly the underflow amount
+      const underflow = thresholdLeft - cf;
+      const newStart = viewport.startRange - underflow;
+      const clampedStart = Math.max(0, Math.min(newStart, length - rangeWidth));
+      viewport.startRange = clampedStart;
+      viewport.endRange = clampedStart + rangeWidth;
+      setScrollLeft(viewport.startRange * scale);
+    }
+  });
 
   // Vertical virtualization: track the body-scroll element's scroll position
   let bodyScrollEl = $state<HTMLDivElement | null>(null);
@@ -466,7 +511,7 @@
         class="timeline-tracks-viewport focus:outline-none"
         bind:this={tracksViewportEl}
         onscroll={handleTracksScroll}
-        onwheel={handleWheel}
+        onwheel={handleTracksWheel}
         onmousemove={handleMouseMove}
         onmouseleave={handleMouseLeave}
         onclick={handleClick}
