@@ -48,7 +48,7 @@
 
   // ── Sync palette state from driver ────────────────────────────────────
   $effect(() => {
-    const unsub = driver.command.onPaletteChange((open) => { paletteOpen = open; });
+    const unsub = driver.command.onPaletteChange((open: boolean) => { paletteOpen = open; });
     return unsub;
   });
 

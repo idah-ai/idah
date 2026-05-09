@@ -117,10 +117,10 @@ export function register(driver: IIdahDriverV2): void {
 
           // Derive a group id from the original annotation so both parts
           // stay in the same timeline group.
-          const groupId = record.metadata?.group_id ?? record.id;
+          const groupId = (record.metadata?.group_id ?? record.id) as string;
 
           // Create a new annotation for the right part (at → end)
-          const created = await data.annotations!.create({
+          const created = await (data.annotations!.create as any)({
             shape: {
               ...shape,
               start: rightMin,
@@ -129,7 +129,7 @@ export function register(driver: IIdahDriverV2): void {
             },
             value: record.value ? { ...record.value } : undefined,
             metadata: { group_id: groupId },
-          });
+          }) as AnnotationItem;
           _createdRightId = created.id;
         },
         async undo() {

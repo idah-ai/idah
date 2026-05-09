@@ -235,9 +235,9 @@
     if (!editable) return;
 
     if (frame != undefined) {
-      deleteSelection(annotation.metadata!.id, frame);
+      deleteSelection(annotation.metadata!.id as string, frame);
     } else {
-      removeAnnotation(annotation.metadata!.id);
+      removeAnnotation(annotation.metadata!.id as string);
     }
   }
 
@@ -287,7 +287,7 @@
        */
       if (selGroup) {
         const closest = selectClosestAnnotation(selGroup as any, frame);
-        addSelection(closest.metadata!.id, { frame, angle, points });
+        addSelection(closest.metadata!.id as string, { frame, angle, points });
         return;
       }
 

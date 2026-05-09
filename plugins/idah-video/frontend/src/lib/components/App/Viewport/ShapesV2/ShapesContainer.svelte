@@ -28,6 +28,7 @@
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { Point } from "$lib/utils/math/point";
+  import type { BBox } from "$lib/utils/math/bbox";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
@@ -210,12 +211,7 @@
     const [tx, ty] = viewport.workspace.transform.translate
     const [w, h] = viewport.workspace.dimensions
     const s = viewport.workspace.transform.scale
-    return [
-      -tx/s,
-      -ty/s,
-      (w/s),
-      (h/s)
-    ]
+    return `${-tx/s} ${-ty/s} ${w/s} ${h/s}`
   })
 
   // ── Event handlers ───────────────────────────────────────────────────
@@ -345,7 +341,7 @@
             offset: viewport.workspace.transform.translate,
           },
         },
-        annotationId: annotation?.metadata?.id || null,
+        annotationId: (annotation?.metadata?.id as string | undefined) || null,
       });
     }
   }
@@ -497,7 +493,7 @@
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: BBox, angle: number) =>
+          onEditComplete={(aabb: Point[], angle: number) =>
             handleEditComplete(ann.id, aabb, angle)}
         />
       {/each}

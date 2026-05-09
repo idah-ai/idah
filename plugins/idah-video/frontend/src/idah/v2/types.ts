@@ -418,6 +418,15 @@ export interface ICommandDriverV2 {
   /** Open or close the command palette. Omit value to toggle. */
   openPalette(open?: boolean): void;
 
+  /** Whether there are actions to undo. */
+  canUndo(): boolean;
+
+  /** Whether there are actions to redo. */
+  canRedo(): boolean;
+
+  /** Listen for palette open/close changes. Returns unsubscribe function. */
+  onPaletteChange(cb: (open: boolean) => void): () => void;
+
   // ── Keyboard resolution ────────────────────────────────────────────────
 
   /**

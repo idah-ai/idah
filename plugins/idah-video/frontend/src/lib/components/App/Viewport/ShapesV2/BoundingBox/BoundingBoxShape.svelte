@@ -4,6 +4,7 @@
       import { centroid as centroidUtil, rotatePoint, type Point } from "$lib/utils/math/point";
     import { media } from "$lib/state/media.svelte";
     import { getInterpolatedFrame } from "$lib/utils/interpolation";
+    import type { IVideoAnnotationShape } from "$idah/v2/video-types";
     import { ui } from "$lib/state/ui.svelte";
     import { getDriver } from "$lib/state/driver.svelte";
     import { annotationColor } from "$lib/utils/color";
@@ -51,7 +52,7 @@
 
   // ── Interpolated values ──────────────────────────────────────────────
   let baseAngle = $derived.by((): number => {
-    const shape = annotation?.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; start: number; end: number; type: string } | undefined;
+    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return 0;
     const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
     return result?.angle ?? 0;
@@ -72,7 +73,7 @@
   let isEditing = $derived(editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined));
 
   let basePoints = $derived.by((): Point[] => {
-    const shape = annotation?.shape as { frames?: { frame: number; points: [number, number][]; angle: number }[]; start: number; end: number; type: string } | undefined;
+    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
     const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
     return result?.points ?? [];

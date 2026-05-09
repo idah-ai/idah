@@ -51,7 +51,7 @@
 
   // The active shape type: from annotation, from group (via first annotation), or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
-    if (sel?.type === "annotation") return sel.annotation.shape.type;
+    if (sel?.type === "annotation") return sel.annotation.shape.type as string;
     // For a group we have only the groupId, so fall back to current mode
     // (the group's shape type will be known when the driver enriches selection)
     if (sel?.type === "group") return viewport.mode !== "default" ? viewport.mode : undefined;
@@ -123,7 +123,7 @@
 
 </script>
 
-{#snippet shapeIcon(color: string | undefined)}
+{#snippet shapeIcon(color: string | null | undefined)}
   {#if shapeType === VIDEO_POLYGON}
     <Icon src={polygonIconSvg} {color} />
   {:else}

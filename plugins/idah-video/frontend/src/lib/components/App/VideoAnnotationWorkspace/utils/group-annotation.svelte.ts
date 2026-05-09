@@ -133,7 +133,7 @@ export function transformAnnotationsToTracks(props: {
       subtitle: groupTitle,
       top: groupIndex * TRACK_HEIGHT,
       items: group.annotations.map((annotation) => ({
-        trackId: annotation.metadata?.id ?? annotation.id,
+        trackId: (annotation.metadata?.id ?? annotation.id) as string,
         startRange: annotation.shape.start,
         endRange: annotation.shape.end,
         rawData: annotation,

@@ -4,6 +4,7 @@
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import type { IVideoAnnotationShape } from "$idah/v2/video-types";
   import { ui } from "$lib/state/ui.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotationColor } from "$lib/utils/color";
@@ -45,7 +46,7 @@
   let h = $derived(media.height);
 
   let baseVertices = $derived.by((): Point[] => {
-    const shape = annotation?.shape as { frames?: { frame: number; points: Point[]; angle: number }[]; start: number; end: number } | undefined;
+    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
     const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
     return result?.points ?? [];
