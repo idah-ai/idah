@@ -11,7 +11,7 @@ export const command = {
   name: "viewport.goto",
   group: "Viewport",
   modes: [] as string[],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Go to frame",
   longDescription: "Jump to a specific frame",
 };

@@ -10,7 +10,7 @@ export const command = {
   name: "viewport.previous_frame",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: "ArrowLeft" as string | null,
+  shortcut: "ArrowLeft",
   shortDescription: "Previous frame",
   longDescription: "Move backward one frame",
 };

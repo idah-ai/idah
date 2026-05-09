@@ -24,7 +24,7 @@ export const command = {
   name: "viewport.skip_backward",
   group: "Viewport",
   modes: ["default", "review"] as string[],
-  shortcut: "Shift+ArrowLeft" as string | null,
+  shortcut: "Shift+ArrowLeft",
   shortDescription: "Skip backward",
   longDescription: "Jump backward by the configured number of frames",
 };

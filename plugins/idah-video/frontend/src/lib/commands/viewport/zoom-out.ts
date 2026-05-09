@@ -10,7 +10,7 @@ export const command = {
   name: "viewport.zoom_out",
   group: "Viewport",
   modes: ["default", "review"] as string[],
-  shortcut: "Minus" as string | null,
+  shortcut: "Minus",
   shortDescription: "Zoom out",
   longDescription: "Zoom out of the viewport",
 };

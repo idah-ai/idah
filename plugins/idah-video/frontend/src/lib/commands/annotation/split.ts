@@ -23,7 +23,7 @@ export const command = {
   name: "annotation.split",
   group: "Annotation",
   modes: [] as string[],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Split annotation at frame",
   longDescription: null,
 };

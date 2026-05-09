@@ -12,7 +12,7 @@ export const command = {
   name: "note.goto",
   group: undefined,
   modes: [] as string[],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: null,
   longDescription: null,
 };

@@ -12,7 +12,7 @@ export const command = {
   name: "annotation.go_to_next_group",
   group: "Annotation",
   modes: ["default", "review"],
-  shortcut: platformShortcut("Control+ArrowDown") as string | null,
+  shortcut: platformShortcut("Control+ArrowDown"),
   shortDescription: "Next group",
   longDescription: "Select the next group in the timeline",
 };

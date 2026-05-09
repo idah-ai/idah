@@ -18,7 +18,7 @@ export const command = {
   name: "annotation.go_to_prev_keyframe",
   group: "Annotation",
   modes: ["default", "review"],
-  shortcut: platformShortcut("Control+ArrowLeft") as string | null,
+  shortcut: platformShortcut("Control+ArrowLeft"),
   shortDescription: "Previous keyframe",
   longDescription: "Jump to the previous keyframe in the current group",
 };
@@ -78,9 +78,25 @@ export function register(driver: IIdahDriverV2): void {
         };
       }
 
+      // Find the annotation in the group that has this keyframe
+      let targetAnnotation: any = undefined;
+      for (const ann of data.annotations?.items ?? []) {
+        const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
+        if (annGroupId !== groupId) continue;
+        const shape = ann.shape as IVideoAnnotationShape;
+        if (!shape.frames) continue;
+        if (shape.frames.some((f) => f.frame === target)) {
+          targetAnnotation = ann;
+          break;
+        }
+      }
+
       return {
         command: command as any,
-        do() { viewport.video.currentFrame.value = target; },
+        do() {
+          viewport.video.currentFrame.value = target;
+          if (targetAnnotation) selection.selectAnnotation(targetAnnotation);
+        },
         isCombinable() { return false; },
         combine(p: any) { return p; },
       };

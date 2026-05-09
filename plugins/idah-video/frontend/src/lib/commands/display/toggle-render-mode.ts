@@ -10,7 +10,7 @@ export const command = {
   name: "ui.toggle_render_mode",
   group: "Display",
   modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Toggle video render mode",
   longDescription: "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video and placeholder",
 };

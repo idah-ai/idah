@@ -11,7 +11,7 @@ export const command = {
   name: "viewport.next_frame",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: "ArrowRight" as string | null,
+  shortcut: "ArrowRight",
   shortDescription: "Next frame",
   longDescription: "Move forward one frame",
 };

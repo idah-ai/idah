@@ -14,7 +14,7 @@ export const command = {
   name: "selection.goto",
   group: "Selection",
   modes: ["default", "review"],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Go to selection",
   longDescription: "Jump to the first frame of the selected annotation",
 };

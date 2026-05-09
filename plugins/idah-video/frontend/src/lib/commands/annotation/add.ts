@@ -17,7 +17,7 @@ export const command = {
   name: "annotation.add",
   group: undefined,
   modes: [] as string[],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: null,
   longDescription: null,
 };

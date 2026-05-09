@@ -11,7 +11,7 @@ export const command = {
   name: "viewport.go_to_start",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: platformShortcut("Control+Alt+ArrowLeft") as string | null,
+  shortcut: platformShortcut("Control+Alt+ArrowLeft"),
   shortDescription: "Go to start",
   longDescription: "Jump to the first frame",
 };

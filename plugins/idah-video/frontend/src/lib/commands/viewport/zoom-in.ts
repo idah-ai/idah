@@ -10,7 +10,7 @@ export const command = {
   name: "viewport.zoom_in",
   group: "Viewport",
   modes: ["default", "review"] as string[],
-  shortcut: "Equal" as string | null,
+  shortcut: "Equal",
   shortDescription: "Zoom in",
   longDescription: "Zoom into the viewport",
 };

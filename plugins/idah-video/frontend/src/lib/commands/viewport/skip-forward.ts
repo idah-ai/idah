@@ -26,7 +26,7 @@ export const command = {
   name: "viewport.skip_forward",
   group: "Viewport",
   modes: ["default", "review"] as string[],
-  shortcut: "Shift+ArrowRight" as string | null,
+  shortcut: "Shift+ArrowRight",
   shortDescription: "Skip forward",
   longDescription: "Jump forward by the configured number of frames",
 };

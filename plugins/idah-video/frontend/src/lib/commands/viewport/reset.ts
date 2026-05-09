@@ -8,7 +8,7 @@ export const command = {
   name: "viewport.reset",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Reset view",
   longDescription: "Reset zoom and pan to fit the full video",
 };

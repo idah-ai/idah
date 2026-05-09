@@ -30,23 +30,13 @@
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
   let isKeyframe = $derived(annotation.shape.frames.some((f) => f.frame === frame));
 
-  // Focus: adjust viewport to show only this annotation's range, then seek if needed
-  function focusOnAnnotation() {
-    const duration = annotation.shape.end - annotation.shape.start;
-    const margin = Math.max(10, Math.round(duration * 0.1));
-    viewport.timeline.range = {
-      startRange: annotation.shape.start - margin,
-      endRange: annotation.shape.end + margin,
-    };
-  }
-
   let menus = $derived<Menus>({
     actions: {
       items: {
         focus: {
           label: "Focus",
           icon: CrosshairIcon,
-          onClick: focusOnAnnotation,
+          onClick: () => getDriver().command.call("timeline.focus"),
         },
       },
     },

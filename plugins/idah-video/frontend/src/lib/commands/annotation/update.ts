@@ -14,7 +14,7 @@ export const command = {
   name: "annotation.update",
   group: "Annotation",
   modes: [] as string[],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Update annotation",
   longDescription: null,
 };

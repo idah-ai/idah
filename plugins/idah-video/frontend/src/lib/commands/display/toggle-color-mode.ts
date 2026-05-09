@@ -10,7 +10,7 @@ export const command = {
   name: "ui.toggle_color_mode",
   group: "Display",
   modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-  shortcut: null as string | null,
+  shortcut: null,
   shortDescription: "Toggle annotation color mode",
   longDescription: "Switch between category-based colors and random colors for annotations",
 };
