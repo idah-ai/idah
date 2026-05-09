@@ -69,6 +69,10 @@
   let annotationId = $derived<string | undefined>(selAnnotation?.id);
   let annotationValue: AnnotationValue = $derived(selAnnotation?.value || {});
 
+  /** Mutable value used during annotation creation (popover category/property selection).
+   *  Once confirmed, this is merged into the final annotation. */
+  let pendingValue: AnnotationValue = $state({});
+
   let length = $state(0);
   let tools: {
     name: string;
@@ -249,25 +253,62 @@
     if (!editable) return;
 
     let requirementFullfilled = requiredFullfilled(value, getDriver().config[valueMode]?.properties);
-    annotationValue = value;
+
     if (valueMode == "entry:root" && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
 
     // wait for confirmation
     if (showPopOver) {
-      if (selAnnotation)
+      // During creation (no selected annotation), store the value in pendingValue so
+      // the SelectionPanel can display it and the Confirm button can read it.
+      if (!selAnnotation) {
+        pendingValue = value;
+      } else {
         selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
-    } else {
-      if (valueMode == "entry:root" && !selAnnotation) {
-        if (value.category && value.category != "" && requirementFullfilled)
-          addAnnotation({ type: valueMode }, $state.snapshot(value));
-      } else if (selAnnotation) {
-        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
-        if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
-      } else if (shapeSelectionArgs && requirementFullfilled) {
-        showPopOver = false;
-        onShapeSelection(...shapeSelectionArgs);
       }
+      return;
     }
+
+    if (valueMode == "entry:root" && !selAnnotation) {
+      if (value.category && value.category != "" && requirementFullfilled)
+        addAnnotation({ type: valueMode }, $state.snapshot(value));
+    } else if (selAnnotation) {
+      selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
+    } else if (valueMode !== "entry:root") {
+      // Sidebar category click: store category and enter drawing mode
+      pendingValue = value;
+      viewport.mode = valueMode;
+    } else if (shapeSelectionArgs && requirementFullfilled) {
+      showPopOver = false;
+      onShapeSelection(...shapeSelectionArgs);
+    }
+  }
+
+  /** Called by the Confirm button / Enter key in the popover.
+   *  Creates the annotation with the value the user picked (category + any properties). */
+  function confirmCreateAnnotation(
+    type: string,
+    frame: number,
+    _points: Point[] = [],
+    angle: number = 0,
+    _selectedId?: string,
+  ) {
+    if (!editable || isNoteMode) return;
+
+    let points = $state.snapshot(_points) as Point[];
+    let value = $state.snapshot(pendingValue) as AnnotationValue;
+
+    let shape: AnnotationShape = { type };
+    shape = {
+      ...shape,
+      start: frame,
+      end: frame,
+      frames: [{ frame, angle, points }] as IVideoFrameSelection[],
+    };
+
+    shapeSelectionArgs = undefined;
+    pendingValue = {};
+    addAnnotation(shape, value);
   }
 
   function onShapeSelection(
@@ -291,7 +332,7 @@
         return;
       }
 
-      let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
+      let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
 
       // todo proper validation
       let shape: AnnotationShape = { type };
@@ -323,9 +364,11 @@
         requiredFullfilled(annotation_value_from, getDriver().config[type]?.properties)
       ) {
         shapeSelectionArgs = undefined;
+        pendingValue = {};
         addAnnotation(shape, annotation_value_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, angle, selectedId];
+        pendingValue = {};
         showPopOver = true;
       }
     } else {
@@ -464,30 +507,29 @@
       onkeydown={(e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
-          // Same logic as the Confirm button
           const canConfirm = shapeSelectionArgs !== undefined || mode === "entry:root";
           if (!canConfirm) return;
           showPopOver = false;
           if (mode === "entry:root") {
             onShapeSelection("entry:root", viewport.video.currentFrame.value);
           } else if (shapeSelectionArgs) {
-            onShapeSelection(...shapeSelectionArgs);
+            confirmCreateAnnotation(...shapeSelectionArgs);
           }
         }
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if annotationValue.category}
+        {#if pendingValue.category}
           <SelectionPanel
-            selectedCategory={annotationValue.category}
-            {annotationValue}
+            selectedCategory={pendingValue.category}
+            annotationValue={pendingValue}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
-              annotationValue = {
-                ...annotationValue,
+              pendingValue = {
+                ...pendingValue,
                 category: selectedCategory,
               };
-              onEditValue({ category: annotationValue.category }, mode);
+              onEditValue({ category: pendingValue.category }, mode);
             }}
             onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
@@ -515,6 +557,7 @@
           onclick={() => {
             showPopOver = false;
             annotationValue = {};
+            pendingValue = {};
             shapeSelectionArgs = undefined;
             selectAnnotation();
           }}
@@ -530,7 +573,7 @@
                 onShapeSelection("entry:root", viewport.video.currentFrame.value);
                 break;
               default:
-                if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
+                if (shapeSelectionArgs) confirmCreateAnnotation(...shapeSelectionArgs);
             }
           }}
           disabled={shapeSelectionArgs == undefined && "entry:root" != mode}

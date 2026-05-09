@@ -374,17 +374,19 @@
   const selectionCaretViewportX = $derived((selectionOffset - viewport.startRange) * scale);
   const hoverCaretViewportX = $derived(caretPixelX - viewport.startRange * scale);
 
-  // Auto-pan when the current frame reaches the right 25% of the viewport.
-  // Shifts the viewport so the frame ends up at 75% from the left edge.
+  // Auto-pan when the current frame reaches the right 85% or left 15% of the viewport.
+  // Only triggers on `currentFrame` changes — not when the viewport is scrolled manually.
+  let _prevFrame = $state(-1);
   $effect(() => {
     const cf = currentFrame;
+    if (cf === _prevFrame) return;
+    _prevFrame = cf;
     if (scale <= 0 || length <= 0) return;
     const rangeWidth = viewport.endRange - viewport.startRange;
     if (rangeWidth <= 0) return;
     const thresholdRight = viewport.startRange + rangeWidth * 0.85;
     const thresholdLeft = viewport.startRange + rangeWidth * 0.15;
     if (cf > thresholdRight) {
-      // Shift right by exactly the overflow amount — seamless one-frame-at-a-time
       const overflow = cf - thresholdRight;
       const newStart = viewport.startRange + overflow;
       const clampedStart = Math.max(0, Math.min(newStart, length - rangeWidth));
@@ -392,7 +394,6 @@
       viewport.endRange = clampedStart + rangeWidth;
       setScrollLeft(viewport.startRange * scale);
     } else if (cf < thresholdLeft) {
-      // Shift left by exactly the underflow amount
       const underflow = thresholdLeft - cf;
       const newStart = viewport.startRange - underflow;
       const clampedStart = Math.max(0, Math.min(newStart, length - rangeWidth));
@@ -580,10 +581,12 @@
 
 <style>
   .timeline {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #ccc;
-  }
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ccc;
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
   .timeline-toolbar {
     flex-shrink: 0;
@@ -610,6 +613,8 @@
     scrollbar-gutter: stable;
     scrollbar-width: none; /* Hide scrollbar but keep functionality */
     cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .timeline-ruler-viewport::-webkit-scrollbar {
@@ -646,6 +651,8 @@
     width: 300px;
     flex-shrink: 0;
     border-right: 1px solid #ccc;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   /* Horizontal-only scroll viewport for the tracks area.
@@ -655,6 +662,8 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .timeline-tracks-viewport::-webkit-scrollbar {
@@ -663,6 +672,8 @@
 
   .timeline-tracks-content {
     position: relative;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   /* Always-visible horizontal scrollbar, pinned at the bottom of .timeline */

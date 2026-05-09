@@ -32,6 +32,8 @@
 
   // ── Right-click on empty track area ───────────────────────────────────
 
+  import { selection } from "$lib/state/selection.svelte";
+
   function handleContextMenu(e: MouseEvent) {
     // Only handle clicks directly on the track div (not on children — TrackItem blocks handle their own)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
@@ -56,6 +58,16 @@
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }
   }
+
+  // ── Click on track background → select the group ──────────────────────
+
+  function handleTrackClick(e: MouseEvent) {
+    // Only for clicks directly on the track div (not on TrackItem children)
+    if ((e.target as HTMLElement) !== e.currentTarget) return;
+    if (trackId) {
+      selection.selectGroup(trackId);
+    }
+  }
 </script>
 
 <div
@@ -64,6 +76,7 @@
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"
+  onclick={handleTrackClick}
   oncontextmenu={handleContextMenu}
 >
   {#each visibleItems as item, itemIndex (itemIndex)}

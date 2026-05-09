@@ -349,7 +349,8 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     key: "",
     mime_type: "video/mp4",
     filename: "sample.mp4",
-    meta: { duration: 100, fps: 25, width: 1920, height: 1080 },
+    url: "/medias/master.m3u8",
+    meta: { duration: 60, fps: 30, width: 1920, height: 1080 },
   };
   private _workflowStep = "annotate";
   private _mode = "default";

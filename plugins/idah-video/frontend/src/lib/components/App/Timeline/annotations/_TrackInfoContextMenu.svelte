@@ -81,20 +81,9 @@
         size="sm"
         class="mx-1 justify-start"
         onclick={() => {
-          const shape = prevAnnotation.rawData.shape;
-          // The clicked frame is outside the annotation's current range,
-          // so getInterpolatedFrame will return undefined. Use the nearest
-          // existing keyframe's points instead.
-          const nearest = shape.frames?.slice().sort((a, b) =>
-            Math.abs(a.frame - frame) - Math.abs(b.frame - frame)
-          )[0];
-          getDriver().command.call("annotation.keyframe_add", {
+          getDriver().command.call("annotation.extend_prev", {
             annotationId: prevAnnotation.rawData.id,
-            selection: {
-              frame,
-              angle: nearest?.angle ?? 0,
-              points: nearest?.points ?? [],
-            },
+            frame,
           });
         }}
       >
@@ -109,18 +98,9 @@
         size="sm"
         class="mx-1 justify-start"
         onclick={() => {
-          const shape = nextAnnotation.rawData.shape;
-          // Use the nearest existing keyframe's points when extending.
-          const nearest = shape.frames?.slice().sort((a, b) =>
-            Math.abs(a.frame - frame) - Math.abs(b.frame - frame)
-          )[0];
-          getDriver().command.call("annotation.keyframe_add", {
+          getDriver().command.call("annotation.extend_next", {
             annotationId: nextAnnotation.rawData.id,
-            selection: {
-              frame,
-              angle: nearest?.angle ?? 0,
-              points: nearest?.points ?? [],
-            },
+            frame,
           });
         }}
       >

@@ -30,7 +30,6 @@ export function buildKeyCombination(e: KeyboardEvent): string {
     return modifiers.join("+");
   }
 
-  // For letter keys use the uppercase letter; for everything else use the code
   const key = e.code.startsWith("Key") ? e.key.toLocaleUpperCase() : e.code;
 
   return [...modifiers, key].join("+");

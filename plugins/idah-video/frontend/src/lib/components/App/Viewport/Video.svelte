@@ -3,7 +3,6 @@
   import { VideoStreamHandler } from "./video-stream-handler.ts";
   import { media } from "$lib/state/media.svelte";
 
-  import placeholderUrl from "$lib/assets/placeholder.webp";
   import { ui } from "$lib/state/ui.svelte";
 
   let {
@@ -213,13 +212,7 @@
 </script>
 
 <div class="video-wrapper" style="width: {media.width}px; height: {media.height}px;" bind:this={element}>
-  <div class="video-placeholder">
-    <img
-      src={placeholderUrl}
-      alt="Video placeholder"
-      class={["placeholder-image", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-    />
-  </div>
+  <div class="video-placeholder"></div>
 
   <video
     class={["video-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}

@@ -47,10 +47,11 @@ export const media = {
   get id(): string {
     return readMedia()?.id ?? "";
   },
-  /** Construct the download URL from the media's resource and key. */
+  /** Construct the download URL from the media's resource and key, or use an explicit url. */
   get url(): string {
     const m = readMedia();
     if (!m) return "";
+    if (m.url) return m.url;
     const path = m.key ? `${m.resource}/${m.key}` : m.resource;
     return `${MEDIA_BASE}/${path}`;
   },

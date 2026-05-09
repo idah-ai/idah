@@ -43,6 +43,8 @@ import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { register as registerAnnotationUpdate } from "./annotation/update";
 import { register as registerAnnotationSplit } from "./annotation/split";
+import { register as registerAnnotationExtendPrev } from "./annotation/extend_prev";
+import { register as registerAnnotationExtendNext } from "./annotation/extend_next";
 import { register as registerAnnotationGoToNextKeyframe } from "./annotation/go_to_next_keyframe";
 import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_to_prev_keyframe";
 import { register as registerAnnotationGoToNextGroup } from "./annotation/go_to_next_group";
@@ -92,6 +94,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
   registerAnnotationSplit(driver);
+  registerAnnotationExtendPrev(driver);
+  registerAnnotationExtendNext(driver);
   registerAnnotationGoToNextKeyframe(driver);
   registerAnnotationGoToPrevKeyframe(driver);
   registerAnnotationGoToNextGroup(driver);
