@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// keyframe.delete — Remove a keyframe from an annotation
+// annotation.keyframe_delete — Remove a keyframe from an annotation
 // Undoable: restores the keyframe.
 //
 // Usage:
-//   driver.command.call("keyframe.delete", { annotationId: "...", frame: 42 });
+//   driver.command.call("annotation.keyframe_delete", { annotationId: "...", frame: 42 });
 //
 // Shortcut: Delete
 // Active only when there's a selected annotation and the current frame
@@ -18,8 +18,8 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { noopAction } from "..";
 
 export const command = {
-  name: "keyframe.delete",
-  group: "Keyframe",
+  name: "annotation.keyframe_delete",
+  group: "Annotation",
   modes: ["default", "review"],
   shortcut: "Control+Delete",
   shortDescription: "Delete keyframe",

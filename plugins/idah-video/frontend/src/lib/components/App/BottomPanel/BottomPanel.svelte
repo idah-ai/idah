@@ -20,14 +20,12 @@
     length: number;
     player: Video | undefined;
     volume: { level: number; muted: boolean };
-    onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
   }
   let {
     viewportAnnotations,
     length,
     player = $bindable(),
     volume,
-    onSelectAnnotation,
   }: Props = $props();
 
   // Internal state
@@ -106,7 +104,7 @@
       {/snippet}
 
       {#snippet TrackInfoSlot({ track })}
-        <AnnotationTrackInfo {track} onClick={onSelectAnnotation} />
+        <AnnotationTrackInfo {track} />
       {/snippet}
     </Timeline>
   {/if}

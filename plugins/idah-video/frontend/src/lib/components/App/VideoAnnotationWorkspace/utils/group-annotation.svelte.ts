@@ -18,7 +18,7 @@ export function groupAnnotations(annotations: IVideoAnnotationRecord[]): Annotat
   const map = new SvelteMap<string, IVideoAnnotationRecord[]>();
 
   for (const ann of annotations) {
-    const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id ?? ann.id;
+    const gid = ann.metadata?.group_id ?? ann.id;
 
     if (!map.has(gid)) {
       map.set(gid, []);

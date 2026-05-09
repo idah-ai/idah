@@ -2,7 +2,7 @@
   import Input from "$lib/components/ui/Input/Input.svelte";
   import Label from "$lib/components/ui/Label/Label.svelte";
 
-  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
 
   import type { IConfigProperty } from "$idah/v2/types";
 

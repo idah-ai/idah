@@ -36,4 +36,12 @@
     width: 100%;
     height: 100%;
   }
+
+  .track-item-content :global(button) {
+    transition: opacity 0.15s ease;
+  }
+
+  .track-item:hover .track-item-content :global(button) {
+    opacity: 0.85;
+  }
 </style>

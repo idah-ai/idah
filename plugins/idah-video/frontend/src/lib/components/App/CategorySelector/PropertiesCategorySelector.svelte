@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent } from "$lib/components/ui/Sidebar";
 
-  import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
+  import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
 
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -51,7 +51,7 @@
     <SidebarGroup class="p-3">
       <SidebarGroupContent>
         {#key [annotationValue, mode, $entryRoot?.value.category]}
-          <PropertySelector
+          <SelectionPanel
             selectedCategory={(defaultMode
               ? annotationValue.category || $entryRoot?.value.category
               : annotationValue.category) || ""}

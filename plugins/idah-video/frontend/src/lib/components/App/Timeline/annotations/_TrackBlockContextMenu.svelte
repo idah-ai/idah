@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { SquareSplitHorizontalIcon, Trash2Icon, type Icon as IconType } from "@lucide/svelte";
+  import {
+    CrosshairIcon,
+    SquareSplitHorizontalIcon,
+    Trash2Icon,
+    FramerIcon,
+    type Icon as IconType,
+  } from "@lucide/svelte";
 
   import Button from "$lib/components/ui/Button/Button.svelte";
   import Separator from "$lib/components/ui/Separator/Separator.svelte";
@@ -8,70 +14,97 @@
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+
   // Props
   interface Props extends ContextMenuComponentProps {
     item: TimelineItem;
+    currentFrame?: number;
   }
-  let { item }: Props = $props();
+  let { item, currentFrame }: Props = $props();
 
   // Variables
-  let menus = $state<Menus>({
-    keyframe: {
+  let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
+  let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
+  let isKeyframe = $derived(annotation.shape.frames.some((f) => f.frame === frame));
+  let isStartOrEnd = $derived(frame === annotation.shape.start || frame === annotation.shape.end);
+
+  // Focus: adjust viewport to show only this annotation's range, then seek if needed
+  function focusOnAnnotation() {
+    const duration = annotation.shape.end - annotation.shape.start;
+    const margin = Math.max(10, Math.round(duration * 0.1));
+    viewport.timeline.range = {
+      startRange: annotation.shape.start - margin,
+      endRange: annotation.shape.end + margin,
+    };
+  }
+
+  let menus = $derived<Menus>({
+    actions: {
       items: {
-        // seek: {
-        //   label: `Seek to frame`,
-        //   icon: SearchIcon,
-        //   visible: false,
-        //   disabled: false,
-        //   onClick: () => {
-        //     onSeekFrame(displayScaledFrame);
-        //   },
-        // },
-        split: {
-          label: `Split at frame: `,
-          icon: SquareSplitHorizontalIcon,
-          hidden: false,
-          disabled: false,
-          onClick: () => {
-            // context.commands.run("annotation.split", {
-            //   id: closestAnnotation.metadata.id,
-            //   at: displayScaledFrame,
-            // });
-          },
-        },
-        deleteKeyframe: {
-          label: `Delete keyframe: `,
-          icon: Trash2Icon,
-          hidden: false,
-          disabled: false,
-          destructive: true,
-          onClick: () => {
-            //     context.commands.run("annotation.delete", {
-            //   annotationId: closestAnnotation.metadata.id,
-            // });
-            // selectAnnotationGroup.annotations = selectAnnotationGroup.annotations.filter(
-            //   (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
-            // );
-            // if (selectAnnotationGroup.annotations.length > 0) {
-            //   /** Select the new closest annotation after filter the deleted annotation */
-            //   selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
-            // } else {
-            //   context.commands.run("tools.reset");
-            // }
-          },
+        focus: {
+          label: "Focus",
+          icon: CrosshairIcon,
+          onClick: focusOnAnnotation,
         },
       },
     },
-    annotation: {
+    edit: {
+      items: {
+        ...(isKeyframe
+          ? {
+              deleteKeyframe: {
+                label: `Delete keyframe`,
+                icon: Trash2Icon,
+                destructive: true,
+                onClick: () => {
+                  getDriver().command.call("annotation.deleteKeyframe", {
+                    id: annotation.id,
+                    frame,
+                  });
+                },
+              },
+            }
+          : {
+              addKeyframe: {
+                label: `Add keyframe`,
+                icon: FramerIcon,
+                onClick: () => {
+                  getDriver().command.call("annotation.addKeyframe", {
+                    id: annotation.id,
+                    frame,
+                  });
+                },
+              },
+            }),
+        ...(!isStartOrEnd
+          ? {
+              split: {
+                label: `Split at frame ${frame}`,
+                icon: SquareSplitHorizontalIcon,
+                onClick: () => {
+                  getDriver().command.call("annotation.split", {
+                    id: annotation.id,
+                    at: frame,
+                  });
+                },
+              },
+            }
+          : {}),
+      },
+    },
+    danger: {
       items: {
         delete: {
           label: `Delete annotation`,
           icon: Trash2Icon,
-          hidden: false,
-          disabled: false,
           destructive: true,
           onClick: () => {
-            console.log("TODO::Handle Delete Annotation");
+            getDriver().command.call("annotation.delete", {
+              id: annotation.id,
+            });
           },
         },
       },

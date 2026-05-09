@@ -5,7 +5,7 @@
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
-  import { requiredFullfilled } from "$lib/components/App/PropertySelector";
+  import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -23,7 +23,7 @@
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
-  import PropertySelector from "$lib/components/App/PropertySelector/PropertySelector.svelte";
+  import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/ShapesV2/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
@@ -66,7 +66,7 @@
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
-  let annotationId = $derived<string | undefined>(selAnnotation ? selAnnotation.metadata?.id : undefined);
+  let annotationId = $derived<string | undefined>(selAnnotation?.id);
   let annotationValue: AnnotationValue = $derived(selAnnotation?.value || {});
 
   let length = $state(0);
@@ -222,13 +222,13 @@
   async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
-    getDriver().command.call("keyframe.add", { annotationId: id, selection });
+    getDriver().command.call("annotation.keyframe_add", { annotationId: id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
     if (!editable) return;
 
-    getDriver().command.call("keyframe.delete", { annotationId, frame });
+    getDriver().command.call("annotation.keyframe_delete", { annotationId, frame });
   }
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
@@ -250,7 +250,6 @@
 
     let requirementFullfilled = requiredFullfilled(value, getDriver().config[valueMode]?.properties);
     annotationValue = value;
-    getDriver()?.setMode(valueMode);
     if (valueMode == "entry:root" && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
 
     // wait for confirmation
@@ -343,50 +342,25 @@
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
     if (annotation) {
       selection.selectAnnotation(annotation as any);
+      // Set viewport mode to the annotation's shape type so the property panel
+      // shows the correct category/property config
+      if (!isNoteMode && editable && annotation.shape.type) {
+        viewport.mode = annotation.shape.type;
+      }
     } else {
       selection.deselect();
-    }
-
-    /**
-     * Set mode to the annotation shape type when selecting an annotation
-     */
-    if (isNoteMode) {
-      return;
-    } else if (annotation?.shape.type && editable) {
-      getDriver()?.setMode(annotation.shape.type);
-    } else {
-      getDriver()?.setMode("default");
-    }
-    if (selAnnotation) {
-      selection.selectGroup(selAnnotation.metadata?.group_id || selAnnotation.metadata?.id);
     }
   }
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, selectedFrame?: number) {
     selection.selectGroup(annotationGroup.groupId);
 
+    if (isNoteMode) return;
+
     const firstAnnotation = annotationGroup.annotations[0];
-    /**
-     * Set mode to the annotation shape type when selecting an annotation
-     */
-    if (isNoteMode) {
-      return;
-    } else if (firstAnnotation.shape.type && editable) {
-      /**
-       * If user select timeline row at specific frame (selectedFrame is exists)
-       * and workflow step is in review or annotation
-       */
-      if (selectedFrame) {
-        /** Set current mode and select closest annotation when selectedFrame is exitsts */
-        getDriver()?.setMode(firstAnnotation.shape.type);
-        const closestAnnotation = selectClosestAnnotation(annotationGroup, selectedFrame);
-      } else {
-        getDriver()?.setMode("default");
-        selection.deselect();
-      }
-    } else {
-      selectAnnotation(undefined);
-      getDriver()?.setMode("default");
+    if (selectedFrame && firstAnnotation?.shape.type && editable) {
+      viewport.mode = firstAnnotation.shape.type;
+      selectClosestAnnotation(annotationGroup, selectedFrame);
     }
   }
 
@@ -395,7 +369,6 @@
       annotationGroup,
       frame,
     });
-    getDriver()?.setMode(closestAnnotation.shape.type);
     selectAnnotation(closestAnnotation);
 
     return closestAnnotation;
@@ -430,6 +403,7 @@
   let viewportAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     const raw = data.annotations?.items ?? [];
     return raw.map((ann) => ({
+      id: ann.id,
       shape: ann.shape as IVideoAnnotationShape,
       value: {
         category: ann.value?.category || "null",
@@ -504,7 +478,7 @@
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
-          <PropertySelector
+          <SelectionPanel
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(selectedCategory) => {
@@ -644,7 +618,6 @@
           {length}
           bind:player
           volume={viewport.video.sound}
-          onSelectAnnotation={selectAnnotation}
         />
       </ResizablePane>
     </ResizablePaneGroup>

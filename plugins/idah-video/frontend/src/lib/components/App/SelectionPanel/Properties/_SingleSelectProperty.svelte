@@ -2,7 +2,7 @@
   import Label from "$lib/components/ui/Label/Label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
 
-  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
 
   import type { IConfigProperty } from "$idah/v2/types";
 
@@ -13,18 +13,16 @@
     disabled,
   }: {
     property: IConfigProperty;
-    value: string[];
-    onValueChange: (v: string[]) => void;
+    value: string;
+    onValueChange: (v: string) => void;
     disabled: boolean;
   } = $props();
 
-  const options = $derived(property.format?.options);
+  const options = $derived(property.format.options);
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, (v: unknown) => string>([
     ["required", (_: unknown) => [property.label, "is required"].join(" ")],
-    ["minimum", (v: unknown) => [property.label, "minimum selection:", v].join(" ")],
-    ["maximum", (v: unknown) => [property.label, "maximum selection:", v].join(" ")],
     ["step", (v: unknown) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
@@ -37,15 +35,12 @@
     {/if}
   </Label>
 
-  <Select type="multiple" {value} {onValueChange} {disabled}>
+  <Select type="single" {value} {onValueChange} {disabled}>
     <SelectTrigger
       class="data-placeholder:text-secondary-foreground bg-secondary w-full text-xs"
       aria-invalid={invalid}
     >
-      {options
-        ?.filter(({ id }) => value?.includes(id))
-        .map((o) => o.label)
-        .join(", ") || "Select property"}
+      {options?.find(({ id }) => id == value)?.label || "Select property"}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>

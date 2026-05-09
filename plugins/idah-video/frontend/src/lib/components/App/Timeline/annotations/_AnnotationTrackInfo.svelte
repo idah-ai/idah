@@ -13,15 +13,13 @@
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { cn } from "$lib/utils";
 
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
   // Props
   interface Props {
     track: TrackData;
-    onClick: (annotation?: IVideoAnnotationRecord) => void;
   }
-  let { track, onClick }: Props = $props();
+  let { track }: Props = $props();
 
   // Variables
   let { id, title, subtitle, top, items } = $derived(track);
@@ -51,11 +49,8 @@
   function handleClick() {
     selectAnnotationGroup();
     /**
-     * Select annotation group
-     * 1. If there is no selectedCurrentFrame, select the first frame of the annotation group
-     * 2. If there is selectedCurrentFrame, select the closest annotation to the selectedCurrentFrame
+     * Select annotation group only — don't change the current drawing mode
      */
-    onClick(items[0].rawData);
   }
 </script>
 

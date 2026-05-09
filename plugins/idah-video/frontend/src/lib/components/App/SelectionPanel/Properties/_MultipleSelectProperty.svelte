@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Input from "$lib/components/ui/Input/Input.svelte";
   import Label from "$lib/components/ui/Label/Label.svelte";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
 
-  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
 
   import type { IConfigProperty } from "$idah/v2/types";
 
@@ -13,17 +13,18 @@
     disabled,
   }: {
     property: IConfigProperty;
-    value: number;
-    onValueChange: (v: number) => void;
+    value: string[];
+    onValueChange: (v: string[]) => void;
     disabled: boolean;
   } = $props();
 
+  const options = $derived(property.format?.options);
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, (v: unknown) => string>([
     ["required", (_: unknown) => [property.label, "is required"].join(" ")],
-    ["minimum", (v: unknown) => [property.label, "minimum value:", v].join(" ")],
-    ["maximum", (v: unknown) => [property.label, "maximum value:", v].join(" ")],
+    ["minimum", (v: unknown) => [property.label, "minimum selection:", v].join(" ")],
+    ["maximum", (v: unknown) => [property.label, "maximum selection:", v].join(" ")],
     ["step", (v: unknown) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
@@ -36,17 +37,24 @@
     {/if}
   </Label>
 
-  <Input
-    aria-invalid={invalid}
-    id={property.id}
-    type="number"
-    min={property.format?.minimum}
-    max={property.format?.maximum}
-    step={property.format?.step || "1"}
-    {value}
-    onchange={(e) => onValueChange(Number.parseInt((e.target as HTMLInputElement).value || ""))}
-    {disabled}
-  />
+  <Select type="multiple" {value} {onValueChange} {disabled}>
+    <SelectTrigger
+      class="data-placeholder:text-secondary-foreground bg-secondary w-full text-xs"
+      aria-invalid={invalid}
+    >
+      {options
+        ?.filter(({ id }) => value?.includes(id))
+        .map((o) => o.label)
+        .join(", ") || "Select property"}
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        {#each options as option (option.id)}
+          <SelectItem value={option.id} label={option.label} class="text-xs" />
+        {/each}
+      </SelectGroup>
+    </SelectContent>
+  </Select>
   {#if invalid}
     <ul class="text-xs">
       {#each format as entry, index (index)}

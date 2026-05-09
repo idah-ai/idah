@@ -2,7 +2,7 @@
   import { Label } from "$lib/components/ui/Label";
   import { Switch } from "$lib/components/ui/Switch";
 
-  import { formatConformity, propertyFullfilled } from "$lib/components/App/PropertySelector";
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
 
   import type { IConfigProperty } from "$idah/v2/types";
 
@@ -21,8 +21,8 @@
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
 
-  // set default value to false if boolean is required
-  if (value == undefined && property.required) onValueChange(false);
+  // Default checked state: false if undefined/required, actual value otherwise
+  let checked = $derived(value ?? (property.required ? false : undefined));
 
   const formatters = new Map<string, (v: unknown) => string>([
     ["required", (_: unknown) => [property.label, "is required"].join(" ")],
@@ -38,7 +38,7 @@
       {/if}
     </Label>
 
-    <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} {disabled} />
+    <Switch aria-invalid={invalid} id={property.id} checked={checked} onCheckedChange={onValueChange} {disabled} />
   </div>
 
   {#if invalid}

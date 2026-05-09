@@ -31,8 +31,8 @@ import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
 import { register as registerSelectionCenter } from "./selection/center";
 
-import { register as registerKeyframeAdd } from "./keyframe/add";
-import { register as registerKeyframeDelete } from "./keyframe/delete";
+import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
+import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
 
 import { register as registerGroupDelete } from "./group/delete";
 
@@ -41,6 +41,7 @@ import { register as registerNoteGoto } from "./note/goto";
 
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
+import { register as registerAnnotationUpdate } from "./annotation/update";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
@@ -83,6 +84,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Annotation ────────────────────────────────────────────────────────
   registerAnnotationAdd(driver);
   registerAnnotationPolygonAddPoint(driver);
+  registerAnnotationUpdate(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);
