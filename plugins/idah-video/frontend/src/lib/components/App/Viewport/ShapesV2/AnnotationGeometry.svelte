@@ -29,18 +29,18 @@
   let _polyComp: any = $state();
 
   /** Expose the active tool selection to parents. */
-  let _toolSelection = $derived.by<{ startSelection: (p: Point) => boolean; endSelection: (p: Point) => void } | undefined>(() => {
+  let _toolSelection = $derived.by<{ startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined>(() => {
     const comp = annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
     if (comp?.startSelection && comp?.endSelection) {
       return {
-        startSelection: (p: Point) => comp.startSelection(p),
+        startSelection: (p: Point, shiftKey?: boolean) => comp.startSelection(p, shiftKey),
         endSelection: (p: Point) => comp.endSelection(p),
       };
     }
     return undefined;
   });
 
-  export function getToolSelection(): { startSelection: (p: Point) => boolean; endSelection: (p: Point) => void } | undefined {
+  export function getToolSelection(): { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined {
     return _toolSelection;
   }
 </script>

@@ -3,12 +3,21 @@
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { polygonVertexHandles, polygonEdgeMidpoints } from "./utils";
+  import BoxSelector from "./_BoxSelector.svelte";
+  import removeCursorSvg from "$lib/assets/icons/remove-cursor.svg?raw";
+
+  const removeCursorCss = `url("data:image/svg+xml,${encodeURIComponent(removeCursorSvg)}") 2 2,pointer`;
 
   type Props = {
     vertices: Point[];
     color: string;
     isEditing: boolean;
+    selectedIndices: Set<number>;
+    boxStart: Point | undefined;
+    boxEnd: Point | undefined;
+    shiftHeld: boolean;
     onStartVertexDrag: (vertexIndex: number) => void;
+    onDeleteVertex: (vertexIndex: number) => void;
     onAddVertex: (edgeIndex: number) => void;
     onStartPan: () => void;
   };
@@ -17,7 +26,12 @@
     vertices,
     color,
     isEditing,
+    selectedIndices,
+    boxStart,
+    boxEnd,
+    shiftHeld,
     onStartVertexDrag,
+    onDeleteVertex,
     onAddVertex,
     onStartPan,
   }: Props = $props();
@@ -42,10 +56,9 @@
   let edgeMidpoints = $derived(polygonEdgeMidpoints(vertices));
 </script>
 
-<!-- Edge midpoint handles — click to add a vertex -->
+<!-- Edge midpoint handles -->
 {#each edgeMidpoints as point, i (i)}
   {@const isHovered = hoveredEdgeIndex === i}
-  <!-- Visible dot -->
   <circle
     cx={point[0] * w}
     cy={point[1] * h}
@@ -56,7 +69,6 @@
     stroke-width={S_line}
     pointer-events="none"
   />
-  <!-- Transparent hit zone -->
   <circle
     cx={point[0] * w}
     cy={point[1] * h}
@@ -66,25 +78,23 @@
     style:cursor={isEditing ? "default" : "copy"}
     onmouseenter={() => (hoveredEdgeIndex = i)}
     onmouseleave={() => (hoveredEdgeIndex = undefined)}
-    onmousedown={(e) => {
-      e.stopPropagation();
-      onAddVertex(i);
-    }}
+    onmousedown={(e) => { e.stopPropagation(); onAddVertex(i); }}
   />
 {/each}
 
 <!-- Vertex handles -->
 {#each vertexHandles as point, i (i)}
   {@const isHovered = hoveredVertexIndex === i}
-  {@const curR = isHovered ? R_hovered : R}
+  {@const isSelected = selectedIndices.has(i)}
+  {@const curR = isHovered || isSelected ? R_hovered : R}
   <circle
     cx={point[0] * w}
     cy={point[1] * h}
     r={curR}
     fill={color}
-    fill-opacity={isHovered ? 0.5 : 0.25}
+    fill-opacity={isSelected ? 0.7 : isHovered ? 0.5 : 0.25}
     stroke={color}
-    stroke-width={S_line}
+    stroke-width={isSelected ? S_line * 2 : S_line}
     pointer-events="none"
   />
   <circle
@@ -94,19 +104,47 @@
     fill={color}
     pointer-events="none"
   />
-  <!-- Transparent hit zone -->
+  {#if isSelected}
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={R_hovered + 3 * invScale}
+      fill="none"
+      stroke={color}
+      stroke-width={1.5}
+      stroke-dasharray="3,2"
+      vector-effect="non-scaling-stroke"
+      pointer-events="none"
+    />
+  {/if}
+  <!-- Minus icon when Shift+hover (delete mode) -->
+  {#if isHovered && shiftHeld}
+    <line
+      x1={(point[0] * w) - R_dot}
+      y1={point[1] * h}
+      x2={(point[0] * w) + R_dot}
+      y2={point[1] * h}
+      stroke={color}
+      stroke-width={S_line * 2}
+      stroke-linecap="round"
+      pointer-events="none"
+    />
+  {/if}
+  <!-- Hit zone -->
   <circle
     cx={point[0] * w}
     cy={point[1] * h}
     r={R_hit}
     fill="transparent"
     style:outline="none"
-    style:cursor={isEditing ? "none" : "move"}
+    style:cursor={shiftHeld ? removeCursorCss : isEditing ? "none" : "move"}
     onmouseenter={() => (hoveredVertexIndex = i)}
     onmouseleave={() => (hoveredVertexIndex = undefined)}
-    onmousedown={(e) => {
-      e.stopPropagation();
-      onStartVertexDrag(i);
-    }}
+    onmousedown={(e) => { e.stopPropagation(); if (e.shiftKey) onDeleteVertex(i); else onStartVertexDrag(i); }}
   />
 {/each}
+
+<!-- Box selection overlay -->
+{#if boxStart && boxEnd}
+  <BoxSelector start={boxStart} end={boxEnd} {color} />
+{/if}

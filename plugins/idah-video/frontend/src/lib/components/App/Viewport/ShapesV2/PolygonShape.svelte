@@ -48,7 +48,16 @@
   let dragVertexIndex: number | undefined = $state();
   let panStart: Point | undefined = $state();
 
-  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined);
+  // Multi-selection state
+  let _selectedIndices: Set<number> = $state(new Set());
+  let boxStart: Point | undefined = $state();
+  let boxEnd: Point | undefined = $state();
+  let multiDragOrigin: Point | undefined = $state();
+
+  // Track Shift key for cursor changes
+  let shiftHeld = $state(false);
+
+  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined || multiDragOrigin !== undefined);
   let vertices: Point[] = $derived(_localVertices ?? baseVertices);
 
   let cursorPx = $derived.by((): Point | undefined => {
@@ -74,11 +83,35 @@
   });
 
   let lastDragCursor: Point = $state([-1, -1]);
+
+  // Single vertex drag
   $effect(() => {
     if (dragVertexIndex === undefined || !cursor) return;
     if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
     lastDragCursor = cursor;
     _localVertices = moveVertex(_localVertices ?? baseVertices, dragVertexIndex, cursor);
+  });
+
+  // Box selection drag
+  $effect(() => {
+    if (!boxStart || !cursor) return;
+    if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
+    lastDragCursor = cursor;
+    boxEnd = cursor;
+  });
+
+  // Multi-drag: move all selected vertices by the cursor delta
+  $effect(() => {
+    if (!multiDragOrigin || !cursor || _selectedIndices.size === 0) return;
+    if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
+    lastDragCursor = cursor;
+    const dx = cursor[0] - multiDragOrigin[0];
+    const dy = cursor[1] - multiDragOrigin[1];
+    multiDragOrigin = cursor;
+    const base = _localVertices ?? baseVertices;
+    _localVertices = base.map((p, i) =>
+      _selectedIndices.has(i) ? [p[0] + dx, p[1] + dy] as Point : p,
+    );
   });
 
   let pathD = $derived.by(() => {
@@ -96,26 +129,79 @@
     onEditComplete?.(pts, 0);
   }
 
-  export function startSelection(start: Point): boolean {
+  export function startSelection(start: Point, shiftKey = false): boolean {
     if (!editable || baseVertices.length < 3) return false;
 
+    // Check if clicking on a vertex
     const vi = hitTestVertex(start, vertices, w, h, 8);
     if (vi >= 0) {
+      if (shiftKey) {
+        // Shift+click on a vertex: delete it (but keep minimum 3 points)
+        if (baseVertices.length <= 3) return true;
+        const next = [...(baseVertices)];
+        next.splice(vi, 1);
+        _localVertices = next;
+        _selectedIndices = new Set();
+        emitComplete();
+        return true;
+      }
+      // If this vertex is already in the multi-selection, start multi-drag
+      if (_selectedIndices.has(vi)) {
+        multiDragOrigin = start;
+        _localVertices = [...baseVertices];
+        return true;
+      }
+      // Single vertex drag — clear selection
+      _selectedIndices = new Set();
       dragVertexIndex = vi;
       _localVertices = [...(baseVertices)];
       return true;
     }
 
+    if (shiftKey) {
+      // Shift+drag anywhere: start box selection (no need to be inside polygon)
+      boxStart = start;
+      boxEnd = start;
+      _localVertices = [...baseVertices];
+      return true;
+    }
+
+    // Check if clicking on the polygon body
     if (pointInPolygon(start, vertices)) {
+      // Start pan — clear selection
+      _selectedIndices = new Set();
       panStart = [start[0] * w, start[1] * h];
       _localVertices = [...(baseVertices)];
       return true;
     }
 
+    // Click on empty space — clear selection
+    _selectedIndices = new Set();
     return false;
   }
 
-  export function endSelection(_end: Point) {
+  export function endSelection(end: Point) {
+    // Finish box selection
+    if (boxStart && boxEnd) {
+      const x1 = Math.min(boxStart[0], boxEnd[0]);
+      const y1 = Math.min(boxStart[1], boxEnd[1]);
+      const x2 = Math.max(boxStart[0], boxEnd[0]);
+      const y2 = Math.max(boxStart[1], boxEnd[1]);
+      const indices: number[] = [];
+      for (let i = 0; i < baseVertices.length; i++) {
+        const [px, py] = baseVertices[i];
+        if (px >= x1 && px <= x2 && py >= y1 && py <= y2) {
+          indices.push(i);
+        }
+      }
+      _selectedIndices = new Set(indices);
+      boxStart = undefined;
+      boxEnd = undefined;
+      _localVertices = undefined;
+      multiDragOrigin = undefined;
+      return;
+    }
+
     let changed = false;
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
       _localVertices = vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point);
@@ -124,18 +210,26 @@
     if (dragVertexIndex !== undefined) {
       changed = true;
     }
+    if (multiDragOrigin !== undefined && _localVertices) {
+      changed = true;
+    }
     if (changed) {
       emitComplete();
     }
     _localVertices = undefined;
     dragVertexIndex = undefined;
     panStart = undefined;
+    multiDragOrigin = undefined;
+    _selectedIndices = new Set();
   }
 
   let over = $state(false);
-</script>
+  </script>
 
-{#if pathD}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <svelte:window onkeydown={(e) => { if (e.key === "Shift") shiftHeld = true; }} onkeyup={(e) => { if (e.key === "Shift") shiftHeld = false; }} />
+
+  {#if pathD}
   <path
     d={pathD}
     fill={color}
@@ -151,25 +245,62 @@
     tabindex="-1"
     onclick={onClick}
     onmousedown={(e) => {
-      if (editable && selected && cursor) {
-        startSelection(cursor);
+      if (editable && selected) {
+        // Convert client coords to SVG viewBox coords, then to normalized (0-1) media coords.
+        const svg = (e.currentTarget as SVGElement).ownerSVGElement;
+        if (svg) {
+          const pt = svg.createSVGPoint();
+          pt.x = e.clientX;
+          pt.y = e.clientY;
+          const ctm = svg.getScreenCTM()?.inverse();
+          if (ctm) {
+            const svgPt = pt.matrixTransform(ctm);
+            const norm: Point = [
+              media.width > 0 ? svgPt.x / media.width : 0,
+              media.height > 0 ? svgPt.y / media.height : 0,
+            ];
+            startSelection(norm, e.shiftKey);
+          }
+        }
       }
       e.stopPropagation();
     }}
   />
 
-  {#if editable && selected && !isEditing && displayVertices.length >= 3}
+{#if editable && selected && !isEditing && displayVertices.length >= 3}
     <PolygonHandler
       vertices={displayVertices}
       {color}
       {isEditing}
-      onStartVertexDrag={(i) => { dragVertexIndex = i; _localVertices = [...(baseVertices)]; }}
+      selectedIndices={_selectedIndices}
+      {boxStart}
+      {boxEnd}
+      {shiftHeld}
+      onStartVertexDrag={(i) => {
+        if (_selectedIndices.size > 0 && _selectedIndices.has(i)) {
+          // Vertex is part of multi-selection — start multi-drag
+          multiDragOrigin = cursor ? [cursor[0], cursor[1]] : undefined;
+          _localVertices = [...baseVertices];
+        } else {
+          _selectedIndices = new Set();
+          dragVertexIndex = i;
+          _localVertices = [...(baseVertices)];
+        }
+      }}
+      onDeleteVertex={(i) => {
+        if (baseVertices.length <= 3) return;
+        const next = [...baseVertices];
+        next.splice(i, 1);
+        _localVertices = next;
+        _selectedIndices = new Set();
+        emitComplete();
+      }}
       onAddVertex={(i) => {
         const { vertices: newVerts, insertedIndex } = addVertexOnEdge(vertices, i);
         _localVertices = newVerts;
         dragVertexIndex = insertedIndex;
       }}
-      onStartPan={() => { panStart = cursor ? [cursor[0] * w, cursor[1] * h] : undefined; _localVertices = [...(baseVertices)]; }}
+      onStartPan={() => { _selectedIndices = new Set(); panStart = cursor ? [cursor[0] * w, cursor[1] * h] : undefined; _localVertices = [...(baseVertices)]; }}
     />
   {/if}
 {/if}

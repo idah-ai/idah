@@ -229,12 +229,16 @@
   }
 
   function onMouseDown(e: MouseEvent) {
+    // Sync mousePosition so the cursor prop used by shape components
+    // reflects the actual click position (not the last mousemove).
+    mousePosition = [e.offsetX, e.offsetY];
+
     const isBuildMode = viewport.mode === BUILD_MODE;
     const isPolyMode = viewport.mode === POLYGON_MODE;
 
     // If an annotation is already selected, try editing it regardless of mode
     if (toolSelection) {
-      const consumed = toolSelection.startSelection(sceneNormalizedCursor);
+      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
       if (consumed) {
         e.stopPropagation();
         return;

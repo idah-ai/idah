@@ -226,7 +226,7 @@
   const ROTATE_RADIUS_PX = 16;
   const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX*HANDLE_RADIUS_PX;
 
-  export function startSelection(start: Point): boolean {
+  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
 
     const xs = points.map((p) => p[0]);
