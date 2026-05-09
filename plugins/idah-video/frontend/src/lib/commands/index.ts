@@ -45,6 +45,8 @@ import { register as registerAnnotationUpdate } from "./annotation/update";
 import { register as registerAnnotationSplit } from "./annotation/split";
 import { register as registerAnnotationGoToNextKeyframe } from "./annotation/go_to_next_keyframe";
 import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_to_prev_keyframe";
+import { register as registerAnnotationGoToNextGroup } from "./annotation/go_to_next_group";
+import { register as registerAnnotationGoToPrevGroup } from "./annotation/go_to_prev_group";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
@@ -91,6 +93,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationSplit(driver);
   registerAnnotationGoToNextKeyframe(driver);
   registerAnnotationGoToPrevKeyframe(driver);
+  registerAnnotationGoToNextGroup(driver);
+  registerAnnotationGoToPrevGroup(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

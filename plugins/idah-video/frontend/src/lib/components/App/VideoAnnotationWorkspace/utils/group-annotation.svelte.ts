@@ -5,6 +5,7 @@ import AnnotationTrackBlock from "$lib/components/App/Timeline/annotations/_Anno
 import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
 
+import { compareGroups } from "$lib/utils/annotation";
 import type { IConfig } from "$idah/v2/types";
 
 interface AnnotationGroup<T> {
@@ -40,10 +41,7 @@ export function groupAnnotations(annotations: IVideoAnnotationRecord[]): Annotat
       }),
   }));
 
-  groups.sort((a, b) => a.annotations[0].shape.start - b.annotations[0].shape.start);
-
-  // Sort groups by groupId ASC
-  groups.sort((a, b) => a.groupId.localeCompare(b.groupId));
+  groups.sort(compareGroups);
 
   return groups;
 }
