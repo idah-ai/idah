@@ -54,7 +54,24 @@ export function register(driver: IIdahDriverV2): void {
           const currentFrame = viewport.video.currentFrame.value;
           const interpolated = getInterpolatedFrame(shape, currentFrame);
           if (!interpolated || !interpolated.points || interpolated.points.length === 0) return;
-          const points = interpolated.points;
+
+          // For rotated shapes (bounding box with angle), rotate points around
+          // their centroid so the AABB reflects the visual bounds.
+          let points = interpolated.points;
+          const angle = interpolated.angle ?? 0;
+          if (angle !== 0 && points.length >= 3) {
+            // Compute centroid
+            let cx = 0, cy = 0;
+            for (const [px, py] of points) { cx += px; cy += py; }
+            cx /= points.length;
+            cy /= points.length;
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            points = points.map(([px, py]) => [
+              cx + (px - cx) * cos - (py - cy) * sin,
+              cy + (px - cx) * sin + (py - cy) * cos,
+            ] as [number, number]);
+          }
 
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
           for (const [px, py] of points) {
