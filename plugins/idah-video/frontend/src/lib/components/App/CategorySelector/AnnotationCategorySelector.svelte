@@ -140,8 +140,8 @@
           modalityShape={tool}
           {categories}
           selectedCategory={tool == "entry:root" && !(tool == mode)
-            ? ($entryRoot as any)?.value?.category
-            : annotationValue.category}
+                      ? entryRoot.value?.category
+                      : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
           {onDeleteAnnotation}

@@ -50,23 +50,23 @@
   <SidebarContent>
     <SidebarGroup class="p-3">
       <SidebarGroupContent>
-        {#key [annotationValue, mode, $entryRoot?.value.category]}
+        {#key [annotationValue, mode, entryRoot?.value?.category]}
           <SelectionPanel
             selectedCategory={(defaultMode
-              ? annotationValue.category || $entryRoot?.value.category
+              ? annotationValue.category || entryRoot?.value?.category
               : annotationValue.category) || ""}
             {annotationId}
             annotationValue={(defaultMode
               ? Object.keys(annotationValue).length
                 ? annotationValue
-                : $entryRoot?.value
+                : entryRoot?.value
               : annotationValue) || {}}
             onSelectCategory={(selectedCategoryId) =>
               categorySelection(defaultMode ? "entry:root" : mode, selectedCategoryId)}
             onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
             onEditValue={(value) => value && onEditValue(value, defaultMode ? "entry:root" : mode)}
             disabled={selAnnotation?.locked ||
-              (defaultMode || mode == "entry:root" ? !!$entryRoot?.locked : false) ||
+              (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
               !["annotate", "review"].includes(getDriver().workflowStep)}
           />
         {/key}

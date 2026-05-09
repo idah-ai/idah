@@ -18,6 +18,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
 
 export const command = {
   name: "annotation.split",
@@ -59,21 +60,10 @@ export function register(driver: IIdahDriverV2): void {
       // Ensure there is a keyframe at the split point.
       // If none exists, interpolate one from the surrounding keyframes.
       let splitFrame: IVideoFrameSelection | undefined = frames.find((f) => f.frame === splitAt);
-      if (!splitFrame && frames.length >= 2) {
-        let before = frames[0];
-        let after = frames[frames.length - 1];
-        for (const f of frames) {
-          if (f.frame < splitAt && (!before || f.frame > before.frame)) before = f;
-          if (f.frame > splitAt && (!after || f.frame < after.frame)) after = f;
-        }
-        if (before && after && before.frame < splitAt && after.frame > splitAt) {
-          const t = (splitAt - before.frame) / (after.frame - before.frame);
-          const angle = ((after.angle || 0) - (before.angle || 0)) * t + (before.angle || 0);
-          const points: [number, number][] = before.points.map((p, i) => [
-            p[0] + ((after.points[i]?.[0] ?? p[0]) - p[0]) * t,
-            p[1] + ((after.points[i]?.[1] ?? p[1]) - p[1]) * t,
-          ] as [number, number]);
-          splitFrame = { frame: splitAt, angle, points };
+      if (!splitFrame) {
+        const interpolated = getInterpolatedFrame(shape, splitAt);
+        if (interpolated) {
+          splitFrame = { frame: splitAt, angle: interpolated.angle, points: interpolated.points ?? [] };
         }
       }
 

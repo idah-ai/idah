@@ -131,7 +131,7 @@
     const entryRootAnnotation = (data.annotations?.items ?? []).find(
       (ann) => (ann.shape as any).type === "entry:root",
     );
-    if (entryRootAnnotation) entryRoot.set(entryRootAnnotation);
+    if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
     /** TOOLS CONFIGURATION */
     const toolListConfig = [
@@ -254,7 +254,7 @@
 
     let requirementFullfilled = requiredFullfilled(value, getDriver().config[valueMode]?.properties);
 
-    if (valueMode == "entry:root" && !selAnnotation && $entryRoot?.metadata.id) selection.selectAnnotation($entryRoot as any);
+    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id) selection.selectAnnotation(entryRoot.value as any);
 
     // wait for confirmation
     if (showPopOver) {

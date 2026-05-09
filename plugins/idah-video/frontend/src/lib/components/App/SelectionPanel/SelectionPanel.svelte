@@ -20,6 +20,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { categoryValueToLabel } from "$lib/utils/annotation";
 
   import type { IConfigProperty } from "$idah/v2/types";
   import type { AnnotationValue } from "$idah/context/annotation-context";
@@ -108,17 +109,6 @@
 
   function reselectCategory(reselectedCategoryId: string) {
     onReSelectCategory?.(reselectedCategoryId);
-  }
-
-  function categoryValueToLabel(value?: string, replaceLabel?: string) {
-    if (!value) return "";
-    const label = value.split("/").map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
-    if (replaceLabel) {
-      label[label.length - 1] = replaceLabel;
-    } else {
-      label.pop();
-    }
-    return label.join(" / ");
   }
 
 </script>

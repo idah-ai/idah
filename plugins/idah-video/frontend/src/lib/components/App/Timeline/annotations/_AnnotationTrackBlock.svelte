@@ -8,8 +8,7 @@
   } from "$lib/components/App/ContextMenu/store";
   import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { ui } from "$lib/state/ui.svelte";
-  import { annotationColor } from "$lib/utils/color";
+  import { resolveAnnotationColor } from "$lib/utils/color";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -34,12 +33,7 @@
   const keyframes = $derived(annotation.shape.frames.map((f) => f.frame));
 
   // Compute color using the same annotationColor() as the viewport shapes
-  let color = $derived.by(() => {
-    return annotationColor(ui.colorMode, annotation, (catId: string) => {
-      const config = getDriver().config[annotation?.shape?.type ?? ""];
-      return config?.values?.find((v) => v.id === catId)?.color ?? null;
-    });
-  });
+  let color = $derived.by(() => resolveAnnotationColor(annotation));
 
   // Check if this specific annotation is the selected one
   let isSelected = $derived.by(() => {

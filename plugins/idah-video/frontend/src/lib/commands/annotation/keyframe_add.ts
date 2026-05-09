@@ -8,8 +8,9 @@
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoFrameSelection } from "$idah/v2/video-types";
+import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
@@ -43,13 +44,23 @@ export function register(driver: IIdahDriverV2): void {
 
       const snapshot: AnnotationItem = { ...record, shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] } };
 
+      // If points are empty, interpolate from surrounding keyframes
+      let selection = { ...props.selection };
+      if (!selection.points || selection.points.length === 0) {
+        const existingShape = snapshot.shape as IVideoAnnotationShape;
+        const result = getInterpolatedFrame(existingShape, selection.frame);
+        if (result) {
+          selection = { ...selection, angle: result.angle, points: result.points ?? [] };
+        }
+      }
+
       return {
         command: { ...command },
         async do() {
           const frames = [...((snapshot.shape.frames as IVideoFrameSelection[]) ?? [])];
-          const existing = frames.findIndex((f) => f.frame === props.selection.frame);
-          if (existing >= 0) frames[existing] = props.selection;
-          else frames.push(props.selection);
+          const existing = frames.findIndex((f) => f.frame === selection.frame);
+          if (existing >= 0) frames[existing] = selection;
+          else frames.push(selection);
           frames.sort((a, b) => a.frame - b.frame);
 
           const min = frames.reduce((m, f) => Math.min(m, f.frame), Infinity);

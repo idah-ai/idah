@@ -5,9 +5,7 @@
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$idah/v2/video-types";
-  import { ui } from "$lib/state/ui.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { annotationColor } from "$lib/utils/color";
+  import { resolveAnnotationColor } from "$lib/utils/color";
   import {
     pointInPolygon,
     hitTestVertex,
@@ -34,13 +32,7 @@
     onEditComplete?: (points: Point[], angle: number) => void;
   } = $props();
 
-  let color = $derived.by(() => {
-    const baseColor = annotationColor(ui.colorMode, annotation, (catId: string) => {
-      const config = getDriver().config[annotation?.shape?.type ?? ""];
-      return config?.values?.find((v) => v.id === catId)?.color ?? null;
-    });
-    return baseColor;
-  });
+  let color = $derived.by(() => resolveAnnotationColor(annotation));
 
   let w = $derived(media.width);
   let h = $derived(media.height);

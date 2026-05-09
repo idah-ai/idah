@@ -5,7 +5,7 @@ import AnnotationTrackBlock from "$lib/components/App/Timeline/annotations/_Anno
 import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
 
-import { compareGroups } from "$lib/utils/annotation";
+import { compareGroups, categoryValueToLabel } from "$lib/utils/annotation";
 import type { IConfig } from "$idah/v2/types";
 
 interface AnnotationGroup<T> {
@@ -79,17 +79,6 @@ export function findClosestAnnotationInGroup(props: {
   }
 
   return closestAnnotation;
-}
-
-function categoryValueToLabel(value?: string) {
-  if (!value) return "";
-
-  const label = value.split("/").map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
-
-  // remove the last part of array
-  label.pop();
-
-  return label.join(" / ");
 }
 
 export function getGroupTitle(props: {

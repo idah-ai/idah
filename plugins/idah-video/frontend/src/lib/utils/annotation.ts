@@ -14,6 +14,18 @@ export function compareGroups(a: { groupId: string; annotations: { shape: { star
   return a.groupId.localeCompare(b.groupId);
 }
 
+/** Format a category path like "vehicles/car" into a human-readable label like "Vehicles / Car". */
+export function categoryValueToLabel(value?: string, replaceLabel?: string): string {
+  if (!value) return "";
+  const label = value.split("/").map((s) => s.slice(0, 1).toUpperCase() + s.slice(1));
+  if (replaceLabel) {
+    label[label.length - 1] = replaceLabel;
+  } else {
+    label.pop();
+  }
+  return label.join(" / ");
+}
+
 /**
  * Return all unique group IDs in the timeline display order.
  *

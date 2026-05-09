@@ -28,8 +28,6 @@ export const command = {
   longDescription: "Pan and zoom to fit the selected annotation in the viewport",
 };
 
-let _previousTransform = { translate: [0, 0] as [number, number], scale: 1 };
-
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
@@ -101,7 +99,6 @@ export function register(driver: IIdahDriverV2): void {
           const centerX = sx + sw / 2;
           const centerY = sy + sh / 2;
 
-          _previousTransform = prev;
           viewport.workspace.transform.translate = [
             vpW / 2 - centerX * newScale,
             vpH / 2 - centerY * newScale,

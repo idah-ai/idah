@@ -5,9 +5,24 @@
 // ---------------------------------------------------------------------------
 
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
-import { VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
+import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$idah/v2/video-types";
 import type { Point } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
+
+/** Find the keyframe nearest to a given frame. Returns undefined if no frames exist. */
+export function nearestKeyframe(
+  shape: { frames?: { frame: number; angle: number; points: [number, number][] }[] },
+  frame: number,
+): { angle: number; points: [number, number][] } | undefined {
+  const frames = shape.frames ?? [];
+  if (frames.length === 0) return undefined;
+  const sorted = [...frames].sort(
+    (a, b) => Math.abs(a.frame - frame) - Math.abs(b.frame - frame),
+  );
+  const nearest = sorted[0];
+  if (!nearest.points?.length) return undefined;
+  return { angle: nearest.angle, points: nearest.points };
+}
 
 /**
  * Simple per-point linear interpolation (lerp).
@@ -62,9 +77,16 @@ export function getInterpolatedFrame(
   const t = (current_frame - before.frame) / (after.frame - before.frame);
   const angle = ((after.angle || 0) - (before.angle || 0)) * t + (before.angle || 0);
 
-  if (shape.type === VIDEO_BOUNDING_BOX) {
-    return { points: lerpPoints(before.points!, after.points!, t), angle };
+  let pts;
+  switch (shape.type) {
+    case VIDEO_BOUNDING_BOX:
+      pts = lerpPoints(before.points!, after.points!, t);
+      return { points: pts, angle };
+    case VIDEO_POLYGON:
+      pts = interpolatePolygon(before.points!, after.points!, t);
+      return { points: pts, angle: 0 };
+    default:
+      throw `Unsupported shape: ${shape.type}`
   }
 
-  return { points: interpolatePolygon(before.points!, after.points!, t), angle };
 }

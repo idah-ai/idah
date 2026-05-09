@@ -6,6 +6,8 @@
 //   "random"   — generates a deterministic HSL color from the annotation's id,
 //                avoiding overly bright or dark shades
 // ---------------------------------------------------------------------------
+import { ui } from "$lib/state/ui.svelte";
+import { getDriver } from "$lib/state/driver.svelte";
 
 /**
  * Generate a hash from a string (simple FNV-1a 32-bit).
@@ -64,4 +66,20 @@ export function annotationColor(
   }
   // Fallback: deterministic HSL from id
   return hslFromId(annotation.id ?? "");
+}
+
+/**
+ * Convenience helper that resolves an annotation's display color using the
+ * UI's current color mode and the driver config's category colors.
+ *
+ * Usage in a $derived.by:
+ *   let color = $derived.by(() => resolveAnnotationColor(annotation));
+ */
+export function resolveAnnotationColor(
+  annotation: { id?: string; value?: { category?: string }; shape?: { type?: string } },
+): string {
+  return annotationColor(ui.colorMode, annotation, (catId: string) => {
+    const config = getDriver().config[annotation?.shape?.type ?? ""];
+    return config?.values?.find((v) => v.id === catId)?.color ?? null;
+  });
 }

@@ -4,9 +4,13 @@
 // An annotation with shape.type === "entry:root" holds entry-level
 // category/properties (scene-level classification).
 //
-// Exposed as a writable store so components can use $entryRoot syntax.
+// Exposed as a Svelte 5 rune-based object so components can use
+// `entryRoot.value` syntax.
 // ---------------------------------------------------------------------------
 
-import { writable } from "svelte/store";
+let _entryRoot: any | undefined = $state(undefined);
 
-export const entryRoot = writable<any | undefined>(undefined);
+export const entryRoot: { value: any | undefined } = {
+  get value() { return _entryRoot; },
+  set value(v: any | undefined) { _entryRoot = v; },
+};

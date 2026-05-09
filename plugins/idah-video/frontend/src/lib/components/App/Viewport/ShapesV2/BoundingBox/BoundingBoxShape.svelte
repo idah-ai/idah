@@ -1,20 +1,18 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-      import { normalizeRect } from "$lib/utils/math/bbox";
-      import { centroid as centroidUtil, rotatePoint, type Point } from "$lib/utils/math/point";
-    import { media } from "$lib/state/media.svelte";
-    import { getInterpolatedFrame } from "$lib/utils/interpolation";
-    import type { IVideoAnnotationShape } from "$idah/v2/video-types";
-    import { ui } from "$lib/state/ui.svelte";
-    import { getDriver } from "$lib/state/driver.svelte";
-    import { annotationColor } from "$lib/utils/color";
+  import { normalizeRect } from "$lib/utils/math/bbox";
+  import { centroid as centroidUtil, rotatePoint, type Point } from "$lib/utils/math/point";
+  import { media } from "$lib/state/media.svelte";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import type { IVideoAnnotationShape } from "$idah/v2/video-types";
+  import { resolveAnnotationColor } from "$lib/utils/color";
   import {
-      boundingBoxHandle,
-      rotatePointN,
-      inverseRotatePointN,
-      rotatedCursorSVG,
-      rotateCursorSVG,
-    } from "./utils";
+    boundingBoxHandle,
+    rotatePointN,
+    inverseRotatePointN,
+    rotatedCursorSVG,
+    rotateCursorSVG,
+  } from "./utils";
   import BBoxHandler from "./_BBoxHandler.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -38,13 +36,7 @@
     onEditComplete,
   }: Props = $props();
 
-  let color = $derived.by(() => {
-    const baseColor = annotationColor(ui.colorMode, annotation, (catId: string) => {
-      const config = getDriver().config[annotation?.shape?.type ?? ""];
-      return config?.values?.find((v) => v.id === catId)?.color ?? null;
-    });
-    return baseColor;
-  });
+  let color = $derived.by(() => resolveAnnotationColor(annotation));
 
   // ── Media dimensions (pixel space) ─────────────────────────────────────
   let w = $derived(media.width);
