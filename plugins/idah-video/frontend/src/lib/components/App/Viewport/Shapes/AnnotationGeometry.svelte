@@ -1,6 +1,6 @@
 <script lang="ts">
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
-  import BoundingBoxShape from "./BoundingBox/BoundingBoxShape.svelte";
+  import BBoxShape from "./BBoxShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
   import type { Point } from "$lib/utils/math/point";
 
@@ -46,7 +46,7 @@
 </script>
 
 {#if annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX}
-  <BoundingBoxShape
+  <BBoxShape
     bind:this={_bboxComp}
     {annotation}
     {selected}

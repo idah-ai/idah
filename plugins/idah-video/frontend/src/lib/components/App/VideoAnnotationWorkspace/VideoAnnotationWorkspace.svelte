@@ -25,7 +25,7 @@
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
-  import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/ShapesV2/ShapesContainer.svelte";
+  import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
@@ -67,11 +67,11 @@
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   let annotationId = $derived<string | undefined>(selAnnotation?.id);
-  let annotationValue: AnnotationValue = $derived(selAnnotation?.value || {});
 
   /** Mutable value used during annotation creation (popover category/property selection).
    *  Once confirmed, this is merged into the final annotation. */
   let pendingValue: AnnotationValue = $state({});
+  let annotationValue: AnnotationValue = $derived.by(() => selAnnotation?.value || pendingValue || {});
 
   let length = $state(0);
   let tools: {
@@ -368,7 +368,7 @@
         addAnnotation(shape, annotation_value_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, angle, selectedId];
-        pendingValue = {};
+        // Keep pendingValue so the popover shows the selected category
         showPopOver = true;
       }
     } else {
@@ -385,11 +385,6 @@
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
     if (annotation) {
       selection.selectAnnotation(annotation as any);
-      // Set viewport mode to the annotation's shape type so the property panel
-      // shows the correct category/property config
-      if (!isNoteMode && editable && annotation.shape.type) {
-        viewport.mode = annotation.shape.type;
-      }
     } else {
       selection.deselect();
     }
@@ -480,13 +475,21 @@
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
-    if (!selGroup) return;
-
-    /** Update annotation group category */
-    getDriver().command.call("annotation.updateGroupCategory", {
-      groupId: selGroup.groupId,
-      categoryIdToBeUpdate: reselectedCategoryId,
-    });
+    if (selGroup) {
+      // Update category for all annotations in the group
+      getDriver().command.call("annotation.updateGroupCategory", {
+        groupId: selGroup.groupId,
+        categoryIdToBeUpdate: reselectedCategoryId,
+      });
+    } else if (selAnnotation) {
+      // Update category for a single annotation
+      getDriver().command.call("annotation.update", {
+        annotation: selAnnotation,
+        value: { category: reselectedCategoryId },
+      });
+    } else {
+      return;
+    }
 
     // Update the currently selected annotation value to reflect the category change in the properties sidebar
     onEditValue({ category: reselectedCategoryId }, mode);

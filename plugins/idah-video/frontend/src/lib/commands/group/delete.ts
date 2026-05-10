@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// group.delete — Delete all annotations in a group
+// annotation.deleteGroup — Delete all annotations in a group
 // Undoable: restores all annotations.
 //
 // Usage:
-//   driver.command.call("group.delete", {
-//     groupId: "...", annotations: [ ... ]
+//   driver.command.call("annotation.deleteGroup", {
+//     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
@@ -13,7 +13,7 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
 export const command = {
-  name: "group.delete",
+  name: "annotation.deleteGroup",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -23,7 +23,7 @@ export const command = {
 
 export interface GroupDeleteProps {
   groupId: string;
-  annotations: AnnotationItem[];
+  annotations?: AnnotationItem[];
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -35,9 +35,24 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as GroupDeleteProps | undefined;
-      if (!props || !data.annotations || props.annotations.length === 0) return noopAction(command);
+      if (!props || !data.annotations) return noopAction(command);
 
-      const snapshot = [...props.annotations];
+      // Resolve annotations: use provided list, or look them up from the data store
+      let groupAnnotations: AnnotationItem[];
+
+      if (props.annotations && props.annotations.length > 0) {
+        groupAnnotations = props.annotations;
+      } else if (props.groupId) {
+        groupAnnotations = data.annotations.items.filter(
+          (ann) => (ann as any).metadata?.group_id === props.groupId
+        );
+      } else {
+        return noopAction(command);
+      }
+
+      if (groupAnnotations.length === 0) return noopAction(command);
+
+      const snapshot = [...groupAnnotations];
 
       return {
         command: { ...command },

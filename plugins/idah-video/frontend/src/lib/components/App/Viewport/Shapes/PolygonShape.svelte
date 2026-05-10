@@ -12,7 +12,7 @@
     moveVertex,
     addVertexOnEdge,
   } from "./Polygon/utils";
-  import PolygonHandler from "./Polygon/PolygonHandler.svelte";
+  import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
 
   let {
     annotation,
@@ -245,6 +245,7 @@
     tabindex="-1"
     onclick={onClick}
     onmousedown={(e) => {
+      if (viewport.mode === "idah-video:polygon") return;
       if (editable && selected) {
         // Convert client coords to SVG viewBox coords, then to normalized (0-1) media coords.
         const svg = (e.currentTarget as SVGElement).ownerSVGElement;

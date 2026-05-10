@@ -291,7 +291,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           label: "Number of wheels",
           format: { minimum: 0, maximum: 24, step: 1 },
           required: true,
-          visibility: true,
+          visibility: ["in", [["get", ["value.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]]] as any,
           description: "How many wheels does the object have?",
         },
         {

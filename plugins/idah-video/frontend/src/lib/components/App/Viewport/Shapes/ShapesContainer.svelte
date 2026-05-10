@@ -236,16 +236,7 @@
     const isBuildMode = viewport.mode === BUILD_MODE;
     const isPolyMode = viewport.mode === POLYGON_MODE;
 
-    // If an annotation is already selected, try editing it regardless of mode
-    if (toolSelection) {
-      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
-      if (consumed) {
-        e.stopPropagation();
-        return;
-      }
-    }
-
-    // ── Polygon creation mode (no annotation selected) ────────────────
+    // ── Polygon creation mode — check BEFORE tool selection ──────────
     if (isPolyMode) {
       e.stopPropagation();
       if (polygonDraft.points.length >= 3) {
@@ -255,21 +246,22 @@
         if (dx * dx + dy * dy < 400) {
           const pts = [...polygonDraft.points];
           polygonDraft.reset();
-          getDriver().command.call("annotation.add", {
-            shape: {
-              type: "idah-video:polygon",
-              start: frame,
-              end: frame,
-              frames: [{ frame, points: pts }],
-            },
-            value: {},
-          });
-          getDriver().setMode("default");
+          // Route through onSelection so the workspace can apply pendingValue (selected category)
+          onSelection("idah-video:polygon", frame, pts, 0, undefined);
           return;
         }
       }
       getDriver().command.call("annotation.polygon.add_point", { point: sceneNormalizedCursor });
       return;
+    }
+
+    // If an annotation is already selected, try editing it (but NOT in polygon mode)
+    if (toolSelection) {
+      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
+      if (consumed) {
+        e.stopPropagation();
+        return;
+      }
     }
 
     if (isBuildMode) {
@@ -355,6 +347,8 @@
   }
 
   function handleClick(ann: IAnnotationRecord) {
+    // Don't select annotations in polygon creation mode
+    if (viewport.mode === POLYGON_MODE) return;
     if (
       selection.value?.type === "annotation" &&
       selection.value.annotation?.id === ann.id

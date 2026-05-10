@@ -206,6 +206,18 @@
           </SelectContent>
         </Select>
       </div>
+
+      <!-- PROPERTIES -->
+      {#if properties.length > 0}
+        <section class="flex flex-col gap-2">
+          <div class="flex flex-row items-center gap-2">
+            <Text size="sm" weight="semibold">Properties</Text>
+          </div>
+          {#each properties as property, i (`${property.id}-${i}`)}
+            {@render renderProperties(property, i)}
+          {/each}
+        </section>
+      {/if}
     </section>
   {/if}
 

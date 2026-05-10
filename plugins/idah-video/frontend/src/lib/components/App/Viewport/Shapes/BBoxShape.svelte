@@ -12,8 +12,8 @@
     inverseRotatePointN,
     rotatedCursorSVG,
     rotateCursorSVG,
-  } from "./utils";
-  import BBoxHandler from "./_BBoxHandler.svelte";
+  } from "./BoundingBox/utils";
+  import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -339,6 +339,7 @@
     tabindex="-1"
     onclick={onClick}
     onmousedown={(e) => {
+      if (viewport.mode === "idah-video:polygon") return;
       if (editable && selected && cursor) {
         startSelection(cursor);
       }

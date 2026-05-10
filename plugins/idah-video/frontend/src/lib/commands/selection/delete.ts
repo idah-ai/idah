@@ -49,7 +49,13 @@ export function register(driver: IIdahDriverV2): void {
         };
       }
 
-      const records = (sel as any).annotations as AnnotationItem[];
+      // Resolve annotations for the group from the data store
+      const groupId = (sel as any).groupId as string;
+      const records = data.annotations.items.filter(
+        (ann) => (ann as any).metadata?.group_id === groupId
+      );
+      if (records.length === 0) return noopAction(command);
+
       return {
         command: { ...command },
         async do() {

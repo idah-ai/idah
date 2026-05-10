@@ -9,6 +9,7 @@
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
+import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$idah/v2/video-types";
 import { noopAction } from "..";
@@ -46,6 +47,8 @@ export function register(driver: IIdahDriverV2): void {
             value: props.value,
           });
           (this as any)._createdId = created.id;
+          // Select the newly created annotation
+          selection.selectAnnotation(created as any);
           // Exit drawing mode after successful creation
           driver.setMode("default");
         },

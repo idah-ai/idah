@@ -22,7 +22,7 @@
   let { track }: Props = $props();
 
   // Variables
-  let { id, title, subtitle, top, items } = $derived(track);
+  let { id, title, subtitle, items } = $derived(track);
   let isGroupSelected = $derived.by(() => {
     const v = selection.value;
     return v?.type === "group" && v.groupId === id;
@@ -56,12 +56,11 @@
 
 <button
   class={cn(
-    "hover:bg-secondary absolute right-0 left-0 box-border cursor-pointer border-b px-2 text-left select-none focus:outline-none",
+    "hover:bg-secondary block w-full box-border cursor-pointer border-b px-2 text-left select-none focus:outline-none",
     {
       "border-primary bg-primary/10 border-t border-b": isGroupSelected,
     },
   )}
-  style:top="{top}px;"
   style:height="{TRACK_HEIGHT}px;"
   oncontextmenu={handleOnContextMenu}
   onclick={handleClick}
