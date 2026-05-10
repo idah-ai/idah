@@ -122,7 +122,7 @@
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
-    viewport.video.currentFrame.value = 1;
+    viewport.video.currentFrame.value = 0;
 
     // annotations are now derived from the global data store
     // The store is already preloaded in initDataStores()

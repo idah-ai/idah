@@ -2,7 +2,7 @@
   interface Props {
     x: number;
     value: number;
-    labelFormatter?: (value: number) => string;
+    labelFormatter?: (value: number, target?: string) => string;
     height: number;
     color?: string;
     showLine?: boolean;
@@ -12,7 +12,7 @@
   let {
     x,
     value,
-    labelFormatter = (v: number) => String(Math.floor(v)),
+    labelFormatter = (v: number, _target?: string) => String(Math.floor(v)),
     height,
     color = "#ccc",
     showLine = true,
@@ -25,7 +25,7 @@
     <div class="caret-line" style="background-color: {color};"></div>
   {/if}
   {#if showLabel}
-    <div class="caret-label" style="border-color: {color}; color: {color};">{labelFormatter(value)}</div>
+    <div class="caret-label" style="border-color: {color}; color: {color};">{labelFormatter(value, "caret")}</div>
   {/if}
 </div>
 

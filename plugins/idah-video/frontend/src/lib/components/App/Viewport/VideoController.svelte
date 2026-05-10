@@ -64,7 +64,8 @@
   ];
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
-  let frameInputValue = $state<number>(viewport.video.currentFrame.value);
+  // Display value is 1-based (user-facing), internal currentFrame is 0-based.
+  let frameInputValue = $state<number>(viewport.video.currentFrame.value + 1);
 
   let disabledSplitButton = $derived.by(() => {
     const ann =
@@ -74,41 +75,35 @@
     if (ann.shape?.end < viewport.video.currentFrame.value) return true;
   });
 
-  // Sync frameInputValue with viewport.video.currentFrame when it changes externally
+  // Sync frameInputValue from currentFrame (0→1 for display)
   $effect(() => {
-    frameInputValue = viewport.video.currentFrame.value;
+    frameInputValue = viewport.video.currentFrame.value + 1;
   });
 
   // TODO: @audi ideally, these should call commands ?
 
   // Functions
-  const performSeek = (value: string) => {
-    if (!value || value === "") return;
+  const handleInput = (e: Event) => {
+    frameInputValue = Number((e.target as HTMLInputElement).value);
+  };
 
-    const frameNumber = Number(value);
-
-    // Validate frame number
-    if (isNaN(frameNumber) || frameNumber < 1 || frameNumber > media.totalFrames) {
+  const performSeek = () => {
+    const value = frameInputValue;
+    if (isNaN(value) || value < 1 || value > media.totalFrames) {
+      frameInputValue = viewport.video.currentFrame.value + 1;
       return;
     }
-
-    viewport.video.currentFrame.value = frameNumber;
+    viewport.video.currentFrame.value = value - 1;
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {
-    // Only trigger on Enter key
     if (event.key !== "Enter") return;
-
-    const target = event.target as HTMLInputElement;
-    performSeek(target.value);
-
-    // Blur the input after seeking
-    target.blur();
+    performSeek();
+    (event.target as HTMLInputElement).blur();
   };
 
-  const handleBlur = (event: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-    const target = event.currentTarget;
-    performSeek(target.value);
+  const handleBlur = () => {
+    performSeek();
   };
 
   function selectVideoSpeed(selectedSpeed: number): void {
@@ -118,7 +113,7 @@
 
   function goFrame(direction: "prev" | "next", step: number = 1) {
     const delta = direction === "prev" ? -step : step;
-    viewport.video.currentFrame.value = Math.max(1, Math.min(media.totalFrames, viewport.video.currentFrame.value + delta));
+    viewport.video.currentFrame.value = Math.max(0, Math.min(media.totalFrames - 1, viewport.video.currentFrame.value + delta));
   }
 
   function gotoFrameStep(direction: "prev" | "next") {
@@ -266,9 +261,9 @@
         class="min-w-24"
         placeholder="Frame"
         min={1}
-        max={Math.max(0, media.totalFrames)}
         suffix={`/ ${Math.max(0, media.totalFrames)}`}
-        bind:value={frameInputValue}
+        value={frameInputValue}
+        oninput={handleInput}
         onkeyup={handleKeyUp}
         onblur={handleBlur}
         groupInputClass="h-7"

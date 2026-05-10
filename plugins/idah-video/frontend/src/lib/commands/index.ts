@@ -52,6 +52,7 @@ import { register as registerAnnotationGoToPrevGroup } from "./annotation/go_to_
 import { register as registerAnnotationUpdateGroupCategory } from "./annotation/updateGroupCategory";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
+import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
 import { register as registerTimelineFocus } from "./timeline/focus";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 
@@ -106,5 +107,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
   registerToggleColorMode(driver);
+  registerToggleTimeDisplay(driver);
   registerToggleRenderMode(driver);
 }

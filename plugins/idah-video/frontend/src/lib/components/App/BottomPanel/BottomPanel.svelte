@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ui } from "$lib/state/ui.svelte";
+  import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { transformAnnotationsToTracks } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
 
@@ -64,7 +66,15 @@
 
   const effectiveRulerMajorStep = $derived.by<number>(() => {
     if (containerWidth <= 0) return 50;
-    const target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / containerWidth;
+    let target = (TARGET_MAJOR_STEP_PX * (viewport.timeline.range.endRange - viewport.timeline.range.startRange)) / containerWidth;
+    // In time mode, labels are wider (h:mm:ss or m:ss), so we need more spacing.
+    // Round to whole seconds to get clean time labels. Minimum 1 second.
+    if (ui.timeDisplay === "time") {
+      const fps = media.fps;
+      // Round to nearest second, never below 1
+      const seconds = Math.max(1, Math.round(target / fps));
+      return seconds * fps;
+    }
     return Math.max(1, roundToSeries(Math.max(1, target)));
   });
 
@@ -82,7 +92,6 @@
     <TimelineZoom {zoomFn} />
   </TimelineToolbar>
 
-    {#if viewportAnnotations.length}
     <Timeline
       onZoom={(fn) => (zoomFn = fn)}
       bind:viewport={viewport.timeline.range}
@@ -107,5 +116,4 @@
         <AnnotationTrackInfo {track} />
       {/snippet}
     </Timeline>
-  {/if}
 </TimelinePanel>

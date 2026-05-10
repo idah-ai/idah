@@ -36,8 +36,9 @@
   let hlsReloadTimer: ReturnType<typeof setTimeout> | undefined;
 
   // ── Helpers ────────────────────────────────────────────────────────
-  function timeToFrame(t: number) { return Math.round(t * fps); }
-  function frameToTime(f: number) { return (f + 0.001) / fps; }
+  // Video is 1-based (frame 1 = 1/fps sec), data/timeline is 0-based.
+  function timeToFrame(t: number) { return Math.round(t * fps) - 1; }
+  function frameToTime(f: number) { return (f + 1 + 0.001) / fps; }
 
   // ── RAF loop (only runs while playing) ─────────────────────────────
   function startRAF() {
@@ -101,8 +102,6 @@
     const delta = Math.abs(target - lastSeekedFrame);
     lastSeekedFrame = target;
 
-    if (target <= 0) target = 1;
-    if (target >= media.totalFrames) target = media.totalFrames;
     videoElement.currentTime = frameToTime(target);
 
     if (streamHandler) {

@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { Viewport } from "$lib/components/App/Timeline/types";
+  import { media } from "$lib/state/media.svelte";
 
   interface Props {
     viewport: Viewport;
     scale: number;
     smallStep?: number;
     bigStep?: number;
-    labelFormatter?: (value: number) => string;
+    labelFormatter?: (value: number, target?: string) => string;
   }
 
   let {
@@ -14,7 +15,7 @@
     scale,
     smallStep = 10,
     bigStep = 50,
-    labelFormatter = (value: number) => String(Math.floor(value) + 1),
+    labelFormatter = (value: number, _target?: string) => String(Math.floor(value) + 1),
   }: Props = $props();
 
   // Generate all marks (small and big) within the viewport range
@@ -76,7 +77,7 @@
     {#each groupedMarks as mark, markIndex (markIndex)}
       {#if mark.isBig && bigStep > 0}
         <div class="mark big" style="left: {mark.position}px;">
-          <span class="label">{labelFormatter(mark.value)}</span>
+          <span class="label">{labelFormatter(mark.value, bigStep < media.fps ? "ruler-sub" : "ruler")}</span>
         </div>
       {:else if smallStep > 0}
         <div class="mark small" style="left: {mark.position}px;"></div>

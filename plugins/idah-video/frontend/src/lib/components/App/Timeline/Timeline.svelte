@@ -9,6 +9,8 @@
 
   import { modKey } from "$lib/utils/browser";
   import { selection } from "$lib/state/selection.svelte";
+  import { ui } from "$lib/state/ui.svelte";
+  import { media } from "$lib/state/media.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
@@ -47,6 +49,30 @@
   // Starts as true so the selection caret is visible from the beginning at frame 0
   let selectionLength = $state(1);
   let hasSelection = $state(true);
+
+  // ── Label formatter ───────────────────────────────────────────────────
+  // Accepts (value, target). target="caret" includes frame sub-second (h:mm:ss.ff),
+  // target="ruler" (or anything else) shows h:mm:ss without frames.
+  // Falls back to frame numbers when ui.timeDisplay === "frames".
+
+  const labelFormatter = $derived.by<(value: number, target?: string) => string>(() => {
+    if (rulerLabelFormatter) return rulerLabelFormatter;
+    if (ui.timeDisplay === "time") {
+      const fps = media.fps;
+      return (value: number, target?: string) => {
+        const s = Math.floor(value) / fps;
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = Math.floor(s % 60);
+        const showFrame = target === "caret" || target === "ruler-sub";
+        const base = h > 0
+          ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+          : `${m}:${String(sec).padStart(2, "0")}`;
+        return showFrame ? `${base}.${String(Math.floor(value) % fps).padStart(2, "0")}` : base;
+      };
+    }
+    return (value: number, _target?: string) => String(Math.floor(value) + 1);
+  });
 
   // Derive selectionOffset from currentFrame
   const selectionOffset = $derived(currentFrame);
@@ -446,7 +472,7 @@
     <div
       role="button"
       tabindex="0"
-      class="timeline-ruler-viewport"
+      class="timeline-ruler-viewport outline-hidden focus:outline-none"
       bind:this={rulerViewportEl}
       onscroll={handleRulerScroll}
       onwheel={handleRulerWheel}
@@ -460,7 +486,7 @@
         {scale}
         smallStep={rulerSmallStep}
         bigStep={rulerBigStep}
-        labelFormatter={rulerLabelFormatter}
+        labelFormatter={labelFormatter}
       />
     </div>
     <!-- Non-scrolling overlay for caret labels — uses viewport-relative x so labels track correctly -->
@@ -469,7 +495,7 @@
         <Caret
           x={selectionCaretViewportX}
           value={selectionOffset}
-          labelFormatter={rulerLabelFormatter}
+          labelFormatter={labelFormatter}
           height={30}
           color="#4a90d9"
           showLine={false}
@@ -479,7 +505,7 @@
         <Caret
           x={hoverCaretViewportX}
           value={caretFrame}
-          labelFormatter={rulerLabelFormatter}
+          labelFormatter={labelFormatter}
           height={30}
           color="orangered"
           showLine={false}
@@ -530,7 +556,7 @@
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
-              labelFormatter={rulerLabelFormatter}
+              labelFormatter={labelFormatter}
               height={tracksHeight}
               color="#4a90d9"
               showLabel={false}
@@ -558,7 +584,7 @@
             <Caret
               x={caretPixelX}
               value={caretFrame}
-              labelFormatter={rulerLabelFormatter}
+              labelFormatter={labelFormatter}
               height={tracksHeight}
               color="orangered"
               showLabel={false}

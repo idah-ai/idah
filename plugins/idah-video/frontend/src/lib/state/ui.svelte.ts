@@ -32,6 +32,7 @@ function createLocalStorageStore<T>(key: string, defaultValue: T) {
 
 export type ColorMode = "category" | "random";
 export type RenderMode = "bilinear" | "nearest-neighbor";
+export type TimeDisplay = "frames" | "time";
 
 /**
  * UI state — dialogs, panels, etc.
@@ -40,6 +41,7 @@ class UIState {
   #frameStep = createLocalStorageStore("idah-video:settings:frame-step", 10);
   #colorMode = createLocalStorageStore<ColorMode>("idah-video:settings:color-mode", "category");
   #renderMode = createLocalStorageStore<RenderMode>("idah-video:settings:render-mode", "bilinear");
+  #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-video:settings:time-display", "frames");
 
   isCommandDialogOpen = $state(false);
 
@@ -55,6 +57,9 @@ class UIState {
 
   get renderMode(): RenderMode { return this.#renderMode.value; }
   set renderMode(value: RenderMode) { this.#renderMode.value = value }
+
+  get timeDisplay(): TimeDisplay { return this.#timeDisplay.value; }
+  set timeDisplay(value: TimeDisplay) { this.#timeDisplay.value = value }
 }
 
 export const ui = new UIState();
