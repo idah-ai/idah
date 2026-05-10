@@ -11,7 +11,7 @@
   import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
 
   // Props

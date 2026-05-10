@@ -4,8 +4,8 @@
 // geometry (points & angle) at that frame.
 // ---------------------------------------------------------------------------
 
-import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
-import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$idah/v2/video-types";
+import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
+import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 import type { Point } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
 

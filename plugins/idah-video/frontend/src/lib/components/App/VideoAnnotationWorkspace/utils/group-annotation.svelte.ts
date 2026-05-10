@@ -12,7 +12,7 @@ interface AnnotationGroup<T> {
   groupId: string;
   annotations: T[];
 }
-import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+import type { IVideoAnnotationRecord } from "$lib/types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
 
 export function groupAnnotations(annotations: IVideoAnnotationRecord[]): AnnotationGroup<IVideoAnnotationRecord>[] {

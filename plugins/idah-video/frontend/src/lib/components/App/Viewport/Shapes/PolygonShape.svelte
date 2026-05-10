@@ -4,7 +4,7 @@
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
-  import type { IVideoAnnotationShape } from "$idah/v2/video-types";
+  import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import {
     pointInPolygon,

@@ -2,7 +2,7 @@
   import { mount, unmount } from "svelte";
   import Plugin from "$lib/components/Plugin.svelte";
   // ── TODO: Use real V2 driver here once integrated ─────────────────────
-  import { IdahDriverV2 } from "$idah/v2/idah-driver";
+  import { IdahDriverV2 } from "./mock/mock-driver";
   import { initDriver } from "$lib/state/driver.svelte";
   import { initDataStores } from "$lib/state/data.svelte";
   import { registerAllCommands } from "$lib/commands";

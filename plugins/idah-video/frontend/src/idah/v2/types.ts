@@ -527,6 +527,12 @@ export interface IIdahDriverV2<
   // ── Project label config ─────────────────────────────────────────────
   readonly config: IConfig;
 
+  /**
+   * Returns the config for a shape type with properties already filtered
+   * by visibility rules against the given value.
+   */
+  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined;
+
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
   readonly toolbar: IToolbarDriverV2;

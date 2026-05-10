@@ -12,7 +12,7 @@
 import { data } from "$lib/state/data.svelte";
 import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoFrameSelection } from "$idah/v2/video-types";
+import type { IVideoFrameSelection } from "$lib/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";

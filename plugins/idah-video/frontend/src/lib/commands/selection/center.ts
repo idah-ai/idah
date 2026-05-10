@@ -8,7 +8,7 @@ import { media } from "$lib/state/media.svelte";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$idah/v2/video-types";
+import type { IVideoAnnotationShape } from "$lib/types";
 
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;

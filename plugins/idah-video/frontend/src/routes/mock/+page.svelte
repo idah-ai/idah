@@ -6,7 +6,7 @@
   import Plugin from "$lib/components/Plugin.svelte";
   import IdahToolbar from "./idah-toolbar.svelte";
   import IdahCommandPalette from "./idah-command-palette.svelte";
-  import { IdahDriverV2 } from "$idah/v2/idah-driver";
+  import { IdahDriverV2 } from "./mock-driver";
   import type { IToolbarItem } from "$idah/v2/types";
 
   // ── Create V2 driver ──────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
   import BBoxShape from "./BBoxShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
   import type { Point } from "$lib/utils/math/point";

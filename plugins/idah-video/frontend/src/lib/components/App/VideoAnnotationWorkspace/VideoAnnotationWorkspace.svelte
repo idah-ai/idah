@@ -6,7 +6,7 @@
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -28,7 +28,7 @@
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
-  import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
+  import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
 
   // Local type aliases for V1-compatible annotation shapes/values
@@ -252,7 +252,7 @@
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
-    let requirementFullfilled = requiredFullfilled(value, getDriver().config[valueMode]?.properties);
+    let requirementFullfilled = requiredFullfilled(value, getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties);
 
     if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id) selection.selectAnnotation(entryRoot.value as any);
 
@@ -361,7 +361,7 @@
 
       if (
         getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
-        requiredFullfilled(annotation_value_from, getDriver().config[type]?.properties)
+        requiredFullfilled(annotation_value_from, getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties)
       ) {
         shapeSelectionArgs = undefined;
         pendingValue = {};

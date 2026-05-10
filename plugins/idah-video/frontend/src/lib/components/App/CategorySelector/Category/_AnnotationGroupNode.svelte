@@ -12,13 +12,24 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
   import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
 
-  import type { AnnotationGroup } from "$idah/context/annotation-context";
-  import type { CategoryDefinition } from "$idah/context/category-context";
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
+  import type { IConfigValue } from "$idah/v2/types";
+
+  type AnnotationGroup<T> = { groupId: string; annotations: T[] };
+  type CategoryDefinition = IConfigValue & {
+    id: string;
+    name: string;
+    description?: string;
+    requiredNested?: boolean;
+    nestedCategories?: CategoryDefinition[];
+    isExpanded?: boolean;
+    count?: number;
+    data?: IConfigValue;
+  };
 
   // Props
   interface Props {

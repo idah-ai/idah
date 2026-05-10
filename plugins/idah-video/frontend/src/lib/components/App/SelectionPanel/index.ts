@@ -1,16 +1,12 @@
-import { AstProcessor, objectVariables } from "./ast";
-
 import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "$idah/v2/types";
-import type { AnnotationValue } from "$idah/context/annotation-context";
 
-export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {
-  if (typeof field.visibility == "boolean") return field.visibility;
-  return new AstProcessor(new Map(objectVariables(value, "value"))).processAST(field.visibility);
-}
-
-export function requiredFullfilled(value: AnnotationValue, properties: IConfigProperty[] = []): boolean {
+/**
+ * Check that all required properties have values.
+ * Properties are expected to already be filtered by visibility via the driver.
+ */
+export function requiredFullfilled(value: { attributes?: Record<string, unknown>; [key: string]: unknown }, properties: IConfigProperty[] = []): boolean {
   return properties
-    .filter((p) => visibilityFullfilled(value, p) && p.required)
+    .filter((p) => p.required)
     .every((p) => (value.attributes?.[p.id] as string | number | boolean | string[] | undefined) != undefined && conformToformat(value.attributes?.[p.id] as string | number | boolean | string[] | undefined, p));
 }
 

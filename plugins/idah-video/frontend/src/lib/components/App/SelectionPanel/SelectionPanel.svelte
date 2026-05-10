@@ -15,23 +15,22 @@
   import SingleSelectProperty from "$lib/components/App/SelectionPanel/Properties/_SingleSelectProperty.svelte";
   import TextProperty from "$lib/components/App/SelectionPanel/Properties/_TextProperty.svelte";
 
-  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$idah/v2/video-types";
-  import { visibilityFullfilled } from "$lib/components/App/SelectionPanel";
+  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
   import type { IConfigProperty } from "$idah/v2/types";
-  import type { AnnotationValue } from "$idah/context/annotation-context";
+  import type { IVideoAnnotationValue } from "$lib/types";
 
   type Props = {
     selectedCategory: string;
     annotationId?: string;
-    annotationValue: AnnotationValue;
+    annotationValue: IVideoAnnotationValue;
     onSelectCategory: (selectedCategoryId?: string) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
-    onEditValue: (value?: AnnotationValue) => void;
+    onEditValue: (value?: IVideoAnnotationValue) => void;
     disabled: boolean;
   };
 
@@ -59,12 +58,11 @@
     return viewport.mode;
   });
 
-  let config = $derived(shapeType ? getDriver().config[shapeType] : undefined);
+  let config = $derived(shapeType ? getDriver().getFilteredConfig(shapeType, annotationValue as unknown as Record<string, unknown>) : undefined);
   let configValues = $derived(config?.values ?? []);
-  let configProperties = $derived(config?.properties ?? []);
 
   let category = $derived(configValues.find((c) => c.id == selectedCategory));
-  let properties = $derived(configProperties.filter((p) => visibilityFullfilled(annotationValue, p)));
+  let properties = $derived(config?.properties ?? []);
 
   // Human-readable mode title from shape type
   let modeTitle = $derived.by(() => {
@@ -99,11 +97,6 @@
         [property.id]: v,
       },
     };
-    const new_visible_properties = (config?.properties ?? [])
-      .filter((p) => visibilityFullfilled(newValue, p))
-      .map((p) => p.id);
-    const visibilityDiff = Object.keys(newValue.attributes).filter((k) => !new_visible_properties.includes(k));
-    if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
     onEditValue(newValue);
   }
 

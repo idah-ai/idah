@@ -9,7 +9,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
-  import type { AnnotationValue } from "$idah/context/annotation-context";
+  import type { IVideoAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -21,8 +21,8 @@
   }: {
     sidebarWidthRem?: number;
     annotationId?: string;
-    annotationValue: AnnotationValue;
-    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
+    annotationValue: IVideoAnnotationValue;
+    onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
   } = $props();
 

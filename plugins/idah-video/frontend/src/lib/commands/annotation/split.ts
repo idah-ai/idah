@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape, IVideoFrameSelection } from "$idah/v2/video-types";
+import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";

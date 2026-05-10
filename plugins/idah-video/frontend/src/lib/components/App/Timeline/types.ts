@@ -1,4 +1,4 @@
-import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+import type { IVideoAnnotationRecord } from "$lib/types";
 import type { Component, Snippet } from "svelte";
 
 export interface Viewport {

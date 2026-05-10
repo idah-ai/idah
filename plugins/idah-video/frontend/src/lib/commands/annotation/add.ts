@@ -11,7 +11,7 @@
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$idah/v2/video-types";
+import type { IVideoAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {

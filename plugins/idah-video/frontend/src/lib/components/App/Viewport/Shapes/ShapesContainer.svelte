@@ -26,7 +26,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import type { BBox } from "$lib/utils/math/bbox";
 

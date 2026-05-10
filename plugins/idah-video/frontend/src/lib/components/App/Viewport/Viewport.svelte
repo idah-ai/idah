@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$idah/v2/video-types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
   import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
   import { viewport } from "$lib/state/viewport.svelte";

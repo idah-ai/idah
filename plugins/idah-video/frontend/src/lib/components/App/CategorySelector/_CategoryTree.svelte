@@ -16,16 +16,26 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$idah/v2/video-types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
-  import type { CategoryDefinition } from "$idah/context/category-context";
-  import type { AnnotationGroup } from "$idah/context/annotation-context";
+
+  type AnnotationGroup<T> = { groupId: string; annotations: T[] };
+  type CategoryDefinition = IConfigValue & {
+    id: string;
+    name: string;
+    description?: string;
+    requiredNested?: boolean;
+    nestedCategories?: CategoryDefinition[];
+    isExpanded?: boolean;
+    count?: number;
+    data?: IConfigValue;
+  };
 
   // Props
   interface Props {

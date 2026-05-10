@@ -21,8 +21,7 @@
   let selAnnotation = $derived(
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
-  import type { AnnotationValue } from "$idah/context/annotation-context";
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+  import type { IVideoAnnotationValue, IVideoAnnotationRecord } from "$lib/types";
   import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   // Props
@@ -40,8 +39,8 @@
   }: {
     view: "sidebar" | "popover";
     sidebarWidthRem: number;
-    annotationValue: AnnotationValue;
-    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
+    annotationValue: IVideoAnnotationValue;
+    onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
     onSelectAnnotationGroup: (annotationGroup: { groupId: string; annotations: IVideoAnnotationRecord[] }) => void;
     onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;

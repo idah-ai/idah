@@ -9,7 +9,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
-  import type { IVideoAnnotationRecord } from "$idah/v2/video-types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
 
   // Props
   interface Props {

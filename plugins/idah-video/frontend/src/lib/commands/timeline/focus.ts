@@ -12,7 +12,7 @@ import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$idah/v2/video-types";
+import type { IVideoAnnotationShape } from "$lib/types";
 
 export const command = {
   name: "timeline.focus",
