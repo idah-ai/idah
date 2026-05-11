@@ -95,7 +95,7 @@
                 account_id: Number(account.id),
                 name: account.name,
                 email,
-                role,
+                role: role || undefined,
                 invited_by_id: Number(currentAccount?.id),
               },
               relationships: {

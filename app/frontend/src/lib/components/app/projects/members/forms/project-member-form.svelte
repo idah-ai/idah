@@ -39,7 +39,7 @@
   });
 
   // Functions
-  async function fetchProjectMembers() {
+  async function fetchProjectMembers(): Promise<void> {
     const projectMembersRes = await projectMembersBackendDataSource.list({
       fields: {
         [ProjectMemberRecord.type]: ["email"],
