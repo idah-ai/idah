@@ -123,7 +123,7 @@
           class="flex-1"
           label="Role"
           placeholder="Select a role"
-          choices={projectMemberRoles}
+          choices={[...projectMemberRoles]}
           required
           searchable
           searchPlaceholder="Search a role"
