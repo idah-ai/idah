@@ -193,7 +193,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
 
     it "reports skipped files when modality doesn't allow mime type" do
-      expect(Processor::Registry).to receive(:allowed_mime_types).with("test_modality").and_return(["image/.*"]).at_least(:once)
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("test_modality").and_return(["image/.*"]).at_least(:once)
 
       # Upload a video file (video/mp4) with a modality that only allows images
       result = subject.upload(
@@ -214,7 +215,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
 
     it "skips unsupported files within a zip and reports them" do
-      expect(Processor::Registry).to receive(:allowed_mime_types).with("image_only").and_return(["image/.*"]).at_least(:once)
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("image_only").and_return(["image/.*"]).at_least(:once)
 
       require "zip"
       zip_path = Tempfile.create(["mixed", ".zip"]).path
