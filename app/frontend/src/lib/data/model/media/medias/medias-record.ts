@@ -1,28 +1,38 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { parseCollectionReturn, parseSingleElementError } from "@/data/model/json_api";
+import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
-import type { CollectionResponse, JsonApiErrorResponse } from "@/data/model/types";
+import type { CollectionResponse, JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+
+export interface SkippedFile {
+  filename: string;
+  message: string;
+}
+
+export interface MediaMeta {
+  skipped?: Array<SkippedFile>;
+}
 
 @type("media:medias")
 export class MediaRecord extends Record {
   @field() public resource!: string;
   @field() public key!: string;
 
+  @field() public filename!: string;
+
   @field() public size!: number;
   @field() public mime_type!: string;
-
-  @field() public filename!: string;
-  @field() public meta!: { [key: string]: unknown };
 
   @field() public created_by!: number;
   @field() public created_role!: string;
 
   @field() public public!: boolean;
+
+  @field() public meta!: Hash;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;

@@ -35,17 +35,10 @@
       case "success": {
         return { variant: "success" };
       }
-      case "error": {
+      /** Other statuses will be treated as failed */
+      default: {
         return { variant: "destructive" };
       }
-      case "skipped": {
-        return { variant: "warning" };
-      }
-      case "archive": {
-        return { variant: "outline" };
-      }
-      default:
-        return { variant: "secondary" };
     }
   });
 
@@ -89,7 +82,7 @@
       </Text>
     </div>
 
-    {#if ["skipped", "archive"].includes(status)}
+    {#if status === "failed"}
       <Collapsible bind:open={openCollapsible}>
         <CollapsibleTrigger
           class={cn(
@@ -110,13 +103,13 @@
           </div>
         </CollapsibleTrigger>
 
-        <CollapsibleContent class="flex flex-col gap-2 rounded-br-sm rounded-bl-sm bg-red-100 p-2 dark:bg-red-900/50">
-          <div class="flex flex-col gap-0 px-2">
-            {#each skippedMedias as skippedMedia, skippedMediaIndex (skippedMediaIndex)}
-              <Text size="xs">{skippedMedia}</Text>
-              <Text size="xs" class="text-destructive">TODO: skippedMedia.message</Text>
-            {/each}
-          </div>
+        <CollapsibleContent class="flex flex-col gap-1 rounded-br-sm rounded-bl-sm bg-red-100 p-2 dark:bg-red-900/50">
+          {#each skippedMedias as skippedMedia, skippedMediaIndex (skippedMediaIndex)}
+            <div class="flex flex-col gap-0 px-2">
+              <Text size="xs">{skippedMedia.filename}</Text>
+              <Text size="xs" class="text-destructive">{skippedMedia.message}</Text>
+            </div>
+          {/each}
         </CollapsibleContent>
       </Collapsible>
     {/if}

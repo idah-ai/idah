@@ -12,7 +12,7 @@
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { mediaBackendDataSource, type SkippedFile } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
@@ -175,9 +175,10 @@
           media.status = "success";
 
           if (createdMedias.meta?.skipped) {
-            media.status = "skipped";
-            for (const skippedFilename of createdMedias.meta.skipped as string[]) {
-              media.skippedMedias.push(skippedFilename);
+            /** Treat skipped medias as failed since entry creation requires valid media */
+            media.status = "failed";
+            for (const skippedFile of createdMedias.meta.skipped as Array<SkippedFile>) {
+              media.skippedMedias.push(skippedFile);
             }
           }
         }
@@ -199,7 +200,7 @@
       }
     }
 
-    media.status = "error"; // exhausted all retries
+    media.status = "failed"; // exhausted all retries
   }
 
   async function uploadMedia(): Promise<void> {
@@ -228,7 +229,7 @@
       await uploadSingleMedia(media); // never throws — loop always continues
     }
 
-    const failed = upload.items.filter((s) => s.status === "error").length;
+    const failed = upload.items.filter((s) => s.status === "failed").length;
     const succeeded = upload.items.filter((s) => s.status === "success").length;
 
     if (failed === 0) {
