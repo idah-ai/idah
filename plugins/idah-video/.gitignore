@@ -3,6 +3,6 @@ tmp
 coverage
 
 # Video media files (download manually from pexels)
-*.mp4
-*.m3u8
-*.ts
+frontend/static/**/*.mp4
+frontend/static/**/*.m3u8
+frontend/static/**/*.ts
