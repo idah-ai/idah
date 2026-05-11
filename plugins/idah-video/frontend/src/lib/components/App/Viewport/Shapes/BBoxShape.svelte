@@ -1,7 +1,7 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
   import { normalizeRect } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, rotatePoint, type Point } from "$lib/utils/math/point";
+  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";

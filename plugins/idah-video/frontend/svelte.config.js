@@ -19,6 +19,7 @@ const config = {
     alias: {
       "$idah/*": "./src/idah/*",
       "$mock/*": "./src/mock/*",
+      "$lib/*": "./src/lib/*"
     },
   },
 };
