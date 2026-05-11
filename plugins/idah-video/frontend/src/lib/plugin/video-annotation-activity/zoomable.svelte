@@ -95,7 +95,15 @@
   }
 
   export function onWheel(e: WheelEvent) {
-    let step = e.deltaY > 0 ? -zoom.step : zoom.step;
+    if (!e.ctrlKey && !e.metaKey) return; // require Ctrl/Metakey key to zoom
+
+    e.preventDefault();
+
+    // dynamically check delta, as it can use deltaX in some cases (ex. Shift is pressed)
+    let delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+    if (delta === 0) return;
+
+    let step = delta > 0 ? -zoom.step : zoom.step;
 
     switch ($currentMode) {
       case IDAH_NOTE: {
