@@ -1,6 +1,6 @@
 import { mount, unmount } from "svelte";
 
-import Plugin from "$lib/plugin/plugin.svelte";
+import ImagePlugin from "$lib/plugin/image-plugin.svelte";
 
 import type { IActivityContext, IActivityView } from "$lib/context/context";
 
@@ -8,7 +8,7 @@ let mounted: object;
 
 const idah_plugin: IActivityView = {
   name: "idah-image",
-  label: "idah image",
+  label: "Idah Image Annotation",
   description: "idah image annotation plugin",
   version: "1.0",
   type: "image",
@@ -22,7 +22,7 @@ const idah_plugin: IActivityView = {
     if (!parent || !context) return console.error("Missing:", { parent, context });
 
     parent.innerHTML = "";
-    mounted = mount(Plugin, { target: parent, props: { context } });
+    mounted = mount(ImagePlugin, { target: parent, props: { context } });
   },
 
   close() {

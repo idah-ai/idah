@@ -184,8 +184,6 @@
           </SelectContent>
         </Select>
       </div>
-
-      <Separator class="my-3" />
     </section>
   {/if}
 {/snippet}
@@ -274,7 +272,15 @@
       </Select>
     </div>
 
-    <Separator class="my-3" />
+    <!-- Frame range -->
+    {#if firstAnnotationInGroup}
+      <div class="flex items-center gap-1">
+        <Text size="sm" weight="semibold">Frame :</Text>
+        <Text size="xs" class="text-muted-foreground">
+          {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape.end}
+        </Text>
+      </div>
+    {/if}
   </section>
 {/snippet}
 
@@ -286,20 +292,13 @@
 {/if}
 
 <!-- PROPERTIES -->
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-3">
   {#if category && properties?.length > 0}
+    <Separator class="mt-3" />
+
     <section class="flex flex-col gap-2">
       <div class="flex flex-row items-center gap-2">
         <Text size="sm" weight="semibold">Properties</Text>
-
-        <!-- Frame range -->
-        {#if firstAnnotationInGroup}
-          <Text size="xs" class="text-muted-foreground">
-            ( Frame :
-            {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape.end}
-            )
-          </Text>
-        {/if}
       </div>
 
       {#each properties as property, index (`${property.id}-${index}`)}

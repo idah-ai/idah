@@ -3,7 +3,7 @@ import { get, writable } from "svelte/store";
 
 export const TIMELINE_ROW_HEADER_WIDTH: number = 300; // Unit: px
 export const TIMELINE_CELL_MIN_WIDTH: number = 10; // Unit: px
-export const TIMELINE_CELL_MAX_WIDTH: number = 40; // Unit: px
+export const TIMELINE_CELL_MAX_WIDTH: number = 60; // Unit: px
 export const TIMELINE_CELL_WIDTH_STEP: number = 1; // Unit: px
 
 /**
@@ -49,8 +49,6 @@ export function getCurrentFrameRangeSpan() {
 export function getFrameRange(startFrame: number, endFrame: number) {
   return Array.from({ length: endFrame - startFrame }, (_, i) => startFrame + i);
 }
-
-export function recalculateFrameRange() {}
 
 /**
  * TIMELINE::FRAME PER SCALE

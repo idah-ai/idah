@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { AnnotationGroup } from "$idah/context/annotation-context";
   import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
@@ -11,8 +10,10 @@
     timelineRulerWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
-  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
@@ -80,6 +81,14 @@
         const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
         const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
+      } else if ($currentFrame < startFrameIndexOfCurrentFrameRange) {
+        const newStart = $currentFrame;
+        const newEnd = $currentFrame + currentRangeSpan;
+        setCurrentFrameRange([newStart, newEnd]);
+      } else if ($currentFrame > endFrameIndexOfCurrentFrameRange) {
+        const newStart = $currentFrame;
+        const newEnd = $currentFrame + currentRangeSpan;
+        setCurrentFrameRange([newStart, newEnd]);
       }
     } else {
       /**
@@ -119,7 +128,7 @@
 
     {#if isInRangeOfTotalFrames}
       <div
-        class="absolute bottom-0 flex border-l pl-0.5 text-sm select-none first:border-l-0"
+        class="absolute bottom-0 flex border-l pl-0.5 text-xs select-none first:border-l-0"
         style:height="{isMajorTick ? 28 : 14}px"
         style:width="{$timelineCellWidth}px"
         style:left="{frameIndex * $timelineCellWidth}px"

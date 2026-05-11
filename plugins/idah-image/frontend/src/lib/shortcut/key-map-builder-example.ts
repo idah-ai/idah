@@ -1,5 +1,5 @@
-import { BuildKeymap } from "$idah/shortcut/key-map-builder";
-import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
+import { BuildKeymap } from "$lib/shortcut/key-map-builder";
+import { ShortcutManager } from "$lib/shortcut/shortcut-manager.svelte";
 
 // Example of creating a key map for a "visual" mode
 const createVisualModeKeyMap = () => {

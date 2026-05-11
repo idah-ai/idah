@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { BuildKeymap } from "$idah/shortcut/key-map-builder";
+import { BuildKeymap } from "$lib/shortcut/key-map-builder";
 
 describe("KeyMapBuilder", () => {
   it("should create a key map with a single shortcut without modifiers", () => {

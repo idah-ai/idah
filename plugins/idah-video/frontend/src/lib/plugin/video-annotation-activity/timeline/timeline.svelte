@@ -16,20 +16,29 @@
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
   import TimelineRowHeading from "$lib/plugin/video-annotation-activity/timeline/timeline-row-heading.svelte";
+  import TimelineRowTitle from "$lib/plugin/video-annotation-activity/timeline/timeline-row-title.svelte";
   import TimelineRow from "$lib/plugin/video-annotation-activity/timeline/timeline-row.svelte";
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setCurrentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import { DEFAULT_MODE } from "$lib/plugin/type";
+  import {
+    currentFrame,
+    setCurrentFrame,
+    setCurrentModeTo,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
-    deselectFrameX,
     framePerScale,
     selectedFrameX,
     setCurrentFrameRange,
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
-  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import {
+    getFrameFromMouseX,
+    recalculateSelectedFrameXFromCurrentFrame,
+  } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -37,8 +46,8 @@
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
+
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import TimelineRowTitle from "$lib/plugin/video-annotation-activity/timeline/timeline-row-title.svelte";
 
   // Props
   interface Props {
@@ -47,15 +56,17 @@
 
     onSeekFrame: (frame: number) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    selectClosestAnnotation: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame: number) => void;
   }
-  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
+  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup, selectClosestAnnotation }: Props =
+    $props();
 
   // Context
   let context: IActivityContext = getContext("context");
 
   // Variables
   let timelineEl: HTMLDivElement;
-  let timelineScrollAreaHeight = $derived(annotationFooterHeight - 100);
+  let timelineScrollAreaHeight = $derived(annotationFooterHeight - 105);
   let clientMouseX: number = $state(0);
   let annotationGroups = $derived(groupAnnotations(annotations));
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
@@ -84,31 +95,28 @@
   function scrollRight(shiftRangeSpan: number) {
     const [start, end] = $currentFrameRange;
     const rangeSpan = end - start;
-    let newStart: number;
-    if ((start + shiftRangeSpan) * $framePerScale <= $totalFrames - rangeSpan) {
-      newStart = start + shiftRangeSpan;
-    } else {
-      newStart = $totalFrames - rangeSpan;
-    }
 
-    let newEnd: number;
-    if ((end + shiftRangeSpan) * $framePerScale <= $totalFrames) {
-      newEnd = end + shiftRangeSpan;
-    } else {
-      newEnd = $totalFrames;
-    }
+    let newEnd = end + shiftRangeSpan;
+    if (newEnd > $totalFrames) newEnd = $totalFrames;
+
+    const newStart = newEnd - rangeSpan;
 
     setCurrentFrameRange([newStart, newEnd]);
+    recalculateSelectedFrameXFromCurrentFrame();
   }
 
   function scrollLeft(shiftRangeSpan: number) {
     const [start, end] = $currentFrameRange;
+    const rangeSpan = end - start;
 
     let newStart = start - shiftRangeSpan;
     if (newStart < 0) newStart = 0;
-    const newEnd = newStart + (end - start);
+
+    let newEnd = newStart + rangeSpan;
+    if (newEnd > $totalFrames) newEnd = $totalFrames;
 
     setCurrentFrameRange([newStart, newEnd]);
+    recalculateSelectedFrameXFromCurrentFrame();
   }
 
   function scrollTimelineHorizontal(e: WheelEvent) {
@@ -116,10 +124,25 @@
     const isScrollDown = e.deltaX > 0;
     const shiftRangeSpan = 1;
 
-    deselectFrameX();
     if (isScrollUp) return scrollRight(shiftRangeSpan);
     if (isScrollDown) return scrollLeft(shiftRangeSpan);
   }
+
+  // function zoomIn() {
+  //   setTimelineCellWidth($timelineCellWidth + TIMELINE_CELL_WIDTH_STEP);
+  // }
+
+  // function zoomOut() {
+  //   setTimelineCellWidth($timelineCellWidth - TIMELINE_CELL_WIDTH_STEP);
+  // }
+
+  // function zoomTimeline(e: WheelEvent) {
+  //   const isScrollUp = e.deltaY < 0;
+  //   const isScrollDown = e.deltaY > 0;
+
+  //   if (isScrollUp) return zoomIn();
+  //   if (isScrollDown) return zoomOut();
+  // }
 
   function handleTimelineWheel(e: WheelEvent) {
     if (!wheelThrottling) {
@@ -131,18 +154,20 @@
       }
 
       if (e.metaKey) {
-        // zoomTimeline()
+        // zoomTimeline(e);
       }
 
       // Check if user scroll horizontal by mouse or track pad
-      if (e.deltaX !== 0) {
-        scrollTimelineHorizontal(e);
-      }
+      // if (e.deltaX !== 0) {
+      //   scrollTimelineHorizontal(e);
+      // }
     }
   }
 
   function selectFrameX(frameX: number) {
-    const selectedFrame = getFrameFromMouseX({ clientX: frameX });
+    const frame = getFrameFromMouseX({ clientX: frameX });
+    const selectedFrame = Math.min(frame, $totalFrames);
+
     const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
     const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
 
@@ -211,6 +236,7 @@
           annotationId: closestAnnotation.metadata.id,
           frame: displayScaledFrame,
         });
+
         closeContextMenu();
       },
     };
@@ -222,6 +248,16 @@
         context.commands.run("annotation.delete", {
           annotationId: closestAnnotation.metadata.id,
         });
+
+        selectAnnotationGroup.annotations = selectAnnotationGroup.annotations.filter(
+          (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
+        );
+
+        if (selectAnnotationGroup.annotations.length > 0) {
+          /** Select the new closest annotation after filter the deleted annotation */
+          selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
+        }
+
         closeContextMenu();
       },
     };
@@ -251,13 +287,31 @@
 
       return displayScaledFrame >= f && displayScaledFrame <= next;
     });
-    if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
-    if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
 
-    /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
+    if (isSelectedFrameInKeyFrames) {
+      contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
+    }
+
+    /** Only show delete menu, if selected frame is in the range of keyframes of the closest annotation */
+    if (
+      closestAnnotationKeyFrames[closestAnnotationKeyFrames.length - 1] >= displayScaledFrame &&
+      closestAnnotationKeyFrames[0] <= displayScaledFrame
+    ) {
+      contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
+    }
+
+    /**
+     * Only show delete interpolation menu;
+     * - If selected annotations have keyframe at selected frame
+     * - If annotation have more than 1 key frames
+     *  */
+    const closestAnnotationHaveMoreThanOneKeyFrame = sortedClosestAnnotationKeyFrames.length > 1;
     const hasInterpolationAtFrame =
       closestAnnotation.shape.frames.filter((f) => f.frame === displayScaledFrame).length > 0;
-    if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+
+    if (hasInterpolationAtFrame && closestAnnotationHaveMoreThanOneKeyFrame) {
+      contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+    }
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
     const annotationMenus = contextMenu.menus.annotationMenu.items.length;
@@ -396,6 +450,8 @@
       deleteAllAnnotations();
     }
 
+    // Return to default mode after deletion
+    setCurrentModeTo(DEFAULT_MODE);
     openConfirmDeleteModal = false;
   }}
   bind:open={openConfirmDeleteModal}

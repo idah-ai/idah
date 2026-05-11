@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/property.utils";
+  import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/properties.index";
   import Label from "$lib/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
   import Separator from "$lib/components/ui/separator/separator.svelte";
@@ -16,10 +16,10 @@
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import { currentMode, selectedAnnotationGroup } from "$lib/plugin/store/store";
-  import { IMAGE_BOUNDING_BOX } from "$lib/plugin/types";
-  import { truncate } from "$lib/utils/string";
+  import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
 
   import type { PropertyComponent } from "$lib/components/app/sidebar/properties/property.types";
+  import { Badge } from "$lib/components/ui/badge";
   import type { AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigProperty } from "$lib/context/context";
 
@@ -100,45 +100,84 @@
     });
     onReSelectCategory?.(reselectedCategoryId);
   }
+
+  function categoryValueToLabel(value?: string, replaceLabel?: string) {
+    if (!value) return "";
+
+    const label = value.split("/").map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
+
+    if (replaceLabel) {
+      label[label.length - 1] = replaceLabel;
+    } else {
+      // remove the last part of array
+      label.pop();
+    }
+
+    return label.join(" / ");
+  }
 </script>
 
 {#snippet SelectCategory()}
   {#if configByMode}
     <section class="flex flex-col gap-2">
       <!-- SELECT::LABEL -->
-      <Label>{getModeTitle()}</Label>
+      <div class="flex items-center gap-2">
+        <Label class="font-semibold">{getModeTitle()}</Label>
+        <Badge variant="success-200">CREATE</Badge>
+      </div>
 
-      <Select type="single" onValueChange={onSelectCategory} {disabled}>
-        <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs">
-          <div class="flex gap-1">
+      <div class="flex flex-col gap-1">
+        <Label class="text-sm font-semibold">Category</Label>
+
+        <Select type="single" onValueChange={onSelectCategory} {disabled}>
+          <SelectTrigger
+            class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs"
+          >
             {#if category?.label}
-              {#if firstAnnotationInGroup?.shape.type === IMAGE_BOUNDING_BOX}
-                <VectorSquareIcon color={category.color} />
-              {:else}
-                <PolygonCircleIcon color={category.color} />
-              {/if}
-              {truncate(category.label)}
-            {:else}
-              Select category
-            {/if}
-          </div>
-        </SelectTrigger>
+              {@const parentLabel = categoryValueToLabel(category.id)}
 
-        <SelectContent>
-          <SelectGroup>
-            {#each configByMode.values as { id: value, label, color } (value)}
-              <SelectItem class="text-xs" {label} {value}>
-                {#if firstAnnotationInGroup?.shape.type === IMAGE_BOUNDING_BOX}
-                  <VectorSquareIcon {color} />
-                {:else}
-                  <PolygonCircleIcon {color} />
+              <div class="flex flex-col gap-1 text-left">
+                {#if parentLabel.length > 0}
+                  <div class="whitespace-break-spaces">
+                    {parentLabel}
+                  </div>
                 {/if}
-                {label}
-              </SelectItem>
-            {/each}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+                <div class="flex items-center justify-start gap-1">
+                  <!-- TO FIX: firstAnnotationInGroup does not have value -->
+                  {#if firstAnnotationInGroup?.shape.type === IMAGE_POLYGON}
+                    <PolygonCircleIcon color={category.color} />
+                  {:else}
+                    <VectorSquareIcon color={category.color} />
+                  {/if}
+                  <b>{category.label}</b>
+                </div>
+              </div>
+            {/if}
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectGroup>
+              {#each configByMode.values as { id: value, label, color }, index (`${value}-${index}`)}
+                {@const valueLabel = categoryValueToLabel(value, label)}
+                <SelectItem
+                  label={valueLabel}
+                  {value}
+                  class={"text-xs " + (category?.id == value ? "bg-primary/20 opacity-100!" : "")}
+                  disabled={category?.id == value}
+                >
+                  <!-- TO FIX: firstAnnotationInGroup does not have value -->
+                  {#if firstAnnotationInGroup?.shape.type === IMAGE_POLYGON}
+                    <PolygonCircleIcon {color} />
+                  {:else}
+                    <VectorSquareIcon {color} />
+                  {/if}
+                  {valueLabel}
+                </SelectItem>
+              {/each}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
 
       <Separator />
     </section>
@@ -146,47 +185,93 @@
 {/snippet}
 
 {#snippet ReSelectCategory()}
-  <section class="flex flex-col gap-2">
+  <section class="flex flex-col gap-3">
     <!-- SELECT::LABEL -->
-    <Label>Category</Label>
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2">
+        <Label class="font-semibold">
+          {getModeTitle()}
+        </Label>
+        <Badge variant="info">EDIT</Badge>
+      </div>
 
-    <Select type="single" onValueChange={reselectCategory} {disabled}>
-      <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs">
-        <div class="flex gap-1">
-          {#if foundAnnotationInGroupCategory?.label}
-            {#if firstAnnotationInGroup?.shape.type === IMAGE_BOUNDING_BOX}
-              <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
+      {#if firstAnnotationInGroup}
+        {@const groupId = firstAnnotationInGroup.metadata.metadata?.group_id ?? firstAnnotationInGroup.metadata.id}
+        {@const splittedGroupId = groupId?.split("-")}
+        {@const lastPartOfGroupId = splittedGroupId ? splittedGroupId[splittedGroupId.length - 1] : ""}
+        {@const fallbackGroupTitle = `Group-${lastPartOfGroupId}`}
+
+        <Label class="text-muted-foreground text-sm">
+          {#if firstAnnotationInGroup.value.category}
+            {@const foundCategory = configByGroup.values.find((c) => c.id == firstAnnotationInGroup.value.category)}
+            {#if foundCategory}
+              {foundCategory.label}-{lastPartOfGroupId}
             {:else}
-              <PolygonCircleIcon color={foundAnnotationInGroupCategory.color} />
+              {fallbackGroupTitle}
             {/if}
-            {truncate(foundAnnotationInGroupCategory.label)}
+          {:else}
+            {fallbackGroupTitle}
+          {/if}
+        </Label>
+      {/if}
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <Label class="text-sm font-semibold">Category</Label>
+      <Select type="single" onValueChange={reselectCategory} {disabled}>
+        <SelectTrigger
+          class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs"
+        >
+          {#if foundAnnotationInGroupCategory?.label}
+            {@const parentLabel = categoryValueToLabel(foundAnnotationInGroupCategory.id)}
+
+            <div class="flex flex-col gap-1 text-left">
+              {#if parentLabel.length > 0}
+                <div class="whitespace-break-spaces">
+                  {parentLabel}
+                </div>
+              {/if}
+              <div class="flex items-center justify-start gap-1">
+                {#if firstAnnotationInGroup?.shape.type === IMAGE_BOUNDING_BOX}
+                  <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
+                {:else}
+                  <PolygonCircleIcon color={foundAnnotationInGroupCategory.color} />
+                {/if}
+                <b>{foundAnnotationInGroupCategory.label}</b>
+              </div>
+            </div>
           {:else}
             Select category
           {/if}
-        </div>
-      </SelectTrigger>
+        </SelectTrigger>
 
-      <SelectContent>
-        <SelectGroup>
-          {#each configByGroup.values as { id: value, label, color } (value)}
-            <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
-              {#if firstAnnotationInGroup?.shape.type === IMAGE_BOUNDING_BOX}
-                <VectorSquareIcon {color} />
-              {:else}
-                <PolygonCircleIcon {color} />
-              {/if}
-              {label}
-            </SelectItem>
-          {/each}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        <SelectContent>
+          <SelectGroup>
+            {#each configByGroup.values as { id: value, label, color }, index (`${value}-${index}`)}
+              {@const valueLabel = categoryValueToLabel(value, label)}
+              <SelectItem
+                class={"text-xs " + (firstAnnotationInGroupCategory == value ? "bg-primary/20 opacity-100!" : "")}
+                label={valueLabel}
+                {value}
+                disabled={firstAnnotationInGroupCategory == value}
+              >
+                {#if firstAnnotationInGroup?.shape.type === IMAGE_BOUNDING_BOX}
+                  <VectorSquareIcon {color} />
+                {:else}
+                  <PolygonCircleIcon {color} />
+                {/if}
+                {valueLabel}
+              </SelectItem>
+            {/each}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
 
-    <Separator />
+    <Separator class="my-3" />
   </section>
 {/snippet}
 
-<!-- {#key $idbUpdatedAt} -->
 <!-- CATEGORIES -->
 {#if annotationId}
   <!--
@@ -195,7 +280,6 @@
         - We only allow to edit the properties
         - We only allow to edit the categories at group level
       -->
-{:else if $selectedAnnotationGroup && !annotationId}
   {@render ReSelectCategory()}
 {:else}
   {@render SelectCategory()}
@@ -205,9 +289,11 @@
 <div class="flex flex-col gap-4">
   {#if category && properties?.length > 0}
     <section class="flex flex-col gap-2">
-      <Label>Properties</Label>
+      <div class="flex flex-row items-center gap-2">
+        <Label class="text-sm font-semibold">Properties</Label>
+      </div>
 
-      {#each properties as property (property.id)}
+      {#each properties as property, index (`${property.id}-${index}`)}
         {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
 
         {#if foundPropertyComponent}
@@ -226,4 +312,3 @@
     </section>
   {/if}
 </div>
-<!-- {/key} -->

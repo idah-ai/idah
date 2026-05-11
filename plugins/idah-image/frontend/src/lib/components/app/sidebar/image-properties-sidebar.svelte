@@ -1,12 +1,6 @@
 <script lang="ts">
   import CategoryProperties from "$lib/components/app/sidebar/properties/category-properties.svelte";
-  import {
-    Sidebar,
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarHeader,
-  } from "$lib/components/ui/sidebar";
+  import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent } from "$lib/components/ui/sidebar";
 
   import { entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, selectedAnnotation } from "$lib/plugin/store/store";
@@ -47,10 +41,8 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" style="w-full" side="right">
-  <SidebarHeader></SidebarHeader>
-
   <SidebarContent>
-    <SidebarGroup>
+    <SidebarGroup class="p-3">
       <SidebarGroupContent>
         {#key [annotationValue, $currentMode, $entryRoot?.value.category]}
           <CategoryProperties

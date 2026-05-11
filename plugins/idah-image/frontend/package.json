@@ -50,6 +50,7 @@
     "lucide-svelte": "^0.576.0",
     "svelte-sonner": "^1.1.0",
     "tailwind-merge": "^3.5.0",
-    "uuidv7": "^1.2.1"
+    "uuidv7": "^1.2.1",
+    "vitest": "^4.1.5"
   }
 }

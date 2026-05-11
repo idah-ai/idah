@@ -3,12 +3,9 @@ import { uuidv7 } from "uuidv7";
 
 import { showToast } from "$lib/components/ui/toast/index.svelte";
 import {
-  getInterpolatedFrame,
   type ImageAnnotationObject,
   type ImageFrameSelection,
   type ImageShape,
-  type InterpolatedVertex,
-  type Point,
 } from "$lib/context/image-annotation-context";
 import { entryRoot, setEntryRoot, setIndexedDBUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
 import {
@@ -18,6 +15,7 @@ import {
   setCurrentModeTo,
   setSelectedAnnotation,
 } from "$lib/plugin/store/store";
+import { uiStore } from "$lib/plugin/store/ui-store.svelte";
 import {
   DEFAULT_MODE,
   ENTRY_ROOT,
@@ -170,15 +168,6 @@ export function registerCommands(params: CommandContext) {
       if (currentSelected) selectedAnnotation.set({ ...currentSelected, locked });
       db?.updateAllLock(locked).then(() => setIndexedDBUpdatedAt());
     }
-  }
-
-  // Helper function to normalize interpolated points to Point[]
-  function normalizePoints(points: Point[] | InterpolatedVertex[] | undefined): Point[] | undefined {
-    if (!points) return undefined;
-    if (points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
-      return (points as InterpolatedVertex[]).map((item) => item.point);
-    }
-    return points as Point[];
   }
 
   /** COMMAND REGISTRATIONS */
@@ -709,188 +698,6 @@ export function registerCommands(params: CommandContext) {
     };
   });
 
-  context.commands.on("annotation.split", async (props: { id: string; at: number }) => {
-    const db = getDb();
-    const annotation = await db?.get("annotations", props.id);
-
-    if (!annotation)
-      return showToast.error({
-        title: "cannot split annotation, annotation not found",
-      });
-
-    const splitAt = props.at;
-
-    if (annotation.shape.start >= splitAt) return console.log("cannot split before/at start frame");
-    if (annotation.shape.end < splitAt) return console.log("cannot split after end frame");
-
-    const newId = uuidv7();
-    const createdAt = new Date();
-
-    const originalEnd = annotation.shape.end;
-    const originalFrames = annotation.shape.frames;
-    const originalUpdatedAt = annotation.metadata.updatedAt;
-    const originalGroupId = annotation.metadata.metadata?.group_id;
-
-    const part1End = splitAt - 1;
-    const part1Frames = annotation.shape.frames.filter((f: ImageFrameSelection) => f.frame <= part1End);
-
-    if (!part1Frames.find((f: ImageFrameSelection) => f.frame === part1End)) {
-      const interpolated = getInterpolatedFrame(annotation.shape as ImageShape, part1End);
-      if (interpolated) {
-        const normalizedPoints = normalizePoints(interpolated.points);
-        if (normalizedPoints) {
-          part1Frames.push({
-            frame: part1End,
-            points: normalizedPoints,
-            angle: interpolated.angle || 0,
-          });
-        }
-      }
-      part1Frames.sort((a, b) => a.frame - b.frame);
-    }
-
-    const part2Start = splitAt;
-    const part2End = splitAt === annotation.shape.end ? part2Start : originalEnd;
-    const part2Frames = annotation.shape.frames.filter((f: ImageFrameSelection) => f.frame >= part2Start);
-
-    if (!part2Frames.find((f: ImageFrameSelection) => f.frame === part2Start)) {
-      const interpolated = getInterpolatedFrame(annotation.shape as ImageShape, part2Start);
-      if (interpolated) {
-        const normalizedPoints = normalizePoints(interpolated.points);
-        if (normalizedPoints) {
-          part2Frames.push({
-            frame: part2Start,
-            points: normalizedPoints,
-            angle: interpolated.angle || 0,
-          });
-        }
-      }
-      part2Frames.sort((a, b) => a.frame - b.frame);
-    }
-
-    const groupId = originalGroupId || annotation.metadata.id;
-
-    return {
-      name: "split annotation",
-      async apply() {
-        const a1 = await db?.get("annotations", props.id);
-
-        if (a1) {
-          a1.shape.end = part1End;
-          a1.shape.frames = part1Frames;
-          a1.metadata.updatedAt = createdAt;
-          a1.metadata.metadata = {
-            ...annotation.metadata.metadata,
-            group_id: groupId,
-          };
-          a1.synced = false;
-          await db?.upsertAnnotations([a1]);
-          const p = context.annotations.update({
-            id: a1.metadata.id,
-            dimensions: a1.shape,
-            annotation: a1.value,
-            metadata: a1.metadata.metadata,
-          });
-
-          p.then(async () => {
-            const annotation = await db?.get("annotations", props.id);
-            if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-              annotation.synced = true;
-              if (get(entryRoot)?.metadata.id == annotation.metadata.id) entryRoot.set(annotation);
-              await db?.upsertAnnotations([annotation]);
-              setIndexedDBUpdatedAt();
-            }
-          });
-        }
-
-        const a2 = {
-          ...annotation,
-          shape: {
-            ...annotation.shape,
-            start: part2Start,
-            end: part2End,
-            frames: part2Frames,
-          },
-          value: { ...annotation.value },
-          metadata: {
-            ...annotation.metadata,
-            id: newId,
-            createdAt,
-            updatedAt: createdAt,
-            metadata: {
-              group_id: groupId,
-              parent_id: annotation.metadata.id,
-            },
-          },
-          synced: false,
-          locked: false,
-          hidden: false,
-        };
-
-        if (a2.shape.type == ENTRY_ROOT) entryRoot.set(a2);
-
-        await db?.upsertAnnotations([a2]);
-        setIndexedDBUpdatedAt();
-
-        const p2 = context.annotations.create(newId, a2.shape, a2.value);
-        p2.then(async () => {
-          const annotation = await db?.get("annotations", newId);
-          if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-            annotation.synced = true;
-            if (get(entryRoot)?.metadata.id == annotation.metadata.id) entryRoot.set(annotation);
-            await db?.upsertAnnotations([annotation]);
-            setIndexedDBUpdatedAt();
-            selectedAnnotation.set(annotation);
-          }
-        });
-      },
-      async undo() {
-        const a1 = await db?.get("annotations", props.id);
-        if (a1) {
-          a1.shape.end = originalEnd;
-          a1.shape.frames = originalFrames;
-          a1.metadata.updatedAt = originalUpdatedAt;
-
-          if (originalGroupId === undefined) {
-            if (a1.metadata.metadata) delete a1.metadata.metadata.group_id;
-          } else {
-            if (!a1.metadata.metadata) a1.metadata.metadata = {};
-            a1.metadata.metadata.group_id = originalGroupId;
-          }
-
-          a1.synced = false;
-          await db?.upsertAnnotations([a1]);
-
-          const p = context.annotations.update({
-            id: a1.metadata.id,
-            dimensions: a1.shape,
-            annotation: a1.value,
-            metadata: a1.metadata.metadata,
-          });
-
-          p.then(async () => {
-            const annotation = await db?.get("annotations", props.id);
-            if (annotation && annotation.metadata.updatedAt.valueOf() == originalUpdatedAt.valueOf()) {
-              annotation.synced = true;
-              if (get(entryRoot)?.metadata.id == annotation.metadata.id) entryRoot.set(annotation);
-              await db?.upsertAnnotations([annotation]);
-              setIndexedDBUpdatedAt();
-              selectedAnnotation.set(annotation);
-            }
-          });
-        }
-
-        await db?.deleteAnnotation(newId);
-        setIndexedDBUpdatedAt();
-        context.annotations.delete(newId);
-
-        if (get(entryRoot)?.metadata.id == newId) entryRoot.set(undefined);
-      },
-      isCombinable: () => false,
-      combine: (c) => c,
-    };
-  });
-
   context.commands.on("keyframe.add", async (props: { id: string; selection: ImageFrameSelection }) => {
     const { id: annotationId } = props;
     const db = getDb();
@@ -1062,4 +869,20 @@ export function registerCommands(params: CommandContext) {
       combine: (prevCmd) => prevCmd,
     };
   });
+
+  context.commands.on(
+    "command_dialog",
+    () => {
+      return {
+        name: "Toggle shortcut guide",
+        apply: () => {
+          uiStore.toggleCommandDialog();
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
 }

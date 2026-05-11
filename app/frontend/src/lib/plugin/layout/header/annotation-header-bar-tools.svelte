@@ -50,7 +50,7 @@
   async function loadIcon(iconName: string | undefined) {
     if (!iconName) return "";
 
-    const pluginIconRes = await pluginsBackendDataSource.serveAsset("idah-video", `${iconName}.svg`);
+    const pluginIconRes = await pluginsBackendDataSource.serveAsset(context.type, `${iconName}.svg`);
     return await pluginIconRes.text();
   }
 </script>
