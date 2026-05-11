@@ -2,34 +2,12 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { modKey } from "$lib/utils/browser";
-
-  let visible = $state(false);
-
-  function toggle() {
-    visible = !visible;
-  }
-
-  $effect(() => {
-    if (typeof window === "undefined") return;
-
-    function handler(e: KeyboardEvent) {
-      if (modKey(e) && e.key === "~") {
-        e.preventDefault();
-        e.stopPropagation();
-        toggle();
-      }
-    }
-
-    // Use capture phase to run before the parent plugin handler
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  });
+  import { ui } from "$lib/state/ui.svelte";
 </script>
 
-{#if visible}
+{#if ui.isDebugConsoleOpen}
   <div class="debug-console">
-    <button class="debug-close" onclick={() => (visible = false)}>✕</button>
+    <button class="debug-close" onclick={() => (ui.isDebugConsoleOpen = false)}>✕</button>
     <pre class="debug-content"><span class="section">── TIMELINE ──</span>
 range      {viewport.timeline.range.startRange.toFixed(1)} → {viewport.timeline.range.endRange.toFixed(1)}
 dimensions {viewport.timeline.dimensions[0]} × {viewport.timeline.dimensions[1]} px

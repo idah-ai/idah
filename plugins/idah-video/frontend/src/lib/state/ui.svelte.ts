@@ -44,9 +44,14 @@ class UIState {
   #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-video:settings:time-display", "frames");
 
   isCommandDialogOpen = $state(false);
+  isDebugConsoleOpen = $state(false);
 
   toggleCommandDialog() {
     this.isCommandDialogOpen = !this.isCommandDialogOpen;
+  }
+
+  toggleDebugConsole() {
+    this.isDebugConsoleOpen = !this.isDebugConsoleOpen;
   }
 
   get frameStep() { return this.#frameStep.value; }
