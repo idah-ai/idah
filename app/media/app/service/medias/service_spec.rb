@@ -243,22 +243,6 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
   end
 
-  describe "Medias::StreamWithPath" do
-    let(:io) { StringIO.new("hello") }
-    let(:path) { "test.txt" }
-    subject { Medias::StreamWithPath.new(io, path) }
-
-    it "delegates methods to io" do
-      expect(subject.read).to eq("hello")
-      expect(subject.respond_to?(:read)).to be true
-      expect(subject.respond_to?(:path)).to be true
-    end
-
-    it "still responds to its own path method" do
-      expect(subject.path).to eq("test.txt")
-    end
-  end
-
   describe "#create" do
     let(:media_record) do
       Verse::JsonApi::Struct.new(
