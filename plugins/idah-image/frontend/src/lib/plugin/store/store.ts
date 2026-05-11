@@ -13,7 +13,7 @@ export function setCurrentModeTo(mode: string) {
 }
 
 /** CURRENT FRAME */
-export const currentFrame = writable<number>(0);
+export const currentFrame = writable<number>(1);
 
 export function setCurrentFrame(frame: number) {
   currentFrame.set(frame);

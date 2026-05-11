@@ -55,7 +55,7 @@ module Medias
               File.basename(zip_entry.name)
             )
 
-            if (res = store_media(
+            result = store_media(
               io: entry_io, # Stream directly from zip entry to storage - no tempfiles
               filename: File.basename(zip_entry.name),
               size: zip_entry.size,
@@ -64,10 +64,12 @@ module Medias
               key:,
               project_id:,
               modality:
-            ))
-              results << res
+            )
+
+            if result.is_a?(Medias::Record)
+              results << result
             else
-              skipped << zip_entry.name
+              skipped << { filename: zip_entry.name, message: result }
             end
           end
         end
@@ -78,7 +80,7 @@ module Medias
                 "Resource #{resource} with key #{key} already exists"
         end
 
-        if (res = store_media(
+        result = store_media(
           io: file.tempfile,
           filename: file.filename,
           mime_type: file.type,
@@ -86,10 +88,12 @@ module Medias
           key:,
           project_id:,
           modality:
-        ))
-          results << res
+        )
+
+        if result.is_a?(Medias::Record)
+          results << result
         else
-          skipped << file.filename
+          skipped << { filename: file.filename, message: result }
         end
       end
 
@@ -125,7 +129,7 @@ module Medias
       if modality &&
          (allowed = Processor::Registry.allowed_mime_types(modality)) &&
          allowed.none? { |pattern| mime_type =~ Regexp.new(pattern) }
-        return nil
+        return "File type is not supported"
       end
 
       Verse::Plugin[:shrine].with_storage do |storage|

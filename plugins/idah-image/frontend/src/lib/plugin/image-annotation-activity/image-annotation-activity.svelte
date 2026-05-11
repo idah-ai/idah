@@ -22,12 +22,13 @@
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
 
-  import { ShortcutManager } from "$lib/shortcut/shortcut-manager";
+  import { getShortcuts } from "$lib/components/ui/kbd/utils";
+  import { ShortcutManager } from "$lib/shortcut/shortcut-manager.svelte";
 
   import { requiredFullfilled } from "$lib/components/app/sidebar/properties/properties.index";
   import { registerCommands } from "$lib/plugin/commands.svelte";
   import { annotationsIndexedDB, type AnnotationBackend } from "$lib/plugin/data/annotation/annotaiton-backend.svelte";
-  import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/shortcut";
+  import { registerOnSelectShortcuts, registerShortcuts, registerShortcutsReference } from "$lib/plugin/shortcut";
   import { boundingBoxes, entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import {
     currentFrame,
@@ -38,6 +39,7 @@
     setSelectedAnnotation,
     setSelectedAnnotationGroup,
   } from "$lib/plugin/store/store";
+  import { uiStore } from "$lib/plugin/store/ui-store.svelte";
   import {
     DEFAULT_MODE,
     EDITOR_MODE_TOOLS,
@@ -70,11 +72,11 @@
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let { id: entryId, workflowStep } = $derived(context);
-
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IMAGE_NOTE);
   let tools: {
+    name: string;
     label: string;
     type: string;
     iconName: string;
@@ -98,7 +100,6 @@
     const annotations = annotationsIDB.annotations;
     return Promise.resolve(annotations);
   });
-  let commandOpen = $state(false);
   let shapeSelectionArgs:
     | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
     | undefined = $state();
@@ -168,6 +169,29 @@
   });
 
   onMount(async () => {
+    // Watch for image container resize events
+    let resizeObserver: ResizeObserver | undefined;
+    const checkAndObserve = () => {
+      if (image_container && !resizeObserver) {
+        resizeObserver = new ResizeObserver(() => {
+          imageResizedAt = new Date();
+        });
+        resizeObserver.observe(image_container);
+      }
+    };
+
+    // Check immediately and periodically until container is ready
+    checkAndObserve();
+    const intervalId = setInterval(checkAndObserve, 100);
+
+    // Cleanup after 2 seconds or when found
+    setTimeout(() => {
+      clearInterval(intervalId);
+    }, 1000);
+
+    // Generate the full static reference list of shortcuts and register them to the shared context
+    registerShortcutsReference(context);
+
     $boundingBoxes = [];
 
     try {
@@ -184,6 +208,8 @@
       });
 
       fetchAnnotations(annotationsIDB).then(() => {
+        if (!annotationsIDB) return;
+
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
         const entryRootAnnotation = annotationsIDB?.annotations.find((a) => a.shape.type === ENTRY_ROOT);
         if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
@@ -195,12 +221,14 @@
     /** TOOLS CONFIGURATION */
     const toolListConfig = [
       {
+        name: "tools.visual",
         label: "Visual",
         type: DEFAULT_MODE,
         iconName: "mouse-pointer-2",
         command: "tools.visual",
       },
       {
+        name: "tools.bounding_box",
         label: "Bounding Box",
         type: IMAGE_BOUNDING_BOX,
         iconName: "vector-square",
@@ -208,6 +236,7 @@
         command: "tools.bounding_box",
       },
       {
+        name: "tools.polygon",
         label: "Polygon",
         type: IMAGE_POLYGON,
         iconName: "polygon",
@@ -215,6 +244,7 @@
         command: "tools.polygon",
       },
       {
+        name: "tools.note",
         label: "Notes",
         type: IMAGE_NOTE,
         iconName: "message-circle",
@@ -232,6 +262,7 @@
 
     tools = toolConfig.map((tool) => {
       return {
+        name: tool.name,
         label: tool.label,
         type: tool.type,
         iconName: tool.iconName,
@@ -244,9 +275,6 @@
 
     registerShortcuts({
       commands: context.commands,
-      toggleCommandCB: () => {
-        commandOpen = !commandOpen;
-      },
       flush: () => context.annotations.flush(),
       switch_mode: (mode: string) => {
         const config = toolConfig.find((c) => c.type === mode) || toolListConfig[0];
@@ -304,22 +332,10 @@
     context.commands.run("annotation.add", { shape: imageShape, value });
   }
 
-  async function removeAnnotation(annotationId: string) {
-    if (!editable) return;
-
-    context.commands.run("annotation.delete", { annotationId });
-  }
-
   async function addSelection(id: string, selection: ImageFrameSelection) {
     if (!editable) return;
 
     context.commands.run("keyframe.add", { id, selection });
-  }
-
-  function deleteAnnotation(annotation: ImageAnnotationObject) {
-    if (!editable) return;
-
-    removeAnnotation(annotation.metadata.id);
   }
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
@@ -362,6 +378,13 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+
+    context.commands.run("annotation.update", {
+      annotation: $selectedAnnotationGroup.annotations[0],
+      value: {
+        category: reselectedCategoryId,
+      },
+    });
   }
 
   function onShapeSelection(
@@ -378,29 +401,7 @@
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
-      let shape: AnnotationShape = { type };
-      switch (type) {
-        case DEFAULT_MODE:
-          break;
-        case IMAGE_BOUNDING_BOX:
-          shape = {
-            ...shape,
-            start: frame,
-            end: frame,
-            frames: [{ frame, angle, points }],
-          };
-          break;
-        case IMAGE_POLYGON:
-          shape = {
-            ...shape,
-            start: frame,
-            end: frame,
-            frames: [{ frame, points }],
-          };
-          break;
-        default:
-          throw `unhandled type ${type}`;
-      }
+      let shape: AnnotationShape = buildShape(type, frame, points, angle);
 
       if (
         context.config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
@@ -414,6 +415,27 @@
       }
     } else {
       addSelection(selectedId, { frame, angle, points });
+    }
+  }
+
+  function buildShape(type: string, frame: number, points: Point[], angle: number): AnnotationShape {
+    switch (type) {
+      case IMAGE_BOUNDING_BOX:
+        return {
+          type,
+          start: frame,
+          end: frame,
+          frames: [{ frame, angle, points }],
+        };
+      case IMAGE_POLYGON:
+        return {
+          type,
+          start: frame,
+          end: frame,
+          frames: [{ frame, points }],
+        };
+      default:
+        throw `unhandled type ${type}`;
     }
   }
 
@@ -474,22 +496,27 @@
       return;
     } else {
       selectAnnotation($selectedAnnotationGroup.annotations[0]);
-      setCurrentModeTo(DEFAULT_MODE);
+      setCurrentModeTo($selectedAnnotationGroup.annotations[0].shape.type);
     }
   }
 </script>
 
 <div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), $selectedAnnotation]}
-    <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
+    <!-- All available shortcuts list -->
+    <CommandDialog bind:open={uiStore.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap($currentMode) || {}) as [key, value] (key)}
-            <CommandItem onclick={() => value.action()}>
-              <span>{value.name} ({value.description})</span>
-              <CommandShortcut>{key}</CommandShortcut>
+        <CommandGroup heading="All Shortcuts">
+          <!-- Get shortcuts from reference list -->
+          {#each Object.entries(context.shortcutReferences || {}) as [name, value] (name)}
+            <CommandItem>
+              <span>{value.label} ({value.description})</span>
+              <CommandShortcut>
+                <!-- Get humanized key combinations, with symbols, join if multiple is available for an action  -->
+                {getShortcuts(value.keyCombinations)?.join(" or ")}
+              </CommandShortcut>
             </CommandItem>
           {/each}
         </CommandGroup>
@@ -534,7 +561,6 @@
             {context}
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={selectAnnotationGroup}
-            onDeleteAnnotation={deleteAnnotation}
           />
         {/if}
       </div>
@@ -587,7 +613,6 @@
               {annotationValue}
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
-              onDeleteAnnotation={deleteAnnotation}
               {onEditValue}
             />
           </ResizablePane>
@@ -604,6 +629,7 @@
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
                 {imageResizedAt}
+                {annotationValue}
               >
                 <img
                   id="idah-image"

@@ -28,7 +28,6 @@
     onEditValue,
     onSelectAnnotation,
     onSelectAnnotationGroup,
-    onDeleteAnnotation,
     context,
     db,
     class: className,
@@ -39,7 +38,6 @@
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: ImageAnnotationObject) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
-    onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationBackend;
     class?: string | null;
@@ -63,9 +61,7 @@
     const result = new SvelteMap<string, IConfigValue[]>();
 
     for (const [toolType, categories] of tools) {
-      const matching = categories.filter((category) =>
-        category.label.toLowerCase().includes(searchValue.toLowerCase()),
-      );
+      const matching = categories.filter((category) => category.id.toLowerCase().includes(searchValue.toLowerCase()));
 
       if (matching.length > 0) {
         result.set(toolType, matching);
@@ -78,7 +74,7 @@
   // Functions
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      if (shape_type != $currentMode) onSelectAnnotation();
+      onSelectAnnotation();
       onEditValue({ category }, shape_type);
     }
   }
@@ -133,7 +129,6 @@
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
-          {onDeleteAnnotation}
         ></ImageCategorySidebar>
       {/if}
     {/each}

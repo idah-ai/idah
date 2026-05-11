@@ -31,7 +31,7 @@
   import Polygon from "$lib/plugin/shape/polygon/polygon.svelte";
   import Zoomable from "$lib/plugin/zoomable.svelte";
 
-  import type { AnnotationShape } from "$lib/context/annotation-context";
+  import type { AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$lib/context/context";
   import type { ToolSelection } from "$lib/plugin/shape/bounding-box/bounding-box.svelte";
 
@@ -56,6 +56,7 @@
     onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     imageResizedAt: Date;
+    annotationValue: AnnotationValue;
   };
   let {
     frame,
@@ -66,6 +67,7 @@
     onSelection, // valid shape output
     onAddNewNote,
     imageResizedAt,
+    annotationValue,
     ...restProps
   }: Props = $props();
 
@@ -148,6 +150,22 @@
   // let svg: SVGElement
   let zoomableElement: Zoomable;
 
+  let annotationValueColor = $derived(
+    Object.entries(context.config)
+      .find(([k, _]) => k == $currentMode)?.[1]
+      .values.find((c) => c.id == annotationValue?.category)?.color || "grey",
+  );
+
+  let crosshairColor = $derived(
+    $selectedAnnotation?.synced
+      ? Object.entries(context.config)
+          .find(([k, _]) => k == $currentMode)?.[1]
+          .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+      : annotationValue?.category
+        ? annotationValueColor
+        : "grey",
+  );
+
   export function zoomIn() {
     zoomableElement.zoomIn();
   }
@@ -222,16 +240,10 @@
   let isEditing = $state(false);
   let editionCursor: string | undefined = $state(undefined);
 
-  // Reset editionCursor when switching to visual mode without selection
-  $effect(() => {
-    if ($currentMode === DEFAULT_MODE && !$selectedAnnotation) {
-      editionCursor = undefined;
-    }
-  });
-
   let pointer = $derived.by(() => {
     if ($currentMode == IMAGE_NOTE) return "cursor-note";
-    if (editionCursor) return editionCursor;
+    // Reset editionCursor logic: only use it when not in DEFAULT_MODE or when there's a selection
+    if (editionCursor && !($currentMode === DEFAULT_MODE && !$selectedAnnotation)) return editionCursor;
     if ($selectedAnnotation) return "cursor-pointer";
     return "cursor-grab";
   });
@@ -275,7 +287,7 @@
 
     const lastAssignedAttributeStyle = assignedAttributesStyles[assignedAttributesStyles.length - 1];
 
-    return lastAssignedAttributeStyle;
+    return lastAssignedAttributeStyle || defaultStyle;
   }
 </script>
 
@@ -305,28 +317,8 @@
   >
     {#if showCrosshair}
       <!-- prevent display issue on load for now -->
-      <line
-        x1={0}
-        y1={target_line[Y]}
-        x2={width}
-        y2={target_line[Y]}
-        stroke={$selectedAnnotation?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == $currentMode)?.[1]
-              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-          : "grey"}
-      />
-      <line
-        x1={target_line[X]}
-        y1={0}
-        x2={target_line[X]}
-        y2={height}
-        stroke={$selectedAnnotation?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == $currentMode)?.[1]
-              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-          : "grey"}
-      />
+      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke={crosshairColor} />
+      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke={crosshairColor} />
     {/if}
 
     <!-- draw annotation context -->
@@ -387,68 +379,66 @@
         {/if}
       {/each}
     {:then annotations}
-      {#key frame}
-        {#each annotations as annotation (annotation.metadata.id)}
-          {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
-            {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
-            {#if annotation.shape.type == IMAGE_BOUNDING_BOX && !annotation.hidden}
-              {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as ImageShape, frame)}
-              {@const current_annotation_points = current_annotation_shape?.points || []}
-              {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+      {#each annotations as annotation (annotation.metadata.id)}
+        {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
+          {#if annotation.shape.type == IMAGE_BOUNDING_BOX && !annotation.hidden}
+            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as ImageShape, frame)}
+            {@const current_annotation_points = current_annotation_shape?.points || []}
+            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
 
-              <BoundingBox
-                mode={$currentMode}
-                points={current_annotation_points as Point[]}
-                angle={current_annotation_angle}
-                ratio={target_size}
-                offset={zoomInfo.offset}
-                color={annotation?.synced
-                  ? Object.entries(context.config)
-                      .find(([k, _]) => k == IMAGE_BOUNDING_BOX)?.[1]
-                      .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
-                  : "grey"}
-                styles={propertyStyle}
-                onmousedown={(e) => {
-                  e.stopPropagation();
+            <BoundingBox
+              mode={$currentMode}
+              points={current_annotation_points as Point[]}
+              angle={current_annotation_angle}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={annotation?.synced
+                ? Object.entries(context.config)
+                    .find(([k, _]) => k == IMAGE_BOUNDING_BOX)?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
 
-                  if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
-                    onSelectAnnotation(annotation);
-                  }
+                if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
 
-                  if ($currentMode === IMAGE_NOTE) {
-                    showNewNoteFeedPopup(annotation);
-                  }
-                }}
-              />
-            {:else if annotation.shape.type == IMAGE_POLYGON && !annotation.hidden}
-              <Polygon
-                mode={$currentMode}
-                points={(getInterpolatedFrame(annotation.shape as ImageShape, frame)?.points ||
-                  []) as InterpolatedVertex[]}
-                ratio={target_size}
-                offset={zoomInfo.offset}
-                color={annotation?.synced
-                  ? Object.entries(context.config)
-                      .find(([k, _]) => k == IMAGE_POLYGON)?.[1]
-                      .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
-                  : "grey"}
-                styles={propertyStyle}
-                onmousedown={(e) => {
-                  e.stopPropagation();
+                if ($currentMode === IMAGE_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
+          {:else if annotation.shape.type == IMAGE_POLYGON && !annotation.hidden}
+            <Polygon
+              mode={$currentMode}
+              points={(getInterpolatedFrame(annotation.shape as ImageShape, frame)?.points ||
+                []) as InterpolatedVertex[]}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={annotation?.synced
+                ? Object.entries(context.config)
+                    .find(([k, _]) => k == IMAGE_POLYGON)?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
 
-                  if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
-                    onSelectAnnotation(annotation);
-                  }
+                if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
 
-                  if ($currentMode === IMAGE_NOTE) {
-                    showNewNoteFeedPopup(annotation);
-                  }
-                }}
-              />
-            {/if}
+                if ($currentMode === IMAGE_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
           {/if}
-        {/each}
-      {/key}
+        {/if}
+      {/each}
     {/await}
 
     <!-- STATE:: SELECTED -->
@@ -476,7 +466,9 @@
               ? Object.entries(context.config)
                   .find(([k, _]) => k == $currentMode)?.[1]
                   .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-              : "gray"}
+              : annotationValue?.category
+                ? annotationValueColor
+                : "grey"}
             styles={propertyStyle}
             onChange={(bb, newAngle) => {
               onSelection(IMAGE_BOUNDING_BOX, frame, bb, newAngle, $selectedAnnotation?.metadata.id);
@@ -506,7 +498,9 @@
             ? Object.entries(context.config)
                 .find(([k, _]) => k == $currentMode)?.[1]
                 .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-            : "grey"}
+            : annotationValue?.category
+              ? annotationValueColor
+              : "grey"}
           styles={propertyStyle}
           onChange={(polygon_points) => {
             onSelection(IMAGE_POLYGON, frame, polygon_points, 0, $selectedAnnotation?.metadata.id);

@@ -49,6 +49,7 @@ export interface ColumnSettings<T extends Record> {
   filterable: boolean;
   filterOptions?: {
     filterKey: string;
+    filterKeys?: string[];
     filterBy: DataTableColumnFilterBy;
     filterOperation: DataTableColumnFilterOperation;
     choices?: LabelValue<string | number | boolean>[];

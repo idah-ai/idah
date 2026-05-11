@@ -1,4 +1,4 @@
-import type { ImageAnnotationObject, ImageFrameSelection } from "$lib/context/image-annotation-context";
+import { type ImageAnnotationObject, type ImageFrameSelection } from "$lib/context/image-annotation-context";
 
 export const storeDefinition: StoresDefinition = {
   annotations: [
@@ -209,22 +209,14 @@ export class AnnotationsIndexedDB {
    * Add a keyframe to an annotation
    */
   async addKeyFrame(annotation_id: string, keyFrame: ImageFrameSelection): Promise<void> {
-    const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
-    const kstore = transaction.objectStore("keyframes");
-    const astore = transaction.objectStore("annotations");
-
-    kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
-
     return new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = async () => {
-        // Fetch and update the annotation with all keyframes
-        const annotation = (await this.get("annotations", annotation_id)) as ImageAnnotationObject;
-        const keyframes = await this.getKeyFrames(annotation_id);
-        annotation.shape.frames = keyframes;
-        await astore.put(annotation, annotation_id);
-        resolve();
-      };
-      transaction.onerror = (e) => reject(e);
+      // Now start the transaction and perform all operations synchronously
+      const transaction = this.db.transaction(["keyframes"], "readwrite");
+      const kstore = transaction.objectStore("keyframes");
+      const request = kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
+
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e);
     });
   }
 
@@ -238,7 +230,7 @@ export class AnnotationsIndexedDB {
 
     return new Promise<void>((resolve, reject) => {
       request.onsuccess = () => resolve();
-      request.onerror = (r) => reject(r);
+      request.onerror = (e) => reject(e);
     });
   }
 

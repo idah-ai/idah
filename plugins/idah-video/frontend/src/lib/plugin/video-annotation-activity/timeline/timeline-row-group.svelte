@@ -55,7 +55,7 @@
         // Scroll into view immediately when this row (group) becomes selected
         if (newParams.isGroupSelected && !params.isGroupSelected) {
           node.scrollIntoView({
-            behavior: "smooth",
+            behavior: "instant",
             block: "center",
             inline: "nearest",
           });
