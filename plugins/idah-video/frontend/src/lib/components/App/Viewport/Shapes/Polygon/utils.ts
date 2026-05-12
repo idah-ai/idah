@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Polygon utils — handle positions, edge midpoints, hit testing
+// Polygon utils — handle positions, edge midpoints, hit testing, scaling
 // ---------------------------------------------------------------------------
 import type { Point } from "$lib/utils/math/point";
 import { distance } from "$lib/utils/math/point";
@@ -89,4 +89,41 @@ export function addVertexOnEdge(vertices: Point[], edgeIndex: number): { vertice
   const insertedIndex = edgeIndex + 1;
   result.splice(insertedIndex, 0, mid);
   return { vertices: result, insertedIndex };
+}
+
+/**
+ * Scale a polygon's vertices by a factor relative to its centroid.
+ */
+export function scalePolygon(vertices: Point[], factor: number): Point[] {
+  if (vertices.length < 3 || factor <= 0) return [...vertices];
+  const c = polygonCentroid(vertices);
+  return vertices.map((p) => [
+    c[0] + (p[0] - c[0]) * factor,
+    c[1] + (p[1] - c[1]) * factor,
+  ]) as Point[];
+}
+
+/**
+ * Compute the scale factor from a drag interaction.
+ * The factor is based on the ratio of the current distance from centroid to cursor
+ * over the initial distance from centroid to cursor.
+ */
+export function computeScaleFactor(
+  centroid: Point,
+  dragStart: Point,
+  currentCursor: Point,
+): number {
+  const initialDist = distance(centroid, dragStart);
+  if (initialDist < 0.001) return 1; // Avoid division by zero / extreme scaling
+  const currentDist = distance(centroid, currentCursor);
+  return currentDist / initialDist;
+}
+
+/** SVG data URL for the scale cursor (four-directional arrows). */
+export function scaleCursorSVG(color: string): string {
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
+      <path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`)}`;
 }

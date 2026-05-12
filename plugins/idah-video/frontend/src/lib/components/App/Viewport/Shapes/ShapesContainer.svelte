@@ -251,6 +251,8 @@
           return;
         }
       }
+      console.log("attttnsdn");
+
       getDriver().command.call("annotation.polygon.add_point", { point: sceneNormalizedCursor });
       return;
     }
