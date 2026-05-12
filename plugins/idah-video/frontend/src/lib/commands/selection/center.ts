@@ -6,7 +6,6 @@ import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { media } from "$lib/state/media.svelte";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
-import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
@@ -23,7 +22,7 @@ export const command = {
   name: "selection.center",
   group: "Selection",
   modes: ["default", "review"],
-  shortcut: platformShortcut("Control+Shift+C"),
+  shortcut: "Control+Shift+C",
   shortDescription: "Center on selection",
   longDescription: "Pan and zoom to fit the selected annotation in the viewport",
 };

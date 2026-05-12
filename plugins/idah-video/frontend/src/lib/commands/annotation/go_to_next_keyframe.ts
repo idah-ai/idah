@@ -10,7 +10,6 @@
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { data } from "$lib/state/data.svelte";
-import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
@@ -18,7 +17,7 @@ export const command = {
   name: "annotation.go_to_next_keyframe",
   group: "Annotation",
   modes: ["default", "review"],
-  shortcut: platformShortcut("Control+ArrowRight"),
+  shortcut: "Control+ArrowRight",
   shortDescription: "Next keyframe",
   longDescription: "Jump to the next keyframe in the current group",
 };

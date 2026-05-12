@@ -8,6 +8,7 @@ import type {
   IShortcut,
 } from "$idah/v2/types";
 import { buildKeyCombination } from "./shortcut-utils";
+import { isMac } from "$lib/utils/browser";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */
@@ -26,6 +27,16 @@ export class CommandManagerV2 {
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
   currentMode: string = "default";
 
+  /**
+   * Normalize shortcut strings so that `Control` is replaced with `Meta` on
+   * Apple platforms (macOS / iOS). This ensures command files can always use
+   * the canonical `"Control+…"` form and it will Just Work on every keyboard.
+   */
+  private normalizeShortcut(shortcut: IShortcut | null): IShortcut | null {
+    if (!shortcut || !isMac()) return shortcut;
+    return shortcut.replace(/\bControl\b/g, "Meta");
+  }
+
   // ── Registration ──────────────────────────────────────────────────────
 
   register(opts: {
@@ -38,7 +49,8 @@ export class CommandManagerV2 {
     group?: string;
     activeWhen?: () => boolean;
   }): void {
-    const { name, modes, shortcut, shortDescription, longDescription, callback, group, activeWhen } = opts;
+    const { name, modes, shortDescription, longDescription, callback, group, activeWhen } = opts;
+    const shortcut = this.normalizeShortcut(opts.shortcut);
     if (this.registry.has(name)) {
       throw new Error(`Command already registered: "${name}"`);
     }

@@ -17,7 +17,7 @@ import { InMemoryStore } from "./in-memory-store";
 import { CommandManagerV2 } from "./command-manager";
 import { ToolbarManagerV2 } from "./toolbar-manager";
 import { AstProcessor } from "./ast-evaluator";
-import { modKey, platformShortcut } from "$lib/utils/browser";
+import { modKey } from "$lib/utils/browser";
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -384,7 +384,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       name: "core.undo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: platformShortcut("Control+Z"),
+      shortcut: "Control+Z",
       shortDescription: "Undo",
       longDescription: "Undo the last action",
       callback: () => ({
@@ -399,7 +399,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       name: "core.redo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: platformShortcut("Control+Shift+Z"),
+      shortcut: "Control+Shift+Z",
       shortDescription: "Redo",
       longDescription: "Redo the last undone action",
       callback: () => ({
@@ -415,7 +415,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       name: "core.palette",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: platformShortcut("Control+Space"),
+      shortcut: "Control+Space",
       shortDescription: null,
       longDescription: null,
       callback: () => ({

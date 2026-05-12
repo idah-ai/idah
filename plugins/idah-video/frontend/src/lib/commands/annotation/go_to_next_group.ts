@@ -5,14 +5,13 @@
 // ---------------------------------------------------------------------------
 import { selection } from "$lib/state/selection.svelte";
 import { getSortedGroupIds } from "$lib/utils/annotation";
-import { platformShortcut } from "$lib/utils/browser";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 
 export const command = {
   name: "annotation.go_to_next_group",
   group: "Annotation",
   modes: ["default", "review"],
-  shortcut: platformShortcut("Control+ArrowDown"),
+  shortcut: "Control+ArrowDown",
   shortDescription: "Next group",
   longDescription: "Select the next group in the timeline",
 };
