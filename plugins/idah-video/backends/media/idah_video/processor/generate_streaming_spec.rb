@@ -4,7 +4,7 @@ require "spec_helper"
 
 RSpec.describe IdahVideo::Processor::GenerateStreaming do
   let(:file_path) {
-    "spec_data/sample.mp4"
+    "backends/spec_data/sample.mp4"
   }
 
   let(:options) do

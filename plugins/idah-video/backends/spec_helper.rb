@@ -27,6 +27,10 @@ backend_services.each do |service|
   loader.push_dir(service_path) if Dir.exist?(service_path)
 end
 
+# Load spec_data directory for test support classes (e.g., FakeProcessorContext)
+spec_data_path = "./backends/spec_data"
+loader.push_dir(spec_data_path) if Dir.exist?(spec_data_path)
+
 loader.setup
 
 SimpleCov.start do
