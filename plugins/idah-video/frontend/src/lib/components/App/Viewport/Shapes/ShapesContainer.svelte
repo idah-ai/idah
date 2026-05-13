@@ -25,6 +25,7 @@
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
+  import { targetCursorSVG } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
@@ -167,6 +168,7 @@
       .cursor-grab { cursor: grab; }
       .cursor-grabbing { cursor: grabbing; }
       .cursor-pointer { cursor: pointer; }
+      .cursor-target { cursor: url('${targetCursorSVG("#f6402b")}') 18 18, crosshair; }
     `;
     document.head.appendChild(style);
 
@@ -184,9 +186,26 @@
     zoomableElement.zoomOut();
   }
 
+  // ── Check if cursor is within `hitRadiusSq` pixels of the first polygon draft point ──
+  function nearFirstPolygonPoint(): boolean {
+    if (polygonDraft.points.length < 3) return false;
+    const CLOSE_RADIUS_PX = 7;
+    const CLOSE_RADIUS_SQ = CLOSE_RADIUS_PX * CLOSE_RADIUS_PX;
+    const first = polygonDraft.points[0];
+    const dx = Math.abs(sceneNormalizedCursor[0] - first[0]) * media.width;
+    const dy = Math.abs(sceneNormalizedCursor[1] - first[1]) * media.height;
+    return dx * dx + dy * dy < CLOSE_RADIUS_SQ;
+  }
+
+  // ── Check if cursor is hovering the first polygon draft point ────────
+  let hoveringFirstPoint = $derived(
+    viewport.mode === POLYGON_MODE && nearFirstPolygonPoint(),
+  );
+
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
     if (viewport.mode === "note") return "cursor-note";
+    if (viewport.mode === POLYGON_MODE && hoveringFirstPoint) return "cursor-target";
     if (viewport.mode === BUILD_MODE || viewport.mode === POLYGON_MODE) return "cursor-crosshair";
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
@@ -239,17 +258,12 @@
     // ── Polygon creation mode — check BEFORE tool selection ──────────
     if (isPolyMode) {
       e.stopPropagation();
-      if (polygonDraft.points.length >= 3) {
-        const first = polygonDraft.points[0];
-        const dx = Math.abs(sceneNormalizedCursor[0] - first[0]) * media.width;
-        const dy = Math.abs(sceneNormalizedCursor[1] - first[1]) * media.height;
-        if (dx * dx + dy * dy < 400) {
-          const pts = [...polygonDraft.points];
-          polygonDraft.reset();
-          // Route through onSelection so the workspace can apply pendingValue (selected category)
-          onSelection("idah-video:polygon", frame, pts, 0, undefined);
-          return;
-        }
+      if (nearFirstPolygonPoint()) {
+        const pts = [...polygonDraft.points];
+        polygonDraft.reset();
+        // Route through onSelection so the workspace can apply pendingValue (selected category)
+        onSelection("idah-video:polygon", frame, pts, 0, undefined);
+        return;
       }
       console.log("attttnsdn");
 

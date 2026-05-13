@@ -130,3 +130,14 @@ export function scaleCursorSVG(color: string): string {
       <line x1="15" y1="12" x2="21" y2="12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
     </svg>`)}`;
 }
+
+/** SVG data URL for a close-target cursor (crosshair + corner brackets + central dot). */
+export function targetCursorSVG(color: string): string {
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="8" stroke="${color}" stroke-width="1.5" fill="none"/>
+      <circle cx="12" cy="12" r="2" fill="${color}"/>
+      <path d="M12 4 L12 8 M12 16 L12 20 M4 12 L8 12 M16 12 L20 12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M8 8 L4 4 M16 8 L20 4 M8 16 L4 20 M16 16 L20 20" stroke="${color}" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+    </svg>`)}`;
+}
