@@ -19,27 +19,21 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
         },
         visibility: {
           label: isSomeHidden ? "Show Group" : "Hide Group",
-          icon: isSomeHidden ? EyeOffIcon : EyeIcon,
+          icon: isSomeHidden ? EyeIcon : EyeOffIcon,
           alwaysShow: isSomeHidden,
-          onClick: () => {
-            getDriver().command.call("annotation.toggleGroupVisibility", { groupId: track.id });
-          },
+          onClick: () => getDriver().command.call("annotation.toggle_group_visibility", { groupId: track.id }),
         },
         editability: {
           label: isSomeLocked ? "Unlock Group" : "Lock Group",
           icon: isSomeLocked ? LockOpenIcon : LockIcon,
           alwaysShow: isSomeLocked,
-          onClick: () => {
-            getDriver().command.call("annotation.toggleGroupEditability", { groupId: track.id });
-          },
+          onClick: () => getDriver().command.call("annotation.toggle_group_editability", { groupId: track.id }),
         },
         delete: {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
-          onClick: () => {
-            getDriver().command.call("annotation.deleteGroup", { groupId: track.id });
-          },
+          onClick: () => getDriver().command.call("annotation.delete_group", { groupId: track.id }),
         },
       },
     },

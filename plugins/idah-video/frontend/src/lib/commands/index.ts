@@ -45,6 +45,8 @@ import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
 import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
 
 import { register as registerGroupDelete } from "./group/delete";
+import { register as registerGroupToggleEditability } from "./group/toggle_editability";
+import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
 
 import { register as registerNoteAdd } from "./note/add";
 import { register as registerNoteGoto } from "./note/goto";
@@ -100,6 +102,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── Group ─────────────────────────────────────────────────────────────
   registerGroupDelete(driver);
+  registerGroupToggleVisibility(driver);
+  registerGroupToggleEditability(driver);
 
   // ── Note ──────────────────────────────────────────────────────────────
   registerNoteAdd(driver);
