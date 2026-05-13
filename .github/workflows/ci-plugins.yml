@@ -10,7 +10,7 @@
 #   - pnpm test (vitest)
 #   - pnpm build (production build)
 #
-# Backend checks (if Gemfile.lock exists):
+# Backend checks (if backends/Gemfile.lock exists):
 #   - bundle install (with caching via ruby/setup-ruby)
 #   - bundle exec rubocop
 #   - bundle exec rspec
@@ -81,13 +81,14 @@ jobs:
       # -------------------------------------------------------
       # System dependencies
       # -------------------------------------------------------
-      - name: Install system dependencies (ImageMagick)
-        if: ${{ hashFiles(format('plugins/{0}/Gemfile.lock', matrix.plugin)) != '' }}
+      - name: Install system dependencies (ImageMagick & FFmpeg)
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
         run: |
           sudo apt-get update && sudo apt-get install -y \
             imagemagick \
             libmagickcore-dev \
-            libmagickwand-dev
+            libmagickwand-dev \
+            ffmpeg
 
       # -------------------------------------------------------
       # Frontend checks
@@ -133,15 +134,17 @@ jobs:
       # Backend checks
       # -------------------------------------------------------
       - uses: ruby/setup-ruby@v1
-        if: ${{ hashFiles(format('plugins/{0}/Gemfile.lock', matrix.plugin)) != '' }}
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
         with:
           bundler-cache: true
-          working-directory: plugins/${{ matrix.plugin }}
+          working-directory: plugins/${{ matrix.plugin }}/backends
 
       - name: Run Rubocop
-        if: ${{ hashFiles(format('plugins/{0}/Gemfile.lock', matrix.plugin)) != '' }}
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/backends
         run: bundle exec rubocop --force-exclusion
 
       - name: Run RSpec
-        if: ${{ hashFiles(format('plugins/{0}/Gemfile.lock', matrix.plugin)) != '' }}
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/backends
         run: bundle exec rspec
