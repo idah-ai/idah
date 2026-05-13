@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe IdahVideo::Processor::Video do
-  let(:file_path) { "backends/spec_data/sample.mp4" }
+  let(:file_path) { "spec_data/sample.mp4" }
   let(:processor_context) do
     FakeProcessorContext.new(
       file_path: file_path,

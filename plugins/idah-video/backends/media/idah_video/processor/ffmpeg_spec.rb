@@ -5,7 +5,7 @@ require "tmpdir"
 require "fileutils"
 
 RSpec.describe IdahVideo::Processor::Ffmpeg do
-  let(:sample_path) { "backends/spec_data/sample.mp4" }
+  let(:sample_path) { "spec_data/sample.mp4" }
 
   describe ".gen_stream" do
     it "generates a 240p video variant" do
@@ -39,7 +39,7 @@ RSpec.describe IdahVideo::Processor::Ffmpeg do
     end
 
     context "with an invalid input file" do
-      let(:invalid_file) { "backends/spec_data/repository_helper.rb" }
+      let(:invalid_file) { "spec_data/repository_helper.rb" }
 
       it "raises an error" do
         Dir.mktmpdir do |tmpdir|

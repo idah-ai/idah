@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe IdahVideo::Processor::VideoInfo do
-  let(:file_path) { "backends/spec_data/sample.mp4" }
+  let(:file_path) { "spec_data/sample.mp4" }
 
   describe ".from_file" do
     context "with a valid video file" do
@@ -23,7 +23,7 @@ RSpec.describe IdahVideo::Processor::VideoInfo do
     end
 
     context "with an invalid video file" do
-      let(:file_path) { "backends/spec_data/repository_helper.rb" }
+      let(:file_path) { "spec_data/repository_helper.rb" }
 
       it "raises an error" do
         expect do

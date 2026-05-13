@@ -4,7 +4,7 @@ require "spec_helper"
 
 RSpec.describe IdahVideo::Processor::GenerateThumbnail do
   let(:file_path) {
-    "backends/spec_data/sample.mp4"
+    "spec_data/sample.mp4"
   }
 
   describe ".generate" do
