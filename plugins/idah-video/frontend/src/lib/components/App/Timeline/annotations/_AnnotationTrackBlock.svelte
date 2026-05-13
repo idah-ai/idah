@@ -8,9 +8,9 @@
   } from "$lib/components/App/ContextMenu/store";
   import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { resolveAnnotationColor } from "$lib/utils/color";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { resolveAnnotationColor } from "$lib/utils/color";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
@@ -55,6 +55,9 @@
       item,
       currentFrame: hoverFrame,
     };
+
+    /* Select annotation group */
+    selection.selectGroup(trackId);
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
