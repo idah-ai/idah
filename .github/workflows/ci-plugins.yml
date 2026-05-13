@@ -15,7 +15,7 @@
 #   - bundle exec rubocop
 #   - bundle exec rspec
 
-name: Plugin CI
+name: CI - Plugins
 
 on:
   pull_request:
@@ -138,6 +138,8 @@ jobs:
         with:
           bundler-cache: true
           working-directory: plugins/${{ matrix.plugin }}/backends
+        env:
+          BUNDLE_PATH: ~/.vendor/bundle
 
       - name: Run Rubocop
         if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
