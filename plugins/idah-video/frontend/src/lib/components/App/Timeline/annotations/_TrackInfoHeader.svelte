@@ -29,7 +29,7 @@
           label: isAllHidden ? "Show all" : "Hide all",
           icon: isAllHidden ? EyeIcon : EyeOffIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggleAllVisibility");
+            getDriver().command.call("annotation.toggle_visibility_all");
           },
         },
         "editability-all": {
