@@ -128,10 +128,6 @@
     return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
   }
 
-  function isZipFile(filename: string): boolean {
-    return filename.toLowerCase().endsWith(".zip");
-  }
-
   const MAX_RETRIES = 3;
   const INITIAL_DELAY_MS = 2_000;
   const MAX_DELAY_MS = 30_000;
@@ -212,9 +208,6 @@
     upload.items = Array.from(media.selected!).map((media) => ({
       uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
       name: media.name,
-      isZip() {
-        return isZipFile(this.name);
-      },
       media: media,
       status: "uploading",
       retryCount: 0,

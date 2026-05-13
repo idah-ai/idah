@@ -4,7 +4,6 @@ export interface UploadItem {
   uuid: string;
   media: File;
   name: string;
-  isZip(): boolean;
   uploadedMedias: Array<MediaRecord>; // set once media upload succeeds — skip on retry
   skippedMedias: Array<SkippedFile>;
   status: "uploading" | "retrying" | "success" | "failed";
