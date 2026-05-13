@@ -53,6 +53,7 @@
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     isPlaying: boolean;
+    onDeleteAnnotation?: (annotationId: string) => void;
   };
 
   let {
@@ -61,6 +62,7 @@
     onSelection,
     onAddNewNote,
     isPlaying,
+    onDeleteAnnotation,
   }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
@@ -265,7 +267,6 @@
         onSelection("idah-video:polygon", frame, pts, 0, undefined);
         return;
       }
-      console.log("attttnsdn");
 
       getDriver().command.call("annotation.polygon.add_point", { point: sceneNormalizedCursor });
       return;
@@ -359,6 +360,11 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
+    // Empty points signals deletion (polygon has fewer than 3 vertices)
+    if (points.length === 0) {
+      onDeleteAnnotation?.(annId);
+      return;
+    }
     onSelection(viewport.mode, frame, points, angle, annId);
   }
 

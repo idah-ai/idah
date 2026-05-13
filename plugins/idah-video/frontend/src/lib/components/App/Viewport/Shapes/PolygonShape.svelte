@@ -328,9 +328,19 @@
         }
       }}
       onDeleteVertex={(i) => {
-        if (baseVertices.length <= 3) return;
+        // If multiple vertices are selected, delete all of them
+        const indicesToDelete = _selectedIndices.size > 0
+          ? [..._selectedIndices].sort((a, b) => b - a)
+          : [i];
+        // Deleting these vertices would leave fewer than 3 — delete entire annotation
+        if (baseVertices.length - indicesToDelete.length < 3) {
+          onEditComplete?.([], 0);
+          return;
+        }
         const next = [...baseVertices];
-        next.splice(i, 1);
+        for (const idx of indicesToDelete) {
+          next.splice(idx, 1);
+        }
         _localVertices = next;
         _selectedIndices = new Set();
         emitComplete();

@@ -219,8 +219,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("selection.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
@@ -237,6 +236,7 @@
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
     if (!editable) return;
+
 
     if (frame != undefined) {
       deleteSelection(annotation.metadata!.id as string, frame);
@@ -623,6 +623,7 @@
                   onAddNewNote={showNewNotePopup}
                   onChangeFrame={seekToFrame}
                   isPlaying={viewport.video.status === "play"}
+                  onDeleteAnnotation={(annId) => removeAnnotation(annId)}
                 >
                   <!-- container context ?-->
                   <Video
