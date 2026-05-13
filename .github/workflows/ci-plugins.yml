@@ -138,8 +138,6 @@ jobs:
         with:
           bundler-cache: true
           working-directory: plugins/${{ matrix.plugin }}/backends
-        env:
-          BUNDLE_PATH: ~/.vendor/bundle
 
       - name: Run Rubocop
         if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
@@ -149,4 +147,4 @@ jobs:
       - name: Run RSpec
         if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
         working-directory: plugins/${{ matrix.plugin }}/backends
-        run: bundle exec rspec
+        run: bundle exec rspec --exclude-pattern 'vendor/**'
