@@ -115,10 +115,10 @@ jobs:
         working-directory: plugins/${{ matrix.plugin }}/frontend
         run: pnpm install
 
-      # - name: Run Svelte Check
-      #   if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
-      #   working-directory: plugins/${{ matrix.plugin }}/frontend
-      #   run: pnpm check
+      - name: Run Svelte Check
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/frontend
+        run: pnpm check
 
       - name: Run Frontend Tests
         if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
