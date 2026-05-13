@@ -17,6 +17,8 @@ import type {
   IAnnotationsDriverV2,
   IAnnotationRecord,
   IFilter,
+  IFilterValue,
+  IRangeOp,
 } from "$idah/v2/types";
 import { InMemoryStore } from "./in-memory-store";
 import { uuidv7 } from "uuidv7";
@@ -26,12 +28,22 @@ import { uuidv7 } from "uuidv7";
 // Bump this when IDB_STORES changes — existing users will get onupgradeneeded.
 const VERSION = 1;
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SYNC_PAGE_SIZE       = 100;
+const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
+
 // ─── ICrudDriver ──────────────────────────────────────────────────────────────
 
+/**
+ * Minimal backend transport interface used exclusively by the IDB sync loop.
+ * Intentionally separate from IAnnotationsDriverV2 — pagination and filter
+ * serialisation are transport concerns, not consumer-facing API concerns.
+ */
 export interface ICrudDriver<T extends { id: string }> {
   list(params: {
-    filters: Record<string, unknown>;
-    page: number;
+    filters:  Record<string, unknown>;
+    page:     number;
     pageSize: number;
   }): Promise<{ data: T[] }>;
   create(record: T): Promise<T>;
@@ -92,7 +104,12 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
 // support arbitrary nested-path and virtual-field predicates uniformly.
 // TODO: leverage IDB indexes for common filter patterns once the filter
 //       surface stabilises.
-const idbFetch = <T extends { id: string }>(db: IDBDatabase, entryId: string, virtualFields?: Map<string, (ann: T) => unknown>, filter?: IFilter): Promise<T[]> =>
+const idbFetch = <T extends { id: string }>(
+  db: IDBDatabase,
+  entryId: string,
+  virtualFields?: Map<string, (ann: T) => unknown>,
+  filter?: IFilter,
+): Promise<T[]> =>
   new Promise((resolve, reject) => {
     const results: T[] = [];
     const range = IDBKeyRange.only(entryId);
@@ -244,25 +261,38 @@ const resolvePath = (obj: unknown, path: string): unknown =>
     obj,
   );
 
-const matchesFilter = (val: unknown, expected: unknown): boolean => {
-  if (typeof expected === "object" && expected !== null && !Array.isArray(expected)) {
-    const op  = expected as Record<string, unknown>;
-    const num = Number(val);
-    if ("lte" in op && num > Number(op.lte)) return false;
-    if ("gte" in op && num < Number(op.gte)) return false;
-    if ("lt"  in op && num >= Number(op.lt))  return false;
-    if ("gt"  in op && num <= Number(op.gt))  return false;
-    if ("eq"  in op && val !== op.eq)          return false;
-    if ("neq" in op && val === op.neq)         return false;
-    return true;
+function matchesFilter(fieldValue: unknown, filterValue: IFilterValue): boolean {
+  // Simple equality (string / number)
+  if (typeof filterValue === "string" || typeof filterValue === "number") {
+    return fieldValue === filterValue;
   }
-  return val === expected;
-};
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+  // Range / comparison operators
+  if (typeof filterValue === "object" && !Array.isArray(filterValue)) {
+    const op = filterValue as IRangeOp;
 
-const SYNC_PAGE_SIZE       = 100;
-const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
+    if (op.eq !== undefined) return fieldValue === op.eq;
+    if (op.neq !== undefined) return fieldValue !== op.neq;
+
+    // Number comparisons
+    const num = Number(fieldValue);
+    if (isNaN(num)) return false;
+
+    if (op.gte !== undefined && num < Number(op.gte)) return false;
+    if (op.gt !== undefined && num <= Number(op.gt)) return false;
+    if (op.lte !== undefined && num > Number(op.lte)) return false;
+    if (op.lt !== undefined && num >= Number(op.lt)) return false;
+
+    return true; // no failing operator found
+  }
+
+  // Array-based operators
+  if (Array.isArray(filterValue)) {
+    return fieldValue !== undefined && (filterValue as unknown[]).includes(fieldValue);
+  }
+
+  return true;
+}
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -272,99 +302,17 @@ export interface IndexedDbAnnotationsDriverConfig<
 > {
   entryId:  string;
   pluginId: string;
-  driver:   ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
-  enqueue:  (op: () => Promise<void>) => void;
+  /**
+   * Backend transport used exclusively by the sync loop.
+   * Intentionally separate from IAnnotationsDriverV2 — pagination and filter
+   * serialisation are transport concerns, not consumer-facing API concerns.
+   * In production this wraps the real API; in local dev use createMemoryDriver.
+   */
+  backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
+  enqueue: (op: () => Promise<void>) => void;
   // TODO: enqueue must handle errors internally (log, retry, dead-letter, etc.)
   //       — this driver intentionally does not catch errors thrown by enqueued ops.
 }
-
-// ─── SSR fallback driver ──────────────────────────────────────────────────────
-
-// When IndexedDB is unavailable (SSR / Node.js), an in-memory Map serves as
-// the local cache. The delta-sync pattern is identical to the IDB driver:
-// fetch returns the cached snapshot immediately, then enqueues a background
-// refresh that only pulls records updated since the last sync.
-const createSsrAnnotationsDriver = <
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
->(
-  config: IndexedDbAnnotationsDriverConfig<Shape, Annotation>,
-): IAnnotationsDriverV2<Shape, Annotation> => {
-  const { entryId, driver, enqueue } = config;
-  const virtualFields = new Map<string, (ann: IAnnotationRecord<Shape, Annotation>) => unknown>();
-
-  // In-memory equivalents of IDB storage + the entries timestamp store.
-  const cache       = new Map<string, IAnnotationRecord<Shape, Annotation>>();
-  let lastUpdatedAt = 0;
-  let syncEnqueued  = false;
-
-  const applyFilter = (filter?: IFilter): IAnnotationRecord<Shape, Annotation>[] => {
-    const all = [...cache.values()];
-    if (!filter) return all;
-    return all.filter((rec) => {
-      for (const [field, expected] of Object.entries(filter)) {
-        const val = virtualFields.has(field)
-          ? virtualFields.get(field)!(rec)
-          : resolvePath(rec, field);
-        if (!matchesFilter(val, expected)) return false;
-      }
-      return true;
-    });
-  };
-
-  return {
-    registerField(name, fn) {
-      virtualFields.set(name, fn as (ann: IAnnotationRecord<Shape, Annotation>) => unknown);
-    },
-
-    async fetch(filter?: IFilter) {
-      // Return the cached snapshot before enqueueing any sync that could mutate it.
-      const results = applyFilter(filter);
-
-      if (!syncEnqueued) {
-        syncEnqueued = true;
-        enqueue(async () => {
-          try {
-            const fetchedAt = Date.now();
-            let page = 1, hasMore = true;
-            while (hasMore) {
-              const res = await driver.list({
-                filters: { entry_id: entryId, updated_at__gt: lastUpdatedAt },
-                page, pageSize: SYNC_PAGE_SIZE,
-              });
-              for (const record of res.data) cache.set(record.id, record);
-              hasMore = res.data.length === SYNC_PAGE_SIZE;
-              page++;
-            }
-            lastUpdatedAt = fetchedAt;
-          } finally {
-            syncEnqueued = false;
-          }
-        });
-      }
-
-      return results;
-    },
-
-    async update(id, data) {
-      const existing = cache.get(id);
-      if (existing) cache.set(id, { ...existing, ...data });
-      enqueue(() => driver.update(id, data));
-    },
-
-    async delete(id) {
-      cache.delete(id);
-      enqueue(() => driver.delete(id));
-    },
-
-    async create(data) {
-      const record = { ...data, id: data.id ?? uuidv7() } as IAnnotationRecord<Shape, Annotation>;
-      cache.set(record.id, record);
-      enqueue(() => driver.create(record).then(() => {}));
-      return record;
-    },
-  };
-};
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
@@ -373,15 +321,15 @@ export const createIndexedDbAnnotationsDriver = <
   Annotation = Record<string, unknown>,
 >(
   config: IndexedDbAnnotationsDriverConfig<Shape, Annotation>,
-): IAnnotationsDriverV2<Shape, Annotation> => {
-  // SSR / non-browser environments: IndexedDB is unavailable.
-  // Fall back to a thin driver that reads/writes directly through the ICrudDriver.
+): IAnnotationsDriverV2<Shape, Annotation> | null => {
+  // SSR / non-browser environments: signal to the caller that IDB is unavailable
+  // so they can fall back to their own IAnnotationsDriverV2 implementation.
   if (typeof indexedDB === "undefined") {
-    console.warn("[idb-driver] IndexedDB unavailable — using direct driver (SSR mode).");
-    return createSsrAnnotationsDriver(config);
+    console.warn("[idb-driver] IndexedDB unavailable (SSR mode).");
+    return null;
   }
 
-  const { entryId, driver, enqueue } = config;
+  const { entryId, backend, enqueue } = config;
 
   // Opened lazily on first use; one connection per driver instance.
   let dbPromise: Promise<IDBDatabase> | null = null;
@@ -394,7 +342,7 @@ export const createIndexedDbAnnotationsDriver = <
 
   // Guards against enqueueing multiple overlapping delta-syncs for the same
   // driver instance (e.g. rapid re-renders or polling).
-  let syncEnqueued  = false;
+  let syncEnqueued   = false;
   // Purge runs once per driver instance; no reset needed.
   let purgeScheduled = false;
   // Visit mark is written once, before the purge is ever enqueued.
@@ -415,10 +363,6 @@ export const createIndexedDbAnnotationsDriver = <
         await idbMarkVisited(db, entryId, Date.now());
       }
 
-      // Read from IDB first so the caller always gets the cached snapshot
-      // before any in-flight sync can write to the store.
-      const results = await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
-
       // Purge stale entries once per session, now that the current entry is safe.
       if (!purgeScheduled) {
         purgeScheduled = true;
@@ -428,6 +372,10 @@ export const createIndexedDbAnnotationsDriver = <
           for (const staleId of staleIds) await idbPurgeEntry(db, staleId);
         });
       }
+
+      // Read from IDB first so the caller always gets the cached snapshot
+      // before any in-flight sync can write to the store.
+      const results = await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
 
       // Background delta-refresh: enqueue at most one sync at a time.
       // The next fetch after the current sync completes will enqueue a fresh one.
@@ -439,9 +387,10 @@ export const createIndexedDbAnnotationsDriver = <
             const fetchedAt   = Date.now();
             let page = 1, hasMore = true;
             while (hasMore) {
-              const response = await driver.list({
-                filters: { entry_id: entryId, updated_at__gt: lastUpdated },
-                page, pageSize: SYNC_PAGE_SIZE,
+              const response = await backend.list({
+                filters:  { entry_id: entryId, updated_at__gt: lastUpdated },
+                page,
+                pageSize: SYNC_PAGE_SIZE,
               });
               await idbUpsertBatch(db, entryId, response.data);
               hasMore = response.data.length === SYNC_PAGE_SIZE;
@@ -462,13 +411,13 @@ export const createIndexedDbAnnotationsDriver = <
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
       if (!existing) throw new Error(`Annotation not found: ${id}`);
       await idbUpsertBatch(db, entryId, [{ ...existing, ...data }]);
-      enqueue(() => driver.update(id, data));
+      enqueue(() => backend.update(id, data));
     },
 
     async delete(id): Promise<void> {
       const db = await getDb();
       await idbDelete(db, entryId, id);
-      enqueue(() => driver.delete(id));
+      enqueue(() => backend.delete(id));
     },
 
     async create(data): Promise<IAnnotationRecord<Shape, Annotation>> {
@@ -477,7 +426,7 @@ export const createIndexedDbAnnotationsDriver = <
       // uuidv7() is kept as a safety net for untyped callers passing a partial record.
       const record = { ...data, id: data.id ?? uuidv7() } as IAnnotationRecord<Shape, Annotation>;
       await idbCreate(db, entryId, record);
-      enqueue(() => driver.create(record).then(() => {}));
+      enqueue(() => backend.create(record).then(() => {}));
       return record;
     },
   };

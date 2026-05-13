@@ -374,12 +374,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
     // IDB-backed annotations driver (falls back to in-memory if indexedDB unavailable, e.g. SSR)
-    this.annotations = createIndexedDbAnnotationsDriver<IVideoAnnotationShape, IVideoAnnotationValue>({
-      entryId:  this._id,
-      pluginId: "idah-video",
-      driver:   createMemoryDriver(this.annotationStore),
-      enqueue: (cb: () => Promise<unknown>) => { /* TODO: queueManager */ }
-    });
+    this.annotations =
+      createIndexedDbAnnotationsDriver<IVideoAnnotationShape, IVideoAnnotationValue>({
+        entryId:  this._id,
+        pluginId: "idah-video",
+        backend:  createMemoryDriver(this.annotationStore),
+        enqueue:  async (cb) => { /* TODO: queueManager */ await cb()},
+      }) ?? new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
 
     // ── Register default idah commands ────────────────────────────────
