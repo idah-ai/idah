@@ -419,14 +419,9 @@
       x={centroidPx[0]}
       y={barY + 24 * invScale}
       text-anchor="middle"
-      fill={color}
+      fill="white"
       font-size={11 * invScale}
       font-weight="bold"
-      style:paint-order="stroke"
-      style:stroke="white"
-      style:stroke-width="3px"
-      style:stroke-linecap="round"
-      style:stroke-linejoin="round"
       pointer-events="none"
     >
       {scaleBarFactor.toFixed(2)}×

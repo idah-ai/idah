@@ -4,9 +4,11 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { polygonVertexHandles, polygonEdgeMidpoints, polygonCentroid, scaleCursorSVG } from "./utils";
   import BoxSelector from "./_BoxSelector.svelte";
-  import removeCursorSvg from "$lib/assets/icons/remove-cursor.svg?raw";
+  import removeCursorSvg from "$lib/assets/icons/pen-tool-remove-2-24x24.svg?raw";
+  import addCursorSvg from "$lib/assets/icons/pen-tool-add-2-24x24.svg?raw";
 
   const removeCursorCss = `url("data:image/svg+xml,${encodeURIComponent(removeCursorSvg)}") 2 2,pointer`;
+  const addCursorCss = `url("data:image/svg+xml,${encodeURIComponent(addCursorSvg)}") 2 2,pointer`;
 
   type Props = {
     vertices: Point[];
@@ -66,26 +68,26 @@
   let centroid = $derived(polygonCentroid(vertices));
 </script>
 
-<!-- Edge midpoint handles -->
+<!-- Edge midpoint handles (diamond shape) -->
 {#each edgeMidpoints as point, i (i)}
   {@const isHovered = hoveredEdgeIndex === i}
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={isHovered ? R_edge_hovered : R_edge}
+  {@const cx = point[0] * w}
+  {@const cy = point[1] * h}
+  {@const r = isHovered ? R_edge_hovered : R_edge}
+  <polygon
+    points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
     fill={color}
     fill-opacity={isHovered ? 0.5 : 0.2}
     stroke={color}
     stroke-width={S_line}
+    stroke-linejoin="round"
     pointer-events="none"
   />
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={R_edge_hit}
+  <polygon
+    points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
     fill="transparent"
     style:outline="none"
-    style:cursor={isEditing ? "default" : "copy"}
+    style:cursor={isEditing ? "default" : addCursorCss}
     onmouseenter={() => (hoveredEdgeIndex = i)}
     onmouseleave={() => (hoveredEdgeIndex = undefined)}
     onmousedown={(e) => { e.stopPropagation(); onAddVertex(i); }}

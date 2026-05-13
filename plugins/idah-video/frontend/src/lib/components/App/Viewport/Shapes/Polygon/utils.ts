@@ -119,11 +119,14 @@ export function computeScaleFactor(
   return currentDist / initialDist;
 }
 
-/** SVG data URL for the scale cursor (four-directional arrows). */
+/** SVG data URL for a dot sight crosshair cursor (crosshair with a central dot). */
 export function scaleCursorSVG(color: string): string {
   return `data:image/svg+xml;base64,${btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
-      <path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="12" cy="12" r="2" fill="${color}"/>
+      <line x1="12" y1="3" x2="12" y2="9" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="12" y1="15" x2="12" y2="21" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="3" y1="12" x2="9" y2="12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="15" y1="12" x2="21" y2="12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
     </svg>`)}`;
 }

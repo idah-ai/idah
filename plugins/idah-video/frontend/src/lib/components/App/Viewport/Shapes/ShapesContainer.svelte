@@ -187,7 +187,7 @@
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
     if (viewport.mode === "note") return "cursor-note";
-    if (viewport.mode === BUILD_MODE) return "cursor-crosshair";
+    if (viewport.mode === BUILD_MODE || viewport.mode === POLYGON_MODE) return "cursor-crosshair";
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
     return "cursor-grab";
