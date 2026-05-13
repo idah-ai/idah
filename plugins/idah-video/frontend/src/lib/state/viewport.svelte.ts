@@ -68,23 +68,17 @@ class Viewport {
 
       let [tx, ty] = translate;
 
-      // If the content fits in the viewport, keep it centered (as fitToViewport set it)
-      if (scaledW <= vw) {
-        tx = (vw - scaledW) / 2;
-      } else {
-        // Content is larger — prevent each edge from going past the opposite edge
-        // Right edge must be at least MARGIN from right viewport edge
-        if (tx + scaledW < MARGIN) tx = MARGIN - scaledW;
-        // Left edge must be at most (vw - MARGIN)
-        if (tx > vw - MARGIN) tx = vw - MARGIN;
-      }
+      // ── Horizontal clamping ───────────────────────────────────────
+      // Prevent the right edge from moving too far left:
+      if (tx + scaledW < MARGIN) tx = MARGIN - scaledW;
+      // Prevent the left edge from moving too far right:
+      if (tx > vw - MARGIN) tx = vw - MARGIN;
 
-      if (scaledH <= vh) {
-        ty = (vh - scaledH) / 2;
-      } else {
-        if (ty + scaledH < MARGIN) ty = MARGIN - scaledH;
-        if (ty > vh - MARGIN) ty = vh - MARGIN;
-      }
+      // ── Vertical clamping ─────────────────────────────────────────
+      // Prevent the bottom edge from moving too far up:
+      if (ty + scaledH < MARGIN) ty = MARGIN - scaledH;
+      // Prevent the top edge from moving too far down:
+      if (ty > vh - MARGIN) ty = vh - MARGIN;
 
       this.transform.translate = [tx, ty];
     },
