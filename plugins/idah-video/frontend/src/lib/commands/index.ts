@@ -59,6 +59,7 @@ import { register as registerAnnotationGoToPrevGroup } from "./annotation/go_to_
 import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_to_prev_keyframe";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { register as registerAnnotationSplit } from "./annotation/split";
+import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
 import { register as registerAnnotationUpdateGroupCategory } from "./annotation/updateGroupCategory";
@@ -108,6 +109,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationAdd(driver);
   registerAnnotationDeleteAll(driver);
   registerAnnotationToggleVisibilityAll(driver);
+  registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
   registerAnnotationSplit(driver);

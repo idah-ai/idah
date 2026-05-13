@@ -36,7 +36,7 @@
           label: isAllLocked ? "Unlock all" : "Lock all",
           icon: isAllLocked ? LockOpenIcon : LockIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggleAllEditability");
+            getDriver().command.call("annotation.toggle_editability_all");
           },
         },
         "delete-all": {
