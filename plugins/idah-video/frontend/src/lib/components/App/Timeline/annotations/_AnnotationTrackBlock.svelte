@@ -49,7 +49,7 @@
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relX = e.clientX - rect.left;
     const rangeSpan = endRange - startRange + 1;
-    const hoverFrame = Math.round(startRange + (relX / rect.width) * rangeSpan);
+    const hoverFrame = Math.min(endRange, Math.floor(startRange + (relX / rect.width) * rangeSpan));
 
     const contextMenuProps: ContextMenuComponentProps = {
       item,
@@ -74,7 +74,7 @@
 </script>
 
 <button
-  class="box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
+  class="relative box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
   class:ring-2={isSelected}
   class:ring-offset-1={isSelected}
   style:background-color={color + "30"}
