@@ -14,7 +14,7 @@
 
   // Props
   interface Props {
-    zoomFn: ((zoom: number) => void) | undefined;
+    zoomFn: ((zoom: number, center?: number) => void) | undefined;
   }
   let { zoomFn }: Props = $props();
 
@@ -26,9 +26,7 @@
 
   const totalFrames = $derived(media.totalFrames > 0 ? media.totalFrames : 1);
   const containerWidth = $derived(viewport.timeline.dimensions[0]);
-  const rangeWidth = $derived(
-    viewport.timeline.range.endRange - viewport.timeline.range.startRange,
-  );
+  const rangeWidth = $derived(viewport.timeline.range.endRange - viewport.timeline.range.startRange);
 
   /** Current zoom level: total-frames / visible-range. */
   const currentZoom = $derived(totalFrames / (rangeWidth > 0 ? rangeWidth : 1));
@@ -37,35 +35,26 @@
   const zoomMin = 1;
 
   /** Max zoom = 80px per frame. */
-  const zoomMax = $derived(
-    containerWidth > 0
-      ? Math.max(zoomMin, (totalFrames * 80) / containerWidth)
-      : zoomMin,
-  );
+  const zoomMax = $derived(containerWidth > 0 ? Math.max(zoomMin, (totalFrames * 80) / containerWidth) : zoomMin);
 
   /** Clamped display value for the slider. */
-  const displayZoom = $derived(
-    Math.max(zoomMin, Math.min(zoomMax, currentZoom)),
-  );
+  const displayZoom = $derived(Math.max(zoomMin, Math.min(zoomMax, currentZoom)));
 
   const sliderValue = $derived(Math.max(zoomMin, Math.min(zoomMax, currentZoom)));
+
+  // Current frame to use as zoom center
+  const currentFrame = $derived(viewport.video.currentFrame.value);
 
   // --- Actions ---
 
   function zoomOut() {
-    const newZoom = Math.max(
-      Math.round((displayZoom - ZOOM_STEP) * 10) / 10,
-      zoomMin,
-    );
-    zoomFn?.(newZoom);
+    const newZoom = Math.max(Math.round((displayZoom - ZOOM_STEP) * 10) / 10, zoomMin);
+    zoomFn?.(newZoom, currentFrame);
   }
 
   function zoomIn() {
-    const newZoom = Math.min(
-      Math.round((displayZoom + ZOOM_STEP) * 10) / 10,
-      zoomMax,
-    );
-    zoomFn?.(newZoom);
+    const newZoom = Math.min(Math.round((displayZoom + ZOOM_STEP) * 10) / 10, zoomMax);
+    zoomFn?.(newZoom, currentFrame);
   }
 </script>
 
@@ -88,7 +77,7 @@
     max={100}
     step={0.1}
     value={sliderValue}
-    onValueChange={(v) => zoomFn?.(v)}
+    onValueChange={(v) => zoomFn?.(v, currentFrame)}
   />
 
   <ToolTooltip

@@ -23,7 +23,7 @@
     onselectionchange?: (offset: number, length: number) => void;
     onDimensionsChange?: (width: number, height: number) => void;
     /** Register a zoom function for external callers (e.g. TimelineZoom). */
-    onZoom?: (zoomFn: (newZoom: number) => void) => void;
+    onZoom?: (zoomFn: (newZoom: number, center?: number) => void) => void;
   }
 
   let {
@@ -65,9 +65,10 @@
         const m = Math.floor((s % 3600) / 60);
         const sec = Math.floor(s % 60);
         const showFrame = target === "caret" || target === "ruler-sub";
-        const base = h > 0
-          ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-          : `${m}:${String(sec).padStart(2, "0")}`;
+        const base =
+          h > 0
+            ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+            : `${m}:${String(sec).padStart(2, "0")}`;
         return showFrame ? `${base}.${String(Math.floor(value) % fps).padStart(2, "0")}` : base;
       };
     }
@@ -117,14 +118,14 @@
   });
 
   // Helpers: convert between mouse x (content-space) and frame value
-  function applyZoom(newZoom: number) {
+  function applyZoom(newZoom: number, center?: number) {
     const newRange = length / newZoom;
 
-    // Zoom from the center of the current viewport
-    const center = (viewport.startRange + viewport.endRange) / 2;
+    // Zoom from the given center, or fall back to viewport center
+    const zoomCenter = center ?? (viewport.startRange + viewport.endRange) / 2;
 
-    let newStart = center - newRange / 2;
-    let newEnd = center + newRange / 2;
+    let newStart = zoomCenter - newRange / 2;
+    let newEnd = zoomCenter + newRange / 2;
 
     if (newStart < 0) {
       newStart = 0;
@@ -165,11 +166,17 @@
     let ns = viewport.startRange;
     let ne = viewport.endRange;
     if (sw >= length) {
-      ns = 0; ne = length; clamped = true;
+      ns = 0;
+      ne = length;
+      clamped = true;
     } else if (ns < 0) {
-      ns = 0; ne = sw; clamped = true;
+      ns = 0;
+      ne = sw;
+      clamped = true;
     } else if (ne > length) {
-      ne = length; ns = length - sw; clamped = true;
+      ne = length;
+      ns = length - sw;
+      clamped = true;
     }
     if (clamped) {
       viewport.startRange = ns;
@@ -481,13 +488,7 @@
       onkeypress={() => {}}
       onclick={handleRulerClick}
     >
-      <Ruler
-        {viewport}
-        {scale}
-        smallStep={rulerSmallStep}
-        bigStep={rulerBigStep}
-        labelFormatter={labelFormatter}
-      />
+      <Ruler {viewport} {scale} smallStep={rulerSmallStep} bigStep={rulerBigStep} {labelFormatter} />
     </div>
     <!-- Non-scrolling overlay for caret labels — uses viewport-relative x so labels track correctly -->
     <div class="timeline-ruler-caret-overlay" aria-hidden="true">
@@ -495,7 +496,7 @@
         <Caret
           x={selectionCaretViewportX}
           value={selectionOffset}
-          labelFormatter={labelFormatter}
+          {labelFormatter}
           height={30}
           color="#4a90d9"
           showLine={false}
@@ -505,7 +506,7 @@
         <Caret
           x={hoverCaretViewportX}
           value={caretFrame}
-          labelFormatter={labelFormatter}
+          {labelFormatter}
           height={30}
           color="orangered"
           showLine={false}
@@ -556,7 +557,7 @@
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
-              labelFormatter={labelFormatter}
+              {labelFormatter}
               height={tracksHeight}
               color="#4a90d9"
               showLabel={false}
@@ -584,7 +585,7 @@
             <Caret
               x={caretPixelX}
               value={caretFrame}
-              labelFormatter={labelFormatter}
+              {labelFormatter}
               height={tracksHeight}
               color="orangered"
               showLabel={false}
@@ -607,12 +608,12 @@
 
 <style>
   .timeline {
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #ccc;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 
   .timeline-toolbar {
     flex-shrink: 0;
