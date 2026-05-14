@@ -75,9 +75,9 @@
   });
 
   // ── Sizes (scaled by invScale) ────────────────────────────────────────
-  let R = $derived(7 * invScale);        // outer visible handle radius
+  let R = $derived(7 * invScale); // outer visible handle radius
   let R_hovered = $derived(9 * invScale); // hover-expanded radius
-  let R_hit = $derived(10 * invScale);    // interactive hit zone radius
+  let R_hit = $derived(10 * invScale); // interactive hit zone radius
   let R_center_dot = $derived(2.5 * invScale);
   let R_rotate = $derived(7 * invScale);
   let R_rotate_hovered = $derived(9 * invScale);
@@ -95,10 +95,7 @@
   let revPlusFillOpacity = $derived(hoveredRevPlus ? 0.35 : 0.15);
 </script>
 
-<g
-  style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px"
-  style:transform="rotate({currentAngle}rad)"
->
+<g style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px" style:transform="rotate({currentAngle}rad)">
   <!-- Rotation line + handle -->
   <line
     x1={rotationLayout.topMidN[0] * w}
@@ -175,7 +172,9 @@
       cy={point[1] * h}
       r={R_hit}
       fill="transparent"
-      style:cursor={isEditing ? "none" : `url('${rotatedCursorSVG(handleIndex, currentAngle, color)}') 18 18, ${handleCursor(handleIndex)}`}
+      style:cursor={isEditing
+        ? "none"
+        : `url('${rotatedCursorSVG(handleIndex, currentAngle, color)}') 18 18, ${handleCursor(handleIndex)}`}
     />
     <!-- Filled handle ring → grows and deepens on hover -->
     <circle
@@ -189,13 +188,7 @@
       pointer-events="none"
     />
     <!-- Center dot -->
-    <circle
-      cx={point[0] * w}
-      cy={point[1] * h}
-      r={R_center_dot}
-      fill={color}
-      pointer-events="none"
-    />
+    <circle cx={point[0] * w} cy={point[1] * h} r={R_center_dot} fill={color} pointer-events="none" />
   {/each}
 </g>
 

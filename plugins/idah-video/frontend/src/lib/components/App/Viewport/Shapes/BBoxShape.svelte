@@ -256,13 +256,20 @@
   export function startSelection(start: Point, _shiftKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
 
+    // Inverse-rotate the cursor so we can test against the unrotated AABB.
+    // The visual bbox is rotated by `currentAngle()` around `centroidN`,
+    // so we rotate the cursor in the opposite direction.
+    const curAngle = currentAngle();
+    const startRotated = curAngle !== 0 ? inverseRotatePointN(start, centroidN, curAngle, w, h) : start;
+
     const xs = points.map((p) => p[0]);
     const ys = points.map((p) => p[1]);
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
-    const isInside = start[0] >= minX && start[0] <= maxX && start[1] >= minY && start[1] <= maxY;
+    const isInside =
+      startRotated[0] >= minX && startRotated[0] <= maxX && startRotated[1] >= minY && startRotated[1] <= maxY;
     if (!isInside) return false;
 
     // 1. Check resize handles (nearest-first)
