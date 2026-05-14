@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
+  import { onMount, tick, type Snippet } from "svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -11,6 +11,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { viewport as globalViewport } from "$lib/state/viewport.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
@@ -147,9 +148,32 @@
     setScrollLeft(viewport.startRange * scale);
   }
 
-  // Expose zoom function to parent on mount
+  // Expose focus handler so external commands (e.g. timeline.focus)
+  // can set the viewport range with proper clamping + DOM scroll sync.
+  async function handleFocusRange(start: number, end: number) {
+    viewport.startRange = start;
+    viewport.endRange = end;
+    clampViewport();
+
+    // Wait for Svelte to re-render the DOM so the ruler/tracks content
+    // has the correct width at the new scale. Otherwise the browser
+    // clamps scrollLeft to the old scrollWidth - clientWidth.
+    await tick();
+
+    // Compute scale locally from the new range — $derived scale hasn't
+    // been re-evaluated yet at this point in the synchronous call.
+    const newRange = viewport.endRange - viewport.startRange;
+    const newScale = containerWidth > 0 ? containerWidth / newRange : 1;
+    setScrollLeft(viewport.startRange * newScale);
+  }
+
+  // Expose functions to parent on mount
   onMount(() => {
     onZoom?.(applyZoom);
+
+    // Expose focus handler on the global viewport timeline so external commands
+    // (e.g. timeline.focus) can set the range with proper clamping + DOM scroll sync.
+    globalViewport.timeline._focusHandler = handleFocusRange;
   });
 
   function mouseXToFrame(mouseXInContent: number): number {
