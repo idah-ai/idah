@@ -30,8 +30,7 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
-  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
-  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
+  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails]);
 
   // Lifecycle
   onMount(() => {
@@ -88,12 +87,13 @@
           }}
         >
           {#snippet slotChoice({ choice, select })}
-            {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
-            {@const isSelected = choice.value === member.email && !isAlreadyAdded}
+            {@const isAlreadyAdded = projectMemberEmails.includes(String(choice.value))}
+            {@const isDisabled = disabledMemberEmails.includes(String(choice.value))}
+            {@const isSelected = choice.value === member.email && !isDisabled}
             <Combobox.Item
               value={String(choice.value)}
               label={choice.label}
-              disabled={choice.disabled || isAlreadyAdded}
+              disabled={choice.disabled || isDisabled}
               onclick={() => select(choice)}
             >
               <!-- wrap with div component for display cursor -->
@@ -101,8 +101,8 @@
                 class={cn(
                   "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
                   {
-                    "text-muted-foreground cursor-not-allowed": choice.disabled || isAlreadyAdded,
-                    "cursor-pointer": !(choice.disabled || isAlreadyAdded),
+                    "text-muted-foreground cursor-not-allowed": choice.disabled || isDisabled,
+                    "cursor-pointer": !(choice.disabled || isDisabled),
                   },
                 )}
               >

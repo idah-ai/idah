@@ -45,6 +45,7 @@
   type Choice = LabelValue<string | number>;
   let filtering = $state(false);
   let filteredChoices = $state<LabelValue<string | number>[]>([]);
+  let inputValue = $state("");
 
   // Functions
   async function filterChoices(searchVal: string) {
@@ -72,9 +73,41 @@
     });
   }
 
-  function select(choice: Choice) {
-    value = choice.value;
-    onSelected?.(value);
+  function select(choice: Choice): void {
+    // Toggle selection: deselect if already selected, otherwise select
+    if (value === choice.value) {
+      value = null;
+      onSelected?.(null);
+      inputValue = ""; // Clear input on deselect
+    } else {
+      value = choice.value;
+      onSelected?.(value);
+      // bits-ui auto-sets inputValue to choice.label
+    }
+  }
+
+  function onInput(e: Event): void {
+    const newValue = (e.currentTarget as HTMLInputElement).value;
+    inputValue = newValue;
+
+    // Clear selection if input is fully cleared
+    if (!newValue) {
+      if (value !== null) {
+        value = null;
+        onSelected?.(null);
+      }
+      return;
+    }
+
+    // Trigger async filter for dropdown
+    filterChoices(newValue);
+  }
+
+  function onBlur(): void {
+    // If user types free-text without selecting a choice → commit as free-text value
+    if (inputValue && value === null) {
+      onSelected?.(inputValue);
+    }
   }
 </script>
 
@@ -85,7 +118,7 @@
     <FieldLabel for={name} {required}>{label}</FieldLabel>
   {/if}
 
-  <Combobox.Root type="single">
+  <Combobox.Root type="single" {inputValue}>
     <div class="relative">
       <Combobox.Input
         class={cn(
@@ -93,12 +126,8 @@
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         )}
-        oninput={(e) => {
-          filterChoices(e.currentTarget.value);
-          if (!filteredChoices) {
-            onSelected?.(e.currentTarget.value);
-          }
-        }}
+        oninput={onInput}
+        onblur={onBlur}
         autofocus={false}
         {disabled}
         {placeholder}
