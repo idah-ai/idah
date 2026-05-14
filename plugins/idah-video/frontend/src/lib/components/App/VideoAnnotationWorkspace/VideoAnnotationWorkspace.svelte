@@ -44,9 +44,7 @@
   let selAnnotation = $derived(
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
-  let selGroup = $derived(
-    selection.value?.type === "group" ? selection.value : undefined,
-  );
+  let selGroup = $derived(selection.value?.type === "group" ? selection.value : undefined);
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -99,6 +97,7 @@
       const consumed = getDriver().handleKeydown(e);
       if (consumed) {
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 
@@ -128,9 +127,7 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find(
-      (ann) => (ann.shape as any).type === "entry:root",
-    );
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
     /** TOOLS CONFIGURATION */
@@ -198,7 +195,12 @@
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
-    const videoShape: IVideoAnnotationShape = { type, start: start!, end: end!, frames: frames as IVideoFrameSelection[] };
+    const videoShape: IVideoAnnotationShape = {
+      type,
+      start: start!,
+      end: end!,
+      frames: frames as IVideoFrameSelection[],
+    };
 
     getDriver().command.call("annotation.add", { shape: videoShape, value });
 
@@ -252,9 +254,13 @@
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
-    let requirementFullfilled = requiredFullfilled(value, getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties);
+    let requirementFullfilled = requiredFullfilled(
+      value,
+      getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
+    );
 
-    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id) selection.selectAnnotation(entryRoot.value as any);
+    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id)
+      selection.selectAnnotation(entryRoot.value as any);
 
     // wait for confirmation
     if (showPopOver) {
@@ -361,7 +367,10 @@
 
       if (
         getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
-        requiredFullfilled(annotation_value_from, getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties)
+        requiredFullfilled(
+          annotation_value_from,
+          getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
+        )
       ) {
         shapeSelectionArgs = undefined;
         pendingValue = {};
@@ -418,9 +427,7 @@
     const annotationGroups = groupAnnotations(viewportAnnotations);
 
     // Find the annotation group to get all annotations in the group
-    const newSelectedAnnotationGroup = annotationGroups.find(
-      (group) => group.groupId === selGroup?.groupId,
-    );
+    const newSelectedAnnotationGroup = annotationGroups.find((group) => group.groupId === selGroup?.groupId);
 
     if (newSelectedAnnotationGroup) {
       const closestAnnotation = findClosestAnnotationInGroup({
@@ -600,7 +607,8 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, viewport.video.currentFrame.value)}
+              onSelectAnnotationGroup={(annotationGroup) =>
+                selectClosestAnnotation(annotationGroup, viewport.video.currentFrame.value)}
               onDeleteAnnotation={deleteAnnotation}
             />
           </ResizablePane>
@@ -644,12 +652,7 @@
                 </ShapesContainer>
               {/if}
 
-              <PropertiesSidebar
-                {annotationId}
-                {annotationValue}
-                {onEditValue}
-                onReSelectCategory={reSelectCategory}
-              />
+              <PropertiesSidebar {annotationId} {annotationValue} {onEditValue} onReSelectCategory={reSelectCategory} />
             </section>
           </ResizablePane>
         </ResizablePaneGroup>
@@ -658,12 +661,7 @@
       <ResizableHandle withHandle />
 
       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
-        <BottomPanel
-          {viewportAnnotations}
-          {length}
-          bind:player
-          volume={viewport.video.sound}
-        />
+        <BottomPanel {viewportAnnotations} {length} bind:player volume={viewport.video.sound} />
       </ResizablePane>
     </ResizablePaneGroup>
   </div>
