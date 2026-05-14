@@ -1,16 +1,16 @@
 <script lang="ts">
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
-  import Button from "$lib/components/ui/Button/Button.svelte";
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
+  import Button from "$lib/components/ui/Button/Button.svelte";
+  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
 
   import {
     showContextMenu,
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
-  import { selection } from "$lib/state/selection.svelte";
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
@@ -47,16 +47,16 @@
   }
 
   function handleClick() {
-    selectAnnotationGroup();
     /**
      * Select annotation group only — don't change the current drawing mode
      */
+    selectAnnotationGroup();
   }
 </script>
 
 <button
   class={cn(
-    "hover:bg-secondary block w-full box-border cursor-pointer border-b px-2 text-left select-none focus:outline-none",
+    "hover:bg-secondary box-border block w-full cursor-pointer border-b px-2 text-left select-none focus:outline-none",
     {
       "border-primary bg-primary/10 border-t border-b": isGroupSelected,
     },

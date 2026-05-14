@@ -5,8 +5,15 @@
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
-  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { media } from "$lib/state/media.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { entryRoot } from "$lib/state/entry-root.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+
+  import { data } from "$lib/state/data.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -19,6 +26,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
+  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -96,6 +104,7 @@
       const consumed = getDriver().handleKeydown(e);
       if (consumed) {
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 

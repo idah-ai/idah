@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
+  import { onMount, tick, type Snippet } from "svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -11,6 +11,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { viewport as globalViewport } from "$lib/state/viewport.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
@@ -23,7 +24,7 @@
     onselectionchange?: (offset: number, length: number) => void;
     onDimensionsChange?: (width: number, height: number) => void;
     /** Register a zoom function for external callers (e.g. TimelineZoom). */
-    onZoom?: (zoomFn: (newZoom: number) => void) => void;
+    onZoom?: (zoomFn: (newZoom: number, center?: number) => void) => void;
   }
 
   let {
@@ -65,9 +66,10 @@
         const m = Math.floor((s % 3600) / 60);
         const sec = Math.floor(s % 60);
         const showFrame = target === "caret" || target === "ruler-sub";
-        const base = h > 0
-          ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-          : `${m}:${String(sec).padStart(2, "0")}`;
+        const base =
+          h > 0
+            ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+            : `${m}:${String(sec).padStart(2, "0")}`;
         return showFrame ? `${base}.${String(Math.floor(value) % fps).padStart(2, "0")}` : base;
       };
     }
@@ -117,14 +119,18 @@
   });
 
   // Helpers: convert between mouse x (content-space) and frame value
-  function applyZoom(newZoom: number) {
+  function applyZoom(newZoom: number, center?: number) {
     const newRange = length / newZoom;
 
-    // Zoom from the center of the current viewport
-    const center = (viewport.startRange + viewport.endRange) / 2;
+    // // Zoom from the given center, or fall back to viewport center
+    let zoomCenter: number = (viewport.startRange + viewport.endRange) / 2;
 
-    let newStart = center - newRange / 2;
-    let newEnd = center + newRange / 2;
+    if (center !== undefined) {
+      zoomCenter = Math.max(1, center);
+    }
+
+    let newStart = zoomCenter - newRange / 2;
+    let newEnd = zoomCenter + newRange / 2;
 
     if (newStart < 0) {
       newStart = 0;
@@ -143,9 +149,32 @@
     setScrollLeft(viewport.startRange * scale);
   }
 
-  // Expose zoom function to parent on mount
+  // Expose focus handler so external commands (e.g. timeline.focus)
+  // can set the viewport range with proper clamping + DOM scroll sync.
+  async function handleFocusRange(start: number, end: number) {
+    viewport.startRange = start;
+    viewport.endRange = end;
+    clampViewport();
+
+    // Wait for Svelte to re-render the DOM so the ruler/tracks content
+    // has the correct width at the new scale. Otherwise the browser
+    // clamps scrollLeft to the old scrollWidth - clientWidth.
+    await tick();
+
+    // Compute scale locally from the new range — $derived scale hasn't
+    // been re-evaluated yet at this point in the synchronous call.
+    const newRange = viewport.endRange - viewport.startRange;
+    const newScale = containerWidth > 0 ? containerWidth / newRange : 1;
+    setScrollLeft(viewport.startRange * newScale);
+  }
+
+  // Expose functions to parent on mount
   onMount(() => {
     onZoom?.(applyZoom);
+
+    // Expose focus handler on the global viewport timeline so external commands
+    // (e.g. timeline.focus) can set the range with proper clamping + DOM scroll sync.
+    globalViewport.timeline._focusHandler = handleFocusRange;
   });
 
   function mouseXToFrame(mouseXInContent: number): number {
@@ -165,11 +194,17 @@
     let ns = viewport.startRange;
     let ne = viewport.endRange;
     if (sw >= length) {
-      ns = 0; ne = length; clamped = true;
+      ns = 0;
+      ne = length;
+      clamped = true;
     } else if (ns < 0) {
-      ns = 0; ne = sw; clamped = true;
+      ns = 0;
+      ne = sw;
+      clamped = true;
     } else if (ne > length) {
-      ne = length; ns = length - sw; clamped = true;
+      ne = length;
+      ns = length - sw;
+      clamped = true;
     }
     if (clamped) {
       viewport.startRange = ns;
@@ -481,13 +516,7 @@
       onkeypress={() => {}}
       onclick={handleRulerClick}
     >
-      <Ruler
-        {viewport}
-        {scale}
-        smallStep={rulerSmallStep}
-        bigStep={rulerBigStep}
-        labelFormatter={labelFormatter}
-      />
+      <Ruler {viewport} {scale} smallStep={rulerSmallStep} bigStep={rulerBigStep} {labelFormatter} />
     </div>
     <!-- Non-scrolling overlay for caret labels — uses viewport-relative x so labels track correctly -->
     <div class="timeline-ruler-caret-overlay" aria-hidden="true">
@@ -495,7 +524,7 @@
         <Caret
           x={selectionCaretViewportX}
           value={selectionOffset}
-          labelFormatter={labelFormatter}
+          {labelFormatter}
           height={30}
           color="#4a90d9"
           showLine={false}
@@ -505,7 +534,7 @@
         <Caret
           x={hoverCaretViewportX}
           value={caretFrame}
-          labelFormatter={labelFormatter}
+          {labelFormatter}
           height={30}
           color="orangered"
           showLine={false}
@@ -556,7 +585,7 @@
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
-              labelFormatter={labelFormatter}
+              {labelFormatter}
               height={tracksHeight}
               color="#4a90d9"
               showLabel={false}
@@ -584,7 +613,7 @@
             <Caret
               x={caretPixelX}
               value={caretFrame}
-              labelFormatter={labelFormatter}
+              {labelFormatter}
               height={tracksHeight}
               color="orangered"
               showLabel={false}
@@ -607,12 +636,12 @@
 
 <style>
   .timeline {
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #ccc;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 
   .timeline-toolbar {
     flex-shrink: 0;

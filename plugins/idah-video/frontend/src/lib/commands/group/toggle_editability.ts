@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.deleteGroup — Delete all annotations in a group
-// Undoable: restores all annotations.
+// annotation.toggle_group_editability — Toggle editability (lock) of a group of annotations
+// Undoable: restores the previous locked state.
 //
 // Usage:
-//   driver.command.call("annotation.deleteGroup", {
+//   driver.command.call("annotation.toggle_group_editability", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@ import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.delete_group",
+  name: "annotation.toggle_group_editability",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -21,7 +21,7 @@ export const command = {
   longDescription: null,
 };
 
-export interface GroupDeleteProps {
+export interface GroupToggleEditabilityProps {
   groupId: string;
   annotations?: AnnotationItem[];
 }
@@ -34,7 +34,8 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as GroupDeleteProps | undefined;
+      const props = opts as unknown as GroupToggleEditabilityProps | undefined;
+
       if (!props || !data.annotations) return noopAction(command);
 
       // Resolve annotations: use provided list, or look them up from the data store
@@ -63,14 +64,18 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
+          if (!data.annotations) return;
+          // If any annotation is locked, unlock all; otherwise lock all
+          const anyLocked = snapshot.some((a) => a.locked);
+          const newLocked = !anyLocked;
           for (const ann of snapshot) {
-            await data.annotations!.delete(ann.id);
+            await data.annotations!.update({ ...ann, locked: newLocked });
           }
         },
         async undo() {
           if (!data.annotations) return;
           for (const ann of snapshot) {
-            await data.annotations!.create({ ...ann, id: ann.id });
+            await data.annotations!.update({ ...ann, locked: ann.locked });
           }
         },
         isCombinable() {

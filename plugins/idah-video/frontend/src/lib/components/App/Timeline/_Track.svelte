@@ -55,6 +55,9 @@
         items: items as any,
       };
 
+      /** Select annotation group */
+      selection.selectGroup(trackId);
+
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }
   }

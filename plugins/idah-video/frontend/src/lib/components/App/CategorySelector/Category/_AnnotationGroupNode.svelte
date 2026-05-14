@@ -5,19 +5,19 @@
 
   import { cn } from "$lib/utils";
 
-  import Icon from "$lib/components/ui/Icon";
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import CategoryName from "$lib/components/App/CategorySelector/Category/_CategoryName.svelte";
+  import Icon from "$lib/components/ui/Icon";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
-  import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
 
-  import type { IVideoAnnotationRecord } from "$lib/types";
   import type { IConfigValue } from "$idah/v2/types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -58,15 +58,15 @@
   }
 
   function toggleAnnotationGroupVisibility() {
-    getDriver().command.call("annotation.toggleGroupVisibility", { groupId });
+    getDriver().command.call("annotation.toggle_group_visibility", { groupId });
   }
 
   function toggleAnnotationGroupEditability() {
-    getDriver().command.call("annotation.toggleGroupEditability", { groupId });
+    getDriver().command.call("annotation.toggle_group_editability", { groupId });
   }
 
   function deleteAnnotationGroup() {
-    getDriver().command.call("annotation.deleteGroup", { groupId });
+    getDriver().command.call("annotation.delete_group", { groupId });
   }
 </script>
 

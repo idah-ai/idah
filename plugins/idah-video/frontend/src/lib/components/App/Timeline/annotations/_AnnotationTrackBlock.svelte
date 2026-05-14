@@ -8,9 +8,9 @@
   } from "$lib/components/App/ContextMenu/store";
   import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { resolveAnnotationColor } from "$lib/utils/color";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { resolveAnnotationColor } from "$lib/utils/color";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
@@ -49,12 +49,15 @@
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relX = e.clientX - rect.left;
     const rangeSpan = endRange - startRange + 1;
-    const hoverFrame = Math.round(startRange + (relX / rect.width) * rangeSpan);
+    const hoverFrame = Math.min(endRange, Math.floor(startRange + (relX / rect.width) * rangeSpan));
 
     const contextMenuProps: ContextMenuComponentProps = {
       item,
       currentFrame: hoverFrame,
     };
+
+    /* Select annotation group */
+    selection.selectGroup(trackId);
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
@@ -71,7 +74,7 @@
 </script>
 
 <button
-  class="box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
+  class="relative box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
   class:ring-2={isSelected}
   class:ring-offset-1={isSelected}
   style:background-color={color + "30"}
