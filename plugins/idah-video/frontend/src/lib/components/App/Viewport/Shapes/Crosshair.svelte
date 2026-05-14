@@ -9,27 +9,27 @@
   import type { Point } from "$lib/utils/math/point";
 
   type Props = {
-    sceneMousePosition: Point;
+    cursor: Point;
     visible: boolean;
   };
 
-  let { sceneMousePosition, visible }: Props = $props();
+  let { cursor, visible }: Props = $props();
 </script>
 
 {#if visible}
   <line
-    x1={sceneMousePosition[0] - 10000}
-    y1={sceneMousePosition[1]}
-    x2={sceneMousePosition[0] + 10000}
-    y2={sceneMousePosition[1]}
+    x1={cursor[0] - 10000}
+    y1={cursor[1]}
+    x2={cursor[0] + 10000}
+    y2={cursor[1]}
     stroke="rgba(255, 59, 48, 0.9)"
     stroke-width="1"
   />
   <line
-    x1={sceneMousePosition[0]}
-    y1={sceneMousePosition[1] - 10000}
-    x2={sceneMousePosition[0]}
-    y2={sceneMousePosition[1] + 10000}
+    x1={cursor[0]}
+    y1={cursor[1] - 10000}
+    x2={cursor[0]}
+    y2={cursor[1] + 10000}
     stroke="rgba(255, 59, 48, 0.9)"
     stroke-width="1"
   />

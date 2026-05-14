@@ -177,7 +177,7 @@
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
     if (isNoteMode) return "cursor-note";
-    if (isBoundingBoxMode) return "cursor-crosshair";
+    if (viewport.isCreationMode) return "cursor-crosshair";
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
 
@@ -337,7 +337,7 @@
     onwheel={onWheel}
   >
     <!-- Crosshair (for build modes) -->
-    <Crosshair {sceneMousePosition} visible={showCrosshair} />
+    <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
     <g>
       <!-- Build mode: bounding box creation preview -->
