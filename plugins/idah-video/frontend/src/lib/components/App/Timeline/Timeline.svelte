@@ -121,8 +121,11 @@
   function applyZoom(newZoom: number, center?: number) {
     const newRange = length / newZoom;
 
-    // Zoom from the given center, or fall back to viewport center
-    const zoomCenter = center ?? (viewport.startRange + viewport.endRange) / 2;
+    // // Zoom from the given center, or fall back to viewport center
+    let zoomCenter: number = (viewport.startRange + viewport.endRange) / 2;
+    if (center && center > -1) {
+      zoomCenter = Math.max(1, center);
+    }
 
     let newStart = zoomCenter - newRange / 2;
     let newEnd = zoomCenter + newRange / 2;
