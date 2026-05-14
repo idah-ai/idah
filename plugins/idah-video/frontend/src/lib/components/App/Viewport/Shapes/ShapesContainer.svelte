@@ -299,16 +299,12 @@
     onSelection(viewport.mode, frame, points, angle, annId);
   }
 
-  function isAnnotationSelected(ann: IAnnotationRecord) {
-    return selection.value?.type === "annotation" && selection.value.annotation?.id === ann.id;
-  }
-
   function handleClick(ann: IAnnotationRecord) {
     // Don't select annotations in polygon creation mode
     if (isPolygonMode) return;
 
     // Don't select already selected annotation
-    if (isAnnotationSelected(ann)) return;
+    if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
   }
@@ -369,8 +365,8 @@
         <AnnotationGeometry
           bind:this={_compRefs[i]}
           annotation={ann}
-          selected={isAnnotationSelected(ann)}
-          editable={viewport.mode === "default" && isAnnotationSelected(ann)}
+          selected={selection.isAnnotationSelected(ann.id)}
+          editable={viewport.mode === "default" && selection.isAnnotationSelected(ann.id)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
