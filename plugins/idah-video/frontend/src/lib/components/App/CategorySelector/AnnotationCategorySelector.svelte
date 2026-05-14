@@ -2,27 +2,23 @@
   import { CircleXIcon } from "@lucide/svelte";
 
   import InputField from "$lib/components/ui/Forms/fields/input/InputField.svelte";
+  import Sidebar from "$lib/components/ui/Sidebar/Sidebar.svelte";
   import SidebarContent from "$lib/components/ui/Sidebar/SidebarContent.svelte";
   import SidebarHeader from "$lib/components/ui/Sidebar/SidebarHeader.svelte";
-  import Sidebar from "$lib/components/ui/Sidebar/Sidebar.svelte";
 
   import { cn } from "$lib/utils";
 
   import CategoryTree from "$lib/components/App/CategorySelector/_CategoryTree.svelte";
 
+  import { getDriver } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
-  import { getDriver } from "$lib/state/driver.svelte";
 
-  let mode = $derived(viewport.mode);
-  let selAnnotation = $derived(
-    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
-  );
-  import type { IVideoAnnotationValue, IVideoAnnotationRecord } from "$lib/types";
-  import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
+  import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
+  import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -49,6 +45,12 @@
     class?: string | null;
   } = $props();
 
+  // Variables
+  let mode = $derived(viewport.mode);
+  let selAnnotation = $derived(
+    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
+  );
+
   let tools = $derived(
     new Map<string, IConfigValue[]>(
       Object.entries(getDriver().config)
@@ -66,9 +68,7 @@
     const result = new Map<string, IConfigValue[]>();
 
     for (const [toolType, categories] of tools) {
-      const matching = categories.filter((category) =>
-        category.label.toLowerCase().includes(searchValue.toLowerCase()),
-      );
+      const matching = categories.filter((category) => category.id.toLowerCase().includes(searchValue.toLowerCase()));
 
       if (matching.length > 0) {
         result.set(toolType, matching);
@@ -139,8 +139,8 @@
           modalityShape={tool}
           {categories}
           selectedCategory={tool == "entry:root" && !(tool == mode)
-                      ? entryRoot.value?.category
-                      : annotationValue.category}
+            ? entryRoot.value?.category
+            : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
           {onDeleteAnnotation}

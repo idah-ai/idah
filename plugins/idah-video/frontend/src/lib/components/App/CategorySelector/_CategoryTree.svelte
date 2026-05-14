@@ -8,22 +8,21 @@
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
 
-  import Icon from "$lib/components/ui/Icon";
   import AnnotationCountBadge from "$lib/components/App/CategorySelector/_AnnotationCountBadge.svelte";
-  import AnnotationGroupNode from "$lib/components/App/CategorySelector/Category/_AnnotationGroupNode.svelte";
   import CategoryName from "$lib/components/App/CategorySelector/Category/_CategoryName.svelte";
+  import Icon from "$lib/components/ui/Icon";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { selection } from "$lib/state/selection.svelte";
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
   import type { IConfigValue } from "$idah/v2/types";
+  import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
-  import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -178,7 +177,7 @@
   } {
     const filteredAnnotations = annotations.filter(
       (annotation) =>
-    viewport.video.currentFrame.value >= annotation.shape.start &&
+        viewport.video.currentFrame.value >= annotation.shape.start &&
         viewport.video.currentFrame.value <= annotation.shape.end &&
         annotation.shape.type == modalityShape,
     );
@@ -232,7 +231,6 @@
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
-      {@const hasAnnotations = count > 0}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -246,7 +244,7 @@
           <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
             {@const hasChildren = !!category.nestedCategories}
             {@const isSelectingCategory = selectedCategory == category.id}
-            {@const showChevronRightIcon = hasChildren || hasAnnotations}
+            {@const showChevronRightIcon = hasChildren}
 
             <Button
               variant="ghost"
@@ -336,20 +334,6 @@
       </CollapsibleTrigger>
 
       <CollapsibleContent hidden={!openStates[category.id]}>
-        {#if !currentModeIsSameAsShape && db && category}
-          {@const categoryAnnotations = items.filter((a) => a.value?.category === category.id)}
-          {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
-          {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
-            <AnnotationGroupNode
-              {category}
-              {annotationGroup}
-              level={level + 1}
-              {onSelectAnnotationGroup}
-              {onDeleteAnnotation}
-            />
-          {/each}
-        {/if}
-
         {#if subCategories}
           {#each subCategories as subCategory (subCategory.id)}
             {@render CategoryNode(
