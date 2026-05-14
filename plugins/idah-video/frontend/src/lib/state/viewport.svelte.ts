@@ -1,9 +1,15 @@
 import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
 
+// List of viewport modes
+export const DEFAULT_MODE = "default";
+export const NOTE_MODE = "note";
+export const BOUNDING_BOX_MODE = "idah-video:bounding-box";
+export const POLYGON_MODE = "idah-video:polygon";
+
 class Viewport {
   // Only mode needs special handling
-  #mode = $state("default");
+  #mode = $state(DEFAULT_MODE);
 
   get mode() { return this.#mode; }
   get isCreationMode() {

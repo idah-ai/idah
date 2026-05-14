@@ -22,7 +22,7 @@
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
 
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -120,11 +120,6 @@
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
-  // ── Mode constants ────────────────────────────────────────────────────
-  const NOTE_MODE = "note";
-  const BOUNDING_BOX_MODE = "idah-video:bounding-box";
-  const POLYGON_MODE = "idah-video:polygon";
-
   let isBoundingBoxMode = $derived(viewport.mode === BOUNDING_BOX_MODE);
   let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
@@ -176,8 +171,8 @@
 
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
-    if (isNoteMode) return "cursor-note";
     if (viewport.isCreationMode) return "cursor-crosshair";
+    if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
 
@@ -188,8 +183,8 @@
     screenDimensions[0] > 0 &&
       screenDimensions[1] > 0 &&
       !isPlaying &&
-      viewport.mode !== "default" &&
-      viewport.mode !== "note",
+      viewport.mode !== DEFAULT_MODE &&
+      viewport.mode !== NOTE_MODE,
   );
 
   const viewBox = $derived.by(() => {
@@ -203,7 +198,7 @@
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
     // Only pan in default mode
-    if (viewport.mode === "default") {
+    if (viewport.mode === DEFAULT_MODE) {
       zoomableElement.mouseMove(e);
     }
   }
@@ -300,8 +295,8 @@
   }
 
   function handleClick(ann: IAnnotationRecord) {
-    // Don't select annotations in polygon creation mode
-    if (isPolygonMode) return;
+    // Don't select annotations in creation mode
+    if (viewport.isCreationMode) return;
 
     // Don't select already selected annotation
     if (selection.isAnnotationSelected(ann.id)) return;
@@ -366,7 +361,7 @@
           bind:this={_compRefs[i]}
           annotation={ann}
           selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === "default" && selection.isAnnotationSelected(ann.id)}
+          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
