@@ -102,10 +102,7 @@
   // visual translation — no inverse rotation needed.
   let panOffset = $derived.by((): Point => {
     if (panStart && cursorPx) {
-      return [
-        (cursorPx[0] - panStart[0]) / w,
-        (cursorPx[1] - panStart[1]) / h,
-      ];
+      return [(cursorPx[0] - panStart[0]) / w, (cursorPx[1] - panStart[1]) / h];
     }
     return [0, 0];
   });
@@ -126,11 +123,7 @@
   // ── SVG path (pixel space) ────────────────────────────────────────────
   let pathD = $derived.by(() => {
     if (displayPoints.length < 4) return "";
-    return (
-      displayPoints
-        .map((p, i) => `${i === 0 ? "M" : "L"}${p[0] * w} ${p[1] * h}`)
-        .join(" ") + " Z"
-    );
+    return displayPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p[0] * w} ${p[1] * h}`).join(" ") + " Z";
   });
 
   // ── Resize effect ─────────────────────────────────────────────────────
@@ -165,34 +158,68 @@
 
     const [tl, tr, br, bl] = resizeInitialPoints;
 
-    let nx1 = tl[0], ny1 = tl[1], nx2 = br[0], ny2 = br[1];
+    let nx1 = tl[0],
+      ny1 = tl[1],
+      nx2 = br[0],
+      ny2 = br[1];
     let fixedPoint: Point;
 
     if (handleIndex % 2 === 0) {
       const cornerIdx = handleIndex / 2;
       switch (cornerIdx) {
-        case 0: nx1 = unrotatedCursor[0]; ny1 = unrotatedCursor[1]; fixedPoint = br; break;
-        case 1: nx2 = unrotatedCursor[0]; ny1 = unrotatedCursor[1]; fixedPoint = bl; break;
-        case 2: nx2 = unrotatedCursor[0]; ny2 = unrotatedCursor[1]; fixedPoint = tl; break;
-        default: nx1 = unrotatedCursor[0]; ny2 = unrotatedCursor[1]; fixedPoint = tr; break;
+        case 0:
+          nx1 = unrotatedCursor[0];
+          ny1 = unrotatedCursor[1];
+          fixedPoint = br;
+          break;
+        case 1:
+          nx2 = unrotatedCursor[0];
+          ny1 = unrotatedCursor[1];
+          fixedPoint = bl;
+          break;
+        case 2:
+          nx2 = unrotatedCursor[0];
+          ny2 = unrotatedCursor[1];
+          fixedPoint = tl;
+          break;
+        default:
+          nx1 = unrotatedCursor[0];
+          ny2 = unrotatedCursor[1];
+          fixedPoint = tr;
+          break;
       }
     } else {
       const edgeIdx = Math.floor(handleIndex / 2);
       switch (edgeIdx) {
-        case 0: ny1 = unrotatedCursor[1]; fixedPoint = [(tl[0] + br[0]) / 2, br[1]]; break;
-        case 1: nx2 = unrotatedCursor[0]; fixedPoint = [tl[0], (tl[1] + br[1]) / 2]; break;
-        case 2: ny2 = unrotatedCursor[1]; fixedPoint = [(tl[0] + br[0]) / 2, tl[1]]; break;
-        default: nx1 = unrotatedCursor[0]; fixedPoint = [br[0], (tl[1] + br[1]) / 2]; break;
+        case 0:
+          ny1 = unrotatedCursor[1];
+          fixedPoint = [(tl[0] + br[0]) / 2, br[1]];
+          break;
+        case 1:
+          nx2 = unrotatedCursor[0];
+          fixedPoint = [tl[0], (tl[1] + br[1]) / 2];
+          break;
+        case 2:
+          ny2 = unrotatedCursor[1];
+          fixedPoint = [(tl[0] + br[0]) / 2, tl[1]];
+          break;
+        default:
+          nx1 = unrotatedCursor[0];
+          fixedPoint = [br[0], (tl[1] + br[1]) / 2];
+          break;
       }
     }
 
     const newPts: Point[] = [
-      [nx1, ny1], [nx2, ny1], [nx2, ny2], [nx1, ny2],
+      [nx1, ny1],
+      [nx2, ny1],
+      [nx2, ny2],
+      [nx1, ny2],
     ];
 
     let newFixedPoint: Point;
     if (handleIndex % 2 === 0) {
-      const oppositeCorner = ((handleIndex / 2) + 2) % 4;
+      const oppositeCorner = (handleIndex / 2 + 2) % 4;
       newFixedPoint = newPts[oppositeCorner];
     } else {
       const oppositeEdge = (Math.floor(handleIndex / 2) + 2) % 4;
@@ -224,7 +251,7 @@
   // ── Selection API ─────────────────────────────────────────────────────
   const HANDLE_RADIUS_PX = 8;
   const ROTATE_RADIUS_PX = 16;
-  const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX*HANDLE_RADIUS_PX;
+  const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX * HANDLE_RADIUS_PX;
 
   export function startSelection(start: Point, _shiftKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
@@ -339,7 +366,10 @@
     tabindex="-1"
     onclick={onClick}
     onmousedown={(e) => {
-      if (viewport.mode === "idah-video:polygon") return;
+      // Do not start selection if video is in a creation mode,
+      // to avoid interfering with the creation process
+      if (viewport.isCreationMode) return;
+
       if (editable && selected && cursor) {
         startSelection(cursor);
       }
@@ -377,24 +407,16 @@
         _localAngle = (angle ?? 0) + 2 * Math.PI;
         emitComplete();
       }}
-      revolutionDisplay={
-        rotateStartRevolutions !== undefined
-          ? `(${rotateStartRevolutions > 0 ? "+" : ""}${rotateStartRevolutions} rev)`
-          : ""
-      }
+      revolutionDisplay={rotateStartRevolutions !== undefined
+        ? `(${rotateStartRevolutions > 0 ? "+" : ""}${rotateStartRevolutions} rev)`
+        : ""}
       rotateStart={!!rotateStart}
     />
   {/if}
 
   {#if activeCursor && cursorPx && isEditing}
     <g style="pointer-events: none;">
-      <image
-        href={activeCursor}
-        x={cursorPx[0] - 18}
-        y={cursorPx[1] - 18}
-        width="36"
-        height="36"
-      />
+      <image href={activeCursor} x={cursorPx[0] - 18} y={cursorPx[1] - 18} width="36" height="36" />
     </g>
   {/if}
 {/if}

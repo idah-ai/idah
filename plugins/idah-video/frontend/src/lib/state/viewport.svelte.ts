@@ -6,6 +6,10 @@ class Viewport {
   #mode = $state("default");
 
   get mode() { return this.#mode; }
+  get isCreationMode() {
+    return ["idah-video:polygon", "idah-video:bounding-box"].includes(this.#mode);
+  }
+
   set mode(val: string) {
     if (this.#mode === val) return;
     this.#mode = val;
