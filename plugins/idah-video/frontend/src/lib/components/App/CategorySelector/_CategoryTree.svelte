@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "@lucide/svelte";
+  import {
+    ChevronRightIcon,
+    CircleSmallIcon,
+    EyeIcon,
+    EyeOffIcon,
+    LockIcon,
+    LockOpenIcon,
+    PlusIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/Collapsible";
@@ -9,6 +18,7 @@
   import { humanize } from "$lib/utils/string";
 
   import AnnotationCountBadge from "$lib/components/App/CategorySelector/_AnnotationCountBadge.svelte";
+  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import CategoryName from "$lib/components/App/CategorySelector/Category/_CategoryName.svelte";
   import Icon from "$lib/components/ui/Icon";
 
@@ -103,6 +113,10 @@
     }, []),
   );
 
+  let isAllHidden = $derived(items.map((annotation) => annotation.value?.hidden).every((hidden) => hidden));
+  let isAllLocked = $derived(items.map((annotation) => annotation.value?.locked).every((locked) => locked));
+
+  // Functions
   function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
@@ -188,6 +202,18 @@
       count: filteredGroupedAnnotations.length,
     };
   }
+
+  function toggleCategoryVisibility(annotations: IVideoAnnotationRecord[]) {
+    // getDriver().command.call("annotation.toggle_group_visibility", { groupId });
+  }
+
+  function toggleCategoryEditability() {
+    // getDriver().command.call("annotation.toggle_group_editability", { groupId });
+  }
+
+  function deleteAnnotationGroup() {
+    // getDriver().command.call("annotation.delete_group", { groupId });
+  }
 </script>
 
 <SidebarGroup>
@@ -241,7 +267,7 @@
         onclick={(e) => toggleCategory(e, category)}
       >
         <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-          <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+          <SidebarMenuItem class="group flex h-8 w-full flex-row items-center gap-1">
             {@const hasChildren = !!category.nestedCategories}
             {@const isSelectingCategory = selectedCategory == category.id}
             {@const showChevronRightIcon = hasChildren}
@@ -326,9 +352,47 @@
 
             <CategoryName name={category.name} />
 
-            {#if view === "sidebar" && count > 0}
-              <AnnotationCountBadge class="mr-2" {count} />
-            {/if}
+            <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
+            <div class="ml-auto flex content-center items-center gap-0">
+              <!-- BUTTON::HIDE/SHOW ALL ANNOTATIONS -->
+              <CategoryAction
+                class={cn({
+                  flex: isAllHidden,
+                  "hidden group-hover:flex": !isAllHidden,
+                })}
+                onclick={() => toggleCategoryVisibility(annotations)}
+              >
+                {#if isAllHidden}
+                  <EyeOffIcon />
+                {:else}
+                  <EyeIcon />
+                {/if}
+              </CategoryAction>
+
+              <!-- BUTTON::LOCK & UNLOCK ALL ANNOTATIONS -->
+              <CategoryAction
+                class={cn({
+                  flex: isAllLocked,
+                  "hidden group-hover:flex": !isAllLocked,
+                })}
+                onclick={toggleCategoryEditability}
+              >
+                {#if isAllLocked}
+                  <LockIcon />
+                {:else}
+                  <LockOpenIcon />
+                {/if}
+              </CategoryAction>
+
+              <!-- BUTTON::DELETE ALL ANNOTATIONS -->
+              <CategoryAction class="hidden group-hover:flex" onclick={deleteAnnotationGroup}>
+                <Trash2Icon />
+              </CategoryAction>
+
+              {#if view === "sidebar" && count > 0}
+                <AnnotationCountBadge class="mr-2 ml-1" {count} />
+              {/if}
+            </div>
           </SidebarMenuItem>
         </div>
       </CollapsibleTrigger>
