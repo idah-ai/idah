@@ -226,6 +226,7 @@
 />
 
 {#if pathD}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <path
     d={pathD}
     fill={color}
@@ -241,7 +242,7 @@
     tabindex="-1"
     onclick={onClick}
     onmousedown={(e) => {
-      // Do not start selection if video is in a creation mode,
+      // Do not start selection if in creation mode,
       // to avoid interfering with the creation process
       if (viewport.isCreationMode) return;
 
