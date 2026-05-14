@@ -212,6 +212,12 @@
     _selectedIndices = new Set();
   }
 
+  // ── Cursor style for the shape body ──────────────────────────────────
+  //   "cursor-grabbing"  → actively dragging (vertex drag, pan, or multi-drag in progress)
+  //   "cursor-grab"      → editable & selected (ready to start a drag)
+  //   "cursor-pointer"   → otherwise
+  let bodyCursor = $derived(isEditing ? "cursor-grabbing" : editable && selected ? "cursor-grab" : "cursor-pointer");
+
   let over = $state(false);
 </script>
 
@@ -237,7 +243,7 @@
     style:outline="none"
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
-    class={editable && selected ? "cursor-grab" : "cursor-pointer"}
+    class={bodyCursor}
     role="button"
     tabindex="-1"
     onclick={onClick}
