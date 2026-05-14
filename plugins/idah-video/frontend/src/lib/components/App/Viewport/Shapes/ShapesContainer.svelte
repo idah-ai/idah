@@ -42,25 +42,13 @@
     annotations_promise: Promise<IVideoAnnotationRecord[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
-    onSelection: (
-      type: string,
-      frame: number,
-      points?: Point[],
-      angle?: number,
-      id?: string,
-    ) => void;
+    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     isPlaying: boolean;
   };
 
-  let {
-    frame,
-    children,
-    onSelection,
-    onAddNewNote,
-    isPlaying,
-  }: Props = $props();
+  let { frame, children, onSelection, onAddNewNote, isPlaying }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -86,10 +74,7 @@
   // scene transform (zoom/pan) so it always stays aligned with the content.
   let sceneNormalizedCursor: Point = $derived.by((): Point => {
     const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
-    return [
-      media.width > 0 ? sv.x / media.width : 0,
-      media.height > 0 ? sv.y / media.height : 0,
-    ];
+    return [media.width > 0 ? sv.x / media.width : 0, media.height > 0 ? sv.y / media.height : 0];
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
@@ -117,16 +102,11 @@
 
   // Derive tool selection from the currently selected annotation's component
   let selAnnotation = $derived(
-    selection.value?.type === "annotation"
-      ? (selection.value.annotation as any)
-      : undefined,
+    selection.value?.type === "annotation" ? (selection.value.annotation as any) : undefined,
   );
 
   let toolSelection = $derived.by(() => {
-    const selId =
-      selection.value?.type === "annotation"
-        ? selection.value.annotation?.id
-        : null;
+    const selId = selection.value?.type === "annotation" ? selection.value.annotation?.id : null;
     if (!selId) return undefined;
     const idx = visibleAnnotations.findIndex((a) => a.id === selId);
     if (idx === -1) return undefined;
@@ -202,17 +182,17 @@
   );
 
   // ── SVG transform ────────────────────────────────────────────────────
-  let svgTransform = ''
+  let svgTransform = "";
   // let svgTransform = $derived(
   //   `translate(${viewport.workspace.transform.translate[0]}px, ${viewport.workspace.transform.translate[1]}px) scale(${viewport.workspace.transform.scale})`,
   // );
 
   const viewBox = $derived.by(() => {
-    const [tx, ty] = viewport.workspace.transform.translate
-    const [w, h] = viewport.workspace.dimensions
-    const s = viewport.workspace.transform.scale
-    return `${-tx/s} ${-ty/s} ${w/s} ${h/s}`
-  })
+    const [tx, ty] = viewport.workspace.transform.translate;
+    const [w, h] = viewport.workspace.dimensions;
+    const s = viewport.workspace.transform.scale;
+    return `${-tx / s} ${-ty / s} ${w / s} ${h / s}`;
+  });
 
   // ── Event handlers ───────────────────────────────────────────────────
   function onMouseMove(e: MouseEvent) {
@@ -349,11 +329,7 @@
   function handleClick(ann: IAnnotationRecord) {
     // Don't select annotations in polygon creation mode
     if (viewport.mode === POLYGON_MODE) return;
-    if (
-      selection.value?.type === "annotation" &&
-      selection.value.annotation?.id === ann.id
-    )
-      return;
+    if (selection.value?.type === "annotation" && selection.value.annotation?.id === ann.id) return;
     selection.selectAnnotation(ann);
   }
 </script>
@@ -361,11 +337,7 @@
 <div class={cn("shapes-container flex-1", pointer)}>
   <!-- Layer 0: Viewport with video content -->
   <div class="viewport-layer">
-    <Viewport
-      bind:this={zoomableElement}
-      onPanStart={() => (isPanning = true)}
-      onPanStop={() => (isPanning = false)}
-    >
+    <Viewport bind:this={zoomableElement} onPanStart={() => (isPanning = true)} onPanStop={() => (isPanning = false)}>
       {@render children?.()}
     </Viewport>
   </div>
@@ -375,7 +347,7 @@
   <svg
     width="100%"
     height="100%"
-    viewBox={viewBox}
+    {viewBox}
     onkeydown={() => {}}
     bind:this={svgEl}
     onmousedown={onMouseDown}
@@ -391,7 +363,8 @@
         y1={sceneMousePosition[1]}
         x2={sceneMousePosition[0] + 10000}
         y2={sceneMousePosition[1]}
-        stroke="rgba(100,100,100,0.25)"
+        // red with opacity
+        stroke="rgba(255, 59, 48, 0.9)"
         stroke-width="1"
       />
       <line
@@ -399,7 +372,8 @@
         y1={sceneMousePosition[1] - 10000}
         x2={sceneMousePosition[0]}
         y2={sceneMousePosition[1] + 10000}
-        stroke="rgba(100,100,100,0.25)"
+        // red with opacity
+        stroke="rgba(255, 59, 48, 0.9)"
         stroke-width="1"
       />
     {/if}
@@ -479,20 +453,14 @@
         <AnnotationGeometry
           bind:this={_compRefs[i]}
           annotation={ann}
-          selected={
+          selected={selection.value?.type === "annotation" && selection.value.annotation?.id === ann.id}
+          editable={viewport.mode === "default" &&
             selection.value?.type === "annotation" &&
-            selection.value.annotation?.id === ann.id
-          }
-          editable={
-            viewport.mode === "default" &&
-            selection.value?.type === "annotation" &&
-            selection.value.annotation?.id === ann.id
-          }
+            selection.value.annotation?.id === ann.id}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], angle: number) =>
-            handleEditComplete(ann.id, aabb, angle)}
+          onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
         />
       {/each}
     </g>
