@@ -1,8 +1,5 @@
 <script lang="ts">
   import { ZoomInIcon, ZoomOutIcon } from "@lucide/svelte";
-  import { getContext } from "svelte";
-
-  import { getShortcut } from "$lib/components/ui/Kbd/utils";
 
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
@@ -11,6 +8,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
 
   // Props
   interface Props {
@@ -18,8 +16,8 @@
   }
   let { zoomFn }: Props = $props();
 
-  // Constants
-  const ZOOM_STEP = 0.1;
+  // Constants — multiplicative factor for 10% zoom steps
+  const ZOOM_FACTOR = 1.1;
 
   // --- Everything derived from global state ---
   // No local state, no $effect — the slider reads from the global viewport reactively.
@@ -48,21 +46,23 @@
   // --- Actions ---
 
   function zoomOut() {
-    const newZoom = Math.max(Math.round((displayZoom - ZOOM_STEP) * 10) / 10, zoomMin);
+    const newZoom = Math.max(Math.round((displayZoom / ZOOM_FACTOR) * 10) / 10, zoomMin);
     zoomFn?.(newZoom, currentFrame);
   }
 
   function zoomIn() {
-    const newZoom = Math.min(Math.round((displayZoom + ZOOM_STEP) * 10) / 10, zoomMax);
+    const newZoom = Math.min(Math.round(displayZoom * ZOOM_FACTOR * 10) / 10, zoomMax);
     zoomFn?.(newZoom, currentFrame);
+  }
+
+  function cmdShortcut(name: string): string | undefined {
+    const s = getDriver().command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
   }
 </script>
 
 <div id="timeline-controller" class="flex items-center gap-2">
-  <ToolTooltip
-    label="Zoom Out"
-    shortcut={getShortcut(getDriver().command.getShortcutReferences()?.["timeline.zoom_out"]?.keyCombinations)}
-  >
+  <ToolTooltip label="Zoom Out" shortcut={cmdShortcut("timeline.zoom_out")}>
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomOut}>
         <ZoomOutIcon />
@@ -80,10 +80,7 @@
     onValueChange={(v) => zoomFn?.(v, currentFrame)}
   />
 
-  <ToolTooltip
-    label="Zoom In"
-    shortcut={getShortcut(getDriver().command.getShortcutReferences()?.["timeline.zoom_in"]?.keyCombinations)}
-  >
+  <ToolTooltip label="Zoom In" shortcut={cmdShortcut("timeline.zoom_in")}>
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomIn}>
         <ZoomInIcon />

@@ -12,14 +12,14 @@
   import { selection } from "$lib/state/selection.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { ui } from "$lib/state/ui.svelte";
-  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
+
   import { data } from "$lib/state/data.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
   } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
 
+  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";

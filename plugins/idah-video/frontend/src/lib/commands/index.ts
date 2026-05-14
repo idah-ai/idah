@@ -71,6 +71,8 @@ import { register as registerToggleDebugConsole } from "./display/toggle-debug-c
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
 import { register as registerTimelineFocus } from "./timeline/focus";
+import { register as registerTimelineZoomIn } from "./timeline/zoom-in";
+import { register as registerTimelineZoomOut } from "./timeline/zoom-out";
 
 /**
  * Register all commands on the given V2 driver.
@@ -127,6 +129,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
+  registerTimelineZoomIn(driver);
+  registerTimelineZoomOut(driver);
   registerToggleColorMode(driver);
   registerToggleTimeDisplay(driver);
   registerToggleDebugConsole(driver);
