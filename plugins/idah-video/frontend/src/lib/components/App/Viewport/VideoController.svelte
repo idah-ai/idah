@@ -260,7 +260,7 @@
     </div>
 
     <!-- ANNOTATION::SPLIT -->
-    <ToolTooltip label="Split annotation">
+    <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
       {#snippet trigger()}
         <Button
           variant="outline"
