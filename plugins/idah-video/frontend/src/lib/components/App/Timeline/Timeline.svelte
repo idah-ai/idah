@@ -124,7 +124,8 @@
 
     // // Zoom from the given center, or fall back to viewport center
     let zoomCenter: number = (viewport.startRange + viewport.endRange) / 2;
-    if (center && center > -1) {
+
+    if (center !== undefined) {
       zoomCenter = Math.max(1, center);
     }
 
