@@ -1,13 +1,14 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import type { BBox } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
+  import { type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { pointInPolygon, hitTestVertex, moveVertex, addVertexOnEdge } from "./Polygon/utils";
+  import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
+  import PolygonScaleHandler from "./Polygon/_PolygonScaleHandler.svelte";
 
   let {
     annotation,
@@ -43,6 +44,7 @@
   let dragVertexIndex: number | undefined = $state();
   let panStart: Point | undefined = $state();
 
+  let scaleHandler: PolygonScaleHandler | undefined = $state();
   // Multi-selection state
   let _selectedIndices: Set<number> = $state(new Set());
   let boxStart: Point | undefined = $state();
@@ -52,7 +54,12 @@
   // Track Shift key for cursor changes
   let shiftHeld = $state(false);
 
-  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined || multiDragOrigin !== undefined);
+  let isEditing = $derived(
+    dragVertexIndex !== undefined ||
+      panStart !== undefined ||
+      multiDragOrigin !== undefined ||
+      (scaleHandler?.isActive() ?? false),
+  );
   let vertices: Point[] = $derived(_localVertices ?? baseVertices);
 
   let cursorPx = $derived.by((): Point | undefined => {
@@ -202,6 +209,13 @@
     if (multiDragOrigin !== undefined && _localVertices) {
       changed = true;
     }
+    if (scaleHandler?.isActive()) {
+      const scaled = scaleHandler.endScale();
+      if (scaled) {
+        _localVertices = scaled;
+        changed = true;
+      }
+    }
     if (changed) {
       emitComplete();
     }
@@ -295,9 +309,20 @@
         }
       }}
       onDeleteVertex={(i) => {
-        if (baseVertices.length <= 3) return;
+        // If multiple vertices are selected, delete all of them
+        const indicesToDelete = _selectedIndices.size > 0 ? [..._selectedIndices].sort((a, b) => b - a) : [i];
+        // Can not delete if it would leave less than 3 points
+        if (baseVertices.length - indicesToDelete.length < 3) {
+          showToast.warning({
+            title: "Cannot delete vertex",
+            description: "A polygon must have at least 3 points.",
+          });
+          return;
+        }
         const next = [...baseVertices];
-        next.splice(i, 1);
+        for (const idx of indicesToDelete) {
+          next.splice(idx, 1);
+        }
         _localVertices = next;
         _selectedIndices = new Set();
         emitComplete();
@@ -312,6 +337,21 @@
         panStart = cursor ? [cursor[0] * w, cursor[1] * h] : undefined;
         _localVertices = [...baseVertices];
       }}
+      onStartScale={() => {
+        if (cursor) {
+          scaleHandler?.startScale(cursor[0]);
+        }
+      }}
     />
   {/if}
+
+  <PolygonScaleHandler
+    bind:this={scaleHandler}
+    {baseVertices}
+    {color}
+    {cursor}
+    onScaleUpdate={(scaled) => {
+      _localVertices = scaled;
+    }}
+  />
 {/if}

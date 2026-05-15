@@ -26,6 +26,9 @@
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+  import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
+  import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
@@ -49,7 +52,13 @@
     isPlaying: boolean;
   };
 
-  let { frame, children, onSelection, onAddNewNote, isPlaying }: Props = $props();
+  let {
+    frame,
+    children,
+    onSelection,
+    onAddNewNote,
+    isPlaying,
+  }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -153,6 +162,7 @@
       .cursor-grab { cursor: grab; }
       .cursor-grabbing { cursor: grabbing; }
       .cursor-pointer { cursor: pointer; }
+      .cursor-target { cursor: alias; }
     `;
     document.head.appendChild(style);
 
@@ -170,8 +180,14 @@
     zoomableElement.zoomOut();
   }
 
+  // ── Check if cursor is hovering the first polygon draft point ────────
+  let hoveringFirstPoint = $derived(
+    isPolygonMode && nearFirstPolygonPoint(sceneNormalizedCursor, media.width, media.height, polygonDraft.points),
+  );
+
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
+    if (hoveringFirstPoint) return "cursor-target";
     if (viewport.isCreationMode) return "cursor-crosshair";
     if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
