@@ -109,9 +109,6 @@
 
   $effect(() => {
     getDriver().setMode(viewport.mode);
-    if (viewport.mode === "note" || viewport.mode === "default") {
-      pendingValue = {};
-    }
   });
 
   onMount(async () => {

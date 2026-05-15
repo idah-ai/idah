@@ -21,6 +21,7 @@
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import CategoryName from "$lib/components/App/CategorySelector/Category/_CategoryName.svelte";
   import Icon from "$lib/components/ui/Icon";
+  import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
@@ -29,6 +30,8 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
+
+  import { getDriver } from "$lib/state/driver.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
@@ -113,8 +116,8 @@
     }, []),
   );
 
-  let isAllHidden = $derived(items.map((annotation) => annotation.value?.hidden).every((hidden) => hidden));
-  let isAllLocked = $derived(items.map((annotation) => annotation.value?.locked).every((locked) => locked));
+  let openConfirmCategoryDeleteDialog = $state(false);
+  let categoryToDelete = $state<string | null>(null);
 
   // Functions
   function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
@@ -203,16 +206,16 @@
     };
   }
 
-  function toggleCategoryVisibility(annotations: IVideoAnnotationRecord[]) {
-    // getDriver().command.call("annotation.toggle_group_visibility", { groupId });
+  function toggleCategoryVisibility(categoryId: string) {
+    getDriver().command.call("annotation.toggle_category_visibility", { category: categoryId });
   }
 
-  function toggleCategoryEditability() {
-    // getDriver().command.call("annotation.toggle_group_editability", { groupId });
+  function toggleCategoryEditability(categoryId: string) {
+    getDriver().command.call("annotation.toggle_category_editability", { category: categoryId });
   }
 
-  function deleteAnnotationGroup() {
-    // getDriver().command.call("annotation.delete_group", { groupId });
+  function deleteCategoryAnnotations(categoryId: string) {
+    getDriver().command.call("annotation.delete_category", { category: categoryId });
   }
 </script>
 
@@ -257,6 +260,8 @@
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
+      {@const isCategoryHidden = items.every((a) => a.value?.hidden && a.value?.category === category.id)}
+      {@const isCategoryLocked = items.every((a) => a.value?.locked && a.value?.category === category.id)}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -356,13 +361,12 @@
             <div class="ml-auto flex content-center items-center gap-0">
               <!-- BUTTON::HIDE/SHOW ALL ANNOTATIONS -->
               <CategoryAction
-                class={cn({
-                  flex: isAllHidden,
-                  "hidden group-hover:flex": !isAllHidden,
+                class={cn("flex", {
+                  "opacity-0 group-hover:opacity-100": !isCategoryHidden,
                 })}
-                onclick={() => toggleCategoryVisibility(annotations)}
+                onclick={() => toggleCategoryVisibility(category.id)}
               >
-                {#if isAllHidden}
+                {#if isCategoryHidden}
                   <EyeOffIcon />
                 {:else}
                   <EyeIcon />
@@ -371,13 +375,12 @@
 
               <!-- BUTTON::LOCK & UNLOCK ALL ANNOTATIONS -->
               <CategoryAction
-                class={cn({
-                  flex: isAllLocked,
-                  "hidden group-hover:flex": !isAllLocked,
+                class={cn("flex", {
+                  "opacity-0 group-hover:opacity-100": !isCategoryLocked,
                 })}
-                onclick={toggleCategoryEditability}
+                onclick={() => toggleCategoryEditability(category.id)}
               >
-                {#if isAllLocked}
+                {#if isCategoryLocked}
                   <LockIcon />
                 {:else}
                   <LockOpenIcon />
@@ -385,7 +388,15 @@
               </CategoryAction>
 
               <!-- BUTTON::DELETE ALL ANNOTATIONS -->
-              <CategoryAction class="hidden group-hover:flex" onclick={deleteAnnotationGroup}>
+              <CategoryAction
+                class={cn("flex", {
+                  "opacity-0 group-hover:opacity-100": !isCategoryHidden,
+                })}
+                onclick={() => {
+                  openConfirmCategoryDeleteDialog = true;
+                  categoryToDelete = category.id;
+                }}
+              >
                 <Trash2Icon />
               </CategoryAction>
 
@@ -414,3 +425,17 @@
     {/if}
   </Collapsible>
 {/snippet}
+
+<ConfirmModal
+  title="Delete annotations in this category"
+  description="Are you sure you want to delete all annotations in this category?"
+  onConfirm={() => {
+    deleteCategoryAnnotations(categoryToDelete!);
+
+    // Return to default mode after deletion
+    // setCurrentModeTo(DEFAULT_MODE);
+    openConfirmCategoryDeleteDialog = false;
+    categoryToDelete = null;
+  }}
+  bind:open={openConfirmCategoryDeleteDialog}
+/>
