@@ -5,8 +5,10 @@
   import { polygonVertexHandles, polygonEdgeMidpoints, polygonCentroid, scaleCursorSVG } from "./utils";
   import BoxSelector from "./_BoxSelector.svelte";
   import removeCursorSvg from "$lib/assets/icons/remove-cursor.svg?raw";
+  import addCursorSvg from "$lib/assets/icons/add-cursor.svg?raw";
 
   const removeCursorCss = `url("data:image/svg+xml,${encodeURIComponent(removeCursorSvg)}") 2 2,pointer`;
+  const addCursorCss = `url("data:image/svg+xml,${encodeURIComponent(addCursorSvg)}") 2 2,pointer`;
 
   type Props = {
     vertices: Point[];
@@ -85,7 +87,7 @@
     points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
     fill="transparent"
     style:outline="none"
-    style:cursor={isEditing ? "default" : "copy"}
+    style:cursor={isEditing ? "default" : addCursorCss}
     onmouseenter={() => (hoveredEdgeIndex = i)}
     onmouseleave={() => (hoveredEdgeIndex = undefined)}
     onmousedown={(e) => { e.stopPropagation(); onAddVertex(i); }}
