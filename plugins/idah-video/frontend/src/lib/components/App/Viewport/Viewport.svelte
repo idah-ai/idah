@@ -5,6 +5,7 @@
   import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { media } from "$lib/state/media.svelte";
 
   // Props
   interface Props {
@@ -31,7 +32,10 @@
   }
 
   function panStart(offsetX: number, offsetY: number) {
-    panOrigin = [offsetX - viewport.workspace.transform.translate[0], offsetY - viewport.workspace.transform.translate[1]];
+    panOrigin = [
+      offsetX - viewport.workspace.transform.translate[0],
+      offsetY - viewport.workspace.transform.translate[1],
+    ];
     // Track mouse at document level during drag so we don't lose it outside the viewport
     document.addEventListener("mousemove", onDocMouseMove);
     document.addEventListener("mouseup", onDocMouseUp);
@@ -47,7 +51,10 @@
     if (!panOrigin) return;
     // Convert client coords to element-relative using the element's bounding rect
     const rect = sizeElement.getBoundingClientRect();
-    viewport.workspace.transform.translate = [(e.clientX - rect.left) - panOrigin[0], (e.clientY - rect.top) - panOrigin[1]];
+    viewport.workspace.transform.translate = [
+      e.clientX - rect.left - panOrigin[0],
+      e.clientY - rect.top - panOrigin[1],
+    ];
     viewport.workspace.clampTranslate();
   }
 
@@ -130,20 +137,17 @@
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
-            // Zoom towards the cursor position
-            let ox = (e.offsetX - curTranslate[0]) / curScale;
-            let oy = (e.offsetY - curTranslate[1]) / curScale;
-            viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
-            viewport.workspace.transform.scale = newScale;
-            viewport.workspace.clampTranslate();
-          }
+        // Zoom towards the cursor position
+        let ox = (e.offsetX - curTranslate[0]) / curScale;
+        let oy = (e.offsetY - curTranslate[1]) / curScale;
+        viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
+        viewport.workspace.transform.scale = newScale;
+        viewport.workspace.clampTranslate();
+      }
     } else {
       // Scroll / two-finger drag → translate
       const curTranslate = viewport.workspace.transform.translate;
-      viewport.workspace.transform.translate = [
-        curTranslate[0] - e.deltaX,
-        curTranslate[1] - e.deltaY,
-      ];
+      viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
       viewport.workspace.clampTranslate();
     }
   }
@@ -204,10 +208,10 @@
 
 <style>
   .viewport {
-      position: absolute;
-      display: flexbox;
-      overflow: hidden;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    position: absolute;
+    display: flexbox;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 </style>

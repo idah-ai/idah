@@ -6,25 +6,24 @@
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { media } from "$lib/state/media.svelte";
-  import { selection } from "$lib/state/selection.svelte";
-  import { entryRoot } from "$lib/state/entry-root.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
-
-  import { data } from "$lib/state/data.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
   } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
+  import { data } from "$lib/state/data.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+  import { entryRoot } from "$lib/state/entry-root.svelte";
+  import { media } from "$lib/state/media.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
-  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
-  import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
+  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
+  import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
@@ -221,8 +220,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("selection.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
@@ -239,6 +237,7 @@
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
     if (!editable) return;
+
 
     if (frame != undefined) {
       deleteSelection(annotation.metadata!.id as string, frame);

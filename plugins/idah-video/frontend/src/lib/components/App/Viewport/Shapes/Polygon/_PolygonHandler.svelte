@@ -2,7 +2,7 @@
   import type { Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { polygonVertexHandles, polygonEdgeMidpoints } from "./utils";
+  import { polygonVertexHandles, polygonEdgeMidpoints, polygonCentroid, scaleCursorSVG } from "./utils";
   import BoxSelector from "./_BoxSelector.svelte";
   import removeCursorSvg from "$lib/assets/icons/remove-cursor.svg?raw";
 
@@ -20,6 +20,7 @@
     onDeleteVertex: (vertexIndex: number) => void;
     onAddVertex: (edgeIndex: number) => void;
     onStartPan: () => void;
+    onStartScale: () => void;
   };
 
   let {
@@ -34,6 +35,7 @@
     onDeleteVertex,
     onAddVertex,
     onStartPan,
+    onStartScale,
   }: Props = $props();
 
   let w = $derived(media.width);
@@ -42,6 +44,7 @@
 
   let hoveredVertexIndex: number | undefined = $state();
   let hoveredEdgeIndex: number | undefined = $state();
+  let hoveredScale: boolean = $state(false);
 
   let R = $derived(6 * invScale);
   let R_hovered = $derived(8 * invScale);
@@ -52,27 +55,34 @@
   let R_dot = $derived(2 * invScale);
   let S_line = $derived(2 * invScale);
 
+  // Scale handle sizes
+  let R_scale = $derived(7 * invScale);
+  let R_scale_hovered = $derived(9 * invScale);
+  let R_scale_hit = $derived(10 * invScale);
+  let R_scale_dot = $derived(2.5 * invScale);
+
   let vertexHandles = $derived(polygonVertexHandles(vertices));
   let edgeMidpoints = $derived(polygonEdgeMidpoints(vertices));
+  let centroid = $derived(polygonCentroid(vertices));
 </script>
 
-<!-- Edge midpoint handles -->
+<!-- Edge midpoint handles (diamond shape) -->
 {#each edgeMidpoints as point, i (i)}
   {@const isHovered = hoveredEdgeIndex === i}
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={isHovered ? R_edge_hovered : R_edge}
-    fill={color}
+  {@const cx = point[0] * w}
+  {@const cy = point[1] * h}
+  {@const r = isHovered ? R_edge_hovered : R_edge}
+  <polygon
+    points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
+    fill="grey"
     fill-opacity={isHovered ? 0.5 : 0.2}
-    stroke={color}
+    stroke="grey"
     stroke-width={S_line}
+    stroke-linejoin="round"
     pointer-events="none"
   />
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={R_edge_hit}
+  <polygon
+    points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
     fill="transparent"
     style:outline="none"
     style:cursor={isEditing ? "default" : "copy"}
@@ -143,6 +153,36 @@
     onmousedown={(e) => { e.stopPropagation(); if (e.shiftKey) onDeleteVertex(i); else onStartVertexDrag(i); }}
   />
 {/each}
+
+<!-- Scale handle at centroid -->
+<circle
+  cx={centroid[0] * w}
+  cy={centroid[1] * h}
+  r={hoveredScale ? R_scale_hovered : R_scale}
+  fill={color}
+  fill-opacity={hoveredScale ? 0.4 : 0.2}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
+/>
+<circle
+  cx={centroid[0] * w}
+  cy={centroid[1] * h}
+  r={R_scale_dot}
+  fill={color}
+  pointer-events="none"
+/>
+<circle
+  cx={centroid[0] * w}
+  cy={centroid[1] * h}
+  r={R_scale_hit}
+  fill="transparent"
+  style:outline="none"
+  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG(color)}') 18 18, nesw-resize`}
+  onmouseenter={() => (hoveredScale = true)}
+  onmouseleave={() => (hoveredScale = false)}
+  onmousedown={(e) => { e.stopPropagation(); onStartScale(); }}
+/>
 
 <!-- Box selection overlay -->
 {#if boxStart && boxEnd}

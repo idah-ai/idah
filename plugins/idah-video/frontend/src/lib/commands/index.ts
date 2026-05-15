@@ -74,6 +74,10 @@ import { register as registerTimelineFocus } from "./timeline/focus";
 import { register as registerTimelineZoomIn } from "./timeline/zoom-in";
 import { register as registerTimelineZoomOut } from "./timeline/zoom-out";
 
+import { register as registerCategoryDelete } from "./category/delete";
+import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
+import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
+
 /**
  * Register all commands on the given V2 driver.
  * Safe to call multiple times (the V2 command manager throws on duplicate
@@ -126,6 +130,10 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationGoToNextGroup(driver);
   registerAnnotationGoToPrevGroup(driver);
   registerAnnotationUpdateGroupCategory(driver);
+
+  registerCategoryToggleEditability(driver);
+  registerCategoryToggleVisibility(driver);
+  registerCategoryDelete(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);

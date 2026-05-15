@@ -1,18 +1,14 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import type { BBox } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
+  import { type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import {
-    pointInPolygon,
-    hitTestVertex,
-    moveVertex,
-    addVertexOnEdge,
-  } from "./Polygon/utils";
+  import { pointInPolygon, hitTestVertex, moveVertex, addVertexOnEdge } from "./Polygon/utils";
+  import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
+  import PolygonScaleHandler from "./Polygon/_PolygonScaleHandler.svelte";
 
   let {
     annotation,
@@ -48,6 +44,7 @@
   let dragVertexIndex: number | undefined = $state();
   let panStart: Point | undefined = $state();
 
+  let scaleHandler: PolygonScaleHandler | undefined = $state();
   // Multi-selection state
   let _selectedIndices: Set<number> = $state(new Set());
   let boxStart: Point | undefined = $state();
@@ -57,7 +54,12 @@
   // Track Shift key for cursor changes
   let shiftHeld = $state(false);
 
-  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined || multiDragOrigin !== undefined);
+  let isEditing = $derived(
+    dragVertexIndex !== undefined ||
+      panStart !== undefined ||
+      multiDragOrigin !== undefined ||
+      (scaleHandler?.isActive() ?? false),
+  );
   let vertices: Point[] = $derived(_localVertices ?? baseVertices);
 
   let cursorPx = $derived.by((): Point | undefined => {
@@ -67,10 +69,7 @@
 
   let panOffset = $derived.by((): Point => {
     if (panStart && cursorPx) {
-      return [
-        (cursorPx[0] - panStart[0]) / w,
-        (cursorPx[1] - panStart[1]) / h,
-      ];
+      return [(cursorPx[0] - panStart[0]) / w, (cursorPx[1] - panStart[1]) / h];
     }
     return [0, 0];
   });
@@ -109,17 +108,14 @@
     const dy = cursor[1] - multiDragOrigin[1];
     multiDragOrigin = cursor;
     const base = _localVertices ?? baseVertices;
-    _localVertices = base.map((p, i) =>
-      _selectedIndices.has(i) ? [p[0] + dx, p[1] + dy] as Point : p,
-    );
+    _localVertices = base.map((p, i) => (_selectedIndices.has(i) ? ([p[0] + dx, p[1] + dy] as Point) : p));
   });
 
   let pathD = $derived.by(() => {
     if (displayVertices.length < 2) return "";
     return (
-      displayVertices
-        .map((p, i) => `${i === 0 ? "M" : "L"}${p[0] * w} ${p[1] * h}`)
-        .join(" ") + (displayVertices.length >= 3 ? " Z" : "")
+      displayVertices.map((p, i) => `${i === 0 ? "M" : "L"}${p[0] * w} ${p[1] * h}`).join(" ") +
+      (displayVertices.length >= 3 ? " Z" : "")
     );
   });
 
@@ -138,7 +134,7 @@
       if (shiftKey) {
         // Shift+click on a vertex: delete it (but keep minimum 3 points)
         if (baseVertices.length <= 3) return true;
-        const next = [...(baseVertices)];
+        const next = [...baseVertices];
         next.splice(vi, 1);
         _localVertices = next;
         _selectedIndices = new Set();
@@ -154,7 +150,7 @@
       // Single vertex drag — clear selection
       _selectedIndices = new Set();
       dragVertexIndex = vi;
-      _localVertices = [...(baseVertices)];
+      _localVertices = [...baseVertices];
       return true;
     }
 
@@ -171,7 +167,7 @@
       // Start pan — clear selection
       _selectedIndices = new Set();
       panStart = [start[0] * w, start[1] * h];
-      _localVertices = [...(baseVertices)];
+      _localVertices = [...baseVertices];
       return true;
     }
 
@@ -213,6 +209,13 @@
     if (multiDragOrigin !== undefined && _localVertices) {
       changed = true;
     }
+    if (scaleHandler?.isActive()) {
+      const scaled = scaleHandler.endScale();
+      if (scaled) {
+        _localVertices = scaled;
+        changed = true;
+      }
+    }
     if (changed) {
       emitComplete();
     }
@@ -223,13 +226,27 @@
     _selectedIndices = new Set();
   }
 
+  // ── Cursor style for the shape body ──────────────────────────────────
+  //   "cursor-grabbing"  → actively dragging (vertex drag, pan, or multi-drag in progress)
+  //   "cursor-grab"      → editable & selected (ready to start a drag)
+  //   "cursor-pointer"   → otherwise
+  let bodyCursor = $derived(isEditing ? "cursor-grabbing" : editable && selected ? "cursor-grab" : "cursor-pointer");
+
   let over = $state(false);
-  </script>
+</script>
 
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <svelte:window onkeydown={(e) => { if (e.key === "Shift") shiftHeld = true; }} onkeyup={(e) => { if (e.key === "Shift") shiftHeld = false; }} />
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<svelte:window
+  onkeydown={(e) => {
+    if (e.key === "Shift") shiftHeld = true;
+  }}
+  onkeyup={(e) => {
+    if (e.key === "Shift") shiftHeld = false;
+  }}
+/>
 
-  {#if pathD}
+{#if pathD}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <path
     d={pathD}
     fill={color}
@@ -240,12 +257,15 @@
     style:outline="none"
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
-    class={editable && selected ? "cursor-grab" : "cursor-pointer"}
+    class={bodyCursor}
     role="button"
     tabindex="-1"
     onclick={onClick}
     onmousedown={(e) => {
-      if (viewport.mode === "idah-video:polygon") return;
+      // Do not start selection if in creation mode,
+      // to avoid interfering with the creation process
+      if (viewport.isCreationMode) return;
+
       if (editable && selected) {
         // Convert client coords to SVG viewBox coords, then to normalized (0-1) media coords.
         const svg = (e.currentTarget as SVGElement).ownerSVGElement;
@@ -268,7 +288,7 @@
     }}
   />
 
-{#if editable && selected && !isEditing && displayVertices.length >= 3}
+  {#if editable && selected && !isEditing && displayVertices.length >= 3}
     <PolygonHandler
       vertices={displayVertices}
       {color}
@@ -285,13 +305,24 @@
         } else {
           _selectedIndices = new Set();
           dragVertexIndex = i;
-          _localVertices = [...(baseVertices)];
+          _localVertices = [...baseVertices];
         }
       }}
       onDeleteVertex={(i) => {
-        if (baseVertices.length <= 3) return;
+        // If multiple vertices are selected, delete all of them
+        const indicesToDelete = _selectedIndices.size > 0 ? [..._selectedIndices].sort((a, b) => b - a) : [i];
+        // Can not delete if it would leave less than 3 points
+        if (baseVertices.length - indicesToDelete.length < 3) {
+          showToast.warning({
+            title: "Cannot delete vertex",
+            description: "A polygon must have at least 3 points.",
+          });
+          return;
+        }
         const next = [...baseVertices];
-        next.splice(i, 1);
+        for (const idx of indicesToDelete) {
+          next.splice(idx, 1);
+        }
         _localVertices = next;
         _selectedIndices = new Set();
         emitComplete();
@@ -301,7 +332,26 @@
         _localVertices = newVerts;
         dragVertexIndex = insertedIndex;
       }}
-      onStartPan={() => { _selectedIndices = new Set(); panStart = cursor ? [cursor[0] * w, cursor[1] * h] : undefined; _localVertices = [...(baseVertices)]; }}
+      onStartPan={() => {
+        _selectedIndices = new Set();
+        panStart = cursor ? [cursor[0] * w, cursor[1] * h] : undefined;
+        _localVertices = [...baseVertices];
+      }}
+      onStartScale={() => {
+        if (cursor) {
+          scaleHandler?.startScale(cursor[0]);
+        }
+      }}
     />
   {/if}
+
+  <PolygonScaleHandler
+    bind:this={scaleHandler}
+    {baseVertices}
+    {color}
+    {cursor}
+    onScaleUpdate={(scaled) => {
+      _localVertices = scaled;
+    }}
+  />
 {/if}
