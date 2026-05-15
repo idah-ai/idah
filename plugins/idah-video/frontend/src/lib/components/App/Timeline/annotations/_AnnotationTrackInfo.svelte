@@ -85,7 +85,7 @@
 
     <div class="ml-auto flex shrink-0 items-center">
       {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, alwaysShow, onClick }] (key)}
-        <div class={cn("", alwaysShow ? "block" : "hidden group-hover:flex")}>
+        <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
           <ToolTooltip {label}>
             {#snippet trigger()}
               <Button variant="ghost" size="icon-sm" onclick={onClick}>
