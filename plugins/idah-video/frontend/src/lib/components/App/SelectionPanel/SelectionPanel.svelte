@@ -33,17 +33,6 @@
   import type { IConfigProperty } from "$idah/v2/types";
   import type { IVideoAnnotationValue } from "$lib/types";
 
-  // Represents a group of annotations on the current frame (deduplicated by groupId)
-  type CurrentFrameGroup = {
-    groupId: string;
-    displayName: string;
-    shapeType: string;
-    color: string | null;
-    isHidden: boolean;
-    isLocked: boolean;
-    earliestStart: number;
-  };
-
   type Props = {
     selectedCategory: string;
     annotationId?: string;
@@ -106,49 +95,44 @@
 
   // -----------------------------------------------------------------------
   // Annotations on current frame (for default mode, no selection)
+  // Sorted in the same group-by-group order as the timeline
   // -----------------------------------------------------------------------
   let currentFrame = $derived(viewport.video.currentFrame.value);
-  let currentFrameGroups = $derived.by<CurrentFrameGroup[]>(() => {
+  let currentFrameAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
-    const items = data.annotations.items;
+    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
     const frame = currentFrame;
 
-    // Filter and group annotations by groupId (same as groupAnnotations in group-annotation.svelte.ts)
+    // Filter to current frame
+    const onFrame = items.filter(
+      (ann) => ann.shape.start <= frame && ann.shape.end >= frame
+    );
+
+    // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
     const map = new Map<string, IVideoAnnotationRecord[]>();
-    for (const ann of items) {
-      const shape = ann.shape as { start?: number; end?: number };
-      if (shape.start === undefined || shape.end === undefined) continue;
-      if (shape.start > frame || shape.end < frame) continue;
+    for (const ann of onFrame) {
       const gid = ann.metadata?.group_id ?? ann.id;
       if (!map.has(gid)) map.set(gid, []);
       map.get(gid)!.push(ann);
     }
 
-    // Sort groups: compareGroups sorts by earliest start of first annotation in each group
-    const groups: CurrentFrameGroup[] = [];
-    for (const [groupId, anns] of map.entries()) {
-      // Sort annotations within group by start frame
-      anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end);
-
-      const firstAnn = anns[0];
-      const annShapeType = firstAnn.shape.type as string;
-      const annConfig = getDriver().config[annShapeType];
-      const annCategory = annConfig?.values?.find((v) => v.id === firstAnn.value?.category);
-      const annColor = annCategory?.color ?? null;
-      const lastPart = groupId.split("-").pop() ?? "";
-      const displayName = annCategory ? `${annCategory.label}-${lastPart}` : (firstAnn.value?.category ?? "Uncategorized");
-
-      const isHidden = anns.some((a) => a.hidden);
-      const isLocked = anns.some((a) => a.locked);
-      const earliestStart = anns.reduce((min, a) => Math.min(min, a.shape.start), Infinity);
-
-      groups.push({ groupId, displayName, shapeType: annShapeType, color: annColor, isHidden, isLocked, earliestStart });
-    }
-
-    // Sort by earliest start (same as compareGroups)
+    // Build sorted groups by earliest start (compareGroups), then flatten with timeline naming
+    const sorted: IVideoAnnotationRecord[] = [];
+    const groups = Array.from(map.entries()).map(([groupId, anns]) => ({
+      groupId,
+      anns: anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end),
+      earliestStart: Math.min(...anns.map((a) => a.shape.start)),
+    }));
     groups.sort((a, b) => a.earliestStart - b.earliestStart);
 
-    return groups;
+    // Flatten preserving group order
+    for (const group of groups) {
+      for (const ann of group.anns) {
+        sorted.push(ann);
+      }
+    }
+
+    return sorted;
   });
 
   // -----------------------------------------------------------------------
@@ -222,41 +206,51 @@
 
 <!-- ============ ANNOTATIONS ON CURRENT FRAME (default mode, no selection) ============ -->
 {#if !sel}
-  {#if viewport.mode === "default" && currentFrameGroups.length > 0}
+  {#if viewport.mode === "default" && currentFrameAnnotations.length > 0}
     <section class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <Text weight="semibold">Annotations</Text>
-        <Badge variant="secondary">{currentFrameGroups.length}</Badge>
+        <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
       </div>
       <div class="flex flex-col gap-1">
-{#each currentFrameGroups as group (group.groupId)}
+{#each currentFrameAnnotations as ann (ann.id)}
+  {@const annShapeType = ann.shape.type as string}
+  {@const annConfig = getDriver().config[annShapeType]}
+  {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
+  {@const annColor = annCategory?.color ?? null}
+  {@const annGroupId = ann.metadata?.group_id ?? ann.id}
+  {@const annGroupIdLastPart = annGroupId.split("-").pop()}
+  {@const annDisplayName = annCategory ? `${annCategory.label}-${annGroupIdLastPart}` : (ann.value?.category ?? "Uncategorized")}
   <div class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent">
     <button
       class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-      onclick={() => selection.selectGroup(group.groupId)}
+      onclick={() => selection.selectAnnotation(ann)}
     >
-      {#if group.shapeType === VIDEO_POLYGON}
-        <Icon src={polygonIconSvg} color={group.color} />
+      {#if annShapeType === VIDEO_POLYGON}
+        <Icon src={polygonIconSvg} color={annColor} />
       {:else}
-        <Icon src={vectorSquareIconSvg} color={group.color} />
+        <Icon src={vectorSquareIconSvg} color={annColor} />
       {/if}
-      <span class="truncate">{group.displayName}</span>
+      <span class="truncate">{annDisplayName}</span>
     </button>
 
     <div class="ml-auto flex shrink-0 items-center gap-0">
       <!-- BUTTON::HIDE/SHOW -->
-      <div class={cn("", group.isHidden ? "flex" : "hidden group-hover:flex")}>
-        <ToolTooltip label={group.isHidden ? "Show Group" : "Hide Group"}>
+      <div class={cn("", ann.hidden ? "flex" : "hidden group-hover:flex")}>
+        <ToolTooltip label={ann.hidden ? "Show" : "Hide"}>
           {#snippet trigger()}
             <Button
               variant="ghost"
               size="icon-sm"
               onclick={(e: MouseEvent) => {
                 e.stopPropagation();
-                getDriver().command.call("annotation.toggleGroupVisibility", { groupId: group.groupId });
+                getDriver().command.call("annotation.update", {
+                  annotation: ann,
+                  value: { hidden: !ann.hidden },
+                });
               }}
             >
-              {#if group.isHidden}
+              {#if ann.hidden}
                 <EyeOffIcon />
               {:else}
                 <EyeIcon />
@@ -267,18 +261,21 @@
       </div>
 
       <!-- BUTTON::LOCK/UNLOCK -->
-      <div class={cn("", group.isLocked ? "flex" : "hidden group-hover:flex")}>
-        <ToolTooltip label={group.isLocked ? "Unlock Group" : "Lock Group"}>
+      <div class={cn("", ann.locked ? "flex" : "hidden group-hover:flex")}>
+        <ToolTooltip label={ann.locked ? "Unlock" : "Lock"}>
           {#snippet trigger()}
             <Button
               variant="ghost"
               size="icon-sm"
               onclick={(e: MouseEvent) => {
                 e.stopPropagation();
-                getDriver().command.call("annotation.toggleGroupEditability", { groupId: group.groupId });
+                getDriver().command.call("annotation.update", {
+                  annotation: ann,
+                  value: { locked: !ann.locked },
+                });
               }}
             >
-              {#if group.isLocked}
+              {#if ann.locked}
                 <LockIcon />
               {:else}
                 <LockOpenIcon />
@@ -290,14 +287,14 @@
 
       <!-- BUTTON::DELETE -->
       <div class="hidden group-hover:flex">
-        <ToolTooltip label="Delete group">
+        <ToolTooltip label="Delete">
           {#snippet trigger()}
             <Button
               variant="ghost"
               size="icon-sm"
               onclick={(e: MouseEvent) => {
                 e.stopPropagation();
-                getDriver().command.call("annotation.deleteGroup", { groupId: group.groupId });
+                getDriver().command.call("annotation.delete", { annotationId: ann.id });
               }}
             >
               <Trash2Icon />
