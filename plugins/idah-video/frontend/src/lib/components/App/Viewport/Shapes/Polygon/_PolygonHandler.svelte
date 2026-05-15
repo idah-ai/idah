@@ -4,7 +4,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { polygonVertexHandles, polygonEdgeMidpoints, polygonCentroid, scaleCursorSVG } from "./utils";
   import BoxSelector from "./_BoxSelector.svelte";
-  import removeCursorSvg from "$lib/assets/icons/pen-tool-remove-2-24x24.svg?raw";
+  import removeCursorSvg from "$lib/assets/icons/remove-cursor.svg?raw";
   import addCursorSvg from "$lib/assets/icons/pen-tool-add-2-24x24.svg?raw";
 
   const removeCursorCss = `url("data:image/svg+xml,${encodeURIComponent(removeCursorSvg)}") 2 2,pointer`;
@@ -76,9 +76,9 @@
   {@const r = isHovered ? R_edge_hovered : R_edge}
   <polygon
     points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
-    fill={color}
+    fill="grey"
     fill-opacity={isHovered ? 0.5 : 0.2}
-    stroke={color}
+    stroke="grey"
     stroke-width={S_line}
     stroke-linejoin="round"
     pointer-events="none"
@@ -87,7 +87,7 @@
     points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
     fill="transparent"
     style:outline="none"
-    style:cursor={isEditing ? "default" : addCursorCss}
+    style:cursor={isEditing ? "default" : "copy"}
     onmouseenter={() => (hoveredEdgeIndex = i)}
     onmouseleave={() => (hoveredEdgeIndex = undefined)}
     onmousedown={(e) => { e.stopPropagation(); onAddVertex(i); }}

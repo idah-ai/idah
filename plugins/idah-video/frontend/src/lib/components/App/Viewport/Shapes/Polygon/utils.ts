@@ -119,6 +119,25 @@ export function computeScaleFactor(
   return currentDist / initialDist;
 }
 
+/**
+ * Check if a normalized cursor is within `hitRadiusPx` pixels of the first polygon draft point.
+ * Used to determine when to close a polygon during creation.
+ */
+export function nearFirstPolygonPoint(
+  cursor: Point,
+  mediaWidth: number,
+  mediaHeight: number,
+  points: Point[],
+): boolean {
+  if (points.length < 3) return false;
+  const CLOSE_RADIUS_PX = 7;
+  const CLOSE_RADIUS_SQ = CLOSE_RADIUS_PX * CLOSE_RADIUS_PX;
+  const first = points[0];
+  const dx = Math.abs(cursor[0] - first[0]) * mediaWidth;
+  const dy = Math.abs(cursor[1] - first[1]) * mediaHeight;
+  return dx * dx + dy * dy < CLOSE_RADIUS_SQ;
+}
+
 /** SVG data URL for a dot sight crosshair cursor (crosshair with a central dot). */
 export function scaleCursorSVG(color: string): string {
   return `data:image/svg+xml;base64,${btoa(`
@@ -131,13 +150,3 @@ export function scaleCursorSVG(color: string): string {
     </svg>`)}`;
 }
 
-/** SVG data URL for a close-target cursor (crosshair + corner brackets + central dot). */
-export function targetCursorSVG(color: string): string {
-  return `data:image/svg+xml;base64,${btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="8" stroke="${color}" stroke-width="1.5" fill="none"/>
-      <circle cx="12" cy="12" r="2" fill="${color}"/>
-      <path d="M12 4 L12 8 M12 16 L12 20 M4 12 L8 12 M16 12 L20 12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M8 8 L4 4 M16 8 L20 4 M8 16 L4 20 M16 16 L20 20" stroke="${color}" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-    </svg>`)}`;
-}

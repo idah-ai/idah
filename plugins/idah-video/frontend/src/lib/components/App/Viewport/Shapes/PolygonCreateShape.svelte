@@ -13,6 +13,7 @@
   import type { Point } from "$lib/utils/math/point";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -36,17 +37,12 @@
    */
   export function handleMouseDown(cursor: Point): boolean {
     // ── Close polygon (click near first point with ≥3 points) ──────────
-    if (polygonDraft.points.length >= 3) {
-      const first = polygonDraft.points[0];
-      const dx = Math.abs(cursor[0] - first[0]) * mediaWidth;
-      const dy = Math.abs(cursor[1] - first[1]) * mediaHeight;
-      if (dx * dx + dy * dy < 400) {
-        const pts = [...polygonDraft.points];
-        polygonDraft.reset();
-        // Route through onSelection so the workspace can apply pendingValue (selected category)
-        onSelection("idah-video:polygon", frame, pts, 0, undefined);
-        return true;
-      }
+    if (nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points)) {
+      const pts = [...polygonDraft.points];
+      polygonDraft.reset();
+      // Route through onSelection so the workspace can apply pendingValue (selected category)
+      onSelection("idah-video:polygon", frame, pts, 0, undefined);
+      return true;
     }
 
     // ── Add a new point ────────────────────────────────────────────────
