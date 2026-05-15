@@ -37,7 +37,11 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
-          onClick: () => getDriver().command.call("annotation.delete_group", { groupId: track.id }),
+          onClick: () =>
+            getDriver().command.call("annotation.delete_group", {
+              groupId: track.id,
+              annotations: track.items.map((item) => item.rawData),
+            }),
         },
       },
     },

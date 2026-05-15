@@ -56,8 +56,8 @@
       currentFrame: hoverFrame,
     };
 
-    /* Select annotation group */
-    selection.selectGroup(trackId);
+    /* Select annotation */
+    selection.selectAnnotation(annotation);
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
