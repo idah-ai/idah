@@ -50,7 +50,7 @@
   let centroidN = $derived(polygonCentroid(displayVertices));
   let centroidPx: Point = $derived([centroidN[0] * w, centroidN[1] * h]);
   let barLength = $derived(120 * invScale);
-  let barY = $derived(centroidPx[1] + 30 * invScale);
+  let barY = $derived(centroidPx[1]);
   let barX1 = $derived(centroidPx[0] - barLength / 2);
   let barX2 = $derived(centroidPx[0] + barLength / 2);
   let thumbX = $derived(centroidPx[0] + (scaleBarFactor - 1) * (barLength / 2) * 0.5);
@@ -122,15 +122,9 @@
     pointer-events="none"
   />
   <!-- Labels -->
-  <text
-    x={barX1} y={barY - 10 * invScale}
-    text-anchor="middle"
-    fill={color}
-    font-size={10 * invScale}
-    pointer-events="none"
-  >0.5×</text>
-  <text x={centroidPx[0]} y={barY - 10 * invScale} text-anchor="middle" fill={color} font-size={10 * invScale} pointer-events="none">1×</text>
-  <text x={barX2} y={barY - 10 * invScale} text-anchor="middle" fill={color} font-size={10 * invScale} pointer-events="none">2×</text>
+  <text x={barX1} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none">0.5×</text>
+  <text x={centroidPx[0]} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none">1×</text>
+  <text x={barX2} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none">2×</text>
   <!-- Thumb (draggable) -->
   <circle
     cx={thumbXClamped}
