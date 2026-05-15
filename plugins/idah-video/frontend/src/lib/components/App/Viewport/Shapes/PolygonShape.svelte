@@ -1,17 +1,11 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
-  import type { BBox } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, clampPoint, clampPoints, type Point } from "$lib/utils/math/point";
+  import { type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import {
-    pointInPolygon,
-    hitTestVertex,
-    moveVertex,
-    addVertexOnEdge,
-  } from "./Polygon/utils";
+  import { pointInPolygon, hitTestVertex, moveVertex, addVertexOnEdge } from "./Polygon/utils";
   import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
   import PolygonScaleHandler from "./Polygon/_PolygonScaleHandler.svelte";
@@ -60,7 +54,12 @@
   // Track Shift key for cursor changes
   let shiftHeld = $state(false);
 
-  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined || multiDragOrigin !== undefined || (scaleHandler?.isActive() ?? false));
+  let isEditing = $derived(
+    dragVertexIndex !== undefined ||
+      panStart !== undefined ||
+      multiDragOrigin !== undefined ||
+      (scaleHandler?.isActive() ?? false),
+  );
   let vertices: Point[] = $derived(_localVertices ?? baseVertices);
 
   let cursorPx = $derived.by((): Point | undefined => {
@@ -84,12 +83,12 @@
 
   let lastDragCursor: Point = $state([-1, -1]);
 
-  // Single vertex drag — clamp vertex to viewport bounds
+  // Single vertex drag
   $effect(() => {
     if (dragVertexIndex === undefined || !cursor) return;
     if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
     lastDragCursor = cursor;
-    _localVertices = moveVertex(_localVertices ?? baseVertices, dragVertexIndex, clampPoint(cursor));
+    _localVertices = moveVertex(_localVertices ?? baseVertices, dragVertexIndex, cursor);
   });
 
   // Box selection drag
@@ -100,7 +99,7 @@
     boxEnd = cursor;
   });
 
-  // Multi-drag: move all selected vertices by the cursor delta — clamp to viewport bounds
+  // Multi-drag: move all selected vertices by the cursor delta
   $effect(() => {
     if (!multiDragOrigin || !cursor || _selectedIndices.size === 0) return;
     if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
@@ -109,7 +108,7 @@
     const dy = cursor[1] - multiDragOrigin[1];
     multiDragOrigin = cursor;
     const base = _localVertices ?? baseVertices;
-    _localVertices = clampPoints(base.map((p, i) => (_selectedIndices.has(i) ? ([p[0] + dx, p[1] + dy] as Point) : p)));
+    _localVertices = base.map((p, i) => (_selectedIndices.has(i) ? ([p[0] + dx, p[1] + dy] as Point) : p));
   });
 
   let pathD = $derived.by(() => {
@@ -201,7 +200,7 @@
 
     let changed = false;
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
-      _localVertices = clampPoints(vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point));
+      _localVertices = vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point);
       changed = true;
     }
     if (dragVertexIndex !== undefined) {
@@ -234,7 +233,6 @@
   let bodyCursor = $derived(isEditing ? "cursor-grabbing" : editable && selected ? "cursor-grab" : "cursor-pointer");
 
   let over = $state(false);
-
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -312,9 +310,7 @@
       }}
       onDeleteVertex={(i) => {
         // If multiple vertices are selected, delete all of them
-        const indicesToDelete = _selectedIndices.size > 0
-          ? [..._selectedIndices].sort((a, b) => b - a)
-          : [i];
+        const indicesToDelete = _selectedIndices.size > 0 ? [..._selectedIndices].sort((a, b) => b - a) : [i];
         // Can not delete if it would leave less than 3 points
         if (baseVertices.length - indicesToDelete.length < 3) {
           showToast.warning({
@@ -339,7 +335,7 @@
       onStartPan={() => {
         _selectedIndices = new Set();
         panStart = cursor ? [cursor[0] * w, cursor[1] * h] : undefined;
-        _localVertices = [...(baseVertices)];
+        _localVertices = [...baseVertices];
       }}
       onStartScale={() => {
         if (cursor) {

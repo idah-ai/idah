@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Polygon utils — handle positions, edge midpoints, hit testing, scaling
 // ---------------------------------------------------------------------------
-import type { Point } from "$lib/utils/math/point";
+import { distance, type Point } from "$lib/utils/math/point";
 
 /** Generate handle positions for each vertex. */
 export function polygonVertexHandles(pts: Point[]): Point[] {

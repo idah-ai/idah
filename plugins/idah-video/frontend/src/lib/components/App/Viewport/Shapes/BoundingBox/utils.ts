@@ -1,20 +1,4 @@
-import { centroid as centroidUtil, clampPoints, rotatePoint, type Point } from "$lib/utils/math/point";
-
-/**
- * Clamp axis-aligned (non-rotated) rectangle corners to [0,1].
- * For rotated bboxes, only prevent the move if *all* visual corners would
- * be outside [0,1] — allowing partial overlap with the video.
- */
-export function clampRect(width: number, height: number, points: Point[], angle: number, origPoints: Point[]): Point[] {
-  if (angle === 0) return clampPoints(points);
-  // Check if at least one visual corner is inside [0,1]
-  const ct = centroidUtil(points);
-  const hasOneInside = points.some((p) => {
-    const vis = rotatePointN(p, ct, angle, width, height);
-    return vis[0] >= 0 && vis[0] <= 1 && vis[1] >= 0 && vis[1] <= 1;
-  });
-  return hasOneInside ? points : origPoints;
-}
+import { rotatePoint, type Point } from "$lib/utils/math/point";
 
 /** Generate 8 handle positions: 4 corners + 4 edge midpoints in order [tl, tm, tr, mr, br, bm, bl, ml] */
 export function boundingBoxHandle(pts: Point[]): Point[] {

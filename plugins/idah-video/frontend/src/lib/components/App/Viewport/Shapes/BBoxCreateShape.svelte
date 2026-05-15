@@ -10,7 +10,6 @@
 
   import { onMount } from "svelte";
   import type { Point } from "$lib/utils/math/point";
-  import { clampPoint } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -32,7 +31,7 @@
    * Records the start position of the bbox drag.
    */
   export function handleMouseDown(cursor: Point) {
-    buildStart = clampPoint(cursor);
+    buildStart = cursor;
   }
 
   /**
@@ -43,11 +42,10 @@
   export function handleMouseUp(cursor: Point): boolean {
     if (!buildStart) return false;
 
-    const clampedCursor = clampPoint(cursor);
-    const x1 = Math.min(buildStart[0], clampedCursor[0]);
-    const y1 = Math.min(buildStart[1], clampedCursor[1]);
-    const x2 = Math.max(buildStart[0], clampedCursor[0]);
-    const y2 = Math.max(buildStart[1], clampedCursor[1]);
+    const x1 = Math.min(buildStart[0], cursor[0]);
+    const y1 = Math.min(buildStart[1], cursor[1]);
+    const x2 = Math.max(buildStart[0], cursor[0]);
+    const y2 = Math.max(buildStart[1], cursor[1]);
     buildStart = undefined;
 
     // Minimum size threshold (normalized: 0.5%)
