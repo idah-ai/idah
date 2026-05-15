@@ -25,8 +25,12 @@ class FakeProcessorContext
     @copied_file = File.join(tmpdir, File.basename(@file_path))
   end
 
-  def upload_media(io, key, mime_type)
-    @uploaded << { io:, key:, mime_type: }
+  def update_original_metadata(metadata)
+    @metadata = metadata
+  end
+
+  def upload_media(io, key, mime_type, metadata = {})
+    @uploaded << { io:, key:, mime_type:, metadata: }
   end
 
   def reschedule!(after: 10)
