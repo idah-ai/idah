@@ -23,6 +23,7 @@
   import Crosshair from "./Crosshair.svelte";
 
   import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -86,11 +87,12 @@
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
 
-  // Build a flat list of visible annotations (filtered by current frame)
+  // Build a flat list of visible annotations (filtered by current frame and hidden state)
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
     const f = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
     return items.filter((ann) => {
+      if (ann.hidden) return false;
       const s = ann.shape as { start?: number; end?: number };
       return s.start != null && s.end != null && f >= s.start && f <= s.end;
     });
@@ -362,7 +364,7 @@
           bind:this={_compRefs[i]}
           annotation={ann}
           selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id)}
+          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id) && !ann.locked}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
