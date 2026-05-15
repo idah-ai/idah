@@ -23,7 +23,7 @@
   import Crosshair from "./Crosshair.svelte";
 
   import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
