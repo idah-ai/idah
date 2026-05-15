@@ -8,7 +8,7 @@ import { initDataStores } from "./state/data.svelte";
 import { registerAllCommands } from "./commands";
 import { initToolbar } from "./toolbar";
 
-interface IActivityView {
+interface IPluginDriver {
   name: string;
   label: string;
   description: string;
@@ -21,7 +21,7 @@ interface IActivityView {
 
 let mounted: object;
 
-const idahVideoPlugin: IActivityView = {
+const idahVideoPlugin: IPluginDriver = {
   name: "idah-video",
   label: "IDAH Video Annotation",
   description: "A module for annotating video.",

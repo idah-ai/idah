@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // idb-driver.ts
 //
-// IDB-backed IAnnotationsDriverV2<Shape, Annotation>.
+// IndexedDB-backed IAnnotationsDriverV2<Shape, Annotation>.
 //
 // Generic over <Shape, Annotation> — treats both as opaque blobs.
 // No knowledge of video, image, CT, or any specific modality.
@@ -13,14 +13,7 @@
 // The queue implementation is the caller's concern.
 // ---------------------------------------------------------------------------
 
-import type {
-  IAnnotationsDriverV2,
-  IAnnotationRecord,
-  IFilter,
-  IFilterValue,
-  IRangeOp,
-} from "$idah/v2/types";
-import { InMemoryStore } from "./in-memory-store";
+import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../types";
 import { uuidv7 } from "uuidv7";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
@@ -30,7 +23,7 @@ const VERSION = 1;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SYNC_PAGE_SIZE       = 100;
+const SYNC_PAGE_SIZE = 100;
 const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
 
 // ─── ICrudDriver ──────────────────────────────────────────────────────────────
@@ -41,29 +34,11 @@ const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
  * serialisation are transport concerns, not consumer-facing API concerns.
  */
 export interface ICrudDriver<T extends { id: string }> {
-  list(params: {
-    filters:  Record<string, unknown>;
-    page:     number;
-    pageSize: number;
-  }): Promise<{ data: T[] }>;
+  list(params: { filters: Record<string, unknown>; page: number; pageSize: number }): Promise<{ data: T[] }>;
   create(record: T): Promise<T>;
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
 }
-
-export const createMemoryDriver = <T extends { id: string }>(
-  store: InMemoryStore<T>,
-): ICrudDriver<T> => ({
-  list: async ({ filters, page, pageSize }) => {
-    const { updated_at__gt: _gt, entry_id: _eid, ...rest } = filters as Record<string, unknown>;
-    const all   = store.fetch(Object.keys(rest).length > 0 ? rest as IFilter : undefined);
-    const start = (page - 1) * pageSize;
-    return { data: all.slice(start, start + pageSize) };
-  },
-  create: async (record) => store.create(record),
-  update: async (id, data) => { store.update(id, data); },
-  delete: async (id) => { store.delete(id); },
-});
 
 // ─── Minimal IDB helpers ──────────────────────────────────────────────────────
 
@@ -84,9 +59,9 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
   const name = `idahPlugin::${pluginId}`;
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(name, VERSION);
-    req.onsuccess       = (e) => resolve((e.target as IDBOpenDBRequest).result);
-    req.onerror         = (e) => reject(e);
-    req.onblocked       = () => console.warn(`[idb-driver] "${name}" upgrade blocked.`);
+    req.onsuccess = (e) => resolve((e.target as IDBOpenDBRequest).result);
+    req.onerror = (e) => reject(e);
+    req.onblocked = () => console.warn(`[idb-driver] "${name}" upgrade blocked.`);
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       for (const s of IDB_STORES) {
@@ -98,10 +73,6 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
 };
 
 // Fetch all annotations for an entry, optionally filtered client-side.
-// Intentionally uses a cursor rather than index-based range filtering to
-// support arbitrary nested-path and virtual-field predicates uniformly.
-// TODO: leverage IDB indexes for common filter patterns once the filter
-//       surface stabilises.
 const idbFetch = <T extends { id: string }>(
   db: IDBDatabase,
   entryId: string,
@@ -111,19 +82,27 @@ const idbFetch = <T extends { id: string }>(
   new Promise((resolve, reject) => {
     const results: T[] = [];
     const range = IDBKeyRange.only(entryId);
-    const req   = db.transaction(["annotations"], "readonly")
-      .objectStore("annotations").index("entryId").openCursor(range);
+    const req = db
+      .transaction(["annotations"], "readonly")
+      .objectStore("annotations")
+      .index("entryId")
+      .openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) { resolve(results); return; }
+      if (!c) {
+        resolve(results);
+        return;
+      }
       const rec = c.value;
       let matches = true;
       if (filter) {
         for (const [field, expected] of Object.entries(filter)) {
-          const val = virtualFields && virtualFields.has(field)
-            ? virtualFields.get(field)!(rec)
-            : resolvePath(rec, field);
-          if (!matchesFilter(val, expected)) { matches = false; break; }
+          const val =
+            virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
+          if (!matchesFilter(val, expected)) {
+            matches = false;
+            break;
+          }
         }
       }
       if (matches) results.push({ ...rec });
@@ -133,81 +112,75 @@ const idbFetch = <T extends { id: string }>(
   });
 
 /** Look up a single annotation by its compound key [entryId, id]. */
-const idbGet = <T extends { id: string }>(
-  db: IDBDatabase, entryId: string, id: string,
-): Promise<T | undefined> =>
+const idbGet = <T extends { id: string }>(db: IDBDatabase, entryId: string, id: string): Promise<T | undefined> =>
   new Promise((resolve, reject) => {
-    const req = db.transaction(["annotations"], "readonly")
-      .objectStore("annotations").get([entryId, id]);
+    const req = db.transaction(["annotations"], "readonly").objectStore("annotations").get([entryId, id]);
     req.onsuccess = (e) => resolve((e.target as IDBRequest<T | undefined>).result);
-    req.onerror   = reject;
+    req.onerror = reject;
   });
 
-const idbUpsertBatch = <T extends { id: string }>(
-  db: IDBDatabase, entryId: string, records: T[],
-): Promise<void> => {
+const idbUpsertBatch = <T extends { id: string }>(db: IDBDatabase, entryId: string, records: T[]): Promise<void> => {
   if (!records.length) return Promise.resolve();
   const tx = db.transaction(["annotations"], "readwrite");
   const os = tx.objectStore("annotations");
   for (const r of records) os.put({ ...r, entryId });
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
-    tx.onerror    = () => reject(tx.error);
-    tx.onabort    = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
   });
 };
 
-const idbCreate = <T extends { id: string }>(
-  db: IDBDatabase, entryId: string, record: T,
-): Promise<T> =>
+const idbCreate = <T extends { id: string }>(db: IDBDatabase, entryId: string, record: T): Promise<T> =>
   new Promise((resolve, reject) => {
-    const req = db.transaction(["annotations"], "readwrite")
-      .objectStore("annotations").add({ ...record, entryId });
+    const req = db
+      .transaction(["annotations"], "readwrite")
+      .objectStore("annotations")
+      .add({ ...record, entryId });
     req.onsuccess = () => resolve(record);
-    req.onerror   = reject;
+    req.onerror = reject;
   });
 
 const idbDelete = (db: IDBDatabase, entryId: string, id: string): Promise<void> =>
   new Promise((resolve, reject) => {
-    const req = db.transaction(["annotations"], "readwrite")
-      .objectStore("annotations").delete([entryId, id]);
+    const req = db.transaction(["annotations"], "readwrite").objectStore("annotations").delete([entryId, id]);
     req.onsuccess = () => resolve();
-    req.onerror   = reject;
+    req.onerror = reject;
   });
 
 /** Read the lastUpdatedAt timestamp for an entry, or 0 if never synced. */
 const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<number> =>
   new Promise((resolve, reject) => {
-    const req = db.transaction(["entries"], "readonly")
-      .objectStore("entries").get(entryId);
+    const req = db.transaction(["entries"], "readonly").objectStore("entries").get(entryId);
     req.onsuccess = (e) => resolve((e.target as IDBRequest).result?.lastUpdatedAt ?? 0);
-    req.onerror   = reject;
+    req.onerror = reject;
   });
 
 /** Write lastUpdatedAt for an entry. */
 const idbSetLastUpdated = (db: IDBDatabase, entryId: string, timestamp: number): Promise<void> =>
   new Promise((resolve, reject) => {
-    const req = db.transaction(["entries"], "readwrite")
-      .objectStore("entries").put({ entryId, lastUpdatedAt: timestamp, lastVisitedAt: timestamp });
+    const req = db
+      .transaction(["entries"], "readwrite")
+      .objectStore("entries")
+      .put({ entryId, lastUpdatedAt: timestamp, lastVisitedAt: timestamp });
     req.onsuccess = () => resolve();
-    req.onerror   = reject;
+    req.onerror = reject;
   });
 
 /**
  * Update lastVisitedAt for an entry without touching lastUpdatedAt.
- * Read-modify-write within a single transaction to preserve the sync watermark.
  */
 const idbMarkVisited = (db: IDBDatabase, entryId: string, timestamp: number): Promise<void> =>
   new Promise((resolve, reject) => {
-    const tx    = db.transaction(["entries"], "readwrite");
+    const tx = db.transaction(["entries"], "readwrite");
     const store = tx.objectStore("entries");
-    const req   = store.get(entryId);
+    const req = store.get(entryId);
     req.onsuccess = (e) => {
       const existing = (e.target as IDBRequest).result ?? { entryId, lastUpdatedAt: 0 };
       store.put({ ...existing, entryId, lastVisitedAt: timestamp });
     };
     tx.oncomplete = () => resolve();
-    tx.onerror    = () => reject(tx.error);
+    tx.onerror = () => reject(tx.error);
   });
 
 /** Return entryIds whose lastVisitedAt is older than cutoff. */
@@ -215,11 +188,13 @@ const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: number): Promise<string[]>
   new Promise((resolve, reject) => {
     const stale: string[] = [];
     const range = IDBKeyRange.upperBound(cutoff);
-    const req   = db.transaction(["entries"], "readonly")
-      .objectStore("entries").index("lastVisitedAt").openCursor(range);
+    const req = db.transaction(["entries"], "readonly").objectStore("entries").index("lastVisitedAt").openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) { resolve(stale); return; }
+      if (!c) {
+        resolve(stale);
+        return;
+      }
       stale.push(c.value.entryId);
       c.continue();
     };
@@ -228,15 +203,13 @@ const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: number): Promise<string[]>
 
 /**
  * Delete all annotations for an entry and its entry record in a single transaction.
- * Uses a cursor over the entryId index so every annotation is removed regardless
- * of how many there are, without needing to know individual ids upfront.
  */
 const idbPurgeEntry = (db: IDBDatabase, entryId: string): Promise<void> =>
   new Promise((resolve, reject) => {
-    const tx        = db.transaction(["annotations", "entries"], "readwrite");
+    const tx = db.transaction(["annotations", "entries"], "readwrite");
     const annoStore = tx.objectStore("annotations");
-    const range     = IDBKeyRange.only(entryId);
-    const req       = annoStore.index("entryId").openCursor(range);
+    const range = IDBKeyRange.only(entryId);
+    const req = annoStore.index("entryId").openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
       if (!c) {
@@ -247,17 +220,14 @@ const idbPurgeEntry = (db: IDBDatabase, entryId: string): Promise<void> =>
       c.continue();
     };
     tx.oncomplete = () => resolve();
-    tx.onerror    = () => reject(tx.error);
-    tx.onabort    = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
   });
 
 // ─── Filter engine ────────────────────────────────────────────────────────────
 
 const resolvePath = (obj: unknown, path: string): unknown =>
-  path.split(".").reduce<unknown>(
-    (acc, k) => acc != null ? (acc as Record<string, unknown>)[k] : undefined,
-    obj,
-  );
+  path.split(".").reduce<unknown>((acc, k) => (acc != null ? (acc as Record<string, unknown>)[k] : undefined), obj);
 
 function matchesFilter(fieldValue: unknown, filterValue: IFilterValue): boolean {
   // Simple equality (string / number)
@@ -298,7 +268,7 @@ export interface IndexedDbAnnotationsDriverConfig<
   Shape = Record<string, unknown>,
   Annotation = Record<string, unknown>,
 > {
-  entryId:  string;
+  entryId: string;
   pluginId: string;
   /**
    * Backend transport used exclusively by the sync loop.
@@ -308,16 +278,11 @@ export interface IndexedDbAnnotationsDriverConfig<
    */
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
   enqueue: (op: () => Promise<void>) => void;
-  // TODO: enqueue must handle errors internally (log, retry, dead-letter, etc.)
-  //       — this driver intentionally does not catch errors thrown by enqueued ops.
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
-export const createIndexedDbAnnotationsDriver = <
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
->(
+export const createIndexedDbAnnotationsDriver = <Shape = Record<string, unknown>, Annotation = Record<string, unknown>>(
   config: IndexedDbAnnotationsDriverConfig<Shape, Annotation>,
 ): IAnnotationsDriverV2<Shape, Annotation> | null => {
   // SSR / non-browser environments: signal to the caller that IDB is unavailable
@@ -340,11 +305,11 @@ export const createIndexedDbAnnotationsDriver = <
 
   // Guards against enqueueing multiple overlapping delta-syncs for the same
   // driver instance (e.g. rapid re-renders or polling).
-  let syncEnqueued   = false;
+  let syncEnqueued = false;
   // Purge runs once per driver instance; no reset needed.
   let purgeScheduled = false;
   // Visit mark is written once, before the purge is ever enqueued.
-  let visitMarked    = false;
+  let visitMarked = false;
 
   return {
     registerField(name, fn) {
@@ -355,7 +320,6 @@ export const createIndexedDbAnnotationsDriver = <
       const db = await getDb();
 
       // Stamp the current entry as visited before the purge can run.
-      // Awaited so the write is durable in IDB before we enqueue anything.
       if (!visitMarked) {
         visitMarked = true;
         await idbMarkVisited(db, entryId, Date.now());
@@ -365,7 +329,7 @@ export const createIndexedDbAnnotationsDriver = <
       if (!purgeScheduled) {
         purgeScheduled = true;
         enqueue(async () => {
-          const cutoff   = Date.now() - EXPIRATION_PERIOD_MS;
+          const cutoff = Date.now() - EXPIRATION_PERIOD_MS;
           const staleIds = await idbGetStaleEntryIds(db, cutoff);
           for (const staleId of staleIds) await idbPurgeEntry(db, staleId);
         });
@@ -376,17 +340,17 @@ export const createIndexedDbAnnotationsDriver = <
       const results = await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
 
       // Background delta-refresh: enqueue at most one sync at a time.
-      // The next fetch after the current sync completes will enqueue a fresh one.
       if (!syncEnqueued) {
         syncEnqueued = true;
         enqueue(async () => {
           try {
             const lastUpdated = await idbGetLastUpdated(db, entryId);
-            const fetchedAt   = Date.now();
-            let page = 1, hasMore = true;
+            const fetchedAt = Date.now();
+            let page = 1,
+              hasMore = true;
             while (hasMore) {
               const response = await backend.list({
-                filters:  { entry_id: entryId, updated_at__gt: lastUpdated },
+                filters: { entry_id: entryId, updated_at__gt: lastUpdated },
                 page,
                 pageSize: SYNC_PAGE_SIZE,
               });
@@ -420,8 +384,6 @@ export const createIndexedDbAnnotationsDriver = <
 
     async create(data): Promise<IAnnotationRecord<Shape, Annotation>> {
       const db = await getDb();
-      // IAnnotationRecord.id is required (string), so data.id is always defined.
-      // uuidv7() is kept as a safety net for untyped callers passing a partial record.
       const record = { ...data, id: data.id ?? uuidv7() } as IAnnotationRecord<Shape, Annotation>;
       await idbCreate(db, entryId, record);
       enqueue(() => backend.create(record).then(() => {}));

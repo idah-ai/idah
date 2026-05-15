@@ -3,16 +3,22 @@
 
   import Button from "@/components/ui/button/button.svelte";
 
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IdahDriverV2 } from "@/plugin/v2/idah-driver";
 
   type Props = {
-    context: IActivityContext;
+    driver: IdahDriverV2;
   };
 
-  let { context }: Props = $props();
+  let { driver }: Props = $props();
 </script>
 
-<Button variant="outline" size="sm" onclick={context.back}>
+<Button
+  variant="outline"
+  size="sm"
+  onclick={() => {
+    // driver.back
+  }}
+>
   <ArrowLeftIcon />
   Back
 </Button>

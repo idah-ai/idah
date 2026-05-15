@@ -23,6 +23,7 @@
   import { parseNoteFeedRecordToINoteFeed } from "@/plugin/NoteDriver";
   import { refetches } from "@/utils/refetch";
 
+  // TODO: Replace IActivityContext with IIdahDriverV2 once the note overlay is migrated to V2 driver
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Props
@@ -70,27 +71,27 @@
     /**
      * Handle when a note feed is selected from sidebar
      */
-    context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
-      if (!noteFeedId) {
-        selectedNoteFeed = null;
-        selectedNoteCommentId = null;
-        return;
-      }
+    // context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
+    //   if (!noteFeedId) {
+    //     selectedNoteFeed = null;
+    //     selectedNoteCommentId = null;
+    //     return;
+    //   }
 
-      const noteFeed = await loadNoteFeed(noteFeedId);
-      selectedNoteCommentId = noteCommentId || null;
-      context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
-    });
+    //   const noteFeed = await loadNoteFeed(noteFeedId);
+    //   selectedNoteCommentId = noteCommentId || null;
+    //   context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
+    // });
 
     /**
      * Handle when a click is made to show new note feed popup
      */
-    context.notes.onNewNoteFeedOpenChange((data) => {
-      showNewNoteFeedPopup = true;
-      newNoteFeed.anchor_type = data.anchor_type;
-      newNoteFeed.position = data.position || {};
-      newNoteFeed.annotation_id = data.annotation_id || null;
-    });
+    // context.notes.onNewNoteFeedOpenChange((data) => {
+    //   showNewNoteFeedPopup = true;
+    //   newNoteFeed.anchor_type = data.anchor_type;
+    //   newNoteFeed.position = data.position || {};
+    //   newNoteFeed.annotation_id = data.annotation_id || null;
+    // });
   });
 
   function closeSelectedNoteFeedPopup() {

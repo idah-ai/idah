@@ -30,21 +30,21 @@
   import { refetches } from "@/utils/refetch";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
+  import type { IdahDriverV2 } from "@/plugin/v2/idah-driver";
 
   // Props
   interface Props {
-    context: IActivityContext;
+    driver: IdahDriverV2;
     open: boolean;
     onSidebarClose: () => void;
   }
-  let { context, open, onSidebarClose }: Props = $props();
+  let { driver, open, onSidebarClose }: Props = $props();
 
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
   let selectedNoteCommentId: string | null = $state(null);
-  let isAllowToCreateNewNote = $derived(["annotate", "review"].includes(context.workflowStep));
+  let isAllowToCreateNewNote = $derived(["annotate", "review"].includes(driver.workflowStep));
   let isListView = $derived(!selectedNoteFeed);
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
@@ -104,7 +104,7 @@
       }
 
       default: {
-        context.notes.gotoFeed(noteFeed.id);
+        // driver.notes.gotoFeed(noteFeed.id);
         break;
       }
     }
@@ -124,7 +124,7 @@
   async function loadNoteFeeds() {
     const noteFeedsRes = await noteFeedsBackendDataSource.list({
       filters: {
-        entry_id: context.id,
+        entry_id: driver.id,
         ...noteFeedFilters,
       },
       pagination: {
@@ -158,7 +158,7 @@
       /** Create a general note feed, if current view is list */
       await noteFeedsBackendDataSource.create({
         attributes: {
-          entry_id: context.id,
+          entry_id: driver.id,
           annotation_id: undefined,
           anchor_type: "entry",
           content_md: contentMd,

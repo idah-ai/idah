@@ -39,15 +39,15 @@
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "@/plugin/layout/header/annotation-header-bar.constants";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
+  import type { IIdahDriverV2 } from "@/plugin/v2/types";
 
   // Props
   interface Props {
-    context: IActivityContext;
+    driver: IIdahDriverV2;
     pluginContainerElement: HTMLElement | null;
   }
-  let { context, pluginContainerElement }: Props = $props();
+  let { driver, pluginContainerElement }: Props = $props();
 
   // Variables
   let frameStep: number = $state(Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10);
@@ -102,18 +102,18 @@
     openNoteSidebar = false;
 
     // Reset selected note feed when closing sidebar
-    context.notes.gotoFeed(null);
+    driver.notes.gotoFeed(null);
   }
 
   async function submitAnnotation() {
     loading = true;
-    await context.submit();
+    await driver.submit();
   }
 
   async function reviewAnnotation(props: { approved: boolean }) {
     const { approved } = props;
     loading = true;
-    await context.submit({ approved });
+    await driver.submit({ approved });
   }
 
   function setFrameStep(inputValue: number) {
@@ -127,7 +127,7 @@
   }
 
   function toggleCommand() {
-    context.commands.run("command_dialog");
+    driver.commands.run("command_dialog");
   }
 </script>
 
@@ -135,7 +135,7 @@
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
     <ToolTooltip
       label="Shortcuts"
-      shortcut={getShortcut(context.shortcutReferences?.["command_dialog"].keyCombinations)}
+      shortcut={getShortcut(driver.shortcutReferences?.["command_dialog"].keyCombinations)}
       align="center"
       delayDuration={100}
     >
@@ -233,9 +233,9 @@
     {/each}
   </div>
 
-  {#if context.workflowStep === "done"}
+  {#if driver.workflowStep === "done"}
     <!-- TODO: What to show? -->
-  {:else if context.workflowStep === "review"}
+  {:else if driver.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>
       {#snippet trigger({ props })}
         <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
@@ -249,6 +249,6 @@
   {/if}
 </div>
 
-<NoteSidebar {context} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
+<NoteSidebar {driver} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
 
-<NoteOverlay {context} {pluginContainerElement} />
+<NoteOverlay {driver} {pluginContainerElement} />
