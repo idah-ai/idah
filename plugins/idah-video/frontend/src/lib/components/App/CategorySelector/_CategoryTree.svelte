@@ -1,14 +1,5 @@
 <script lang="ts">
-  import {
-    ChevronRightIcon,
-    CircleSmallIcon,
-    EyeIcon,
-    EyeOffIcon,
-    LockIcon,
-    LockOpenIcon,
-    PlusIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "@lucide/svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/Collapsible";
@@ -36,6 +27,7 @@
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
+  import { getCategoryActions } from "./menus";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -206,14 +198,6 @@
     };
   }
 
-  function toggleCategoryVisibility(categoryId: string) {
-    getDriver().command.call("annotation.toggle_category_visibility", { category: categoryId });
-  }
-
-  function toggleCategoryEditability(categoryId: string) {
-    getDriver().command.call("annotation.toggle_category_editability", { category: categoryId });
-  }
-
   function deleteCategoryAnnotations(categoryId: string) {
     getDriver().command.call("annotation.delete_category", { category: categoryId });
   }
@@ -260,8 +244,6 @@
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
-      {@const isCategoryHidden = items.some((a) => a.hidden && a.value?.category === category.id)}
-      {@const isCategoryLocked = items.some((a) => a.locked && a.value?.category === category.id)}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -358,47 +340,31 @@
             <CategoryName name={category.name} />
 
             <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
+            {@const actions = getCategoryActions({
+              categoryId: category.id,
+              items: annotations,
+              onClickDelete: () => {
+                categoryToDelete = category.id;
+                openConfirmCategoryDeleteDialog = true;
+              },
+            })}
+
+            <!-- Icon Actions -->
             <div class="ml-auto flex content-center items-center gap-0">
-              <!-- BUTTON::HIDE/SHOW ALL ANNOTATIONS -->
-              <CategoryAction
-                class={cn("flex", {
-                  "opacity-0 group-hover:opacity-100": !isCategoryHidden,
-                  "opacity-100": isCategoryHidden,
-                })}
-                onclick={() => toggleCategoryVisibility(category.id)}
-              >
-                {#if isCategoryHidden}
-                  <EyeOffIcon />
-                {:else}
-                  <EyeIcon />
-                {/if}
-              </CategoryAction>
-
-              <!-- BUTTON::LOCK & UNLOCK ALL ANNOTATIONS -->
-              <CategoryAction
-                class={cn("flex", {
-                  "opacity-0 group-hover:opacity-100": !isCategoryLocked,
-                  "opacity-100": isCategoryLocked,
-                })}
-                onclick={() => toggleCategoryEditability(category.id)}
-              >
-                {#if isCategoryLocked}
-                  <LockIcon />
-                {:else}
-                  <LockOpenIcon />
-                {/if}
-              </CategoryAction>
-
-              <!-- BUTTON::DELETE ALL ANNOTATIONS -->
-              <CategoryAction
-                class={cn("flex opacity-0 group-hover:opacity-100")}
-                onclick={() => {
-                  openConfirmCategoryDeleteDialog = true;
-                  categoryToDelete = category.id;
-                }}
-              >
-                <Trash2Icon />
-              </CategoryAction>
+              {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+                <CategoryAction
+                  {label}
+                  {icon}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onClick(e);
+                  }}
+                  class={cn({
+                    "opacity-100": alwaysShow,
+                    "opacity-0 group-hover:opacity-100": !alwaysShow,
+                  })}
+                ></CategoryAction>
+              {/each}
 
               {#if view === "sidebar" && count > 0}
                 <AnnotationCountBadge class="mr-2 ml-1" {count} />
