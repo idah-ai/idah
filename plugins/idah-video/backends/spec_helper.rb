@@ -23,15 +23,19 @@ loader = Zeitwerk::Loader.new
 # Dynamically load only existing backend service directories
 backend_services = ["media", "sync"]
 backend_services.each do |service|
-  service_path = "./backends/#{service}"
+  service_path = "./#{service}"
   loader.push_dir(service_path) if Dir.exist?(service_path)
 end
+
+# Load spec_data directory for test support classes (e.g., FakeProcessorContext)
+spec_data_path = "./spec_data"
+loader.push_dir(spec_data_path) if Dir.exist?(spec_data_path)
 
 loader.setup
 
 SimpleCov.start do
   backend_services.each do |service|
-    add_group "#{service.capitalize} Service", service if Dir.exist?("./backends/#{service}")
+    add_group "#{service.capitalize} Service", service if Dir.exist?("./#{service}")
   end
 
   add_filter /_spec.rb$/
