@@ -6,8 +6,15 @@
   import Badge from "$lib/components/ui/Badge/Badge.svelte";
   import Icon from "$lib/components/ui/Icon";
 
+  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+
+  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import Button from "$lib/components/ui/Button/Button.svelte";
+
+  import { cn } from "$lib/utils";
 
   import BooleanProperty from "$lib/components/App/SelectionPanel/Properties/_BooleanProperty.svelte";
   import IntegerProperty from "$lib/components/App/SelectionPanel/Properties/_IntegerProperty.svelte";
@@ -19,10 +26,23 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { data } from "$lib/state/data.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
+  import type { IVideoAnnotationRecord } from "$lib/types";
 
   import type { IConfigProperty } from "$idah/v2/types";
   import type { IVideoAnnotationValue } from "$lib/types";
+
+  // Represents a group of annotations on the current frame (deduplicated by groupId)
+  type CurrentFrameGroup = {
+    groupId: string;
+    displayName: string;
+    shapeType: string;
+    color: string | null;
+    isHidden: boolean;
+    isLocked: boolean;
+    earliestStart: number;
+  };
 
   type Props = {
     selectedCategory: string;
@@ -85,7 +105,52 @@
   });
 
   // -----------------------------------------------------------------------
-  // Handlers
+  // Annotations on current frame (for default mode, no selection)
+  // -----------------------------------------------------------------------
+  let currentFrame = $derived(viewport.video.currentFrame.value);
+  let currentFrameGroups = $derived.by<CurrentFrameGroup[]>(() => {
+    if (!data.annotations) return [];
+    const items = data.annotations.items;
+    const frame = currentFrame;
+
+    // Filter and group annotations by groupId (same as groupAnnotations in group-annotation.svelte.ts)
+    const map = new Map<string, IVideoAnnotationRecord[]>();
+    for (const ann of items) {
+      const shape = ann.shape as { start?: number; end?: number };
+      if (shape.start === undefined || shape.end === undefined) continue;
+      if (shape.start > frame || shape.end < frame) continue;
+      const gid = ann.metadata?.group_id ?? ann.id;
+      if (!map.has(gid)) map.set(gid, []);
+      map.get(gid)!.push(ann);
+    }
+
+    // Sort groups: compareGroups sorts by earliest start of first annotation in each group
+    const groups: CurrentFrameGroup[] = [];
+    for (const [groupId, anns] of map.entries()) {
+      // Sort annotations within group by start frame
+      anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end);
+
+      const firstAnn = anns[0];
+      const annShapeType = firstAnn.shape.type as string;
+      const annConfig = getDriver().config[annShapeType];
+      const annCategory = annConfig?.values?.find((v) => v.id === firstAnn.value?.category);
+      const annColor = annCategory?.color ?? null;
+      const lastPart = groupId.split("-").pop() ?? "";
+      const displayName = annCategory ? `${annCategory.label}-${lastPart}` : (firstAnn.value?.category ?? "Uncategorized");
+
+      const isHidden = anns.some((a) => a.hidden);
+      const isLocked = anns.some((a) => a.locked);
+      const earliestStart = anns.reduce((min, a) => Math.min(min, a.shape.start), Infinity);
+
+      groups.push({ groupId, displayName, shapeType: annShapeType, color: annColor, isHidden, isLocked, earliestStart });
+    }
+
+    // Sort by earliest start (same as compareGroups)
+    groups.sort((a, b) => a.earliestStart - b.earliestStart);
+
+    return groups;
+  });
+
   // -----------------------------------------------------------------------
   // Handlers
   // -----------------------------------------------------------------------
@@ -155,8 +220,99 @@
   </div>
 {/snippet}
 
-<!-- ============ CREATE MODE ============ -->
+<!-- ============ ANNOTATIONS ON CURRENT FRAME (default mode, no selection) ============ -->
 {#if !sel}
+  {#if viewport.mode === "default" && currentFrameGroups.length > 0}
+    <section class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <Text weight="semibold">Annotations</Text>
+        <Badge variant="secondary">{currentFrameGroups.length}</Badge>
+      </div>
+      <div class="flex flex-col gap-1">
+{#each currentFrameGroups as group (group.groupId)}
+  <div class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent">
+    <button
+      class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+      onclick={() => selection.selectGroup(group.groupId)}
+    >
+      {#if group.shapeType === VIDEO_POLYGON}
+        <Icon src={polygonIconSvg} color={group.color} />
+      {:else}
+        <Icon src={vectorSquareIconSvg} color={group.color} />
+      {/if}
+      <span class="truncate">{group.displayName}</span>
+    </button>
+
+    <div class="ml-auto flex shrink-0 items-center gap-0">
+      <!-- BUTTON::HIDE/SHOW -->
+      <div class={cn("", group.isHidden ? "flex" : "hidden group-hover:flex")}>
+        <ToolTooltip label={group.isHidden ? "Show Group" : "Hide Group"}>
+          {#snippet trigger()}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onclick={(e: MouseEvent) => {
+                e.stopPropagation();
+                getDriver().command.call("annotation.toggleGroupVisibility", { groupId: group.groupId });
+              }}
+            >
+              {#if group.isHidden}
+                <EyeOffIcon />
+              {:else}
+                <EyeIcon />
+              {/if}
+            </Button>
+          {/snippet}
+        </ToolTooltip>
+      </div>
+
+      <!-- BUTTON::LOCK/UNLOCK -->
+      <div class={cn("", group.isLocked ? "flex" : "hidden group-hover:flex")}>
+        <ToolTooltip label={group.isLocked ? "Unlock Group" : "Lock Group"}>
+          {#snippet trigger()}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onclick={(e: MouseEvent) => {
+                e.stopPropagation();
+                getDriver().command.call("annotation.toggleGroupEditability", { groupId: group.groupId });
+              }}
+            >
+              {#if group.isLocked}
+                <LockIcon />
+              {:else}
+                <LockOpenIcon />
+              {/if}
+            </Button>
+          {/snippet}
+        </ToolTooltip>
+      </div>
+
+      <!-- BUTTON::DELETE -->
+      <div class="hidden group-hover:flex">
+        <ToolTooltip label="Delete group">
+          {#snippet trigger()}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onclick={(e: MouseEvent) => {
+                e.stopPropagation();
+                getDriver().command.call("annotation.deleteGroup", { groupId: group.groupId });
+              }}
+            >
+              <Trash2Icon />
+            </Button>
+          {/snippet}
+        </ToolTooltip>
+      </div>
+    </div>
+  </div>
+{/each}
+      </div>
+    </section>
+    <Separator class="my-2" />
+  {/if}
+
   {#if config}
     <section class="flex flex-col gap-3">
       <div class="flex items-center gap-2">
@@ -268,15 +424,18 @@
 
 <!-- ============ ANNOTATION SELECTION ============ -->
 {:else if sel.type === "annotation"}
+  {@const selAnnGroupId = sel.annotation.metadata?.group_id ?? sel.annotation.id}
+  {@const selAnnGroupIdLastPart = selAnnGroupId.split("-").pop()}
+  {@const selAnnDisplayName = category ? `${category.label}-${selAnnGroupIdLastPart}` : undefined}
   <section class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
         <Text weight="semibold">{modeTitle}</Text>
         <Badge variant="info">EDIT</Badge>
       </div>
-      {#if category}
+      {#if selAnnDisplayName}
         <Text size="sm" class="text-muted-foreground">
-          {category.label}
+          {selAnnDisplayName}
         </Text>
       {/if}
     </div>
