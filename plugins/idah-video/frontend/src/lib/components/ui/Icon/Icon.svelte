@@ -9,6 +9,6 @@
   let { src, color, class: className }: Props = $props();
 </script>
 
-<div class={cn("shrink-0", className)} style={color ? `color: ${color}` : ""}>
+<div class={cn("shrink-0", color && "[&>svg]:!text-current", className)} style={color ? `color: ${color}` : ""}>
   {@html src}
 </div>
