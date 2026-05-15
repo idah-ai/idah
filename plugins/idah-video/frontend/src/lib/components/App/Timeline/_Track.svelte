@@ -45,7 +45,7 @@
     // so clientX - rect.left is the pixel offset within the content.
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relX = e.clientX - rect.left;
-    const frame = Math.round(relX / scale);
+    const frame = Math.floor(relX / scale);
 
     if (trackId) {
       const contextMenuProps: ContextMenuComponentProps = {
@@ -54,6 +54,9 @@
         frame,
         items: items as any,
       };
+
+      /** Select annotation group */
+      selection.selectGroup(trackId);
 
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }

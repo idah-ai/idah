@@ -36,8 +36,12 @@ export function register(driver: IIdahDriverV2): void {
         return {
           command: command as any,
           do() {},
-          isCombinable() { return false; },
-          combine(p: any) { return p; },
+          isCombinable() {
+            return false;
+          },
+          combine(p: any) {
+            return p;
+          },
         };
       }
 
@@ -66,8 +70,12 @@ export function register(driver: IIdahDriverV2): void {
         return {
           command: command as any,
           do() {},
-          isCombinable() { return false; },
-          combine(p: any) { return p; },
+          isCombinable() {
+            return false;
+          },
+          combine(p: any) {
+            return p;
+          },
         };
       }
 
@@ -76,13 +84,23 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          viewport.timeline.range = {
-            startRange: Math.max(0, start - margin),
-            endRange: end + margin,
-          };
+          const handler = viewport.timeline._focusHandler;
+          if (handler) {
+            handler(Math.max(0, start - margin), end + margin);
+          } else {
+            // Fallback if Timeline hasn't mounted yet
+            viewport.timeline.range = {
+              startRange: Math.max(0, start - margin),
+              endRange: end + margin,
+            };
+          }
         },
-        isCombinable() { return false; },
-        combine(p: any) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p: any) {
+          return p;
+        },
       };
     },
     group: command.group,

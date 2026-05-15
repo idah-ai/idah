@@ -2,22 +2,36 @@
 // V2 IdahDriver — the main in-memory mock driver hub
 // ---------------------------------------------------------------------------
 import type {
-  IIdahDriverV2, IMediaInfo, IConfig, IShapeConfig,
-  IAnnotationsDriverV2, INotesDriverV2, ICommandDriverV2,
-  IToolbarDriverV2, IAnnotationRecord, INoteRecord, IFilter,
-  ICommandAction, ICommandDescriptor, IModeEvent, ISyncEvent,
-  ISyncErrorEvent, IShortcut, ICommandStackEntry, IToolbarItem,
-  ToolbarItemOptions, Unsubscribe,
+  IIdahDriverV2,
+  IMediaInfo,
+  IConfig,
+  IShapeConfig,
+  IAnnotationsDriverV2,
+  INotesDriverV2,
+  ICommandDriverV2,
+  IToolbarDriverV2,
+  IAnnotationRecord,
+  INoteRecord,
+  IFilter,
+  ICommandAction,
+  ICommandDescriptor,
+  IModeEvent,
+  ISyncEvent,
+  ISyncErrorEvent,
+  IShortcut,
+  ICommandStackEntry,
+  IToolbarItem,
+  ToolbarItemOptions,
+  Unsubscribe,
 } from "$idah/v2/types";
-import type {
-  IVideoAnnotationShape, IVideoAnnotationValue, IVideoFrameSelection,
-} from "$lib/types";
+import type { IVideoAnnotationShape, IVideoAnnotationValue, IVideoFrameSelection } from "$lib/types";
 
 import { InMemoryStore } from "./in-memory-store";
 import { CommandManagerV2 } from "./command-manager";
 import { ToolbarManagerV2 } from "./toolbar-manager";
 import { AstProcessor } from "./ast-evaluator";
 import { modKey } from "$lib/utils/browser";
+import { uuidv7 } from "uuidv7";
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -26,64 +40,148 @@ type SampleAnnotation = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotatio
 
 const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
   {
-    id: "ann-v2-001",
+    id: uuidv7(),
     shape: {
       type: "idah-video:bounding-box",
-      start: 0, end: 120,
+      start: 0,
+      end: 120,
       frames: [
-        { frame: 0,   points: [[0.2, 0.3], [0.45, 0.3], [0.45, 0.5], [0.2, 0.5]], angle: 0 },
-        { frame: 60,  points: [[0.22, 0.28], [0.48, 0.28], [0.48, 0.52], [0.22, 0.52]], angle: 2 },
-        { frame: 120, points: [[0.25, 0.25], [0.50, 0.25], [0.50, 0.55], [0.25, 0.55]], angle: 3 },
+        {
+          frame: 0,
+          points: [
+            [0.2, 0.3],
+            [0.45, 0.3],
+            [0.45, 0.5],
+            [0.2, 0.5],
+          ],
+          angle: 0,
+        },
+        {
+          frame: 60,
+          points: [
+            [0.22, 0.28],
+            [0.48, 0.28],
+            [0.48, 0.52],
+            [0.22, 0.52],
+          ],
+          angle: 2,
+        },
+        {
+          frame: 120,
+          points: [
+            [0.25, 0.25],
+            [0.5, 0.25],
+            [0.5, 0.55],
+            [0.25, 0.55],
+          ],
+          angle: 3,
+        },
       ],
     } as IVideoAnnotationShape,
     value: { category: "vehicles/car", label: "car" },
   },
   {
-    id: "ann-v2-002",
+    id: uuidv7(),
     shape: {
       type: "idah-video:bounding-box",
-      start: 50, end: 300,
+      start: 50,
+      end: 300,
       frames: [
-        { frame: 50,  points: [[0.6, 0.4], [0.8, 0.4], [0.8, 0.7], [0.6, 0.7]], angle: 0 },
-        { frame: 150, points: [[0.58, 0.38], [0.78, 0.38], [0.78, 0.68], [0.58, 0.68]], angle: -1 },
-        { frame: 300, points: [[0.55, 0.35], [0.75, 0.35], [0.75, 0.65], [0.55, 0.65]], angle: -2 },
+        {
+          frame: 50,
+          points: [
+            [0.6, 0.4],
+            [0.8, 0.4],
+            [0.8, 0.7],
+            [0.6, 0.7],
+          ],
+          angle: 0,
+        },
+        {
+          frame: 150,
+          points: [
+            [0.58, 0.38],
+            [0.78, 0.38],
+            [0.78, 0.68],
+            [0.58, 0.68],
+          ],
+          angle: -1,
+        },
+        {
+          frame: 300,
+          points: [
+            [0.55, 0.35],
+            [0.75, 0.35],
+            [0.75, 0.65],
+            [0.55, 0.65],
+          ],
+          angle: -2,
+        },
       ],
     } as IVideoAnnotationShape,
     value: { category: "vehicles/bus", label: "bus" },
   },
   {
-    id: "ann-v2-003",
+    id: uuidv7(),
     shape: {
       type: "idah-video:polygon",
-      start: 30, end: 190,
+      start: 30,
+      end: 190,
       frames: [
         // Frame 30 — trapezoid (4 vertices)
-        { frame: 30,  angle: 0, points: [[0.12, 0.05], [0.38, 0.05], [0.42, 0.35], [0.08, 0.35]] },
+        {
+          frame: 30,
+          angle: 0,
+          points: [
+            [0.12, 0.05],
+            [0.38, 0.05],
+            [0.42, 0.35],
+            [0.08, 0.35],
+          ],
+        },
         // Frame 110 — 5-pointed star (10 vertices)
         {
-          frame: 110, angle: 0,
+          frame: 110,
+          angle: 0,
           points: [
-            [0.250, 0.050], [0.285, 0.151], [0.393, 0.154], [0.307, 0.219],
-            [0.338, 0.321], [0.250, 0.260], [0.162, 0.321], [0.193, 0.219],
-            [0.107, 0.154], [0.215, 0.151],
+            [0.25, 0.05],
+            [0.285, 0.151],
+            [0.393, 0.154],
+            [0.307, 0.219],
+            [0.338, 0.321],
+            [0.25, 0.26],
+            [0.162, 0.321],
+            [0.193, 0.219],
+            [0.107, 0.154],
+            [0.215, 0.151],
           ],
         },
         // Frame 190 — crescent
         {
-          frame: 190, angle: 0,
-          points:
-            [
-              [0.288984375, 0.3175], [0.263671875, 0.34],
-              [0.23554687500000002, 0.3425], [0.208828125, 0.325],
-              [0.1884375, 0.29], [0.1771875, 0.24375],
-              [0.1771875, 0.19375], [0.1884375, 0.1475],
-              [0.208828125, 0.1125], [0.23554687500000002, 0.095],
-              [0.263671875, 0.0975], [0.288984375, 0.12],
-              [0.263671875, 0.1125], [0.2390625, 0.125],
-              [0.21937500000000001, 0.155], [0.208828125, 0.19625],
-              [0.208828125, 0.24125], [0.21937500000000001, 0.2825],
-              [0.2390625, 0.3125], [0.263671875, 0.325]
-            ],
+          frame: 190,
+          angle: 0,
+          points: [
+            [0.288984375, 0.3175],
+            [0.263671875, 0.34],
+            [0.23554687500000002, 0.3425],
+            [0.208828125, 0.325],
+            [0.1884375, 0.29],
+            [0.1771875, 0.24375],
+            [0.1771875, 0.19375],
+            [0.1884375, 0.1475],
+            [0.208828125, 0.1125],
+            [0.23554687500000002, 0.095],
+            [0.263671875, 0.0975],
+            [0.288984375, 0.12],
+            [0.263671875, 0.1125],
+            [0.2390625, 0.125],
+            [0.21937500000000001, 0.155],
+            [0.208828125, 0.19625],
+            [0.208828125, 0.24125],
+            [0.21937500000000001, 0.2825],
+            [0.2390625, 0.3125],
+            [0.263671875, 0.325],
+          ],
         },
       ],
     } as IVideoAnnotationShape,
@@ -92,7 +190,12 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
 ];
 
 const SAMPLE_NOTES: INoteRecord[] = [
-  { id: "note-v2-001", annotation_id: "ann-v2-001", content_md: "Check this car — front bumper unclear", resolved: false },
+  {
+    id: "note-v2-001",
+    annotation_id: "ann-v2-001",
+    content_md: "Check this car — front bumper unclear",
+    resolved: false,
+  },
   { id: "note-v2-002", annotation_id: "ann-v2-002", content_md: "Bus has a logo on the side", resolved: false },
 ];
 
@@ -180,10 +283,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     return this.mgr.getKeyMapForMode(mode);
   }
 
-  getShortcutReferences(): Record<
-    string,
-    { label: string; description: string; keyCombinations: string[] }
-  > {
+  getShortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }> {
     return this.mgr.getShortcutReferences();
   }
 }
@@ -292,7 +392,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           label: "Number of wheels",
           format: { minimum: 0, maximum: 24, step: 1 },
           required: true,
-          visibility: ["in", [["get", ["value.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]]] as any,
+          visibility: [
+            "in",
+            [["get", ["value.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
+          ] as any,
           description: "How many wheels does the object have?",
         },
         {
@@ -317,7 +420,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     "idah-video:polygon": {
       values: [
         { id: "road-sign", color: "#FFD600", label: "Road Sign", text_color: "#000000", description: "A road sign" },
-        { id: "traffic-light", color: "#FF6D00", label: "Traffic Light", text_color: "#FFFFFF", description: "A traffic light" },
+        {
+          id: "traffic-light",
+          color: "#FF6D00",
+          label: "Traffic Light",
+          text_color: "#FFFFFF",
+          description: "A traffic light",
+        },
         { id: "pedestrian", color: "#AA00FF", label: "Pedestrian", text_color: "#FFFFFF", description: "A pedestrian" },
       ],
       properties: [
@@ -388,10 +497,23 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       shortDescription: "Undo",
       longDescription: "Undo the last action",
       callback: () => ({
-        command: { name: "core.undo", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
-        do() { cmdMgr.undo(); },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        command: {
+          name: "core.undo",
+          group: "General",
+          modes: [],
+          shortcut: null,
+          shortDescription: null,
+          longDescription: null,
+        },
+        do() {
+          cmdMgr.undo();
+        },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       }),
     });
 
@@ -403,10 +525,23 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       shortDescription: "Redo",
       longDescription: "Redo the last undone action",
       callback: () => ({
-        command: { name: "core.redo", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
-        do() { cmdMgr.redo(); },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        command: {
+          name: "core.redo",
+          group: "General",
+          modes: [],
+          shortcut: null,
+          shortDescription: null,
+          longDescription: null,
+        },
+        do() {
+          cmdMgr.redo();
+        },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       }),
     });
 
@@ -419,10 +554,21 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       shortDescription: null,
       longDescription: null,
       callback: () => ({
-        command: { name: "core.palette", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
+        command: {
+          name: "core.palette",
+          group: "General",
+          modes: [],
+          shortcut: null,
+          shortDescription: null,
+          longDescription: null,
+        },
         do() {},
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       }),
     });
 
@@ -434,12 +580,23 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       shortDescription: "Exit current mode",
       longDescription: "Return to the default selection mode",
       callback: () => ({
-        command: { name: "core.exit_mode", group: "General", modes: [], shortcut: null, shortDescription: null, longDescription: null },
+        command: {
+          name: "core.exit_mode",
+          group: "General",
+          modes: [],
+          shortcut: null,
+          shortDescription: null,
+          longDescription: null,
+        },
         do() {
           driver.setMode("default");
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       }),
     });
 
@@ -547,17 +704,17 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
 
   // ── Private helpers ──────────────────────────────────────────────────
 
-  #objectVariables(obj: Record<string, unknown>, root?: string): [string, string | number | string[] | boolean | undefined][] {
-    return Object.entries(obj).reduce<[string, string | number | string[] | boolean | undefined][]>(
-      (acc, [k, v]) => {
-        if (typeof v === "object" && !Array.isArray(v) && v !== null) {
-          acc.push(...this.#objectVariables(v as Record<string, unknown>, root ? `${root}.${k}` : k));
-        } else {
-          acc.push([root ? `${root}.${k}` : k, v as string | number | string[] | boolean | undefined]);
-        }
-        return acc;
-      },
-      [],
-    );
+  #objectVariables(
+    obj: Record<string, unknown>,
+    root?: string,
+  ): [string, string | number | string[] | boolean | undefined][] {
+    return Object.entries(obj).reduce<[string, string | number | string[] | boolean | undefined][]>((acc, [k, v]) => {
+      if (typeof v === "object" && !Array.isArray(v) && v !== null) {
+        acc.push(...this.#objectVariables(v as Record<string, unknown>, root ? `${root}.${k}` : k));
+      } else {
+        acc.push([root ? `${root}.${k}` : k, v as string | number | string[] | boolean | undefined]);
+      }
+      return acc;
+    }, []);
   }
 }

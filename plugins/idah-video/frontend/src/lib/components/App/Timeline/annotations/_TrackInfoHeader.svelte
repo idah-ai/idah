@@ -1,12 +1,12 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import Button from "$lib/components/ui/Button/Button.svelte";
   import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
-  import Button from "$lib/components/ui/Button/Button.svelte";
 
-  import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { selection } from "$lib/state/selection.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
@@ -26,17 +26,17 @@
     actions: {
       items: {
         "visibility-all": {
-          label: isAllHidden ? "Show all" : "Hide all",
-          icon: isAllHidden ? EyeIcon : EyeOffIcon,
+          label: "Show/Hide All",
+          icon: isAllHidden ? EyeOffIcon : EyeIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggleAllVisibility");
+            getDriver().command.call("annotation.toggle_visibility_all");
           },
         },
         "editability-all": {
-          label: isAllLocked ? "Unlock all" : "Lock all",
-          icon: isAllLocked ? LockOpenIcon : LockIcon,
+          label: "Lock/Unlock All",
+          icon: isAllLocked ? LockIcon : LockOpenIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggleAllEditability");
+            getDriver().command.call("annotation.toggle_editability_all");
           },
         },
         "delete-all": {
@@ -52,7 +52,7 @@
 
   // Functions
   function deleteAllAnnotations() {
-    getDriver().command.call("annotation.deleteAll");
+    getDriver().command.call("annotation.delete_all");
     openConfirmDeleteAllDialog = false;
   }
 </script>

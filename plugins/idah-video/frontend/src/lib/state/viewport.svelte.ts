@@ -25,14 +25,23 @@ class Viewport {
   timeline = $state({
     range: { startRange: 0, endRange: 0 },
     dimensions: [0, 0] as [number, number],
+    /**
+     * Internal — set by Timeline.svelte to expose its clamp+sync logic
+     * to external callers such as the timeline.focus command.
+     */
+    _focusHandler: null as ((start: number, end: number) => void) | null,
   });
 
   video = $state({
     currentFrame: { value: 0 },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
-    play() { this.status = "play"; },
-    pause() { this.status = "pause"; },
+    play() {
+      this.status = "play";
+    },
+    pause() {
+      this.status = "pause";
+    },
   });
 
   workspace = $state({
@@ -54,10 +63,7 @@ class Viewport {
       const scaleY = vh / mh;
       const scale = Math.min(scaleX, scaleY);
       this.transform = {
-        translate: [
-          (vw - mw * scale) / 2,
-          (vh - mh * scale) / 2,
-        ],
+        translate: [(vw - mw * scale) / 2, (vh - mh * scale) / 2],
         scale,
       };
     },
@@ -105,15 +111,15 @@ class Viewport {
       const t = this.transform;
       const d = this.dimensions;
       const m = media.dimensions;
-      const s = t.scale
+      const s = t.scale;
 
       return [
         -t.translate[0] / (s * m[0]),
         -t.translate[1] / (s * m[1]),
         (-t.translate[0] + d[0]) / (s * m[0]),
-        (-t.translate[1] + d[1]) / (s * m[1])
-      ]
-    }
+        (-t.translate[1] + d[1]) / (s * m[1]),
+      ];
+    },
   });
 }
 
