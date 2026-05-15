@@ -29,6 +29,7 @@
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
+  import { getDriver } from "$lib/state/driver.svelte";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
