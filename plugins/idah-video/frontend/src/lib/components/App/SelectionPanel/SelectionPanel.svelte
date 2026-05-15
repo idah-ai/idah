@@ -61,16 +61,45 @@
   // The active shape type: from annotation, from group (via first annotation), or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
     if (sel?.type === "annotation") return sel.annotation.shape.type as string;
-    // For a group we have only the groupId, so fall back to current mode
-    // (the group's shape type will be known when the driver enriches selection)
-    if (sel?.type === "group") return viewport.mode !== "default" ? viewport.mode : undefined;
+    if (sel?.type === "group" && data.annotations) {
+      // Find the first annotation belonging to this group to get its shape type
+      const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
+      const groupAnn = items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
+      if (groupAnn) return groupAnn.shape.type as string;
+    }
     return viewport.mode;
   });
 
   let config = $derived(shapeType ? getDriver().getFilteredConfig(shapeType, annotationValue as unknown as Record<string, unknown>) : undefined);
   let configValues = $derived(config?.values ?? []);
 
-  let category = $derived(configValues.find((c) => c.id == selectedCategory));
+  // Annotation from the selected group (for group edit mode display)
+  // NOTE: Must be declared BEFORE effectiveSelectedCategory since it depends on it
+  let groupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
+    if (sel?.type !== "group" || !data.annotations) return undefined;
+    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
+    return items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
+  });
+
+  let groupAnnDisplayName = $derived.by<string>(() => {
+    if (!groupAnnotation || !sel || sel.type !== "group") return "";
+    const gAnn = groupAnnotation;
+    const gShapeType = gAnn.shape.type as string;
+    const gConfig = getDriver().config[gShapeType];
+    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.value?.category);
+    const lastPart = sel.groupId.split("-").pop() ?? "";
+    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.value?.category ?? "Uncategorized");
+  });
+
+  // When a group is selected, always use the annotation's current category from the data store,
+  // so it stays in sync even when the parent doesn't update the selectedCategory prop.
+  let effectiveSelectedCategory = $derived(
+    sel?.type === "group"
+      ? (groupAnnotation?.value?.category || "")
+      : selectedCategory
+  );
+
+  let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
   let properties = $derived(config?.properties ?? []);
 
   // Human-readable mode title from shape type
@@ -376,7 +405,7 @@
         <Badge variant="info">EDIT</Badge>
       </div>
       <Text size="sm" class="text-muted-foreground">
-        Group-{groupIdForDisplay}
+        {groupAnnDisplayName}
       </Text>
     </div>
 
@@ -404,10 +433,10 @@
             {#each configValues as { id: value, label, color }, index (`${value}-${index}`)}
               {@const valueLabel = categoryValueToLabel(value, label)}
               <SelectItem
-                class={"text-xs " + (selectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
+                class={"text-xs " + (effectiveSelectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
                 label={valueLabel}
                 {value}
-                disabled={selectedCategory == value}
+                disabled={effectiveSelectedCategory == value}
               >
                 {@render shapeIcon(color)}
                 {valueLabel}
