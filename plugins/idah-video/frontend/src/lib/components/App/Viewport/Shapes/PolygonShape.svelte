@@ -1,7 +1,7 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
   import type { BBox } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
+  import { centroid as centroidUtil, clampPoint, clampPoints, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
@@ -84,12 +84,12 @@
 
   let lastDragCursor: Point = $state([-1, -1]);
 
-  // Single vertex drag
+  // Single vertex drag — clamp vertex to viewport bounds
   $effect(() => {
     if (dragVertexIndex === undefined || !cursor) return;
     if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
     lastDragCursor = cursor;
-    _localVertices = moveVertex(_localVertices ?? baseVertices, dragVertexIndex, cursor);
+    _localVertices = moveVertex(_localVertices ?? baseVertices, dragVertexIndex, clampPoint(cursor));
   });
 
   // Box selection drag
@@ -100,7 +100,7 @@
     boxEnd = cursor;
   });
 
-  // Multi-drag: move all selected vertices by the cursor delta
+  // Multi-drag: move all selected vertices by the cursor delta — clamp to viewport bounds
   $effect(() => {
     if (!multiDragOrigin || !cursor || _selectedIndices.size === 0) return;
     if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
@@ -109,7 +109,7 @@
     const dy = cursor[1] - multiDragOrigin[1];
     multiDragOrigin = cursor;
     const base = _localVertices ?? baseVertices;
-    _localVertices = base.map((p, i) => (_selectedIndices.has(i) ? ([p[0] + dx, p[1] + dy] as Point) : p));
+    _localVertices = clampPoints(base.map((p, i) => (_selectedIndices.has(i) ? ([p[0] + dx, p[1] + dy] as Point) : p)));
   });
 
   let pathD = $derived.by(() => {
@@ -201,7 +201,7 @@
 
     let changed = false;
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
-      _localVertices = vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point);
+      _localVertices = clampPoints(vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point));
       changed = true;
     }
     if (dragVertexIndex !== undefined) {

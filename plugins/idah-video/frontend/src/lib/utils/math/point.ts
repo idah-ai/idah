@@ -70,3 +70,18 @@ export function centroid(pts: Point[]): Point {
   const sum = pts.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]);
   return [sum[0] / pts.length, sum[1] / pts.length];
 }
+
+/**
+ * Clamp a point's coordinates to the normalized [0, 1] range.
+ * This ensures annotation points stay within the video bounds.
+ */
+export function clampPoint(point: Point): Point {
+  return [Math.max(0, Math.min(1, point[0])), Math.max(0, Math.min(1, point[1]))];
+}
+
+/**
+ * Clamp an array of points to the normalized [0, 1] range.
+ */
+export function clampPoints(points: Point[]): Point[] {
+  return points.map(clampPoint);
+}
