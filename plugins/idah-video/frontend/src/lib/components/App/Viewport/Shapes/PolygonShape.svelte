@@ -11,11 +11,10 @@
     hitTestVertex,
     moveVertex,
     addVertexOnEdge,
-    scalePolygon,
-    polygonCentroid,
   } from "./Polygon/utils";
   import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
+  import PolygonScaleHandler from "./Polygon/_PolygonScaleHandler.svelte";
 
   let {
     annotation,
@@ -51,12 +50,7 @@
   let dragVertexIndex: number | undefined = $state();
   let panStart: Point | undefined = $state();
 
-  // Scale bar state
-  let scaleBarActive: boolean = $state(false);
-  let scaleBarStartX: number = $state(0);
-  let scaleBarCurrentX: number = $state(0);
-  let scaleBarFactor: number = $state(1);
-
+  let scaleHandler: PolygonScaleHandler | undefined = $state();
   // Multi-selection state
   let _selectedIndices: Set<number> = $state(new Set());
   let boxStart: Point | undefined = $state();
@@ -66,7 +60,7 @@
   // Track Shift key for cursor changes
   let shiftHeld = $state(false);
 
-  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined || multiDragOrigin !== undefined || scaleBarActive);
+  let isEditing = $derived(dragVertexIndex !== undefined || panStart !== undefined || multiDragOrigin !== undefined || (scaleHandler?.isActive() ?? false));
   let vertices: Point[] = $derived(_localVertices ?? baseVertices);
 
   let cursorPx = $derived.by((): Point | undefined => {
@@ -116,21 +110,6 @@
     multiDragOrigin = cursor;
     const base = _localVertices ?? baseVertices;
     _localVertices = base.map((p, i) => (_selectedIndices.has(i) ? ([p[0] + dx, p[1] + dy] as Point) : p));
-  });
-
-  // Scale bar drag: horizontal movement controls scale factor
-  $effect(() => {
-    if (!scaleBarActive || !cursor) return;
-    if (cursor[0] === lastDragCursor[0] && cursor[1] === lastDragCursor[1]) return;
-    lastDragCursor = cursor;
-    scaleBarCurrentX = cursor[0];
-
-    // Compute factor from horizontal delta: moving right = scale up, left = scale down
-    // Sensitivity: 1 pixel of movement = 0.5% scale change
-    const dx = (cursor[0] - scaleBarStartX) * w;
-    const factor = Math.max(0.1, Math.min(10, 1 + dx * 0.005));
-    scaleBarFactor = factor;
-    _localVertices = scalePolygon(baseVertices, factor);
   });
 
   let pathD = $derived.by(() => {
@@ -231,8 +210,12 @@
     if (multiDragOrigin !== undefined && _localVertices) {
       changed = true;
     }
-    if (scaleBarActive && _localVertices) {
-      changed = true;
+    if (scaleHandler?.isActive()) {
+      const scaled = scaleHandler.endScale();
+      if (scaled) {
+        _localVertices = scaled;
+        changed = true;
+      }
     }
     if (changed) {
       emitComplete();
@@ -241,8 +224,6 @@
     dragVertexIndex = undefined;
     panStart = undefined;
     multiDragOrigin = undefined;
-    scaleBarActive = false;
-    scaleBarFactor = 1;
     _selectedIndices = new Set();
   }
 
@@ -254,16 +235,6 @@
 
   let over = $state(false);
 
-  // ── Scale bar layout ──────────────────────────────────────────────────
-  let centroidN = $derived(polygonCentroid(displayVertices));
-  let centroidPx: Point = $derived([centroidN[0] * w, centroidN[1] * h]);
-  let invScale = $derived(1 / viewport.workspace.transform.scale);
-  let barLength = $derived(120 * invScale);
-  let barY = $derived(centroidPx[1] + 30 * invScale);
-  let barX1 = $derived(centroidPx[0] - barLength / 2);
-  let barX2 = $derived(centroidPx[0] + barLength / 2);
-  let thumbX = $derived(centroidPx[0] + (scaleBarFactor - 1) * (barLength / 2) * 0.5);
-  let thumbXClamped = $derived(Math.max(barX1, Math.min(barX2, thumbX)));
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -372,118 +343,19 @@
       }}
       onStartScale={() => {
         if (cursor) {
-          scaleBarActive = true;
-          scaleBarStartX = cursor[0];
-          scaleBarCurrentX = cursor[0];
-          scaleBarFactor = 1;
-          _localVertices = [...baseVertices];
+          scaleHandler?.startScale(cursor[0]);
         }
       }}
     />
   {/if}
 
-  <!-- Scale bar (rendered when active) -->
-  {#if scaleBarActive}
-    <!-- Track line -->
-    <line
-      x1={barX1}
-      y1={barY}
-      x2={barX2}
-      y2={barY}
-      stroke={color}
-      stroke-width={2 * invScale}
-      stroke-linecap="round"
-      pointer-events="none"
-    />
-    <!-- Scale markers -->
-    <line
-      x1={centroidPx[0]}
-      y1={barY - 6 * invScale}
-      x2={centroidPx[0]}
-      y2={barY + 6 * invScale}
-      stroke={color}
-      stroke-width={1.5 * invScale}
-      pointer-events="none"
-    />
-    <line
-      x1={barX1}
-      y1={barY - 4 * invScale}
-      x2={barX1}
-      y2={barY + 4 * invScale}
-      stroke={color}
-      stroke-width={1 * invScale}
-      pointer-events="none"
-    />
-    <line
-      x1={barX2}
-      y1={barY - 4 * invScale}
-      x2={barX2}
-      y2={barY + 4 * invScale}
-      stroke={color}
-      stroke-width={1 * invScale}
-      pointer-events="none"
-    />
-    <!-- Labels -->
-    <text
-      x={barX1} y={barY - 10 * invScale}
-      text-anchor="middle"
-      fill={color}
-      font-size={10 * invScale}
-      pointer-events="none"
-    >0.5×</text>
-    <text x={centroidPx[0]} y={barY - 10 * invScale} text-anchor="middle" fill={color} font-size={10 * invScale} pointer-events="none">1×</text>
-    <text x={barX2} y={barY - 10 * invScale} text-anchor="middle" fill={color} font-size={10 * invScale} pointer-events="none">2×</text>
-    <!-- Thumb (draggable) -->
-    <circle
-      cx={thumbXClamped}
-      cy={barY}
-      r={6 * invScale}
-      fill={color}
-      stroke="white"
-      stroke-width={2 * invScale}
-      style:cursor="ew-resize"
-      pointer-events="none"
-    />
-    <!-- Invisible wide hit zone for the thumb -->
-    <line
-      x1={barX1}
-      y1={barY}
-      x2={barX2}
-      y2={barY}
-      stroke="transparent"
-      stroke-width={20 * invScale}
-      style:cursor="ew-resize"
-      onmousedown={(e) => {
-        e.stopPropagation();
-        const svg = (e.currentTarget as SVGElement).ownerSVGElement;
-        if (svg) {
-          const pt = svg.createSVGPoint();
-          pt.x = e.clientX;
-          pt.y = e.clientY;
-          const ctm = svg.getScreenCTM()?.inverse();
-          if (ctm) {
-            const svgPt = pt.matrixTransform(ctm);
-            const normX = media.width > 0 ? svgPt.x / media.width : 0;
-            scaleBarActive = true;
-            scaleBarStartX = normX;
-            scaleBarCurrentX = normX;
-            scaleBarFactor = 1;
-            _localVertices = [...baseVertices];
-          }
-        }
-      }}
-    />
-    <!-- Current factor display -->
-    <text
-      x={centroidPx[0]}
-      y={barY + 24 * invScale}
-      text-anchor="middle"
-      fill="white"
-      font-size={11 * invScale}
-      font-weight="bold"
-      pointer-events="none"
-    >
-      {scaleBarFactor.toFixed(2)}×
-    </text>
-  {/if}
+  <PolygonScaleHandler
+    bind:this={scaleHandler}
+    {baseVertices}
+    {color}
+    {cursor}
+    onScaleUpdate={(scaled) => {
+      _localVertices = scaled;
+    }}
+  />
 {/if}

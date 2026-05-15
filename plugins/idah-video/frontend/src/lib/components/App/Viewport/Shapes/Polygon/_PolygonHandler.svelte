@@ -5,10 +5,8 @@
   import { polygonVertexHandles, polygonEdgeMidpoints, polygonCentroid, scaleCursorSVG } from "./utils";
   import BoxSelector from "./_BoxSelector.svelte";
   import removeCursorSvg from "$lib/assets/icons/remove-cursor.svg?raw";
-  import addCursorSvg from "$lib/assets/icons/pen-tool-add-2-24x24.svg?raw";
 
   const removeCursorCss = `url("data:image/svg+xml,${encodeURIComponent(removeCursorSvg)}") 2 2,pointer`;
-  const addCursorCss = `url("data:image/svg+xml,${encodeURIComponent(addCursorSvg)}") 2 2,pointer`;
 
   type Props = {
     vertices: Point[];
