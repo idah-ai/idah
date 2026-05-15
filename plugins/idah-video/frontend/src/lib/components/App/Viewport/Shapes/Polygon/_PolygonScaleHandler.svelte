@@ -122,9 +122,9 @@
     pointer-events="none"
   />
   <!-- Labels -->
-  <text x={barX1} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none">0.5×</text>
-  <text x={centroidPx[0]} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none">1×</text>
-  <text x={barX2} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none">2×</text>
+  <text x={barX1} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none" style="user-select:none">0.5×</text>
+  <text x={centroidPx[0]} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none" style="user-select:none">1×</text>
+  <text x={barX2} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none" style="user-select:none">2×</text>
   <!-- Thumb (draggable) -->
   <circle
     cx={thumbXClamped}
@@ -170,6 +170,7 @@
     font-size={11 * invScale}
     font-weight="bold"
     pointer-events="none"
+    style="user-select:none"
   >
     {scaleBarFactor.toFixed(2)}×
   </text>
