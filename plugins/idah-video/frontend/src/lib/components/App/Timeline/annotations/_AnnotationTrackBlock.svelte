@@ -65,7 +65,7 @@
 </script>
 
 <button
-  class="relative box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
+  class="relative h-full w-full cursor-pointer rounded-lg border transition-opacity hover:opacity-80 focus:outline-none"
   class:ring-2={isSelected}
   class:ring-offset-1={isSelected}
   style:background-color={color + "30"}
@@ -91,4 +91,7 @@
       onkeypress={() => {}}
     ></div>
   {/each}
+
+  <!-- Visual padding layer (does not affect keyframe positioning) -->
+  <div class="pointer-events-none absolute inset-0 rounded-lg p-2"></div>
 </button>
