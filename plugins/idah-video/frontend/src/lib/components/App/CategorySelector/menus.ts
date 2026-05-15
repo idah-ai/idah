@@ -41,7 +41,7 @@ export function getCategoryVisibilityAction(
 
   return {
     id: "visibility",
-    label: isSomeHidden ? "Show category annotations" : "Hide category annotations",
+    label: "Show/Hide this category annotations",
     icon: isSomeHidden ? EyeOffIcon : EyeIcon,
     alwaysShow: isSomeHidden,
     onClick: (e: MouseEvent) => {
@@ -61,7 +61,7 @@ export function getCategoryEditabilityAction(
 
   return {
     id: "editability",
-    label: isSomeLocked ? "Unlock category annotations" : "Lock category annotations",
+    label: "Lock/Unlock this category annotations",
     icon: isSomeLocked ? LockIcon : LockOpenIcon,
     alwaysShow: isSomeLocked,
     onClick: (e: MouseEvent) => {
@@ -79,7 +79,7 @@ export function getCategoryDeleteAction(
 
   return {
     id: "delete",
-    label: "Delete category annotations",
+    label: "Delete this category annotations",
     icon: Trash2Icon,
     destructive: true,
     onClick: async (e: MouseEvent) => {

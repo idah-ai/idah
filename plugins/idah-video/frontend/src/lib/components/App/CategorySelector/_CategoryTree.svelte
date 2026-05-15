@@ -366,9 +366,12 @@
                 ></CategoryAction>
               {/each}
 
-              {#if view === "sidebar" && count > 0}
-                <AnnotationCountBadge class="mr-2 ml-1" {count} />
-              {/if}
+              <AnnotationCountBadge
+                class={cn("mr-2 ml-1 opacity-0", {
+                  "opacity-100": view === "sidebar" && count > 0,
+                })}
+                {count}
+              />
             </div>
           </SidebarMenuItem>
         </div>
