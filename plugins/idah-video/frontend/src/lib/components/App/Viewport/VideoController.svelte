@@ -79,11 +79,10 @@
     frameInputValue = viewport.video.currentFrame.value + 1;
   });
 
-  // TODO: @audi ideally, these should call commands ?
-
   // Functions
   const handleInput = (e: Event) => {
-    frameInputValue = Number((e.target as HTMLInputElement).value);
+    const rawValue = (e.target as HTMLInputElement).value;
+    frameInputValue = rawValue === "" ? 1 : Number(rawValue);
   };
 
   const performSeek = () => {

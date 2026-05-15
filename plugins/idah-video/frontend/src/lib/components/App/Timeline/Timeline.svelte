@@ -125,9 +125,10 @@
     // // Zoom from the given center, or fall back to viewport center
     let zoomCenter: number = (viewport.startRange + viewport.endRange) / 2;
 
-    if (center !== undefined) {
-      zoomCenter = Math.max(1, center);
-    }
+    /** Note: This lead bugs on timeline but user want to zoom at the center of the selection */
+    // if (center !== undefined) {
+    //   zoomCenter = Math.max(1, center);
+    // }
 
     let newStart = zoomCenter - newRange / 2;
     let newEnd = zoomCenter + newRange / 2;
@@ -168,17 +169,17 @@
     setScrollLeft(viewport.startRange * newScale);
   }
 
+  // Expose focus handler on the global viewport timeline so external commands
+  // (e.g. timeline.focus) can set the range with proper clamping + DOM scroll sync.
+  globalViewport.timeline._focusHandler = handleFocusRange;
+
   // Expose functions to parent on mount
   onMount(() => {
     onZoom?.(applyZoom);
-
-    // Expose focus handler on the global viewport timeline so external commands
-    // (e.g. timeline.focus) can set the range with proper clamping + DOM scroll sync.
-    globalViewport.timeline._focusHandler = handleFocusRange;
   });
 
   function mouseXToFrame(mouseXInContent: number): number {
-    return Math.floor(mouseXInContent / scale);
+    return Math.max(0, Math.floor(mouseXInContent / scale));
   }
 
   function frameToPixelX(frame: number): number {

@@ -6,8 +6,6 @@
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
-  import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
-  import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
@@ -23,13 +21,6 @@
   // Variables
   let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
   const rangeSize = $derived(Number(endRange - startRange) + 1);
-  const category = $derived(
-    findCategory({
-      labelConfig: getDriver().config,
-      categoryId: annotation.value?.category,
-      shapeType: annotation.shape.type,
-    }),
-  );
   const keyframes = $derived(annotation.shape.frames.map((f) => f.frame));
 
   // Compute color using the same annotationColor() as the viewport shapes
