@@ -21,6 +21,10 @@ export const selection = {
     return _selected?.type === "annotation";
   },
 
+  isAnnotationSelected(annotationId: string): boolean {
+    return _selected?.type === "annotation" && _selected.annotation.id === annotationId;
+  },
+
   isGroup(): boolean {
     return _selected?.type === "group";
   },
