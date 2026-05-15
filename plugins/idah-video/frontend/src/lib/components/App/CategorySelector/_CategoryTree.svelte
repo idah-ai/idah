@@ -260,8 +260,8 @@
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
-      {@const isCategoryHidden = items.every((a) => a.value?.hidden && a.value?.category === category.id)}
-      {@const isCategoryLocked = items.every((a) => a.value?.locked && a.value?.category === category.id)}
+      {@const isCategoryHidden = items.some((a) => a.hidden && a.value?.category === category.id)}
+      {@const isCategoryLocked = items.some((a) => a.locked && a.value?.category === category.id)}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -363,6 +363,7 @@
               <CategoryAction
                 class={cn("flex", {
                   "opacity-0 group-hover:opacity-100": !isCategoryHidden,
+                  "opacity-100": isCategoryHidden,
                 })}
                 onclick={() => toggleCategoryVisibility(category.id)}
               >
@@ -377,6 +378,7 @@
               <CategoryAction
                 class={cn("flex", {
                   "opacity-0 group-hover:opacity-100": !isCategoryLocked,
+                  "opacity-100": isCategoryLocked,
                 })}
                 onclick={() => toggleCategoryEditability(category.id)}
               >
@@ -389,9 +391,7 @@
 
               <!-- BUTTON::DELETE ALL ANNOTATIONS -->
               <CategoryAction
-                class={cn("flex", {
-                  "opacity-0 group-hover:opacity-100": !isCategoryHidden,
-                })}
+                class={cn("flex opacity-0 group-hover:opacity-100")}
                 onclick={() => {
                   openConfirmCategoryDeleteDialog = true;
                   categoryToDelete = category.id;
