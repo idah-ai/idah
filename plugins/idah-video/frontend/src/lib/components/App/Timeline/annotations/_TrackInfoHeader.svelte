@@ -26,15 +26,15 @@
     actions: {
       items: {
         "visibility-all": {
-          label: isAllHidden ? "Show all" : "Hide all",
-          icon: isAllHidden ? EyeIcon : EyeOffIcon,
+          label: "Show/Hide All",
+          icon: isAllHidden ? EyeOffIcon : EyeIcon,
           onClick: () => {
             getDriver().command.call("annotation.toggle_visibility_all");
           },
         },
         "editability-all": {
-          label: isAllLocked ? "Unlock all" : "Lock all",
-          icon: isAllLocked ? LockOpenIcon : LockIcon,
+          label: "Lock/Unlock All",
+          icon: isAllLocked ? LockIcon : LockOpenIcon,
           onClick: () => {
             getDriver().command.call("annotation.toggle_editability_all");
           },

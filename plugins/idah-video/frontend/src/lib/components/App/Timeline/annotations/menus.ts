@@ -22,14 +22,14 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           },
         },
         visibility: {
-          label: isSomeHidden ? "Show Group" : "Hide Group",
-          icon: isSomeHidden ? EyeIcon : EyeOffIcon,
+          label: "Show/Hide Group",
+          icon: isSomeHidden ? EyeOffIcon : EyeIcon,
           alwaysShow: isSomeHidden,
           onClick: () => getDriver().command.call("annotation.toggle_group_visibility", { groupId: track.id }),
         },
         editability: {
-          label: isSomeLocked ? "Unlock Group" : "Lock Group",
-          icon: isSomeLocked ? LockOpenIcon : LockIcon,
+          label: "Lock/Unlock Group",
+          icon: isSomeLocked ? LockIcon : LockOpenIcon,
           alwaysShow: isSomeLocked,
           onClick: () => getDriver().command.call("annotation.toggle_group_editability", { groupId: track.id }),
         },
@@ -37,7 +37,11 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
-          onClick: () => getDriver().command.call("annotation.delete_group", { groupId: track.id }),
+          onClick: () =>
+            getDriver().command.call("annotation.delete_group", {
+              groupId: track.id,
+              annotations: track.items.map((item) => item.rawData),
+            }),
         },
       },
     },
