@@ -1,7 +1,7 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
   import { normalizeRect } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
+  import { centroid as centroidUtil, clampPoints, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
@@ -12,6 +12,7 @@
     inverseRotatePointN,
     rotatedCursorSVG,
     rotateCursorSVG,
+    clampRect,
   } from "./BoundingBox/utils";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
 
@@ -110,7 +111,10 @@
   // ── Display points ────────────────────────────────────────────────────
   let displayPoints = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
-      return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+      const candidate = points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+      // Live preview always follows the cursor. Constraint is applied on commit only.
+      if (currentAngle() === 0) return clampPoints(candidate);
+      return candidate;
     }
     return points;
   });
@@ -210,12 +214,14 @@
       }
     }
 
-    const newPts: Point[] = [
+    // Resize operates in unrotated AABB space — clamp the unrotated AABB to [0,1]
+    // This keeps the rectangle shape intact (no rotation involved in the AABB itself)
+    const newPts: Point[] = clampPoints([
       [nx1, ny1],
       [nx2, ny1],
       [nx2, ny2],
       [nx1, ny2],
-    ];
+    ]);
 
     let newFixedPoint: Point;
     if (handleIndex % 2 === 0) {
@@ -323,7 +329,8 @@
     let changed = false;
     if (panStart) {
       if (panOffset[0] !== 0 || panOffset[1] !== 0) {
-        _localPoints = points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point);
+        const candidate = points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+        _localPoints = clampRect(w, h, candidate, currentAngle(), points);
         changed = true;
       }
       panStart = undefined;

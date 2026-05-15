@@ -11,6 +11,7 @@
 
   import { onMount } from "svelte";
   import type { Point } from "$lib/utils/math/point";
+  import { clampPoint } from "$lib/utils/math/point";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
 
@@ -35,11 +36,13 @@
    * Returns true if the event was consumed (polygon creation handled).
    */
   export function handleMouseDown(cursor: Point): boolean {
+    const clampedCursor = clampPoint(cursor);
+
     // ── Close polygon (click near first point with ≥3 points) ──────────
     if (polygonDraft.points.length >= 3) {
       const first = polygonDraft.points[0];
-      const dx = Math.abs(cursor[0] - first[0]) * mediaWidth;
-      const dy = Math.abs(cursor[1] - first[1]) * mediaHeight;
+      const dx = Math.abs(clampedCursor[0] - first[0]) * mediaWidth;
+      const dy = Math.abs(clampedCursor[1] - first[1]) * mediaHeight;
       if (dx * dx + dy * dy < 400) {
         const pts = [...polygonDraft.points];
         polygonDraft.reset();
@@ -50,7 +53,7 @@
     }
 
     // ── Add a new point ────────────────────────────────────────────────
-    getDriver().command.call("annotation.polygon.add_point", { point: cursor });
+    getDriver().command.call("annotation.polygon.add_point", { point: clampedCursor });
     return true;
   }
 
