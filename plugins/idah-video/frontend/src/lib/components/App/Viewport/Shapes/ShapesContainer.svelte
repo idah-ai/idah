@@ -49,7 +49,6 @@
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     isPlaying: boolean;
-    onDeleteAnnotation?: (annotationId: string) => void;
   };
 
   let {
@@ -58,7 +57,6 @@
     onSelection,
     onAddNewNote,
     isPlaying,
-    onDeleteAnnotation,
   }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
@@ -309,11 +307,6 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
-    // Empty points signals deletion (polygon has fewer than 3 vertices)
-    if (points.length === 0) {
-      onDeleteAnnotation?.(annId);
-      return;
-    }
     onSelection(viewport.mode, frame, points, angle, annId);
   }
 

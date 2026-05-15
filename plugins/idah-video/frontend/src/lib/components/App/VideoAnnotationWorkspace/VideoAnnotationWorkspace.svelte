@@ -623,7 +623,6 @@
                   onAddNewNote={showNewNotePopup}
                   onChangeFrame={seekToFrame}
                   isPlaying={viewport.video.status === "play"}
-                  onDeleteAnnotation={(annId) => removeAnnotation(annId)}
                 >
                   <!-- container context ?-->
                   <Video

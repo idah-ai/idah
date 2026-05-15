@@ -14,6 +14,7 @@
     scalePolygon,
     polygonCentroid,
   } from "./Polygon/utils";
+  import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
 
   let {
@@ -343,9 +344,12 @@
         const indicesToDelete = _selectedIndices.size > 0
           ? [..._selectedIndices].sort((a, b) => b - a)
           : [i];
-        // Deleting these vertices would leave fewer than 3 — delete entire annotation
+        // Can not delete if it would leave less than 3 points
         if (baseVertices.length - indicesToDelete.length < 3) {
-          onEditComplete?.([], 0);
+          showToast.warning({
+            title: "Cannot delete vertex",
+            description: "A polygon must have at least 3 points.",
+          });
           return;
         }
         const next = [...baseVertices];
