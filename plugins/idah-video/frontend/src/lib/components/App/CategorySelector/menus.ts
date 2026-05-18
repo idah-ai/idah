@@ -1,5 +1,6 @@
 import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as IconType } from "@lucide/svelte";
 
+import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 
 import type { IVideoAnnotationRecord } from "$lib/types";
@@ -37,7 +38,7 @@ export function getCategoryVisibilityAction(
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
-  const isSomeHidden = items.some((item) => item.hidden);
+  const isSomeHidden = items.some((item) => annotation.isHidden(item.id));
 
   return {
     id: "visibility",
@@ -57,7 +58,7 @@ export function getCategoryEditabilityAction(
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
-  const isSomeLocked = items.some((item) => item.locked);
+  const isSomeLocked = items.some((item) => annotation.isLocked(item.id));
 
   return {
     id: "editability",

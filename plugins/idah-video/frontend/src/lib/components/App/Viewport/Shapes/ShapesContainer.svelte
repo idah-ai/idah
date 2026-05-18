@@ -24,6 +24,7 @@
 
   import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
 
+  import { annotation } from "$lib/state/annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -92,7 +93,7 @@
     const f = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
     return items.filter((ann) => {
-      if (ann.hidden) return false;
+      if (annotation.isHidden(ann.id)) return false;
       const s = ann.shape as { start?: number; end?: number };
       return s.start != null && s.end != null && f >= s.start && f <= s.end;
     });
@@ -364,7 +365,7 @@
           bind:this={_compRefs[i]}
           annotation={ann}
           selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id) && !ann.locked}
+          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id) && !annotation.isLocked(ann.id)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}

@@ -5,6 +5,7 @@
   import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
 
+  import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
 
@@ -17,11 +18,11 @@
   }
   let { annotations }: Props = $props();
 
-  // Vairables
+  // Variables
   let openConfirmDeleteAllDialog = $state(false);
 
-  const isAllHidden = $derived(annotations.every((a) => a.hidden));
-  const isAllLocked = $derived(annotations.every((a) => a.locked));
+  const isAllHidden = $derived(annotations.length > 0 && annotations.every((a) => annotation.isHidden(a.id)));
+  const isAllLocked = $derived(annotations.length > 0 && annotations.every((a) => annotation.isLocked(a.id)));
   const menus = $derived<Menus>({
     actions: {
       items: {

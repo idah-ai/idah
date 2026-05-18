@@ -21,6 +21,7 @@
 
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
@@ -79,7 +80,11 @@ export function register(driver: IIdahDriverV2): void {
         return noopAction(command);
       }
 
-      const snapshot = [...categoryAnnotations];
+      // Snapshot IDs and their current hidden state from annotation module
+      const snapshot = categoryAnnotations.map((ann) => ({
+        id: ann.id,
+        hidden: annotation.isHidden(ann.id),
+      }));
 
       return {
         command: { ...command },
@@ -87,17 +92,11 @@ export function register(driver: IIdahDriverV2): void {
         async do() {
           if (!data.annotations) return;
 
-          // If any annotation is hidden,
-          // show all. Otherwise hide all.
-          const anyHidden = snapshot.some((ann) => ann.hidden);
-
+          const anyHidden = snapshot.some((s) => s.hidden);
           const newHidden = !anyHidden;
 
-          for (const ann of snapshot) {
-            await data.annotations!.update({
-              ...ann,
-              hidden: newHidden,
-            });
+          for (const { id } of snapshot) {
+            annotation.toggleHidden(id, newHidden);
           }
         },
 
@@ -105,11 +104,8 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
 
           // Restore original hidden states
-          for (const ann of snapshot) {
-            await data.annotations!.update({
-              ...ann,
-              hidden: ann.hidden,
-            });
+          for (const { id, hidden } of snapshot) {
+            annotation.toggleHidden(id, hidden);
           }
         },
 

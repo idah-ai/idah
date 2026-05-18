@@ -16,6 +16,7 @@
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
@@ -384,10 +385,11 @@
     }
   }
 
-  function updateAnnotationValue(annotation: IVideoAnnotationRecord, value: AnnotationValue) {
-    if (annotation?.locked || !editable) return;
+  function updateAnnotationValue(ann: IVideoAnnotationRecord, value: AnnotationValue) {
+    if (!editable) return;
+    if (ann && annotation.isLocked(ann.id)) return;
 
-    getDriver().command.call("annotation.update", { annotation, value });
+    getDriver().command.call("annotation.update", { annotation: ann, value });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
@@ -454,8 +456,6 @@
         attributes: ann.value?.attributes ?? {},
       },
       metadata: ann.metadata ?? {},
-      hidden: ann.hidden ?? false,
-      locked: ann.locked ?? false,
       synced: ann.synced ?? true,
     })) as IVideoAnnotationRecord[];
   });
