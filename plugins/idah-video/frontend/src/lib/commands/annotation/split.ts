@@ -14,7 +14,7 @@
 // Shortcut: S
 // Active only when there's a selected annotation.
 // ---------------------------------------------------------------------------
-import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
@@ -37,11 +37,6 @@ export interface AnnotationSplitProps {
   at: number;
 }
 
-function isAnnotationSelected(): boolean {
-  const sel = selection.value;
-  return !!sel && sel.type === "annotation";
-}
-
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
@@ -60,8 +55,12 @@ export function register(driver: IIdahDriverV2): void {
         at = props.at;
       } else {
         // Shortcut invocation — derive from current selection and viewport
-        const sel = selection.value;
-        if (sel && sel.type === "annotation") {
+        if (selection.hasSelection() && selection.isAnnotation()) {
+          const sel = selection.value as {
+            type: "annotation";
+            annotation: IAnnotationRecord<Record<string, unknown>, Record<string, unknown>>;
+          };
+
           annotationId = sel.annotation.id;
           at = viewport.video.currentFrame.value;
         }
@@ -161,6 +160,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: isAnnotationSelected,
+    activeWhen: selection.hasSelection,
   });
 }
