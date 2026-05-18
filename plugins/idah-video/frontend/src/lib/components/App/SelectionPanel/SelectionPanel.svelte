@@ -259,7 +259,7 @@
       <div class="flex items-center gap-2">
         <Text weight="semibold">Annotations</Text>
         <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
-        <Text size="sm" class="text-muted-foreground ml-auto">on Frame: {currentFrame + 1}</Text>
+        <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
       </div>
       <div class="flex flex-col gap-1">
       <Separator class="my-2" />
