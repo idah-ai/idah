@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
@@ -27,6 +27,7 @@
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
+  import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
 
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
@@ -221,8 +222,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("selection.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
@@ -668,3 +668,4 @@
 
 <DebugConsole />
 <ContextMenu />
+<ConfirmDialog />
