@@ -182,7 +182,7 @@
   function getAnnotationActions(ann: IVideoAnnotationRecord) {
     return [
       {
-        label: "Focus",
+        label: "Focus Annotation",
         icon: CrosshairIcon,
         onclick: (e: MouseEvent) => {
           e.stopPropagation();
@@ -191,7 +191,7 @@
         }
       },
       {
-        label: "Delete",
+        label: "Delete Annotation",
         icon: Trash2Icon,
         onclick: (e: MouseEvent) => {
           e.stopPropagation();
