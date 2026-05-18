@@ -38,10 +38,10 @@ export function register(driver: IIdahDriverV2): void {
       const props = opts as unknown as UpdateGroupCategoryProps | undefined;
       if (!props || !data.annotations) return noopAction(command);
 
-      // Find all annotations in this group by checking metadata.group_id
+      // Find all annotations in this group by checking metadata.group_id (with id fallback)
       const allItems = data.annotations.items;
       const groupAnnotations = allItems.filter(
-        (ann) => (ann as any).metadata?.group_id === props.groupId
+        (ann) => ((ann as any).metadata?.group_id ?? ann.id) === props.groupId
       );
 
       if (groupAnnotations.length === 0) return noopAction(command);
