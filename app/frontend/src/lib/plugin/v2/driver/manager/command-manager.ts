@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // V2 Command Manager — register, call, undo / redo (V2 duplicate)
 // ---------------------------------------------------------------------------
-import type { ICommandDescriptor, ICommandAction, ICommandStackEntry, IShortcut } from "./types";
-import { buildKeyCombination } from "./utils/shortcut-utils";
-import { isMac } from "./utils/browser";
+import type { ICommandDescriptor, ICommandAction, ICommandStackEntry, IShortcut } from "../../types";
+import { buildKeyCombination } from "../../utils/shortcut-utils";
+import { isMac } from "../../utils/browser";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */

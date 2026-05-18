@@ -13,7 +13,7 @@
 // The queue implementation is the caller's concern.
 // ---------------------------------------------------------------------------
 
-import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../types";
+import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../../types";
 import { uuidv7 } from "uuidv7";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
@@ -281,8 +281,10 @@ export interface IndexedDbAnnotationsDriverConfig<
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
-
-export const createIndexedDbAnnotationsDriver = <Shape = Record<string, unknown>, Annotation = Record<string, unknown>>(
+export const IdbBackedAnnotationsDriverAdapter = <
+  Shape = Record<string, unknown>,
+  Annotation = Record<string, unknown>,
+>(
   config: IndexedDbAnnotationsDriverConfig<Shape, Annotation>,
 ): IAnnotationsDriverV2<Shape, Annotation> | null => {
   // SSR / non-browser environments: signal to the caller that IDB is unavailable
@@ -318,6 +320,8 @@ export const createIndexedDbAnnotationsDriver = <Shape = Record<string, unknown>
 
     async fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]> {
       const db = await getDb();
+
+      console.warn({ db });
 
       // Stamp the current entry as visited before the purge can run.
       if (!visitMarked) {

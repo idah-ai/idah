@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
-  import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
+  import type { IdahDriverV2 } from "./v2/driver";
+  import type { IPluginDriver } from "./v2/types";
 
-  import type { IPluginDriver } from "./interface/Activity";
-  import type { IdahDriverV2 } from "./v2/idah-driver";
-  import IdahCommandPalette from "./v2/idah-command-palette.svelte";
+  import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
+  import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
 
   interface Props {
     driver: IdahDriverV2;
@@ -39,12 +39,17 @@
       plugin = _plugin;
       plugin.init(driver);
       initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
-      plugin.render(pluginContainerElement);
     });
     const unsub = driver.command.onPaletteChange((open: boolean) => {
       paletteOpen = open;
     });
     return unsub;
+  });
+
+  $effect(() => {
+    if (!plugin) return;
+    if (!pluginContainerElement) return;
+    if (initialized) plugin.render(pluginContainerElement);
   });
 
   onDestroy(() => {

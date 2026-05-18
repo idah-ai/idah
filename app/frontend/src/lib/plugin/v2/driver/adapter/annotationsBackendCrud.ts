@@ -2,7 +2,7 @@
 
 import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { annotationsBackendDataSource, type AnnotationRecord } from "@/data/model/dataset/annotations/record";
-import type { IAnnotationRecord, IAnnotationsDriverV2, IFilter } from "../types";
+import type { IAnnotationRecord, IAnnotationsDriverV2, IFilter } from "../../types";
 import type { ICrudDriver } from "./idb-driver";
 
 const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
@@ -81,7 +81,7 @@ export function createBackendCrudDriver(entryId: string): ICrudDriver<IAnnotatio
  * Fallback annotations driver used when IndexedDB is unavailable (SSR).
  * Talks directly to the backend — no offline caching.
  */
-export class AnnotationsFallbackDriver implements IAnnotationsDriverV2 {
+export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   private virtualFields = new Map<string, (ann: IAnnotationRecord) => unknown>();
   private rpc: JsonRpcDatasource;
 
@@ -126,7 +126,7 @@ export class AnnotationsFallbackDriver implements IAnnotationsDriverV2 {
     if (data.value !== undefined) payload["annotation"] = data.value;
     if (data.metadata !== undefined) payload["metadata"] = data.metadata;
 
-    await this.rpc.call({ method: "update", params: { id: id, ...payload } });
+    await this.rpc.call({ method: "update", params: { id: id, entry_id: this.entryId, ...payload } });
   }
 
   async delete(id: string): Promise<void> {

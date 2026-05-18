@@ -5,7 +5,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import IdahPlugin from "@/plugin/IdahPlugin.svelte";
 
-  import { createIdahDriverV2, IdahDriverV2 } from "@/plugin/v2/idah-driver";
+  import { createIdahDriverV2, type IdahDriverV2 } from "@/plugin/v2/driver";
 
   // Variables
   let entryId: string = page.params.entryId as string;

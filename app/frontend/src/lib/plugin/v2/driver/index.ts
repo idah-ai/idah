@@ -22,44 +22,20 @@ import type {
   ISyncEvent,
   ISyncErrorEvent,
   Unsubscribe,
-} from "./types";
+} from "../types";
 
-import { CommandManagerV2 } from "./command-manager";
-import { ToolbarManagerV2 } from "./toolbar-manager";
-import { AstProcessor } from "./utils/ast-evaluator";
-import { modKey } from "./utils/browser";
-import { createIndexedDbAnnotationsDriver } from "./drivers/idb-driver";
+import { CommandManagerV2 } from "./manager/command-manager";
+import { ToolbarManagerV2 } from "./manager/toolbar-manager";
+import { AstProcessor } from "../utils/ast-evaluator";
+import { modKey } from "../utils/browser";
+import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
+import registerCommands from "./command";
+
 import type { RecordResponse } from "@/data/model/types";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
 const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
-
-// ─── Simple FIFO queue for I./utils/ast-evaluatorync ──────────────────────────
-class SyncQueue {
-  private queue: Array<() => Promise<void>> = [];
-  private processing = false;
-
-  enqueue(op: () => Promise<void>): void {
-    this.queue.push(op);
-    if (!this.processing) this.processNext();
-  }
-
-  private async processNext(): Promise<void> {
-    if (this.queue.length === 0) {
-      this.processing = false;
-      return;
-    }
-    this.processing = true;
-    const op = this.queue.shift()!;
-    try {
-      await op();
-    } catch (err) {
-      console.error("[IdahDriverV2] sync error:", err);
-    }
-    this.processNext();
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Main IdahDriverV2 — Core App Adapter
@@ -72,7 +48,14 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   readonly toolbarMgr = new ToolbarManagerV2();
 
   /** Sync queue for IDB background operations. */
-  readonly syncQueue = new SyncQueue();
+  readonly syncQueueMgr = new SyncQueueManager(
+    (event) => {
+      this.syncChangeListeners.forEach((cb) => cb(event));
+    },
+    (event) => {
+      this.syncErrorListeners.forEach((cb) => cb(event));
+    },
+  );
 
   // ── Adapters exposed to the user ──────────────────────────────────────
 
@@ -107,137 +90,34 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
 
-    // Build the IDB-backed annotations driver or fall back to AnnotationsFallbackDriver
-    const idbDriver = createIndexedDbAnnotationsDriver({
+    // Build the IDB-backed annotations driver or fall back to AnnotationsDriver
+    const idbDriver = IdbBackedAnnotationsDriverAdapter({
       entryId: this._id,
       pluginId: PLUGIN_ID,
       backend: createBackendCrudDriver(this._id),
-      enqueue: (op) => this.syncQueue.enqueue(op),
+      enqueue: (op) => this.syncQueueMgr.enqueue(op),
     });
-    this.annotations = idbDriver ?? new AnnotationsFallbackDriver(this._id);
-
+    this.annotations = new AnnotationsDriverAdapter(this._id);
+    // this.annotations = idbDriver ?? new AnnotationsDriverAdapter(this._id);
     // Build notes driver (no IDB layer yet)
     this.notes = new NotesDriverAdapter();
 
     // ── Register default idah commands ────────────────────────────────
+    registerCommands(this);
 
-    const cmdMgr = this.commandMgr;
-    const driver = this;
-
-    this.command.register({
-      name: "core.undo",
-      group: "General",
-      // TODO modes ['*'] ?
-      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Z",
-      shortDescription: "Undo",
-      longDescription: "Undo the last action",
-      callback: () => ({
-        command: {
-          name: "core.undo",
-          group: "General",
-          modes: [],
-          shortcut: null,
-          shortDescription: null,
-          longDescription: null,
-        },
-        do() {
-          cmdMgr.undo();
-        },
-        isCombinable() {
-          return false;
-        },
-        combine(p) {
-          return p;
-        },
-      }),
+    this.onSyncChange((syncChangeEvent) => {
+      console.warn({ syncChangeEvent });
+      this._ready = syncChangeEvent.queued == 0 ? true : false;
+      if (this._ready) for (const cb of this.readyCallbacks) cb();
     });
 
-    this.command.register({
-      name: "core.redo",
-      group: "General",
-      // TODO modes ['*'] ?
-      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Shift+Z",
-      shortDescription: "Redo",
-      longDescription: "Redo the last undone action",
-      callback: () => ({
-        command: {
-          name: "core.redo",
-          group: "General",
-          modes: [],
-          shortcut: null,
-          shortDescription: null,
-          longDescription: null,
-        },
-        do() {
-          cmdMgr.redo();
-        },
-        isCombinable() {
-          return false;
-        },
-        combine(p) {
-          return p;
-        },
-      }),
+    this.onSyncError((syncErrorEvent) => {
+      console.error({ syncErrorEvent });
     });
 
-    this.command.register({
-      name: "core.palette",
-      group: "General",
-      // TODO modes ['*'] ?
-      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Space",
-      shortDescription: null,
-      longDescription: null,
-      callback: () => ({
-        command: {
-          name: "core.palette",
-          group: "General",
-          modes: [],
-          shortcut: null,
-          shortDescription: null,
-          longDescription: null,
-        },
-        do() {},
-        isCombinable() {
-          return false;
-        },
-        combine(p) {
-          return p;
-        },
-      }),
+    this.onReady(() => {
+      console.warn("SYNC READY");
     });
-
-    this.command.register({
-      name: "core.exit_mode",
-      group: "General",
-      // TODO modes ['*'] ?
-      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Escape",
-      shortDescription: "Exit current mode",
-      longDescription: "Return to the default selection mode",
-      callback: () => ({
-        command: {
-          name: "core.exit_mode",
-          group: "General",
-          modes: [],
-          shortcut: null,
-          shortDescription: null,
-          longDescription: null,
-        },
-        do() {
-          driver.setMode("default");
-        },
-        isCombinable() {
-          return false;
-        },
-        combine(p) {
-          return p;
-        },
-      }),
-    });
-
     // Mark ready after a microtask (simulate async init)
     queueMicrotask(() => {
       this._ready = true;
@@ -353,10 +233,11 @@ export class IdahDriverV2 implements IIdahDriverV2 {
  */
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
-import { CommandDriverAdapter } from "./drivers/command";
-import { AnnotationsFallbackDriver, createBackendCrudDriver } from "./drivers/annotationsBackendCrud";
-import { NotesDriverAdapter } from "./drivers/notes";
-import { ToolbarDriverAdapter } from "./drivers/toolbar";
+import { CommandDriverAdapter } from "./adapter/command";
+import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
+import { NotesDriverAdapter } from "./adapter/notes";
+import { ToolbarDriverAdapter } from "./adapter/toolbar";
+import { SyncQueueManager } from "./manager/syncQueueManager";
 
 export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2> {
   // Start workflow if needed
