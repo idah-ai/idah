@@ -241,7 +241,11 @@
         <Text weight="semibold">Annotations</Text>
         <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
       </div>
+      <Text size="sm" class="text-muted-foreground">
+        on Frame: {currentFrame}
+      </Text>
       <div class="flex flex-col gap-1">
+      <Separator class="my-2" />
 {#each currentFrameAnnotations as ann (ann.id)}
   {@const annShapeType = ann.shape.type as string}
   {@const annConfig = getDriver().config[annShapeType]}
@@ -266,7 +270,7 @@
     <div class="ml-auto flex shrink-0 items-center gap-0">
       <!-- BUTTON::HIDE/SHOW -->
       <div class={cn("", ann.hidden ? "flex" : "hidden group-hover:flex")}>
-        <ToolTooltip label={ann.hidden ? "Show" : "Hide"}>
+        <ToolTooltip label={"Hide / Show"}>
           {#snippet trigger()}
             <Button
               variant="ghost"
@@ -291,7 +295,7 @@
 
       <!-- BUTTON::LOCK/UNLOCK -->
       <div class={cn("", ann.locked ? "flex" : "hidden group-hover:flex")}>
-        <ToolTooltip label={ann.locked ? "Unlock" : "Lock"}>
+        <ToolTooltip label={"Lock / Unlock"}>
           {#snippet trigger()}
             <Button
               variant="ghost"
@@ -336,7 +340,6 @@
 {/each}
       </div>
     </section>
-    <Separator class="my-2" />
   {/if}
 
   {#if config}
