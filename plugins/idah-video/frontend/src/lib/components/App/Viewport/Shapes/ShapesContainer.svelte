@@ -312,7 +312,7 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
-    getDriver().command.call("timeline.focus");
+    viewport.video.currentFrame.value = ann.shape.start as number;
   }
 </script>
 
