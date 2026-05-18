@@ -3,13 +3,15 @@
 // ---------------------------------------------------------------------------
 
 /**
- * A keyboard shortcut expressed as a canonical key-combination string.
+ * A keyboard shortcut expressed as a canonical key-combination string,
+ * or an array of such strings for multiple bindings to the same command.
  *
  * Format: `"ModifierA+ModifierB+Key"` where modifiers are sorted alphabetically.
  * When there are no modifiers, it's just the key name.
  *
  * Examples:
- *   - `"Delete"`
+ *   - `"Delete"` (single shortcut)
+ *   - `["Delete", "Backspace"]` (multiple shortcuts for same command)
  *   - `"Control+Z"`
  *   - `"Control+Shift+Z"`
  *   - `"Control+Alt+ArrowRight"`
@@ -22,7 +24,7 @@
  * (`"Space"`, `"ArrowRight"`, `"Delete"`, …) and the uppercase letter
  * for letter keys (`"A"`, `"B"`, …).
  */
-export type IShortcut = string;
+export type IShortcut = string | string[];
 
 // ─── Media ────────────────────────────────────────────────────────────────
 
