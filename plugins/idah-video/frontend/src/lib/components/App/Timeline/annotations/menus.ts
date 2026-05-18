@@ -1,9 +1,11 @@
 import { CrosshairIcon, EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
-import type { Menus } from "$lib/components/App/ContextMenu/types";
-import type { TrackData } from "$lib/components/App/Timeline/types";
 import { getDriver } from "$lib/state/driver.svelte";
 import { selection } from "$lib/state/selection.svelte";
+import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+
+import type { Menus } from "$lib/components/App/ContextMenu/types";
+import type { TrackData } from "$lib/components/App/Timeline/types";
 
 export function getGroupContextMenus(props: { track: TrackData }): Menus {
   const { track } = props;
@@ -37,11 +39,18 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
-          onClick: () =>
-            getDriver().command.call("annotation.delete_group", {
-              groupId: track.id,
-              annotations: track.items.map((item) => item.rawData),
-            }),
+          onClick: () => {
+            showConfirmDialog({
+              title: "Delete annotation group",
+              description: "Are you sure you want to delete this annotation group?",
+              onConfirm: () => {
+                getDriver().command.call("annotation.delete_group", {
+                  groupId: track.id,
+                  annotations: track.items.map((item) => item.rawData),
+                });
+              },
+            });
+          },
         },
       },
     },
