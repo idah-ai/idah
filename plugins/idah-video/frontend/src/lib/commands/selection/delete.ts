@@ -12,13 +12,13 @@ export const command = {
   name: "selection.delete",
   group: "Selection",
   modes: ["default", "review"],
-  shortcut: "Delete",
+  shortcut: ["Delete", "Backspace"],
   shortDescription: "Delete selected",
   longDescription: null,
 };
 
 function hasSelection(): boolean {
-  return selection.value !== null;
+  return selection.value !== null && selection.value.type === "annotation";
 }
 
 export function register(driver: IIdahDriverV2): void {

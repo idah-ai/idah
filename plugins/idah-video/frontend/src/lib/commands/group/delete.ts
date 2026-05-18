@@ -11,12 +11,16 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { selection } from "$lib/state/selection.svelte";
+import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+
 
 export const command = {
   name: "annotation.delete_group",
   group: undefined,
-  modes: [] as string[],
-  shortcut: null,
+  // modes: [] as string[],
+  modes: ["default", "review"],
+  shortcut: ["Delete", "Backspace"],
   shortDescription: null,
   longDescription: null,
 };
@@ -24,6 +28,10 @@ export const command = {
 export interface GroupDeleteProps {
   groupId: string;
   annotations?: AnnotationItem[];
+}
+
+function hasGroupSelection(): boolean {
+  return selection.value !== null && selection.value.type === "group";
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -34,26 +42,43 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as GroupDeleteProps | undefined;
-      if (!props || !data.annotations) return noopAction(command);
+      // Determine groupId from props (programmatic call) or selection (keyboard shortcut)
+      let groupId: string | undefined;
+      let groupAnnotations: AnnotationItem[] | undefined;
+
+      // Programmatic call with options
+      if (opts) {
+        const props = opts as unknown as GroupDeleteProps;
+        if (props.groupId) {
+          groupId = props.groupId;
+        }
+        if (props.annotations && props.annotations.length > 0) {
+          groupAnnotations = props.annotations;
+        }
+      }
+
+      // Keyboard shortcut: read from selection
+      if (!groupId && !groupAnnotations && selection.value?.type === "group") {
+        groupId = selection.value.groupId;
+      }
+
+      if (!data.annotations) return noopAction(command);
 
       // Resolve annotations: use provided list, or look them up from the data store
-      let groupAnnotations: AnnotationItem[];
+      if (!groupAnnotations) {
+        if (!groupId) return noopAction(command);
 
-      if (props.annotations && props.annotations.length > 0) {
-        groupAnnotations = props.annotations;
-      } else if (props.groupId) {
-        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === props.groupId);
+        groupAnnotations = data.annotations.items.filter(
+          (ann) => (ann as any).metadata?.group_id === groupId
+        );
 
-        // If filter is empty, also search for annotation with id === props.groupId
+        // If filter is empty, also search for annotation with id === groupId
         if (groupAnnotations.length === 0) {
-          const matchById = data.annotations.items.find((ann) => ann.id === props.groupId);
+          const matchById = data.annotations.items.find((ann) => ann.id === groupId);
           if (matchById) {
             groupAnnotations = [matchById];
           }
         }
-      } else {
-        return noopAction(command);
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
@@ -63,6 +88,14 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
+          const confirmed = await showConfirmDialog({
+            title: "Delete group",
+            description: "Are you sure you want to delete all annotations in this group?",
+          });
+
+          if (!confirmed) return;
+
+          selection.deselect();
           for (const ann of snapshot) {
             await data.annotations!.delete(ann.id);
           }
@@ -82,5 +115,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
+    activeWhen: hasGroupSelection,
   });
 }

@@ -40,12 +40,14 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          onClick: () => {
-            showConfirmDialog({
+          onClick: async () => {
+            const confirmed = await showConfirmDialog({
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations?",
-              onConfirm: () => getDriver().command.call("annotation.delete_all"),
             });
+            if (confirmed) {
+              getDriver().command.call("annotation.delete_all");
+            }
           },
         },
       },
