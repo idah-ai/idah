@@ -11,7 +11,6 @@
   import { selection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { viewport as globalViewport } from "$lib/state/viewport.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
@@ -105,7 +104,7 @@
       const w = tracksViewportEl.clientWidth;
       if (w !== containerWidth) {
         containerWidth = w;
-        if (onDimensionsChange && w > 0 && remainingHeight > 0) {
+        if (onDimensionsChange && w > 0) {
           onDimensionsChange(w, remainingHeight);
         }
       }
@@ -122,13 +121,8 @@
   function applyZoom(newZoom: number, center?: number) {
     const newRange = length / newZoom;
 
-    // // Zoom from the given center, or fall back to viewport center
-    let zoomCenter: number = (viewport.startRange + viewport.endRange) / 2;
-
-    /** Note: This lead bugs on timeline but user want to zoom at the center of the selection */
-    // if (center !== undefined) {
-    //   zoomCenter = Math.max(1, center);
-    // }
+    const zoomCenter =
+      center !== undefined ? Math.max(0, Math.min(center, length)) : (viewport.startRange + viewport.endRange) / 2;
 
     let newStart = zoomCenter - newRange / 2;
     let newEnd = zoomCenter + newRange / 2;
@@ -146,32 +140,10 @@
     viewport.endRange = newEnd;
     clampViewport();
 
-    // Sync DOM scroll positions immediately after viewport change
-    setScrollLeft(viewport.startRange * scale);
-  }
-
-  // Expose focus handler so external commands (e.g. timeline.focus)
-  // can set the viewport range with proper clamping + DOM scroll sync.
-  async function handleFocusRange(start: number, end: number) {
-    viewport.startRange = start;
-    viewport.endRange = end;
-    clampViewport();
-
-    // Wait for Svelte to re-render the DOM so the ruler/tracks content
-    // has the correct width at the new scale. Otherwise the browser
-    // clamps scrollLeft to the old scrollWidth - clientWidth.
-    await tick();
-
-    // Compute scale locally from the new range — $derived scale hasn't
-    // been re-evaluated yet at this point in the synchronous call.
-    const newRange = viewport.endRange - viewport.startRange;
-    const newScale = containerWidth > 0 ? containerWidth / newRange : 1;
+    // Compute scale locally — $derived scale hasn't re-evaluated yet at this point
+    const newScale = containerWidth > 0 ? containerWidth / (viewport.endRange - viewport.startRange) : 1;
     setScrollLeft(viewport.startRange * newScale);
   }
-
-  // Expose focus handler on the global viewport timeline so external commands
-  // (e.g. timeline.focus) can set the range with proper clamping + DOM scroll sync.
-  globalViewport.timeline._focusHandler = handleFocusRange;
 
   // Expose functions to parent on mount
   onMount(() => {
