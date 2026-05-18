@@ -55,7 +55,7 @@ export function register(driver: IIdahDriverV2): void {
         at = props.at;
       } else {
         // Shortcut invocation — derive from current selection and viewport
-        if (selection.hasSelection() && selection.isAnnotation()) {
+        if (selection.isAnnotation()) {
           const sel = selection.value as {
             type: "annotation";
             annotation: IAnnotationRecord<Record<string, unknown>, Record<string, unknown>>;
@@ -160,6 +160,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: selection.hasSelection,
+    activeWhen: selection.isAnnotation,
   });
 }
