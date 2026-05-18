@@ -51,7 +51,7 @@
   let R = $derived(6 * invScale);
   let R_hovered = $derived(8 * invScale);
   let R_hit = $derived(8 * invScale);
-  let R_edge = $derived(4 * invScale);
+  let R_edge = $derived(3 * invScale);
   let R_edge_hovered = $derived(6 * invScale);
   let R_edge_hit = $derived(8 * invScale);
   let R_dot = $derived(2 * invScale);
@@ -77,9 +77,7 @@
   <polygon
     points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
     fill="grey"
-    fill-opacity={isHovered ? 0.5 : 0.2}
-    stroke="grey"
-    stroke-width={S_line}
+    stroke="white"
     stroke-linejoin="round"
     pointer-events="none"
   />
@@ -99,6 +97,15 @@
   {@const isHovered = hoveredVertexIndex === i}
   {@const isSelected = selectedIndices.has(i)}
   {@const curR = isHovered || isSelected ? R_hovered : R}
+  <!-- White halo for contrast → expands on hover -->
+  <circle
+    cx={point[0] * w}
+    cy={point[1] * h}
+    r={isHovered ? R_hovered : R_hit}
+    fill="white"
+    fill-opacity={isHovered ? 0.8 : 0.6}
+    pointer-events="none"
+  />
   <circle
     cx={point[0] * w}
     cy={point[1] * h}
