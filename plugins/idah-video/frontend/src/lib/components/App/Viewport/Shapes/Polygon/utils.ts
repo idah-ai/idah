@@ -140,7 +140,7 @@ export function nearFirstPolygonPoint(
 /** SVG data URL for a dot sight crosshair cursor (crosshair with a central dot). */
 export function scaleCursorSVG(color: string): string {
   return `data:image/svg+xml;base64,${btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="2" fill="${color}"/>
       <line x1="12" y1="3" x2="12" y2="9" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
       <line x1="12" y1="15" x2="12" y2="21" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
