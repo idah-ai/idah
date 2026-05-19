@@ -19,15 +19,15 @@
 
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
+  import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
   import { getDriver } from "$lib/state/driver.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
-  import { getCategoryActions } from "./menus";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -359,9 +359,9 @@
                     e.stopPropagation();
                     onClick(e);
                   }}
-                  class={cn({
+                  class={cn("opacity-0", {
                     "opacity-100": alwaysShow,
-                    "opacity-0 group-hover:opacity-100": !alwaysShow,
+                    "group-hover:opacity-100": !alwaysShow && mode == DEFAULT_MODE,
                   })}
                 ></CategoryAction>
               {/each}
