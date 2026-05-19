@@ -6,15 +6,12 @@
   import Badge from "$lib/components/ui/Badge/Badge.svelte";
   import Icon from "$lib/components/ui/Icon";
 
-  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+  import { CrosshairIcon, Trash2Icon } from "@lucide/svelte";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
-  import Button from "$lib/components/ui/Button/Button.svelte";
-
-  import { cn } from "$lib/utils";
+  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
 
   import BooleanProperty from "$lib/components/App/SelectionPanel/Properties/_BooleanProperty.svelte";
   import IntegerProperty from "$lib/components/App/SelectionPanel/Properties/_IntegerProperty.svelte";
@@ -182,6 +179,27 @@
     onReSelectCategory?.(reselectedCategoryId);
   }
 
+  function getAnnotationActions(ann: IVideoAnnotationRecord) {
+    return [
+      {
+        label: "Focus Annotation",
+        icon: CrosshairIcon,
+        onclick: (e: MouseEvent) => {
+          e.stopPropagation();
+          selection.selectAnnotation(ann);
+          getDriver().command.call("timeline.focus");
+        }
+      },
+      {
+        label: "Delete Annotation",
+        icon: Trash2Icon,
+        onclick: (e: MouseEvent) => {
+          e.stopPropagation();
+          getDriver().command.call("annotation.delete", { annotationId: ann.id });
+        }
+      }
+    ];
+  }
 </script>
 
 {#snippet shapeIcon(color: string | null | undefined)}
@@ -240,8 +258,10 @@
       <div class="flex items-center gap-2">
         <Text weight="semibold">Annotations</Text>
         <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
+        <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
       </div>
       <div class="flex flex-col gap-1">
+      <Separator class="my-2" />
 {#each currentFrameAnnotations as ann (ann.id)}
   {@const annShapeType = ann.shape.type as string}
   {@const annConfig = getDriver().config[annShapeType]}
@@ -250,6 +270,7 @@
   {@const annGroupId = ann.metadata?.group_id ?? ann.id}
   {@const annGroupIdLastPart = annGroupId.split("-").pop()}
   {@const annDisplayName = annCategory ? `${annCategory.label}-${annGroupIdLastPart}` : (ann.value?.category ?? "Uncategorized")}
+  {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
   <div class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent">
     <button
       class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
@@ -260,83 +281,28 @@
       {:else}
         <Icon src={vectorSquareIconSvg} color={annColor} />
       {/if}
-      <span class="truncate">{annDisplayName}</span>
+      <div class="flex flex-col min-w-0">
+        {#if annParentLabel.length > 0}
+          <span class="text-xs text-muted-foreground truncate">{annParentLabel}</span>
+        {/if}
+        <span class="truncate">{annDisplayName}</span>
+      </div>
     </button>
 
     <div class="ml-auto flex shrink-0 items-center gap-0">
-      <!-- BUTTON::HIDE/SHOW -->
-      <div class={cn("", ann.hidden ? "flex" : "hidden group-hover:flex")}>
-        <ToolTooltip label={ann.hidden ? "Show" : "Hide"}>
-          {#snippet trigger()}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onclick={(e: MouseEvent) => {
-                e.stopPropagation();
-                getDriver().command.call("annotation.update", {
-                  annotation: ann,
-                  value: { hidden: !ann.hidden },
-                });
-              }}
-            >
-              {#if ann.hidden}
-                <EyeOffIcon />
-              {:else}
-                <EyeIcon />
-              {/if}
-            </Button>
-          {/snippet}
-        </ToolTooltip>
-      </div>
-
-      <!-- BUTTON::LOCK/UNLOCK -->
-      <div class={cn("", ann.locked ? "flex" : "hidden group-hover:flex")}>
-        <ToolTooltip label={ann.locked ? "Unlock" : "Lock"}>
-          {#snippet trigger()}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onclick={(e: MouseEvent) => {
-                e.stopPropagation();
-                getDriver().command.call("annotation.update", {
-                  annotation: ann,
-                  value: { locked: !ann.locked },
-                });
-              }}
-            >
-              {#if ann.locked}
-                <LockIcon />
-              {:else}
-                <LockOpenIcon />
-              {/if}
-            </Button>
-          {/snippet}
-        </ToolTooltip>
-      </div>
-
-      <!-- BUTTON::DELETE -->
-      <div class="hidden group-hover:flex">
-        <ToolTooltip label="Delete">
-          {#snippet trigger()}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onclick={(e: MouseEvent) => {
-                e.stopPropagation();
-                getDriver().command.call("annotation.delete", { annotationId: ann.id });
-              }}
-            >
-              <Trash2Icon />
-            </Button>
-          {/snippet}
-        </ToolTooltip>
-      </div>
+      {#each getAnnotationActions(ann) as { label, icon: Icon, onclick }}
+        <CategoryAction
+          {label}
+          icon={Icon}
+          {onclick}
+          class = "opacity-0 group-hover:opacity-100 transition-opacity"
+        />
+      {/each}
     </div>
   </div>
 {/each}
       </div>
     </section>
-    <Separator class="my-2" />
   {/if}
 
   {#if config}

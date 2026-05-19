@@ -52,6 +52,7 @@ import { register as registerNoteAdd } from "./note/add";
 import { register as registerNoteGoto } from "./note/goto";
 
 import { register as registerAnnotationAdd } from "./annotation/add";
+import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
 import { register as registerAnnotationExtendNext } from "./annotation/extend_next";
 import { register as registerAnnotationExtendPrev } from "./annotation/extend_prev";
@@ -118,6 +119,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── Annotation ────────────────────────────────────────────────────────
   registerAnnotationAdd(driver);
+  registerAnnotationDelete(driver);
   registerAnnotationDeleteAll(driver);
   registerAnnotationToggleVisibilityAll(driver);
   registerAnnotationToggleEditabilityAll(driver);
