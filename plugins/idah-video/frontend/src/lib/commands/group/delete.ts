@@ -63,15 +63,13 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          for (const ann of snapshot) {
-            await data.annotations!.delete(ann.id);
-          }
+          const deletions = snapshot.map((ann) => data.annotations!.delete(ann.id));
+          await Promise.all(deletions);
         },
         async undo() {
           if (!data.annotations) return;
-          for (const ann of snapshot) {
-            await data.annotations!.create({ ...ann, id: ann.id });
-          }
+          const creations = snapshot.map((ann) => data.annotations!.create({ ...ann, id: ann.id }));
+          await Promise.all(creations);
         },
         isCombinable() {
           return false;

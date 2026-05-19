@@ -4,10 +4,10 @@
   import Separator from "$lib/components/ui/Separator/Separator.svelte";
 
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
+  import { getDriver } from "$lib/state/driver.svelte";
 
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { TrackData, TimelineItem } from "$lib/components/App/Timeline/types";
-  import { getDriver } from "$lib/state/driver.svelte";
 
   // Props — either `track` (title right-click) or `trackId`/`frame`/`items` (empty area right-click)
   interface Props extends ContextMenuComponentProps {
