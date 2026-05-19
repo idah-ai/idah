@@ -361,7 +361,7 @@
                   }}
                   class={cn("opacity-0", {
                     "opacity-100": alwaysShow,
-                    "group-hover:opacity-100": !alwaysShow && mode == DEFAULT_MODE,
+                    "group-hover:opacity-100": !alwaysShow && mode == DEFAULT_MODE && !selAnnotation,
                   })}
                 ></CategoryAction>
               {/each}
