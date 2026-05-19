@@ -58,10 +58,10 @@
   let S_line = $derived(2 * invScale);
 
   // Scale handle sizes
-  let R_scale = $derived(7 * invScale);
-  let R_scale_hovered = $derived(9 * invScale);
-  let R_scale_hit = $derived(10 * invScale);
-  let R_scale_dot = $derived(2.5 * invScale);
+  let R_scale = $derived(6 * invScale);
+  let R_scale_hovered = $derived(8 * invScale);
+  let R_scale_hit = $derived(8 * invScale);
+  let R_scale_dot = $derived(2 * invScale);
 
   let vertexHandles = $derived(polygonVertexHandles(vertices));
   let edgeMidpoints = $derived(polygonEdgeMidpoints(vertices));
@@ -164,6 +164,15 @@
 {/each}
 
 <!-- Scale handle at centroid -->
+  <!-- White halo for contrast → expands on hover -->
+<circle
+  cx={centroid[0] * w}
+  cy={centroid[1] * h}
+  r={hoveredScale ? R_scale_hovered : R_scale_hit}
+  fill="white"
+  fill-opacity={hoveredScale ? 0.8 : 0.6}
+  pointer-events="none"
+/>
 <circle
   cx={centroid[0] * w}
   cy={centroid[1] * h}
@@ -187,7 +196,7 @@
   r={R_scale_hit}
   fill="transparent"
   style:outline="none"
-  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG(color)}') 18 18, nesw-resize`}
+  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 18 18, nesw-resize`}
   onmouseenter={() => (hoveredScale = true)}
   onmouseleave={() => (hoveredScale = false)}
   onmousedown={(e) => { e.stopPropagation(); onStartScale(); }}

@@ -252,7 +252,7 @@
     fill={color}
     fill-opacity={selected ? 0.6 : 0.3}
     stroke={color.replace("0.5", "1")}
-    stroke-width={selected ? 3 : 1.5}
+    stroke-width={selected ? 1.5 : 1}
     vector-effect="non-scaling-stroke"
     style:outline="none"
     onmouseenter={() => (over = true)}
