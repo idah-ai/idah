@@ -4,10 +4,10 @@
   import Separator from "$lib/components/ui/Separator/Separator.svelte";
 
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
+  import { getDriver } from "$lib/state/driver.svelte";
 
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { TrackData, TimelineItem } from "$lib/components/App/Timeline/types";
-  import { getDriver } from "$lib/state/driver.svelte";
 
   // Props — either `track` (title right-click) or `trackId`/`frame`/`items` (empty area right-click)
   interface Props extends ContextMenuComponentProps {
@@ -72,7 +72,6 @@
         <Separator class="my-1" />
       {/if}
     {/each}
-
   {:else if trackId && frame !== undefined}
     <!-- Empty track area context menu — extend actions -->
     {#if prevAnnotation}
@@ -88,7 +87,7 @@
         }}
       >
         <ArrowRightToLineIcon />
-        Extend previous annotation to frame {frame}
+        Extend previous annotation to frame {frame + 1}
       </Button>
     {/if}
 
@@ -105,12 +104,12 @@
         }}
       >
         <ArrowLeftToLineIcon />
-        Extend next annotation to frame {frame}
+        Extend next annotation to frame {frame + 1}
       </Button>
     {/if}
 
     {#if !prevAnnotation && !nextAnnotation}
-      <div class="px-4 py-2 text-xs text-muted-foreground">No annotations to extend</div>
+      <div class="text-muted-foreground px-4 py-2 text-xs">No annotations to extend</div>
     {/if}
   {/if}
 </div>

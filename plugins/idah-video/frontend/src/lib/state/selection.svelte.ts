@@ -5,8 +5,17 @@
 // ---------------------------------------------------------------------------
 import type { IAnnotationRecord } from "$idah/v2/types";
 
-let _selected: { type: "annotation"; annotation: IAnnotationRecord } | { type: "group"; groupId: string } | null =
-  $state(null);
+export interface IAnnotationSelection {
+  type: "annotation";
+  annotation: IAnnotationRecord;
+}
+
+export interface IAnnotationGroupSelection {
+  type: "group";
+  groupId: string;
+}
+
+let _selected: IAnnotationSelection | IAnnotationGroupSelection | null = $state(null);
 
 export const selection = {
   get value() {

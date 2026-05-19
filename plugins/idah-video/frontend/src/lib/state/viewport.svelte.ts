@@ -11,7 +11,9 @@ class Viewport {
   // Only mode needs special handling
   #mode = $state(DEFAULT_MODE);
 
-  get mode() { return this.#mode; }
+  get mode() {
+    return this.#mode;
+  }
   get isCreationMode() {
     return ["idah-video:polygon", "idah-video:bounding-box"].includes(this.#mode);
   }
@@ -31,8 +33,12 @@ class Viewport {
     currentFrame: { value: 0 },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
-    play() { this.status = "play"; },
-    pause() { this.status = "pause"; },
+    play() {
+      this.status = "play";
+    },
+    pause() {
+      this.status = "pause";
+    },
   });
 
   workspace = $state({
@@ -54,10 +60,7 @@ class Viewport {
       const scaleY = vh / mh;
       const scale = Math.min(scaleX, scaleY);
       this.transform = {
-        translate: [
-          (vw - mw * scale) / 2,
-          (vh - mh * scale) / 2,
-        ],
+        translate: [(vw - mw * scale) / 2, (vh - mh * scale) / 2],
         scale,
       };
     },
@@ -105,15 +108,15 @@ class Viewport {
       const t = this.transform;
       const d = this.dimensions;
       const m = media.dimensions;
-      const s = t.scale
+      const s = t.scale;
 
       return [
         -t.translate[0] / (s * m[0]),
         -t.translate[1] / (s * m[1]),
         (-t.translate[0] + d[0]) / (s * m[0]),
-        (-t.translate[1] + d[1]) / (s * m[1])
-      ]
-    }
+        (-t.translate[1] + d[1]) / (s * m[1]),
+      ];
+    },
   });
 }
 

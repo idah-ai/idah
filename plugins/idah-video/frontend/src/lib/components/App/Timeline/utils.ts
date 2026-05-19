@@ -6,7 +6,7 @@
  * @param end2 - End of second range
  */
 export function rangesOverlap(start1: number, end1: number, start2: number, end2: number): boolean {
-  return start1 < end2 && end1 > start2;
+  return start1 <= end2 && end1 >= start2;
 }
 
 /**

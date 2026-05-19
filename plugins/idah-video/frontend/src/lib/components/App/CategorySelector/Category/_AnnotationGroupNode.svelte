@@ -1,23 +1,22 @@
 <script lang="ts">
-  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
-
   import { SidebarMenuButton, SidebarMenuItem } from "$lib/components/ui/Sidebar";
 
   import { cn } from "$lib/utils";
 
-  import Icon from "$lib/components/ui/Icon";
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import CategoryName from "$lib/components/App/CategorySelector/Category/_CategoryName.svelte";
+  import Icon from "$lib/components/ui/Icon";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
-  import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
 
-  import type { IVideoAnnotationRecord } from "$lib/types";
   import type { IConfigValue } from "$idah/v2/types";
+  import type { IVideoAnnotationRecord } from "$lib/types";
+  import { getCategoryActions } from "../menus";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -48,8 +47,9 @@
     const v = selection.value;
     return v?.type === "group" && v.groupId === groupId;
   });
-  let isAllHidden = $derived(annotations.map((annotation) => annotation.hidden).every((hidden) => hidden));
-  let isAllLocked = $derived(annotations.map((annotation) => annotation.locked).every((locked) => locked));
+  let actions = $derived(
+    getCategoryActions({ categoryId: category.id, items: annotations, onClickDelete: () => deleteAnnotationGroup() }),
+  );
 
   // function
   function selectAnnotationGroup() {
@@ -58,15 +58,15 @@
   }
 
   function toggleAnnotationGroupVisibility() {
-    getDriver().command.call("annotation.toggleGroupVisibility", { groupId });
+    getDriver().command.call("annotation.toggle_group_visibility", { groupId });
   }
 
   function toggleAnnotationGroupEditability() {
-    getDriver().command.call("annotation.toggleGroupEditability", { groupId });
+    getDriver().command.call("annotation.toggle_group_editability", { groupId });
   }
 
   function deleteAnnotationGroup() {
-    getDriver().command.call("annotation.deleteGroup", { groupId });
+    getDriver().command.call("annotation.delete_group", { groupId });
   }
 </script>
 
@@ -92,40 +92,20 @@
 
       <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
       <div class="ml-auto flex items-center gap-0">
-        <!-- BUTTON::HIDE/SHOW ALL ANNOTATIONS -->
-        <CategoryAction
-          class={cn({
-            flex: isAllHidden,
-            "hidden group-hover:flex": !isAllHidden,
-          })}
-          onclick={toggleAnnotationGroupVisibility}
-        >
-          {#if isAllHidden}
-            <EyeOffIcon />
-          {:else}
-            <EyeIcon />
-          {/if}
-        </CategoryAction>
-
-        <!-- BUTTON::LOCK & UNLOCK ALL ANNOTATIONS -->
-        <CategoryAction
-          class={cn({
-            flex: isAllLocked,
-            "hidden group-hover:flex": !isAllLocked,
-          })}
-          onclick={toggleAnnotationGroupEditability}
-        >
-          {#if isAllLocked}
-            <LockIcon />
-          {:else}
-            <LockOpenIcon />
-          {/if}
-        </CategoryAction>
-
-        <!-- BUTTON::DELETE ALL ANNOTATIONS -->
-        <CategoryAction class="hidden group-hover:flex" onclick={deleteAnnotationGroup}>
-          <Trash2Icon />
-        </CategoryAction>
+        {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+          <CategoryAction
+            {label}
+            {icon}
+            onclick={(e) => {
+              e.stopPropagation();
+              onClick(e);
+            }}
+            class={cn({
+              "opacity-100": alwaysShow,
+              "opacity-0 group-hover:opacity-100": !alwaysShow,
+            })}
+          ></CategoryAction>
+        {/each}
       </div>
     </div>
   </SidebarMenuButton>

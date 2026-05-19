@@ -1,16 +1,16 @@
 <script lang="ts">
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
-  import Button from "$lib/components/ui/Button/Button.svelte";
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
+  import Button from "$lib/components/ui/Button/Button.svelte";
+  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
 
   import {
     showContextMenu,
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
-  import { selection } from "$lib/state/selection.svelte";
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
@@ -47,16 +47,16 @@
   }
 
   function handleClick() {
-    selectAnnotationGroup();
     /**
      * Select annotation group only — don't change the current drawing mode
      */
+    selectAnnotationGroup();
   }
 </script>
 
 <button
   class={cn(
-    "hover:bg-secondary block w-full box-border cursor-pointer border-b px-2 text-left select-none focus:outline-none",
+    "hover:bg-secondary box-border block w-full cursor-pointer border-b px-2 text-left select-none focus:outline-none",
     {
       "border-primary bg-primary/10 border-t border-b": isGroupSelected,
     },
@@ -85,10 +85,10 @@
 
     <div class="ml-auto flex shrink-0 items-center">
       {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, alwaysShow, onClick }] (key)}
-        <div class={cn("", alwaysShow ? "block" : "hidden group-hover:flex")}>
+        <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
           <ToolTooltip {label}>
             {#snippet trigger()}
-              <Button variant="ghost" size="icon-sm" onclick={onClick}>
+              <Button variant="ghost" size="icon-sm" class="focus:outline-none" onclick={onClick}>
                 <Icon />
               </Button>
             {/snippet}

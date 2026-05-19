@@ -51,13 +51,7 @@
     isPlaying: boolean;
   };
 
-  let {
-    frame,
-    children,
-    onSelection,
-    onAddNewNote,
-    isPlaying,
-  }: Props = $props();
+  let { frame, children, onSelection, onAddNewNote, isPlaying }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -318,6 +312,7 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
+    getDriver().command.call("timeline.scroll_to_annotation");
   }
 </script>
 

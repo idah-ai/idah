@@ -1,32 +1,32 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { media } from "$lib/state/media.svelte";
-  import { selection } from "$lib/state/selection.svelte";
-  import { entryRoot } from "$lib/state/entry-root.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { ui } from "$lib/state/ui.svelte";
-  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
-  import { data } from "$lib/state/data.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
   } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
+  import { data } from "$lib/state/data.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+  import { entryRoot } from "$lib/state/entry-root.svelte";
+  import { media } from "$lib/state/media.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
-  import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
+  import DebugConsole from "$lib/components/App/DebugConsole.svelte";
+  import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
+  import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
 
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
@@ -44,9 +44,7 @@
   let selAnnotation = $derived(
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
-  let selGroup = $derived(
-    selection.value?.type === "group" ? selection.value : undefined,
-  );
+  let selGroup = $derived(selection.value?.type === "group" ? selection.value : undefined);
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -115,6 +113,7 @@
       const consumed = getDriver().handleKeydown(e);
       if (consumed) {
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 
@@ -144,9 +143,7 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find(
-      (ann) => (ann.shape as any).type === "entry:root",
-    );
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
     /** TOOLS CONFIGURATION */
@@ -214,7 +211,12 @@
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
-    const videoShape: IVideoAnnotationShape = { type, start: start!, end: end!, frames: frames as IVideoFrameSelection[] };
+    const videoShape: IVideoAnnotationShape = {
+      type,
+      start: start!,
+      end: end!,
+      frames: frames as IVideoFrameSelection[],
+    };
 
     getDriver().command.call("annotation.add", { shape: videoShape, value });
 
@@ -253,7 +255,6 @@
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
     if (!editable) return;
 
-
     if (frame != undefined) {
       deleteSelection(annotation.metadata!.id as string, frame);
     } else {
@@ -268,9 +269,13 @@
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
-    let requirementFullfilled = requiredFullfilled(value, getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties);
+    let requirementFullfilled = requiredFullfilled(
+      value,
+      getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
+    );
 
-    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id) selection.selectAnnotation(entryRoot.value as any);
+    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id)
+      selection.selectAnnotation(entryRoot.value as any);
 
     // wait for confirmation
     if (showPopOver) {
@@ -377,7 +382,10 @@
 
       if (
         getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
-        requiredFullfilled(annotation_value_from, getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties)
+        requiredFullfilled(
+          annotation_value_from,
+          getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
+        )
       ) {
         shapeSelectionArgs = undefined;
         pendingValue = {};
@@ -434,9 +442,7 @@
     const annotationGroups = groupAnnotations(viewportAnnotations);
 
     // Find the annotation group to get all annotations in the group
-    const newSelectedAnnotationGroup = annotationGroups.find(
-      (group) => group.groupId === selGroup?.groupId,
-    );
+    const newSelectedAnnotationGroup = annotationGroups.find((group) => group.groupId === selGroup?.groupId);
 
     if (newSelectedAnnotationGroup) {
       const closestAnnotation = findClosestAnnotationInGroup({
@@ -615,7 +621,8 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, viewport.video.currentFrame.value)}
+              onSelectAnnotationGroup={(annotationGroup) =>
+                selectClosestAnnotation(annotationGroup, viewport.video.currentFrame.value)}
               onDeleteAnnotation={deleteAnnotation}
             />
           </ResizablePane>
@@ -659,12 +666,7 @@
                 </ShapesContainer>
               {/if}
 
-              <PropertiesSidebar
-                {annotationId}
-                {annotationValue}
-                {onEditValue}
-                onReSelectCategory={reSelectCategory}
-              />
+              <PropertiesSidebar {annotationId} {annotationValue} {onEditValue} onReSelectCategory={reSelectCategory} />
             </section>
           </ResizablePane>
         </ResizablePaneGroup>
@@ -673,12 +675,7 @@
       <ResizableHandle withHandle />
 
       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
-        <BottomPanel
-          {viewportAnnotations}
-          {length}
-          bind:player
-          volume={viewport.video.sound}
-        />
+        <BottomPanel {viewportAnnotations} {length} bind:player volume={viewport.video.sound} />
       </ResizablePane>
     </ResizablePaneGroup>
   </div>
@@ -686,3 +683,4 @@
 
 <DebugConsole />
 <ContextMenu />
+<ConfirmDialog />

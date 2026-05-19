@@ -6,11 +6,9 @@
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
-  import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { resolveAnnotationColor } from "$lib/utils/color";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { resolveAnnotationColor } from "$lib/utils/color";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
@@ -23,13 +21,6 @@
   // Variables
   let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
   const rangeSize = $derived(Number(endRange - startRange) + 1);
-  const category = $derived(
-    findCategory({
-      labelConfig: getDriver().config,
-      categoryId: annotation.value?.category,
-      shapeType: annotation.shape.type,
-    }),
-  );
   const keyframes = $derived(annotation.shape.frames.map((f) => f.frame));
 
   // Compute color using the same annotationColor() as the viewport shapes
@@ -49,12 +40,15 @@
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relX = e.clientX - rect.left;
     const rangeSpan = endRange - startRange + 1;
-    const hoverFrame = Math.round(startRange + (relX / rect.width) * rangeSpan);
+    const hoverFrame = Math.min(endRange, Math.floor(startRange + (relX / rect.width) * rangeSpan));
 
     const contextMenuProps: ContextMenuComponentProps = {
       item,
       currentFrame: hoverFrame,
     };
+
+    /* Select annotation */
+    selection.selectAnnotation(annotation);
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
@@ -71,7 +65,7 @@
 </script>
 
 <button
-  class="box-border h-full w-full cursor-pointer rounded-lg border p-2 transition-opacity hover:opacity-80 focus:outline-none"
+  class="relative h-full w-full cursor-pointer rounded-lg border transition-opacity hover:opacity-80 focus:outline-none"
   class:ring-2={isSelected}
   class:ring-offset-1={isSelected}
   style:background-color={color + "30"}
@@ -97,4 +91,7 @@
       onkeypress={() => {}}
     ></div>
   {/each}
+
+  <!-- Visual padding layer (does not affect keyframe positioning) -->
+  <div class="pointer-events-none absolute inset-0 rounded-lg p-2"></div>
 </button>

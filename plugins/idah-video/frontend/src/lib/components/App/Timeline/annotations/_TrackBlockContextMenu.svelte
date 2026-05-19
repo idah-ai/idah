@@ -72,16 +72,16 @@
                 },
               },
             }),
-      split: {
-        label: `Split at frame ${frame}`,
-        icon: SquareSplitHorizontalIcon,
-        onClick: () => {
-          getDriver().command.call("annotation.split", {
-            annotationId: annotation.id,
-            at: frame,
-          });
+        split: {
+          label: `Split at frame ${frame + 1}`,
+          icon: SquareSplitHorizontalIcon,
+          onClick: () => {
+            getDriver().command.call("annotation.split", {
+              annotationId: annotation.id,
+              at: frame,
+            });
+          },
         },
-      },
       },
     },
     danger: {
