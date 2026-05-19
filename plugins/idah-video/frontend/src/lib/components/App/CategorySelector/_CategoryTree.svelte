@@ -350,29 +350,31 @@
             })}
 
             <!-- Icon Actions -->
-            <div class="ml-auto flex content-center items-center gap-0">
-              {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
-                <CategoryAction
-                  {label}
-                  {icon}
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    onClick(e);
-                  }}
-                  class={cn("opacity-0", {
-                    "opacity-100": alwaysShow,
-                    "group-hover:opacity-100": !alwaysShow && mode == DEFAULT_MODE && !selAnnotation,
-                  })}
-                ></CategoryAction>
-              {/each}
+            {#if mode == DEFAULT_MODE && !selAnnotation}
+              <div class="ml-auto flex content-center items-center gap-0">
+                {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+                  <CategoryAction
+                    {label}
+                    {icon}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      onClick(e);
+                    }}
+                    class={cn("opacity-0", {
+                      "opacity-100": alwaysShow,
+                      "group-hover:opacity-100": !alwaysShow,
+                    })}
+                  ></CategoryAction>
+                {/each}
 
-              <AnnotationCountBadge
-                class={cn("mr-2 ml-1 opacity-0", {
-                  "opacity-100": view === "sidebar" && count > 0,
-                })}
-                {count}
-              />
-            </div>
+                <AnnotationCountBadge
+                  class={cn("mr-2 ml-1 opacity-0", {
+                    "opacity-100": view === "sidebar" && count > 0,
+                  })}
+                  {count}
+                />
+              </div>
+            {/if}
           </SidebarMenuItem>
         </div>
       </CollapsibleTrigger>
