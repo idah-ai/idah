@@ -19,15 +19,15 @@
 
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
+  import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
   import { getDriver } from "$lib/state/driver.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
-  import { getCategoryActions } from "./menus";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -243,7 +243,7 @@
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
-      {@const { count } = groupFilteredAnnotations(annotations)}
+      {@const count = annotations.length}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -351,20 +351,22 @@
 
             <!-- Icon Actions -->
             <div class="ml-auto flex content-center items-center gap-0">
-              {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
-                <CategoryAction
-                  {label}
-                  {icon}
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    onClick(e);
-                  }}
-                  class={cn({
-                    "opacity-100": alwaysShow,
-                    "opacity-0 group-hover:opacity-100": !alwaysShow,
-                  })}
-                ></CategoryAction>
-              {/each}
+              {#if mode == DEFAULT_MODE}
+                {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+                  <CategoryAction
+                    {label}
+                    {icon}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      onClick(e);
+                    }}
+                    class={cn("opacity-0", {
+                      "opacity-100": alwaysShow,
+                      "group-hover:opacity-100": !alwaysShow,
+                    })}
+                  ></CategoryAction>
+                {/each}
+              {/if}
 
               <AnnotationCountBadge
                 class={cn("mr-2 ml-1 opacity-0", {
