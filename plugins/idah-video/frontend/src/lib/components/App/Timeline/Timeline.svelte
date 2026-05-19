@@ -8,12 +8,14 @@
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
 
   import { modKey } from "$lib/utils/browser";
-  import { selection } from "$lib/state/selection.svelte";
+  import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { getAnnotationGroupId } from "$lib/types";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
+  import type { IAnnotationRecord } from "$idah/v2/types";
 
   interface Props extends TimelineProps {
     toolbar?: Snippet;
@@ -459,6 +461,31 @@
     bodyScrollTop = bodyScrollEl.scrollTop;
   }
 
+  // Scroll vertically to show the selected annotation's track.
+  // Reads bodyScrollEl.scrollTop directly (not reactive bodyScrollTop) so this effect
+  // only re-runs on selection or items changes — not on every manual scroll.
+  $effect(() => {
+    const v = selection.value;
+    handleAnnotationScroll(v as IAnnotationSelection);
+  });
+
+  function handleAnnotationScroll(selectionValue: IAnnotationSelection) {
+    if (!selection.isAnnotation() || !bodyScrollEl) return;
+
+    const groupId = getAnnotationGroupId(selectionValue.annotation);
+    const trackIndex = items.findIndex((t) => t.id === groupId);
+    if (trackIndex === -1) return;
+
+    const trackTop = trackIndex * TRACK_HEIGHT;
+    const trackBottom = trackTop + TRACK_HEIGHT;
+    const currentScrollTop = bodyScrollEl.scrollTop;
+    const currentScrollBottom = currentScrollTop + bodyScrollClientHeight;
+
+    if (trackTop >= currentScrollTop && trackBottom <= currentScrollBottom) return;
+
+    bodyScrollEl.scrollTop = Math.max(0, trackTop - bodyScrollClientHeight / 2 + TRACK_HEIGHT / 2);
+  }
+
   // Calculate tracks height for content
   const tracksHeight = $derived(items.length * TRACK_HEIGHT);
 
@@ -536,13 +563,15 @@
     onscroll={handleBodyScroll}
   >
     <div class="timeline-main">
-      <div class="timeline-trackinfos-body" onwheel={handleBodyScroll} style="height: {tracksHeight}px;">
+      <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
-          {#if TrackInfoSlot}
-            {@render TrackInfoSlot({ track })}
-          {:else}
-            <TrackInfo {track} />
-          {/if}
+          <div class="timeline-trackinfo-row" style="top: {track.top}px;">
+            {#if TrackInfoSlot}
+              {@render TrackInfoSlot({ track })}
+            {:else}
+              <TrackInfo {track} />
+            {/if}
+          </div>
         {/each}
       </div>
 
@@ -693,6 +722,12 @@
     border-right: 1px solid #ccc;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  .timeline-trackinfo-row {
+    position: absolute;
+    left: 0;
+    right: 0;
   }
 
   /* Horizontal-only scroll viewport for the tracks area.

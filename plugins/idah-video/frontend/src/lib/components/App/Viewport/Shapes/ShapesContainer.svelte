@@ -312,7 +312,7 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
-    viewport.video.currentFrame.value = ann.shape.start as number;
+    // TODO: getDriver().command.call("timeline.scroll_to_annotation_viewport")
   }
 </script>
 
