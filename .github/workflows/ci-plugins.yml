@@ -1,0 +1,150 @@
+# Plugin CI workflow
+#
+# This workflow runs checks for all plugins in the plugins/ directory.
+# It uses a matrix strategy to run checks for each plugin in parallel.
+# Plugins are auto-discovered - no workflow changes needed when adding new plugins.
+#
+# Frontend checks (if frontend/package.json exists):
+#   - pnpm install (with caching)
+#   - pnpm check (Svelte type checking)
+#   - pnpm test (vitest)
+#   - pnpm build (production build)
+#
+# Backend checks (if backends/Gemfile.lock exists):
+#   - bundle install (with caching via ruby/setup-ruby)
+#   - bundle exec rubocop
+#   - bundle exec rspec
+
+name: CI - Plugins
+
+on:
+  pull_request:
+    paths:
+      - "plugins/**"
+    types:
+      - ready_for_review
+      - synchronize
+      - opened
+      - reopened
+
+concurrency:
+  group: ${{ github.head_ref }}-plugins
+  cancel-in-progress: true
+
+jobs:
+  discover:
+    name: Discover Plugins
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.list.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List plugin directories
+        id: list
+        run: |
+          plugins=$(ls -d plugins/*/ 2>/dev/null | sed 's|plugins/||;s|/||' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
+          echo "Discovered plugins: $plugins"
+
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.filter.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            plugins:
+              - added|modified: 'plugins/**'
+
+  plugin-ci:
+    name: Plugin ${{ matrix.plugin }}
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: [discover, changes]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        plugin: ${{ fromJson(needs.discover.outputs.plugins) }}
+      fail-fast: false
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.plugin }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # -------------------------------------------------------
+      # System dependencies
+      # -------------------------------------------------------
+      - name: Install system dependencies (ImageMagick & FFmpeg)
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            imagemagick \
+            libmagickcore-dev \
+            libmagickwand-dev \
+            ffmpeg
+
+      # -------------------------------------------------------
+      # Frontend checks
+      # -------------------------------------------------------
+      - name: Setup Node
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        run: npm install -g pnpm@10.15.1
+
+      - name: Cache frontend dependencies
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        uses: actions/cache@v4
+        with:
+          path: plugins/${{ matrix.plugin }}/frontend/node_modules
+          key: ${{ runner.os }}-plugin-${{ matrix.plugin }}-modules-${{ hashFiles(format('plugins/{0}/frontend/pnpm-lock.yaml', matrix.plugin)) }}
+
+      - name: Install frontend dependencies
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/frontend
+        run: pnpm install
+
+      - name: Run Svelte Check
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/frontend
+        run: pnpm check
+
+      - name: Run Frontend Tests
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/frontend
+        run: pnpm test
+
+      - name: Build Frontend
+        if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/frontend
+        run: pnpm build
+
+      # -------------------------------------------------------
+      # Backend checks
+      # -------------------------------------------------------
+      - uses: ruby/setup-ruby@v1
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
+        with:
+          bundler-cache: true
+          working-directory: plugins/${{ matrix.plugin }}/backends
+
+      - name: Run Rubocop
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/backends
+        run: bundle exec rubocop --force-exclusion
+
+      - name: Run RSpec
+        if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
+        working-directory: plugins/${{ matrix.plugin }}/backends
+        run: bundle exec rspec --exclude-pattern 'vendor/**/*'

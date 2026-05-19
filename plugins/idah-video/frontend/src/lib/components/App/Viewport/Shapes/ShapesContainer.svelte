@@ -18,17 +18,20 @@
 
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
+  import BBoxCreateShape from "./BBoxCreateShape.svelte";
+  import PolygonCreateShape from "./PolygonCreateShape.svelte";
+  import Crosshair from "./Crosshair.svelte";
 
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
+  import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
-  import type { BBox } from "$lib/utils/math/bbox";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
@@ -42,25 +45,13 @@
     annotations_promise: Promise<IVideoAnnotationRecord[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
-    onSelection: (
-      type: string,
-      frame: number,
-      points?: Point[],
-      angle?: number,
-      id?: string,
-    ) => void;
+    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     isPlaying: boolean;
   };
 
-  let {
-    frame,
-    children,
-    onSelection,
-    onAddNewNote,
-    isPlaying,
-  }: Props = $props();
+  let { frame, children, onSelection, onAddNewNote, isPlaying }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -71,11 +62,14 @@
   // ── Derived viewport dimensions ──────────────────────────────────────
   let screenDimensions: Point = $derived<Point>(viewport.workspace.dimensions);
 
+  // Cursor in scene space (passes through zoom/pan transform, but not media normalization)
   let normalizedMousePosition: Point = $derived([
     screenDimensions[0] > 0 ? mousePosition[0] / screenDimensions[0] : 0,
     screenDimensions[1] > 0 ? mousePosition[1] / screenDimensions[1] : 0,
   ] as Point);
 
+  // Cursor in scene space (passes through zoom/pan transform, but not media normalization).
+  // Used for rendering shapes that follow the cursor (crosshair, build previews) so they stay aligned with the content.
   let sceneMousePosition: Point = $derived.by(() => {
     const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
     return [sv.x, sv.y] as Point;
@@ -86,10 +80,7 @@
   // scene transform (zoom/pan) so it always stays aligned with the content.
   let sceneNormalizedCursor: Point = $derived.by((): Point => {
     const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
-    return [
-      media.width > 0 ? sv.x / media.width : 0,
-      media.height > 0 ? sv.y / media.height : 0,
-    ];
+    return [media.width > 0 ? sv.x / media.width : 0, media.height > 0 ? sv.y / media.height : 0];
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
@@ -117,28 +108,25 @@
 
   // Derive tool selection from the currently selected annotation's component
   let selAnnotation = $derived(
-    selection.value?.type === "annotation"
-      ? (selection.value.annotation as any)
-      : undefined,
+    selection.value?.type === "annotation" ? (selection.value.annotation as any) : undefined,
   );
 
   let toolSelection = $derived.by(() => {
-    const selId =
-      selection.value?.type === "annotation"
-        ? selection.value.annotation?.id
-        : null;
+    const selId = selection.value?.type === "annotation" ? selection.value.annotation?.id : null;
     if (!selId) return undefined;
     const idx = visibleAnnotations.findIndex((a) => a.id === selId);
     if (idx === -1) return undefined;
     return _compRefs[idx]?.getToolSelection();
   });
 
-  // ── Build mode state ─────────────────────────────────────────────────
-  const BUILD_MODE = "idah-video:bounding-box";
-  const POLYGON_MODE = "idah-video:polygon";
-  let buildStart: Point | undefined = $state();
+  // ── Create shape component refs ───────────────────────────────────────
+  let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
+  let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
-  // ── Polygon build state ──────────────────────────────────────────────
+  let isBoundingBoxMode = $derived(viewport.mode === BOUNDING_BOX_MODE);
+  let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
+  let isNoteMode = $derived(viewport.mode === NOTE_MODE);
+
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
   let isDragging = $state(false);
@@ -167,6 +155,7 @@
       .cursor-grab { cursor: grab; }
       .cursor-grabbing { cursor: grabbing; }
       .cursor-pointer { cursor: pointer; }
+      .cursor-target { cursor: alias; }
     `;
     document.head.appendChild(style);
 
@@ -184,12 +173,19 @@
     zoomableElement.zoomOut();
   }
 
+  // ── Check if cursor is hovering the first polygon draft point ────────
+  let hoveringFirstPoint = $derived(
+    isPolygonMode && nearFirstPolygonPoint(sceneNormalizedCursor, media.width, media.height, polygonDraft.points),
+  );
+
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
-    if (viewport.mode === "note") return "cursor-note";
-    if (viewport.mode === BUILD_MODE) return "cursor-crosshair";
+    if (hoveringFirstPoint) return "cursor-target";
+    if (viewport.isCreationMode) return "cursor-crosshair";
+    if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
+
     return "cursor-grab";
   });
 
@@ -197,28 +193,22 @@
     screenDimensions[0] > 0 &&
       screenDimensions[1] > 0 &&
       !isPlaying &&
-      viewport.mode !== "default" &&
-      viewport.mode !== "note",
+      viewport.mode !== DEFAULT_MODE &&
+      viewport.mode !== NOTE_MODE,
   );
 
-  // ── SVG transform ────────────────────────────────────────────────────
-  let svgTransform = ''
-  // let svgTransform = $derived(
-  //   `translate(${viewport.workspace.transform.translate[0]}px, ${viewport.workspace.transform.translate[1]}px) scale(${viewport.workspace.transform.scale})`,
-  // );
-
   const viewBox = $derived.by(() => {
-    const [tx, ty] = viewport.workspace.transform.translate
-    const [w, h] = viewport.workspace.dimensions
-    const s = viewport.workspace.transform.scale
-    return `${-tx/s} ${-ty/s} ${w/s} ${h/s}`
-  })
+    const [tx, ty] = viewport.workspace.transform.translate;
+    const [w, h] = viewport.workspace.dimensions;
+    const s = viewport.workspace.transform.scale;
+    return `${-tx / s} ${-ty / s} ${w / s} ${h / s}`;
+  });
 
   // ── Event handlers ───────────────────────────────────────────────────
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
     // Only pan in default mode
-    if (viewport.mode === "default") {
+    if (viewport.mode === DEFAULT_MODE) {
       zoomableElement.mouseMove(e);
     }
   }
@@ -233,44 +223,31 @@
     // reflects the actual click position (not the last mousemove).
     mousePosition = [e.offsetX, e.offsetY];
 
-    const isBuildMode = viewport.mode === BUILD_MODE;
-    const isPolyMode = viewport.mode === POLYGON_MODE;
-
-    // ── Polygon creation mode — check BEFORE tool selection ──────────
-    if (isPolyMode) {
+    // ── Polygon creation mode — delegate to PolygonCreateShape ─────
+    if (isPolygonMode) {
       e.stopPropagation();
-      if (polygonDraft.points.length >= 3) {
-        const first = polygonDraft.points[0];
-        const dx = Math.abs(sceneNormalizedCursor[0] - first[0]) * media.width;
-        const dy = Math.abs(sceneNormalizedCursor[1] - first[1]) * media.height;
-        if (dx * dx + dy * dy < 400) {
-          const pts = [...polygonDraft.points];
-          polygonDraft.reset();
-          // Route through onSelection so the workspace can apply pendingValue (selected category)
-          onSelection("idah-video:polygon", frame, pts, 0, undefined);
-          return;
-        }
-      }
-      getDriver().command.call("annotation.polygon.add_point", { point: sceneNormalizedCursor });
+      polygonCreateComp?.handleMouseDown(sceneNormalizedCursor);
       return;
     }
 
-    // If an annotation is already selected, try editing it (but NOT in polygon mode)
+    // ── Bounding-box creation mode — delegate to BBoxCreateShape ───
+    if (isBoundingBoxMode) {
+      bboxCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      return;
+    }
+
+    // ── Note mode — defer to mouseup ───────────────────────────────
+    if (isNoteMode) {
+      return;
+    }
+
+    // ── Default mode: try editing selected annotation ──────────────
     if (toolSelection) {
       const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
       if (consumed) {
         e.stopPropagation();
         return;
       }
-    }
-
-    if (isBuildMode) {
-      buildStart = sceneNormalizedCursor;
-      return;
-    }
-
-    if (viewport.mode === "note") {
-      return;
     }
 
     // Nothing hit — deselect and start panning
@@ -286,31 +263,14 @@
   }
 
   function onMouseUp(e: MouseEvent) {
-    const isBuildMode = viewport.mode === BUILD_MODE;
-
-    if (isBuildMode && buildStart) {
-      // Finalize new bounding box
-      const end = sceneNormalizedCursor;
-      const x1 = Math.min(buildStart[0], end[0]);
-      const y1 = Math.min(buildStart[1], end[1]);
-      const x2 = Math.max(buildStart[0], end[0]);
-      const y2 = Math.max(buildStart[1], end[1]);
-      buildStart = undefined;
-
-      // Minimum size threshold (normalized: 0.5%)
-      if (Math.abs(x2 - x1) < 0.005 || Math.abs(y2 - y1) < 0.005) return;
-
-      const points: Point[] = [
-        [x1, y1],
-        [x2, y1],
-        [x2, y2],
-        [x1, y2],
-      ];
-      onSelection(viewport.mode, frame, points, 0, undefined);
+    // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
+    if (isBoundingBoxMode) {
+      bboxCreateComp?.handleMouseUp(sceneNormalizedCursor);
       return;
     }
 
-    if (viewport.mode === "note") {
+    // Note mode — show new note popup anchored to cursor position
+    if (isNoteMode) {
       showNewNoteFeedPopup();
       return;
     }
@@ -323,23 +283,21 @@
   }
 
   function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {
-    if (viewport.mode === "note") {
-      onAddNewNote({
-        anchorType: annotation ? "annotation" : "entry",
-        position: {
-          x: normalizedMousePosition[0],
-          y: normalizedMousePosition[1],
-          start: frame,
-          end: frame,
-          target_size: screenDimensions,
-          zoom_info: {
-            scale: viewport.workspace.transform.scale,
-            offset: viewport.workspace.transform.translate,
-          },
+    onAddNewNote({
+      anchorType: annotation ? "annotation" : "entry",
+      position: {
+        x: normalizedMousePosition[0],
+        y: normalizedMousePosition[1],
+        start: frame,
+        end: frame,
+        target_size: screenDimensions,
+        zoom_info: {
+          scale: viewport.workspace.transform.scale,
+          offset: viewport.workspace.transform.translate,
         },
-        annotationId: (annotation?.metadata?.id as string | undefined) || null,
-      });
-    }
+      },
+      annotationId: (annotation?.metadata?.id as string | undefined) || null,
+    });
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
@@ -347,25 +305,21 @@
   }
 
   function handleClick(ann: IAnnotationRecord) {
-    // Don't select annotations in polygon creation mode
-    if (viewport.mode === POLYGON_MODE) return;
-    if (
-      selection.value?.type === "annotation" &&
-      selection.value.annotation?.id === ann.id
-    )
-      return;
+    // Don't select annotations in creation mode
+    if (viewport.isCreationMode) return;
+
+    // Don't select already selected annotation
+    if (selection.isAnnotationSelected(ann.id)) return;
+
     selection.selectAnnotation(ann);
+    getDriver().command.call("timeline.scroll_to_annotation");
   }
 </script>
 
 <div class={cn("shapes-container flex-1", pointer)}>
   <!-- Layer 0: Viewport with video content -->
   <div class="viewport-layer">
-    <Viewport
-      bind:this={zoomableElement}
-      onPanStart={() => (isPanning = true)}
-      onPanStop={() => (isPanning = false)}
-    >
+    <Viewport bind:this={zoomableElement} onPanStart={() => (isPanning = true)} onPanStop={() => (isPanning = false)}>
       {@render children?.()}
     </Viewport>
   </div>
@@ -375,7 +329,7 @@
   <svg
     width="100%"
     height="100%"
-    viewBox={viewBox}
+    {viewBox}
     onkeydown={() => {}}
     bind:this={svgEl}
     onmousedown={onMouseDown}
@@ -385,114 +339,44 @@
     onwheel={onWheel}
   >
     <!-- Crosshair (for build modes) -->
-    {#if showCrosshair}
-      <line
-        x1={sceneMousePosition[0] - 10000}
-        y1={sceneMousePosition[1]}
-        x2={sceneMousePosition[0] + 10000}
-        y2={sceneMousePosition[1]}
-        stroke="rgba(100,100,100,0.25)"
-        stroke-width="1"
-      />
-      <line
-        x1={sceneMousePosition[0]}
-        y1={sceneMousePosition[1] - 10000}
-        x2={sceneMousePosition[0]}
-        y2={sceneMousePosition[1] + 10000}
-        stroke="rgba(100,100,100,0.25)"
-        stroke-width="1"
-      />
-    {/if}
+    <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
     <g>
-      <!-- Build mode preview: dashed rectangle from start to current cursor -->
-      {#if viewport.mode === BUILD_MODE && buildStart}
-        {@const sx = buildStart[0] * media.width}
-        {@const sy = buildStart[1] * media.height}
-        {@const cx = sceneNormalizedCursor[0] * media.width}
-        {@const cy = sceneNormalizedCursor[1] * media.height}
-        <rect
-          x={Math.min(sx, cx)}
-          y={Math.min(sy, cy)}
-          width={Math.abs(cx - sx)}
-          height={Math.abs(cy - sy)}
-          fill="rgba(246, 64, 43, 0.15)"
-          stroke="rgba(246, 64, 43, 0.8)"
-          stroke-width="2"
-          stroke-dasharray="6,3"
-          vector-effect="non-scaling-stroke"
+      <!-- Build mode: bounding box creation preview -->
+      {#if isBoundingBoxMode}
+        <BBoxCreateShape
+          bind:this={bboxCreateComp}
+          cursor={sceneNormalizedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {frame}
+          {onSelection}
         />
       {/if}
 
-      <!-- Polygon draft preview: lines connecting placed points + line to cursor -->
-      {#if viewport.mode === POLYGON_MODE && polygonDraft.points.length > 0}
-        {@const pts = polygonDraft.points}
-        {@const cursorPos = sceneNormalizedCursor}
-        <!-- Draw path connecting all placed points -->
-        <polyline
-          points={pts.map((p) => `${p[0] * media.width},${p[1] * media.height}`).join(" ")}
-          fill="none"
-          stroke="rgba(246, 64, 43, 0.8)"
-          stroke-width="2"
-          stroke-dasharray="4,2"
-          vector-effect="non-scaling-stroke"
-        />
-        <!-- Line from last point to cursor -->
-        {#if pts.length > 0}
-          <line
-            x1={pts[pts.length - 1][0] * media.width}
-            y1={pts[pts.length - 1][1] * media.height}
-            x2={cursorPos[0] * media.width}
-            y2={cursorPos[1] * media.height}
-            stroke="rgba(246, 64, 43, 0.4)"
-            stroke-width="1.5"
-            stroke-dasharray="3,3"
-            vector-effect="non-scaling-stroke"
-          />
-        {/if}
-        <!-- Vertex dots at each placed point -->
-        {#each pts as p}
-          <circle
-            cx={p[0] * media.width}
-            cy={p[1] * media.height}
-            r={4}
-            fill="rgba(246, 64, 43, 0.9)"
-            stroke="white"
-            stroke-width="1.5"
-            vector-effect="non-scaling-stroke"
-          />
-        {/each}
-        <!-- Highlight first point (close target) -->
-        <circle
-          cx={pts[0][0] * media.width}
-          cy={pts[0][1] * media.height}
-          r={6}
-          fill="none"
-          stroke="rgba(246, 64, 43, 0.9)"
-          stroke-width="2"
-          stroke-dasharray="2,2"
-          vector-effect="non-scaling-stroke"
+      <!-- Build mode: polygon creation preview -->
+      {#if isPolygonMode}
+        <PolygonCreateShape
+          bind:this={polygonCreateComp}
+          cursor={sceneNormalizedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {frame}
+          {onSelection}
         />
       {/if}
 
+      <!-- Rendered annotations -->
       {#each visibleAnnotations as ann, i (ann.id)}
         <AnnotationGeometry
           bind:this={_compRefs[i]}
           annotation={ann}
-          selected={
-            selection.value?.type === "annotation" &&
-            selection.value.annotation?.id === ann.id
-          }
-          editable={
-            viewport.mode === "default" &&
-            selection.value?.type === "annotation" &&
-            selection.value.annotation?.id === ann.id
-          }
+          selected={selection.isAnnotationSelected(ann.id)}
+          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], angle: number) =>
-            handleEditComplete(ann.id, aabb, angle)}
+          onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
         />
       {/each}
     </g>

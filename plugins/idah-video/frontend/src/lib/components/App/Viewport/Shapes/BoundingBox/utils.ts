@@ -28,10 +28,9 @@ export function inverseRotatePointN(point: Point, center: Point, angleRad: numbe
 /** CSS cursor name for each handle index (0-7) */
 export function handleCursor(handleIndex: number): string {
   return (
-    [
-      "nwse-resize", "ns-resize", "nesw-resize", "ew-resize",
-      "nwse-resize", "ns-resize", "nesw-resize", "ew-resize",
-    ][handleIndex] ?? "grab"
+    ["nwse-resize", "ns-resize", "nesw-resize", "ew-resize", "nwse-resize", "ns-resize", "nesw-resize", "ew-resize"][
+      handleIndex
+    ] ?? "grab"
   );
 }
 
@@ -50,7 +49,7 @@ export function rotatedCursorSVG(handleIndex: number, angleRad: number, color: s
           : `<path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
 
   return `data:image/svg+xml;base64,${btoa(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"><g transform="rotate(${deg} 12 12)">${arrow}</g></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"><g transform="rotate(${deg} 12 12)">${arrow}</g></svg>`,
   )}`;
 }
 

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Test CI
 require "bundler/setup"
 require "rspec/core/rake_task"
 

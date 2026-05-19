@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
+  import { onMount, tick, untrack, type Snippet } from "svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -8,12 +8,14 @@
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
 
   import { modKey } from "$lib/utils/browser";
-  import { selection } from "$lib/state/selection.svelte";
+  import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { getAnnotationGroupId } from "$lib/types";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
+  import type { IAnnotationRecord } from "$idah/v2/types";
 
   interface Props extends TimelineProps {
     toolbar?: Snippet;
@@ -23,7 +25,7 @@
     onselectionchange?: (offset: number, length: number) => void;
     onDimensionsChange?: (width: number, height: number) => void;
     /** Register a zoom function for external callers (e.g. TimelineZoom). */
-    onZoom?: (zoomFn: (newZoom: number) => void) => void;
+    onZoom?: (zoomFn: (newZoom: number, center?: number) => void) => void;
   }
 
   let {
@@ -65,9 +67,10 @@
         const m = Math.floor((s % 3600) / 60);
         const sec = Math.floor(s % 60);
         const showFrame = target === "caret" || target === "ruler-sub";
-        const base = h > 0
-          ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-          : `${m}:${String(sec).padStart(2, "0")}`;
+        const base =
+          h > 0
+            ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+            : `${m}:${String(sec).padStart(2, "0")}`;
         return showFrame ? `${base}.${String(Math.floor(value) % fps).padStart(2, "0")}` : base;
       };
     }
@@ -103,7 +106,7 @@
       const w = tracksViewportEl.clientWidth;
       if (w !== containerWidth) {
         containerWidth = w;
-        if (onDimensionsChange && w > 0 && remainingHeight > 0) {
+        if (onDimensionsChange && w > 0) {
           onDimensionsChange(w, remainingHeight);
         }
       }
@@ -117,14 +120,14 @@
   });
 
   // Helpers: convert between mouse x (content-space) and frame value
-  function applyZoom(newZoom: number) {
+  function applyZoom(newZoom: number, center?: number) {
     const newRange = length / newZoom;
 
-    // Zoom from the center of the current viewport
-    const center = (viewport.startRange + viewport.endRange) / 2;
+    const zoomCenter =
+      center !== undefined ? Math.max(0, Math.min(center, length)) : (viewport.startRange + viewport.endRange) / 2;
 
-    let newStart = center - newRange / 2;
-    let newEnd = center + newRange / 2;
+    let newStart = zoomCenter - newRange / 2;
+    let newEnd = zoomCenter + newRange / 2;
 
     if (newStart < 0) {
       newStart = 0;
@@ -139,17 +142,18 @@
     viewport.endRange = newEnd;
     clampViewport();
 
-    // Sync DOM scroll positions immediately after viewport change
-    setScrollLeft(viewport.startRange * scale);
+    // Compute scale locally — $derived scale hasn't re-evaluated yet at this point
+    const newScale = containerWidth > 0 ? containerWidth / (viewport.endRange - viewport.startRange) : 1;
+    setScrollLeft(viewport.startRange * newScale);
   }
 
-  // Expose zoom function to parent on mount
+  // Expose functions to parent on mount
   onMount(() => {
     onZoom?.(applyZoom);
   });
 
   function mouseXToFrame(mouseXInContent: number): number {
-    return Math.floor(mouseXInContent / scale);
+    return Math.max(0, Math.floor(mouseXInContent / scale));
   }
 
   function frameToPixelX(frame: number): number {
@@ -165,11 +169,17 @@
     let ns = viewport.startRange;
     let ne = viewport.endRange;
     if (sw >= length) {
-      ns = 0; ne = length; clamped = true;
+      ns = 0;
+      ne = length;
+      clamped = true;
     } else if (ns < 0) {
-      ns = 0; ne = sw; clamped = true;
+      ns = 0;
+      ne = sw;
+      clamped = true;
     } else if (ne > length) {
-      ne = length; ns = length - sw; clamped = true;
+      ne = length;
+      ns = length - sw;
+      clamped = true;
     }
     if (clamped) {
       viewport.startRange = ns;
@@ -429,6 +439,18 @@
     }
   });
 
+  // Sync DOM scroll position when viewport range is changed externally (e.g. focus command).
+  // untrack prevents the writes to _prevStartRange from re-triggering this effect.
+  let _prevStartRange = $state(-1);
+  $effect(() => {
+    const start = viewport.startRange;
+    if (start === _prevStartRange) return;
+    untrack(() => {
+      _prevStartRange = start;
+      setScrollLeft(start * scale);
+    });
+  });
+
   // Vertical virtualization: track the body-scroll element's scroll position
   let bodyScrollEl = $state<HTMLDivElement | null>(null);
   let bodyScrollTop = $state(0);
@@ -437,6 +459,31 @@
   function handleBodyScroll() {
     if (!bodyScrollEl) return;
     bodyScrollTop = bodyScrollEl.scrollTop;
+  }
+
+  // Scroll vertically to show the selected annotation's track.
+  // Reads bodyScrollEl.scrollTop directly (not reactive bodyScrollTop) so this effect
+  // only re-runs on selection or items changes — not on every manual scroll.
+  $effect(() => {
+    const v = selection.value;
+    handleAnnotationScroll(v as IAnnotationSelection);
+  });
+
+  function handleAnnotationScroll(selectionValue: IAnnotationSelection) {
+    if (!selection.isAnnotation() || !bodyScrollEl) return;
+
+    const groupId = getAnnotationGroupId(selectionValue.annotation);
+    const trackIndex = items.findIndex((t) => t.id === groupId);
+    if (trackIndex === -1) return;
+
+    const trackTop = trackIndex * TRACK_HEIGHT;
+    const trackBottom = trackTop + TRACK_HEIGHT;
+    const currentScrollTop = bodyScrollEl.scrollTop;
+    const currentScrollBottom = currentScrollTop + bodyScrollClientHeight;
+
+    if (trackTop >= currentScrollTop && trackBottom <= currentScrollBottom) return;
+
+    bodyScrollEl.scrollTop = Math.max(0, trackTop - bodyScrollClientHeight / 2 + TRACK_HEIGHT / 2);
   }
 
   // Calculate tracks height for content
@@ -481,13 +528,7 @@
       onkeypress={() => {}}
       onclick={handleRulerClick}
     >
-      <Ruler
-        {viewport}
-        {scale}
-        smallStep={rulerSmallStep}
-        bigStep={rulerBigStep}
-        labelFormatter={labelFormatter}
-      />
+      <Ruler {viewport} {scale} smallStep={rulerSmallStep} bigStep={rulerBigStep} {labelFormatter} />
     </div>
     <!-- Non-scrolling overlay for caret labels — uses viewport-relative x so labels track correctly -->
     <div class="timeline-ruler-caret-overlay" aria-hidden="true">
@@ -495,7 +536,7 @@
         <Caret
           x={selectionCaretViewportX}
           value={selectionOffset}
-          labelFormatter={labelFormatter}
+          {labelFormatter}
           height={30}
           color="#4a90d9"
           showLine={false}
@@ -505,7 +546,7 @@
         <Caret
           x={hoverCaretViewportX}
           value={caretFrame}
-          labelFormatter={labelFormatter}
+          {labelFormatter}
           height={30}
           color="orangered"
           showLine={false}
@@ -522,13 +563,15 @@
     onscroll={handleBodyScroll}
   >
     <div class="timeline-main">
-      <div class="timeline-trackinfos-body" onwheel={handleBodyScroll} style="height: {tracksHeight}px;">
+      <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
-          {#if TrackInfoSlot}
-            {@render TrackInfoSlot({ track })}
-          {:else}
-            <TrackInfo {track} />
-          {/if}
+          <div class="timeline-trackinfo-row" style="top: {track.top}px;">
+            {#if TrackInfoSlot}
+              {@render TrackInfoSlot({ track })}
+            {:else}
+              <TrackInfo {track} />
+            {/if}
+          </div>
         {/each}
       </div>
 
@@ -556,7 +599,7 @@
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
-              labelFormatter={labelFormatter}
+              {labelFormatter}
               height={tracksHeight}
               color="#4a90d9"
               showLabel={false}
@@ -584,7 +627,7 @@
             <Caret
               x={caretPixelX}
               value={caretFrame}
-              labelFormatter={labelFormatter}
+              {labelFormatter}
               height={tracksHeight}
               color="orangered"
               showLabel={false}
@@ -607,12 +650,12 @@
 
 <style>
   .timeline {
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #ccc;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 
   .timeline-toolbar {
     flex-shrink: 0;
@@ -679,6 +722,12 @@
     border-right: 1px solid #ccc;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  .timeline-trackinfo-row {
+    position: absolute;
+    left: 0;
+    right: 0;
   }
 
   /* Horizontal-only scroll viewport for the tracks area.

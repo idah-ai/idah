@@ -16,12 +16,13 @@ RSpec.describe IdahVideo::Processor::Video do
   it "process video" do
     subject.run
 
-    # It should upload the master manifest
+    # It should upload the master manifest (with config metadata)
     expect(processor_context.uploaded).to include(
       a_hash_including(
         io: an_instance_of(File),
         key: "master.m3u8",
-        mime_type: "application/vnd.apple.mpegurl"
+        mime_type: "application/vnd.apple.mpegurl",
+        metadata: an_instance_of(Hash)
       )
     )
 
@@ -30,15 +31,17 @@ RSpec.describe IdahVideo::Processor::Video do
       a_hash_including(
         io: an_instance_of(File),
         key: "240p.m3u8",
-        mime_type: "application/vnd.apple.mpegurl"
+        mime_type: "application/vnd.apple.mpegurl",
+        metadata: {}
       )
     )
 
     expect(processor_context.uploaded).to include(
       a_hash_including(
         io: an_instance_of(File),
-        key: "240p_0000.ts",
-        mime_type: "video/mp2t"
+        key: "240p_00000.ts",
+        mime_type: "video/mp2t",
+        metadata: {}
       )
     )
 

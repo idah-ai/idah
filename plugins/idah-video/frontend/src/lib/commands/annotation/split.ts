@@ -9,22 +9,25 @@
 // Undoable: deletes the two new annotations and restores the original.
 //
 // Usage:
-//   driver.command.call("annotation.split", {
-//     annotationId: "...", at: 42
-//   });
+//   driver.command.call("annotation.split", { annotationId: "...", at: 42 });
+//
+// Shortcut: S
+// Active only when there's a selected annotation.
 // ---------------------------------------------------------------------------
-import { data } from "$lib/state/data.svelte";
-import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
+import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
-import { noopAction } from "..";
+import { data } from "$lib/state/data.svelte";
+import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
+import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
+import { noopAction } from "..";
 
 export const command = {
   name: "annotation.split",
   group: "Annotation",
-  modes: [] as string[],
-  shortcut: null,
+  modes: ["default", "review"] as string[],
+  shortcut: "S",
   shortDescription: "Split annotation at frame",
   longDescription: null,
 };
@@ -42,15 +45,31 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as AnnotationSplitProps | undefined;
-      if (!props || !data.annotations) return noopAction(command);
+      // Derive annotationId + at from opts (programmatic call) or from current selection (shortcut invocation)
+      let annotationId: string | undefined;
+      let at: number | undefined;
 
-      const record = data.annotations.items.find((r) => r.id === props.annotationId);
+      if (opts) {
+        const props = opts as unknown as AnnotationSplitProps;
+        annotationId = props.annotationId;
+        at = props.at;
+      } else {
+        // Shortcut invocation — derive from current selection and viewport
+        if (selection.isAnnotation()) {
+          const sel = selection.value as IAnnotationSelection;
+
+          annotationId = sel.annotation.id;
+          at = viewport.video.currentFrame.value;
+        }
+      }
+
+      if (!annotationId || at === undefined || !data.annotations) return noopAction(command);
+
+      const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
       const shape = record.shape as IVideoAnnotationShape;
       const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-      const at = props.at;
 
       // Splitting at frame zero is not possible — nothing to split off.
       if (at <= 0) return noopAction(command);
@@ -110,7 +129,7 @@ export function register(driver: IIdahDriverV2): void {
           const groupId = (record.metadata?.group_id ?? record.id) as string;
 
           // Create a new annotation for the right part (at → end)
-          const created = await (data.annotations!.create as any)({
+          const created = (await (data.annotations!.create as any)({
             shape: {
               ...shape,
               start: rightMin,
@@ -119,7 +138,7 @@ export function register(driver: IIdahDriverV2): void {
             },
             value: record.value ? { ...record.value } : undefined,
             metadata: { group_id: groupId },
-          }) as AnnotationItem;
+          })) as AnnotationItem;
           _createdRightId = created.id;
         },
         async undo() {
@@ -129,10 +148,15 @@ export function register(driver: IIdahDriverV2): void {
           // Delete the right part using the stored id
           if (_createdRightId) await data.annotations.delete(_createdRightId);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,
+    activeWhen: selection.isAnnotation,
   });
 }

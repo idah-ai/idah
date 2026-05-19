@@ -25,7 +25,12 @@
     <div class="caret-line" style="background-color: {color};"></div>
   {/if}
   {#if showLabel}
-    <div class="caret-label" style="border-color: {color}; color: {color};">{labelFormatter(value, "caret")}</div>
+    <div
+      class="caret-label"
+      style="border-color: {color}; color: {color}; transform: translateX({x < 12 ? '1' : '-50%'})"
+    >
+      {labelFormatter(value, "caret")}
+    </div>
   {/if}
 </div>
 
@@ -52,7 +57,6 @@
     position: absolute;
     bottom: 0;
     left: 50%;
-    transform: translateX(-50%);
     background-color: #fff;
     border: 1px solid;
     padding: 2px 6px;
