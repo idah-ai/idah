@@ -29,44 +29,10 @@ export class CommandManagerV2 {
    * Normalize shortcut strings so that `Control` is replaced with `Meta` on
    * Apple platforms (macOS / iOS). This ensures command files can always use
    * the canonical `"Control+…"` form and it will Just Work on every keyboard.
-   * Also sorts modifiers alphabetically to match buildKeyCombination output.
    */
   private normalizeShortcut(shortcut: IShortcut | null): IShortcut | null {
-    if (!shortcut) return shortcut;
-    if (!isMac()) return shortcut;
-
-    const normalize = (s: string): string => {
-      const parts = s.split("+");
-      const key = parts.pop()!;
-      let modifiers = parts.map(m => m.replace(/\bControl\b/g, "Meta")).sort();
-      return [...modifiers, key].join("+");
-    };
-
-    if (typeof shortcut === "string") {
-      return normalize(shortcut);
-    }
-    // Array of shortcuts
-    return shortcut.map(normalize);
-  }
-
-  /**
-   * Check if a keyboard event combo matches a command's shortcut(s).
-   */
-  private shortcutMatches(commandShortcut: IShortcut | null, combo: string): boolean {
-    if (!commandShortcut) return false;
-    if (typeof commandShortcut === "string") {
-      return commandShortcut === combo;
-    }
-    return commandShortcut.includes(combo);
-  }
-
-  /**
-   * Normalize any shortcut to an array for consistent iteration.
-   */
-  private shortcutToArray(shortcut: IShortcut | null): string[] {
-    if (!shortcut) return [];
-    if (typeof shortcut === "string") return [shortcut];
-    return shortcut;
+    if (!shortcut || !isMac()) return shortcut;
+    return shortcut.replace(/\bControl\b/g, "Meta");
   }
 
   // ── Registration ──────────────────────────────────────────────────────
@@ -242,13 +208,11 @@ export class CommandManagerV2 {
   /**
    * Return the human-readable shortcut label for a command name, or undefined
    * if the command has no shortcut or doesn't exist.
-   * For array shortcuts, returns the first shortcut.
    */
   getShortcut(name: string): string | undefined {
     const entry = this.registry.get(name);
     if (!entry || !entry.shortcut) return undefined;
-    if (typeof entry.shortcut === "string") return entry.shortcut;
-    return entry.shortcut[0]; // Return first shortcut for display
+    return entry.shortcut;
   }
 
   /** Return a single command descriptor by name. */
@@ -272,7 +236,7 @@ export class CommandManagerV2 {
     const combo = buildKeyCombination(event);
     // First pass: look for a command with activeWhen that passes
     for (const entry of this.registry.values()) {
-      if (!this.shortcutMatches(entry.shortcut, combo)) continue;
+      if (!entry.shortcut || entry.shortcut !== combo) continue;
       if (!entry.modes.includes(mode)) continue;
       if (entry.activeWhen && entry.activeWhen()) {
         this.call(entry.name);
@@ -281,7 +245,7 @@ export class CommandManagerV2 {
     }
     // Second pass: look for a matching command without activeWhen (or whose activeWhen is null)
     for (const entry of this.registry.values()) {
-      if (!this.shortcutMatches(entry.shortcut, combo)) continue;
+      if (!entry.shortcut || entry.shortcut !== combo) continue;
       if (!entry.modes.includes(mode)) continue;
       if (!entry.activeWhen) {
         this.call(entry.name);
@@ -295,18 +259,13 @@ export class CommandManagerV2 {
    * Return the flat key-combination → command name map for a given mode.
    * Commands with activeWhen are skipped — they are resolved dynamically
    * in resolveKeyEvent instead.
-   * When multiple commands share a shortcut, the last one registered wins
-   * (for simple string shortcuts). For array shortcuts, all are mapped.
    */
   getKeyMapForMode(mode: string): Record<string, string> {
     const map: Record<string, string> = {};
     for (const entry of this.registry.values()) {
       if (!entry.shortcut || !entry.modes.includes(mode)) continue;
       if (entry.activeWhen) continue; // resolved dynamically
-      const shortcuts = this.shortcutToArray(entry.shortcut);
-      for (const sc of shortcuts) {
-        map[sc] = entry.name;
-      }
+      map[entry.shortcut] = entry.name;
     }
     return map;
   }
@@ -321,20 +280,14 @@ export class CommandManagerV2 {
     for (const entry of this.registry.values()) {
       if (!entry.shortcut) continue;
       if (entry.activeWhen && !entry.activeWhen()) continue;
-      const shortcuts = this.shortcutToArray(entry.shortcut);
       if (!refs[entry.name]) {
         refs[entry.name] = {
           label: entry.shortDescription ?? entry.name,
           description: entry.longDescription ?? "",
-          keyCombinations: [...shortcuts],
+          keyCombinations: [entry.shortcut],
         };
-      } else {
-        // Add any new shortcuts that aren't already in the list
-        for (const sc of shortcuts) {
-          if (!refs[entry.name].keyCombinations.includes(sc)) {
-            refs[entry.name].keyCombinations.push(sc);
-          }
-        }
+      } else if (!refs[entry.name].keyCombinations.includes(entry.shortcut)) {
+        refs[entry.name].keyCombinations.push(entry.shortcut);
       }
     }
     return refs;

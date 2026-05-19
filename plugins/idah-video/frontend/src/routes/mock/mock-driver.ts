@@ -668,17 +668,12 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
 
   handleKeydown(event: KeyboardEvent): boolean {
     // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
+    // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
     if (modKey(event) && event.code === "Space") {
-      event.preventDefault();
       (this.command as CommandDriverAdapter).openPalette();
       return true;
     }
-    
-    const handled = this.commandMgr.resolveKeyEvent(event, this._mode);
-    if (handled) {
-      event.preventDefault();
-    }
-    return handled;
+    return this.commandMgr.resolveKeyEvent(event, this._mode);
   }
 
   // ── Private helpers ──────────────────────────────────────────────────

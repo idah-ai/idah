@@ -9,7 +9,7 @@ import type { ICommandAction, IIdahDriverV2 } from "$idah/v2/types";
 export function noopAction(command: {
   name: string;
   modes: string[];
-  shortcut: string | string[] | null;
+  shortcut: string | null;
   shortDescription: string | null;
   longDescription: string | null;
 }): ICommandAction {
