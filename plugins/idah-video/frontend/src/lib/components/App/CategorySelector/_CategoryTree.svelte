@@ -350,8 +350,8 @@
             })}
 
             <!-- Icon Actions -->
-            {#if mode == DEFAULT_MODE && !selAnnotation}
-              <div class="ml-auto flex content-center items-center gap-0">
+            <div class="ml-auto flex content-center items-center gap-0">
+              {#if mode == DEFAULT_MODE && !selAnnotation}
                 {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
                   <CategoryAction
                     {label}
@@ -366,15 +366,15 @@
                     })}
                   ></CategoryAction>
                 {/each}
+              {/if}
 
-                <AnnotationCountBadge
-                  class={cn("mr-2 ml-1 opacity-0", {
-                    "opacity-100": view === "sidebar" && count > 0,
-                  })}
-                  {count}
-                />
-              </div>
-            {/if}
+              <AnnotationCountBadge
+                class={cn("mr-2 ml-1 opacity-0", {
+                  "opacity-100": view === "sidebar" && count > 0,
+                })}
+                {count}
+              />
+            </div>
           </SidebarMenuItem>
         </div>
       </CollapsibleTrigger>
