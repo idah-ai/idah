@@ -367,7 +367,7 @@
     fill={color}
     fill-opacity={selected ? 0.6 : 0.3}
     stroke={color.replace("0.5", "1")}
-    stroke-width={selected ? 3 : 1.5}
+    stroke-width={selected ? 1.5 : 1}
     style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
