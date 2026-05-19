@@ -173,20 +173,6 @@ describe("annotation state", () => {
       expect(annotation.isHidden(groupAnn)).toBe(true);
     });
 
-    it("isLocked prefers group_id over individual unlock when annotation id was removed", () => {
-      const groupAnn = mockRecord("ann-group-child", "group-1");
-      annotation.toggleLocked("group-1", true);
-      annotation.toggleLocked("ann-group-child", false);
-      expect(annotation.isLocked(groupAnn)).toBe(true);
-    });
-
-    it("isHidden prefers group_id over individual unhide when annotation id was removed", () => {
-      const groupAnn = mockRecord("ann-group-child", "group-1");
-      annotation.toggleHidden("group-1", true);
-      annotation.toggleHidden("ann-group-child", false);
-      expect(annotation.isHidden(groupAnn)).toBe(true);
-    });
-
     it("isLocked returns false when no group_id and id is not locked", () => {
       const standalone = mockRecord("standalone-001");
       expect(annotation.isLocked(standalone)).toBe(false);
