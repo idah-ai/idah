@@ -18,7 +18,6 @@ import { CommandManagerV2 } from "./command-manager";
 import { ToolbarManagerV2 } from "./toolbar-manager";
 import { AstProcessor } from "./ast-evaluator";
 import { modKey } from "$lib/utils/browser";
-import { createIndexedDbAnnotationsDriver, createMemoryDriver } from "./idb-driver";
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -373,14 +372,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     // Build adapters
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
-    // IDB-backed annotations driver (falls back to in-memory if indexedDB unavailable, e.g. SSR)
-    this.annotations =
-      createIndexedDbAnnotationsDriver<IVideoAnnotationShape, IVideoAnnotationValue>({
-        entryId:  this._id,
-        pluginId: "idah-video",
-        backend:  createMemoryDriver(this.annotationStore),
-        enqueue:  async (cb) => { /* TODO: queueManager */ await cb()},
-      }) ?? new AnnotationsDriverAdapter(this.annotationStore);
+    this.annotations = new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
 
     // ── Register default idah commands ────────────────────────────────
