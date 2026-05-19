@@ -17,7 +17,7 @@
 import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
-import { selection } from "$lib/state/selection.svelte";
+import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -56,10 +56,7 @@ export function register(driver: IIdahDriverV2): void {
       } else {
         // Shortcut invocation — derive from current selection and viewport
         if (selection.isAnnotation()) {
-          const sel = selection.value as {
-            type: "annotation";
-            annotation: IAnnotationRecord<Record<string, unknown>, Record<string, unknown>>;
-          };
+          const sel = selection.value as IAnnotationSelection;
 
           annotationId = sel.annotation.id;
           at = viewport.video.currentFrame.value;
