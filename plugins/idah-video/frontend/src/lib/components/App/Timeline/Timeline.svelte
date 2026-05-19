@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, type Snippet } from "svelte";
+  import { onMount, tick, untrack, type Snippet } from "svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -435,6 +435,18 @@
       viewport.endRange = clampedStart + rangeWidth;
       setScrollLeft(viewport.startRange * scale);
     }
+  });
+
+  // Sync DOM scroll position when viewport range is changed externally (e.g. focus command).
+  // untrack prevents the writes to _prevStartRange from re-triggering this effect.
+  let _prevStartRange = $state(-1);
+  $effect(() => {
+    const start = viewport.startRange;
+    if (start === _prevStartRange) return;
+    untrack(() => {
+      _prevStartRange = start;
+      setScrollLeft(start * scale);
+    });
   });
 
   // Vertical virtualization: track the body-scroll element's scroll position
