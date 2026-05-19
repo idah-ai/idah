@@ -5,6 +5,7 @@
 
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
 
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { TrackData, TimelineItem } from "$lib/components/App/Timeline/types";
@@ -20,6 +21,7 @@
 
   // ── Track title context menus (existing) ──────────────────────────────
   let groupMenus = $derived(track ? getGroupContextMenus({ track }) : null);
+  let annotationIsLocked = $derived(trackId ? annotation.isLocked(trackId) : false);
 
   // ── Empty-area extend menus (new) ─────────────────────────────────────
   let prevAnnotation = $derived.by<TimelineItem | undefined>(() => {
@@ -79,6 +81,7 @@
         variant="ghost"
         size="sm"
         class="mx-1 justify-start"
+        disabled={annotationIsLocked}
         onclick={() => {
           getDriver().command.call("annotation.extend_prev", {
             annotationId: prevAnnotation.rawData.id,
@@ -96,6 +99,7 @@
         variant="ghost"
         size="sm"
         class="mx-1 justify-start"
+        disabled={annotationIsLocked}
         onclick={() => {
           getDriver().command.call("annotation.extend_next", {
             annotationId: nextAnnotation.rawData.id,
