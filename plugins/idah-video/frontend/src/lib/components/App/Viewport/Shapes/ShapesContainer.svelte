@@ -312,7 +312,7 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
-    // TODO: getDriver().command.call("timeline.scroll_to_annotation_viewport")
+    getDriver().command.call("timeline.scroll_to_annotation");
   }
 </script>
 
