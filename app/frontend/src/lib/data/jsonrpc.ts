@@ -46,10 +46,15 @@ export class JsonRpcDatasource {
   processing = false;
   batch_size: number;
   base_url: string;
+  retry_attempt = 0;
+  retry_base_delay: number;
+  retry_max_delay: number;
 
   constructor(base_url: string, config: JSONRpcBatchConfig = { size: 200, time: 5000 }) {
     this.base_url = base_url;
     this.batch_size = config.size;
+    this.retry_base_delay = 1000;   // 1 second initial delay
+    this.retry_max_delay = 30000;   // 30 seconds max delay
   }
 
   call(method: JsonRpcMethod): Promise<JsonRpcResult> {
@@ -60,7 +65,7 @@ export class JsonRpcDatasource {
   }
 
   process() {
-    if (this.processing || this.queue.length === 0) return;
+    if (this.processing || this.queue.length === 0 || this.retry_attempt) return;
     this.flush();
   }
 
@@ -76,15 +81,23 @@ export class JsonRpcDatasource {
       }
 
       await this.process_batch(batch)
-        .then(async () => await this.flush())
+        .then(async () => {
+          this.retry_attempt = 0;
+          this.flush();
+        })
         .catch((failure: BatchFailure) => {
-          for (const item of failure.batch) {
-            this.queue.unshift(item);
-          }
+          this.queue.unshift(...failure.batch);
+
           this.processing = false;
-          if (failure.retry) setTimeout(() => this.process(), 10000);
-        });
-    } else {
+          if (failure.retry) {
+            const delay = Math.min(
+              this.retry_base_delay * Math.pow(2, this.retry_attempt),
+              this.retry_max_delay
+            );
+            this.retry_attempt++;
+            setTimeout(() => this.flush(), delay);
+          }
+        });    } else {
       this.processing = false;
     }
   }
@@ -111,7 +124,7 @@ export class JsonRpcDatasource {
           for (const item of batch) {
             const res = body.find((r) => r.id === item.id);
             if (!res) {
-              // review
+              // review // authentication error json rpc param issue ? )
               item.onReject?.({ code: -4242, message: "No response found for rpc command" });
             } else if (res.error) {
               item.onReject?.(res.error);
@@ -122,6 +135,7 @@ export class JsonRpcDatasource {
           resolve();
         })
         .catch((err: unknown) => {
+          console.error("JSON RPC error", err)
           reject({ batch, retry: true });
         });
     });
