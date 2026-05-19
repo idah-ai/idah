@@ -351,7 +351,7 @@
 
             <!-- Icon Actions -->
             <div class="ml-auto flex content-center items-center gap-0">
-              {#if mode == DEFAULT_MODE && !selAnnotation}
+              {#if mode == DEFAULT_MODE}
                 {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
                   <CategoryAction
                     {label}
