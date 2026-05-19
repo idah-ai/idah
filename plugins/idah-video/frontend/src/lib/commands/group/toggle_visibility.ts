@@ -45,15 +45,11 @@ export function register(driver: IIdahDriverV2): void {
       if (props.annotations && props.annotations.length > 0) {
         groupAnnotations = props.annotations;
       } else if (props.groupId) {
-        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === props.groupId);
-
-        // If filter is empty, also search for annotation with id === props.groupId
-        if (groupAnnotations.length === 0) {
-          const matchById = data.annotations.items.find((ann) => ann.id === props.groupId);
-          if (matchById) {
-            groupAnnotations = [matchById];
-          }
-        }
+        groupAnnotations = data.annotations.items.filter(
+          (ann) =>
+            (ann as AnnotationItem).id === props.groupId ||
+            (ann as AnnotationItem).metadata?.group_id === props.groupId,
+        );
       } else {
         return noopAction(command);
       }
