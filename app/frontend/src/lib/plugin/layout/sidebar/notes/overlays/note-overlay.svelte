@@ -20,7 +20,6 @@
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
-  import { parseNoteFeedRecordToINoteFeed } from "@/plugin/NoteDriver";
   import { refetches } from "@/utils/refetch";
 
   // TODO: Replace IActivityContext with IIdahDriverV2 once the note overlay is migrated to V2 driver
@@ -211,7 +210,7 @@
       {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
       {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
       {@const sidebarLeftWidth = newNoteFeed.position.sidebar_width || 0}
-      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
+      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] })}
       {@const zoomOffsetX = zoomInfo.offset[0] || 0}
       {@const zoomOffsetY = zoomInfo.offset[1] || 0}
 

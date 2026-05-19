@@ -305,8 +305,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   const virtualFields = new Map<string, (ann: IAnnotationRecord<Shape, Annotation>) => unknown>();
 
-  // Guards against enqueueing multiple overlapping delta-syncs for the same
-  // driver instance (e.g. rapid re-renders or polling).
+  // fetch once from backend lastUpdatedAt
   let synced = false;
   // Purge runs once per driver instance; no reset needed.
   let purgeScheduled = false;

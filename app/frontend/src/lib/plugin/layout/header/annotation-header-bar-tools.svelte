@@ -19,7 +19,6 @@
   let { driver }: Props = $props();
 
   // Variables
-
   const disabledToolsIfWorkflowSteps = ["done"];
   let currentMode = $state(driver.mode);
   let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbarMgr.getItemsForMode(currentMode));
@@ -32,32 +31,26 @@
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((_) => {
-    refreshToolbar();
-  });
-  driver.command.onPaletteChange(() => {
-    refreshToolbar();
-  });
+  driver.onModeChange((_) => refreshToolbar())
+  driver.onSyncChange(() => refreshToolbar())
+  onMount(refreshToolbar);
 
-  onMount(() => {
-    refreshToolbar();
-  });
-  const commands: AnnotationHeaderBarBaseTool[] = [
+  const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
       name: "undo",
       label: "Undo",
       icon: UndoIcon,
-      disabled: (() => !canUndo)() && disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
-      handleClick: () => driver.command.undo(),
+      disabled: !canUndo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
+      handleClick: () => driver.command.undo()
     },
     {
       name: "redo",
       label: "Redo",
       icon: RedoIcon,
-      disabled: (() => !canRedo)() && disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
+      disabled: !canRedo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
       handleClick: () => driver.command.redo(),
     },
-  ];
+  ]);
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
