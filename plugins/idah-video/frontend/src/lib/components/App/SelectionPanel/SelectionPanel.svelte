@@ -295,7 +295,7 @@
         <CategoryAction
           {label}
           icon={Icon}
-          onclick={(e) => onclick(e)}
+          {onclick}
           class = "opacity-0 group-hover:opacity-100 transition-opacity"
         />
       {/each}
