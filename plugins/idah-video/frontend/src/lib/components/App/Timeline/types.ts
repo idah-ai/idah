@@ -4,9 +4,6 @@ import type { Component, Snippet } from "svelte";
 export interface Viewport {
   startRange: number;
   endRange: number;
-  /** Internal — set by Timeline.svelte to expose its clamp+sync logic
-   *  to external callers such as the timeline.focus command. */
-  _focusHandler?: ((start: number, end: number) => void) | null;
 }
 
 export interface TimelineItem<T extends Record<string, unknown> = Record<string, unknown>> {
