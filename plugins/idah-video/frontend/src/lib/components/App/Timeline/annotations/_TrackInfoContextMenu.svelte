@@ -57,16 +57,19 @@
 
       {#each Object.entries(group.items) as [menuKey, { label, icon: Icon, disabled, hidden, destructive, onClick }] (menuKey)}
         {#if !hidden}
-          <Button
-            variant={destructive ? "destructive-ghost" : "ghost"}
-            size="sm"
-            class="mx-1 justify-start"
-            {disabled}
-            onclick={onClick}
-          >
-            <Icon />
-            {label}
-          </Button>
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div role="none" onclick={(e) => { if (disabled) e.stopPropagation(); }}>
+            <Button
+              variant={destructive ? "destructive-ghost" : "ghost"}
+              size="sm"
+              class="mx-1 w-full justify-start"
+              {disabled}
+              onclick={onClick}
+            >
+              <Icon />
+              {label}
+            </Button>
+          </div>
         {/if}
       {/each}
 
@@ -77,39 +80,45 @@
   {:else if trackId && frame !== undefined}
     <!-- Empty track area context menu — extend actions -->
     {#if prevAnnotation}
-      <Button
-        variant="ghost"
-        size="sm"
-        class="mx-1 justify-start"
-        disabled={annotationIsLocked}
-        onclick={() => {
-          getDriver().command.call("annotation.extend_prev", {
-            annotationId: prevAnnotation.rawData.id,
-            frame,
-          });
-        }}
-      >
-        <ArrowRightToLineIcon />
-        Extend previous annotation to frame {frame + 1}
-      </Button>
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div role="none" onclick={(e) => { if (annotationIsLocked) e.stopPropagation(); }}>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="mx-1 w-full justify-start"
+          disabled={annotationIsLocked}
+          onclick={() => {
+            getDriver().command.call("annotation.extend_prev", {
+              annotationId: prevAnnotation.rawData.id,
+              frame,
+            });
+          }}
+        >
+          <ArrowRightToLineIcon />
+          Extend previous annotation to frame {frame + 1}
+        </Button>
+      </div>
     {/if}
 
     {#if nextAnnotation}
-      <Button
-        variant="ghost"
-        size="sm"
-        class="mx-1 justify-start"
-        disabled={annotationIsLocked}
-        onclick={() => {
-          getDriver().command.call("annotation.extend_next", {
-            annotationId: nextAnnotation.rawData.id,
-            frame,
-          });
-        }}
-      >
-        <ArrowLeftToLineIcon />
-        Extend next annotation to frame {frame + 1}
-      </Button>
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div role="none" onclick={(e) => { if (annotationIsLocked) e.stopPropagation(); }}>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="mx-1 w-full justify-start"
+          disabled={annotationIsLocked}
+          onclick={() => {
+            getDriver().command.call("annotation.extend_next", {
+              annotationId: nextAnnotation.rawData.id,
+              frame,
+            });
+          }}
+        >
+          <ArrowLeftToLineIcon />
+          Extend next annotation to frame {frame + 1}
+        </Button>
+      </div>
     {/if}
 
     {#if !prevAnnotation && !nextAnnotation}
