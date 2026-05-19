@@ -18,7 +18,7 @@ export const command = {
 };
 
 function hasSelection(): boolean {
-  return selection.value !== null && selection.value.type === "annotation";
+  return selection.hasSelection();
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -52,7 +52,7 @@ export function register(driver: IIdahDriverV2): void {
       // Resolve annotations for the group from the data store
       const groupId = (sel as any).groupId as string;
       const records = data.annotations.items.filter(
-        (ann) => (ann as any).metadata?.group_id === groupId
+        (ann) => (ann as any).metadata?.group_id === groupId || ann.id === groupId
       );
       if (records.length === 0) return noopAction(command);
 
