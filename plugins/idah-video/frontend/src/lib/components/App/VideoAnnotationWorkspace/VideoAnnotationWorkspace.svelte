@@ -221,7 +221,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("selection.delete", { annotationId });
+    getDriver().command.call("annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {

@@ -195,8 +195,7 @@
         icon: Trash2Icon,
         onclick: (e: MouseEvent) => {
           e.stopPropagation();
-          selection.selectAnnotation(ann);
-          getDriver().command.call("selection.delete", {});
+          getDriver().command.call("annotation.delete", { annotationId: ann.id });
         }
       }
     ];
