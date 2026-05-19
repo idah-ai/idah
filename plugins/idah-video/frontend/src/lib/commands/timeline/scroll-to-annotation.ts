@@ -59,7 +59,7 @@ export function register(driver: IIdahDriverV2): void {
       }
 
       const { startRange, endRange } = viewport.timeline.range;
-      const margin = Math.max(10, Math.round((shape.end - shape.start) * 0.1));
+      const margin = Math.max(1, Math.round((endRange - startRange) * 0.1));
       const newStart = Math.max(0, shape.start - margin);
       const rangeWidth = endRange - startRange;
       const newEnd = newStart + rangeWidth;
