@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, type Snippet } from "svelte";
+  import { onMount, tick, untrack, type Snippet } from "svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -8,13 +8,14 @@
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
 
   import { modKey } from "$lib/utils/browser";
-  import { selection } from "$lib/state/selection.svelte";
+  import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { viewport as globalViewport } from "$lib/state/viewport.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { getAnnotationGroupId } from "$lib/types";
 
   import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
+  import type { IAnnotationRecord } from "$idah/v2/types";
 
   interface Props extends TimelineProps {
     toolbar?: Snippet;
@@ -105,7 +106,7 @@
       const w = tracksViewportEl.clientWidth;
       if (w !== containerWidth) {
         containerWidth = w;
-        if (onDimensionsChange && w > 0 && remainingHeight > 0) {
+        if (onDimensionsChange && w > 0) {
           onDimensionsChange(w, remainingHeight);
         }
       }
@@ -122,13 +123,8 @@
   function applyZoom(newZoom: number, center?: number) {
     const newRange = length / newZoom;
 
-    // // Zoom from the given center, or fall back to viewport center
-    let zoomCenter: number = (viewport.startRange + viewport.endRange) / 2;
-
-    /** Note: This lead bugs on timeline but user want to zoom at the center of the selection */
-    // if (center !== undefined) {
-    //   zoomCenter = Math.max(1, center);
-    // }
+    const zoomCenter =
+      center !== undefined ? Math.max(0, Math.min(center, length)) : (viewport.startRange + viewport.endRange) / 2;
 
     let newStart = zoomCenter - newRange / 2;
     let newEnd = zoomCenter + newRange / 2;
@@ -146,32 +142,10 @@
     viewport.endRange = newEnd;
     clampViewport();
 
-    // Sync DOM scroll positions immediately after viewport change
-    setScrollLeft(viewport.startRange * scale);
-  }
-
-  // Expose focus handler so external commands (e.g. timeline.focus)
-  // can set the viewport range with proper clamping + DOM scroll sync.
-  async function handleFocusRange(start: number, end: number) {
-    viewport.startRange = start;
-    viewport.endRange = end;
-    clampViewport();
-
-    // Wait for Svelte to re-render the DOM so the ruler/tracks content
-    // has the correct width at the new scale. Otherwise the browser
-    // clamps scrollLeft to the old scrollWidth - clientWidth.
-    await tick();
-
-    // Compute scale locally from the new range — $derived scale hasn't
-    // been re-evaluated yet at this point in the synchronous call.
-    const newRange = viewport.endRange - viewport.startRange;
-    const newScale = containerWidth > 0 ? containerWidth / newRange : 1;
+    // Compute scale locally — $derived scale hasn't re-evaluated yet at this point
+    const newScale = containerWidth > 0 ? containerWidth / (viewport.endRange - viewport.startRange) : 1;
     setScrollLeft(viewport.startRange * newScale);
   }
-
-  // Expose focus handler on the global viewport timeline so external commands
-  // (e.g. timeline.focus) can set the range with proper clamping + DOM scroll sync.
-  globalViewport.timeline._focusHandler = handleFocusRange;
 
   // Expose functions to parent on mount
   onMount(() => {
@@ -465,6 +439,18 @@
     }
   });
 
+  // Sync DOM scroll position when viewport range is changed externally (e.g. focus command).
+  // untrack prevents the writes to _prevStartRange from re-triggering this effect.
+  let _prevStartRange = $state(-1);
+  $effect(() => {
+    const start = viewport.startRange;
+    if (start === _prevStartRange) return;
+    untrack(() => {
+      _prevStartRange = start;
+      setScrollLeft(start * scale);
+    });
+  });
+
   // Vertical virtualization: track the body-scroll element's scroll position
   let bodyScrollEl = $state<HTMLDivElement | null>(null);
   let bodyScrollTop = $state(0);
@@ -473,6 +459,31 @@
   function handleBodyScroll() {
     if (!bodyScrollEl) return;
     bodyScrollTop = bodyScrollEl.scrollTop;
+  }
+
+  // Scroll vertically to show the selected annotation's track.
+  // Reads bodyScrollEl.scrollTop directly (not reactive bodyScrollTop) so this effect
+  // only re-runs on selection or items changes — not on every manual scroll.
+  $effect(() => {
+    const v = selection.value;
+    handleAnnotationScroll(v as IAnnotationSelection);
+  });
+
+  function handleAnnotationScroll(selectionValue: IAnnotationSelection) {
+    if (!selection.isAnnotation() || !bodyScrollEl) return;
+
+    const groupId = getAnnotationGroupId(selectionValue.annotation);
+    const trackIndex = items.findIndex((t) => t.id === groupId);
+    if (trackIndex === -1) return;
+
+    const trackTop = trackIndex * TRACK_HEIGHT;
+    const trackBottom = trackTop + TRACK_HEIGHT;
+    const currentScrollTop = bodyScrollEl.scrollTop;
+    const currentScrollBottom = currentScrollTop + bodyScrollClientHeight;
+
+    if (trackTop >= currentScrollTop && trackBottom <= currentScrollBottom) return;
+
+    bodyScrollEl.scrollTop = Math.max(0, trackTop - bodyScrollClientHeight / 2 + TRACK_HEIGHT / 2);
   }
 
   // Calculate tracks height for content
@@ -552,13 +563,15 @@
     onscroll={handleBodyScroll}
   >
     <div class="timeline-main">
-      <div class="timeline-trackinfos-body" onwheel={handleBodyScroll} style="height: {tracksHeight}px;">
+      <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
-          {#if TrackInfoSlot}
-            {@render TrackInfoSlot({ track })}
-          {:else}
-            <TrackInfo {track} />
-          {/if}
+          <div class="timeline-trackinfo-row" style="top: {track.top}px;">
+            {#if TrackInfoSlot}
+              {@render TrackInfoSlot({ track })}
+            {:else}
+              <TrackInfo {track} />
+            {/if}
+          </div>
         {/each}
       </div>
 
@@ -709,6 +722,12 @@
     border-right: 1px solid #ccc;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  .timeline-trackinfo-row {
+    position: absolute;
+    left: 0;
+    right: 0;
   }
 
   /* Horizontal-only scroll viewport for the tracks area.

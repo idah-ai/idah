@@ -72,6 +72,22 @@
   let pendingValue: AnnotationValue = $state({});
   let annotationValue: AnnotationValue = $derived.by(() => selAnnotation?.value || pendingValue || {});
 
+  /** Whether the user can confirm the current annotation creation (has category + all required properties filled). */
+  let canConfirm = $derived.by(() => {
+    if (!editable || isNoteMode) return false;
+
+    if (mode === "entry:root") {
+      if (!pendingValue.category || pendingValue.category === "") return false;
+      const properties = getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+      return requiredFullfilled(pendingValue, properties);
+    }
+
+    if (!shapeSelectionArgs) return false;
+    if (!pendingValue.category || pendingValue.category === "") return false;
+    const properties = getDriver().getFilteredConfig(shapeSelectionArgs[0], pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+    return requiredFullfilled(pendingValue, properties);
+  });
+
   let length = $state(0);
   let tools: {
     name: string;
@@ -516,7 +532,6 @@
       onkeydown={(e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
-          const canConfirm = shapeSelectionArgs !== undefined || mode === "entry:root";
           if (!canConfirm) return;
           showPopOver = false;
           if (mode === "entry:root") {
@@ -582,10 +597,10 @@
                 onShapeSelection("entry:root", viewport.video.currentFrame.value);
                 break;
               default:
-                if (shapeSelectionArgs) confirmCreateAnnotation(...shapeSelectionArgs);
+                if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
             }
           }}
-          disabled={shapeSelectionArgs == undefined && "entry:root" != mode}
+          disabled={!canConfirm}
         >
           Confirm
         </Button>
