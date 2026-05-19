@@ -12,7 +12,7 @@ export const command = {
   name: "selection.delete",
   group: "Selection",
   modes: ["default", "review"],
-  shortcut: ["Delete", "Backspace"],
+  shortcut: "Backspace",
   shortDescription: "Delete selected",
   longDescription: null,
 };

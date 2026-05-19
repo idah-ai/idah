@@ -18,9 +18,8 @@ import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dia
 export const command = {
   name: "annotation.delete_group",
   group: undefined,
-  // modes: [] as string[],
   modes: ["default", "review"],
-  shortcut: ["Delete", "Backspace"],
+  shortcut: "Backspace",
   shortDescription: null,
   longDescription: null,
 };
