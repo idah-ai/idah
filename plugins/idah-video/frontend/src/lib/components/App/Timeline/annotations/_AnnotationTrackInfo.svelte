@@ -88,7 +88,7 @@
         <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
           <ToolTooltip {label}>
             {#snippet trigger()}
-              <Button variant="ghost" size="icon-sm" onclick={onClick}>
+              <Button variant="ghost" size="icon-sm" class="focus:outline-none" onclick={onClick}>
                 <Icon />
               </Button>
             {/snippet}

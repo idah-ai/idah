@@ -11,7 +11,9 @@ class Viewport {
   // Only mode needs special handling
   #mode = $state(DEFAULT_MODE);
 
-  get mode() { return this.#mode; }
+  get mode() {
+    return this.#mode;
+  }
   get isCreationMode() {
     return ["idah-video:polygon", "idah-video:bounding-box"].includes(this.#mode);
   }
@@ -25,11 +27,6 @@ class Viewport {
   timeline = $state({
     range: { startRange: 0, endRange: 0 },
     dimensions: [0, 0] as [number, number],
-    /**
-     * Internal — set by Timeline.svelte to expose its clamp+sync logic
-     * to external callers such as the timeline.focus command.
-     */
-    _focusHandler: null as ((start: number, end: number) => void) | null,
   });
 
   video = $state({
