@@ -64,7 +64,7 @@ export class JsonRpcDatasource {
     this.flush();
   }
 
-  private flush() {
+  private async flush() {
     if (this.queue.length > 0) {
       this.processing = true;
 
@@ -75,8 +75,8 @@ export class JsonRpcDatasource {
         batch.push({ ...item, id: String(batch.length) });
       }
 
-      this.process_batch(batch)
-        .then(() => this.flush())
+      await this.process_batch(batch)
+        .then(async () => await this.flush())
         .catch((failure: BatchFailure) => {
           for (const item of failure.batch) {
             this.queue.unshift(item);

@@ -1,7 +1,7 @@
 import type { ISyncErrorEvent, ISyncEvent } from "../../types";
 
 export class SyncQueueManager {
-  private queue: Array<() => Promise<void>> = [];
+  private queue: Array<Promise<unknown>> = [];
   private processing = false;
   private onSyncChange: (event: ISyncEvent) => void;
   private onSyncError: (event: ISyncErrorEvent) => void;
@@ -11,7 +11,7 @@ export class SyncQueueManager {
     this.onSyncError = onSyncError;
   }
 
-  enqueue(op: () => Promise<void>): void {
+  enqueue(op: Promise<unknown>): void {
     this.queue.push(op);
     this.onSyncChange({ queued: this.queue.length });
     if (!this.processing) this.processNext();
@@ -29,9 +29,9 @@ export class SyncQueueManager {
     this.processing = true;
     const op = this.queue.shift()!;
     try {
-      await op();
+      await op;
       this.onSyncChange({ queued: this.queue.length });
-      this.processNext();
+      await this.processNext();
     } catch (err) {
       console.error("[IdahDriverV2] sync error:", err);
       this.queue.unshift(op);

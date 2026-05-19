@@ -149,15 +149,15 @@ const idbDelete = (db: IDBDatabase, entryId: string, id: string): Promise<void> 
   });
 
 /** Read the lastUpdatedAt timestamp for an entry, or 0 if never synced. */
-const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<number> =>
+const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<Date> =>
   new Promise((resolve, reject) => {
     const req = db.transaction(["entries"], "readonly").objectStore("entries").get(entryId);
-    req.onsuccess = (e) => resolve((e.target as IDBRequest).result?.lastUpdatedAt ?? 0);
+    req.onsuccess = (e) => resolve(new Date((e.target as IDBRequest).result?.lastUpdatedAt) || 0);
     req.onerror = reject;
   });
 
 /** Write lastUpdatedAt for an entry. */
-const idbSetLastUpdated = (db: IDBDatabase, entryId: string, timestamp: number): Promise<void> =>
+const idbSetLastUpdated = (db: IDBDatabase, entryId: string, timestamp: Date): Promise<void> =>
   new Promise((resolve, reject) => {
     const req = db
       .transaction(["entries"], "readwrite")
@@ -170,7 +170,7 @@ const idbSetLastUpdated = (db: IDBDatabase, entryId: string, timestamp: number):
 /**
  * Update lastVisitedAt for an entry without touching lastUpdatedAt.
  */
-const idbMarkVisited = (db: IDBDatabase, entryId: string, timestamp: number): Promise<void> =>
+const idbMarkVisited = (db: IDBDatabase, entryId: string, timestamp: Date): Promise<void> =>
   new Promise((resolve, reject) => {
     const tx = db.transaction(["entries"], "readwrite");
     const store = tx.objectStore("entries");
@@ -184,7 +184,7 @@ const idbMarkVisited = (db: IDBDatabase, entryId: string, timestamp: number): Pr
   });
 
 /** Return entryIds whose lastVisitedAt is older than cutoff. */
-const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: number): Promise<string[]> =>
+const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: Date): Promise<string[]> =>
   new Promise((resolve, reject) => {
     const stale: string[] = [];
     const range = IDBKeyRange.upperBound(cutoff);
@@ -277,7 +277,7 @@ export interface IndexedDbAnnotationsDriverConfig<
    * In production this wraps the real API; in local dev use createMemoryDriver.
    */
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
-  enqueue: (op: () => Promise<void>) => void;
+  enqueue: (p: Promise<unknown>) => void;
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -307,7 +307,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   // Guards against enqueueing multiple overlapping delta-syncs for the same
   // driver instance (e.g. rapid re-renders or polling).
-  let syncEnqueued = false;
+  let synced = false;
   // Purge runs once per driver instance; no reset needed.
   let purgeScheduled = false;
   // Visit mark is written once, before the purge is ever enqueued.
@@ -320,56 +320,51 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
     async fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]> {
       const db = await getDb();
-
-      console.warn({ db });
-
       // Stamp the current entry as visited before the purge can run.
       if (!visitMarked) {
         visitMarked = true;
-        await idbMarkVisited(db, entryId, Date.now());
+        await idbMarkVisited(db, entryId, new Date(Date.now()));
       }
 
       // Purge stale entries once per session, now that the current entry is safe.
       if (!purgeScheduled) {
         purgeScheduled = true;
-        enqueue(async () => {
-          const cutoff = Date.now() - EXPIRATION_PERIOD_MS;
+        const cutoff = new Date(Date.now() - EXPIRATION_PERIOD_MS);
+        try {
           const staleIds = await idbGetStaleEntryIds(db, cutoff);
           for (const staleId of staleIds) await idbPurgeEntry(db, staleId);
-        });
+        } catch (err) {
+          console.error("Error purging stale entry", err)
+          purgeScheduled = false
+        }
       }
 
-      // Read from IDB first so the caller always gets the cached snapshot
-      // before any in-flight sync can write to the store.
-      const results = await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
+      // delta-refresh: one sync at first use
+      if (!synced) {
+        let lastUpdated = await idbGetLastUpdated(db, entryId);
+        let page = 1, hasMore = true;
+        while (hasMore) {
+          const response = await backend.list({
+            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
+            page,
+            pageSize: SYNC_PAGE_SIZE,
+          });
 
-      // Background delta-refresh: enqueue at most one sync at a time.
-      if (!syncEnqueued) {
-        syncEnqueued = true;
-        enqueue(async () => {
-          try {
-            const lastUpdated = await idbGetLastUpdated(db, entryId);
-            const fetchedAt = Date.now();
-            let page = 1,
-              hasMore = true;
-            while (hasMore) {
-              const response = await backend.list({
-                filters: { entry_id: entryId, updated_at__gt: lastUpdated },
-                page,
-                pageSize: SYNC_PAGE_SIZE,
-              });
-              await idbUpsertBatch(db, entryId, response.data);
-              hasMore = response.data.length === SYNC_PAGE_SIZE;
-              page++;
-            }
-            await idbSetLastUpdated(db, entryId, fetchedAt);
-          } finally {
-            syncEnqueued = false;
-          }
-        });
+          response.data.forEach((a) => {
+            const updatedAt = new Date(a.updated_at || 0)
+            if (updatedAt > lastUpdated)
+              lastUpdated = updatedAt
+          })
+          await idbUpsertBatch(db, entryId, response.data);
+          hasMore = response.data.length === SYNC_PAGE_SIZE;
+          page++;
+        }
+        await idbSetLastUpdated(db, entryId, lastUpdated);
+        synced = true
       }
 
-      return results;
+      // fetch after synced complete
+      return await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
     },
 
     async update(id, data): Promise<void> {
@@ -377,20 +372,20 @@ export const IdbBackedAnnotationsDriverAdapter = <
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
       if (!existing) throw new Error(`Annotation not found: ${id}`);
       await idbUpsertBatch(db, entryId, [{ ...existing, ...data }]);
-      enqueue(() => backend.update(id, data));
+      enqueue(backend.update(id, data));
     },
 
     async delete(id): Promise<void> {
       const db = await getDb();
       await idbDelete(db, entryId, id);
-      enqueue(() => backend.delete(id));
+      enqueue(backend.delete(id));
     },
 
     async create(data): Promise<IAnnotationRecord<Shape, Annotation>> {
       const db = await getDb();
       const record = { ...data, id: data.id ?? uuidv7() } as IAnnotationRecord<Shape, Annotation>;
       await idbCreate(db, entryId, record);
-      enqueue(() => backend.create(record).then(() => {}));
+      enqueue(backend.create(record));
       return record;
     },
   };

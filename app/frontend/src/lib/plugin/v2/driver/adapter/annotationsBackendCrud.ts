@@ -56,9 +56,9 @@ export function createBackendCrudDriver(entryId: string): ICrudDriver<IAnnotatio
 
     async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
       const payload: Record<string, unknown> = {};
-      if (data.shape !== undefined) payload["dimensions"] = data.shape;
-      if (data.value !== undefined) payload["annotation"] = data.value;
-      if (data.metadata !== undefined) payload["metadata"] = data.metadata;
+      if (data.shape) payload["dimensions"] = data.shape;
+      if (data.value) payload["annotation"] = data.value;
+      if (data.metadata) payload["metadata"] = data.metadata;
 
       await annotations_rpc.call({
         method: "update",
@@ -122,9 +122,9 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
 
   async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
     const payload: Record<string, unknown> = {};
-    if (data.shape !== undefined) payload["dimensions"] = data.shape;
-    if (data.value !== undefined) payload["annotation"] = data.value;
-    if (data.metadata !== undefined) payload["metadata"] = data.metadata;
+    if (data.shape) payload["dimensions"] = data.shape;
+    if (data.value) payload["annotation"] = data.value;
+    if (data.metadata) payload["metadata"] = data.metadata;
 
     await this.rpc.call({ method: "update", params: { id: id, entry_id: this.entryId, ...payload } });
   }

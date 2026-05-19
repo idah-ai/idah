@@ -95,10 +95,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       entryId: this._id,
       pluginId: PLUGIN_ID,
       backend: createBackendCrudDriver(this._id),
-      enqueue: (op) => this.syncQueueMgr.enqueue(op),
+      enqueue: (op: Promise<unknown>) => this.syncQueueMgr.enqueue(op),
     });
-    this.annotations = new AnnotationsDriverAdapter(this._id);
-    // this.annotations = idbDriver ?? new AnnotationsDriverAdapter(this._id);
+    this.annotations = idbDriver ?? new AnnotationsDriverAdapter(this._id);
     // Build notes driver (no IDB layer yet)
     this.notes = new NotesDriverAdapter();
 
@@ -107,7 +106,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
     this.onSyncChange((syncChangeEvent) => {
       console.warn({ syncChangeEvent });
-      this._ready = syncChangeEvent.queued == 0 ? true : false;
+      this._ready = syncChangeEvent.queued == 0;
       if (this._ready) for (const cb of this.readyCallbacks) cb();
     });
 
