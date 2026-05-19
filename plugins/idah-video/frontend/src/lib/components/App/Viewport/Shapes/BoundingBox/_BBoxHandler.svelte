@@ -75,9 +75,9 @@
   });
 
   // ── Sizes (scaled by invScale) ────────────────────────────────────────
-  let R = $derived(7 * invScale); // outer visible handle radius
-  let R_hovered = $derived(9 * invScale); // hover-expanded radius
-  let R_hit = $derived(10 * invScale); // interactive hit zone radius
+  let R = $derived(6 * invScale); // outer visible handle radius
+  let R_hovered = $derived(8 * invScale); // hover-expanded radius
+  let R_hit = $derived(8 * invScale); // interactive hit zone radius
   let R_center_dot = $derived(2.5 * invScale);
   let R_rotate = $derived(7 * invScale);
   let R_rotate_hovered = $derived(9 * invScale);

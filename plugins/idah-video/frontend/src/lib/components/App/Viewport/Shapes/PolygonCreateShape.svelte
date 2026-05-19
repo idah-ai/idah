@@ -13,6 +13,7 @@
   import type { Point } from "$lib/utils/math/point";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -25,6 +26,11 @@
   };
 
   let { cursor, mediaWidth, mediaHeight, frame, onSelection }: Props = $props();
+
+  // Keep points at fixed screen size regardless of zoom
+  let invScale = $derived(1 / viewport.workspace.transform.scale);
+  let R_vertex = $derived(5 * invScale);
+  let R_ring = $derived(8 * invScale);
 
   // ── Exported mouse handler ────────────────────────────────────────────
   /**
@@ -68,7 +74,7 @@
     fill="none"
     stroke="rgba(246, 64, 43, 0.8)"
     stroke-width="2"
-    stroke-dasharray="4,2"
+    stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
   />
 
@@ -79,8 +85,8 @@
     x2={cursorPos[0] * mediaWidth}
     y2={cursorPos[1] * mediaHeight}
     stroke="rgba(246, 64, 43, 0.4)"
-    stroke-width="1.5"
-    stroke-dasharray="3,3"
+    stroke-width="2"
+    stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
   />
 
@@ -89,7 +95,7 @@
     <circle
       cx={p[0] * mediaWidth}
       cy={p[1] * mediaHeight}
-      r={4}
+      r={R_vertex}
       fill="rgba(246, 64, 43, 0.9)"
       stroke="white"
       stroke-width="1.5"
@@ -101,7 +107,7 @@
   <circle
     cx={pts[0][0] * mediaWidth}
     cy={pts[0][1] * mediaHeight}
-    r={6}
+    r={R_ring}
     fill="none"
     stroke="rgba(246, 64, 43, 0.9)"
     stroke-width="2"
