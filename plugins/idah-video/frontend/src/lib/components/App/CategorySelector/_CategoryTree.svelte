@@ -243,7 +243,7 @@
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
-      {@const { count } = groupFilteredAnnotations(annotations)}
+      {@const count = annotations.length}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
