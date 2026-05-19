@@ -43,7 +43,7 @@
 
   // Derived disabled state using the annotation module
   let disabled = $derived(
-    (selAnnotation && annotation.isLocked(selAnnotation.id)) ||
+    (selAnnotation && annotation.isLocked(selAnnotation)) ||
     (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
     !["annotate", "review"].includes(getDriver().workflowStep)
   );

@@ -38,7 +38,7 @@ export function getCategoryVisibilityAction(
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
-  const isSomeHidden = items.some((item) => annotation.isHidden(item.id));
+  const isSomeHidden = items.some((item) => annotation.isHidden(item));
 
   return {
     id: "visibility",
@@ -58,7 +58,7 @@ export function getCategoryEditabilityAction(
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
-  const isSomeLocked = items.some((item) => annotation.isLocked(item.id));
+  const isSomeLocked = items.some((item) => annotation.isLocked(item));
 
   return {
     id: "editability",

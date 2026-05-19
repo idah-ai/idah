@@ -83,7 +83,7 @@ export function register(driver: IIdahDriverV2): void {
       // Snapshot IDs and their current locked state from annotation module
       const snapshot = categoryAnnotations.map((ann) => ({
         id: ann.id,
-        locked: annotation.isLocked(ann.id),
+        locked: annotation.isLocked(ann),
       }));
 
       return {

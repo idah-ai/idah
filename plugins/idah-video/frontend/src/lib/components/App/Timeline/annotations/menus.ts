@@ -10,8 +10,8 @@ import type { TrackData } from "$lib/components/App/Timeline/types";
 
 export function getGroupContextMenus(props: { track: TrackData }): Menus {
   const { track } = props;
-  const isSomeHidden = track.items.some((item) => annotation.isHidden(item.rawData.id));
-  const isSomeLocked = track.items.some((item) => annotation.isLocked(item.rawData.id));
+  const isSomeHidden = track.items.some((item) => annotation.isHidden(item.rawData));
+  const isSomeLocked = track.items.some((item) => annotation.isLocked(item.rawData));
 
   return {
     actions: {

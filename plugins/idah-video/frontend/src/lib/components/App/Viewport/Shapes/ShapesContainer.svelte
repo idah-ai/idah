@@ -96,7 +96,7 @@
     const f = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
     return items.filter((ann) => {
-      if (annotation.isHidden(ann.id)) return false;
+      if (annotation.isHidden(ann)) return false;
       const s = ann.shape as { start?: number; end?: number };
       return s.start != null && s.end != null && f >= s.start && f <= s.end;
     });
@@ -375,7 +375,7 @@
           bind:this={_compRefs[i]}
           annotation={ann}
           selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id) && !annotation.isLocked(ann.id)}
+          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id) && !annotation.isLocked(ann)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
