@@ -84,16 +84,10 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          const handler = viewport.timeline._focusHandler;
-          if (handler) {
-            handler(Math.max(0, start - margin), end + margin);
-          } else {
-            // Fallback if Timeline hasn't mounted yet
-            viewport.timeline.range = {
-              startRange: Math.max(0, start - margin),
-              endRange: end + margin,
-            };
-          }
+          viewport.timeline.range = {
+            startRange: Math.max(0, start - margin),
+            endRange: end + margin,
+          };
         },
         isCombinable() {
           return false;

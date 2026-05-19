@@ -35,10 +35,12 @@
   /** Max zoom = 80px per frame. */
   const zoomMax = $derived(containerWidth > 0 ? Math.max(zoomMin, (totalFrames * 80) / containerWidth) : zoomMin);
 
-  /** Clamped display value for the slider. */
-  const displayZoom = $derived(Math.max(zoomMin, Math.min(zoomMax, currentZoom)));
-
-  const sliderValue = $derived(Math.max(zoomMin, Math.min(zoomMax, currentZoom)));
+  // Round to step precision (0.1) so bits-ui never sees an off-step value and
+  // fires an internal snap that re-triggers onValueChange after zoom.
+  const SLIDER_STEP = 0.1;
+  const sliderValue = $derived(
+    Math.round(Math.max(zoomMin, Math.min(zoomMax, currentZoom)) / SLIDER_STEP) * SLIDER_STEP,
+  );
 
   // Current frame to use as zoom center
   const currentFrame = $derived(viewport.video.currentFrame.value);
@@ -46,12 +48,12 @@
   // --- Actions ---
 
   function zoomOut() {
-    const newZoom = Math.max(Math.round((displayZoom / ZOOM_FACTOR) * 10) / 10, zoomMin);
+    const newZoom = Math.max(Math.round((sliderValue / ZOOM_FACTOR) * 10) / 10, zoomMin);
     zoomFn?.(newZoom, currentFrame);
   }
 
   function zoomIn() {
-    const newZoom = Math.min(Math.round(displayZoom * ZOOM_FACTOR * 10) / 10, zoomMax);
+    const newZoom = Math.min(Math.round(sliderValue * ZOOM_FACTOR * 10) / 10, zoomMax);
     zoomFn?.(newZoom, currentFrame);
   }
 
