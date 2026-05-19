@@ -7,6 +7,7 @@ import { selection } from "$lib/state/selection.svelte";
 import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
+import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
 export const command = {
   name: "selection.delete",
@@ -59,6 +60,15 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
+          if (sel.type === "group") {
+            const confirmed = await showConfirmDialog({
+              title: "Delete group",
+              description: "Are you sure you want to delete all annotations in this group?",
+            });
+
+            if (!confirmed) return;
+          }
+
           selection.deselect();
           for (const r of records) {
             await data.annotations!.delete(r.id);

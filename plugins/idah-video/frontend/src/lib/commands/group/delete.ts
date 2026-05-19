@@ -41,43 +41,26 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      // Determine groupId from props (programmatic call) or selection (keyboard shortcut)
-      let groupId: string | undefined;
-      let groupAnnotations: AnnotationItem[] | undefined;
-
-      // Programmatic call with options
-      if (opts) {
-        const props = opts as unknown as GroupDeleteProps;
-        if (props.groupId) {
-          groupId = props.groupId;
-        }
-        if (props.annotations && props.annotations.length > 0) {
-          groupAnnotations = props.annotations;
-        }
-      }
-
-      // Keyboard shortcut: read from selection
-      if (!groupId && !groupAnnotations && selection.value?.type === "group") {
-        groupId = selection.value.groupId;
-      }
-
-      if (!data.annotations) return noopAction(command);
+      const props = opts as unknown as GroupDeleteProps | undefined;
+      if (!props || !data.annotations) return noopAction(command);
 
       // Resolve annotations: use provided list, or look them up from the data store
-      if (!groupAnnotations) {
-        if (!groupId) return noopAction(command);
+      let groupAnnotations: AnnotationItem[];
 
-        groupAnnotations = data.annotations.items.filter(
-          (ann) => (ann as any).metadata?.group_id === groupId
-        );
+      if (props.annotations && props.annotations.length > 0) {
+        groupAnnotations = props.annotations;
+      } else if (props.groupId) {
+        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === props.groupId);
 
-        // If filter is empty, also search for annotation with id === groupId
+        // If filter is empty, also search for annotation with id === props.groupId
         if (groupAnnotations.length === 0) {
-          const matchById = data.annotations.items.find((ann) => ann.id === groupId);
+          const matchById = data.annotations.items.find((ann) => ann.id === props.groupId);
           if (matchById) {
             groupAnnotations = [matchById];
           }
         }
+      } else {
+        return noopAction(command);
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
