@@ -237,7 +237,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("selection.delete", { annotationId });
+    getDriver().command.call("annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
@@ -295,6 +295,12 @@
     } else if (selAnnotation) {
       selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
       if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
+    } else if (selGroup) {
+      // Update category for all annotations in the group
+      getDriver().command.call("annotation.updateGroupCategory", {
+        groupId: selGroup.groupId,
+        categoryIdToBeUpdate: value.category,
+      });
     } else if (valueMode !== "entry:root") {
       // Sidebar category click: store category and enter drawing mode
       pendingValue = value;
@@ -497,23 +503,7 @@
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
-    if (selGroup) {
-      // Update category for all annotations in the group
-      getDriver().command.call("annotation.updateGroupCategory", {
-        groupId: selGroup.groupId,
-        categoryIdToBeUpdate: reselectedCategoryId,
-      });
-    } else if (selAnnotation) {
-      // Update category for a single annotation
-      getDriver().command.call("annotation.update", {
-        annotation: selAnnotation,
-        value: { category: reselectedCategoryId },
-      });
-    } else {
-      return;
-    }
-
-    // Update the currently selected annotation value to reflect the category change in the properties sidebar
+    // onEditValue handles the update for both selAnnotation and selGroup cases
     onEditValue({ category: reselectedCategoryId }, mode);
   }
 </script>

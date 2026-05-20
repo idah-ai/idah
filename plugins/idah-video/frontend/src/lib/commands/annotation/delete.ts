@@ -1,0 +1,62 @@
+// ---------------------------------------------------------------------------
+// annotation.delete — Delete a specific annotation
+// Undoable: restores the annotation.
+//
+// Usage:
+//   driver.command.call("annotation.delete", {
+//     annotationId: "some-id"
+//   });
+// ---------------------------------------------------------------------------
+import { data, type AnnotationItem } from "$lib/state/data.svelte";
+import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import { noopAction } from "..";
+
+export const command = {
+  name: "annotation.delete",
+  group: undefined,
+  modes: [] as string[],
+  shortcut: null,
+  shortDescription: null,
+  longDescription: null,
+};
+
+export interface AnnotationDeleteProps {
+  annotationId: string;
+}
+
+export function register(driver: IIdahDriverV2): void {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: (opts?: Record<string, unknown>) => {
+      const props = opts as unknown as AnnotationDeleteProps | undefined;
+      if (!props || !props.annotationId || !data.annotations) return noopAction(command);
+
+      const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
+      if (!record) return noopAction(command);
+
+      return {
+        command: { ...command },
+        async do() {
+          const sel = selection.value as IAnnotationSelection;
+          if (selection.isAnnotation() && sel.annotation.id === props.annotationId) {
+            selection.deselect();
+          }
+
+          await data.annotations!.delete(props.annotationId);
+        },
+        async undo() {
+          if (!data.annotations) return;
+          await data.annotations!.create({ ...record, id: record.id });
+        },
+        isCombinable() { return false; },
+        combine(p) { return p; },
+      };
+    },
+    group: command.group,
+  });
+}
