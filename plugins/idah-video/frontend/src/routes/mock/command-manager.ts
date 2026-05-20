@@ -9,7 +9,7 @@ export class CommandManagerV2 {
   /** Registered commands keyed by name. */
   private registry = new Map<
     string,
-    ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction; activeWhen?: () => boolean }
+    ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction | Promise<ICommandAction>; activeWhen?: () => boolean }
   >();
 
   /** Undo stack (most recent at end). */
@@ -43,7 +43,7 @@ export class CommandManagerV2 {
     shortcut: IShortcut | null;
     shortDescription: string | null;
     longDescription: string | null;
-    callback: (opts?: Record<string, unknown>) => ICommandAction;
+    callback: (opts?: Record<string, unknown>) => ICommandAction | Promise<ICommandAction>;
     group?: string;
     activeWhen?: () => boolean;
   }): void {
@@ -76,35 +76,35 @@ export class CommandManagerV2 {
     }
 
     const props = opts.length > 0 ? opts[0] : undefined;
-    const action = entry.callback(props);
+    Promise.resolve(entry.callback(props)).then((action) => {
+      if (action.undo) {
+        // Clear redo stack — we're creating a new undoable action
+        this.redoStack = [];
+        // Attempt combine with the previous action in the stack
+        const last = this.undoStack[this.undoStack.length - 1];
+        if (last) {
+          const diff = Date.now() - last.timestamp;
+          if (diff < this.combineWindow && action.isCombinable(last.action)) {
+            const combined = action.combine(last.action);
+            // Replace the last entry with the combined action
+            this.undoStack[this.undoStack.length - 1] = {
+              action: combined,
+              timestamp: Date.now(),
+            };
+            combined.do();
+            return;
+          }
+        }
 
-    if (action.undo) {
-      // Clear redo stack — we're creating a new undoable action
-      this.redoStack = [];
-      // Attempt combine with the previous action in the stack
-      const last = this.undoStack[this.undoStack.length - 1];
-      if (last) {
-        const diff = Date.now() - last.timestamp;
-        if (diff < this.combineWindow && action.isCombinable(last.action)) {
-          const combined = action.combine(last.action);
-          // Replace the last entry with the combined action
-          this.undoStack[this.undoStack.length - 1] = {
-            action: combined,
-            timestamp: Date.now(),
-          };
-          combined.do();
-          return;
+        // Normal push
+        this.undoStack.push({ action, timestamp: Date.now() });
+        if (this.undoStack.length > this.maxStack) {
+          this.undoStack.shift();
         }
       }
 
-      // Normal push
-      this.undoStack.push({ action, timestamp: Date.now() });
-      if (this.undoStack.length > this.maxStack) {
-        this.undoStack.shift();
-      }
-    }
-
-    action.do();
+      action.do();
+    });
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -201,7 +201,7 @@ export class CommandManagerV2 {
   }
 
   /** Get a registered callback by name (for tests). */
-  getCallback(name: string): ((opts?: Record<string, unknown>) => ICommandAction) | undefined {
+  getCallback(name: string): ((opts?: Record<string, unknown>) => ICommandAction | Promise<ICommandAction>) | undefined {
     return this.registry.get(name)?.callback;
   }
 

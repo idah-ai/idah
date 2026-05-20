@@ -374,7 +374,7 @@ export interface ICommandDriverV2 {
     shortcut: IShortcut | null;
     shortDescription: string | null;
     longDescription: string | null;
-    callback: (opts?: Record<string, unknown>) => ICommandAction;
+    callback: (opts?: Record<string, unknown>) => ICommandAction | Promise<ICommandAction>;
     group?: string;
     activeWhen?: () => boolean;
   }): void;

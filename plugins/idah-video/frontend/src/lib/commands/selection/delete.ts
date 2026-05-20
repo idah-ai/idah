@@ -29,7 +29,7 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => {
+    callback: async (opts?: { confirm?: boolean }) => {
       const sel = selection.value;
       if (!sel || !data.annotations) return noopAction(command);
 
@@ -48,6 +48,15 @@ export function register(driver: IIdahDriverV2): void {
           isCombinable() { return false; },
           combine(p) { return p; },
         };
+      } else if (sel.type === "group") {
+        const needConfirm = !opts || opts.confirm; // Default to `true`
+        if (needConfirm) {
+          const confirmed = await showConfirmDialog({
+            title: "Delete group",
+            description: "Are you sure you want to delete all annotations in this group?",
+          });
+          if (!confirmed) return noopAction(command);
+        }
       }
 
       // Resolve annotations for the group from the data store
@@ -60,15 +69,6 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          if (sel.type === "group") {
-            const confirmed = await showConfirmDialog({
-              title: "Delete group",
-              description: "Are you sure you want to delete all annotations in this group?",
-            });
-
-            if (!confirmed) return;
-          }
-
           selection.deselect();
           for (const r of records) {
             await data.annotations!.delete(r.id);
