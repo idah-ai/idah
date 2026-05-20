@@ -4,7 +4,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
-  import type { IdahDriverV2 } from "@/plugin/v2/idah-driver";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 
   type Props = {
