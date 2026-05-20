@@ -1,7 +1,11 @@
 <script lang="ts">
+  import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
+  import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import Icon from "$lib/components/ui/Icon/Icon.svelte";
 
   import {
     showContextMenu,
@@ -12,6 +16,8 @@
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
+  import { resolveAnnotationColor } from "$lib/utils/color";
+  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -23,6 +29,11 @@
 
   // Variables
   let { id, title, subtitle, items } = $derived(track);
+  let shapeType = $derived(items[0]?.rawData.shape.type ?? "");
+  let color = $derived.by(() => {
+    const ann = items[0]?.rawData;
+    return ann ? resolveAnnotationColor(ann) : "gray";
+  });
   let isGroupSelected = $derived.by(() => {
     const v = selection.value;
     return v?.type === "group" && v.groupId === id;
@@ -65,7 +76,13 @@
   oncontextmenu={handleOnContextMenu}
   onclick={handleClick}
 >
-  <div class="group flex items-center">
+  <div class="group flex items-center gap-2">
+    {#if shapeType === VIDEO_BOUNDING_BOX}
+      <Icon src={vectorSquareIconSvg} {color} />
+    {:else if shapeType === VIDEO_POLYGON}
+      <Icon src={polygonIconSvg} {color} />
+    {/if}
+
     <div class="flex flex-col">
       <!-- SUBTITLE::CATEGORY -->
       <span id="subtitle" class="text-muted-foreground text-xs">

@@ -11,6 +11,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { selection } from "$lib/state/selection.svelte";
 
 export const command = {
   name: "annotation.delete_group",
@@ -63,6 +64,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
+          selection.deselect();
           const deletions = snapshot.map((ann) => data.annotations!.delete(ann.id));
           await Promise.all(deletions);
         },
@@ -80,5 +82,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
+    activeWhen: () => selection.hasGroupSelection(),
   });
 }

@@ -3,22 +3,25 @@
 // Undoable: restores the previous hidden state.
 //
 // Usage:
-//   driver.command.call("annotation.toggleGroupVisibility", {
+//   driver.command.call("annotation.toggle_group_visibility", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { selection } from "$lib/state/selection.svelte";
+import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state/selection.svelte";
 
 export const command = {
   name: "annotation.toggle_group_visibility",
-  group: undefined,
-  modes: [] as string[],
-  shortcut: null,
-  shortDescription: null,
-  longDescription: null,
+  group: "Annotation",
+  modes: ["default", "review"],
+  shortcut: "H",
+  shortDescription: "Toggle visibility",
+  longDescription: "Toggle annotation's visibility (hide/show)",
 };
 
 export interface GroupToggleVisibilityProps {
@@ -34,48 +37,64 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as GroupToggleVisibilityProps | undefined;
+      // Determine groupId from props (programmatic call) or selection (keyboard shortcut)
+      let groupId: string | undefined;
+      let groupAnnotations: AnnotationItem[] | undefined;
 
-      if (!props || !data.annotations) return noopAction(command);
-
-      // Resolve annotations: use provided list, or look them up from the data store
-      let groupAnnotations: AnnotationItem[];
-
-      if (props.annotations && props.annotations.length > 0) {
-        groupAnnotations = props.annotations;
-      } else if (props.groupId) {
-        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === props.groupId);
-
-        // If filter is empty, also search for annotation with id === props.groupId
-        if (groupAnnotations.length === 0) {
-          const matchById = data.annotations.items.find((ann) => ann.id === props.groupId);
-          if (matchById) {
-            groupAnnotations = [matchById];
-          }
+      if (opts) {
+        // Programmatic call with options
+        const props = opts as unknown as GroupToggleVisibilityProps;
+        if (props.groupId) {
+          groupId = props.groupId;
+        }
+        if (props.annotations && props.annotations.length > 0) {
+          groupAnnotations = props.annotations;
         }
       } else {
-        return noopAction(command);
+        // Keyboard shortcut: read from selection
+        const sel = selection.value;
+        if (sel && selection.isAnnotationGroup()) {
+          groupId = (sel as IAnnotationGroupSelection).groupId;
+        } else if (sel && selection.isAnnotation()) {
+          const annotation = (sel as IAnnotationSelection).annotation;
+          // Use group_id from metadata if exists, otherwise use annotation's own id
+          groupId = (annotation as any).metadata?.group_id || annotation.id;
+        }
+      }
+
+      if (!data.annotations) return noopAction(command);
+
+      // Resolve annotations: use provided list, or look them up from the data store
+      if (!groupAnnotations) {
+        if (!groupId) return noopAction(command);
+
+        groupAnnotations = data.annotations.items.filter(
+          (ann) =>
+            (ann as AnnotationItem).id === groupId ||
+            (ann as AnnotationItem).metadata?.group_id === groupId,
+        );
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
 
-      const snapshot = [...groupAnnotations];
+      // Snapshot IDs and their current hidden state from the annotation module
+      const snapshot = groupAnnotations.map((ann) => ({
+        id: ann.id,
+        hidden: annotation.isHidden(ann),
+      }));
 
       return {
         command: { ...command },
         async do() {
-          if (!data.annotations) return;
-          // If any annotation is hidden, show all; otherwise hide all
-          const anyHidden = snapshot.some((a) => a.hidden);
+          const anyHidden = snapshot.some((s) => s.hidden);
           const newHidden = !anyHidden;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, hidden: newHidden });
+          for (const { id } of snapshot) {
+            annotation.toggleHidden(id, newHidden);
           }
         },
         async undo() {
-          if (!data.annotations) return;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, hidden: ann.hidden });
+          for (const { id, hidden } of snapshot) {
+            annotation.toggleHidden(id, hidden);
           }
         },
         isCombinable() {
@@ -87,5 +106,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
+    activeWhen: () => selection.hasValidSelection(),
   });
 }

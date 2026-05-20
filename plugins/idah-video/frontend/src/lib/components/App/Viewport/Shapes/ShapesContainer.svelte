@@ -23,7 +23,9 @@
   import Crosshair from "./Crosshair.svelte";
 
   import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
-  import { selection } from "$lib/state/selection.svelte";
+
+  import { annotation } from "$lib/state/annotation.svelte";
+  import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -89,11 +91,12 @@
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
 
-  // Build a flat list of visible annotations (filtered by current frame)
+  // Build a flat list of visible annotations (filtered by current frame and hidden state)
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
     const f = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
     return items.filter((ann) => {
+      if (annotation.isHidden(ann)) return false;
       const s = ann.shape as { start?: number; end?: number };
       return s.start != null && s.end != null && f >= s.start && f <= s.end;
     });
@@ -108,7 +111,7 @@
 
   // Derive tool selection from the currently selected annotation's component
   let selAnnotation = $derived(
-    selection.value?.type === "annotation" ? (selection.value.annotation as any) : undefined,
+    selection.isAnnotation() ? (selection.value as IAnnotationSelection).annotation : undefined,
   );
 
   let toolSelection = $derived.by(() => {
@@ -372,7 +375,9 @@
           bind:this={_compRefs[i]}
           annotation={ann}
           selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE && selection.isAnnotationSelected(ann.id)}
+          editable={viewport.mode === DEFAULT_MODE &&
+            selection.isAnnotationSelected(ann.id) &&
+            !annotation.isLocked(ann)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}

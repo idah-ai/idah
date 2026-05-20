@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
@@ -29,24 +30,24 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => {
       if (!data.annotations) return noopAction(command);
 
-      const snapshot: AnnotationItem[] = [...data.annotations.items];
+      const snapshot: { id: string; locked: boolean }[] = data.annotations.items.map((ann) => ({
+        id: ann.id,
+        locked: annotation.isLocked(ann),
+      }));
       if (snapshot.length === 0) return noopAction(command);
 
       return {
         command: { ...command },
         async do() {
-          if (!data.annotations) return;
-          // If any annotation is locked, unlock all; otherwise lock all
-          const anyLocked = snapshot.some((a) => a.locked);
+          const anyLocked = snapshot.some((s) => s.locked);
           const newLocked = !anyLocked;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, locked: newLocked });
+          for (const { id } of snapshot) {
+            annotation.toggleLocked(id, newLocked);
           }
         },
         async undo() {
-          if (!data.annotations) return;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, locked: ann.locked });
+          for (const { id, locked } of snapshot) {
+            annotation.toggleLocked(id, locked);
           }
         },
         isCombinable() {
