@@ -152,7 +152,7 @@ const idbDelete = (db: IDBDatabase, entryId: string, id: string): Promise<void> 
 const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<Date> =>
   new Promise((resolve, reject) => {
     const req = db.transaction(["entries"], "readonly").objectStore("entries").get(entryId);
-    req.onsuccess = (e) => resolve(new Date((e.target as IDBRequest).result?.lastUpdatedAt) || 0);
+    req.onsuccess = (e) => resolve(new Date((e.target as IDBRequest).result?.lastUpdatedAt ?? 0));
     req.onerror = reject;
   });
 
