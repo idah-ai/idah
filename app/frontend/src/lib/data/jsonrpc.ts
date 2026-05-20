@@ -50,7 +50,7 @@ export class JsonRpcDatasource {
   retry_base_delay: number;
   retry_max_delay: number;
 
-  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 200, time: 5000 }) {
+  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 50, time: 5000 }) {
     this.base_url = base_url;
     this.batch_size = config.size;
     this.retry_base_delay = 1000;   // 1 second initial delay
@@ -97,7 +97,8 @@ export class JsonRpcDatasource {
             this.retry_attempt++;
             setTimeout(() => this.flush(), delay);
           }
-        });    } else {
+        });
+    } else {
       this.processing = false;
     }
   }
@@ -115,12 +116,17 @@ export class JsonRpcDatasource {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
       })
-        .then((response) => {
-          return response.json()
-        })
+        .then((response) => response.json())
         .then((body_response: JsonRpcResponse | JsonRpcResponse[]) => {
-          const body: JsonRpcResponse[] = Array.isArray(body_response) ? body_response : [body_response];
+          // quickfix error for now
+          if (!Array.isArray(body_response) && !body_response.id && body_response.error) {
+            for (const item of batch) {
+              item.onReject?.(body_response.error)
+            }
+            return reject({batch, retry: false})
+          }
 
+          const body: JsonRpcResponse[] = Array.isArray(body_response) ? body_response : [body_response];
           for (const item of batch) {
             const res = body.find((r) => r.id === item.id);
             if (!res) {

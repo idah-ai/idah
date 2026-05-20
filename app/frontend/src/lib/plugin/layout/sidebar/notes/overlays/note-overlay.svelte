@@ -298,7 +298,7 @@
                 <NoteFeedCard noteFeedRecord={selectedNoteFeed} editable {onNoteFeedUpdated} />
 
                 {#key $refetches.noteComments.list}
-                  {#await loadNoteComments(selectedNoteFeed.id) then}
+                  {#await loadNoteComments(selectedNoteFeed.id) then _}
                     {#each noteComments as noteComment (noteComment.id)}
                       <NoteCommentCard
                         noteCommentRecord={noteComment}
