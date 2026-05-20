@@ -71,7 +71,7 @@
   let disabledSplitButton = $derived.by(() => {
     const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
     if (!ann) return true;
-    if (annotation.isLocked(ann.id)) return true;
+    if (annotation.isLocked(ann)) return true;
     if (ann.shape?.end < viewport.video.currentFrame.value) return true;
   });
 

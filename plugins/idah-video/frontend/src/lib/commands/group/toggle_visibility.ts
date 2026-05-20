@@ -57,9 +57,9 @@ export function register(driver: IIdahDriverV2): void {
       if (groupAnnotations.length === 0) return noopAction(command);
 
       // Snapshot IDs and their current hidden state from the annotation module
-      const snapshot = groupAnnotations.map((a) => ({
-        id: a.id,
-        hidden: annotation.isHidden(a.id),
+      const snapshot = groupAnnotations.map((ann) => ({
+        id: ann.id,
+        hidden: annotation.isHidden(ann),
       }));
 
       return {

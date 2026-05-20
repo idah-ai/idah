@@ -30,9 +30,9 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => {
       if (!data.annotations) return noopAction(command);
 
-      const snapshot: { id: string; hidden: boolean }[] = data.annotations.items.map((a) => ({
-        id: a.id,
-        hidden: annotation.isHidden(a.id),
+      const snapshot: { id: string; hidden: boolean }[] = data.annotations.items.map((ann) => ({
+        id: ann.id,
+        hidden: annotation.isHidden(ann),
       }));
       if (snapshot.length === 0) return noopAction(command);
 

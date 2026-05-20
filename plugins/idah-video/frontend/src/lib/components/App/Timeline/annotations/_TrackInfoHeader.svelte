@@ -19,8 +19,8 @@
   let { annotations }: Props = $props();
 
   // Variables
-  const isAllHidden = $derived(annotations.length > 0 && annotations.every((a) => annotation.isHidden(a.id)));
-  const isAllLocked = $derived(annotations.length > 0 && annotations.every((a) => annotation.isLocked(a.id)));
+  const isAllHidden = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isHidden(ann)));
+  const isAllLocked = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isLocked(ann)));
   const menus = $derived<Menus>({
     actions: {
       items: {

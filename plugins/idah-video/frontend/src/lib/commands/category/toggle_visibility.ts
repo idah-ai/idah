@@ -83,7 +83,7 @@ export function register(driver: IIdahDriverV2): void {
       // Snapshot IDs and their current hidden state from annotation module
       const snapshot = categoryAnnotations.map((ann) => ({
         id: ann.id,
-        hidden: annotation.isHidden(ann.id),
+        hidden: annotation.isHidden(ann),
       }));
 
       return {

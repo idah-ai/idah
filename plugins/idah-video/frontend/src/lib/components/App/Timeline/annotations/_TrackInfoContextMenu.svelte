@@ -21,7 +21,7 @@
 
   // ── Track title context menus (existing) ──────────────────────────────
   let groupMenus = $derived(track ? getGroupContextMenus({ track }) : null);
-  let annotationIsLocked = $derived(trackId ? annotation.isLocked(trackId) : false);
+  let annotationIsLocked = $derived(trackId && items ? items.some(item => annotation.isLocked(item.rawData)) : false);
 
   // ── Empty-area extend menus (new) ─────────────────────────────────────
   let prevAnnotation = $derived.by<TimelineItem | undefined>(() => {

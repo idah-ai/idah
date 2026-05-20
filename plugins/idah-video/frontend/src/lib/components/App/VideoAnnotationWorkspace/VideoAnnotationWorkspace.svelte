@@ -409,7 +409,7 @@
 
   function updateAnnotationValue(ann: IVideoAnnotationRecord, value: AnnotationValue) {
     if (!editable) return;
-    if (ann && annotation.isLocked(ann.id)) return;
+    if (ann && annotation.isLocked(ann)) return;
 
     getDriver().command.call("annotation.update", { annotation: ann, value });
   }
