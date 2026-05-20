@@ -136,9 +136,7 @@ export function register(driver: IIdahDriverV2): void {
             },
           });
         },
-        undo() {
-          // No undo — the nested keyframe_add handles its own undo.
-        },
+        // No undo — the nested keyframe_add handles its own undo.
         isCombinable() {
           return false;
         },
