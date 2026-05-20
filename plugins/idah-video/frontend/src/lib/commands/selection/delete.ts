@@ -12,14 +12,10 @@ export const command = {
   name: "selection.delete",
   group: "Selection",
   modes: ["default", "review"],
-  shortcut: "Delete",
+  shortcut: "Backspace",
   shortDescription: "Delete selected",
   longDescription: null,
 };
-
-function hasSelection(): boolean {
-  return selection.value !== null;
-}
 
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
@@ -52,7 +48,7 @@ export function register(driver: IIdahDriverV2): void {
       // Resolve annotations for the group from the data store
       const groupId = (sel as any).groupId as string;
       const records = data.annotations.items.filter(
-        (ann) => (ann as any).metadata?.group_id === groupId
+        (ann) => (ann as any).metadata?.group_id === groupId || ann.id === groupId
       );
       if (records.length === 0) return noopAction(command);
 
@@ -75,6 +71,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: hasSelection,
+    activeWhen: () => selection.hasSelection(),
   });
 }

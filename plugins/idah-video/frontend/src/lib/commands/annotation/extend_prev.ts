@@ -68,7 +68,7 @@ export function register(driver: IIdahDriverV2): void {
             const target = all.find((a) => a.id === annotationId);
 
             // If no target annotation or target is locked, abort.
-            if (!target || annotation.isLocked(target)) return noopAction(command);
+            if (!target || annotation.isLocked(target)) return;
 
             // Build a list for the overlap check: same group as the target
             const gid = (target.metadata as any)?.group_id ?? annotationId;
@@ -78,7 +78,7 @@ export function register(driver: IIdahDriverV2): void {
           } else {
             // Shortcut: resolve from selection
             const sel = selection.value;
-            if (!sel) return noopAction(command);
+            if (!sel) return;
 
             let gid: string;
             if (sel.type === "group") {
@@ -86,11 +86,11 @@ export function register(driver: IIdahDriverV2): void {
             } else if (sel.type === "annotation") {
               gid = (sel.annotation.metadata as any)?.group_id ?? sel.annotation.id;
             } else {
-              return noopAction(command);
+              return;
             }
 
             // If the current group is locked, abort.
-            if (annotation.isLocked(gid)) return noopAction(command);
+            if (annotation.isLocked(gid)) return;
 
             groupAnnotations = (data.annotations?.items ?? [])
               .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
@@ -109,7 +109,7 @@ export function register(driver: IIdahDriverV2): void {
               return bEnd - aEnd;
             })[0];
 
-          if (!prevAnn) return noopAction(command);
+          if (!prevAnn) return;
 
           // Overlap protection: don't exceed the next annotation's start
           const nextAnn = groupAnnotations
@@ -126,7 +126,7 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           const nearest = nearestKeyframe(prevAnn.shape, cappedFrame);
-          if (!nearest) return noopAction(command);
+          if (!nearest) return;
 
           driver.command.call("annotation.keyframe_add", {
             annotationId: prevAnn.id,
