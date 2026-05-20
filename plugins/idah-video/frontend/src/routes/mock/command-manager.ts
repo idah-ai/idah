@@ -77,6 +77,7 @@ export class CommandManagerV2 {
 
     const props = opts.length > 0 ? opts[0] : undefined;
     const action = entry.callback(props);
+
     if (action.undo) {
       // Clear redo stack — we're creating a new undoable action
       this.redoStack = [];
@@ -94,17 +95,16 @@ export class CommandManagerV2 {
           combined.do();
           return;
         }
-
-
-        // Normal push
-        this.undoStack.push({ action, timestamp: Date.now() });
-        if (this.undoStack.length > this.maxStack) {
-          this.undoStack.shift();
-        }
       }
 
-      action.do();
-    };
+      // Normal push
+      this.undoStack.push({ action, timestamp: Date.now() });
+      if (this.undoStack.length > this.maxStack) {
+        this.undoStack.shift();
+      }
+    }
+
+    action.do();
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
