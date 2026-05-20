@@ -93,10 +93,13 @@
       value = 1;
       frameInputValue = 1;
     }
-    if (isNaN(value) || value < 1 || value > media.totalFrames) {
+    if (isNaN(value)) {
       frameInputValue = viewport.video.currentFrame.value + 1;
       return;
     }
+    // Clamp to valid range [1, media.totalFrames]
+    value = Math.max(1, Math.min(media.totalFrames, value));
+    frameInputValue = value;
     viewport.video.currentFrame.value = value - 1;
   };
 
@@ -249,10 +252,9 @@
     </DropdownMenu>
 
     <!-- VIDEO::FRAME ADJUSTER -->
-    <div class="inline-flex items-center gap-1 whitespace-nowrap">
+    <div class="inline-flex w-40 items-center gap-1 whitespace-nowrap">
       <NumberField
         name="frame-seek"
-        class="min-w-24"
         placeholder="Frame"
         min={1}
         suffix={`/ ${Math.max(0, media.totalFrames)}`}
