@@ -246,7 +246,7 @@
       {@const { count } = groupFilteredAnnotations(annotations)}
 
       <CollapsibleTrigger
-        class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+        class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
           "bg-secondary border-primary border": !selAnnotation && selectedCategory == category.id,
           "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
           "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
@@ -264,7 +264,7 @@
               size="icon-sm"
               disabled={currentModeIsSameAsShape}
               class={cn("p-0", {
-                "opacity-0": !showChevronRightIcon,
+                "opacity-0 focus-visible:outline-none": !showChevronRightIcon,
               })}
               onclick={(e) => {
                 e.stopPropagation();

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
@@ -15,7 +15,7 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
@@ -78,13 +78,19 @@
 
     if (mode === "entry:root") {
       if (!pendingValue.category || pendingValue.category === "") return false;
-      const properties = getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+
+      const properties =
+        getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+
       return requiredFullfilled(pendingValue, properties);
     }
 
     if (!shapeSelectionArgs) return false;
     if (!pendingValue.category || pendingValue.category === "") return false;
-    const properties = getDriver().getFilteredConfig(shapeSelectionArgs[0], pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+    const properties =
+      getDriver().getFilteredConfig(shapeSelectionArgs[0], pendingValue as unknown as Record<string, unknown>)
+        ?.properties ?? [];
+
     return requiredFullfilled(pendingValue, properties);
   });
 
@@ -126,7 +132,18 @@
   });
 
   $effect(() => {
-    getDriver().setMode(viewport.mode);
+    const viewportMode = viewport.mode;
+
+    getDriver().setMode(viewportMode);
+
+    // Reset pendingValue when getting out of drawing modes,
+    // to avoid stale pendingValue when user switches back to drawing mode later
+    if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE) {
+      pendingValue = {};
+    }
+
+    // Deselect group or annotation when switching to drawing modes
+    if (viewport.isCreationMode) selection.deselect();
   });
 
   onMount(async () => {
@@ -350,16 +367,6 @@
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
-      /**
-       * If no selectedId, check if we have an active group selection.
-       * If yes, we try to find the closest annotation in that group to add a keyframe to.
-       */
-      if (selGroup) {
-        const closest = selectClosestAnnotation(selGroup as any, frame);
-        addSelection(closest.metadata!.id as string, { frame, angle, points });
-        return;
-      }
-
       let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
 
       // todo proper validation
