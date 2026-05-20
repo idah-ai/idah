@@ -14,15 +14,26 @@ import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { nearestKeyframe } from "$lib/utils/interpolation";
+import { noopAction } from "..";
+import { annotation } from "$lib/state/annotation.svelte";
+
+export const command = {
+  name: "annotation.extend_next",
+  group: "Annotation",
+  modes: ["default"],
+  shortcut: "BracketLeft",
+  shortDescription: "Extend next annotation",
+  longDescription: "Extend the next annotation to the current frame",
+};
 
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
-    name: "annotation.extend_next",
-    group: "Annotation",
-    modes: ["default"],
-    shortcut: "BracketLeft",
-    shortDescription: "Extend next annotation",
-    longDescription: "Extend the next annotation to the current frame",
+    name: command.name,
+    group: command.group,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       return {
         command: {
@@ -35,22 +46,31 @@ export function register(driver: IIdahDriverV2): void {
         },
         do() {
           // ── Resolve target annotation and frame ────────────────────────
-          const frame = opts?.frame as number | undefined ?? viewport.video.currentFrame.value;
+          const frame = (opts?.frame as number | undefined) ?? viewport.video.currentFrame.value;
 
           // Resolve group annotations
-          let groupAnnotations: { id: string; shape: { frames: { frame: number; angle: number; points: [number, number][] }[] } }[];
+          let groupAnnotations: {
+            id: string;
+            shape: { frames: { frame: number; angle: number; points: [number, number][] }[] };
+          }[];
           if (opts?.annotationId) {
-            const targetId = opts.annotationId as string;
+            const annotationId = opts.annotationId as string;
             const all = data.annotations?.items ?? [];
-            const target = all.find((a) => a.id === targetId);
-            if (!target) return;
-            const gid = (target.metadata as any)?.group_id ?? targetId;
+            const target = all.find((a) => a.id === annotationId);
+
+            // If no target annotation or target is locked, abort.
+            if (!target || annotation.isLocked(target)) return;
+
+            const gid = (target.metadata as any)?.group_id ?? annotationId;
             groupAnnotations = all
               .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
               .map((a) => ({ id: a.id, shape: a.shape as any }));
           } else {
             const sel = selection.value;
+
+            // If no selection, abort.
             if (!sel) return;
+
             let gid: string;
             if (sel.type === "group") {
               gid = sel.groupId;
@@ -59,6 +79,10 @@ export function register(driver: IIdahDriverV2): void {
             } else {
               return;
             }
+
+            // If the current group is locked, abort.
+            if (annotation.isLocked(gid)) return;
+
             groupAnnotations = (data.annotations?.items ?? [])
               .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
               .map((a) => ({ id: a.id, shape: a.shape as any }));
@@ -70,9 +94,7 @@ export function register(driver: IIdahDriverV2): void {
               const firstFrame = a.shape.frames?.[0]?.frame ?? Infinity;
               return firstFrame > frame;
             })
-            .sort(
-              (a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity),
-            )[0];
+            .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
 
           if (!nextAnn) return;
 
@@ -82,13 +104,11 @@ export function register(driver: IIdahDriverV2): void {
               const lastFrame = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
               return lastFrame < frame && a.id !== nextAnn.id;
             })
-            .sort(
-              (a, b) => {
-                const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-                const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
-                return bEnd - aEnd;
-              },
-            )[0];
+            .sort((a, b) => {
+              const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
+              const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
+              return bEnd - aEnd;
+            })[0];
 
           let cappedFrame = frame;
           if (prevAnn) {
@@ -107,11 +127,13 @@ export function register(driver: IIdahDriverV2): void {
             },
           });
         },
-        undo() {
-          // No undo — the nested keyframe_add handles its own undo.
+        // No undo — the nested keyframe_add handles its own undo.
+        isCombinable() {
+          return false;
         },
-        isCombinable() { return false; },
-        combine(p: never) { return p; },
+        combine(p: never) {
+          return p;
+        },
       };
     },
   });

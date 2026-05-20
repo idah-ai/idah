@@ -184,13 +184,7 @@
     groups: Array<AnnotationGroup<IVideoAnnotationRecord>>;
     count: number;
   } {
-    const filteredAnnotations = annotations.filter(
-      (annotation) =>
-        viewport.video.currentFrame.value >= annotation.shape.start &&
-        viewport.video.currentFrame.value <= annotation.shape.end &&
-        annotation.shape.type == modalityShape,
-    );
-    const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
+    const filteredGroupedAnnotations = groupAnnotations(annotations);
 
     return {
       groups: filteredGroupedAnnotations,
@@ -243,10 +237,10 @@
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
-      {@const count = annotations.length}
+      {@const { count } = groupFilteredAnnotations(annotations)}
 
       <CollapsibleTrigger
-        class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+        class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
           "bg-secondary border-primary border": !selAnnotation && selectedCategory == category.id,
           "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
           "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
@@ -264,7 +258,7 @@
               size="icon-sm"
               disabled={currentModeIsSameAsShape}
               class={cn("p-0", {
-                "opacity-0": !showChevronRightIcon,
+                "opacity-0 focus-visible:outline-none": !showChevronRightIcon,
               })}
               onclick={(e) => {
                 e.stopPropagation();
