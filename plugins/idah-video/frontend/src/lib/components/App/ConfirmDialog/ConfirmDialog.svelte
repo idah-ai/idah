@@ -13,32 +13,27 @@
   import { closeConfirmDialog, confirmDialogState } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
   // Variables
-  let { open, title, description, onConfirm, onCancel } = $derived($confirmDialogState);
+  let { open, title, description, onConfirm } = $derived($confirmDialogState);
 
   // Functions
   function handleClickConfirm() {
     onConfirm();
     closeConfirmDialog();
   }
-
-  function handleCancel() {
-    if (onCancel) onCancel();
-    closeConfirmDialog();
-  }
 </script>
 
-  <AlertDialog bind:open onClose={handleCancel}>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{title}</AlertDialogTitle>
-        <AlertDialogDescription>{description}</AlertDialogDescription>
-      </AlertDialogHeader>
+<AlertDialog bind:open>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>{title}</AlertDialogTitle>
+      <AlertDialogDescription>{description}</AlertDialogDescription>
+    </AlertDialogHeader>
 
-      <!-- Render custom content here -->
+    <!-- Render custom content here -->
 
-      <AlertDialogFooter>
-        <AlertDialogCancel onclick={handleCancel}>Cancel</AlertDialogCancel>
-        <Button variant="destructive" onclick={handleClickConfirm}>Confirm</Button>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <Button variant="destructive" onclick={handleClickConfirm}>Confirm</Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
