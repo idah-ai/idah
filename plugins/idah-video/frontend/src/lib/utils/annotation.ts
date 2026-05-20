@@ -4,14 +4,27 @@
 import { data } from "$lib/state/data.svelte";
 
 /**
- * Compare two groups by their first annotation's start frame, then by group ID.
- * This is the single source of truth for group ordering in the timeline
- * and keyboard navigation.
+ * Compare two groups for stable timeline track ordering.
+ *
+ * Primary key: `groupId` lexicographic order.
+ * Because all group IDs are UUIDv7 values they sort in creation-time order, which
+ * is both stable and intuitive (annotations are normally created left-to-right on
+ * the timeline). Crucially, `groupId` is immutable — it never changes through
+ * split, delete, or update operations — so tracks cannot jump position when an
+ * annotation inside a group is removed.
+ *
+ * Secondary key: first annotation's start frame (tiebreaker only; two distinct
+ * groups cannot share the same groupId in practice).
+ *
+ * Previous behaviour sorted by start frame first, which caused a track to move
+ * when the earliest-starting annotation in the group was deleted (e.g. after a
+ * split + delete-left operation the remaining right-side piece has a later start
+ * frame and the group dropped to a lower track position).
  */
 export function compareGroups(a: { groupId: string; annotations: { shape: { start: number } }[] }, b: { groupId: string; annotations: { shape: { start: number } }[] }): number {
-  const byStart = (a.annotations[0]?.shape.start ?? Infinity) - (b.annotations[0]?.shape.start ?? Infinity);
-  if (byStart !== 0) return byStart;
-  return a.groupId.localeCompare(b.groupId);
+  const byGroupId = a.groupId.localeCompare(b.groupId);
+  if (byGroupId !== 0) return byGroupId;
+  return (a.annotations[0]?.shape.start ?? Infinity) - (b.annotations[0]?.shape.start ?? Infinity);
 }
 
 /** Format a category path like "vehicles/car" into a human-readable label like "Vehicles / Car". */
