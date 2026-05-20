@@ -17,10 +17,6 @@ export const command = {
   longDescription: null,
 };
 
-function hasSelection(): boolean {
-  return selection.hasSelection();
-}
-
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
@@ -75,6 +71,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: hasSelection,
+    activeWhen: () => selection.hasSelection(),
   });
 }

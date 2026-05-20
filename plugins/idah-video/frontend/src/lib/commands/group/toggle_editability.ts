@@ -12,6 +12,7 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
+import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state/selection.svelte";
 
 export const command = {
   name: "annotation.toggle_group_editability",
@@ -25,11 +26,6 @@ export const command = {
 export interface GroupToggleEditabilityProps {
   groupId: string;
   annotations?: AnnotationItem[];
-}
-
-function hasValidSelection(): boolean {
-  return selection.value !== null && 
-    (selection.value.type === "group" || selection.value.type === "annotation");
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -55,14 +51,13 @@ export function register(driver: IIdahDriverV2): void {
         }
       } else {
         // Keyboard shortcut: read from selection
-        if (selection.value) {
-          if (selection.value.type === "group") {
-            groupId = selection.value.groupId;
-          } else if (selection.value.type === "annotation") {
-            const annotation = selection.value.annotation;
-            // Use group_id from metadata if exists, otherwise use annotation's own id
-            groupId = (annotation as any).metadata?.group_id || annotation.id;
-          }
+        const sel = selection.value;
+        if (sel && selection.isAnnotationGroup()) {
+          groupId = (sel as IAnnotationGroupSelection).groupId;
+        } else if (sel && selection.isAnnotation()) {
+          const annotation = (sel as IAnnotationSelection).annotation;
+          // Use group_id from metadata if exists, otherwise use annotation's own id
+          groupId = (annotation as any).metadata?.group_id || annotation.id;
         }
       }
 
@@ -113,6 +108,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: hasValidSelection,
+    activeWhen: () => selection.hasValidSelection(),
   });
 }

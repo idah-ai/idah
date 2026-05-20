@@ -27,10 +27,6 @@ export interface GroupDeleteProps {
   annotations?: AnnotationItem[];
 }
 
-function hasGroupSelection(): boolean {
-  return selection.value !== null && selection.value.type === "group";
-}
-
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
@@ -86,6 +82,6 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: hasGroupSelection,
+    activeWhen: () => selection.hasGroupSelection(),
   });
 }
