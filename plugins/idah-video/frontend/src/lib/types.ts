@@ -78,8 +78,6 @@ export interface IVideoAnnotationRecord extends IAnnotationRecord<
   IVideoAnnotationShape,
   IVideoAnnotationValue
 > {
-  locked?: boolean;
-  hidden?: boolean;
   synced?: boolean;
 }
 

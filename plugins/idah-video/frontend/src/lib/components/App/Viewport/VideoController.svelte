@@ -13,8 +13,6 @@
   } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
   import {
     DropdownMenu,
@@ -24,14 +22,17 @@
     DropdownMenuLabel,
     DropdownMenuTrigger,
   } from "$lib/components/ui/DropdownMenu";
+  import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
+  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Video from "./Video.svelte";
 
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
 
@@ -65,13 +66,12 @@
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
   // Display value is 1-based (user-facing), internal currentFrame is 0-based.
-  let frameInputValue = $state<number>(viewport.video.currentFrame.value + 1);
+  let frameInputValue = $state<number | null>(viewport.video.currentFrame.value + 1);
 
   let disabledSplitButton = $derived.by(() => {
-    const ann =
-      selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+    const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
     if (!ann) return true;
-    if (ann.locked) return true;
+    if (annotation.isLocked(ann)) return true;
     if (ann.shape?.end < viewport.video.currentFrame.value) return true;
   });
 
@@ -80,19 +80,26 @@
     frameInputValue = viewport.video.currentFrame.value + 1;
   });
 
-  // TODO: @audi ideally, these should call commands ?
-
   // Functions
   const handleInput = (e: Event) => {
-    frameInputValue = Number((e.target as HTMLInputElement).value);
+    const rawValue = (e.target as HTMLInputElement).value;
+    frameInputValue = rawValue === "" ? null : Number(rawValue);
   };
 
   const performSeek = () => {
-    const value = frameInputValue;
-    if (isNaN(value) || value < 1 || value > media.totalFrames) {
+    let value = frameInputValue;
+    // Empty input defaults to frame 1
+    if (value === null || value === undefined) {
+      value = 1;
+      frameInputValue = 1;
+    }
+    if (isNaN(value)) {
       frameInputValue = viewport.video.currentFrame.value + 1;
       return;
     }
+    // Clamp to valid range [1, media.totalFrames]
+    value = Math.max(1, Math.min(media.totalFrames, value));
+    frameInputValue = value;
     viewport.video.currentFrame.value = value - 1;
   };
 
@@ -113,7 +120,10 @@
 
   function goFrame(direction: "prev" | "next", step: number = 1) {
     const delta = direction === "prev" ? -step : step;
-    viewport.video.currentFrame.value = Math.max(0, Math.min(media.totalFrames - 1, viewport.video.currentFrame.value + delta));
+    viewport.video.currentFrame.value = Math.max(
+      0,
+      Math.min(media.totalFrames - 1, viewport.video.currentFrame.value + delta),
+    );
   }
 
   function gotoFrameStep(direction: "prev" | "next") {
@@ -154,10 +164,7 @@
     </ToolTooltip>
 
     <!-- VIDEO::PREVIOUS FRAME -->
-    <ToolTooltip
-      label="Previous frame"
-      shortcut={cmdShortcut("viewport.previous_frame")}
-    >
+    <ToolTooltip label="Previous frame" shortcut={cmdShortcut("viewport.previous_frame")}>
       {#snippet trigger()}
         <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.previous_frame")}>
           <ChevronLeftIcon />
@@ -166,16 +173,9 @@
     </ToolTooltip>
 
     <!-- VIDEO::PLAY / PAUSE -->
-    <ToolTooltip
-      label={viewport.video.status === "play" ? "Pause" : "Play"}
-      shortcut={cmdShortcut("viewport.play")}
-    >
+    <ToolTooltip label={viewport.video.status === "play" ? "Pause" : "Play"} shortcut={cmdShortcut("viewport.play")}>
       {#snippet trigger()}
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onclick={() => getDriver().command.call("viewport.play")}
-        >
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.play")}>
           {#if viewport.video.status === "play"}
             <PauseIcon />
           {:else}
@@ -186,10 +186,7 @@
     </ToolTooltip>
 
     <!-- VIDEO::NEXT FRAME -->
-    <ToolTooltip
-      label="Next frame"
-      shortcut={cmdShortcut("viewport.next_frame")}
-    >
+    <ToolTooltip label="Next frame" shortcut={cmdShortcut("viewport.next_frame")}>
       {#snippet trigger()}
         <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.next_frame")}>
           <ChevronRightIcon />
@@ -244,7 +241,7 @@
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent>
+      <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Video speed</DropdownMenuLabel>
           {#each videoSpeeds as { label, value } (value)}
@@ -255,10 +252,9 @@
     </DropdownMenu>
 
     <!-- VIDEO::FRAME ADJUSTER -->
-    <div class="inline-flex items-center gap-1 whitespace-nowrap">
+    <div class="inline-flex w-40 items-center gap-1 whitespace-nowrap">
       <NumberField
         name="frame-seek"
-        class="min-w-24"
         placeholder="Frame"
         min={1}
         suffix={`/ ${Math.max(0, media.totalFrames)}`}
@@ -271,23 +267,19 @@
     </div>
 
     <!-- ANNOTATION::SPLIT -->
-    <ToolTooltip
-      label="Split annotation"
-    >
+    <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
       {#snippet trigger()}
         <Button
           variant="outline"
           size="icon-sm"
           disabled={disabledSplitButton}
           onclick={() => {
-            const ann =
-              selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+            const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
             if (ann)
               getDriver().command.call("annotation.split", {
-                id: ann.metadata?.id ?? ann.id,
+                annotationId: ann.metadata?.id ?? ann.id,
                 at: viewport.video.currentFrame.value,
-              }
-            );
+              });
           }}
         >
           <SquareSplitHorizontalIcon />
@@ -295,68 +287,4 @@
       {/snippet}
     </ToolTooltip>
   </div>
-
-  <!-- CONTAINER::CENTER -->
-  <!-- <Button variant="outline" class="border-primary text-primary hover:text-primary">Auto Track</Button> -->
-
-  <!-- CONTAINER::RIGHT -->
-  <!-- <div class="flex items-center gap-2">
-    <Tooltips align="center">
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={zoomOut}>
-          <ZoomOutIcon />
-        </Button>
-      {/snippet}
-
-      {#snippet content()}
-        Zoom out
-      {/snippet}
-    </Tooltips>
-
-    <Slider class="min-w-[200px]" type="single" {min} {max} step={5} value={sliderValue} onValueChange={onSliderChange}
-    ></Slider>
-
-    <Tooltips align="center">
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={zoomIn}>
-          <ZoomInIcon />
-        </Button>
-      {/snippet}
-
-      {#snippet content()}
-        Zoom in
-      {/snippet}
-    </Tooltips>
-  </div> -->
-
-  <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
-  <!-- <Popover>
-      <PopoverTrigger>
-        <Tooltips align="center">
-          {#snippet trigger()}
-            <Button variant="outline" size="icon-sm">
-              <RulerIcon />
-            </Button>
-          {/snippet}
-
-          {#snippet content()}
-            Zoom scale
-          {/snippet}
-        </Tooltips>
-      </PopoverTrigger>
-
-      <PopoverContent side="top" align="center" class="flex max-w-10 flex-col items-center gap-2 px-2">
-        <Text class="text-muted-foreground">{scale}</Text>
-
-        <Slider
-          type="single"
-          orientation="vertical"
-          min={1}
-          max={Math.ceil(totalFrames / zoom)}
-          step={1}
-          value={scale}
-          onValueChange={onScaleChange}
-        />
-      </PopoverContent>
-    </Popover> -->
 </div>

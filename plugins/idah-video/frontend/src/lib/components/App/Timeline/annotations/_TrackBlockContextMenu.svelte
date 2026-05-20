@@ -17,6 +17,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
 
   // Props
   interface Props extends ContextMenuComponentProps {
@@ -26,9 +27,10 @@
   let { item, currentFrame }: Props = $props();
 
   // Variables
-  let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
+  let { trackId, startRange, endRange, rawData } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
-  let isKeyframe = $derived(annotation.shape.frames.some((f) => f.frame === frame));
+  let isKeyframe = $derived(rawData.shape.frames.some((f) => f.frame === frame));
+  let annotationIsLocked = $derived(annotation.isLocked(rawData));
 
   let menus = $derived<Menus>({
     actions: {
@@ -47,10 +49,11 @@
               deleteKeyframe: {
                 label: `Delete keyframe`,
                 icon: Trash2Icon,
+                disabled: annotationIsLocked,
                 destructive: true,
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_delete", {
-                    annotationId: annotation.id,
+                    annotationId: rawData.id,
                     frame,
                   });
                 },
@@ -60,9 +63,10 @@
               addKeyframe: {
                 label: `Add keyframe`,
                 icon: FramerIcon,
+                disabled: annotationIsLocked,
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_add", {
-                    annotationId: annotation.id,
+                    annotationId: rawData.id,
                     selection: {
                       frame,
                       angle: 0,
@@ -72,16 +76,17 @@
                 },
               },
             }),
-      split: {
-        label: `Split at frame ${frame}`,
-        icon: SquareSplitHorizontalIcon,
-        onClick: () => {
-          getDriver().command.call("annotation.split", {
-            annotationId: annotation.id,
-            at: frame,
-          });
+        split: {
+          label: `Split at frame ${frame + 1}`,
+          icon: SquareSplitHorizontalIcon,
+          disabled: annotationIsLocked,
+          onClick: () => {
+            getDriver().command.call("annotation.split", {
+              annotationId: rawData.id,
+              at: frame,
+            });
+          },
         },
-      },
       },
     },
     danger: {
@@ -89,9 +94,10 @@
         delete: {
           label: `Delete annotation`,
           icon: Trash2Icon,
+          disabled: annotationIsLocked,
           destructive: true,
           onClick: () => {
-            selection.selectAnnotation(annotation);
+            selection.selectAnnotation(rawData);
             getDriver().command.call("selection.delete", {});
           },
         },
@@ -106,16 +112,19 @@
 
     {#each Object.entries(group.items) as [menuKey, { label, icon: Icon, disabled, hidden, destructive, onClick }] (menuKey)}
       {#if !hidden}
-        <Button
-          variant={destructive ? "destructive-ghost" : "ghost"}
-          size="sm"
-          class="mx-1 justify-start"
-          {disabled}
-          onclick={onClick}
-        >
-          <Icon />
-          {label}
-        </Button>
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div role="none" onclick={(e) => { if (disabled) e.stopPropagation(); }}>
+          <Button
+            variant={destructive ? "destructive-ghost" : "ghost"}
+            size="sm"
+            class="mx-1 w-full justify-start"
+            {disabled}
+            onclick={onClick}
+          >
+            <Icon />
+            {label}
+          </Button>
+        </div>
       {/if}
     {/each}
 

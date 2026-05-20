@@ -1,11 +1,23 @@
 import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
 
+// List of viewport modes
+export const DEFAULT_MODE = "default";
+export const NOTE_MODE = "note";
+export const BOUNDING_BOX_MODE = "idah-video:bounding-box";
+export const POLYGON_MODE = "idah-video:polygon";
+
 class Viewport {
   // Only mode needs special handling
-  #mode = $state("default");
+  #mode = $state(DEFAULT_MODE);
 
-  get mode() { return this.#mode; }
+  get mode() {
+    return this.#mode;
+  }
+  get isCreationMode() {
+    return ["idah-video:polygon", "idah-video:bounding-box"].includes(this.#mode);
+  }
+
   set mode(val: string) {
     if (this.#mode === val) return;
     this.#mode = val;
@@ -21,8 +33,12 @@ class Viewport {
     currentFrame: { value: 0 },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
-    play() { this.status = "play"; },
-    pause() { this.status = "pause"; },
+    play() {
+      this.status = "play";
+    },
+    pause() {
+      this.status = "pause";
+    },
   });
 
   workspace = $state({
@@ -44,10 +60,7 @@ class Viewport {
       const scaleY = vh / mh;
       const scale = Math.min(scaleX, scaleY);
       this.transform = {
-        translate: [
-          (vw - mw * scale) / 2,
-          (vh - mh * scale) / 2,
-        ],
+        translate: [(vw - mw * scale) / 2, (vh - mh * scale) / 2],
         scale,
       };
     },
@@ -68,23 +81,17 @@ class Viewport {
 
       let [tx, ty] = translate;
 
-      // If the content fits in the viewport, keep it centered (as fitToViewport set it)
-      if (scaledW <= vw) {
-        tx = (vw - scaledW) / 2;
-      } else {
-        // Content is larger — prevent each edge from going past the opposite edge
-        // Right edge must be at least MARGIN from right viewport edge
-        if (tx + scaledW < MARGIN) tx = MARGIN - scaledW;
-        // Left edge must be at most (vw - MARGIN)
-        if (tx > vw - MARGIN) tx = vw - MARGIN;
-      }
+      // ── Horizontal clamping ───────────────────────────────────────
+      // Prevent the right edge from moving too far left:
+      if (tx + scaledW < MARGIN) tx = MARGIN - scaledW;
+      // Prevent the left edge from moving too far right:
+      if (tx > vw - MARGIN) tx = vw - MARGIN;
 
-      if (scaledH <= vh) {
-        ty = (vh - scaledH) / 2;
-      } else {
-        if (ty + scaledH < MARGIN) ty = MARGIN - scaledH;
-        if (ty > vh - MARGIN) ty = vh - MARGIN;
-      }
+      // ── Vertical clamping ─────────────────────────────────────────
+      // Prevent the bottom edge from moving too far up:
+      if (ty + scaledH < MARGIN) ty = MARGIN - scaledH;
+      // Prevent the top edge from moving too far down:
+      if (ty > vh - MARGIN) ty = vh - MARGIN;
 
       this.transform.translate = [tx, ty];
     },
@@ -101,15 +108,15 @@ class Viewport {
       const t = this.transform;
       const d = this.dimensions;
       const m = media.dimensions;
-      const s = t.scale
+      const s = t.scale;
 
       return [
         -t.translate[0] / (s * m[0]),
         -t.translate[1] / (s * m[1]),
         (-t.translate[0] + d[0]) / (s * m[0]),
-        (-t.translate[1] + d[1]) / (s * m[1])
-      ]
-    }
+        (-t.translate[1] + d[1]) / (s * m[1]),
+      ];
+    },
   });
 }
 

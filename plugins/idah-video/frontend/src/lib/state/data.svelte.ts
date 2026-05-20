@@ -116,8 +116,6 @@ export type AnnotationItem = {
   shape: { type: string; start: number; end: number } & Record<string, unknown>;
   value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
   metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
-  hidden?: boolean;
-  locked?: boolean;
   synced?: boolean;
   [key: string]: unknown;
 };
@@ -197,7 +195,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       // Optimistic: insert locally first
       originalUpsert(item);
       try {
-        await driver.create({ ...data, id });
+        await driver.create($state.snapshot({ ...data, id }));
       } catch {
         // Rollback on failure
         store.remove(id);
@@ -226,7 +224,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       originalUpsert(item);
       syncSelectionOnUpdate(item.id);
       try {
-        await driver.update(item.id, item);
+        await driver.update(item.id, $state.snapshot(item));
       } catch {
         // Rollback
         if (old) originalUpsert(old);

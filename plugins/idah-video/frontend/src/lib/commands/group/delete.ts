@@ -7,13 +7,14 @@
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
-import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { selection } from "$lib/state/selection.svelte";
 
 export const command = {
-  name: "annotation.deleteGroup",
+  name: "annotation.delete_group",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -43,9 +44,15 @@ export function register(driver: IIdahDriverV2): void {
       if (props.annotations && props.annotations.length > 0) {
         groupAnnotations = props.annotations;
       } else if (props.groupId) {
-        groupAnnotations = data.annotations.items.filter(
-          (ann) => (ann as any).metadata?.group_id === props.groupId
-        );
+        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === props.groupId);
+
+        // If filter is empty, also search for annotation with id === props.groupId
+        if (groupAnnotations.length === 0) {
+          const matchById = data.annotations.items.find((ann) => ann.id === props.groupId);
+          if (matchById) {
+            groupAnnotations = [matchById];
+          }
+        }
       } else {
         return noopAction(command);
       }
@@ -57,20 +64,24 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          for (const ann of snapshot) {
-            await data.annotations!.delete(ann.id);
-          }
+          selection.deselect();
+          const deletions = snapshot.map((ann) => data.annotations!.delete(ann.id));
+          await Promise.all(deletions);
         },
         async undo() {
           if (!data.annotations) return;
-          for (const ann of snapshot) {
-            await data.annotations!.create({ ...ann, id: ann.id });
-          }
+          const creations = snapshot.map((ann) => data.annotations!.create({ ...ann, id: ann.id }));
+          await Promise.all(creations);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,
+    activeWhen: () => selection.hasGroupSelection(),
   });
 }

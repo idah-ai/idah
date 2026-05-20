@@ -10,6 +10,7 @@
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { isInViewport } from "$lib/components/App/Timeline/utils";
   import { cn } from "$lib/utils";
+  import { selection } from "$lib/state/selection.svelte";
 
   import type { TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
 
@@ -32,8 +33,6 @@
 
   // ── Right-click on empty track area ───────────────────────────────────
 
-  import { selection } from "$lib/state/selection.svelte";
-
   function handleContextMenu(e: MouseEvent) {
     // Only handle clicks directly on the track div (not on children — TrackItem blocks handle their own)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
@@ -45,7 +44,7 @@
     // so clientX - rect.left is the pixel offset within the content.
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relX = e.clientX - rect.left;
-    const frame = Math.round(relX / scale);
+    const frame = Math.floor(relX / scale);
 
     if (trackId) {
       const contextMenuProps: ContextMenuComponentProps = {
@@ -54,6 +53,9 @@
         frame,
         items: items as any,
       };
+
+      /** Select annotation group */
+      selection.selectGroup(trackId);
 
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }
@@ -71,15 +73,18 @@
 </script>
 
 <div
+  role="button"
+  tabindex="-1"
   class={cn("track border-b", {
     "border-primary bg-primary/10 border-t border-b": isSelected,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"
   onclick={handleTrackClick}
+  onkeypress={() => {}}
   oncontextmenu={handleContextMenu}
 >
-  {#each visibleItems as item, itemIndex (itemIndex)}
+  {#each visibleItems as item (item.rawData.id)}
     <TrackItem {item} {scale} />
   {/each}
 </div>

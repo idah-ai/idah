@@ -1,12 +1,13 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
-  import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
+  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
 
-  import { selection } from "$lib/state/selection.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
@@ -17,44 +18,40 @@
   }
   let { annotations }: Props = $props();
 
-  // Vairables
-  let openConfirmDeleteAllDialog = $state(false);
-
-  const isAllHidden = $derived(annotations.every((a) => a.hidden));
-  const isAllLocked = $derived(annotations.every((a) => a.locked));
+  // Variables
+  const isAllHidden = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isHidden(ann)));
+  const isAllLocked = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isLocked(ann)));
   const menus = $derived<Menus>({
     actions: {
       items: {
         "visibility-all": {
-          label: isAllHidden ? "Show all" : "Hide all",
-          icon: isAllHidden ? EyeIcon : EyeOffIcon,
+          label: "Show/Hide All",
+          icon: isAllHidden ? EyeOffIcon : EyeIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggleAllVisibility");
+            getDriver().command.call("annotation.toggle_visibility_all");
           },
         },
         "editability-all": {
-          label: isAllLocked ? "Unlock all" : "Lock all",
-          icon: isAllLocked ? LockOpenIcon : LockIcon,
+          label: "Lock/Unlock All",
+          icon: isAllLocked ? LockIcon : LockOpenIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggleAllEditability");
+            getDriver().command.call("annotation.toggle_editability_all");
           },
         },
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
           onClick: () => {
-            openConfirmDeleteAllDialog = true;
+            showConfirmDialog({
+              title: "Delete all annotations",
+              description: "Are you sure you want to delete all annotations?",
+              onConfirm: () => getDriver().command.call("annotation.delete_all"),
+            });
           },
         },
       },
     },
   });
-
-  // Functions
-  function deleteAllAnnotations() {
-    getDriver().command.call("annotation.deleteAll");
-    openConfirmDeleteAllDialog = false;
-  }
 </script>
 
 <div
@@ -85,16 +82,3 @@
     {/each}
   </div>
 </div>
-
-<ConfirmModal
-  title="Delete all annotations"
-  description="Are you sure you want to delete all annotations?"
-  onConfirm={() => {
-    deleteAllAnnotations();
-
-    // Return to default mode after deletion
-    // setCurrentModeTo(DEFAULT_MODE);
-    openConfirmDeleteAllDialog = false;
-  }}
-  bind:open={openConfirmDeleteAllDialog}
-/>

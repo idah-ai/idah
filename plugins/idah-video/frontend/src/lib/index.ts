@@ -2,28 +2,38 @@
 import { mount, unmount } from "svelte";
 
 import Plugin from "$lib/components/Plugin.svelte";
+import { type IIdahDriverV2 } from "$idah/v2/types"
+import { initDriver } from "./state/driver.svelte";
+import { initDataStores } from "./state/data.svelte";
+import { registerAllCommands } from "./commands";
+import { initToolbar } from "./toolbar";
 
-interface IActivityView {
+interface IPluginDriver {
   name: string;
   label: string;
   description: string;
   version: string;
   type: string;
-  init(): void;
+  init(driver:  IIdahDriverV2): void;
   render(parent: HTMLElement): void;
   close(): void;
 }
 
 let mounted: object;
 
-const idahVideoPlugin: IActivityView = {
+const idahVideoPlugin: IPluginDriver = {
   name: "idah-video",
   label: "IDAH Video Annotation",
   description: "A module for annotating video.",
   version: "1.0.0",
   type: "video",
-  init() {
-    console.debug("Initializing Plugin", { this: this });
+  init(driver: IIdahDriverV2) {
+    console.debug("Initializing plugin", { this: this });
+    initDriver(driver);
+    initDataStores();
+    registerAllCommands(driver);
+    initToolbar(driver);
+    console.debug("Plugin initialized", { this: this });
   },
 
   render(parent: HTMLElement) {

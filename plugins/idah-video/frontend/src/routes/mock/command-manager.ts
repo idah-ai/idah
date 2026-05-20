@@ -1,18 +1,16 @@
 // ---------------------------------------------------------------------------
 // V2 Command Manager — register, call, undo / redo
 // ---------------------------------------------------------------------------
-import type {
-  ICommandDescriptor,
-  ICommandAction,
-  ICommandStackEntry,
-  IShortcut,
-} from "$idah/v2/types";
-import { buildKeyCombination } from "./shortcut-utils";
+import type { ICommandAction, ICommandDescriptor, ICommandStackEntry, IShortcut } from "$idah/v2/types";
 import { isMac } from "$lib/utils/browser";
+import { buildKeyCombination } from "./shortcut-utils";
 
 export class CommandManagerV2 {
   /** Registered commands keyed by name. */
-  private registry = new Map<string, ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction; activeWhen?: () => boolean }>();
+  private registry = new Map<
+    string,
+    ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction; activeWhen?: () => boolean }
+  >();
 
   /** Undo stack (most recent at end). */
   private undoStack: ICommandStackEntry[] = [];
@@ -71,7 +69,9 @@ export class CommandManagerV2 {
   call(name: string, ...opts: Record<string, unknown>[]): void {
     const entry = this.registry.get(name);
     if (!entry) {
-      console.error(`[command] unknown command: "${name}"`);
+      console.error(
+        `[command] command not registered: "${name}", Please register it in the plugins/idah-video/frontend/src/lib/commands/index.ts`,
+      );
       return;
     }
 
@@ -275,10 +275,7 @@ export class CommandManagerV2 {
    * across all modes, for use in the command palette.
    * Same shape as `IActivityContext.shortcutReferences`.
    */
-  getShortcutReferences(): Record<
-    string,
-    { label: string; description: string; keyCombinations: string[] }
-  > {
+  getShortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }> {
     const refs: Record<string, { label: string; description: string; keyCombinations: string[] }> = {};
     for (const entry of this.registry.values()) {
       if (!entry.shortcut) continue;

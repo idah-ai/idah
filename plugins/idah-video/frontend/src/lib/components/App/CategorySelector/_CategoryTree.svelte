@@ -8,22 +8,26 @@
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
 
-  import Icon from "$lib/components/ui/Icon";
   import AnnotationCountBadge from "$lib/components/App/CategorySelector/_AnnotationCountBadge.svelte";
-  import AnnotationGroupNode from "$lib/components/App/CategorySelector/Category/_AnnotationGroupNode.svelte";
+  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import CategoryName from "$lib/components/App/CategorySelector/Category/_CategoryName.svelte";
+  import Icon from "$lib/components/ui/Icon";
+  import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { selection } from "$lib/state/selection.svelte";
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
+
+  import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
+  import { getDriver } from "$lib/state/driver.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
+  import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
-  import type { DataStore, AnnotationItem } from "$lib/state/data.svelte";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
@@ -104,6 +108,10 @@
     }, []),
   );
 
+  let openConfirmCategoryDeleteDialog = $state(false);
+  let categoryToDelete = $state<string | null>(null);
+
+  // Functions
   function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
@@ -176,18 +184,16 @@
     groups: Array<AnnotationGroup<IVideoAnnotationRecord>>;
     count: number;
   } {
-    const filteredAnnotations = annotations.filter(
-      (annotation) =>
-    viewport.video.currentFrame.value >= annotation.shape.start &&
-        viewport.video.currentFrame.value <= annotation.shape.end &&
-        annotation.shape.type == modalityShape,
-    );
-    const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
+    const filteredGroupedAnnotations = groupAnnotations(annotations);
 
     return {
       groups: filteredGroupedAnnotations,
       count: filteredGroupedAnnotations.length,
     };
+  }
+
+  function deleteCategoryAnnotations(categoryId: string) {
+    getDriver().command.call("annotation.delete_category", { category: categoryId });
   }
 </script>
 
@@ -232,10 +238,9 @@
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
       {@const { count } = groupFilteredAnnotations(annotations)}
-      {@const hasAnnotations = count > 0}
 
       <CollapsibleTrigger
-        class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+        class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
           "bg-secondary border-primary border": !selAnnotation && selectedCategory == category.id,
           "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
           "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
@@ -243,17 +248,17 @@
         onclick={(e) => toggleCategory(e, category)}
       >
         <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-          <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+          <SidebarMenuItem class="group flex h-8 w-full flex-row items-center gap-1">
             {@const hasChildren = !!category.nestedCategories}
             {@const isSelectingCategory = selectedCategory == category.id}
-            {@const showChevronRightIcon = hasChildren || hasAnnotations}
+            {@const showChevronRightIcon = hasChildren}
 
             <Button
               variant="ghost"
               size="icon-sm"
               disabled={currentModeIsSameAsShape}
               class={cn("p-0", {
-                "opacity-0": !showChevronRightIcon,
+                "opacity-0 focus-visible:outline-none": !showChevronRightIcon,
               })}
               onclick={(e) => {
                 e.stopPropagation();
@@ -328,28 +333,47 @@
 
             <CategoryName name={category.name} />
 
-            {#if view === "sidebar" && count > 0}
-              <AnnotationCountBadge class="mr-2" {count} />
-            {/if}
+            <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
+            {@const actions = getCategoryActions({
+              categoryId: category.id,
+              items: annotations,
+              onClickDelete: () => {
+                categoryToDelete = category.id;
+                openConfirmCategoryDeleteDialog = true;
+              },
+            })}
+
+            <!-- Icon Actions -->
+            <div class="ml-auto flex content-center items-center gap-0">
+              {#if mode == DEFAULT_MODE}
+                {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+                  <CategoryAction
+                    {label}
+                    {icon}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      onClick(e);
+                    }}
+                    class={cn("opacity-0", {
+                      "opacity-100": alwaysShow,
+                      "group-hover:opacity-100": !alwaysShow,
+                    })}
+                  ></CategoryAction>
+                {/each}
+              {/if}
+
+              <AnnotationCountBadge
+                class={cn("mr-2 ml-1 opacity-0", {
+                  "opacity-100": view === "sidebar" && count > 0,
+                })}
+                {count}
+              />
+            </div>
           </SidebarMenuItem>
         </div>
       </CollapsibleTrigger>
 
       <CollapsibleContent hidden={!openStates[category.id]}>
-        {#if !currentModeIsSameAsShape && db && category}
-          {@const categoryAnnotations = items.filter((a) => a.value?.category === category.id)}
-          {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
-          {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
-            <AnnotationGroupNode
-              {category}
-              {annotationGroup}
-              level={level + 1}
-              {onSelectAnnotationGroup}
-              {onDeleteAnnotation}
-            />
-          {/each}
-        {/if}
-
         {#if subCategories}
           {#each subCategories as subCategory (subCategory.id)}
             {@render CategoryNode(
@@ -366,3 +390,14 @@
     {/if}
   </Collapsible>
 {/snippet}
+
+<ConfirmModal
+  title="Delete annotations in this category"
+  description="Are you sure you want to delete all annotations in this category? This action cannot be undone."
+  onConfirm={() => {
+    deleteCategoryAnnotations(categoryToDelete!);
+    openConfirmCategoryDeleteDialog = false;
+    categoryToDelete = null;
+  }}
+  bind:open={openConfirmCategoryDeleteDialog}
+/>

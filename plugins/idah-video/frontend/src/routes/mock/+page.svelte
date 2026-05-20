@@ -12,17 +12,8 @@
   // ── Create V2 driver ──────────────────────────────────────────────────
   const driver = new IdahDriverV2();
 
-  // ── Wire global singletons BEFORE any component mounts ────────────────
-  import { initDriver } from "$lib/state/driver.svelte";
-  import { initDataStores } from "$lib/state/data.svelte";
-  initDriver(driver);
-  initDataStores();
-
-  // ── Register commands and toolbar ─────────────────────────────────────
-  import { registerAllCommands } from "$lib/commands";
-  import { initToolbar } from "$lib/toolbar";
-  registerAllCommands(driver);
-  initToolbar(driver);
+  import loadedPlugin from "$lib/index"
+  loadedPlugin.init(driver)
 
   // ── State ─────────────────────────────────────────────────────────────
   let targetElement: HTMLDivElement;
@@ -41,14 +32,20 @@
   }
 
   // ── Listen to mode changes to refresh toolbar ────────────────────────
-  driver.onModeChange(() => { refreshToolbar(); });
+  driver.onModeChange(() => {
+    refreshToolbar();
+  });
 
   // Refresh toolbar after any command (for undo/redo state)
-  driver.command.onPaletteChange(() => { refreshToolbar(); });
+  driver.command.onPaletteChange(() => {
+    refreshToolbar();
+  });
 
   // ── Sync palette state from driver ────────────────────────────────────
   $effect(() => {
-    const unsub = driver.command.onPaletteChange((open: boolean) => { paletteOpen = open; });
+    const unsub = driver.command.onPaletteChange((open: boolean) => {
+      paletteOpen = open;
+    });
     return unsub;
   });
 
@@ -56,16 +53,9 @@
   $effect(() => {
     if (!targetElement) return;
 
-    mountedPlugin = mount(Plugin, {
-      target: targetElement,
-    });
+    loadedPlugin.render(targetElement)
 
-    return () => {
-      if (mountedPlugin) {
-        unmount(mountedPlugin);
-        mountedPlugin = undefined;
-      }
-    };
+    return loadedPlugin.close
   });
 
   // ── Init toolbar display ──────────────────────────────────────────────
@@ -84,8 +74,14 @@
   <!-- V2 Toolbar — simulates the outer IDAH toolbar -->
   <IdahToolbar
     items={toolbarItems}
-    onUndo={() => { driver.command.undo(); refreshToolbar(); }}
-    onRedo={() => { driver.command.redo(); refreshToolbar(); }}
+    onUndo={() => {
+      driver.command.undo();
+      refreshToolbar();
+    }}
+    onRedo={() => {
+      driver.command.redo();
+      refreshToolbar();
+    }}
     {canUndo}
     {canRedo}
   />

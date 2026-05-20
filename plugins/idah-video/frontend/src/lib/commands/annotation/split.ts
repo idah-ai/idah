@@ -9,22 +9,28 @@
 // Undoable: deletes the two new annotations and restores the original.
 //
 // Usage:
-//   driver.command.call("annotation.split", {
-//     annotationId: "...", at: 42
-//   });
+//   driver.command.call("annotation.split", { annotationId: "...", at: 42 });
+//
+// Shortcut: S
+// Active only when there's a selected annotation.
 // ---------------------------------------------------------------------------
-import { data } from "$lib/state/data.svelte";
-import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
+import { uuidv7 } from "uuidv7";
+
+import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
-import { noopAction } from "..";
+import { data } from "$lib/state/data.svelte";
+import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
+import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
+import { noopAction } from "..";
 
 export const command = {
   name: "annotation.split",
   group: "Annotation",
-  modes: [] as string[],
-  shortcut: null,
+  modes: ["default", "review"] as string[],
+  shortcut: "S",
   shortDescription: "Split annotation at frame",
   longDescription: null,
 };
@@ -42,15 +48,31 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as AnnotationSplitProps | undefined;
-      if (!props || !data.annotations) return noopAction(command);
+      // Derive annotationId + at from opts (programmatic call) or from current selection (shortcut invocation)
+      let annotationId: string | undefined;
+      let at: number | undefined;
 
-      const record = data.annotations.items.find((r) => r.id === props.annotationId);
+      if (opts) {
+        const props = opts as unknown as AnnotationSplitProps;
+        annotationId = props.annotationId;
+        at = props.at;
+      } else {
+        // Shortcut invocation — derive from current selection and viewport
+        if (selection.isAnnotation()) {
+          const sel = selection.value as IAnnotationSelection;
+
+          annotationId = sel.annotation.id;
+          at = viewport.video.currentFrame.value;
+        }
+      }
+
+      if (!annotationId || at === undefined || !data.annotations) return noopAction(command);
+
+      const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
       const shape = record.shape as IVideoAnnotationShape;
       const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-      const at = props.at;
 
       // Splitting at frame zero is not possible — nothing to split off.
       if (at <= 0) return noopAction(command);
@@ -89,7 +111,14 @@ export function register(driver: IIdahDriverV2): void {
       const rightMin = rightFrames[0].frame;
       const rightMax = rightFrames[rightFrames.length - 1].frame;
 
-      let _createdRightId: string | undefined;
+      // Generate the right-side ID once at command creation time.
+      // Reusing the same ID on every redo keeps IDs stable, so that
+      // subsequent split commands (which captured this annotation by ID)
+      // can always find and update it correctly across undo/redo cycles.
+      const rightId = uuidv7();
+
+      // Derive the group id once — it never changes between do/undo.
+      const groupId = (record.metadata?.group_id ?? record.id) as string;
 
       return {
         command: { ...command },
@@ -105,12 +134,10 @@ export function register(driver: IIdahDriverV2): void {
             },
           });
 
-          // Derive a group id from the original annotation so both parts
-          // stay in the same timeline group.
-          const groupId = (record.metadata?.group_id ?? record.id) as string;
-
-          // Create a new annotation for the right part (at → end)
-          const created = await (data.annotations!.create as any)({
+          // Create a new annotation for the right part (at → end).
+          // Pass rightId explicitly so every redo reuses the same ID.
+          await data.annotations!.create({
+            id: rightId,
             shape: {
               ...shape,
               start: rightMin,
@@ -118,21 +145,29 @@ export function register(driver: IIdahDriverV2): void {
               frames: rightFrames,
             },
             value: record.value ? { ...record.value } : undefined,
-            metadata: { group_id: groupId },
-          }) as AnnotationItem;
-          _createdRightId = created.id;
+            // group_id is annotation-level custom metadata; system fields (id,
+            // createdAt, updatedAt) are added by the server on create.
+            metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
+          });
         },
         async undo() {
           if (!data.annotations) return;
           // Restore original annotation
           await data.annotations.update(record);
-          // Delete the right part using the stored id
-          if (_createdRightId) await data.annotations.delete(_createdRightId);
+          // Delete the right part — rightId is always stable
+          await data.annotations.delete(rightId);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,
+    activeWhen: () => {
+      return selection.isAnnotation() && !annotation.isLocked((selection.value as IAnnotationSelection).annotation);
+    },
   });
 }
