@@ -17,14 +17,18 @@ let hiddenIds: string[] = $state([]);
 let lockedIds: string[] = $state([]);
 
 export const annotation = {
-  isLocked: (annotation: IAnnotationRecord) => {
-    return lockedIds.includes(annotation.id) ||
-      (annotation.metadata?.group_id != null && lockedIds.includes(annotation.metadata.group_id));
+  isLocked: (target: IAnnotationRecord | string) => {
+    if(typeof target === "string") return lockedIds.includes(target)
+
+    return lockedIds.includes(target.id) ||
+      (target.metadata?.group_id != null && lockedIds.includes(target.metadata.group_id));
   },
 
-  isHidden: (annotation: IAnnotationRecord) => {
-    return hiddenIds.includes(annotation.id) ||
-      (annotation.metadata?.group_id != null && hiddenIds.includes(annotation.metadata.group_id));
+  isHidden: (target: IAnnotationRecord | string) => {
+    if (typeof target === "string") return hiddenIds.includes(target)
+
+    return hiddenIds.includes(target.id) ||
+      (target.metadata?.group_id != null && hiddenIds.includes(target.metadata.group_id));
   },
 
   clearLocked: () => {
