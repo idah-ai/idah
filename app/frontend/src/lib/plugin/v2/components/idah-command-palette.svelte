@@ -15,7 +15,7 @@
     CommandShortcut,
   } from "$lib/components/ui/command";
   import Highlight from "$lib/components/ui/Highlight.svelte";
-  import { getShortcuts } from "$lib/components/ui/Kbd/utils";
+  import { getShortcuts } from "$lib/components/ui/kbd/utils";
   import type { ICommandDriverV2 } from "$lib/plugin/v2/types";
 
   interface Props {
