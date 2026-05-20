@@ -24,7 +24,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { data } from "$lib/state/data.svelte";
-  import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { compareGroups, categoryValueToLabel } from "$lib/utils/annotation";
   import type { IVideoAnnotationRecord } from "$lib/types";
 
   import type { IConfigProperty } from "$idah/v2/types";
@@ -142,18 +142,17 @@
       map.get(gid)!.push(ann);
     }
 
-    // Build sorted groups by earliest start (compareGroups), then flatten with timeline naming
+    // Build groups with `annotations` key to match compareGroups signature, then flatten
     const sorted: IVideoAnnotationRecord[] = [];
     const groups = Array.from(map.entries()).map(([groupId, anns]) => ({
       groupId,
-      anns: anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end),
-      earliestStart: Math.min(...anns.map((a) => a.shape.start)),
+      annotations: anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end),
     }));
-    groups.sort((a, b) => a.earliestStart - b.earliestStart);
+    groups.sort(compareGroups);
 
     // Flatten preserving group order
     for (const group of groups) {
-      for (const ann of group.anns) {
+      for (const ann of group.annotations) {
         sorted.push(ann);
       }
     }
