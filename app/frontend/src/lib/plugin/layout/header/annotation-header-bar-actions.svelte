@@ -127,7 +127,7 @@
   }
 
   function toggleCommand() {
-    driver.command.openPalette()
+    driver.command.openPalette();
   }
 </script>
 

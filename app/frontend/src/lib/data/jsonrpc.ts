@@ -53,8 +53,8 @@ export class JsonRpcDatasource {
   constructor(base_url: string, config: JSONRpcBatchConfig = { size: 50, time: 5000 }) {
     this.base_url = base_url;
     this.batch_size = config.size;
-    this.retry_base_delay = 1000;   // 1 second initial delay
-    this.retry_max_delay = 30000;   // 30 seconds max delay
+    this.retry_base_delay = 1000; // 1 second initial delay
+    this.retry_max_delay = 30000; // 30 seconds max delay
   }
 
   call(method: JsonRpcMethod): Promise<JsonRpcResult> {
@@ -90,10 +90,7 @@ export class JsonRpcDatasource {
 
           this.processing = false;
           if (failure.retry) {
-            const delay = Math.min(
-              this.retry_base_delay * Math.pow(2, this.retry_attempt),
-              this.retry_max_delay
-            );
+            const delay = Math.min(this.retry_base_delay * Math.pow(2, this.retry_attempt), this.retry_max_delay);
             this.retry_attempt++;
             setTimeout(() => this.flush(), delay);
           }
@@ -121,9 +118,9 @@ export class JsonRpcDatasource {
           // quickfix error for now
           if (!Array.isArray(body_response) && !body_response.id && body_response.error) {
             for (const item of batch) {
-              item.onReject?.(body_response.error)
+              item.onReject?.(body_response.error);
             }
-            return reject({batch, retry: false})
+            return reject({ batch, retry: false });
           }
 
           const body: JsonRpcResponse[] = Array.isArray(body_response) ? body_response : [body_response];
@@ -141,7 +138,7 @@ export class JsonRpcDatasource {
           resolve();
         })
         .catch((err: unknown) => {
-          console.error("JSON RPC error", err)
+          console.error("JSON RPC error", err);
           reject({ batch, retry: true });
         });
     });

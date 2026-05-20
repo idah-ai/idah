@@ -249,10 +249,7 @@ export interface IAnnotationValue {
  * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
  * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
  */
-export interface IAnnotationRecord<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   id: string;
 
   /**
@@ -318,10 +315,7 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
@@ -460,10 +454,7 @@ export interface ICommandDriverV2 {
    * across all modes, for use in the command palette.
    * Same shape as `IActivityContext.shortcutReferences`.
    */
-  getShortcutReferences(): Record<
-    string,
-    { label: string; description: string; keyCombinations: string[] }
-  >;
+  getShortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }>;
 }
 
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
@@ -506,10 +497,7 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly media: IMediaInfo;

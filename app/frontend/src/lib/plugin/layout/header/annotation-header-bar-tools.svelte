@@ -31,8 +31,8 @@
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((_) => refreshToolbar())
-  driver.onSyncChange(() => refreshToolbar())
+  driver.onModeChange((_) => refreshToolbar());
+  driver.onSyncChange(() => refreshToolbar());
   onMount(refreshToolbar);
 
   const commands: AnnotationHeaderBarBaseTool[] = $derived([
@@ -41,7 +41,7 @@
       label: "Undo",
       icon: UndoIcon,
       disabled: !canUndo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
-      handleClick: () => driver.command.undo()
+      handleClick: () => driver.command.undo(),
     },
     {
       name: "redo",
@@ -64,12 +64,12 @@
       {#snippet trigger()}
         {#if visibleWhen?.() || true}
           <Button
-            variant={(whenToggled?.() || false) ? "default" : "ghost"}
+            variant={whenToggled?.() || false ? "default" : "ghost"}
             size="icon-sm"
             onclick={onClick}
             disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
           >
-              {console.log({mode, currentMode,variant: currentMode === mode ? "default" : "ghost", toolbarItems})}
+            {console.log({ mode, currentMode, variant: currentMode === mode ? "default" : "ghost", toolbarItems })}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>

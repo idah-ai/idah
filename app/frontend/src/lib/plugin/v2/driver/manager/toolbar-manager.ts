@@ -40,9 +40,7 @@ export class ToolbarManagerV2 {
    */
   getItemsForMode(mode: string): IToolbarItem[] {
     // Filter by mode and whenActive
-    const visible = this.items.filter(
-      (it) => it.mode === mode && (it.visibleWhen?.() ?? true),
-    );
+    const visible = this.items.filter((it) => it.mode === mode && (it.visibleWhen?.() ?? true));
 
     // Group ordering
     const order = this.groupOrders.get(mode);
@@ -72,7 +70,6 @@ export class ToolbarManagerV2 {
   getAllItems(): IToolbarItem[] {
     return [...this.items];
   }
-
 
   /** Remove all items (for cleanup). */
   clear(): void {

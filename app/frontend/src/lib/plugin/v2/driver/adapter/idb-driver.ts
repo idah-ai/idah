@@ -333,15 +333,16 @@ export const IdbBackedAnnotationsDriverAdapter = <
           const staleIds = await idbGetStaleEntryIds(db, cutoff);
           for (const staleId of staleIds) await idbPurgeEntry(db, staleId);
         } catch (err) {
-          console.error("Error purging stale entry", err)
-          purgeScheduled = false
+          console.error("Error purging stale entry", err);
+          purgeScheduled = false;
         }
       }
 
       // delta-refresh: one sync at first use
       if (!synced) {
         let lastUpdated = await idbGetLastUpdated(db, entryId);
-        let page = 1, hasMore = true;
+        let page = 1,
+          hasMore = true;
         while (hasMore) {
           const response = await backend.list({
             filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
@@ -350,16 +351,15 @@ export const IdbBackedAnnotationsDriverAdapter = <
           });
 
           response.data.forEach((a) => {
-            const updatedAt = new Date(a.updated_at || 0)
-            if (updatedAt > lastUpdated)
-              lastUpdated = updatedAt
-          })
+            const updatedAt = new Date(a.updated_at || 0);
+            if (updatedAt > lastUpdated) lastUpdated = updatedAt;
+          });
           await idbUpsertBatch(db, entryId, response.data);
           hasMore = response.data.length === SYNC_PAGE_SIZE;
           page++;
         }
         await idbSetLastUpdated(db, entryId, lastUpdated);
-        synced = true
+        synced = true;
       }
 
       // fetch after synced complete

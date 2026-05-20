@@ -19,14 +19,12 @@
   size="sm"
   onclick={async () => {
     // probably shouldnt need to make that call
-    const entry = await entriesBackendDataSource.get(driver.id)
+    const entry = await entriesBackendDataSource.get(driver.id);
     goto(
-      resolve(
-        "/(protected)/(app)/projects/[projectId]/datasets/[datasetId]/entries", {
-          projectId: entry.data.project_id,
-          datasetId: entry.data.dataset_id,
-        },
-      )
+      resolve("/(protected)/(app)/projects/[projectId]/datasets/[datasetId]/entries", {
+        projectId: entry.data.project_id,
+        datasetId: entry.data.dataset_id,
+      }),
     );
   }}
 >

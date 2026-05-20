@@ -8,10 +8,7 @@
  * modifier key for keyboard shortcuts and gestures.
  */
 export function isMac(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    /Mac|iPod|iPhone|iPad/.test(navigator.platform ?? "")
-  );
+  return typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform ?? "");
 }
 
 /**

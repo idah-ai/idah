@@ -34,7 +34,7 @@
 
 {#each parts as part (part.value + part.highlight)}
   {#if part.highlight}
-    <strong class="underline font-semibold">{part.value}</strong>
+    <strong class="font-semibold underline">{part.value}</strong>
   {:else}
     {part.value}
   {/if}

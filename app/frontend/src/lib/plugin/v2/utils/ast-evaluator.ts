@@ -36,10 +36,16 @@ function wildcard_match(pattern1: string, pattern2: string): boolean {
     if (i === pattern1.length && j === pattern2.length) return true;
 
     if (i === pattern1.length) {
-      return pattern2.slice(j).split("").every((c) => c === "*");
+      return pattern2
+        .slice(j)
+        .split("")
+        .every((c) => c === "*");
     }
     if (j === pattern2.length) {
-      return pattern1.slice(i).split("").every((c) => c === "*");
+      return pattern1
+        .slice(i)
+        .split("")
+        .every((c) => c === "*");
     }
 
     const c1 = pattern1[i];
