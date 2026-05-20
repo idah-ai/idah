@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
@@ -44,38 +45,35 @@ export function register(driver: IIdahDriverV2): void {
       if (props.annotations && props.annotations.length > 0) {
         groupAnnotations = props.annotations;
       } else if (props.groupId) {
-        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === props.groupId);
-
-        // If filter is empty, also search for annotation with id === props.groupId
-        if (groupAnnotations.length === 0) {
-          const matchById = data.annotations.items.find((ann) => ann.id === props.groupId);
-          if (matchById) {
-            groupAnnotations = [matchById];
-          }
-        }
+        groupAnnotations = data.annotations.items.filter(
+          (ann) =>
+            (ann as AnnotationItem).id === props.groupId ||
+            (ann as AnnotationItem).metadata?.group_id === props.groupId,
+        );
       } else {
         return noopAction(command);
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
 
-      const snapshot = [...groupAnnotations];
+      // Snapshot IDs and their current locked state from the annotation module
+      const snapshot = groupAnnotations.map((ann) => ({
+        id: ann.id,
+        locked: annotation.isLocked(ann),
+      }));
 
       return {
         command: { ...command },
         async do() {
-          if (!data.annotations) return;
-          // If any annotation is locked, unlock all; otherwise lock all
-          const anyLocked = snapshot.some((a) => a.locked);
+          const anyLocked = snapshot.some((s) => s.locked);
           const newLocked = !anyLocked;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, locked: newLocked });
+          for (const { id } of snapshot) {
+            annotation.toggleLocked(id, newLocked);
           }
         },
         async undo() {
-          if (!data.annotations) return;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, locked: ann.locked });
+          for (const { id, locked } of snapshot) {
+            annotation.toggleLocked(id, locked);
           }
         },
         isCombinable() {

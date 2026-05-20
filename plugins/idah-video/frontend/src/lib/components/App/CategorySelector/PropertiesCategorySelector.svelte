@@ -7,6 +7,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { IVideoAnnotationValue } from "$lib/types";
@@ -40,6 +41,13 @@
   );
   let defaultMode = $derived(mode == "default" || !tools.has(mode));
 
+  // Derived disabled state using the annotation module
+  let disabled = $derived(
+    (selAnnotation && annotation.isLocked(selAnnotation)) ||
+    (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
+    !["annotate", "review"].includes(getDriver().workflowStep)
+  );
+
   // Functions
   function categorySelection(shape_type: string, categoryId?: string) {
     if (categoryId) onEditValue({ category: categoryId }, shape_type);
@@ -65,9 +73,7 @@
               categorySelection(defaultMode ? "entry:root" : mode, selectedCategoryId)}
             onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
             onEditValue={(value) => value && onEditValue(value, defaultMode ? "entry:root" : mode)}
-            disabled={selAnnotation?.locked ||
-              (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
-              !["annotate", "review"].includes(getDriver().workflowStep)}
+            {disabled}
           />
         {/key}
       </SidebarGroupContent>

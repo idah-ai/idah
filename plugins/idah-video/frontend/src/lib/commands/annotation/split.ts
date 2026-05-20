@@ -14,10 +14,11 @@
 // Shortcut: S
 // Active only when there's a selected annotation.
 // ---------------------------------------------------------------------------
-import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
+import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -157,6 +158,8 @@ export function register(driver: IIdahDriverV2): void {
       };
     },
     group: command.group,
-    activeWhen: selection.isAnnotation,
+    activeWhen: () => {
+      return selection.isAnnotation() && !annotation.isLocked((selection.value as IAnnotationSelection).annotation);
+    },
   });
 }

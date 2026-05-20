@@ -23,8 +23,8 @@ export function initToolbar(driver: IIdahDriverV2): void {
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
     onClick: (() =>
-      (driver.mode === "default") ? driver.setMode("idah-video:bounding-box") :
-        driver.setMode("default")),
+      (driver.mode === "idah-video:bounding-box") ? driver.setMode("default") :
+        driver.setMode("idah-video:bounding-box")),
     whenToggled: () => driver.mode === "idah-video:bounding-box",
   });
   t.add({
@@ -33,8 +33,8 @@ export function initToolbar(driver: IIdahDriverV2): void {
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
     onClick: (() =>
-      (driver.mode === "default") ? driver.setMode("idah-video:polygon") :
-        driver.setMode("default")),
+      (driver.mode === "idah-video:polygon") ? driver.setMode("default") :
+        driver.setMode("idah-video:polygon")),
     whenToggled: () => driver.mode === "idah-video:polygon",
   });
   t.add({
