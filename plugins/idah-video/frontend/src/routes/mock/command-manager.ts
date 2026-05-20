@@ -129,7 +129,6 @@ export class CommandManagerV2 {
       this.redoStack.push(entry);
       did = true;
     }
-    if (did) this._notifyStack();
     return did;
   }
 
@@ -142,7 +141,6 @@ export class CommandManagerV2 {
       this.undoStack.push(entry);
       did = true;
     }
-    if (did) this._notifyStack();
     return did;
   }
 
