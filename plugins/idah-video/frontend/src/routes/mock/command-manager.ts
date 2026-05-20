@@ -104,7 +104,7 @@ export class CommandManagerV2 {
       }
 
       action.do();
-    });
+    };
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
