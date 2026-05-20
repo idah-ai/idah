@@ -68,15 +68,11 @@ export function register(driver: IIdahDriverV2): void {
       if (!groupAnnotations) {
         if (!groupId) return noopAction(command);
 
-        groupAnnotations = data.annotations.items.filter((ann) => (ann as any).metadata?.group_id === groupId);
-
-        // If filter is empty, also search for annotation with id === groupId
-        if (groupAnnotations.length === 0) {
-          const matchById = data.annotations.items.find((ann) => ann.id === groupId);
-          if (matchById) {
-            groupAnnotations = [matchById];
-          }
-        }
+        groupAnnotations = data.annotations.items.filter(
+          (ann) =>
+            (ann as AnnotationItem).id === groupId ||
+            (ann as AnnotationItem).metadata?.group_id === groupId,
+        );
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
