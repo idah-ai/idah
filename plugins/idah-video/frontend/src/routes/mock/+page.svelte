@@ -12,17 +12,8 @@
   // ── Create V2 driver ──────────────────────────────────────────────────
   const driver = new IdahDriverV2();
 
-  // ── Wire global singletons BEFORE any component mounts ────────────────
-  import { initDriver } from "$lib/state/driver.svelte";
-  import { initDataStores } from "$lib/state/data.svelte";
-  initDriver(driver);
-  initDataStores();
-
-  // ── Register commands and toolbar ─────────────────────────────────────
-  import { registerAllCommands } from "$lib/commands";
-  import { initToolbar } from "$lib/toolbar";
-  registerAllCommands(driver);
-  initToolbar(driver);
+  import loadedPlugin from "$lib/index"
+  loadedPlugin.init(driver)
 
   // ── State ─────────────────────────────────────────────────────────────
   let targetElement: HTMLDivElement;
@@ -62,16 +53,9 @@
   $effect(() => {
     if (!targetElement) return;
 
-    mountedPlugin = mount(Plugin, {
-      target: targetElement,
-    });
+    loadedPlugin.render(targetElement)
 
-    return () => {
-      if (mountedPlugin) {
-        unmount(mountedPlugin);
-        mountedPlugin = undefined;
-      }
-    };
+    return loadedPlugin.close
   });
 
   // ── Init toolbar display ──────────────────────────────────────────────

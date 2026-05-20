@@ -195,7 +195,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       // Optimistic: insert locally first
       originalUpsert(item);
       try {
-        await driver.create({ ...data, id });
+        await driver.create($state.snapshot({ ...data, id }));
       } catch {
         // Rollback on failure
         store.remove(id);
@@ -224,7 +224,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       originalUpsert(item);
       syncSelectionOnUpdate(item.id);
       try {
-        await driver.update(item.id, item);
+        await driver.update(item.id, $state.snapshot(item));
       } catch {
         // Rollback
         if (old) originalUpsert(old);
