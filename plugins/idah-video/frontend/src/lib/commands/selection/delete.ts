@@ -7,7 +7,6 @@ import { selection } from "$lib/state/selection.svelte";
 import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
-import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
 export const command = {
   name: "selection.delete",
