@@ -66,7 +66,7 @@
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
   // Display value is 1-based (user-facing), internal currentFrame is 0-based.
-  let frameInputValue = $state<number>(viewport.video.currentFrame.value + 1);
+  let frameInputValue = $state<number | null>(viewport.video.currentFrame.value + 1);
 
   let disabledSplitButton = $derived.by(() => {
     const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
@@ -83,11 +83,16 @@
   // Functions
   const handleInput = (e: Event) => {
     const rawValue = (e.target as HTMLInputElement).value;
-    frameInputValue = rawValue === "" ? 1 : Number(rawValue);
+    frameInputValue = rawValue === "" ? null : Number(rawValue);
   };
 
   const performSeek = () => {
-    const value = frameInputValue;
+    let value = frameInputValue;
+    // Empty input defaults to frame 1
+    if (value === null || value === undefined) {
+      value = 1;
+      frameInputValue = 1;
+    }
     if (isNaN(value) || value < 1 || value > media.totalFrames) {
       frameInputValue = viewport.video.currentFrame.value + 1;
       return;
