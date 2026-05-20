@@ -429,9 +429,6 @@ export interface ICommandDriverV2 {
   /** Listen for palette open/close changes. Returns unsubscribe function. */
   onPaletteChange(cb: (open: boolean) => void): () => void;
 
-  /** Listen for undo/redo stack changes (after call, undo, or redo). Returns unsubscribe function. */
-  onStackChange(cb: () => void): () => void;
-
   // ── Keyboard resolution ────────────────────────────────────────────────
 
   /**

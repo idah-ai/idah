@@ -206,7 +206,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
   #paletteOpen = false;
   #paletteListeners: Set<(open: boolean) => void> = new Set();
 
-  constructor(private mgr: CommandManagerV2) {}
+  constructor(private mgr: CommandManagerV2) { }
 
   isPaletteOpen(): boolean {
     return this.#paletteOpen;
@@ -220,10 +220,6 @@ class CommandDriverAdapter implements ICommandDriverV2 {
   onPaletteChange(cb: (open: boolean) => void): () => void {
     this.#paletteListeners.add(cb);
     return () => this.#paletteListeners.delete(cb);
-  }
-
-  onStackChange(cb: () => void): () => void {
-    return this.mgr.onStackChange(cb);
   }
 
   register(opts: {
@@ -296,7 +292,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
 // Adapter: toolbar driver → IToolbarDriverV2
 // ---------------------------------------------------------------------------
 class ToolbarDriverAdapter implements IToolbarDriverV2 {
-  constructor(private mgr: ToolbarManagerV2) {}
+  constructor(private mgr: ToolbarManagerV2) { }
 
   add(options: ToolbarItemOptions): void {
     this.mgr.add(options);
@@ -313,7 +309,7 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
 type Annot = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue>;
 
 class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue> {
-  constructor(private store: InMemoryStore<Annot>) {}
+  constructor(private store: InMemoryStore<Annot>) { }
 
   registerField(name: string, fn: (ann: Annot) => unknown): void {
     this.store.registerField(name, fn);
@@ -340,7 +336,7 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
 // Adapter: notes
 // ---------------------------------------------------------------------------
 class NotesDriverAdapter implements INotesDriverV2 {
-  constructor(private store: InMemoryStore<INoteRecord>) {}
+  constructor(private store: InMemoryStore<INoteRecord>) { }
 
   registerField(name: string, fn: (note: INoteRecord) => unknown): void {
     this.store.registerField(name, fn);
@@ -566,7 +562,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           shortDescription: null,
           longDescription: null,
         },
-        do() {},
+        do() { },
         isCombinable() {
           return false;
         },
