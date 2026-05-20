@@ -116,8 +116,6 @@ export type AnnotationItem = {
   shape: { type: string; start: number; end: number } & Record<string, unknown>;
   value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
   metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
-  hidden?: boolean;
-  locked?: boolean;
   synced?: boolean;
   [key: string]: unknown;
 };

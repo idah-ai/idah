@@ -429,7 +429,9 @@
 
   {#if activeCursor && cursorPx && isEditing}
     <g style="pointer-events: none;">
-      <image href={activeCursor} x={cursorPx[0] - 18} y={cursorPx[1] - 18} width="36" height="36" />
+      <g transform="translate({cursorPx[0]}, {cursorPx[1]}) scale({1 / viewport.workspace.transform.scale})">
+        <image href={activeCursor} x="-18" y="-18" width="36" height="36" />
+      </g>
     </g>
   {/if}
 {/if}

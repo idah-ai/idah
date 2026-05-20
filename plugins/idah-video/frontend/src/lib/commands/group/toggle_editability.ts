@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
@@ -80,23 +81,24 @@ export function register(driver: IIdahDriverV2): void {
 
       if (groupAnnotations.length === 0) return noopAction(command);
 
-      const snapshot = [...groupAnnotations];
+      // Snapshot IDs and their current locked state from the annotation module
+      const snapshot = groupAnnotations.map((ann) => ({
+        id: ann.id,
+        locked: annotation.isLocked(ann),
+      }));
 
       return {
         command: { ...command },
         async do() {
-          if (!data.annotations) return;
-          // If any annotation is locked, unlock all; otherwise lock all
-          const anyLocked = snapshot.some((a) => a.locked);
+          const anyLocked = snapshot.some((s) => s.locked);
           const newLocked = !anyLocked;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, locked: newLocked });
+          for (const { id } of snapshot) {
+            annotation.toggleLocked(id, newLocked);
           }
         },
         async undo() {
-          if (!data.annotations) return;
-          for (const ann of snapshot) {
-            await data.annotations!.update({ ...ann, locked: ann.locked });
+          for (const { id, locked } of snapshot) {
+            annotation.toggleLocked(id, locked);
           }
         },
         isCombinable() {

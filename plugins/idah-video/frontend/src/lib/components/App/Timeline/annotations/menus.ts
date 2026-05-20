@@ -1,5 +1,6 @@
 import { CrosshairIcon, EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
+import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
@@ -9,8 +10,8 @@ import type { TrackData } from "$lib/components/App/Timeline/types";
 
 export function getGroupContextMenus(props: { track: TrackData }): Menus {
   const { track } = props;
-  const isSomeHidden = track.items.some((item) => item.rawData.hidden);
-  const isSomeLocked = track.items.some((item) => item.rawData.locked);
+  const isSomeHidden = track.items.some((item) => annotation.isHidden(item.rawData));
+  const isSomeLocked = track.items.some((item) => annotation.isLocked(item.rawData));
 
   return {
     actions: {

@@ -28,6 +28,7 @@
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Video from "./Video.svelte";
 
+  import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -70,7 +71,7 @@
   let disabledSplitButton = $derived.by(() => {
     const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
     if (!ann) return true;
-    if (ann.locked) return true;
+    if (annotation.isLocked(ann)) return true;
     if (ann.shape?.end < viewport.video.currentFrame.value) return true;
   });
 
