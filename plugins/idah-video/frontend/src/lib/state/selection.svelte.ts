@@ -26,8 +26,21 @@ export const selection = {
     return _selected !== null;
   },
 
+  hasGroupSelection(): boolean {
+    return _selected !== null && _selected.type === "group";
+  },
+
+  hasValidSelection(): boolean {
+    return _selected !== null &&
+      (_selected.type === "group" || _selected.type === "annotation");
+  },
+
   isAnnotation(): boolean {
     return _selected?.type === "annotation";
+  },
+
+  isAnnotationGroup(): boolean {
+    return _selected?.type === "group";
   },
 
   isAnnotationSelected(annotationId: string): boolean {

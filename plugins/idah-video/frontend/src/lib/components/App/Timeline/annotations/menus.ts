@@ -45,13 +45,14 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
               title: "Delete annotation group",
               description: "Are you sure you want to delete this annotation group?",
               onConfirm: () => {
-                getDriver().command.call("annotation.delete_group", {
+                selection.selectGroup(track.id);
+                getDriver().command.call("selection.delete", {
                   groupId: track.id,
                   annotations: track.items.map((item) => item.rawData),
                 });
-              },
-            });
-          },
+              }
+            })
+          }
         },
       },
     },
