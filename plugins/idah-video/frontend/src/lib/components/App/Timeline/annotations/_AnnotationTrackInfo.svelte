@@ -18,8 +18,10 @@
   import { cn } from "$lib/utils";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
+  import { annotation } from "$lib/state/annotation.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
+  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
 
   // Props
   interface Props {
@@ -38,6 +40,9 @@
     const v = selection.value;
     return v?.type === "group" && v.groupId === id;
   });
+  let isGroupHidden = $derived(annotation.isHidden(id));
+  let isGroupLocked = $derived(annotation.isLocked(id));
+  let showTooltip = $derived(isGroupHidden || title.length > 17);
   const menus = $derived(getGroupContextMenus({ track }));
 
   // Functions
@@ -67,7 +72,7 @@
 
 <button
   class={cn(
-    "hover:bg-secondary box-border block w-full cursor-pointer border-b px-2 text-left select-none focus:outline-none",
+    "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
     {
       "border-primary bg-primary/10 border-t border-b": isGroupSelected,
     },
@@ -76,28 +81,47 @@
   oncontextmenu={handleOnContextMenu}
   onclick={handleClick}
 >
-  <div class="group flex items-center gap-2">
+  <div class="group relative flex items-center gap-2 px-2">
     {#if shapeType === VIDEO_BOUNDING_BOX}
       <Icon src={vectorSquareIconSvg} {color} />
     {:else if shapeType === VIDEO_POLYGON}
       <Icon src={polygonIconSvg} {color} />
     {/if}
 
-    <div class="flex flex-col">
+    <div class="flex min-w-0 flex-col">
       <!-- SUBTITLE::CATEGORY -->
-      <span id="subtitle" class="text-muted-foreground text-xs">
+      <span id="subtitle" class="text-muted-foreground truncate text-xs">
         {subtitle}
       </span>
 
       <!-- TITLE::CATEGORY WITH GROUP ID -->
-      <span
-        id="title"
-        class={cn("font-regular truncate text-xs", {
-          "text-primary font-bold": isGroupSelected,
-        })}
-      >
-        {title}
-      </span>
+      {#if showTooltip}
+        <Tooltips
+          class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
+            "text-primary font-bold": isGroupSelected,
+            "min-w-44": isGroupLocked,
+            "min-w-32": isGroupHidden,
+          })}
+        >
+          {#snippet trigger()}
+            {title}
+          {/snippet}
+
+          {#snippet content()}
+            {title}
+          {/snippet}
+        </Tooltips>
+      {:else}
+        <span
+          class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
+            "text-primary font-bold": isGroupSelected,
+            "min-w-44": isGroupLocked,
+            "min-w-32": isGroupHidden,
+          })}
+        >
+          {title}
+        </span>
+      {/if}
     </div>
 
     <div class="ml-auto flex shrink-0 items-center">
