@@ -210,7 +210,7 @@
       {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
       {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
       {@const sidebarLeftWidth = newNoteFeed.position.sidebar_width || 0}
-      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] })}
+      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
       {@const zoomOffsetX = zoomInfo.offset[0] || 0}
       {@const zoomOffsetY = zoomInfo.offset[1] || 0}
 
