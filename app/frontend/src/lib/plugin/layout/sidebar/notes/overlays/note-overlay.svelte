@@ -20,9 +20,9 @@
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
-  import { parseNoteFeedRecordToINoteFeed } from "@/plugin/NoteDriver";
   import { refetches } from "@/utils/refetch";
 
+  // TODO: Replace IActivityContext with IIdahDriverV2 once the note overlay is migrated to V2 driver
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Props
@@ -70,27 +70,27 @@
     /**
      * Handle when a note feed is selected from sidebar
      */
-    context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
-      if (!noteFeedId) {
-        selectedNoteFeed = null;
-        selectedNoteCommentId = null;
-        return;
-      }
+    // context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
+    //   if (!noteFeedId) {
+    //     selectedNoteFeed = null;
+    //     selectedNoteCommentId = null;
+    //     return;
+    //   }
 
-      const noteFeed = await loadNoteFeed(noteFeedId);
-      selectedNoteCommentId = noteCommentId || null;
-      context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
-    });
+    //   const noteFeed = await loadNoteFeed(noteFeedId);
+    //   selectedNoteCommentId = noteCommentId || null;
+    //   context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
+    // });
 
     /**
      * Handle when a click is made to show new note feed popup
      */
-    context.notes.onNewNoteFeedOpenChange((data) => {
-      showNewNoteFeedPopup = true;
-      newNoteFeed.anchor_type = data.anchor_type;
-      newNoteFeed.position = data.position || {};
-      newNoteFeed.annotation_id = data.annotation_id || null;
-    });
+    // context.notes.onNewNoteFeedOpenChange((data) => {
+    //   showNewNoteFeedPopup = true;
+    //   newNoteFeed.anchor_type = data.anchor_type;
+    //   newNoteFeed.position = data.position || {};
+    //   newNoteFeed.annotation_id = data.annotation_id || null;
+    // });
   });
 
   function closeSelectedNoteFeedPopup() {
@@ -210,7 +210,7 @@
       {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
       {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
       {@const sidebarLeftWidth = newNoteFeed.position.sidebar_width || 0}
-      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
+      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] })}
       {@const zoomOffsetX = zoomInfo.offset[0] || 0}
       {@const zoomOffsetY = zoomInfo.offset[1] || 0}
 

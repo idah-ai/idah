@@ -838,7 +838,7 @@ end
 2. Add plugin entry files (JS/CSS)
 3. For media: implement processor class, register in `Processor::Registry`
 4. For sync: implement exporter class, register in `Exports::Registry`
-5. For frontend: export `IActivityView` on `window.idah_plugin`
+5. For frontend: export `IPluginDriver` on `window.idah_plugin`
 6. Frontend loads at `/entries/[id]/plugin/[pluginId]`
 
 ---
