@@ -41,12 +41,12 @@ export function rotatedCursorSVG(handleIndex: number, angleRad: number, color: s
 
   const arrow =
     type === "nwse-resize"
-      ? `<path d="M8 8L4 4M4 4H8M4 4V8" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16L20 20M20 20H16M20 20V16" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`
+      ? `<path d="M8 8L4 4M4 4H8M4 4V8" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8L4 4M4 4H8M4 4V8" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16L20 20M20 20H16M20 20V16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16L20 20M20 20H16M20 20V16" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`
       : type === "nesw-resize"
-        ? `<path d="M16 8L20 4M20 4H16M20 4V8" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16L4 20M4 20H8M4 20V16" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`
+        ? `<path d="M16 8L20 4M20 4H16M20 4V8" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 8L20 4M20 4H16M20 4V8" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16L4 20M4 20H8M4 20V16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16L4 20M4 20H8M4 20V16" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`
         : type === "ns-resize"
-          ? `<path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`
-          : `<path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+          ? `<path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`
+          : `<path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
 
   return `data:image/svg+xml;base64,${btoa(
     `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"><g transform="rotate(${deg} 12 12)">${arrow}</g></svg>`,
