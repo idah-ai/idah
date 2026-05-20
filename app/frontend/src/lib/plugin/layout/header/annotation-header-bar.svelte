@@ -9,7 +9,7 @@
   import AnnotationHeaderBarBackButton from "./annotation-header-bar-back-button.svelte";
   import AnnotationHeaderBarMediaName from "./annotation-header-bar-media-name.svelte";
   import AnnotationHeaderBarTools from "./annotation-header-bar-tools.svelte";
-  import type { IdahDriverV2 } from "@/plugin/v2/idah-driver";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
 
   // Props
   interface Props {

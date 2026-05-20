@@ -8,7 +8,7 @@
   import { getShortcut } from "@/components/ui/kbd/utils";
 
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
-  import type { IdahDriverV2 } from "@/plugin/v2/idah-driver";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem } from "@/plugin/v2/types";
   import { onMount } from "svelte";
 
@@ -64,11 +64,12 @@
       {#snippet trigger()}
         {#if visibleWhen?.() || true}
           <Button
-            variant={currentMode === mode ? "default" : "ghost"}
+            variant={(whenToggled?.() || false) ? "default" : "ghost"}
             size="icon-sm"
-            disabled={whenToggled?.()}
             onclick={onClick}
+            disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
           >
+              {console.log({mode, currentMode,variant: currentMode === mode ? "default" : "ghost", toolbarItems})}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>
