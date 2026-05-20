@@ -9,7 +9,8 @@ import { ui } from "$lib/state/ui.svelte";
 
 function makeAction(): ICommandAction {
   const current = viewport.video.currentFrame.value;
-  const step = ui.frameStep;
+  const localStorageFrameStep = localStorage.getItem("idah-video:settings:frame-step");
+  const step = localStorageFrameStep ? Number(localStorageFrameStep) : ui.frameStep;
   return {
     command: { name: "viewport.skip_backward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip backward", longDescription: "Jump backward by the configured number of frames" },
     do() {
