@@ -84,7 +84,7 @@
   onkeypress={() => {}}
   oncontextmenu={handleContextMenu}
 >
-  {#each visibleItems as item, itemIndex (itemIndex)}
+  {#each visibleItems as item (item.rawData.id)}
     <TrackItem {item} {scale} />
   {/each}
 </div>
