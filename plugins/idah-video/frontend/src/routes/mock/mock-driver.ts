@@ -228,7 +228,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     shortcut: IShortcut | null;
     shortDescription: string | null;
     longDescription: string | null;
-    callback: (opts?: Record<string, unknown>) => ICommandAction | Promise<ICommandAction>;
+    callback: (opts?: Record<string, unknown>) => ICommandAction;
     group?: string;
     activeWhen?: () => boolean;
   }): void {
@@ -667,7 +667,6 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 
   handleKeydown(event: KeyboardEvent): boolean {
-    // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
     // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
     if (modKey(event) && event.code === "Space") {
       (this.command as CommandDriverAdapter).openPalette();
