@@ -40,12 +40,18 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           icon: Trash2Icon,
           destructive: true,
           onClick: () => {
-            selection.selectGroup(track.id);
-            getDriver().command.call("annotation.delete_group", {
-              groupId: track.id,
-              annotations: track.items.map((item) => item.rawData),
-            });
-          },
+            showConfirmDialog({
+              title: "Delete annotation group",
+              description: "Are you sure you want to delete this annotation group?",
+              onConfirm: () => {
+                selection.selectGroup(track.id);
+                getDriver().command.call("selection.delete", {
+                  groupId: track.id,
+                  annotations: track.items.map((item) => item.rawData),
+                });
+              }
+            })
+          }
         },
       },
     },

@@ -12,8 +12,6 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
-import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
-
 
 export const command = {
   name: "annotation.delete_group",
@@ -70,13 +68,6 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          const confirmed = await showConfirmDialog({
-            title: "Delete group",
-            description: "Are you sure you want to delete all annotations in this group?",
-          });
-
-          if (!confirmed) return;
-
           selection.deselect();
           const deletions = snapshot.map((ann) => data.annotations!.delete(ann.id));
           await Promise.all(deletions);
