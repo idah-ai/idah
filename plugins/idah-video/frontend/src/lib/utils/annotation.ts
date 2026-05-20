@@ -7,11 +7,10 @@ import { data } from "$lib/state/data.svelte";
  * Compare two groups for stable timeline track ordering.
  *
  * Primary key: `groupId` lexicographic order.
- * Because all group IDs are UUIDv7 values they sort in creation-time order, which
- * is both stable and intuitive (annotations are normally created left-to-right on
- * the timeline). Crucially, `groupId` is immutable — it never changes through
- * split, delete, or update operations — so tracks cannot jump position when an
- * annotation inside a group is removed.
+ * `groupId` is immutable — it never changes through split, delete, or update
+ * operations — so tracks cannot jump position when an annotation inside a group
+ * is removed. Lexicographic order is stable across undo/redo cycles because the
+ * ID never changes, regardless of UUID version.
  *
  * Secondary key: first annotation's start frame (tiebreaker only; two distinct
  * groups cannot share the same groupId in practice).

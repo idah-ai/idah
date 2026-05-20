@@ -51,9 +51,11 @@
   });
 
   // Refresh canUndo / canRedo whenever the undo stack changes (e.g. keyboard shortcuts)
-  driver.command.onStackChange(() => {
-    canUndo = driver.command.canUndo();
-    canRedo = driver.command.canRedo();
+  $effect(() => {
+    return driver.command.onStackChange(() => {
+      canUndo = driver.command.canUndo();
+      canRedo = driver.command.canRedo();
+    });
   });
 
   // ── Sync palette state from driver ────────────────────────────────────

@@ -136,7 +136,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Create a new annotation for the right part (at → end).
           // Pass rightId explicitly so every redo reuses the same ID.
-          await (data.annotations!.create as any)({
+          await data.annotations!.create({
             id: rightId,
             shape: {
               ...shape,
@@ -145,7 +145,9 @@ export function register(driver: IIdahDriverV2): void {
               frames: rightFrames,
             },
             value: record.value ? { ...record.value } : undefined,
-            metadata: { group_id: groupId },
+            // group_id is annotation-level custom metadata; system fields (id,
+            // createdAt, updatedAt) are added by the server on create.
+            metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
           });
         },
         async undo() {
