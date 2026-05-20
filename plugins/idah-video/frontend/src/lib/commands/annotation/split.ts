@@ -167,10 +167,7 @@ export function register(driver: IIdahDriverV2): void {
     },
     group: command.group,
     activeWhen: () => {
-      if (!selection.isAnnotation()) return false;
-      const sel = selection.value;
-      if (sel?.type !== "annotation") return false;
-      return !annotation.isLocked(sel.annotation);
+      return selection.isAnnotation() && !annotation.isLocked((selection.value as IAnnotationSelection).annotation);
     },
   });
 }
