@@ -32,6 +32,8 @@ function createMockDriver() {
     _triggerModeChange(oldValue: string, newValue: string) {
       if (modeChangeCb) modeChangeCb({ oldValue, newValue });
     },
+    onSyncChange: vi.fn((event: ISyncEvent) => { }),
+    onSyncError: vi.fn((event: ISyncErrorEvent) => { })
   };
 }
 
@@ -43,6 +45,7 @@ let currentDriver: ReturnType<typeof createMockDriver>;
 // Tests (must be placed after imports below)
 // ---------------------------------------------------------------------------
 import { getDriver, initDriver } from "./driver.svelte";
+import type { ISyncErrorEvent, ISyncEvent } from "$idah/v2/types";
 
 describe("driver singleton", () => {
   // We need a fresh module state for each test. Since ES modules are cached,
