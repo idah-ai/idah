@@ -1,10 +1,10 @@
 <script lang="ts">
+  import Badge from "$lib/components/ui/Badge/Badge.svelte";
+  import Icon from "$lib/components/ui/Icon";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
   import SelectGroup from "$lib/components/ui/Select/SelectGroup.svelte";
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
-  import Badge from "$lib/components/ui/Badge/Badge.svelte";
-  import Icon from "$lib/components/ui/Icon";
 
   import { CrosshairIcon, Trash2Icon } from "@lucide/svelte";
 
@@ -19,16 +19,15 @@
   import SingleSelectProperty from "$lib/components/App/SelectionPanel/Properties/_SingleSelectProperty.svelte";
   import TextProperty from "$lib/components/App/SelectionPanel/Properties/_TextProperty.svelte";
 
-  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
+  import { data } from "$lib/state/data.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { data } from "$lib/state/data.svelte";
+  import { VIDEO_POLYGON } from "$lib/types";
   import { categoryValueToLabel } from "$lib/utils/annotation";
-  import type { IVideoAnnotationRecord } from "$lib/types";
 
   import type { IConfigProperty } from "$idah/v2/types";
-  import type { IVideoAnnotationValue } from "$lib/types";
+  import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
 
   type Props = {
     selectedCategory: string;
@@ -67,7 +66,11 @@
     return viewport.mode;
   });
 
-  let config = $derived(shapeType ? getDriver().getFilteredConfig(shapeType, annotationValue as unknown as Record<string, unknown>) : undefined);
+  let config = $derived(
+    shapeType
+      ? getDriver().getFilteredConfig(shapeType, annotationValue as unknown as Record<string, unknown>)
+      : undefined,
+  );
   let configValues = $derived(config?.values ?? []);
 
   // Annotation from the selected group (for group edit mode display)
@@ -91,9 +94,7 @@
   // When a group is selected, always use the annotation's current category from the data store,
   // so it stays in sync even when the parent doesn't update the selectedCategory prop.
   let effectiveSelectedCategory = $derived(
-    sel?.type === "group"
-      ? (groupAnnotation?.value?.category || "")
-      : selectedCategory
+    sel?.type === "group" ? groupAnnotation?.value?.category || "" : selectedCategory,
   );
 
   let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
@@ -130,9 +131,7 @@
     const frame = currentFrame;
 
     // Filter to current frame
-    const onFrame = items.filter(
-      (ann) => ann.shape.start <= frame && ann.shape.end >= frame
-    );
+    const onFrame = items.filter((ann) => ann.shape.start <= frame && ann.shape.end >= frame);
 
     // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
     const map = new Map<string, IVideoAnnotationRecord[]>();
@@ -188,7 +187,7 @@
           e.stopPropagation();
           selection.selectAnnotation(ann);
           getDriver().command.call("timeline.focus");
-        }
+        },
       },
       {
         label: "Delete Annotation",
@@ -196,8 +195,8 @@
         onclick: (e: MouseEvent) => {
           e.stopPropagation();
           getDriver().command.call("annotation.delete", { annotationId: ann.id });
-        }
-      }
+        },
+      },
     ];
   }
 </script>
@@ -261,46 +260,48 @@
         <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
       </div>
       <div class="flex flex-col gap-1">
-      <Separator class="my-2" />
-{#each currentFrameAnnotations as ann (ann.id)}
-  {@const annShapeType = ann.shape.type as string}
-  {@const annConfig = getDriver().config[annShapeType]}
-  {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
-  {@const annColor = annCategory?.color ?? null}
-  {@const annGroupId = ann.metadata?.group_id ?? ann.id}
-  {@const annGroupIdLastPart = annGroupId.split("-").pop()}
-  {@const annDisplayName = annCategory ? `${annCategory.label}-${annGroupIdLastPart}` : (ann.value?.category ?? "Uncategorized")}
-  {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
-  <div class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent">
-    <button
-      class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-      onclick={() => selection.selectAnnotation(ann)}
-    >
-      {#if annShapeType === VIDEO_POLYGON}
-        <Icon src={polygonIconSvg} color={annColor} />
-      {:else}
-        <Icon src={vectorSquareIconSvg} color={annColor} />
-      {/if}
-      <div class="flex flex-col min-w-0">
-        {#if annParentLabel.length > 0}
-          <span class="text-xs text-muted-foreground truncate">{annParentLabel}</span>
-        {/if}
-        <span class="truncate">{annDisplayName}</span>
-      </div>
-    </button>
+        <Separator class="my-2" />
+        {#each currentFrameAnnotations as ann (ann.id)}
+          {@const annShapeType = ann.shape.type as string}
+          {@const annConfig = getDriver().config[annShapeType]}
+          {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
+          {@const annColor = annCategory?.color ?? null}
+          {@const annGroupId = ann.metadata?.group_id ?? ann.id}
+          {@const annGroupIdLastPart = annGroupId.split("-").pop()}
+          {@const annDisplayName = annCategory
+            ? `${annCategory.label}-${annGroupIdLastPart}`
+            : (ann.value?.category ?? "Uncategorized")}
+          {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
+          <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
+            <button
+              class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+              onclick={() => selection.selectAnnotation(ann)}
+            >
+              {#if annShapeType === VIDEO_POLYGON}
+                <Icon src={polygonIconSvg} color={annColor} />
+              {:else}
+                <Icon src={vectorSquareIconSvg} color={annColor} />
+              {/if}
+              <div class="flex min-w-0 flex-col">
+                {#if annParentLabel.length > 0}
+                  <span class="text-muted-foreground truncate text-xs">{annParentLabel}</span>
+                {/if}
+                <span class="truncate">{annDisplayName}</span>
+              </div>
+            </button>
 
-    <div class="ml-auto flex shrink-0 items-center gap-0">
-      {#each getAnnotationActions(ann) as { label, icon: Icon, onclick }}
-        <CategoryAction
-          {label}
-          icon={Icon}
-          {onclick}
-          class = "opacity-0 group-hover:opacity-100 transition-opacity"
-        />
-      {/each}
-    </div>
-  </div>
-{/each}
+            <div class="ml-auto flex shrink-0 items-center gap-0">
+              {#each getAnnotationActions(ann) as { label, icon: Icon, onclick }}
+                <CategoryAction
+                  {label}
+                  icon={Icon}
+                  {onclick}
+                  class="opacity-0 transition-opacity group-hover:opacity-100"
+                />
+              {/each}
+            </div>
+          </div>
+        {/each}
       </div>
     </section>
   {/if}
@@ -315,7 +316,9 @@
       <div class="flex flex-col gap-1">
         <Text size="sm" weight="semibold">Category</Text>
         <Select type="single" onValueChange={onSelectCategory} {disabled}>
-          <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs">
+          <SelectTrigger
+            class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
+          >
             {#if category?.label}
               {@const parentLabel = categoryValueToLabel(category.id)}
               <div class="flex flex-col gap-1 text-left">
@@ -362,7 +365,7 @@
     </section>
   {/if}
 
-<!-- ============ GROUP SELECTION ============ -->
+  <!-- ============ GROUP SELECTION ============ -->
 {:else if sel.type === "group"}
   <section class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
@@ -378,7 +381,9 @@
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="semibold">Category</Text>
       <Select type="single" onValueChange={reselectCategory} {disabled}>
-        <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs">
+        <SelectTrigger
+          class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
+        >
           {#if category?.label}
             {@const parentLabel = categoryValueToLabel(category.id)}
             <div class="flex flex-col gap-1 text-left">
@@ -414,7 +419,7 @@
     </div>
   </section>
 
-<!-- ============ ANNOTATION SELECTION ============ -->
+  <!-- ============ ANNOTATION SELECTION ============ -->
 {:else if sel.type === "annotation"}
   {@const selAnnGroupId = sel.annotation.metadata?.group_id ?? sel.annotation.id}
   {@const selAnnGroupIdLastPart = selAnnGroupId.split("-").pop()}
@@ -435,7 +440,9 @@
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="semibold">Category</Text>
       <Select type="single" onValueChange={reselectCategory} {disabled}>
-        <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs">
+        <SelectTrigger
+          class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
+        >
           {#if category?.label}
             {@const parentLabel = categoryValueToLabel(category.id)}
             <div class="flex flex-col gap-1 text-left">
