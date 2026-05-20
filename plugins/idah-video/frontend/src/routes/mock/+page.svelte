@@ -41,14 +41,26 @@
   }
 
   // ── Listen to mode changes to refresh toolbar ────────────────────────
-  driver.onModeChange(() => { refreshToolbar(); });
+  driver.onModeChange(() => {
+    refreshToolbar();
+  });
 
   // Refresh toolbar after any command (for undo/redo state)
-  driver.command.onPaletteChange(() => { refreshToolbar(); });
+  driver.command.onPaletteChange(() => {
+    refreshToolbar();
+  });
+
+  // Refresh canUndo / canRedo whenever the undo stack changes (e.g. keyboard shortcuts)
+  driver.command.onStackChange(() => {
+    canUndo = driver.command.canUndo();
+    canRedo = driver.command.canRedo();
+  });
 
   // ── Sync palette state from driver ────────────────────────────────────
   $effect(() => {
-    const unsub = driver.command.onPaletteChange((open: boolean) => { paletteOpen = open; });
+    const unsub = driver.command.onPaletteChange((open: boolean) => {
+      paletteOpen = open;
+    });
     return unsub;
   });
 
@@ -84,8 +96,14 @@
   <!-- V2 Toolbar — simulates the outer IDAH toolbar -->
   <IdahToolbar
     items={toolbarItems}
-    onUndo={() => { driver.command.undo(); refreshToolbar(); }}
-    onRedo={() => { driver.command.redo(); refreshToolbar(); }}
+    onUndo={() => {
+      driver.command.undo();
+      refreshToolbar();
+    }}
+    onRedo={() => {
+      driver.command.redo();
+      refreshToolbar();
+    }}
     {canUndo}
     {canRedo}
   />

@@ -222,6 +222,10 @@ class CommandDriverAdapter implements ICommandDriverV2 {
     return () => this.#paletteListeners.delete(cb);
   }
 
+  onStackChange(cb: () => void): () => void {
+    return this.mgr.onStackChange(cb);
+  }
+
   register(opts: {
     name: string;
     modes: string[];

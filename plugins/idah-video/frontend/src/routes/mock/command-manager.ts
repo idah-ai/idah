@@ -17,6 +17,12 @@ export class CommandManagerV2 {
   /** Redo stack (most recent at end). */
   private redoStack: ICommandStackEntry[] = [];
 
+  /** Serial chain — ensures async do/undo never run concurrently. */
+  private _chain: Promise<unknown> = Promise.resolve();
+
+  /** Stack-change listeners — called after call(), undo(), or redo() modifies the stacks. */
+  private _stackListeners: Set<() => void> = new Set();
+
   /** Maximum undo depth. */
   private maxStack = 200;
   /** Time window (ms) for auto-combine. */
@@ -33,6 +39,15 @@ export class CommandManagerV2 {
   private normalizeShortcut(shortcut: IShortcut | null): IShortcut | null {
     if (!shortcut || !isMac()) return shortcut;
     return shortcut.replace(/\bControl\b/g, "Meta");
+  }
+
+  onStackChange(cb: () => void): () => void {
+    this._stackListeners.add(cb);
+    return () => this._stackListeners.delete(cb);
+  }
+
+  private _notifyStack(): void {
+    for (const cb of this._stackListeners) cb();
   }
 
   // ── Registration ──────────────────────────────────────────────────────
@@ -92,7 +107,8 @@ export class CommandManagerV2 {
             action: combined,
             timestamp: Date.now(),
           };
-          combined.do();
+          this._chain = this._chain.then(() => combined.do()).catch((e) => console.error("[cmd]", e));
+          this._notifyStack();
           return;
         }
       }
@@ -102,9 +118,10 @@ export class CommandManagerV2 {
       if (this.undoStack.length > this.maxStack) {
         this.undoStack.shift();
       }
+      this._notifyStack();
     }
 
-    action.do();
+    this._chain = this._chain.then(() => action.do()).catch((e) => console.error("[cmd]", e));
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -122,10 +139,11 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.undoStack.pop();
       if (!entry) break;
-      entry.action.undo?.();
+      this._chain = this._chain.then(() => entry.action.undo?.()).catch((e) => console.error("[cmd]", e));
       this.redoStack.push(entry);
       did = true;
     }
+    if (did) this._notifyStack();
     return did;
   }
 
@@ -134,10 +152,11 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.redoStack.pop();
       if (!entry) break;
-      entry.action.do();
+      this._chain = this._chain.then(() => entry.action.do()).catch((e) => console.error("[cmd]", e));
       this.undoStack.push(entry);
       did = true;
     }
+    if (did) this._notifyStack();
     return did;
   }
 

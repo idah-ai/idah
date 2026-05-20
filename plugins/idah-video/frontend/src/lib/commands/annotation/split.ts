@@ -14,6 +14,8 @@
 // Shortcut: S
 // Active only when there's a selected annotation.
 // ---------------------------------------------------------------------------
+import { uuidv7 } from "uuidv7";
+
 import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
@@ -109,7 +111,14 @@ export function register(driver: IIdahDriverV2): void {
       const rightMin = rightFrames[0].frame;
       const rightMax = rightFrames[rightFrames.length - 1].frame;
 
-      let _createdRightId: string | undefined;
+      // Generate the right-side ID once at command creation time.
+      // Reusing the same ID on every redo keeps IDs stable, so that
+      // subsequent split commands (which captured this annotation by ID)
+      // can always find and update it correctly across undo/redo cycles.
+      const rightId = uuidv7();
+
+      // Derive the group id once — it never changes between do/undo.
+      const groupId = (record.metadata?.group_id ?? record.id) as string;
 
       return {
         command: { ...command },
@@ -125,12 +134,10 @@ export function register(driver: IIdahDriverV2): void {
             },
           });
 
-          // Derive a group id from the original annotation so both parts
-          // stay in the same timeline group.
-          const groupId = (record.metadata?.group_id ?? record.id) as string;
-
-          // Create a new annotation for the right part (at → end)
-          const created = (await (data.annotations!.create as any)({
+          // Create a new annotation for the right part (at → end).
+          // Pass rightId explicitly so every redo reuses the same ID.
+          await (data.annotations!.create as any)({
+            id: rightId,
             shape: {
               ...shape,
               start: rightMin,
@@ -139,15 +146,14 @@ export function register(driver: IIdahDriverV2): void {
             },
             value: record.value ? { ...record.value } : undefined,
             metadata: { group_id: groupId },
-          })) as AnnotationItem;
-          _createdRightId = created.id;
+          });
         },
         async undo() {
           if (!data.annotations) return;
           // Restore original annotation
           await data.annotations.update(record);
-          // Delete the right part using the stored id
-          if (_createdRightId) await data.annotations.delete(_createdRightId);
+          // Delete the right part — rightId is always stable
+          await data.annotations.delete(rightId);
         },
         isCombinable() {
           return false;
