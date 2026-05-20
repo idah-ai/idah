@@ -184,13 +184,7 @@
     groups: Array<AnnotationGroup<IVideoAnnotationRecord>>;
     count: number;
   } {
-    const filteredAnnotations = annotations.filter(
-      (annotation) =>
-        viewport.video.currentFrame.value >= annotation.shape.start &&
-        viewport.video.currentFrame.value <= annotation.shape.end &&
-        annotation.shape.type == modalityShape,
-    );
-    const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
+    const filteredGroupedAnnotations = groupAnnotations(annotations);
 
     return {
       groups: filteredGroupedAnnotations,
@@ -243,7 +237,7 @@
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
-      {@const count = annotations.length}
+      {@const { count } = groupFilteredAnnotations(annotations)}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
