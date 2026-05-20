@@ -31,7 +31,7 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { Hash } from "@/utils/types";
-  import type { IdahDriverV2 } from "@/plugin/v2/idah-driver";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
 
   // Props
   interface Props {
