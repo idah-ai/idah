@@ -97,7 +97,7 @@
       <!-- TITLE::CATEGORY WITH GROUP ID -->
       {#if showTooltip}
         <Tooltips
-          class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
+          class={cn("font-regular min-w-64 truncate text-left text-xs group-hover:min-w-32", {
             "text-primary font-bold": isGroupSelected,
             "min-w-44": isGroupLocked,
             "min-w-32": isGroupHidden,
