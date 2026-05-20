@@ -4,7 +4,7 @@
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
 
   import { entryRoot } from "$lib/state/entry-root.svelte";
-  import { selection } from "$lib/state/selection.svelte";
+  import { selection, type IAnnotationGroupSelection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
@@ -37,15 +37,17 @@
   );
   let mode = $derived(viewport.mode);
   let selAnnotation = $derived(
-    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
+    selection.isAnnotation() ? (selection.value as IAnnotationSelection).annotation : undefined,
   );
+  let selGroupId = $derived(selection.isGroup() ? (selection.value as IAnnotationGroupSelection).groupId : undefined);
   let defaultMode = $derived(mode == "default" || !tools.has(mode));
 
   // Derived disabled state using the annotation module
   let disabled = $derived(
     (selAnnotation && annotation.isLocked(selAnnotation)) ||
-    (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
-    !["annotate", "review"].includes(getDriver().workflowStep)
+      (selGroupId && annotation.isLocked(selGroupId)) ||
+      (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
+      !["annotate", "review"].includes(getDriver().workflowStep),
   );
 
   // Functions
