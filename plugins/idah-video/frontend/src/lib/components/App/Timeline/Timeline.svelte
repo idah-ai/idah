@@ -502,7 +502,7 @@
   );
 </script>
 
-<div class="timeline" style:height="{Math.max(remainingHeight, TRACK_HEIGHT)}px">
+<div class="timeline border-1" style:height="{Math.max(remainingHeight, TRACK_HEIGHT)}px">
   {#if toolbar}
     <div class="timeline-toolbar">
       {@render toolbar()}
@@ -510,7 +510,7 @@
   {/if}
 
   <div class="timeline-ruler-wrapper">
-    <div class="timeline-ruler-spacer" aria-hidden="true">
+    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true">
       {#if TrackInfoHeaderSlot}
         {@render TrackInfoHeaderSlot()}
       {/if}
@@ -563,7 +563,7 @@
     onscroll={handleBodyScroll}
   >
     <div class="timeline-main">
-      <div class="timeline-trackinfos-body" style="height: {tracksHeight}px;">
+      <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">
         {#each visibleTracks as track (track.id)}
           <div class="timeline-trackinfo-row" style="top: {track.top}px;">
             {#if TrackInfoSlot}
@@ -640,8 +640,8 @@
 
   <!-- Custom horizontal scrollbar pinned at the bottom of .timeline,
 	     outside .timeline-body-scroll so it is always visible regardless of vertical scroll -->
-  <div class="timeline-hscrollbar-wrapper">
-    <div class="timeline-hscrollbar-spacer" aria-hidden="true"></div>
+  <div class="timeline-hscrollbar-wrapper border-t">
+    <div class="timeline-hscrollbar-spacer bg-secondary border-r" aria-hidden="true"></div>
     <div class="timeline-hscrollbar" bind:this={hScrollbarEl} onscroll={handleHScrollbarScroll}>
       <div style="width: {contentWidth}px; height: 1px;" aria-hidden="true"></div>
     </div>
@@ -652,7 +652,6 @@
   .timeline {
     display: flex;
     flex-direction: column;
-    border: 1px solid #ccc;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -670,8 +669,6 @@
   .timeline-ruler-spacer {
     width: 300px;
     flex-shrink: 0;
-    border-right: 1px solid #ccc;
-    background-color: #fafafa;
   }
 
   .timeline-ruler-viewport {
@@ -719,7 +716,6 @@
     position: relative;
     width: 300px;
     flex-shrink: 0;
-    border-right: 1px solid #ccc;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -755,14 +751,11 @@
   .timeline-hscrollbar-wrapper {
     display: flex;
     flex-shrink: 0;
-    border-top: 1px solid #eee;
   }
 
   .timeline-hscrollbar-spacer {
     width: 300px;
     flex-shrink: 0;
-    border-right: 1px solid #ccc;
-    background-color: #fafafa;
   }
 
   .timeline-hscrollbar {
