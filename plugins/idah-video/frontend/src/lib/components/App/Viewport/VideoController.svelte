@@ -233,7 +233,7 @@
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent>
+      <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Video speed</DropdownMenuLabel>
           {#each videoSpeeds as { label, value } (value)}
