@@ -48,7 +48,7 @@ export function getCategoryVisibilityAction(opts: {
   const { categoryId, items, shapeType } = opts;
   if (items.length === 0) return null;
 
-  const isSomeHidden = items.every((item) => annotation.isHidden(item));
+  const isSomeHidden = items.some((item) => annotation.isHidden(item));
 
   return {
     id: "visibility",

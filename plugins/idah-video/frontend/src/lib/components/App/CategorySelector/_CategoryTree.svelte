@@ -236,7 +236,9 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
+      {@const annotations = items.filter(
+        (a) => a.value?.category?.startsWith(category.id) && a.shape.type === modalityShape,
+      )}
       {@const { count } = groupFilteredAnnotations(annotations)}
 
       <CollapsibleTrigger
