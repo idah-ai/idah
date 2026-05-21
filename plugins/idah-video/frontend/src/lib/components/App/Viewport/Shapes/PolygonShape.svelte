@@ -5,6 +5,7 @@
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { resolveShapeStyles } from "$lib/utils/styles";
   import { pointInPolygon, hitTestVertex, moveVertex, addVertexOnEdge } from "./Polygon/utils";
   import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
@@ -29,6 +30,14 @@
   } = $props();
 
   let color = $derived.by(() => resolveAnnotationColor(annotation));
+
+  // ── Shape display styles from property options ─────────────────────────
+  let shapeStyles = $derived.by(() => resolveShapeStyles(annotation));
+  let shapeStyleString = $derived.by(() => {
+    return Object.entries(shapeStyles)
+      .map(([key, value]) => `${key}:${value}`)
+      .join(";");
+  });
 
   let w = $derived(media.width);
   let h = $derived(media.height);
@@ -254,6 +263,7 @@
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 1.5 : 1}
     vector-effect="non-scaling-stroke"
+    style={shapeStyleString}
     style:outline="none"
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}

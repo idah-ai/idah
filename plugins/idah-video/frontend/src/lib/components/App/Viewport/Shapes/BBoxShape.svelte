@@ -6,6 +6,7 @@
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { resolveShapeStyles } from "$lib/utils/styles";
   import {
     boundingBoxHandle,
     rotatePointN,
@@ -37,6 +38,14 @@
   }: Props = $props();
 
   let color = $derived.by(() => resolveAnnotationColor(annotation));
+
+  // ── Shape display styles from property options ─────────────────────────
+  let shapeStyles = $derived.by(() => resolveShapeStyles(annotation));
+  let shapeStyleString = $derived.by(() => {
+    return Object.entries(shapeStyles)
+      .map(([key, value]) => `${key}:${value}`)
+      .join(";");
+  });
 
   // ── Media dimensions (pixel space) ─────────────────────────────────────
   let w = $derived(media.width);
@@ -371,6 +380,7 @@
     style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
+    style={shapeStyleString}
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
     class={bodyCursor}
