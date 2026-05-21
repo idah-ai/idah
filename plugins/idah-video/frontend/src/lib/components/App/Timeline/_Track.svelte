@@ -76,7 +76,7 @@
   role="button"
   tabindex="-1"
   class={cn("track border-b", {
-    "border-primary bg-primary/10 border-t border-b": isSelected,
+    "border-primary/50 bg-primary/10 border-t border-b": isSelected,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"
