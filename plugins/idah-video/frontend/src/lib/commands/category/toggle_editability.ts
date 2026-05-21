@@ -20,8 +20,8 @@
 // ---------------------------------------------------------------------------
 
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { AnnotationItem } from "$lib/state/data.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
+import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
@@ -36,6 +36,7 @@ export const command = {
 
 export interface ToggleCategoryEditabilityProps {
   category: string;
+  shapeType: string;
   annotations?: AnnotationItem[];
 }
 
@@ -69,8 +70,8 @@ export function register(driver: IIdahDriverV2): void {
         categoryAnnotations = props.annotations;
       } else if (props.category) {
         // Resolve from category tree
-        categoryAnnotations = data.annotations.items.filter((ann) =>
-          isCategoryMatch(ann.value?.category, props.category),
+        categoryAnnotations = data.annotations.items.filter(
+          (ann) => isCategoryMatch(ann.value?.category, props.category) && ann.shape.type === props.shapeType,
         );
       } else {
         return noopAction(command);
