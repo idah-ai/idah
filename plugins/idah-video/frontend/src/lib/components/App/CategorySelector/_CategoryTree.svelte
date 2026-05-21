@@ -193,7 +193,7 @@
   }
 
   function deleteCategoryAnnotations(categoryId: string) {
-    getDriver().command.call("annotation.delete_category", { category: categoryId });
+    getDriver().command.call("annotation.delete_category", { category: categoryId, shapeType: modalityShape });
   }
 </script>
 
