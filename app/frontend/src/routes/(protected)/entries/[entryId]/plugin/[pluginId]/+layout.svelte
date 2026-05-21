@@ -23,8 +23,6 @@
   ></script>
 </svelte:head>
 
-<div>
-  {#if loaded}
-    {@render children?.()}
-  {/if}
-</div>
+{#if loaded}
+  {@render children?.()}
+{/if}

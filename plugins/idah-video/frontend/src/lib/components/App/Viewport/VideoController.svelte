@@ -28,6 +28,7 @@
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Video from "./Video.svelte";
 
+  import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -65,12 +66,12 @@
   let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
   // Display value is 1-based (user-facing), internal currentFrame is 0-based.
-  let frameInputValue = $state<number>(viewport.video.currentFrame.value + 1);
+  let frameInputValue = $state<number | null>(viewport.video.currentFrame.value + 1);
 
   let disabledSplitButton = $derived.by(() => {
     const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
     if (!ann) return true;
-    if (ann.locked) return true;
+    if (annotation.isLocked(ann)) return true;
     if (ann.shape?.end < viewport.video.currentFrame.value) return true;
   });
 
@@ -82,15 +83,23 @@
   // Functions
   const handleInput = (e: Event) => {
     const rawValue = (e.target as HTMLInputElement).value;
-    frameInputValue = rawValue === "" ? 1 : Number(rawValue);
+    frameInputValue = rawValue === "" ? null : Number(rawValue);
   };
 
   const performSeek = () => {
-    const value = frameInputValue;
-    if (isNaN(value) || value < 1 || value > media.totalFrames) {
+    let value = frameInputValue;
+    // Empty input defaults to frame 1
+    if (value === null || value === undefined) {
+      value = 1;
+      frameInputValue = 1;
+    }
+    if (isNaN(value)) {
       frameInputValue = viewport.video.currentFrame.value + 1;
       return;
     }
+    // Clamp to valid range [1, media.totalFrames]
+    value = Math.max(1, Math.min(media.totalFrames, value));
+    frameInputValue = value;
     viewport.video.currentFrame.value = value - 1;
   };
 
@@ -232,7 +241,7 @@
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent>
+      <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Video speed</DropdownMenuLabel>
           {#each videoSpeeds as { label, value } (value)}
@@ -243,10 +252,9 @@
     </DropdownMenu>
 
     <!-- VIDEO::FRAME ADJUSTER -->
-    <div class="inline-flex items-center gap-1 whitespace-nowrap">
+    <div class="inline-flex w-40 items-center gap-1 whitespace-nowrap">
       <NumberField
         name="frame-seek"
-        class="min-w-24"
         placeholder="Frame"
         min={1}
         suffix={`/ ${Math.max(0, media.totalFrames)}`}

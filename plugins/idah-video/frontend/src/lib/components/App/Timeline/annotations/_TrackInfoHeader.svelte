@@ -4,6 +4,7 @@
   import Button from "$lib/components/ui/Button/Button.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
 
+  import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
@@ -17,9 +18,9 @@
   }
   let { annotations }: Props = $props();
 
-  // Vairables
-  const isAllHidden = $derived(annotations.every((a) => a.hidden));
-  const isAllLocked = $derived(annotations.every((a) => a.locked));
+  // Variables
+  const isAllHidden = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isHidden(ann)));
+  const isAllLocked = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isLocked(ann)));
   const menus = $derived<Menus>({
     actions: {
       items: {

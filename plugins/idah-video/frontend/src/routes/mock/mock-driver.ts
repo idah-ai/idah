@@ -206,7 +206,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
   #paletteOpen = false;
   #paletteListeners: Set<(open: boolean) => void> = new Set();
 
-  constructor(private mgr: CommandManagerV2) {}
+  constructor(private mgr: CommandManagerV2) { }
 
   isPaletteOpen(): boolean {
     return this.#paletteOpen;
@@ -292,7 +292,7 @@ class CommandDriverAdapter implements ICommandDriverV2 {
 // Adapter: toolbar driver → IToolbarDriverV2
 // ---------------------------------------------------------------------------
 class ToolbarDriverAdapter implements IToolbarDriverV2 {
-  constructor(private mgr: ToolbarManagerV2) {}
+  constructor(private mgr: ToolbarManagerV2) { }
 
   add(options: ToolbarItemOptions): void {
     this.mgr.add(options);
@@ -309,7 +309,7 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
 type Annot = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue>;
 
 class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue> {
-  constructor(private store: InMemoryStore<Annot>) {}
+  constructor(private store: InMemoryStore<Annot>) { }
 
   registerField(name: string, fn: (ann: Annot) => unknown): void {
     this.store.registerField(name, fn);
@@ -336,7 +336,7 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
 // Adapter: notes
 // ---------------------------------------------------------------------------
 class NotesDriverAdapter implements INotesDriverV2 {
-  constructor(private store: InMemoryStore<INoteRecord>) {}
+  constructor(private store: InMemoryStore<INoteRecord>) { }
 
   registerField(name: string, fn: (note: INoteRecord) => unknown): void {
     this.store.registerField(name, fn);
@@ -545,33 +545,6 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       }),
     });
 
-    // Register command palette toggle — Ctrl+Space
-    this.command.register({
-      name: "core.palette",
-      group: "General",
-      modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-      shortcut: "Control+Space",
-      shortDescription: null,
-      longDescription: null,
-      callback: () => ({
-        command: {
-          name: "core.palette",
-          group: "General",
-          modes: [],
-          shortcut: null,
-          shortDescription: null,
-          longDescription: null,
-        },
-        do() {},
-        isCombinable() {
-          return false;
-        },
-        combine(p) {
-          return p;
-        },
-      }),
-    });
-
     this.command.register({
       name: "core.exit_mode",
       group: "General",
@@ -696,10 +669,17 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   handleKeydown(event: KeyboardEvent): boolean {
     // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
     if (modKey(event) && event.code === "Space") {
+      event.preventDefault();
       (this.command as CommandDriverAdapter).openPalette();
       return true;
     }
-    return this.commandMgr.resolveKeyEvent(event, this._mode);
+
+    // only prevent browser if pressed key is handled as a command shortcut
+    const handled = this.commandMgr.resolveKeyEvent(event, this._mode);
+    if (handled) {
+      event.preventDefault();
+    }
+    return handled;
   }
 
   // ── Private helpers ──────────────────────────────────────────────────

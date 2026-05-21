@@ -5,6 +5,7 @@
   import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
   import { viewport } from "$lib/state/viewport.svelte";
+  import SyncIndicator from "./SyncIndicator.svelte";
   import { media } from "$lib/state/media.svelte";
 
   // Props
@@ -197,6 +198,7 @@
   bind:clientHeight={size[1]}
   bind:clientWidth={size[0]}
 >
+  <SyncIndicator />
   <div
     class="target"
     style:transform-origin="top left"

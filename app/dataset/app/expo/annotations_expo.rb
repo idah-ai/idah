@@ -12,7 +12,9 @@ class AnnotationsExpo < BaseExpo
 
   json_api Annotation::Record do
     show
-    index
+    index do
+      allowed_filters :updated_at__gt
+    end
     create do
       authorized_relationships entry: [:link]
     end
