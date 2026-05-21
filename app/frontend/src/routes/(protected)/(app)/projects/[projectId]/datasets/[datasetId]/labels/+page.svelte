@@ -22,7 +22,7 @@
   import { humanize, slugify } from "@/utils/string";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
@@ -71,10 +71,6 @@
 
     labelConfig = datasetRes.data.labeling_configuration;
 
-    // Sorting labelConfig values to make sure the categories are always in the same order, which can improve the experience when users switch between different label configs.
-    Object.keys(labelConfig).forEach((key) => {
-      labelConfig[key].values = sortingLabelConfigValues(labelConfig[key].values);
-    });
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
 
@@ -345,23 +341,6 @@
     if (!labelConfig) return;
     const selectedLabelConfig = labelConfig[labelConfigKey];
     selectedLabelConfig.properties = selectedLabelConfig.properties.filter((p) => p.id !== propertyId);
-  }
-
-  function sortingLabelConfigValues(labelConfigKey: IConfigValue[]) {
-    return labelConfigKey.sort((a, b) => {
-      const aParts = a.id.split("/");
-      const bParts = b.id.split("/");
-
-      const len = Math.min(aParts.length, bParts.length);
-
-      for (let i = 0; i < len; i++) {
-        if (aParts[i] !== bParts[i]) {
-          return aParts[i].localeCompare(bParts[i]);
-        }
-      }
-
-      return aParts.length - bParts.length;
-    });
   }
 </script>
 

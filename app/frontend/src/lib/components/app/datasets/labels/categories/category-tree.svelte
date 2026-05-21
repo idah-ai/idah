@@ -10,8 +10,7 @@
 
   import { humanize } from "@/utils/string";
 
-  import type { IConfigValue } from "@/plugin/interface/Activity";
-  import type { Hash } from "@/utils/types";
+  import type { IConfigValue } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -27,60 +26,46 @@
 
   // Functions
   function constructCategoryTree(values: IConfigValue[]) {
-    const root: Hash = {};
+    type TreeNode = ICategoryTreeNode;
 
-    for (const category of values) {
-      const parts: Array<string> = category.id.split("/");
-      let currentNode = root;
-      let parentPath: string | null = null;
+    const root: TreeNode[] = [];
+    const nodeMap: Record<string, TreeNode> = {};
 
-      /** Walk through each part of the category ID */
-      parts.forEach((part, partIndex) => {
-        // Build the current path
-        const currentPath = parentPath ? `${parentPath}/${part}` : part;
+    for (const value of values) {
+      const parts = value.id.split("/");
 
-        /** Create node if it doesn't exist */
-        currentNode[part] = currentNode[part] || {
-          __data: {
+      let currentChildren = root;
+      let currentPath = "";
+
+      parts.forEach((part, index) => {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+
+        const parent = currentPath.includes("/") ? currentPath.split("/").slice(0, -1).join("/") : null;
+
+        let existingNode = nodeMap[currentPath];
+
+        if (!existingNode) {
+          const isLeaf = index === parts.length - 1;
+
+          existingNode = {
             id: currentPath,
-            parent: parentPath,
-            label: humanize(part),
-            color: null, // Note: Set it to null as default for non-leaf nodes, will be set after implement selectable nodes
-            text_color: null, // Note: Set it to null as default for non-leaf nodes, will be set after implement selectable nodes
+            label: isLeaf ? value.label : humanize(part),
+            color: isLeaf ? value.color : null,
+            text_color: isLeaf ? value.text_color : null,
             expanded: true,
-          },
-          __children: {},
-        };
-
-        /** At the last part, store the category info */
-        if (partIndex === parts.length - 1) {
-          currentNode[part].__data = {
-            id: category.id,
-            parent: parentPath,
-            label: humanize(part),
-            color: category.color,
-            text_color: category.text_color,
-            expanded: true,
+            parent,
+            children: [],
           };
+
+          nodeMap[currentPath] = existingNode;
+          currentChildren.push(existingNode);
         }
 
-        /** Update parent path for next iteration */
-        parentPath = currentPath;
-
-        /** Move to the next level in the tree */
-        currentNode = currentNode[part].__children;
+        currentChildren = existingNode.children;
       });
     }
 
-    /** Convert the nested object structure to an array */
-    function convertToArray(node: Hash): ICategoryTreeNode[] {
-      return Object.values(node).map((item) => ({
-        ...item.__data,
-        children: convertToArray(item.__children),
-      }));
-    }
-
-    return convertToArray(root);
+    return root;
   }
 
   function toggleExpand(id: string) {
