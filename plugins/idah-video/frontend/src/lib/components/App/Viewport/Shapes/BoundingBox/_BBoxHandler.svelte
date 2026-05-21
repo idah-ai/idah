@@ -245,7 +245,7 @@
   style:fill={color}
   style:paint-order="stroke"
   style:stroke="white"
-  style:stroke-width="3px"
+  style:stroke-width="{S_font}px"
   style:stroke-linecap="round"
   style:stroke-linejoin="round"
   style:pointer-events="none"
