@@ -26,6 +26,7 @@
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
   import Video from "./Video.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
@@ -210,13 +211,21 @@
     <!-- VIDEO::VOLUME -->
     <Popover>
       <PopoverTrigger>
-        <Button variant="outline" size="icon-sm">
-          {#if volume.muted || volume.level == 0}
-            <VolumeXIcon />
-          {:else}
-            <Volume2Icon />
-          {/if}
-        </Button>
+        <Tooltips align="center">
+          {#snippet trigger()}
+            <Button variant="outline" size="icon-sm">
+              {#if volume.muted || volume.level == 0}
+                <VolumeXIcon />
+              {:else}
+                <Volume2Icon />
+              {/if}
+            </Button>
+          {/snippet}
+
+          {#snippet content()}
+            Volume: {volume.level}%
+          {/snippet}
+        </Tooltips>
       </PopoverTrigger>
 
       <PopoverContent side="top" align="center" class="max-w-10 px-2">
@@ -235,10 +244,18 @@
     <!-- VIDEO::SPEED -->
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button variant="outline" size="sm">
-          <FastForwardIcon />
-          {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || "Speed"}
-        </Button>
+        <Tooltips align="center">
+          {#snippet trigger()}
+            <Button variant="outline" size="sm">
+              <FastForwardIcon />
+              {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || "Speed"}
+            </Button>
+          {/snippet}
+
+          {#snippet content()}
+            Video speed: {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || `${currentSpeed}X`}
+          {/snippet}
+        </Tooltips>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
