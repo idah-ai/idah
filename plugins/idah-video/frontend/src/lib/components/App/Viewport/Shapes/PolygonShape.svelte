@@ -129,7 +129,7 @@
     if (!editable || baseVertices.length < 3) return false;
 
     // Check if clicking on a vertex
-    const vi = hitTestVertex(start, vertices, w, h, 8);
+    const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
     if (vi >= 0) {
       if (shiftKey) {
         // Shift+click on a vertex: delete it (but keep minimum 3 points)

@@ -78,6 +78,7 @@
     points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
     fill="grey"
     stroke="white"
+    stroke-width={S_line}
     stroke-linejoin="round"
     pointer-events="none"
   />

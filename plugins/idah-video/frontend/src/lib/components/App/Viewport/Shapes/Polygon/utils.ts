@@ -43,24 +43,45 @@ export function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
-/** Find the closest vertex handle index, or -1 if none within hitRadius. */
-export function hitTestVertex(point: Point, vertices: Point[], w: number, h: number, hitRadiusPx: number): number {
+/**
+ * Find the closest vertex handle index, or -1 if none within hitRadius.
+ * @param viewportScale - the current viewport zoom scale to convert media pixels to screen pixels
+ */
+export function hitTestVertex(
+  point: Point,
+  vertices: Point[],
+  w: number,
+  h: number,
+  hitRadiusPx: number,
+  viewportScale: number = 1,
+): number {
   const rSq = hitRadiusPx * hitRadiusPx;
   for (let i = 0; i < vertices.length; i++) {
-    const dx = Math.abs(point[0] - vertices[i][0]) * w;
-    const dy = Math.abs(point[1] - vertices[i][1]) * h;
+    const dx = Math.abs(point[0] - vertices[i][0]) * w * viewportScale;
+    const dy = Math.abs(point[1] - vertices[i][1]) * h * viewportScale;
+
     if (dx * dx + dy * dy < rSq) return i;
   }
   return -1;
 }
 
-/** Find the closest edge midpoint index, or -1 if none within hitRadius. */
-export function hitTestEdgeMidpoint(point: Point, vertices: Point[], w: number, h: number, hitRadiusPx: number): number {
+/**
+ * Find the closest edge midpoint index, or -1 if none within hitRadius.
+ * @param viewportScale - the current viewport zoom scale to convert media pixels to screen pixels
+ */
+export function hitTestEdgeMidpoint(
+  point: Point,
+  vertices: Point[],
+  w: number,
+  h: number,
+  hitRadiusPx: number,
+  viewportScale: number = 1,
+): number {
   const midpoints = polygonEdgeMidpoints(vertices);
   const rSq = hitRadiusPx * hitRadiusPx;
   for (let i = 0; i < midpoints.length; i++) {
-    const dx = Math.abs(point[0] - midpoints[i][0]) * w;
-    const dy = Math.abs(point[1] - midpoints[i][1]) * h;
+    const dx = Math.abs(point[0] - midpoints[i][0]) * w * viewportScale;
+    const dy = Math.abs(point[1] - midpoints[i][1]) * h * viewportScale;
     if (dx * dx + dy * dy < rSq) return i;
   }
   return -1;
@@ -148,4 +169,3 @@ export function scaleCursorSVG(color: string): string {
       <line x1="15" y1="12" x2="21" y2="12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
     </svg>`)}`;
 }
-
