@@ -336,6 +336,7 @@
             <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
             {@const actions = getCategoryActions({
               categoryId: category.id,
+              shapeType: modalityShape,
               items: annotations,
               onClickDelete: () => {
                 categoryToDelete = category.id;
