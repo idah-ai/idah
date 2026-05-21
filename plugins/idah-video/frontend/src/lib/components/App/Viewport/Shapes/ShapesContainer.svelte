@@ -91,15 +91,34 @@
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
 
-  // Build a flat list of visible annotations (filtered by current frame and hidden state)
+  // Build a flat list of visible annotations (filtered by current frame and hidden state).
+  // The list is ordered so the selected annotation always comes last (highest z-order
+  // in SVG), and non-selected annotations are ordered by creation (earliest first).
+  // This ensures overlapping shapes always have the selected one on top.
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
     const f = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
-    return items.filter((ann) => {
-      if (annotation.isHidden(ann)) return false;
+    const filtered: IAnnotationRecord[] = [];
+    let selectedAnn: IAnnotationRecord | undefined;
+    for (const ann of items) {
+      if (annotation.isHidden(ann)) continue;
       const s = ann.shape as { start?: number; end?: number };
-      return s.start != null && s.end != null && f >= s.start && f <= s.end;
+      if (s.start == null || s.end == null || f < s.start || f > s.end) continue;
+      if (selection.isAnnotationSelected(ann.id)) {
+        selectedAnn = ann;
+      } else {
+        filtered.push(ann);
+      }
+    }
+    // Sort non-selected by creation order (earliest first) so later-created ones
+    // naturally stack on top, and the selected annotation is always at the very end.
+    filtered.sort((a, b) => {
+      const aTime = a.created_at?.getTime() ?? 0;
+      const bTime = b.created_at?.getTime() ?? 0;
+      return aTime - bTime;
     });
+    if (selectedAnn) filtered.push(selectedAnn);
+    return filtered;
   });
 
   // Keep refs array sized to match visible annotations
