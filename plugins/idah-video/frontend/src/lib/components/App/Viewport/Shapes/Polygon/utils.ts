@@ -45,6 +45,11 @@ export function pointInPolygon(point: Point, polygon: Point[]): boolean {
 
 /**
  * Find the closest vertex handle index, or -1 if none within hitRadius.
+ * @param point - normalized cursor position [0-1]
+ * @param vertices - polygon vertices as normalized points [0-1]
+ * @param w - media width in pixels (for converting to screen space)
+ * @param h - media height in pixels (for converting to screen space)
+ * @param hitRadiusPx - radius in pixels for hit testing
  * @param viewportScale - the current viewport zoom scale to convert media pixels to screen pixels
  */
 export function hitTestVertex(
@@ -67,6 +72,11 @@ export function hitTestVertex(
 
 /**
  * Find the closest edge midpoint index, or -1 if none within hitRadius.
+ * @param point - normalized cursor position [0-1]
+ * @param vertices - polygon vertices as normalized points [0-1]
+ * @param w - media width in pixels (for converting to screen space)
+ * @param h - media height in pixels (for converting to screen space)
+ * @param hitRadiusPx - radius in pixels for hit testing
  * @param viewportScale - the current viewport zoom scale to convert media pixels to screen pixels
  */
 export function hitTestEdgeMidpoint(

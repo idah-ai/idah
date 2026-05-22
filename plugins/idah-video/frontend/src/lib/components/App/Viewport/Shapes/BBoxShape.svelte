@@ -281,7 +281,7 @@
       const handle = handles[i];
       const dx = Math.abs(start[0] - handle[0]) * w * scale;
       const dy = Math.abs(start[1] - handle[1]) * h * scale;
-
+      // If within handle radius, start resizing with this handle
       if (dx * dx + dy * dy < HANDLE_RADIUS_PX_SQR) {
         resizeHandleIndex = i;
         resizeInitialPoints = [...points];
@@ -306,6 +306,7 @@
 
       const rdx = Math.abs(start[0] - rotHandleRotated[0]) * w * scale;
       const rdy = Math.abs(start[1] - rotHandleRotated[1]) * h * scale;
+      // If within rotation handle radius, start rotating with this handle as the pivot
       if (rdx * rdx + rdy * rdy < ROTATE_RADIUS_PX_SQR) {
         rotateStart = centroidN;
         rotateStartRevolutions = Math.round(currentAngle() / (2 * Math.PI));
