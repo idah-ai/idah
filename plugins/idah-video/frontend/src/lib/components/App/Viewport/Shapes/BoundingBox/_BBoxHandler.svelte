@@ -86,7 +86,7 @@
   let R_rev = $derived(7 * invScale);
   let R_rev_hovered = $derived(9 * invScale);
   let S_line = $derived(2.5 * invScale);
-  let S_font = $derived(12 * invScale);
+  let S_font = $derived(9 * invScale);
   let S_offset = $derived(14 * invScale);
 
   // ── Derived hover styles ──────────────────────────────────────────────
@@ -205,15 +205,24 @@
     pointer-events="none"
   />
 {/if}
-
 <!-- Revolution controls -->
-<line
-  x1={rotationLayout.rotHPxX - S_offset - R_rev}
-  y1={rotationLayout.rotHPxY}
-  x2={rotationLayout.rotHPxX - S_offset + R_rev}
-  y2={rotationLayout.rotHPxY}
-  stroke={color}
-  stroke-width={S_line}
+<!-- White halo for contrast → expands on hover -->
+<circle
+  cx={rotationLayout.rotHPxX - S_offset}
+  cy={rotationLayout.rotHPxY}
+  r={hoveredRevMinus ? R_hovered : R_hit}
+  fill="white"
+  fill-opacity={hoveredRevMinus ? 0.8 : 0.6}
+  pointer-events="none"
+/>
+
+<circle
+  cx={rotationLayout.rotHPxX + S_offset}
+  cy={rotationLayout.rotHPxY}
+  r={hoveredRevPlus ? R_hovered : R_hit}
+  fill="white"
+  fill-opacity={hoveredRevPlus ? 0.8 : 0.6}
+  pointer-events="none"
 />
 <circle
   role="button"
@@ -235,6 +244,16 @@
   }}
 />
 
+ <line
+  x1={rotationLayout.rotHPxX - S_offset - R_rev}
+  y1={rotationLayout.rotHPxY}
+  x2={rotationLayout.rotHPxX - S_offset + R_rev}
+  y2={rotationLayout.rotHPxY}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
+/>
+
 <text
   x={rotationLayout.rotHPxX}
   y={rotationLayout.rotHPxY - S_offset}
@@ -254,22 +273,6 @@
   {(currentAngle * (180 / Math.PI)).toFixed(1)}° {revolutionDisplay}
 </text>
 
-<line
-  x1={rotationLayout.rotHPxX + S_offset - R_rev}
-  y1={rotationLayout.rotHPxY}
-  x2={rotationLayout.rotHPxX + S_offset + R_rev}
-  y2={rotationLayout.rotHPxY}
-  stroke={color}
-  stroke-width={S_line}
-/>
-<line
-  x1={rotationLayout.rotHPxX + S_offset}
-  y1={rotationLayout.rotHPxY - R_rev}
-  x2={rotationLayout.rotHPxX + S_offset}
-  y2={rotationLayout.rotHPxY + R_rev}
-  stroke={color}
-  stroke-width={S_line}
-/>
 <circle
   role="button"
   tabindex="-1"
@@ -288,4 +291,23 @@
     e.stopPropagation();
     onIncrementRevolution();
   }}
+/>
+
+<line
+  x1={rotationLayout.rotHPxX + S_offset - R_rev}
+  y1={rotationLayout.rotHPxY}
+  x2={rotationLayout.rotHPxX + S_offset + R_rev}
+  y2={rotationLayout.rotHPxY}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
+/>
+<line
+  x1={rotationLayout.rotHPxX + S_offset}
+  y1={rotationLayout.rotHPxY - R_rev}
+  x2={rotationLayout.rotHPxX + S_offset}
+  y2={rotationLayout.rotHPxY + R_rev}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
 />
