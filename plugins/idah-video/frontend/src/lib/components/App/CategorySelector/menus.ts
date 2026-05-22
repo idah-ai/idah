@@ -32,12 +32,10 @@ export function toggleCategoryEditability(opts: { categoryId: string; shapeType:
   });
 }
 
-export function deleteCategoryAnnotations(opts: { categoryId: string }) {
-  const { categoryId } = opts;
+export function deleteCategoryAnnotations(opts: { categoryId: string; shapeType: string }) {
+  const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.delete_category", {
-    category: categoryId,
-  });
+  getDriver().command.call("annotation.delete_category", { category: categoryId, shapeType });
 }
 
 export function getCategoryVisibilityAction(opts: {
