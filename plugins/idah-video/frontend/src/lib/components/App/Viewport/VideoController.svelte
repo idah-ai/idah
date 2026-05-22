@@ -4,30 +4,17 @@
     ChevronRightIcon,
     ChevronsLeftIcon,
     ChevronsRightIcon,
-    FastForwardIcon,
     PauseIcon,
     PlayIcon,
     SquareSplitHorizontalIcon,
-    Volume2Icon,
-    VolumeXIcon,
   } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import Button from "$lib/components/ui/Button/Button.svelte";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-  } from "$lib/components/ui/DropdownMenu";
   import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
-  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
-  import Slider from "$lib/components/ui/Slider/Slider.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
-  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
-  import Video from "./Video.svelte";
+  import Video from "$lib/components/App/Viewport/Video.svelte";
+  import VideoSettingsDropdownMenu from "$lib/components/App/Viewport/VideoSettingsDropdownMenu.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -50,21 +37,6 @@
   let { video = $bindable(), volume }: Props = $props();
 
   // Variables
-  interface VideoSpeedMenuItem {
-    label: string;
-    value: number;
-  }
-  const videoSpeeds: VideoSpeedMenuItem[] = [
-    { label: "0.25 X", value: 0.25 },
-    { label: "0.5 X", value: 0.5 },
-    { label: "1 X", value: 1 },
-    { label: "1.25 X", value: 1.25 },
-    { label: "1.5 X", value: 1.5 },
-    { label: "2 X", value: 2 },
-    { label: "3 X", value: 3 },
-    { label: "5 X", value: 5 },
-  ];
-  let currentSpeed: number = $state(1);
   let frameStep = $state<number>(10);
   // Display value is 1-based (user-facing), internal currentFrame is 0-based.
   let frameInputValue = $state<number | null>(viewport.video.currentFrame.value + 1);
@@ -113,23 +85,6 @@
   const handleBlur = () => {
     performSeek();
   };
-
-  function selectVideoSpeed(selectedSpeed: number): void {
-    currentSpeed = selectedSpeed;
-    if (video) video.playbackRate(currentSpeed);
-  }
-
-  function goFrame(direction: "prev" | "next", step: number = 1) {
-    const delta = direction === "prev" ? -step : step;
-    viewport.video.currentFrame.value = Math.max(
-      0,
-      Math.min(media.totalFrames - 1, viewport.video.currentFrame.value + delta),
-    );
-  }
-
-  function gotoFrameStep(direction: "prev" | "next") {
-    goFrame(direction, frameStep);
-  }
 
   function getFrameStepFromLocalStorage() {
     const localStorageFrameStep = localStorage.getItem("idah-video:settings:frame-step");
@@ -208,65 +163,7 @@
       {/snippet}
     </ToolTooltip>
 
-    <!-- VIDEO::VOLUME -->
-    <Popover>
-      <PopoverTrigger>
-        <Tooltips align="center">
-          {#snippet trigger()}
-            <Button variant="outline" size="icon-sm">
-              {#if volume.muted || volume.level == 0}
-                <VolumeXIcon />
-              {:else}
-                <Volume2Icon />
-              {/if}
-            </Button>
-          {/snippet}
-
-          {#snippet content()}
-            Volume: {volume.level}%
-          {/snippet}
-        </Tooltips>
-      </PopoverTrigger>
-
-      <PopoverContent side="top" align="center" class="max-w-10 px-2">
-        <Slider
-          type="single"
-          orientation="vertical"
-          min={0}
-          max={100}
-          step={1}
-          onValueChange={(v) => video?.setVolume(v)}
-          value={volume.level}
-        />
-      </PopoverContent>
-    </Popover>
-
-    <!-- VIDEO::SPEED -->
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Tooltips align="center">
-          {#snippet trigger()}
-            <Button variant="outline" size="sm">
-              <FastForwardIcon />
-              {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || "Speed"}
-            </Button>
-          {/snippet}
-
-          {#snippet content()}
-            Video speed: {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || `${currentSpeed}X`}
-          {/snippet}
-        </Tooltips>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Video speed</DropdownMenuLabel>
-          {#each videoSpeeds as { label, value } (value)}
-            <DropdownMenuItem onclick={() => selectVideoSpeed(value)}>{label}</DropdownMenuItem>
-          {/each}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <VideoSettingsDropdownMenu bind:video {volume} />
 
     <!-- VIDEO::FRAME ADJUSTER -->
     <div class="inline-flex w-40 items-center gap-1 whitespace-nowrap">
