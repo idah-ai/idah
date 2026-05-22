@@ -191,8 +191,12 @@ export class AstProcessor {
       return first;
     }
     // Operator node
-    if (typeof first === "string" && this.operators.has(first)) {
+    if (typeof first === "string") {
       return this.processOperator(value as ASTNode);
+    }
+    // Nested array literal
+    if (Array.isArray(first)) {
+      return first;
     }
     return value as ASTValue;
   }

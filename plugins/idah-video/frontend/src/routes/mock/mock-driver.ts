@@ -394,7 +394,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           required: true,
           visibility: [
             "in",
-            [["get", ["category"]], ["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]],
+            [["get", ["category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
           ] as any,
           description: "How many wheels does the object have?",
         },
