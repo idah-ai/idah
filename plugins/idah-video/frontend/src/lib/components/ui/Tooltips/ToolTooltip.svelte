@@ -34,7 +34,7 @@
 
       {#if shortcut}
         <KbdGroup>
-          <Kbd>{shortcut}</Kbd>
+          <Kbd class="border">{shortcut}</Kbd>
         </KbdGroup>
       {/if}
     </div>

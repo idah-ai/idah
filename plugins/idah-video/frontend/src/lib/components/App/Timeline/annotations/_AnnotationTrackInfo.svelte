@@ -74,7 +74,7 @@
   class={cn(
     "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
     {
-      "border-primary bg-primary/10 border-t border-b": isGroupSelected,
+      "border-primary/50 bg-primary/10 border-t border-b": isGroupSelected,
     },
   )}
   style:height="{TRACK_HEIGHT}px;"
