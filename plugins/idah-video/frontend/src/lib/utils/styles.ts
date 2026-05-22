@@ -3,7 +3,7 @@
 //
 // For properties of type `single-select`, if the selected option has a
 // `styles` field, those generic style keys (e.g. `border`, `opacity`) are
-// translated to SVG/CSS-compatible values and returned as a flat record.
+// translated to SVG/CSS-compatible values and returned as a CSS string.
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
 import type { IConfigPropertyOption } from "$idah/v2/types";
@@ -28,30 +28,31 @@ const STYLE_SVG_MAP: Record<string, string> = {
 };
 
 /**
- * Resolve the shape display styles for an annotation.
+ * Resolve shape display styles for an annotation as a CSS string.
  *
  * Looks at all `single-select` properties defined in the shape config.
  * For each property where the annotation has a selected value, it finds
  * the matching option and collects its `styles`. All collected styles
- * are merged and translated to SVG/CSS properties.
+ * are merged, translated to SVG/CSS properties, and returned as a
+ * semicolon-separated CSS string (e.g. `"stroke-dasharray:6, 3;opacity:4"`).
  *
  * @param annotation  The annotation record (must have `shape.type` and
  *                    `value.attributes`).
- * @returns           A record of CSS/SVG property → value pairs.
+ * @returns           A CSS string of property:value pairs, or empty string.
  *
  * @example
  *   // annotation has attributes: { "shape-proprety": "option_2" }
  *   // option_2.styles = { border: "dashed", opacity: 4 }
- *   // Returns: { "stroke-dasharray": "6, 3", "opacity": "4" }
+ *   // Returns: "stroke-dasharray:6, 3;opacity:4"
  */
 export function resolveShapeStyles(
   annotation: {
     value?: { attributes?: Record<string, unknown> };
     shape?: { type?: string };
   },
-): Record<string, string> {
+): string {
   const config = getDriver().config[annotation?.shape?.type ?? ""];
-  if (!config?.properties) return {};
+  if (!config?.properties) return "";
 
   const attributes = annotation.value?.attributes ?? {};
   const mergedStyles: Record<string, unknown> = {};
@@ -74,30 +75,20 @@ export function resolveShapeStyles(
     }
   }
 
-  // Translate generic styles → SVG/CSS properties
-  const result: Record<string, string> = {};
+  // Translate generic styles → SVG/CSS properties and build CSS string
+  const parts: string[] = [];
   for (const [key, value] of Object.entries(mergedStyles)) {
     const svgKey = STYLE_SVG_MAP[key] ?? key;
     if (key === "border") {
       const dashValue = BORDER_DASHARRAY[String(value)];
       if (dashValue !== undefined) {
-        result[svgKey] = dashValue;
+        parts.push(`${svgKey}:${dashValue}`);
       }
       // "solid" → no dasharray set (default)
     } else {
-      result[svgKey] = String(value);
+      parts.push(`${svgKey}:${String(value)}`);
     }
   }
 
-  return result;
-}
-
-/**
- * Convenience getter for a specific style property, or undefined if not set.
- */
-export function getShapeStyle(
-  styles: Record<string, string>,
-  property: string,
-): string | undefined {
-  return styles[property] ?? undefined;
+  return parts.join(";");
 }

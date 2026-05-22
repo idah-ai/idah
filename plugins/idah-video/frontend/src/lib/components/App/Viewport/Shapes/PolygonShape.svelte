@@ -32,12 +32,7 @@
   let color = $derived.by(() => resolveAnnotationColor(annotation));
 
   // ── Shape display styles from property options ─────────────────────────
-  let shapeStyles = $derived.by(() => resolveShapeStyles(annotation));
-  let shapeStyleString = $derived.by(() => {
-    return Object.entries(shapeStyles)
-      .map(([key, value]) => `${key}:${value}`)
-      .join(";");
-  });
+  let shapeStyleString = $derived.by(() => resolveShapeStyles(annotation));
 
   let w = $derived(media.width);
   let h = $derived(media.height);
