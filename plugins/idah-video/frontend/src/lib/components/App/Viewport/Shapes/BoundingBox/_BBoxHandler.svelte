@@ -86,6 +86,7 @@
   let R_rev = $derived(7 * invScale);
   let R_rev_hovered = $derived(9 * invScale);
   let S_line = $derived(2.5 * invScale);
+  let S_line_hovered = $derived(4 * invScale);
   let S_font = $derived(9 * invScale);
   let S_offset = $derived(14 * invScale);
 
@@ -243,7 +244,18 @@
     onDecrementRevolution();
   }}
 />
-
+{#if hoveredRevMinus}
+  <line
+    x1={rotationLayout.rotHPxX - S_offset - R_rev}
+    y1={rotationLayout.rotHPxY}
+    x2={rotationLayout.rotHPxX - S_offset + R_rev}
+    y2={rotationLayout.rotHPxY}
+    stroke="white"
+    stroke-width={S_line_hovered}
+    pointer-events="none"
+    stroke-linecap="round"
+  />
+{/if}
  <line
   x1={rotationLayout.rotHPxX - S_offset - R_rev}
   y1={rotationLayout.rotHPxY}
@@ -264,7 +276,7 @@
   style:fill={color}
   style:paint-order="stroke"
   style:stroke="white"
-  style:stroke-width="{S_font}px"
+  style:stroke-width="{S_font/6}px"
   style:stroke-linecap="round"
   style:stroke-linejoin="round"
   style:pointer-events="none"
@@ -293,6 +305,28 @@
   }}
 />
 
+{#if hoveredRevPlus}
+   <line
+    x1={rotationLayout.rotHPxX + S_offset - R_rev}
+    y1={rotationLayout.rotHPxY}
+    x2={rotationLayout.rotHPxX + S_offset + R_rev}
+    y2={rotationLayout.rotHPxY}
+    stroke="white"
+    stroke-width={S_line_hovered}
+    pointer-events="none"
+    stroke-linecap="round"
+  />
+    <line
+    x1={rotationLayout.rotHPxX + S_offset}
+    y1={rotationLayout.rotHPxY - R_rev}
+    x2={rotationLayout.rotHPxX + S_offset}
+    y2={rotationLayout.rotHPxY + R_rev}
+    stroke="white"
+    stroke-width={S_line_hovered}
+    pointer-events="none"
+    stroke-linecap="round"
+  />
+{/if}
 <line
   x1={rotationLayout.rotHPxX + S_offset - R_rev}
   y1={rotationLayout.rotHPxY}
