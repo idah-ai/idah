@@ -238,6 +238,19 @@
 
     getDriver().command.call("annotation.add", { shape: videoShape, value });
 
+    // If the annotation has a defined start frame, snap the timeline viewport
+    // to center on it. This ensures the user can see the newly created annotation
+    // even if they had scrolled the timeline to a different part of the video.
+    if (start !== undefined) {
+      const rangeWidth = viewport.timeline.range.endRange - viewport.timeline.range.startRange;
+      const half = rangeWidth / 2;
+      const newStart = Math.max(0, Math.min(start - half, length - rangeWidth));
+      viewport.timeline.range = {
+        startRange: newStart,
+        endRange: newStart + rangeWidth,
+      };
+    }
+
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
     if (timelineScrollAreaEl) {
