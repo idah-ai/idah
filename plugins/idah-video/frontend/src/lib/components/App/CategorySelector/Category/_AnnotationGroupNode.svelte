@@ -47,8 +47,23 @@
     const v = selection.value;
     return v?.type === "group" && v.groupId === groupId;
   });
-  let actions = $derived(
+  // Build actions, but override visibility to use group-level toggle with Shift+click support
+  let categoryActions = $derived(
     getCategoryActions({ categoryId: category.id, items: annotations, onClickDelete: () => deleteAnnotationGroup() }),
+  );
+  let actions = $derived(
+    categoryActions.map((action) => {
+      if (action.id === "visibility") {
+        return {
+          ...action,
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+            toggleAnnotationGroupVisibility(e);
+          },
+        };
+      }
+      return action;
+    }),
   );
 
   // function
@@ -57,8 +72,12 @@
     onSelectAnnotationGroup(annotationGroup);
   }
 
-  function toggleAnnotationGroupVisibility() {
-    getDriver().command.call("annotation.toggle_group_visibility", { groupId });
+  function toggleAnnotationGroupVisibility(e?: MouseEvent) {
+    if (e?.shiftKey) {
+      getDriver().command.call("annotation.toggle_group_visibility_solo", { groupId });
+    } else {
+      getDriver().command.call("annotation.toggle_group_visibility", { groupId });
+    }
   }
 
   function toggleAnnotationGroupEditability() {

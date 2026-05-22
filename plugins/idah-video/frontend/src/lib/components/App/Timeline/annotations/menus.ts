@@ -28,7 +28,13 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Show/Hide Group",
           icon: isSomeHidden ? EyeOffIcon : EyeIcon,
           alwaysShow: isSomeHidden,
-          onClick: () => getDriver().command.call("annotation.toggle_group_visibility", { groupId: track.id }),
+          onClick: (e: MouseEvent) => {
+            if (e.shiftKey) {
+              getDriver().command.call("annotation.toggle_group_visibility_solo", { groupId: track.id });
+            } else {
+              getDriver().command.call("annotation.toggle_group_visibility", { groupId: track.id });
+            }
+          },
         },
         editability: {
           label: "Lock/Unlock Group",

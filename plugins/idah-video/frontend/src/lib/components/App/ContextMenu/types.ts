@@ -7,7 +7,7 @@ export interface Menu {
   disabled?: boolean;
   alwaysShow?: boolean;
   destructive?: boolean;
-  onClick: () => void;
+  onClick: (e: MouseEvent) => void;
 }
 
 export interface Menus {
