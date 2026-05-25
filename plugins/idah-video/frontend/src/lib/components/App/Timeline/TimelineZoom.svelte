@@ -42,19 +42,32 @@
     Math.round(Math.max(zoomMin, Math.min(zoomMax, currentZoom)) / SLIDER_STEP) * SLIDER_STEP,
   );
 
-  // Current frame to use as zoom center
-  const currentFrame = $derived(viewport.video.currentFrame.value);
-
   // --- Actions ---
 
   function zoomOut() {
     const newZoom = Math.max(Math.round((sliderValue / ZOOM_FACTOR) * 10) / 10, zoomMin);
-    zoomFn?.(newZoom, currentFrame);
+    zoomFn?.(newZoom, viewport.video.currentFrame.value);
   }
 
   function zoomIn() {
     const newZoom = Math.min(Math.round(sliderValue * ZOOM_FACTOR * 10) / 10, zoomMax);
-    zoomFn?.(newZoom, currentFrame);
+    zoomFn?.(newZoom, viewport.video.currentFrame.value);
+  }
+
+  // Named (not inline) so it has a stable reference across renders.
+  // An inline `(v) => zoomFn?.(v, currentFrame)` where currentFrame is $derived would
+  // make it a template dep — Svelte recreates the arrow each frame tick, bits-ui
+  // receives a new onValueChange prop and may fire it, triggering applyZoom spuriously.
+  //
+  // Guard: skip when v is within half a step of sliderValue. When bits-ui fires
+  // onValueChange for a programmatic viewport change (focus, keyboard zoom, snap-on-add),
+  // sliderValue has already re-derived to the new value, so the delta is ~0 → no-op.
+  // Strict equality is unsafe here: Math.round(x/0.1)*0.1 can produce 0.30000000000000004
+  // while bits-ui produces 0.3, so we use half-step tolerance (0.05) instead.
+  // Real user drags produce at least a full step (0.1) → delta > threshold → pass through.
+  function handleSliderZoom(v: number) {
+    if (Math.abs(v - sliderValue) < SLIDER_STEP / 2) return;
+    zoomFn?.(v, viewport.video.currentFrame.value);
   }
 
   function cmdShortcut(name: string): string | undefined {
@@ -75,11 +88,11 @@
   <Slider
     type="single"
     class="w-40"
-    min={0}
-    max={100}
-    step={0.1}
+    min={zoomMin}
+    max={zoomMax}
+    step={SLIDER_STEP}
     value={sliderValue}
-    onValueChange={(v) => zoomFn?.(v, currentFrame)}
+    onValueChange={handleSliderZoom}
   />
 
   <ToolTooltip label="Zoom In" shortcut={cmdShortcut("timeline.zoom_in")}>
