@@ -234,7 +234,7 @@ export interface IAnnotationMetadata {
 /**
  * Base annotation value payload (maps to DB `annotation` JSONB column).
  * This is a generic base; specific modalities extend it
- * (e.g. IVideoAnnotationValue for video).
+ * (e.g. IImageAnnotationValue for video).
  */
 export interface IAnnotationValue {
   [key: string]: unknown;
@@ -257,7 +257,7 @@ export interface IAnnotationRecord<
 
   /**
    * Shape geometry — corresponds to the DB `dimensions` JSONB column.
-   * Type-specific (e.g. IVideoAnnotationShape for video).
+   * Type-specific (e.g. IImageAnnotationShape for video).
    */
   shape: Shape;
 

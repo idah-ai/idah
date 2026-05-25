@@ -4,7 +4,7 @@
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
-  import type { IVideoAnnotationShape } from "$lib/types";
+  import type { IImageAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import {
     boundingBoxHandle,
@@ -44,7 +44,7 @@
 
   // ── Interpolated values ──────────────────────────────────────────────
   let baseAngle = $derived.by((): number => {
-    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
+    const shape = annotation?.shape as IImageAnnotationShape | undefined;
     if (!shape?.frames) return 0;
     const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
     return result?.angle ?? 0;
@@ -65,7 +65,7 @@
   let isEditing = $derived(editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined));
 
   let basePoints = $derived.by((): Point[] => {
-    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
+    const shape = annotation?.shape as IImageAnnotationShape | undefined;
     if (!shape?.frames) return [];
     const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
     return result?.points ?? [];

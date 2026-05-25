@@ -3,14 +3,14 @@
 
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
 
+  import { annotation } from "$lib/state/annotation.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection, type IAnnotationGroupSelection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { annotation } from "$lib/state/annotation.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
-  import type { IVideoAnnotationValue } from "$lib/types";
+  import type { IImageAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -22,8 +22,8 @@
   }: {
     sidebarWidthRem?: number;
     annotationId?: string;
-    annotationValue: IVideoAnnotationValue;
-    onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
+    annotationValue: IImageAnnotationValue;
+    onEditValue: (annotationValue: IImageAnnotationValue, mode: string) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
   } = $props();
 

@@ -7,11 +7,11 @@
 //     annotationId: "...", selection: { frame, angle, points }
 //   });
 // ---------------------------------------------------------------------------
-import { data } from "$lib/state/data.svelte";
-import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { data } from "$lib/state/data.svelte";
+import type { IImageAnnotationShape, IImageFrameSelection } from "$lib/types";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { noopAction } from "..";
 
 export const command = {
@@ -25,7 +25,7 @@ export const command = {
 
 export interface KeyframeAddProps {
   annotationId: string;
-  selection: IVideoFrameSelection;
+  selection: IImageFrameSelection;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -42,12 +42,15 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === props.annotationId);
       if (!record) return noopAction(command);
 
-      const snapshot: AnnotationItem = { ...record, shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] } };
+      const snapshot: AnnotationItem = {
+        ...record,
+        shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] },
+      };
 
       // If points are empty, interpolate from surrounding keyframes
       let selection = { ...props.selection };
       if (!selection.points || selection.points.length === 0) {
-        const existingShape = snapshot.shape as IVideoAnnotationShape;
+        const existingShape = snapshot.shape as IImageAnnotationShape;
         const result = getInterpolatedFrame(existingShape, selection.frame);
         if (result) {
           selection = { ...selection, angle: result.angle, points: result.points ?? [] };
@@ -57,7 +60,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          const frames = [...((snapshot.shape.frames as IVideoFrameSelection[]) ?? [])];
+          const frames = [...((snapshot.shape.frames as IImageFrameSelection[]) ?? [])];
           const existing = frames.findIndex((f) => f.frame === selection.frame);
           if (existing >= 0) frames[existing] = selection;
           else frames.push(selection);
@@ -75,8 +78,12 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

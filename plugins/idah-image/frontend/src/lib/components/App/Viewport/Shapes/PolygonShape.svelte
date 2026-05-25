@@ -3,7 +3,7 @@
   import { type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
-  import type { IVideoAnnotationShape } from "$lib/types";
+  import type { IImageAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { pointInPolygon, hitTestVertex, moveVertex, addVertexOnEdge } from "./Polygon/utils";
   import { showToast } from "$lib/components/ui/Toast/index.svelte";
@@ -34,7 +34,7 @@
   let h = $derived(media.height);
 
   let baseVertices = $derived.by((): Point[] => {
-    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
+    const shape = annotation?.shape as IImageAnnotationShape | undefined;
     if (!shape?.frames) return [];
     const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
     return result?.points ?? [];

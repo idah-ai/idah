@@ -2,12 +2,12 @@
 // selection.center — Center viewport on the selected annotation's AABB
 // Undoable: restores the previous viewport transform.
 // ---------------------------------------------------------------------------
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import { media } from "$lib/state/media.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import { media } from "$lib/state/media.svelte";
+import type { IImageAnnotationShape } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
-import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$lib/types";
 
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;
@@ -46,7 +46,7 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (sel?.type !== "annotation") return;
           const record = sel.annotation as any;
-          const shape = record.shape as IVideoAnnotationShape;
+          const shape = record.shape as IImageAnnotationShape;
           if (!shape.frames || shape.frames.length === 0) return;
           const currentFrame = viewport.video.currentFrame.value;
           const interpolated = getInterpolatedFrame(shape, currentFrame);
@@ -58,19 +58,26 @@ export function register(driver: IIdahDriverV2): void {
           const angle = interpolated.angle ?? 0;
           if (angle !== 0 && points.length >= 3) {
             // Compute centroid
-            let cx = 0, cy = 0;
-            for (const [px, py] of points) { cx += px; cy += py; }
+            let cx = 0,
+              cy = 0;
+            for (const [px, py] of points) {
+              cx += px;
+              cy += py;
+            }
             cx /= points.length;
             cy /= points.length;
             const cos = Math.cos(angle);
             const sin = Math.sin(angle);
-            points = points.map(([px, py]) => [
-              cx + (px - cx) * cos - (py - cy) * sin,
-              cy + (px - cx) * sin + (py - cy) * cos,
-            ] as [number, number]);
+            points = points.map(
+              ([px, py]) =>
+                [cx + (px - cx) * cos - (py - cy) * sin, cy + (px - cx) * sin + (py - cy) * cos] as [number, number],
+            );
           }
 
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
           for (const [px, py] of points) {
             if (px < minX) minX = px;
             if (py < minY) minY = py;
@@ -83,8 +90,10 @@ export function register(driver: IIdahDriverV2): void {
           if (mw === 0 || mh === 0) return;
 
           // Convert from normalized media space (0-1) to scene pixel space
-          const sx = minX * mw, sy = minY * mh;
-          const sw = (maxX - minX) * mw, sh = (maxY - minY) * mh;
+          const sx = minX * mw,
+            sy = minY * mh;
+          const sw = (maxX - minX) * mw,
+            sh = (maxY - minY) * mh;
 
           const vpW = viewport.workspace.dimensions[0];
           const vpH = viewport.workspace.dimensions[1];
@@ -98,14 +107,15 @@ export function register(driver: IIdahDriverV2): void {
           const centerX = sx + sw / 2;
           const centerY = sy + sh / 2;
 
-          viewport.workspace.transform.translate = [
-            vpW / 2 - centerX * newScale,
-            vpH / 2 - centerY * newScale,
-          ];
+          viewport.workspace.transform.translate = [vpW / 2 - centerX * newScale, vpH / 2 - centerY * newScale];
           viewport.workspace.transform.scale = newScale;
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

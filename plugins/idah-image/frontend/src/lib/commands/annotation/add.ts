@@ -8,10 +8,10 @@
 //     value: { category: "car" }
 //   });
 // ---------------------------------------------------------------------------
+import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
-import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$lib/types";
+import type { IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {
@@ -24,7 +24,7 @@ export const command = {
 };
 
 export interface AnnotationAddProps {
-  shape: IVideoAnnotationShape;
+  shape: IImageAnnotationShape;
   value?: { category?: string; label?: string; [key: string]: unknown };
 }
 
@@ -58,8 +58,12 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.delete(id);
           }
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

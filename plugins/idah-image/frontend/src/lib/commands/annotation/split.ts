@@ -16,13 +16,13 @@
 // ---------------------------------------------------------------------------
 import { uuidv7 } from "uuidv7";
 
-import type { IAnnotationRecord, IIdahDriverV2 } from "$idah/v2/types";
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import { annotation } from "$lib/state/annotation.svelte";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
-import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
+import type { IImageAnnotationShape, IImageFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { noopAction } from "..";
 
@@ -71,8 +71,8 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
-      const shape = record.shape as IVideoAnnotationShape;
-      const frames = (shape.frames ?? []) as IVideoFrameSelection[];
+      const shape = record.shape as IImageAnnotationShape;
+      const frames = (shape.frames ?? []) as IImageFrameSelection[];
 
       // Splitting at frame zero is not possible — nothing to split off.
       if (at <= 0) return noopAction(command);
@@ -81,7 +81,7 @@ export function register(driver: IIdahDriverV2): void {
 
       // Ensure there is a keyframe at the split point.
       // If none exists, interpolate one from the surrounding keyframes.
-      let splitFrame: IVideoFrameSelection | undefined = frames.find((f) => f.frame === splitAt);
+      let splitFrame: IImageFrameSelection | undefined = frames.find((f) => f.frame === splitAt);
       if (!splitFrame) {
         const interpolated = getInterpolatedFrame(shape, splitAt);
         if (interpolated) {

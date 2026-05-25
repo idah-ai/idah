@@ -9,12 +9,12 @@
 // Active only when there's a selected annotation and the current frame
 // is a keyframe of that annotation.
 // ---------------------------------------------------------------------------
-import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoFrameSelection } from "$lib/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import type { IImageFrameSelection } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {
@@ -34,7 +34,7 @@ export interface KeyframeDeleteProps {
 function isCurrentFrameKeyframe(): boolean {
   const sel = selection.value;
   if (!sel || sel.type !== "annotation") return false;
-  const frames = (sel.annotation.shape?.frames as IVideoFrameSelection[]) ?? [];
+  const frames = (sel.annotation.shape?.frames as IImageFrameSelection[]) ?? [];
   const currentFrame = viewport.video.currentFrame.value;
   return frames.some((f) => f.frame === currentFrame);
 }
@@ -69,7 +69,7 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
-      const frames = (record.shape.frames as IVideoFrameSelection[]) ?? [];
+      const frames = (record.shape.frames as IImageFrameSelection[]) ?? [];
       const idx = frames.findIndex((f) => f.frame === frame);
       if (idx === -1) return noopAction(command);
 
@@ -91,8 +91,12 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

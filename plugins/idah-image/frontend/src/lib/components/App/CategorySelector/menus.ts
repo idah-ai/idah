@@ -3,8 +3,6 @@ import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as I
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 
-import type { IVideoAnnotationRecord } from "$lib/types";
-
 export interface CategoryAction {
   id: string;
   label: string;
@@ -34,7 +32,7 @@ export function deleteCategoryAnnotations(categoryId: string) {
 
 export function getCategoryVisibilityAction(
   categoryId: string,
-  items: IVideoAnnotationRecord[],
+  items: IImageAnnotationRecord[],
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
@@ -54,7 +52,7 @@ export function getCategoryVisibilityAction(
 
 export function getCategoryEditabilityAction(
   categoryId: string,
-  items: IVideoAnnotationRecord[],
+  items: IImageAnnotationRecord[],
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
@@ -73,7 +71,7 @@ export function getCategoryEditabilityAction(
 }
 
 export function getCategoryDeleteAction(
-  items: IVideoAnnotationRecord[],
+  items: IImageAnnotationRecord[],
   onClickDelete: () => void,
 ): CategoryAction | null {
   if (items.length === 0) return null;
@@ -92,7 +90,7 @@ export function getCategoryDeleteAction(
 
 export function getCategoryActions(props: {
   categoryId: string;
-  items: IVideoAnnotationRecord[];
+  items: IImageAnnotationRecord[];
   onClickDelete: () => void;
 }): CategoryAction[] {
   const { categoryId, items, onClickDelete } = props;

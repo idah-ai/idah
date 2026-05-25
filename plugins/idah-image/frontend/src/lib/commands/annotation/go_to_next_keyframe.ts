@@ -7,11 +7,11 @@
 //
 // Shortcut: Control+ArrowRight
 // ---------------------------------------------------------------------------
+import type { ICommandAction, IIdahDriverV2 } from "$idah/v2/types";
+import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import { data } from "$lib/state/data.svelte";
-import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$lib/types";
+import type { IImageAnnotationShape } from "$lib/types";
 
 export const command = {
   name: "annotation.go_to_next_keyframe",
@@ -28,7 +28,7 @@ function getGroupKeyframes(groupId: string): number[] {
   for (const ann of data.annotations.items) {
     const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
     if (annGroupId !== groupId) continue;
-    const shape = ann.shape as IVideoAnnotationShape;
+    const shape = ann.shape as IImageAnnotationShape;
     if (!shape.frames) continue;
     for (const f of shape.frames) frames.add(f.frame);
   }
@@ -56,9 +56,15 @@ export function register(driver: IIdahDriverV2): void {
       if (!groupId) {
         return {
           command: command as any,
-          do() { viewport.video.currentFrame.value = Math.min(currentFrame + 1, 99999); },
-          isCombinable() { return false; },
-          combine(p: any) { return p; },
+          do() {
+            viewport.video.currentFrame.value = Math.min(currentFrame + 1, 99999);
+          },
+          isCombinable() {
+            return false;
+          },
+          combine(p: any) {
+            return p;
+          },
         };
       }
 
@@ -68,8 +74,12 @@ export function register(driver: IIdahDriverV2): void {
         return {
           command: command as any,
           do() {},
-          isCombinable() { return false; },
-          combine(p: any) { return p; },
+          isCombinable() {
+            return false;
+          },
+          combine(p: any) {
+            return p;
+          },
         };
       }
 
@@ -78,7 +88,7 @@ export function register(driver: IIdahDriverV2): void {
       for (const ann of data.annotations?.items ?? []) {
         const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
         if (annGroupId !== groupId) continue;
-        const shape = ann.shape as IVideoAnnotationShape;
+        const shape = ann.shape as IImageAnnotationShape;
         if (!shape.frames) continue;
         if (shape.frames.some((f) => f.frame === target)) {
           targetAnnotation = ann;
@@ -92,8 +102,12 @@ export function register(driver: IIdahDriverV2): void {
           viewport.video.currentFrame.value = target;
           if (targetAnnotation) selection.selectAnnotation(targetAnnotation);
         },
-        isCombinable() { return false; },
-        combine(p: any) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p: any) {
+          return p;
+        },
       };
     },
     group: command.group,

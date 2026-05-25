@@ -18,7 +18,7 @@
   import type { IConfigValue } from "$idah/v2/types";
 
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
-  import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
+  import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -35,13 +35,13 @@
   }: {
     view: "sidebar" | "popover";
     sidebarWidthRem: number;
-    annotationValue: IVideoAnnotationValue;
-    onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
-    onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
-    onSelectAnnotationGroup: (annotationGroup: { groupId: string; annotations: IVideoAnnotationRecord[] }) => void;
-    onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
+    annotationValue: IImageAnnotationValue;
+    onEditValue: (annotationValue: IImageAnnotationValue, mode: string) => void;
+    onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
+    onSelectAnnotationGroup: (annotationGroup: { groupId: string; annotations: IImageAnnotationRecord[] }) => void;
+    onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
     db?: DataStore<AnnotationItem> | null;
-    items: IVideoAnnotationRecord[];
+    items: IImageAnnotationRecord[];
     class?: string | null;
   } = $props();
 
