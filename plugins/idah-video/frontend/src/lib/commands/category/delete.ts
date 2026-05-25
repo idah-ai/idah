@@ -67,12 +67,18 @@ export function register(driver: IIdahDriverV2): void {
       // Use provided annotations if available
       if (props.annotations && props.annotations.length > 0) {
         categoryAnnotations = props.annotations;
-      } else if (props.category) {
-        categoryAnnotations = data.annotations.items.filter((ann) =>
-          isCategoryMatch(ann.value?.category, props.category),
-        );
-      } else if (props.shapeType) {
-        categoryAnnotations = data.annotations.items.filter((ann) => ann.shape.type === props.shapeType);
+      } else if (props.category || props.shapeType) {
+        categoryAnnotations = data.annotations.items;
+
+        if (props.category) {
+          categoryAnnotations = categoryAnnotations.filter((ann) =>
+            isCategoryMatch(ann.value?.category, props.category),
+          );
+        }
+
+        if (props.shapeType) {
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+        }
       } else {
         return noopAction(command);
       }
