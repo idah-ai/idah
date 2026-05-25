@@ -32,6 +32,7 @@ export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[]
     {
       label: "Delete",
       icon: Trash2Icon,
+      destructive: true,
       action: onDelete,
     },
   ];

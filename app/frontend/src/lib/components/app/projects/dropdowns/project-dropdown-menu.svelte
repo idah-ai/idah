@@ -43,6 +43,7 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          destructive: true,
           hidden: !canDeleteProject,
           action: () => {
             openConfirmDeleteProjectModal = true;
