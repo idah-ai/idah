@@ -33,10 +33,11 @@ export function pointInPolygon(point: Point, polygon: Point[]): boolean {
   let inside = false;
   const n = polygon.length;
   for (let i = 0, j = n - 1; i < n; j = i++) {
-    const xi = polygon[i][0], yi = polygon[i][1];
-    const xj = polygon[j][0], yj = polygon[j][1];
-    if ((yi > point[1]) !== (yj > point[1]) &&
-        point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi) {
+    const xi = polygon[i][0],
+      yi = polygon[i][1];
+    const xj = polygon[j][0],
+      yj = polygon[j][1];
+    if (yi > point[1] !== yj > point[1] && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi) {
       inside = !inside;
     }
   }
@@ -127,10 +128,7 @@ export function addVertexOnEdge(vertices: Point[], edgeIndex: number): { vertice
 export function scalePolygon(vertices: Point[], factor: number): Point[] {
   if (vertices.length < 3 || factor <= 0) return [...vertices];
   const c = polygonCentroid(vertices);
-  return vertices.map((p) => [
-    c[0] + (p[0] - c[0]) * factor,
-    c[1] + (p[1] - c[1]) * factor,
-  ]) as Point[];
+  return vertices.map((p) => [c[0] + (p[0] - c[0]) * factor, c[1] + (p[1] - c[1]) * factor]) as Point[];
 }
 
 /**
@@ -138,11 +136,7 @@ export function scalePolygon(vertices: Point[], factor: number): Point[] {
  * The factor is based on the ratio of the current distance from centroid to cursor
  * over the initial distance from centroid to cursor.
  */
-export function computeScaleFactor(
-  centroid: Point,
-  dragStart: Point,
-  currentCursor: Point,
-): number {
+export function computeScaleFactor(centroid: Point, dragStart: Point, currentCursor: Point): number {
   const initialDist = distance(centroid, dragStart);
   if (initialDist < 0.001) return 1; // Avoid division by zero / extreme scaling
   const currentDist = distance(centroid, currentCursor);
@@ -172,10 +166,15 @@ export function nearFirstPolygonPoint(
 export function scaleCursorSVG(color: string): string {
   return `data:image/svg+xml;base64,${btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="4" fill="white"/>
       <circle cx="12" cy="12" r="2" fill="${color}"/>
-      <line x1="12" y1="3" x2="12" y2="9" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="12" y1="15" x2="12" y2="21" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="3" y1="12" x2="9" y2="12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="15" y1="12" x2="21" y2="12" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="12" y1="2" x2="12" y2="8" stroke="white" stroke-width="5" stroke-linecap="round"/>
+      <line x1="12" y1="2" x2="12" y2="8" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+      <line x1="12" y1="16" x2="12" y2="22" stroke="white" stroke-width="5" stroke-linecap="round"/>
+      <line x1="12" y1="16" x2="12" y2="22" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+      <line x1="2" y1="12" x2="8" y2="12" stroke="white" stroke-width="5" stroke-linecap="round"/>
+      <line x1="2" y1="12" x2="8" y2="12" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+      <line x1="16" y1="12" x2="22" y2="12" stroke="white" stroke-width="5" stroke-linecap="round"/>
+      <line x1="16" y1="12" x2="22" y2="12" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
     </svg>`)}`;
 }
