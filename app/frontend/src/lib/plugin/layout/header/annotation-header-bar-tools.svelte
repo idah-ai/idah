@@ -69,7 +69,6 @@
             onclick={onClick}
             disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
           >
-            {console.log({ mode, currentMode, variant: currentMode === mode ? "default" : "ghost", toolbarItems })}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>

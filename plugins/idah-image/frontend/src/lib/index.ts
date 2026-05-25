@@ -1,28 +1,51 @@
+// place files you want to import through the `$lib` alias in this folder.
 import { mount, unmount } from "svelte";
 
-import ImagePlugin from "$lib/plugin/image-plugin.svelte";
+import { type IIdahDriverV2 } from "$idah/v2/types";
+import Plugin from "$lib/components/Plugin.svelte";
+import { registerAllCommands } from "./commands";
+import { initDataStores } from "./state/data.svelte";
+import { initDriver } from "./state/driver.svelte";
+import { initToolbar } from "./toolbar";
 
-import type { IActivityContext, IActivityView } from "$lib/context/context";
+interface IPluginDriver {
+  name: string;
+  label: string;
+  description: string;
+  version: string;
+  type: string;
+  init(driver: IIdahDriverV2): void;
+  render(parent: HTMLElement): void;
+  close(): void;
+}
 
 let mounted: object;
 
-const idah_plugin: IActivityView = {
+const idahImagePlugin: IPluginDriver = {
   name: "idah-image",
-  label: "Idah Image Annotation",
-  description: "idah image annotation plugin",
-  version: "1.0",
+  label: "IDAH Image Annotation",
+  description: "A module for annotating image.",
+  version: "1.0.0",
   type: "image",
-  init() {
-    console.debug("Initializing Plugin", { this: this });
+  init(driver: IIdahDriverV2) {
+    console.debug("Initializing plugin", { this: this });
+    initDriver(driver);
+    initDataStores();
+    registerAllCommands(driver);
+    initToolbar(driver);
+    console.debug("Plugin initialized", { this: this });
   },
 
-  render(parent: HTMLElement, context: IActivityContext) {
-    console.debug("Rendering Plugin", { this: this, context, parent });
+  render(parent: HTMLElement) {
+    console.debug("Rendering Plugin", { this: this, parent });
 
-    if (!parent || !context) return console.error("Missing:", { parent, context });
+    if (!parent) return console.error("Missing:", { parent });
 
     parent.innerHTML = "";
-    mounted = mount(ImagePlugin, { target: parent, props: { context } });
+    // NOTE: The V2 driver is expected to be set up externally via
+    //   initDriver(driver); initDataStores();
+    // before render() is called. The IdahVideoPlugin no longer wires them.
+    mounted = mount(Plugin, { target: parent });
   },
 
   close() {
@@ -33,4 +56,4 @@ const idah_plugin: IActivityView = {
   },
 };
 
-export default idah_plugin;
+export default idahImagePlugin;

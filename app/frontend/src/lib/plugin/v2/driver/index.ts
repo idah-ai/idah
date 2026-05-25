@@ -10,26 +10,26 @@
 // Notes use the BackendDataSource directly (no IDB layer yet).
 // ---------------------------------------------------------------------------
 import type {
+  IAnnotationsDriverV2,
+  ICommandDriverV2,
+  IConfig,
   IIdahDriverV2,
   IMediaInfo,
-  IConfig,
-  IShapeConfig,
-  IAnnotationsDriverV2,
-  INotesDriverV2,
-  ICommandDriverV2,
-  IToolbarDriverV2,
   IModeEvent,
-  ISyncEvent,
+  INotesDriverV2,
+  IShapeConfig,
   ISyncErrorEvent,
+  ISyncEvent,
+  IToolbarDriverV2,
   Unsubscribe,
 } from "../types";
 
-import { CommandManagerV2 } from "./manager/command-manager";
-import { ToolbarManagerV2 } from "./manager/toolbar-manager";
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
 import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
 import registerCommands from "./command";
+import { CommandManagerV2 } from "./manager/command-manager";
+import { ToolbarManagerV2 } from "./manager/toolbar-manager";
 
 import type { RecordResponse } from "@/data/model/types";
 
@@ -232,8 +232,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
  */
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
-import { CommandDriverAdapter } from "./adapter/command";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
+import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { SyncQueueManager } from "./manager/syncQueueManager";
@@ -275,7 +275,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
       mime_type: m.mime_type,
       filename: m.filename,
       meta: m.meta,
-      url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
+      url: entry.dataset.modality === "idah-video" ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8` : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
     };
   } catch {
     // Fallback if media info is not available
@@ -287,7 +287,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
       mime_type: "",
       filename: entry.name,
       meta: {},
-      url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
+      url: entry.dataset.modality === "idah-video" ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8` : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
     };
   }
 

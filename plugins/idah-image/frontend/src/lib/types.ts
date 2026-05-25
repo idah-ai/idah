@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// Plugin-specific video annotation types
+// Plugin-specific Image annotation types
 //
-// These types extend the generic annotation record model for the video
-// modality. They are used by the idah-video plugin and any other plugin
-// dealing with video annotation.
+// These types extend the generic annotation record model for the image
+// modality. They are used by the idah-image plugin and any other plugin
+// dealing with image annotation.
 // ---------------------------------------------------------------------------
 
 import type { IAnnotationMetadata, IAnnotationRecord, IAnnotationValue } from "$idah/v2/types";
@@ -11,7 +11,7 @@ import type { IAnnotationMetadata, IAnnotationRecord, IAnnotationValue } from "$
 // ─── Frame range ─────────────────────────────────────────────────────────
 
 /**
- * Frame range for an annotation (used by filter system for video/timeline).
+ * Frame range for an annotation (used by filter system for image/timeline).
  */
 export interface IAnnotationFrame {
   start: number;
@@ -23,7 +23,7 @@ export interface IAnnotationFrame {
 /**
  * A single keyframe selection within an annotation's shape.
  */
-export interface IVideoFrameSelection {
+export interface IImageFrameSelection {
   frame: number;
   /** Rotation angle in radians (optional). */
   angle: number;
@@ -33,30 +33,30 @@ export interface IVideoFrameSelection {
 
 // ─── Shape constants ─────────────────────────────────────────────────────
 
-export const VIDEO_BOUNDING_BOX = "idah-video:bounding-box";
-export const VIDEO_POLYGON = "idah-video:polygon";
+export const IMAGE_BOUNDING_BOX = "idah-image:bounding-box";
+export const IMAGE_POLYGON = "idah-image:polygon";
 
-// ─── Video annotation shape ──────────────────────────────────────────────
+// ─── Image annotation shape ──────────────────────────────────────────────
 
 /**
- * Video-specific annotation shape — always has a frame range and keyframes.
+ * Image-specific annotation shape — always has a frame range and keyframes.
  */
-export interface IVideoAnnotationShape {
+export interface IImageAnnotationShape {
   type: string;
   start: number;
   end: number;
   /** Keyframe selections. */
-  frames: IVideoFrameSelection[];
+  frames: IImageFrameSelection[];
   /** Allow extensibility. */
   [key: string]: unknown;
 }
 
-// ─── Video annotation value ──────────────────────────────────────────────
+// ─── Image annotation value ──────────────────────────────────────────────
 
 /**
- * Video annotation value payload (maps to DB `annotation` JSONB column).
+ * Image annotation value payload (maps to DB `annotation` JSONB column).
  */
-export interface IVideoAnnotationValue extends IAnnotationValue {
+export interface IImageAnnotationValue extends IAnnotationValue {
   /** Category path, e.g. "vehicles/car". */
   category?: string;
   /** Human-readable label, e.g. "car", "bus". */
@@ -65,16 +65,16 @@ export interface IVideoAnnotationValue extends IAnnotationValue {
   attributes?: Record<string, unknown>;
 }
 
-// ─── Video annotation record ─────────────────────────────────────────────
+// ─── Image annotation record ─────────────────────────────────────────────
 
 /**
- * Video annotation record with transient UI state fields.
+ * Image annotation record with transient UI state fields.
  */
-export interface IVideoAnnotationRecord extends IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue> {
+export interface IImageAnnotationRecord extends IAnnotationRecord<IImageAnnotationShape, IImageAnnotationValue> {
   synced?: boolean;
 }
 
-// ─── Video annotation metadata helper ────────────────────────────────────
+// ─── Image annotation metadata helper ────────────────────────────────────
 
 /**
  * Extract the group identifier from an annotation record's metadata.
