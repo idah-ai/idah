@@ -391,7 +391,7 @@
 
 <ConfirmModal
   title="Delete annotations in this category"
-  description="Are you sure you want to delete all annotations in this category? This action cannot be undone."
+  description="Are you sure you want to delete all annotations in this category?"
   onConfirm={() => {
     deleteCategoryAnnotations({ categoryId: categoryToDelete!, shapeType: modalityShape });
     openConfirmCategoryDeleteDialog = false;
