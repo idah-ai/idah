@@ -24,16 +24,17 @@
 
   import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
 
-  import type { IAnnotationRecord } from "$idah/v2/types";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+  import { nearFirstPolygonPoint } from "./Polygon/utils";
+
+  import type { IAnnotationRecord } from "$idah/v2/types";
   import type { IImageAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
-  import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
@@ -92,12 +93,11 @@
 
   // Build a flat list of visible annotations (filtered by current frame and hidden state)
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
-    const f = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
     return items.filter((ann) => {
       if (annotation.isHidden(ann)) return false;
       const s = ann.shape as { start?: number; end?: number };
-      return s.start != null && s.end != null && f >= s.start && f <= s.end;
+      return s.start != null && s.end != null;
     });
   });
 
@@ -280,7 +280,7 @@
     zoomableElement.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {
+  function showNewNoteFeedPopup(annotation?: IImageAnnotationRecord) {
     onAddNewNote({
       anchorType: annotation ? "annotation" : "entry",
       position: {

@@ -25,15 +25,7 @@ export function noopAction(command: {
   };
 }
 
-import { register as registerViewportGoToEnd } from "./viewport/go-to-end";
-import { register as registerViewportGoToStart } from "./viewport/go-to-start";
-import { register as registerViewportGoto } from "./viewport/goto";
-import { register as registerViewportNextFrame } from "./viewport/next-frame";
-import { register as registerViewportPlay } from "./viewport/play";
-import { register as registerViewportPreviousFrame } from "./viewport/previous-frame";
 import { register as registerViewportReset } from "./viewport/reset";
-import { register as registerViewportSkipBackward } from "./viewport/skip-backward";
-import { register as registerViewportSkipForward } from "./viewport/skip-forward";
 import { register as registerViewportZoomIn } from "./viewport/zoom-in";
 import { register as registerViewportZoomOut } from "./viewport/zoom-out";
 
@@ -76,10 +68,10 @@ import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
 
-import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
-import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeNote } from "./mode/note";
+import { register as registerModePolygon } from "./mode/polygon";
+import { register as registerModeSelect } from "./mode/select";
 
 /**
  * Register all commands on the given V2 driver.
@@ -88,15 +80,7 @@ import { register as registerModeNote } from "./mode/note";
  */
 export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Viewport ─────────────────────────────────────────────────────────
-  registerViewportPlay(driver);
-  registerViewportGoto(driver);
   registerViewportReset(driver);
-  registerViewportNextFrame(driver);
-  registerViewportPreviousFrame(driver);
-  registerViewportSkipForward(driver);
-  registerViewportSkipBackward(driver);
-  registerViewportGoToStart(driver);
-  registerViewportGoToEnd(driver);
   registerViewportZoomIn(driver);
   registerViewportZoomOut(driver);
 

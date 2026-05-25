@@ -8,7 +8,7 @@ const config = {
     preserveComments: false,
   },
   onwarn: (warning, handler) => {
-    if (warning.code.startsWith('a11y')) return;
+    if (warning.code.startsWith("a11y")) return;
     handler(warning);
   },
   kit: {
@@ -19,7 +19,7 @@ const config = {
     alias: {
       "$idah/*": "./src/idah/*",
       "$mock/*": "./src/mock/*",
-      "$lib/*": "./src/lib/*"
+      "$lib/*": "./src/lib/*",
     },
   },
 };
