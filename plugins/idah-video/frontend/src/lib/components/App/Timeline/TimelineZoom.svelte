@@ -54,17 +54,7 @@
     zoomFn?.(newZoom, viewport.video.currentFrame.value);
   }
 
-  // Named (not inline) so it has a stable reference across renders.
-  // An inline `(v) => zoomFn?.(v, currentFrame)` where currentFrame is $derived would
-  // make it a template dep — Svelte recreates the arrow each frame tick, bits-ui
-  // receives a new onValueChange prop and may fire it, triggering applyZoom spuriously.
-  //
-  // Guard: skip when v is within half a step of sliderValue. When bits-ui fires
-  // onValueChange for a programmatic viewport change (focus, keyboard zoom, snap-on-add),
-  // sliderValue has already re-derived to the new value, so the delta is ~0 → no-op.
-  // Strict equality is unsafe here: Math.round(x/0.1)*0.1 can produce 0.30000000000000004
-  // while bits-ui produces 0.3, so we use half-step tolerance (0.05) instead.
-  // Real user drags produce at least a full step (0.1) → delta > threshold → pass through.
+  // guards against bits-ui's spurious onValueChange fires by skipping values within half a step (0.05) of current,
   function handleSliderZoom(v: number) {
     if (Math.abs(v - sliderValue) < SLIDER_STEP / 2) return;
     zoomFn?.(v, viewport.video.currentFrame.value);
