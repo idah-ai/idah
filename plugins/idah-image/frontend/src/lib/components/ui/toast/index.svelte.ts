@@ -1,4 +1,4 @@
-import CustomToast from "$lib/components/ui/toast/custom-toast.svelte";
+import CustomToast from "$lib/components/ui/Toast/CustomToast.svelte";
 
 import { toast } from "svelte-sonner";
 

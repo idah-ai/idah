@@ -1,10 +1,9 @@
-import Root from "./kbd.svelte";
-import Group from "./kbd-group.svelte";
-
+import Group from "./KbdGroup.svelte";
+import Root from "./Kbd.svelte";
 export {
-	Root,
-	Group,
-	//
-	Root as Kbd,
-	Group as KbdGroup,
+  Group,
+  //
+  Root as Kbd,
+  Group as KbdGroup,
+  Root,
 };

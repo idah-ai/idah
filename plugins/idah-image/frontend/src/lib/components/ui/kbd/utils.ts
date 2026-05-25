@@ -1,96 +1,60 @@
-/**
- * Utility functions for Kbd component
- */
+// ---------------------------------------------------------------------------
+// Kbd utils — Maps key-combination strings to human-readable labels
+// ---------------------------------------------------------------------------
 
-const SYMBOL_MAP: Record<string, string> = {
-  // Common / Windows
-  Control: "Ctrl",
-  Meta: "Win",
+import { isMac, modKeyLabel } from "$lib/utils/browser";
+
+const MODIFIER_SYMBOLS: Record<string, string> = {
+  Control: "⌃",
+  Alt: "⌥",
   Shift: "⇧",
-  Alt: "Alt",
-  Backspace: "⌫",
-  Delete: "Del",
-  Escape: "Esc",
-  Enter: "↵",
-  Tab: "⇥",
-  Space: "␣",
-  ArrowUp: "↑",
-  ArrowDown: "↓",
-  ArrowLeft: "←",
-  ArrowRight: "→",
-  PageUp: "⇞",
-  PageDown: "⇟",
-  Home: "Home",
-  End: "End",
-  CapsLock: "⇪",
-
-  // TODO: implement OS detection ?
-  // Mac
-  // Control: "⌃",
-  // Meta: "⌘",
-  // Shift: "⇧",
-  // Alt: "⌥",
-  // Backspace: "⌫",
-  // Delete: "⌦",
-  // Escape: "⎋",
-  // Enter: "↵",
-  // Tab: "⇥",
-  // Space: "Space",
-  // ArrowUp: "↑",
-  // ArrowDown: "↓",
-  // ArrowLeft: "←",
-  // ArrowRight: "→",
-  // PageUp: "⇞",
-  // PageDown: "⇟",
-  // Home: "↖",
-  // End: "↘",
-  // CapsLock: "⇪",
+  Meta: "⌘",
 };
 
+const _isMac = isMac();
+
 /**
- * Get the symbol for a key name
- * @param key The key name (e.g., "Control", "Meta", "A")
- * @returns The symbol (e.g., "Ctrl", "⌘", "A")
+ * Convert a canonical key-combination string to a human-readable label.
+ *
+ * Examples:
+ *   - `"Control+Z"` → `"⌃Z"` (Mac) / `"Ctrl+Z"` (non-Mac)
+ *   - `"Delete"` → `"Del"`
+ *   - `"Control+Shift+S"` → `"⌃⇧S"` (Mac) / `"Ctrl+Shift+S"` (non-Mac)
  */
-export function getKeySymbol(key: string): string {
-  // TODO: Add different mapping for different OS later
-  return SYMBOL_MAP[key] || key;
-}
+export function getShortcutLabel(shortcut: string): string {
+  const parts = shortcut.split("+");
+  const key = parts[parts.length - 1];
+  const modifiers = parts.slice(0, -1);
 
-// get the symbol of each key
-export function getKeySymbols(keys: string[]): string[] {
-  return keys.map(getKeySymbol);
-}
+  const modLabel = modifiers
+    .map((m) => (_isMac ? MODIFIER_SYMBOLS[m] ?? m : m === "Control" ? modKeyLabel() : m))
+    .join(_isMac ? "" : "+");
 
-// humanize the key combination (e.g., ["Meta", "A"] -> "⌘+A")
-export function getHunamizedKeyCombination(keys: string[]): string {
-  return keys.map(getKeySymbol).join("+");
+  const keyLabel = key === "Space" ? "␣" : key === "ArrowRight" ? "→" : key === "ArrowLeft" ? "←" : key;
+
+  return _isMac ? `${modLabel} ${keyLabel}` : modLabel ? `${modLabel} + ${keyLabel}` : keyLabel;
 }
 
 /**
- * Format a keyCombinations array into a human-readable shortcut string with symbols.
- * Accepts the `keyCombinations` array from the shortcut reference list and returns
- * the primary (first) combination humanized (e.g., ["Control+Z", "Meta+Z"] → "Ctrl+Z").
- * @param keyCombinations Array of combination strings or undefined.
- * @returns The formatted shortcut string or undefined.
+ * Convert an array of canonical key-combination strings to human-readable labels.
+ * This is used by the command palette to display shortcut badges.
+ *
+ * @deprecated Use `getShortcutLabel` directly; this wrapper only exists for
+ * backwards compatibility with the V1 activity context.
+ */
+export function getShortcuts(shortcuts: string[]): string[] {
+  return shortcuts.map(getShortcutLabel);
+}
+
+/**
+ * Get the primary (first) shortcut label from a keyCombinations array.
+ * Returns `undefined` if the array is empty or undefined.
+ *
+ * This is used by the V1 activity context's ToolTooltip components.
+ *
+ * @deprecated Use `getShortcutLabel` directly.
  */
 export function getShortcut(keyCombinations: string[] | undefined): string | undefined {
   if (!keyCombinations || keyCombinations.length === 0) return undefined;
-
-  // Use only the primary (first) combination, split into individual keys, then humanize
-  return getHunamizedKeyCombination(keyCombinations[0].split("+"));
-}
-
-/**
- * Format a keyCombinations array into a human-readable shortcut string with symbols.
- * Accepts the `keyCombinations` array from the shortcut reference list and returns
- * the combinations humanized (e.g., ["Control+Z", "Meta+Z"] → ["Ctrl+Z", "⌘+Z"]).
- * @param keyCombinations Array of combination strings or undefined.
- * @returns The formatted shortcut string or undefined.
- */
-export function getShortcuts(keyCombinations: string[] | undefined): string[] | undefined {
-  if (!keyCombinations || keyCombinations.length === 0) return undefined;
-
-  // Use only the primary (first) combination, split into individual keys, then humanize
-  return keyCombinations.map((k) => getHunamizedKeyCombination(k.split("+")));
+  return getShortcutLabel(keyCombinations[0]);
 }
