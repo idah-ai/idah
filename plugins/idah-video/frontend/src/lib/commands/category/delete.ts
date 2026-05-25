@@ -35,6 +35,7 @@ export const command = {
 
 export interface DeleteCategoryProps {
   category: string;
+  shapeType: string;
   annotations?: AnnotationItem[];
 }
 
@@ -66,11 +67,18 @@ export function register(driver: IIdahDriverV2): void {
       // Use provided annotations if available
       if (props.annotations && props.annotations.length > 0) {
         categoryAnnotations = props.annotations;
-      } else if (props.category) {
-        // Resolve annotations from category tree
-        categoryAnnotations = data.annotations.items.filter((ann) =>
-          isCategoryMatch(ann.value?.category, props.category),
-        );
+      } else if (props.category || props.shapeType) {
+        categoryAnnotations = data.annotations.items;
+
+        if (props.category) {
+          categoryAnnotations = categoryAnnotations.filter((ann) =>
+            isCategoryMatch(ann.value?.category, props.category),
+          );
+        }
+
+        if (props.shapeType) {
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+        }
       } else {
         return noopAction(command);
       }
