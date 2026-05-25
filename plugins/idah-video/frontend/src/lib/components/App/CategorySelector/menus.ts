@@ -14,73 +14,84 @@ export interface CategoryAction {
   onClick: (e: MouseEvent) => void;
 }
 
-export function toggleCategoryVisibility(categoryId: string) {
+export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: string }) {
+  const { categoryId, shapeType } = opts;
+
   getDriver().command.call("annotation.toggle_category_visibility", {
     category: categoryId,
+    shapeType,
   });
 }
 
-export function toggleCategoryEditability(categoryId: string) {
+export function toggleCategoryEditability(opts: { categoryId: string; shapeType: string }) {
+  const { categoryId, shapeType } = opts;
+
   getDriver().command.call("annotation.toggle_category_editability", {
     category: categoryId,
+    shapeType,
   });
 }
 
-export function deleteCategoryAnnotations(categoryId: string) {
-  getDriver().command.call("annotation.delete_category", {
-    category: categoryId,
-  });
+export function deleteCategoryAnnotations(opts: { categoryId: string; shapeType: string }) {
+  const { categoryId, shapeType } = opts;
+
+  getDriver().command.call("annotation.delete_category", { category: categoryId, shapeType });
 }
 
-export function getCategoryVisibilityAction(
-  categoryId: string,
-  items: IVideoAnnotationRecord[],
-): CategoryAction | null {
+export function getCategoryVisibilityAction(opts: {
+  categoryId: string;
+  items: IVideoAnnotationRecord[];
+  shapeType: string;
+}): CategoryAction | null {
+  const { categoryId, items, shapeType } = opts;
   if (items.length === 0) return null;
 
   const isSomeHidden = items.some((item) => annotation.isHidden(item));
 
   return {
     id: "visibility",
-    label: "Show/Hide this category annotations",
+    label: "Show/Hide category annotations",
     icon: isSomeHidden ? EyeOffIcon : EyeIcon,
     alwaysShow: isSomeHidden,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleCategoryVisibility(categoryId);
+      toggleCategoryVisibility({ categoryId, shapeType });
     },
   };
 }
 
-export function getCategoryEditabilityAction(
-  categoryId: string,
-  items: IVideoAnnotationRecord[],
-): CategoryAction | null {
+export function getCategoryEditabilityAction(opts: {
+  categoryId: string;
+  items: IVideoAnnotationRecord[];
+  shapeType: string;
+}): CategoryAction | null {
+  const { categoryId, items, shapeType } = opts;
   if (items.length === 0) return null;
 
   const isSomeLocked = items.some((item) => annotation.isLocked(item));
 
   return {
     id: "editability",
-    label: "Lock/Unlock this category annotations",
+    label: "Lock/Unlock category annotations",
     icon: isSomeLocked ? LockIcon : LockOpenIcon,
     alwaysShow: isSomeLocked,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleCategoryEditability(categoryId);
+      toggleCategoryEditability({ categoryId, shapeType });
     },
   };
 }
 
 export function getCategoryDeleteAction(
-  items: IVideoAnnotationRecord[],
+  opts: { items: IVideoAnnotationRecord[] },
   onClickDelete: () => void,
 ): CategoryAction | null {
+  const { items } = opts;
   if (items.length === 0) return null;
 
   return {
     id: "delete",
-    label: "Delete this category annotations",
+    label: "Delete category annotations",
     icon: Trash2Icon,
     destructive: true,
     onClick: async (e: MouseEvent) => {
@@ -92,15 +103,16 @@ export function getCategoryDeleteAction(
 
 export function getCategoryActions(props: {
   categoryId: string;
+  shapeType: string;
   items: IVideoAnnotationRecord[];
   onClickDelete: () => void;
 }): CategoryAction[] {
-  const { categoryId, items, onClickDelete } = props;
+  const { categoryId, items, shapeType, onClickDelete } = props;
 
   const actions = [
-    getCategoryVisibilityAction(categoryId, items),
-    getCategoryEditabilityAction(categoryId, items),
-    getCategoryDeleteAction(items, onClickDelete),
+    getCategoryVisibilityAction({ categoryId, items, shapeType }),
+    getCategoryEditabilityAction({ categoryId, items, shapeType }),
+    getCategoryDeleteAction({ items }, onClickDelete),
   ];
 
   return actions.filter(Boolean) as CategoryAction[];
