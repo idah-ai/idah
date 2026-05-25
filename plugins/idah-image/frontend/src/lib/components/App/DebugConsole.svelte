@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
@@ -20,11 +19,8 @@ transform  translate({viewport.workspace.transform.translate[0].toFixed(
       )}, {viewport.workspace.transform.translate[1].toFixed(1)}) scale({viewport.workspace.transform.scale.toFixed(2)})
 
 <span class="section">── VIDEO ──</span>
-frame      {viewport.video.currentFrame.value}
-status     {viewport.video.status}
 mode       {viewport.mode}
-fps        {media.fps}
-duration   {media.duration.toFixed(1)}s
+
 
 <span class="section">── SELECTION ──</span>
 {selection.value ? selection.value.type : "none"}
