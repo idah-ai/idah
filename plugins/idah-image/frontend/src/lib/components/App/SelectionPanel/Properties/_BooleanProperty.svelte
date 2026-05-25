@@ -1,0 +1,58 @@
+<script lang="ts">
+  import { Label } from "$lib/components/ui/Label";
+  import { Switch } from "$lib/components/ui/Switch";
+
+  import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
+
+  import type { IConfigProperty } from "$idah/v2/types";
+
+  let {
+    property,
+    value,
+    onValueChange,
+    disabled,
+  }: {
+    property: IConfigProperty;
+    value: boolean;
+    onValueChange: (v: boolean) => void;
+    disabled: boolean;
+  } = $props();
+
+  const invalid = $derived(!propertyFullfilled(value, property));
+  const format = $derived(invalid ? formatConformity(value, property) : []);
+
+  // Default checked state: false if undefined/required, actual value otherwise
+  let checked = $derived(value ?? (property.required ? false : undefined));
+
+  const formatters = new Map<string, (v: unknown) => string>([
+    ["required", (_: unknown) => [property.label, "is required"].join(" ")],
+  ]);
+</script>
+
+<div class="flex flex-col gap-1">
+  <div class="flex items-center space-x-2 text-center">
+    <Label for={property.id} class="text-xs">
+      {property.label}
+      {#if property.required}
+        <span class="text-red-500">*</span>
+      {/if}
+    </Label>
+
+    <Switch aria-invalid={invalid} id={property.id} checked={checked} onCheckedChange={onValueChange} {disabled} />
+  </div>
+
+  {#if invalid}
+    <ul class="text-xs">
+      {#each format as entry, index (index)}
+        {@const [k, v] = entry}
+        {@const formatter = formatters.get(k)}
+
+        {#if formatter && formatter(v)}
+          <li style:color="red">{formatter(v)}</li>
+          <!-- {:else}
+          <li style:color="red">{k}:<span>{v}</span></li> -->
+        {/if}
+      {/each}
+    </ul>
+  {/if}
+</div>
