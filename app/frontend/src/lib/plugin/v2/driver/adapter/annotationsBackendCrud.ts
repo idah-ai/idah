@@ -5,8 +5,6 @@ import { annotationsBackendDataSource, type AnnotationRecord } from "@/data/mode
 import type { IAnnotationRecord, IAnnotationsDriverV2, IFilter } from "../../types";
 import type { ICrudDriver } from "./idb-driver";
 
-const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
-
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
@@ -21,17 +19,10 @@ function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
   };
 }
 
-// ─── Backend CrudDriver for IDB sync loop ───────────────────────────────
-//
-// This wraps the real backend API as an ICrudDriver, which is the interface
-// the IDB sync loop expects for delta-fetch and write-behind operations.
-
-export function createBackendCrudDriver(entryId: string): ICrudDriver<IAnnotationRecord> {
+export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource): ICrudDriver<IAnnotationRecord> {
   return {
     async list(params): Promise<{ data: IAnnotationRecord[] }> {
       const filters: Record<string, unknown> = { ...params.filters };
-      // The sync loop sends entry_id + updated_at__gt — pass them through
-      // to the JSON:API annotations backend.
       const res = await annotationsBackendDataSource.list({
         filters,
         pagination: { page: params.page, itemsPerPage: params.pageSize },
@@ -41,7 +32,7 @@ export function createBackendCrudDriver(entryId: string): ICrudDriver<IAnnotatio
     },
 
     async create(record: IAnnotationRecord): Promise<IAnnotationRecord> {
-      const result = await annotations_rpc.call({
+      const result = await rpc.call({
         method: "create",
         params: {
           id: record.id,
@@ -60,14 +51,14 @@ export function createBackendCrudDriver(entryId: string): ICrudDriver<IAnnotatio
       if (data.value) payload["annotation"] = data.value;
       if (data.metadata) payload["metadata"] = data.metadata;
 
-      await annotations_rpc.call({
+      await rpc.call({
         method: "update",
         params: { id, entry_id: entryId, ...payload },
       });
     },
 
     async delete(id: string): Promise<void> {
-      await annotations_rpc.call({
+      await rpc.call({
         method: "delete",
         params: { id, entry_id: entryId },
       });
@@ -79,15 +70,13 @@ export function createBackendCrudDriver(entryId: string): ICrudDriver<IAnnotatio
 
 /**
  * Fallback annotations driver used when IndexedDB is unavailable (SSR).
- * Talks directly to the backend — no offline caching.
+ * Also accepts the shared RPC instance for consistency — though in SSR
+ * contexts this driver is typically replaced entirely.
  */
 export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   private virtualFields = new Map<string, (ann: IAnnotationRecord) => unknown>();
-  private rpc: JsonRpcDatasource;
 
-  constructor(private entryId: string) {
-    this.rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
-  }
+  constructor(private entryId: string, private rpc: JsonRpcDatasource) {}
 
   registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void {
     this.virtualFields.set(name, fn);
@@ -113,10 +102,7 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
       }
     }
 
-    const res = await annotationsBackendDataSource.list({
-      filters,
-      noCache: true,
-    });
+    const res = await annotationsBackendDataSource.list({ filters, noCache: true });
     return res.data.map(annotationRecordToV2);
   }
 
@@ -126,11 +112,11 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
     if (data.value) payload["annotation"] = data.value;
     if (data.metadata) payload["metadata"] = data.metadata;
 
-    await this.rpc.call({ method: "update", params: { id: id, entry_id: this.entryId, ...payload } });
+    await this.rpc.call({ method: "update", params: { id, entry_id: this.entryId, ...payload } });
   }
 
   async delete(id: string): Promise<void> {
-    await this.rpc.call({ method: "delete", params: { id: id, entry_id: this.entryId } });
+    await this.rpc.call({ method: "delete", params: { id, entry_id: this.entryId } });
   }
 
   async create(data: IAnnotationRecord): Promise<IAnnotationRecord> {

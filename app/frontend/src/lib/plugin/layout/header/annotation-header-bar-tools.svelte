@@ -21,7 +21,7 @@
   // Variables
   const disabledToolsIfWorkflowSteps = ["done"];
   let currentMode = $state(driver.mode);
-  let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbarMgr.getItemsForMode(currentMode));
+  let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
@@ -62,14 +62,13 @@
       delayDuration={100}
     >
       {#snippet trigger()}
-        {#if visibleWhen?.() || true}
+        {#if visibleWhen?.()}
           <Button
             variant={whenToggled?.() || false ? "default" : "ghost"}
             size="icon-sm"
             onclick={onClick}
             disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
           >
-            {console.log({ mode, currentMode, variant: currentMode === mode ? "default" : "ghost", toolbarItems })}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>

@@ -1,4 +1,4 @@
-import type { CommandManagerV2 } from "../command-manager";
+import type { CommandManagerV2 } from "../manager/command-manager";
 import type { ICommandAction, ICommandDescriptor, ICommandDriverV2, ICommandStackEntry, IShortcut } from "../types";
 
 // ---------------------------------------------------------------------------

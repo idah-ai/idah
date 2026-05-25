@@ -6,7 +6,7 @@
 // Generic over <Shape, Annotation> — treats both as opaque blobs.
 // No knowledge of video, image, CT, or any specific modality.
 //
-// createIndexedDbAnnotationsDriver is synchronous — IDB is opened lazily on
+// IdbBackedAnnotationsDriverAdapter is synchronous — IDB is opened lazily on
 // the first fetch / create / update / delete call.
 //
 // Takes a plain `enqueue` function for remote driver sync operations.
@@ -18,7 +18,6 @@ import { uuidv7 } from "uuidv7";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
 
-// Bump this when IDB_STORES changes — existing users will get onupgradeneeded.
 const VERSION = 1;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -72,7 +71,6 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
   });
 };
 
-// Fetch all annotations for an entry, optionally filtered client-side.
 const idbFetch = <T extends { id: string }>(
   db: IDBDatabase,
   entryId: string,
@@ -89,20 +87,16 @@ const idbFetch = <T extends { id: string }>(
       .openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) {
-        resolve(results);
-        return;
-      }
+      if (!c) { resolve(results); return; }
       const rec = c.value;
       let matches = true;
       if (filter) {
         for (const [field, expected] of Object.entries(filter)) {
           const val =
-            virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
-          if (!matchesFilter(val, expected)) {
-            matches = false;
-            break;
-          }
+            virtualFields && virtualFields.has(field)
+              ? virtualFields.get(field)!(rec)
+              : resolvePath(rec, field);
+          if (!matchesFilter(val, expected)) { matches = false; break; }
         }
       }
       if (matches) results.push({ ...rec });
@@ -111,7 +105,6 @@ const idbFetch = <T extends { id: string }>(
     req.onerror = reject;
   });
 
-/** Look up a single annotation by its compound key [entryId, id]. */
 const idbGet = <T extends { id: string }>(db: IDBDatabase, entryId: string, id: string): Promise<T | undefined> =>
   new Promise((resolve, reject) => {
     const req = db.transaction(["annotations"], "readonly").objectStore("annotations").get([entryId, id]);
@@ -148,7 +141,6 @@ const idbDelete = (db: IDBDatabase, entryId: string, id: string): Promise<void> 
     req.onerror = reject;
   });
 
-/** Read the lastUpdatedAt timestamp for an entry, or 0 if never synced. */
 const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<Date> =>
   new Promise((resolve, reject) => {
     const req = db.transaction(["entries"], "readonly").objectStore("entries").get(entryId);
@@ -156,7 +148,6 @@ const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<Date> =>
     req.onerror = reject;
   });
 
-/** Write lastUpdatedAt for an entry. */
 const idbSetLastUpdated = (db: IDBDatabase, entryId: string, timestamp: Date): Promise<void> =>
   new Promise((resolve, reject) => {
     const req = db
@@ -167,9 +158,6 @@ const idbSetLastUpdated = (db: IDBDatabase, entryId: string, timestamp: Date): P
     req.onerror = reject;
   });
 
-/**
- * Update lastVisitedAt for an entry without touching lastUpdatedAt.
- */
 const idbMarkVisited = (db: IDBDatabase, entryId: string, timestamp: Date): Promise<void> =>
   new Promise((resolve, reject) => {
     const tx = db.transaction(["entries"], "readwrite");
@@ -183,7 +171,6 @@ const idbMarkVisited = (db: IDBDatabase, entryId: string, timestamp: Date): Prom
     tx.onerror = () => reject(tx.error);
   });
 
-/** Return entryIds whose lastVisitedAt is older than cutoff. */
 const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: Date): Promise<string[]> =>
   new Promise((resolve, reject) => {
     const stale: string[] = [];
@@ -191,19 +178,13 @@ const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: Date): Promise<string[]> =
     const req = db.transaction(["entries"], "readonly").objectStore("entries").index("lastVisitedAt").openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) {
-        resolve(stale);
-        return;
-      }
+      if (!c) { resolve(stale); return; }
       stale.push(c.value.entryId);
       c.continue();
     };
     req.onerror = reject;
   });
 
-/**
- * Delete all annotations for an entry and its entry record in a single transaction.
- */
 const idbPurgeEntry = (db: IDBDatabase, entryId: string): Promise<void> =>
   new Promise((resolve, reject) => {
     const tx = db.transaction(["annotations", "entries"], "readwrite");
@@ -212,10 +193,7 @@ const idbPurgeEntry = (db: IDBDatabase, entryId: string): Promise<void> =>
     const req = annoStore.index("entryId").openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) {
-        tx.objectStore("entries").delete(entryId);
-        return;
-      }
+      if (!c) { tx.objectStore("entries").delete(entryId); return; }
       c.delete();
       c.continue();
     };
@@ -230,35 +208,24 @@ const resolvePath = (obj: unknown, path: string): unknown =>
   path.split(".").reduce<unknown>((acc, k) => (acc != null ? (acc as Record<string, unknown>)[k] : undefined), obj);
 
 function matchesFilter(fieldValue: unknown, filterValue: IFilterValue): boolean {
-  // Simple equality (string / number)
   if (typeof filterValue === "string" || typeof filterValue === "number") {
     return fieldValue === filterValue;
   }
-
-  // Range / comparison operators
   if (typeof filterValue === "object" && !Array.isArray(filterValue)) {
     const op = filterValue as IRangeOp;
-
     if (op.eq !== undefined) return fieldValue === op.eq;
     if (op.neq !== undefined) return fieldValue !== op.neq;
-
-    // Number comparisons
     const num = Number(fieldValue);
     if (isNaN(num)) return false;
-
     if (op.gte !== undefined && num < Number(op.gte)) return false;
     if (op.gt !== undefined && num <= Number(op.gt)) return false;
     if (op.lte !== undefined && num > Number(op.lte)) return false;
     if (op.lt !== undefined && num >= Number(op.lt)) return false;
-
-    return true; // no failing operator found
+    return true;
   }
-
-  // Array-based operators
   if (Array.isArray(filterValue)) {
     return fieldValue !== undefined && (filterValue as unknown[]).includes(fieldValue);
   }
-
   return true;
 }
 
@@ -270,25 +237,26 @@ export interface IndexedDbAnnotationsDriverConfig<
 > {
   entryId: string;
   pluginId: string;
-  /**
-   * Backend transport used exclusively by the sync loop.
-   * Intentionally separate from IAnnotationsDriverV2 — pagination and filter
-   * serialisation are transport concerns, not consumer-facing API concerns.
-   * In production this wraps the real API; in local dev use createMemoryDriver.
-   */
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
   enqueue: (p: Promise<unknown>) => void;
 }
 
+// ─── Internal type ────────────────────────────────────────────────────────────
+
+/** Full driver surface including the clearCache escape hatch (private to the module). */
+type IdbDriverInternal<Shape, Annotation> = IAnnotationsDriverV2<Shape, Annotation> & {
+  clearCache(): Promise<void>;
+  sealed(): IAnnotationsDriverV2<Shape, Annotation>
+};
+
 // ─── Factory ──────────────────────────────────────────────────────────────────
+
 export const IdbBackedAnnotationsDriverAdapter = <
   Shape = Record<string, unknown>,
   Annotation = Record<string, unknown>,
 >(
   config: IndexedDbAnnotationsDriverConfig<Shape, Annotation>,
-): IAnnotationsDriverV2<Shape, Annotation> | null => {
-  // SSR / non-browser environments: signal to the caller that IDB is unavailable
-  // so they can fall back to their own IAnnotationsDriverV2 implementation.
+): IdbDriverInternal<Shape, Annotation> | null => {
   if (typeof indexedDB === "undefined") {
     console.warn("[idb-driver] IndexedDB unavailable (SSR mode).");
     return null;
@@ -296,7 +264,6 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   const { entryId, backend, enqueue } = config;
 
-  // Opened lazily on first use; one connection per driver instance.
   let dbPromise: Promise<IDBDatabase> | null = null;
   const getDb = () => {
     if (!dbPromise) dbPromise = openIdb(config.pluginId);
@@ -305,11 +272,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   const virtualFields = new Map<string, (ann: IAnnotationRecord<Shape, Annotation>) => unknown>();
 
-  // fetch once from backend lastUpdatedAt
   let synced = false;
-  // Purge runs once per driver instance; no reset needed.
   let purgeScheduled = false;
-  // Visit mark is written once, before the purge is ever enqueued.
   let visitMarked = false;
 
   return {
@@ -317,15 +281,30 @@ export const IdbBackedAnnotationsDriverAdapter = <
       virtualFields.set(name, fn as (ann: IAnnotationRecord<Shape, Annotation>) => unknown);
     },
 
+    sealed() {
+      const driver = this
+      return {
+        registerField: driver.registerField.bind(driver),
+        fetch:         driver.fetch.bind(driver),
+        create:        driver.create.bind(driver),
+        update:        driver.update.bind(driver),
+        delete:        driver.delete.bind(driver),
+      };
+    },
+
+    async clearCache() {
+      const db = await getDb();
+      await idbPurgeEntry(db, entryId);
+    },
+
     async fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]> {
       const db = await getDb();
-      // Stamp the current entry as visited before the purge can run.
+
       if (!visitMarked) {
         visitMarked = true;
         await idbMarkVisited(db, entryId, new Date(Date.now()));
       }
 
-      // Purge stale entries once per session, now that the current entry is safe.
       if (!purgeScheduled) {
         purgeScheduled = true;
         const cutoff = new Date(Date.now() - EXPIRATION_PERIOD_MS);
@@ -338,18 +317,15 @@ export const IdbBackedAnnotationsDriverAdapter = <
         }
       }
 
-      // delta-refresh: one sync at first use
       if (!synced) {
         let lastUpdated = await idbGetLastUpdated(db, entryId);
-        let page = 1,
-          hasMore = true;
+        let page = 1, hasMore = true;
         while (hasMore) {
           const response = await backend.list({
             filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
             page,
             pageSize: SYNC_PAGE_SIZE,
           });
-
           response.data.forEach((a) => {
             const updatedAt = new Date(a.updated_at || 0);
             if (updatedAt > lastUpdated) lastUpdated = updatedAt;
@@ -362,7 +338,6 @@ export const IdbBackedAnnotationsDriverAdapter = <
         synced = true;
       }
 
-      // fetch after synced complete
       return await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
     },
 

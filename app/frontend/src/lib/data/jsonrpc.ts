@@ -1,3 +1,8 @@
+import type { ISyncErrorEvent } from "@/plugin/v2/types";
+export type RpcErrorObserver = (err: ISyncErrorEvent) => void;
+
+// ── Internal types ────────────────────────────────────────────────────────
+
 type JsonRpcMethod = {
   method: string;
   params?: object;
@@ -23,124 +28,164 @@ type JsonRpcResponse = {
   error?: JsonRpcError;
 };
 
-type JSONRpcBatchConfig = {
-  size: number;
-  time: number;
-};
-
 type QueueItem = {
   method: JsonRpcMethod;
-  onResolve?: (r: JsonRpcResult) => void;
-  onReject?: (e: JsonRpcError) => void;
+  onResolve: (r: JsonRpcResult) => void;
 };
 
 type BatchItem = QueueItem & { id: string };
 
 type BatchFailure = {
-  batch: BatchItem[];
-  retry: boolean;
+  items: BatchItem[];
+  isNetworkError: boolean;
+  error?: JsonRpcError;
 };
 
-export class JsonRpcDatasource {
-  queue: QueueItem[] = [];
-  processing = false;
-  batch_size: number;
-  base_url: string;
-  retry_attempt = 0;
-  retry_base_delay: number;
-  retry_max_delay: number;
+type JSONRpcConfig = {
+  batch_size?: number;
+};
 
-  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 50, time: 5000 }) {
+// ── Datasou`rce ────────────────────────────────────────────────────────────
+
+export class JsonRpcDatasource {
+  private queue: QueueItem[] = [];
+  private processing = false;
+  private paused = false;
+
+  private failedCount = 0;
+  private readonly retry_base_delay = 1000;
+  private readonly retry_max_delay = 30000;
+  private readonly batch_size: number;
+
+  readonly base_url: string;
+  private errorObserver?: RpcErrorObserver;
+
+  constructor(base_url: string, config?: JSONRpcConfig) {
     this.base_url = base_url;
-    this.batch_size = config.size;
-    this.retry_base_delay = 1000; // 1 second initial delay
-    this.retry_max_delay = 30000; // 30 seconds max delay
+    this.batch_size = config?.batch_size ?? 50;
+  }
+
+  setErrorObserver(fn: RpcErrorObserver): void {
+    this.errorObserver = fn;
+  }
+
+  resume(): void {
+    this.paused = false;
+    this.process();
   }
 
   call(method: JsonRpcMethod): Promise<JsonRpcResult> {
-    return new Promise<JsonRpcResult>((onResolve, onReject) => {
-      this.queue.push({ method, onResolve, onReject });
-      if (!this.processing) this.process();
+    return new Promise<JsonRpcResult>((onResolve) => {
+      this.queue.push({ method, onResolve });
+      this.process();
     });
   }
 
-  process() {
-    if (this.processing || this.queue.length === 0 || this.retry_attempt) return;
+  private process(): void {
+    if (this.processing || this.paused || this.queue.length === 0) return;
     this.flush();
   }
 
-  private async flush() {
-    if (this.queue.length > 0) {
-      this.processing = true;
-
-      const batch: BatchItem[] = [];
-      while (batch.length < this.batch_size) {
-        const item = this.queue.shift();
-        if (!item) break;
-        batch.push({ ...item, id: String(batch.length) });
-      }
-
-      await this.process_batch(batch)
-        .then(async () => {
-          this.retry_attempt = 0;
-          this.flush();
-        })
-        .catch((failure: BatchFailure) => {
-          this.queue.unshift(...failure.batch);
-
-          this.processing = false;
-          if (failure.retry) {
-            const delay = Math.min(this.retry_base_delay * Math.pow(2, this.retry_attempt), this.retry_max_delay);
-            this.retry_attempt++;
-            setTimeout(() => this.flush(), delay);
-          }
-        });
-    } else {
+  private async flush(): Promise<void> {
+    if (this.queue.length === 0) {
       this.processing = false;
+      return;
     }
+
+    this.processing = true;
+
+    const batch: BatchItem[] = [];
+    while (batch.length < this.batch_size) {
+      const item = this.queue.shift();
+      if (!item) break;
+      batch.push({ ...item, id: String(batch.length) });
+    }
+
+    this.process_batch(batch)
+      .then(() => {
+        this.failedCount = 0;
+        this.processing = false;
+        this.process();
+      }).catch((failure: BatchFailure) => {
+        this.queue.unshift(...failure.items);
+        this.processing = false;
+        this.failedCount++;
+        if (failure.isNetworkError) {
+          const delay = Math.min(
+            this.retry_base_delay * Math.pow(2, this.failedCount),
+            this.retry_max_delay,
+          );
+          setTimeout(() => {
+            if (!this.paused && !this.processing) this.flush();
+          }, delay);
+        } else {
+          this.paused = true;
+          this.errorObserver?.({
+            message: failure.error?.message ?? "Server rejected the request.",
+            code: failure.error?.code.toString(),
+            failedCount: this.failedCount
+          });
+        }
+      });
   }
 
   private process_batch(batch: BatchItem[]): Promise<void> {
-    return new Promise<void>((resolve, reject: (f: BatchFailure) => void) => {
+    return new Promise<void>(async (resolve, reject: (f: BatchFailure) => void) => {
       const requests: JsonRpcRequest[] = batch.map((item) => ({
         ...item.method,
         jsonrpc: "2.0",
         id: item.id,
       }));
 
-      fetch(this.base_url, {
+      const response = await fetch(this.base_url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
       })
-        .then((response) => response.json())
-        .then((body_response: JsonRpcResponse | JsonRpcResponse[]) => {
-          // quickfix error for now
-          if (!Array.isArray(body_response) && !body_response.id && body_response.error) {
-            for (const item of batch) {
-              item.onReject?.(body_response.error);
-            }
-            return reject({ batch, retry: false });
-          }
+      if ([502, 503, 504, 511].includes(response.status)) {
+        return reject({
+          items: batch, isNetworkError: true, error: {
+            code: response.status,
+            message: "Network Issue",
+            data: response
+        }})
+      }
 
-          const body: JsonRpcResponse[] = Array.isArray(body_response) ? body_response : [body_response];
-          for (const item of batch) {
-            const res = body.find((r) => r.id === item.id);
-            if (!res) {
-              // review // authentication error json rpc param issue ? )
-              item.onReject?.({ code: -4242, message: "No response found for rpc command" });
-            } else if (res.error) {
-              item.onReject?.(res.error);
-            } else {
-              item.onResolve?.(res.result);
-            }
+      try {
+        const body_response = await response.json() as unknown as JsonRpcResponse | JsonRpcResponse[];
+        if (!Array.isArray(body_response) && !body_response.id && body_response.error) {
+          return reject({ items: batch, isNetworkError: false, error: body_response.error });
+        }
+
+        const body: JsonRpcResponse[] = Array.isArray(body_response) ? body_response : [body_response];
+        const failed: BatchItem[] = [];
+        let representativeError: JsonRpcError | undefined;
+
+        for (const item of batch) {
+          const res = body.find((r) => r.id === item.id);
+          if (!res) {
+            failed.push(item);
+          } else if (res.error) {
+            failed.push(item);
+            representativeError ??= res.error;
+          } else {
+            item.onResolve(res.result);
           }
+        }
+
+        if (failed.length > 0) {
+          reject({ items: failed, isNetworkError: false, error: representativeError });
+        } else {
           resolve();
-        })
-        .catch((err: unknown) => {
-          console.error("JSON RPC error", err);
-          reject({ batch, retry: true });
-        });
+        }
+      } catch (err) {
+        reject({
+          items: batch, isNetworkError: false, error: {
+            message: "Error",
+            code: -1,
+            data: err as any
+        }});
+      }
     });
   }
 }
