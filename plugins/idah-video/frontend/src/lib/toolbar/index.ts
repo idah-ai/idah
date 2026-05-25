@@ -11,7 +11,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
 
   t.add({
     icon: cursorIcon,
-    label: "Select",
+    label: "Selection",
     name: "mode.default",
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
