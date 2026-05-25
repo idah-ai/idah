@@ -82,6 +82,7 @@
     stroke-linejoin="round"
     pointer-events="none"
   />
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <polygon
     points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
     fill="transparent"
@@ -148,6 +149,7 @@
     />
   {/if}
   <!-- Hit zone -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <circle
     cx={point[0] * w}
     cy={point[1] * h}
@@ -186,13 +188,14 @@
   pointer-events="none"
 />
 <circle cx={centroid[0] * w} cy={centroid[1] * h} r={R_scale_dot} fill={color} pointer-events="none" />
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <circle
   cx={centroid[0] * w}
   cy={centroid[1] * h}
   r={R_scale_hit}
   fill="transparent"
   style:outline="none"
-  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 18 18, nesw-resize`}
+  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 12 12, nesw-resize`}
   onmouseenter={() => (hoveredScale = true)}
   onmouseleave={() => (hoveredScale = false)}
   onmousedown={(e) => {
