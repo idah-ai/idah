@@ -32,7 +32,7 @@ export function getShortcutLabel(shortcut: string): string {
 
   const keyLabel = key === "Space" ? "␣" : key === "ArrowRight" ? "→" : key === "ArrowLeft" ? "←" : key;
 
-  return _isMac ? `${modLabel}${keyLabel}` : modLabel ? `${modLabel}+${keyLabel}` : keyLabel;
+  return _isMac ? `${modLabel} ${keyLabel}` : modLabel ? `${modLabel} + ${keyLabel}` : keyLabel;
 }
 
 /**

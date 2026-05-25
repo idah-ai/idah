@@ -13,6 +13,6 @@
   } = $props();
 </script>
 
-<div class={cn("z-40 h-full", className)} bind:clientHeight={panelHeight}>
+<div class={cn("z-40 h-full bg-sidebar", className)} bind:clientHeight={panelHeight}>
   {@render children?.()}
 </div>
