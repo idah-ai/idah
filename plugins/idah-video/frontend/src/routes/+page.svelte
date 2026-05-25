@@ -1,7 +1,8 @@
 <script lang="ts">
-  import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
 
-  import { activityContextExample } from "./activity-context-example";
+  onMount(() => {
+    goto("/mock", { replaceState: true });
+  });
 </script>
-
-<IdahVideoPlugin context={activityContextExample} />

@@ -21,6 +21,7 @@ Thumbs.db
 .idea/
 *.sublime-project
 *.sublime-workspace
+.zed/
 
 # Dependencies
 node_modules/
