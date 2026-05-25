@@ -62,9 +62,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          let totalFrames: number;
-          try { totalFrames = media.totalFrames; } catch { return; }
-
+          const totalFrames = media.totalFrames;
           const { startRange, endRange } = viewport.timeline.range;
           const rangeWidth = endRange - startRange;
           if (rangeWidth <= 0) return;

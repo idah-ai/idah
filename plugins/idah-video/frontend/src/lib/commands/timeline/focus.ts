@@ -85,12 +85,9 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          let totalFrames: number;
-          // media.totalFrames throws if the driver isn't initialized yet.
-          try { totalFrames = media.totalFrames; } catch { return; }
           viewport.timeline.range = {
             startRange: Math.max(0, start - margin),
-            endRange: Math.min(totalFrames, end + margin),
+            endRange: Math.min(media.totalFrames, end + margin),
           };
         },
         isCombinable() {
