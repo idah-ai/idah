@@ -11,6 +11,7 @@
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { data } from "$lib/state/data.svelte";
+import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
@@ -84,9 +85,12 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
+          let totalFrames: number;
+          // media.totalFrames throws if the driver isn't initialized yet.
+          try { totalFrames = media.totalFrames; } catch { return; }
           viewport.timeline.range = {
             startRange: Math.max(0, start - margin),
-            endRange: end + margin,
+            endRange: Math.min(totalFrames, end + margin),
           };
         },
         isCombinable() {

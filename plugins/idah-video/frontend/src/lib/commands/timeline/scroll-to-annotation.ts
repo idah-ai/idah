@@ -4,10 +4,11 @@
 //
 // Shifts the viewport so the annotation's start frame sits ~10 frames from
 // the left edge. The visible range width (scale) is preserved unchanged.
-// The start is clamped to 0 when the margin would make it negative.
+// The end is clamped to totalFrames; when it would exceed, the start is also pulled back to preserve the viewport width.
 // ---------------------------------------------------------------------------
 import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
@@ -58,19 +59,26 @@ export function register(driver: IIdahDriverV2): void {
         };
       }
 
-      const { startRange, endRange } = viewport.timeline.range;
-      const margin = Math.max(1, Math.round((endRange - startRange) * 0.1));
-      const newStart = Math.max(0, shape.start - margin);
-      const rangeWidth = endRange - startRange;
-      const newEnd = newStart + rangeWidth;
-
       return {
         command: command as any,
         do() {
-          viewport.timeline.range = {
-            startRange: newStart,
-            endRange: newEnd,
-          };
+          let totalFrames: number;
+          try { totalFrames = media.totalFrames; } catch { return; }
+
+          const { startRange, endRange } = viewport.timeline.range;
+          const rangeWidth = endRange - startRange;
+          if (rangeWidth <= 0) return;
+          const margin = Math.max(1, Math.round(rangeWidth * 0.1));
+
+          let newStart = Math.max(0, shape.start - margin);
+          let newEnd = newStart + rangeWidth;
+
+          if (newEnd > totalFrames) {
+            newEnd = totalFrames;
+            newStart = Math.max(0, totalFrames - rangeWidth);
+          }
+
+          viewport.timeline.range = { startRange: newStart, endRange: newEnd };
         },
         isCombinable() {
           return false;
