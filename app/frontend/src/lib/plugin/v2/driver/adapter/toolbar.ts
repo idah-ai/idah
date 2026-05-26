@@ -1,5 +1,5 @@
-import type { ToolbarManagerV2 } from "../toolbar-manager";
-import type { IToolbarDriverV2, ToolbarItemOptions } from "../types";
+import type { ToolbarManagerV2 } from "../manager/toolbar-manager";
+import type { IToolbarDriverV2, ToolbarItemOptions } from "../../types";
 
 // ---------------------------------------------------------------------------
 // Adapter: toolbar driver → IToolbarDriverV2

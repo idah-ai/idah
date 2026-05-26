@@ -186,6 +186,11 @@ export interface IToolbarItem {
   /** Click handler. */
   onClick: Unsubscribe;
   /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
+  /**
    * Predicate — toolbar hides the item when `visibleWhen` returns `false`.
    * Default: always true.
    */
@@ -473,6 +478,11 @@ export interface ToolbarItemOptions {
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
+  /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
   /**
    * Optional predicate — when returns `false`, the item is hidden.
    * Default: always visible.

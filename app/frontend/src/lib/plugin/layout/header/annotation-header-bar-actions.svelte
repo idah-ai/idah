@@ -25,7 +25,7 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { getShortcut } from "@/components/ui/kbd/utils";
+  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
@@ -100,16 +100,16 @@
   function toggleCommand() {
     driver.command.openPalette();
   }
+
+  function cmdShortcut(name: string): string | undefined {
+    const s = driver.command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
+  }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
-    <ToolTooltip
-      label="Shortcuts"
-      shortcut={getShortcut(driver.shortcutReferences?.["command_dialog"].keyCombinations)}
-      align="center"
-      delayDuration={100}
-    >
+    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
           <KeyboardIcon />
