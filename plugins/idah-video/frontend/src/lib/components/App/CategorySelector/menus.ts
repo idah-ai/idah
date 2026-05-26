@@ -14,13 +14,20 @@ export interface CategoryAction {
   onClick: (e: MouseEvent) => void;
 }
 
-export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: string }) {
+export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: string }, e?: MouseEvent) {
   const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.toggle_category_visibility", {
-    category: categoryId,
-    shapeType,
-  });
+  if (e?.shiftKey) {
+    getDriver().command.call("annotation.toggle_category_visibility_solo", {
+      category: categoryId,
+      shapeType,
+    });
+  } else {
+    getDriver().command.call("annotation.toggle_category_visibility", {
+      category: categoryId,
+      shapeType,
+    });
+  }
 }
 
 export function toggleCategoryEditability(opts: { categoryId: string; shapeType: string }) {
@@ -55,7 +62,7 @@ export function getCategoryVisibilityAction(opts: {
     alwaysShow: isSomeHidden,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleCategoryVisibility({ categoryId, shapeType });
+      toggleCategoryVisibility({ categoryId, shapeType }, e);
     },
   };
 }

@@ -77,17 +77,19 @@
   // ── Sizes (scaled by invScale) ────────────────────────────────────────
   let R = $derived(6 * invScale); // outer visible handle radius
   let R_hovered = $derived(8 * invScale); // hover-expanded radius
-  let R_hit = $derived(8 * invScale); // interactive hit zone radius
+  let R_hit = $derived(6 * invScale); // interactive hit zone radius
   let R_center_dot = $derived(2.5 * invScale);
   let R_rotate = $derived(7 * invScale);
   let R_rotate_hovered = $derived(9 * invScale);
-  let R_rotate_hit = $derived(10 * invScale);
+  let R_rotate_hit = $derived(7 * invScale);
   let R_rotate_dot = $derived(2.5 * invScale);
   let R_rev = $derived(7 * invScale);
   let R_rev_hovered = $derived(9 * invScale);
   let S_line = $derived(2.5 * invScale);
-  let S_font = $derived(12 * invScale);
-  let S_offset = $derived(14 * invScale);
+  let S_line_hovered = $derived(4 * invScale);
+  let S_font = $derived(9 * invScale);
+  let S_offset = $derived(20 * invScale);
+  let L_rev = $derived(4 * invScale);
 
   // ── Derived hover styles ──────────────────────────────────────────────
   let rotateFillOpacity = $derived(hoveredRotate ? 0.35 : 0.15);
@@ -107,6 +109,15 @@
     pointer-events="none"
   />
   <!-- Rotation top dot: white outline + filled center -->
+  <!-- White halo for contrast → expands on hover -->
+  <circle
+    cx={rotationLayout.topMidN[0] * w}
+    cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
+    r={hoveredRotate ? R_hovered : R_hit}
+    fill="white"
+    fill-opacity={hoveredRotate ? 0.8 : 0.6}
+    pointer-events="none"
+  />
   <circle
     cx={rotationLayout.topMidN[0] * w}
     cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
@@ -205,15 +216,24 @@
     pointer-events="none"
   />
 {/if}
-
 <!-- Revolution controls -->
-<line
-  x1={rotationLayout.rotHPxX - S_offset - R_rev}
-  y1={rotationLayout.rotHPxY}
-  x2={rotationLayout.rotHPxX - S_offset + R_rev}
-  y2={rotationLayout.rotHPxY}
-  stroke={color}
-  stroke-width={S_line}
+<!-- White halo for contrast → expands on hover -->
+<circle
+  cx={rotationLayout.rotHPxX - S_offset}
+  cy={rotationLayout.rotHPxY}
+  r={hoveredRevMinus ? R_hovered : R_hit}
+  fill="white"
+  fill-opacity={hoveredRevMinus ? 0.8 : 0.6}
+  pointer-events="none"
+/>
+
+<circle
+  cx={rotationLayout.rotHPxX + S_offset}
+  cy={rotationLayout.rotHPxY}
+  r={hoveredRevPlus ? R_hovered : R_hit}
+  fill="white"
+  fill-opacity={hoveredRevPlus ? 0.8 : 0.6}
+  pointer-events="none"
 />
 <circle
   role="button"
@@ -234,6 +254,27 @@
     onDecrementRevolution();
   }}
 />
+{#if hoveredRevMinus}
+  <line
+    x1={rotationLayout.rotHPxX - S_offset - L_rev}
+    y1={rotationLayout.rotHPxY}
+    x2={rotationLayout.rotHPxX - S_offset + L_rev}
+    y2={rotationLayout.rotHPxY}
+    stroke="white"
+    stroke-width={S_line_hovered}
+    pointer-events="none"
+    stroke-linecap="round"
+  />
+{/if}
+<line
+  x1={rotationLayout.rotHPxX - S_offset - L_rev}
+  y1={rotationLayout.rotHPxY}
+  x2={rotationLayout.rotHPxX - S_offset + L_rev}
+  y2={rotationLayout.rotHPxY}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
+/>
 
 <text
   x={rotationLayout.rotHPxX}
@@ -245,7 +286,7 @@
   style:fill={color}
   style:paint-order="stroke"
   style:stroke="white"
-  style:stroke-width="3px"
+  style:stroke-width="{S_font / 6}px"
   style:stroke-linecap="round"
   style:stroke-linejoin="round"
   style:pointer-events="none"
@@ -254,22 +295,6 @@
   {(currentAngle * (180 / Math.PI)).toFixed(1)}° {revolutionDisplay}
 </text>
 
-<line
-  x1={rotationLayout.rotHPxX + S_offset - R_rev}
-  y1={rotationLayout.rotHPxY}
-  x2={rotationLayout.rotHPxX + S_offset + R_rev}
-  y2={rotationLayout.rotHPxY}
-  stroke={color}
-  stroke-width={S_line}
-/>
-<line
-  x1={rotationLayout.rotHPxX + S_offset}
-  y1={rotationLayout.rotHPxY - R_rev}
-  x2={rotationLayout.rotHPxX + S_offset}
-  y2={rotationLayout.rotHPxY + R_rev}
-  stroke={color}
-  stroke-width={S_line}
-/>
 <circle
   role="button"
   tabindex="-1"
@@ -288,4 +313,45 @@
     e.stopPropagation();
     onIncrementRevolution();
   }}
+/>
+
+{#if hoveredRevPlus}
+  <line
+    x1={rotationLayout.rotHPxX + S_offset - L_rev}
+    y1={rotationLayout.rotHPxY}
+    x2={rotationLayout.rotHPxX + S_offset + L_rev}
+    y2={rotationLayout.rotHPxY}
+    stroke="white"
+    stroke-width={S_line_hovered}
+    pointer-events="none"
+    stroke-linecap="round"
+  />
+  <line
+    x1={rotationLayout.rotHPxX + S_offset}
+    y1={rotationLayout.rotHPxY - L_rev}
+    x2={rotationLayout.rotHPxX + S_offset}
+    y2={rotationLayout.rotHPxY + L_rev}
+    stroke="white"
+    stroke-width={S_line_hovered}
+    pointer-events="none"
+    stroke-linecap="round"
+  />
+{/if}
+<line
+  x1={rotationLayout.rotHPxX + S_offset - L_rev}
+  y1={rotationLayout.rotHPxY}
+  x2={rotationLayout.rotHPxX + S_offset + L_rev}
+  y2={rotationLayout.rotHPxY}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
+/>
+<line
+  x1={rotationLayout.rotHPxX + S_offset}
+  y1={rotationLayout.rotHPxY - L_rev}
+  x2={rotationLayout.rotHPxX + S_offset}
+  y2={rotationLayout.rotHPxY + L_rev}
+  stroke={color}
+  stroke-width={S_line}
+  pointer-events="none"
 />
