@@ -22,6 +22,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
+import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
 
 export const command = {
@@ -37,14 +38,6 @@ export interface DeleteCategoryProps {
   category: string;
   shapeType: string;
   annotations?: AnnotationItem[];
-}
-
-function isCategoryMatch(annotationCategory: string | undefined, targetCategory: string): boolean {
-  if (!annotationCategory) {
-    return false;
-  }
-
-  return annotationCategory === targetCategory || annotationCategory.startsWith(`${targetCategory}/`);
 }
 
 export function register(driver: IIdahDriverV2): void {
