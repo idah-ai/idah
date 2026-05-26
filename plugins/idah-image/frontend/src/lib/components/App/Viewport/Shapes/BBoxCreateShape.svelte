@@ -7,8 +7,10 @@
   //
   // Used by ShapesContainer in bounding-box build mode.
   // ---------------------------------------------------------------------------
-
   import { onMount } from "svelte";
+
+  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
+
   import type { Point } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -57,7 +59,7 @@
       [x2, y2],
       [x1, y2],
     ];
-    onSelection("idah-video:bounding-box", frame, points, 0, undefined);
+    onSelection(IDAH_IMAGE_BOUNDING_BOX, frame, points, 0, undefined);
     return true;
   }
 

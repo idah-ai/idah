@@ -159,7 +159,7 @@ export interface IShapeConfig {
 }
 
 /**
- * Project configuration: maps shape types (e.g. "idah-video:bounding-box")
+ * Project configuration: maps shape types (e.g. "idah-image:bounding-box")
  * to their label lists and property schemas.
  */
 export interface IConfig {
@@ -179,7 +179,7 @@ export interface IToolbarItem {
   icon: string;
   /** Label for tooltips. */
   label: string;
-  /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
+  /** The mode this item belongs to (e.g. "default", "idah-image:bounding-box"). */
   mode: string;
   /** Optional group name (items in the same group are rendered together; `null` => always first). */
   group: string | null;
@@ -234,7 +234,7 @@ export interface IAnnotationMetadata {
 /**
  * Base annotation value payload (maps to DB `annotation` JSONB column).
  * This is a generic base; specific modalities extend it
- * (e.g. IImageAnnotationValue for video).
+ * (e.g. IImageAnnotationValue for image).
  */
 export interface IAnnotationValue {
   [key: string]: unknown;
@@ -249,15 +249,12 @@ export interface IAnnotationValue {
  * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
  * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
  */
-export interface IAnnotationRecord<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   id: string;
 
   /**
    * Shape geometry — corresponds to the DB `dimensions` JSONB column.
-   * Type-specific (e.g. IImageAnnotationShape for video).
+   * Type-specific (e.g. IImageAnnotationShape for image).
    */
   shape: Shape;
 
@@ -318,10 +315,7 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
@@ -460,10 +454,7 @@ export interface ICommandDriverV2 {
    * across all modes, for use in the command palette.
    * Same shape as `IActivityContext.shortcutReferences`.
    */
-  getShortcutReferences(): Record<
-    string,
-    { label: string; description: string; keyCombinations: string[] }
-  >;
+  getShortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }>;
 }
 
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
@@ -506,10 +497,7 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly media: IMediaInfo;

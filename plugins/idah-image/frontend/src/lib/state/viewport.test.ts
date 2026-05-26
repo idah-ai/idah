@@ -9,7 +9,7 @@
 //   - fitToViewport centering math
 //   - viewportSize calculation
 // ---------------------------------------------------------------------------
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -21,8 +21,7 @@ const mockDriver = vi.hoisted(() => ({
   __onModeChange: vi.fn(),
   getDriver: vi.fn(() => ({
     setMode: (val: string) => mockDriver.__setMode(val),
-    onModeChange: (cb: (ev: { oldValue: string; newValue: string }) => void) =>
-      mockDriver.__onModeChange(cb),
+    onModeChange: (cb: (ev: { oldValue: string; newValue: string }) => void) => mockDriver.__onModeChange(cb),
   })),
 }));
 
@@ -52,17 +51,12 @@ vi.mock("./media.svelte", () => ({
 // ---------------------------------------------------------------------------
 // Imports (after mocks are set up)
 // ---------------------------------------------------------------------------
-import {
-  viewport,
-  DEFAULT_MODE,
-  BOUNDING_BOX_MODE,
-  POLYGON_MODE,
-} from "./viewport.svelte";
+import { BOUNDING_BOX_MODE, DEFAULT_MODE, POLYGON_MODE, viewport } from "./viewport.svelte";
 
 // See also: default constants
 //   DEFAULT_MODE     = "default"
-//   BOUNDING_BOX_MODE = "idah-video:bounding-box"
-//   POLYGON_MODE      = "idah-video:polygon"
+//   BOUNDING_BOX_MODE = "idah-image:bounding-box"
+//   POLYGON_MODE      = "idah-image:polygon"
 
 // Before each test, reset media dimensions to the default.
 function setMediaDimensions(w: number, h: number) {

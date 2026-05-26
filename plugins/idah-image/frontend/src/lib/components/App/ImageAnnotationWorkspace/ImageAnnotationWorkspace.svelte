@@ -202,7 +202,7 @@
     ];
 
     const toolConfig = toolListConfig.filter((tool) => {
-      if (["idah-image:bounding-box", "idah-image:polygon"].includes(tool.type)) {
+      if ([IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_POLYGON].includes(tool.type)) {
         return !!getDriver().config[tool.type];
       }
       return true;

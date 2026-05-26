@@ -4,7 +4,7 @@
 // Tests getDriver (throws before init) and initDriver (stores the driver,
 // registers mode-change listener).
 // ---------------------------------------------------------------------------
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -32,8 +32,8 @@ function createMockDriver() {
     _triggerModeChange(oldValue: string, newValue: string) {
       if (modeChangeCb) modeChangeCb({ oldValue, newValue });
     },
-    onSyncChange: vi.fn((event: ISyncEvent) => { }),
-    onSyncError: vi.fn((event: ISyncErrorEvent) => { })
+    onSyncChange: vi.fn((event: ISyncEvent) => {}),
+    onSyncError: vi.fn((event: ISyncErrorEvent) => {}),
   };
 }
 
@@ -45,6 +45,7 @@ let currentDriver: ReturnType<typeof createMockDriver>;
 // Tests (must be placed after imports below)
 // ---------------------------------------------------------------------------
 import { getDriver, initDriver } from "./driver.svelte";
+
 import type { ISyncErrorEvent, ISyncEvent } from "$idah/v2/types";
 
 describe("driver singleton", () => {
@@ -100,19 +101,19 @@ describe("driver singleton", () => {
     it("updates viewport.mode on mode change events", () => {
       const driver = currentDriver;
       initDriver(driver as any);
-      driver._triggerModeChange("default", "idah-video:bounding-box");
-      expect(viewportModeSetter).toHaveBeenCalledWith("idah-video:bounding-box");
+      driver._triggerModeChange("default", "idah-image:bounding-box");
+      expect(viewportModeSetter).toHaveBeenCalledWith("idah-image:bounding-box");
     });
 
     it("updates viewport.mode on each mode change event", () => {
       const driver = currentDriver;
       initDriver(driver as any);
-      driver._triggerModeChange("default", "idah-video:bounding-box");
-      driver._triggerModeChange("idah-video:bounding-box", "idah-video:polygon");
-      driver._triggerModeChange("idah-video:polygon", "default");
+      driver._triggerModeChange("default", "idah-image:bounding-box");
+      driver._triggerModeChange("idah-image:bounding-box", "idah-image:polygon");
+      driver._triggerModeChange("idah-image:polygon", "default");
       expect(viewportModeSetter).toHaveBeenCalledTimes(3);
-      expect(viewportModeSetter).toHaveBeenNthCalledWith(1, "idah-video:bounding-box");
-      expect(viewportModeSetter).toHaveBeenNthCalledWith(2, "idah-video:polygon");
+      expect(viewportModeSetter).toHaveBeenNthCalledWith(1, "idah-image:bounding-box");
+      expect(viewportModeSetter).toHaveBeenNthCalledWith(2, "idah-image:polygon");
       expect(viewportModeSetter).toHaveBeenNthCalledWith(3, "default");
     });
   });

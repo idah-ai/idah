@@ -9,10 +9,11 @@ import { ui, type RenderMode } from "$lib/state/ui.svelte";
 export const command = {
   name: "ui.toggle_render_mode",
   group: "Display",
-  modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+  modes: ["default", "review", "idah-image:bounding-box", "idah-image:polygon", "note"],
   shortcut: null,
   shortDescription: "Toggle video render mode",
-  longDescription: "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video and placeholder",
+  longDescription:
+    "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video and placeholder",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -27,8 +28,12 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         ui.renderMode = (ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode;
       },
-      isCombinable() { return false; },
-      combine(p) { return p; },
+      isCombinable() {
+        return false;
+      },
+      combine(p) {
+        return p;
+      },
     }),
     group: command.group,
   });

@@ -5,7 +5,7 @@
 //   - Dialog toggles (command dialog, debug console)
 //   - localStorage-backed preferences (frameStep, colorMode, renderMode, timeDisplay)
 // ---------------------------------------------------------------------------
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ui } from "./ui.svelte";
 
 // ---------------------------------------------------------------------------
@@ -15,12 +15,22 @@ const localStorageMock = vi.hoisted(() => {
   let store: Record<string, string> = {};
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
-    removeItem: vi.fn((key: string) => { delete store[key]; }),
-    clear: vi.fn(() => { store = {}; }),
-    get length() { return Object.keys(store).length; },
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+    get length() {
+      return Object.keys(store).length;
+    },
     key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
-    _reset: () => { store = {}; },
+    _reset: () => {
+      store = {};
+    },
   };
 });
 
@@ -80,10 +90,7 @@ describe("UIState", () => {
 
     it("persists to localStorage on set", () => {
       ui.frameStep = 5;
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        "idah-video:settings:frame-step",
-        "5",
-      );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("idah-image:settings:frame-step", "5");
     });
 
     it("returns the set value", () => {
@@ -101,10 +108,7 @@ describe("UIState", () => {
 
     it("persists to localStorage on set", () => {
       ui.colorMode = "random";
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        "idah-video:settings:color-mode",
-        '"random"',
-      );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("idah-image:settings:color-mode", '"random"');
     });
 
     it("returns the set value", () => {
@@ -129,10 +133,7 @@ describe("UIState", () => {
 
     it("persists to localStorage on set", () => {
       ui.renderMode = "nearest-neighbor";
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        "idah-video:settings:render-mode",
-        '"nearest-neighbor"',
-      );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("idah-image:settings:render-mode", '"nearest-neighbor"');
     });
 
     it("returns the set value", () => {
@@ -150,10 +151,7 @@ describe("UIState", () => {
 
     it("persists to localStorage on set", () => {
       ui.timeDisplay = "time";
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        "idah-video:settings:time-display",
-        '"time"',
-      );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("idah-image:settings:time-display", '"time"');
     });
 
     it("returns the set value", () => {

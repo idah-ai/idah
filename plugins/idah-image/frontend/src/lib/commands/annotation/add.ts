@@ -4,7 +4,7 @@
 //
 // Usage:
 //   driver.command.call("annotation.add", {
-//     shape: { type: "idah-video:bounding-box", start: 1, end: 100, frames: [...] },
+//     shape: { type: "idah-image:bounding-box", start: 1, end: 100, frames: [...] },
 //     value: { category: "car" }
 //   });
 // ---------------------------------------------------------------------------

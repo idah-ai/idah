@@ -4,7 +4,7 @@
   //
   // Replaces the old SvgOverlay + ShapeContainer pair with a single clean
   // component. Responsibilities:
-  //   • Wraps <Video> inside a <Viewport> (pan/zoom)
+  //   • Wraps <Image> inside a <Viewport> (pan/zoom)
   //   • Renders an SVG layer on top with crosshair, build-mode preview, etc.
   //   • Filters visible annotations by current frame and renders them via
   //     AnnotationGeometry
@@ -146,7 +146,7 @@
     if (svgEl) ro.observe(svgEl);
     syncDimensions();
 
-    // Fit video to viewport on initial load
+    // Fit image to viewport on initial load
     requestAnimationFrame(() => viewport.workspace.fitToViewport());
 
     // Add a tiny stylesheet for cursor classes
@@ -315,7 +315,7 @@
 </script>
 
 <div class={cn("shapes-container flex-1", pointer)}>
-  <!-- Layer 0: Viewport with video content -->
+  <!-- Layer 0: Viewport with image content -->
   <div class="viewport-layer">
     <Viewport bind:this={zoomableElement} onPanStart={() => (isPanning = true)} onPanStop={() => (isPanning = false)}>
       {@render children?.()}

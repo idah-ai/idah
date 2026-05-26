@@ -18,7 +18,9 @@ function createLocalStorageStore<T>(key: string, defaultValue: T) {
   }
 
   return {
-    get value() { return value; },
+    get value() {
+      return value;
+    },
     set value(v: T) {
       value = v;
       try {
@@ -38,10 +40,10 @@ export type TimeDisplay = "frames" | "time";
  * UI state — dialogs, panels, etc.
  */
 class UIState {
-  #frameStep = createLocalStorageStore("idah-video:settings:frame-step", 10);
-  #colorMode = createLocalStorageStore<ColorMode>("idah-video:settings:color-mode", "category");
-  #renderMode = createLocalStorageStore<RenderMode>("idah-video:settings:render-mode", "bilinear");
-  #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-video:settings:time-display", "frames");
+  #frameStep = createLocalStorageStore("idah-image:settings:frame-step", 10);
+  #colorMode = createLocalStorageStore<ColorMode>("idah-image:settings:color-mode", "category");
+  #renderMode = createLocalStorageStore<RenderMode>("idah-image:settings:render-mode", "bilinear");
+  #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-image:settings:time-display", "frames");
 
   isCommandDialogOpen = $state(false);
   isDebugConsoleOpen = $state(false);
@@ -54,17 +56,33 @@ class UIState {
     this.isDebugConsoleOpen = !this.isDebugConsoleOpen;
   }
 
-  get frameStep() { return this.#frameStep.value; }
-  set frameStep(value) { this.#frameStep.value = value }
+  get frameStep() {
+    return this.#frameStep.value;
+  }
+  set frameStep(value) {
+    this.#frameStep.value = value;
+  }
 
-  get colorMode(): ColorMode { return this.#colorMode.value; }
-  set colorMode(value: ColorMode) { this.#colorMode.value = value }
+  get colorMode(): ColorMode {
+    return this.#colorMode.value;
+  }
+  set colorMode(value: ColorMode) {
+    this.#colorMode.value = value;
+  }
 
-  get renderMode(): RenderMode { return this.#renderMode.value; }
-  set renderMode(value: RenderMode) { this.#renderMode.value = value }
+  get renderMode(): RenderMode {
+    return this.#renderMode.value;
+  }
+  set renderMode(value: RenderMode) {
+    this.#renderMode.value = value;
+  }
 
-  get timeDisplay(): TimeDisplay { return this.#timeDisplay.value; }
-  set timeDisplay(value: TimeDisplay) { this.#timeDisplay.value = value }
+  get timeDisplay(): TimeDisplay {
+    return this.#timeDisplay.value;
+  }
+  set timeDisplay(value: TimeDisplay) {
+    this.#timeDisplay.value = value;
+  }
 }
 
 export const ui = new UIState();

@@ -1,10 +1,10 @@
-// plugins/idah-video/frontend/src/lib/commands/mode/select.ts
+// plugins/idah-image/frontend/src/lib/commands/mode/select.ts
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
   name: "mode.select",
   group: "Tools",
-  modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+  modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
   shortcut: "D",
   shortDescription: "Select",
   longDescription: "Selection Tool",
@@ -22,8 +22,12 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         driver.setMode("default");
       },
-      isCombinable() { return false; },
-      combine(p) { return p; },
+      isCombinable() {
+        return false;
+      },
+      combine(p) {
+        return p;
+      },
     }),
     group: command.group,
   });

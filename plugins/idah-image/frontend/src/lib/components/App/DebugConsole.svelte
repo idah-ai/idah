@@ -18,7 +18,7 @@ transform  translate({viewport.workspace.transform.translate[0].toFixed(
         1,
       )}, {viewport.workspace.transform.translate[1].toFixed(1)}) scale({viewport.workspace.transform.scale.toFixed(2)})
 
-<span class="section">── VIDEO ──</span>
+<span class="section">── IMAGE ──</span>
 mode       {viewport.mode}
 
 

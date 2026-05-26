@@ -9,11 +9,11 @@
   // Used by ShapesContainer in polygon build mode.
   // ---------------------------------------------------------------------------
 
-  import { onMount } from "svelte";
-  import type { Point } from "$lib/utils/math/point";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import type { Point } from "$lib/utils/math/point";
+  import { onMount } from "svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@
       const pts = [...polygonDraft.points];
       polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)
-      onSelection("idah-video:polygon", frame, pts, 0, undefined);
+      onSelection("idah-image:polygon", frame, pts, 0, undefined);
       return true;
     }
 

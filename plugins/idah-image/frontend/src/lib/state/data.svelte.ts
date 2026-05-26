@@ -8,8 +8,8 @@
 // in memory, merges new items, and optionally cleans up old ones when the
 // collection grows beyond a threshold.
 // ---------------------------------------------------------------------------
-import { uuidv7 } from "uuidv7";
 import { selection } from "$lib/state/selection.svelte";
+import { uuidv7 } from "uuidv7";
 
 /** Minimum interface an item must expose. */
 export interface DataItem {
@@ -35,10 +35,7 @@ export type GetItemRange<T> = (item: T) => [number, number] | null;
  *
  * Returns an array of `[start, end]` segments (inclusive on both sides).
  */
-export function computeMissingRanges(
-  loaded: [number, number] | null,
-  request: [number, number],
-): [number, number][] {
+export function computeMissingRanges(loaded: [number, number] | null, request: [number, number]): [number, number][] {
   const [rStart, rEnd] = request;
   if (rStart > rEnd) return [];
 
@@ -115,7 +112,13 @@ export type AnnotationItem = {
   id: string;
   shape: { type: string; start: number; end: number } & Record<string, unknown>;
   value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
-  metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
+  metadata?: {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    metadata?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
   synced?: boolean;
   [key: string]: unknown;
 };
@@ -174,18 +177,38 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
   return {
     // ── Delegate getters/setters directly (NOT via spread, which would
     //     evaluate $state getters once and lose reactivity) ──────────
-    get items() { return store.items; },
-    get loadedRange() { return store.loadedRange; },
-    get pending() { return store.pending; },
-    get maxItems() { return store.maxItems; },
-    set maxItems(v) { store.maxItems = v; },
-    get onCleanup() { return store.onCleanup; },
-    set onCleanup(v) { store.onCleanup = v; },
-    get getItemRange() { return store.getItemRange; },
-    set getItemRange(v) { store.getItemRange = v; },
+    get items() {
+      return store.items;
+    },
+    get loadedRange() {
+      return store.loadedRange;
+    },
+    get pending() {
+      return store.pending;
+    },
+    get maxItems() {
+      return store.maxItems;
+    },
+    set maxItems(v) {
+      store.maxItems = v;
+    },
+    get onCleanup() {
+      return store.onCleanup;
+    },
+    set onCleanup(v) {
+      store.onCleanup = v;
+    },
+    get getItemRange() {
+      return store.getItemRange;
+    },
+    set getItemRange(v) {
+      store.getItemRange = v;
+    },
     preloadRange: (s: number, e: number) => store.preloadRange(s, e),
     remove: (id: string) => store.remove(id),
-    upsert: (item: AnnotationItem) => { originalUpsert(item); },
+    upsert: (item: AnnotationItem) => {
+      originalUpsert(item);
+    },
     reset: (items: AnnotationItem[], range: [number, number]) => store.reset(items, range),
     clear: () => store.clear(),
 
@@ -275,18 +298,38 @@ export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
 
   return {
     // ── Delegate getters/setters directly ───────────────────────────
-    get items() { return store.items; },
-    get loadedRange() { return store.loadedRange; },
-    get pending() { return store.pending; },
-    get maxItems() { return store.maxItems; },
-    set maxItems(v) { store.maxItems = v; },
-    get onCleanup() { return store.onCleanup; },
-    set onCleanup(v) { store.onCleanup = v; },
-    get getItemRange() { return store.getItemRange; },
-    set getItemRange(v) { store.getItemRange = v; },
+    get items() {
+      return store.items;
+    },
+    get loadedRange() {
+      return store.loadedRange;
+    },
+    get pending() {
+      return store.pending;
+    },
+    get maxItems() {
+      return store.maxItems;
+    },
+    set maxItems(v) {
+      store.maxItems = v;
+    },
+    get onCleanup() {
+      return store.onCleanup;
+    },
+    set onCleanup(v) {
+      store.onCleanup = v;
+    },
+    get getItemRange() {
+      return store.getItemRange;
+    },
+    set getItemRange(v) {
+      store.getItemRange = v;
+    },
     preloadRange: (s: number, e: number) => store.preloadRange(s, e),
     remove: (id: string) => store.remove(id),
-    upsert: (item: NoteItem) => { originalUpsert(item); },
+    upsert: (item: NoteItem) => {
+      originalUpsert(item);
+    },
     reset: (items: NoteItem[], range: [number, number]) => store.reset(items, range),
     clear: () => store.clear(),
 
@@ -327,9 +370,7 @@ export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
   };
 }
 
-export function createDataStore<T extends DataItem>(
-  fetchFn: RangeFetchFn<T>,
-): DataStore<T> {
+export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): DataStore<T> {
   // ── Internal state ──────────────────────────────────────────────────
   let items = $state<T[]>([]);
   let loadedRange: [number, number] | null = $state(null);
@@ -344,10 +385,7 @@ export function createDataStore<T extends DataItem>(
     if (loadedRange === null) {
       loadedRange = [newStart, newEnd];
     } else {
-      loadedRange = [
-        Math.min(loadedRange[0], newStart),
-        Math.max(loadedRange[1], newEnd),
-      ];
+      loadedRange = [Math.min(loadedRange[0], newStart), Math.max(loadedRange[1], newEnd)];
     }
   }
 
@@ -361,10 +399,7 @@ export function createDataStore<T extends DataItem>(
     } else {
       // Default: extend the current viewport range by 50 % on each side
       const margin = (currentEnd - currentStart) * 0.5;
-      retainRange = [
-        Math.max(0, currentStart - margin),
-        currentEnd + margin,
-      ];
+      retainRange = [Math.max(0, currentStart - margin), currentEnd + margin];
     }
 
     // Remove items whose range doesn't overlap with retainRange
@@ -453,9 +488,15 @@ export function createDataStore<T extends DataItem>(
   }
 
   return {
-    get items() { return items; },
-    get loadedRange() { return loadedRange; },
-    get pending() { return pending; },
+    get items() {
+      return items;
+    },
+    get loadedRange() {
+      return loadedRange;
+    },
+    get pending() {
+      return pending;
+    },
 
     preloadRange,
     remove,
@@ -473,24 +514,36 @@ export function createDataStore<T extends DataItem>(
     },
 
     async create(data: Partial<T> & { id?: string }): Promise<T> {
-        throw new Error("create not implemented — use createAnnotationStore or createNoteStore");
-      },
+      throw new Error("create not implemented — use createAnnotationStore or createNoteStore");
+    },
 
-    get maxItems() { return maxItems; },
-    set maxItems(v: number) { maxItems = v; },
+    get maxItems() {
+      return maxItems;
+    },
+    set maxItems(v: number) {
+      maxItems = v;
+    },
 
-    get onCleanup() { return onCleanup; },
-    set onCleanup(v) { onCleanup = v; },
+    get onCleanup() {
+      return onCleanup;
+    },
+    set onCleanup(v) {
+      onCleanup = v;
+    },
 
-    get getItemRange() { return getItemRange; },
-    set getItemRange(v) { getItemRange = v; },
+    get getItemRange() {
+      return getItemRange;
+    },
+    set getItemRange(v) {
+      getItemRange = v;
+    },
   };
 }
 
 // ─── Global singleton stores ─────────────────────────────────────────────-
 //
 // These automatically initialise from the global V2 driver as soon as it
-// becomes available (set by idah-video-plugin.svelte on mount).
+// becomes available (set by idah-image-plugin.svelte on mount).
 //
 // Usage:
 //   import { data } from "$lib/state/data.svelte";
@@ -517,6 +570,10 @@ export const data: {
   annotations: DataStore<AnnotationItem> | null;
   notes: DataStore<NoteItem> | null;
 } = {
-  get annotations() { return _annotations; },
-  get notes() { return _notes; },
+  get annotations() {
+    return _annotations;
+  },
+  get notes() {
+    return _notes;
+  },
 };
