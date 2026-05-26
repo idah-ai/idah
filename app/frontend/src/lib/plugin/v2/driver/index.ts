@@ -233,6 +233,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
 
   sealed(): IIdahDriverV2 {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const driver = this
     return {
       get id()           { return driver.id; },

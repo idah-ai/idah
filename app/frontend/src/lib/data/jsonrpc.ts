@@ -130,6 +130,7 @@ export class JsonRpcDatasource {
   }
 
   private process_batch(batch: BatchItem[]): Promise<void> {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise<void>(async (resolve, reject: (f: BatchFailure) => void) => {
       const requests: JsonRpcRequest[] = batch.map((item) => ({
         ...item.method,
@@ -183,7 +184,7 @@ export class JsonRpcDatasource {
           items: batch, isNetworkError: false, error: {
             message: "Error",
             code: -1,
-            data: err as any
+            data: err as object
         }});
       }
     });

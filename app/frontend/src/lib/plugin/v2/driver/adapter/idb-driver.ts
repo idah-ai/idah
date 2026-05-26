@@ -282,6 +282,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     sealed() {
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const driver = this
       return {
         registerField: driver.registerField.bind(driver),
