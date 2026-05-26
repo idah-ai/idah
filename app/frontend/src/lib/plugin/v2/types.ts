@@ -519,7 +519,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
    * Returns the config for a shape type with properties already filtered
    * by visibility rules against the given value.
    */
-  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined;
+  getFilteredConfig(shapeType: string, value: Record<string, unknown>, objectName?: string): IShapeConfig | undefined;
 
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
