@@ -20,6 +20,7 @@ export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: 
   if (e?.shiftKey) {
     getDriver().command.call("annotation.toggle_category_visibility_solo", {
       category: categoryId,
+      shapeType,
     });
   } else {
     getDriver().command.call("annotation.toggle_category_visibility", {

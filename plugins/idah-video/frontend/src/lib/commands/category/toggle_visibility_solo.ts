@@ -36,6 +36,7 @@ export const command = {
 
 export interface ToggleCategoryVisibilitySoloProps {
   category: string;
+  shapeType: string;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -57,16 +58,28 @@ export function register(driver: IIdahDriverV2): void {
       if (allAnnotations.length === 0) return noopAction(command);
 
       // Resolve annotations that belong to the target category
-      const targetAnnotations = allAnnotations.filter((ann) => isCategoryMatch(ann.value?.category, props.category));
+      let targetAnnotations = allAnnotations.filter((ann) => isCategoryMatch(ann.value?.category, props.category));
+
+      // Further filter by shape type if provided
+      if (props.shapeType) {
+        targetAnnotations = targetAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+      }
 
       if (targetAnnotations.length === 0) {
         return noopAction(command);
       }
 
       // Determine if any non-target annotations are currently visible
-      const nonTargetAnnotations = allAnnotations.filter(
-        (ann) => !isCategoryMatch(ann.value?.category, props.category),
-      );
+      let nonTargetAnnotations = allAnnotations.filter((ann) => {
+        if (props.shapeType) {
+          // If shapeType is provided, only consider annotations of that shape type as non-target;
+          // other shape types are ignored and treated as non-target
+          return ann.shape.type !== props.shapeType || !isCategoryMatch(ann.value?.category, props.category);
+        } else {
+          // All annotations that don't match the category are non-target
+          return !isCategoryMatch(ann.value?.category, props.category);
+        }
+      });
 
       const hasNonTargetVisible = nonTargetAnnotations.some((ann) => !annotation.isHidden(ann));
 
