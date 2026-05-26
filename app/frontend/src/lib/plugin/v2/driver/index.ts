@@ -146,10 +146,14 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     return this._config;
   }
 
-  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined {
+  getFilteredConfig(
+    shapeType: string,
+    value: Record<string, unknown>,
+    objectName: string = "annotation",
+  ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;
-    const ast = new AstProcessor(new Map(this.#objectVariables(value)));
+    const ast = new AstProcessor(new Map(this.#objectVariables(value, objectName)));
     return {
       values: raw.values,
       properties: raw.properties.filter((p) => {

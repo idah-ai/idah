@@ -489,7 +489,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           required: true,
           visibility: [
             "in",
-            [["get", ["value.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
+            [["get", ["annotation.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
           ] as any,
           description: "How many wheels does the object have?",
         },
@@ -510,6 +510,46 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           visibility: true,
           description: "Primary color of the object",
         },
+        {
+          id: "occlusion",
+          type: "single-select",
+          label: "Occlusion",
+          format: {
+            options: [
+              {
+                id: "occluded",
+                label: "Occluded",
+                styles: {
+                  opacity: 0
+                }
+              },
+              {
+                id: "partially_occluded",
+                label: "Partially Occluded",
+                styles: {
+                  border: "dashed",
+                  opacity: 4
+                }
+              },
+              {
+                id: "semi_occluded",
+                label: "Semi Occluded",
+                styles: {
+                  border: "dotted",
+                  opacity: 1
+                }
+              },
+              {
+                id: "not_occluded",
+                label: "Not Occluded",
+                styles: {}
+              }
+            ]
+          },
+          required: false,
+          visibility: true,
+          description: ""
+        }
       ],
     },
     "idah-video:polygon": {
@@ -698,10 +738,14 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     return this._config;
   }
 
-  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined {
+  getFilteredConfig(
+    shapeType: string,
+    value: Record<string, unknown>,
+    objectName: string = "annotation"
+  ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;
-    const ast = new AstProcessor(new Map(this.#objectVariables(value)));
+    const ast = new AstProcessor(new Map(this.#objectVariables(value, objectName)));
     return {
       values: raw.values,
       properties: raw.properties.filter((p) => {
