@@ -76,7 +76,10 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
 export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   private virtualFields = new Map<string, (ann: IAnnotationRecord) => unknown>();
 
-  constructor(private entryId: string, private rpc: JsonRpcDatasource) {}
+  constructor(
+    private entryId: string,
+    private rpc: JsonRpcDatasource,
+  ) {}
 
   registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void {
     this.virtualFields.set(name, fn);

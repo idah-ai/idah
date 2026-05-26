@@ -87,16 +87,20 @@ const idbFetch = <T extends { id: string }>(
       .openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) { resolve(results); return; }
+      if (!c) {
+        resolve(results);
+        return;
+      }
       const rec = c.value;
       let matches = true;
       if (filter) {
         for (const [field, expected] of Object.entries(filter)) {
           const val =
-            virtualFields && virtualFields.has(field)
-              ? virtualFields.get(field)!(rec)
-              : resolvePath(rec, field);
-          if (!matchesFilter(val, expected)) { matches = false; break; }
+            virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
+          if (!matchesFilter(val, expected)) {
+            matches = false;
+            break;
+          }
         }
       }
       if (matches) results.push({ ...rec });
@@ -178,7 +182,10 @@ const idbGetStaleEntryIds = (db: IDBDatabase, cutoff: Date): Promise<string[]> =
     const req = db.transaction(["entries"], "readonly").objectStore("entries").index("lastVisitedAt").openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) { resolve(stale); return; }
+      if (!c) {
+        resolve(stale);
+        return;
+      }
       stale.push(c.value.entryId);
       c.continue();
     };
@@ -193,7 +200,10 @@ const idbPurgeEntry = (db: IDBDatabase, entryId: string): Promise<void> =>
     const req = annoStore.index("entryId").openCursor(range);
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
-      if (!c) { tx.objectStore("entries").delete(entryId); return; }
+      if (!c) {
+        tx.objectStore("entries").delete(entryId);
+        return;
+      }
       c.delete();
       c.continue();
     };
@@ -246,7 +256,7 @@ export interface IndexedDbAnnotationsDriverConfig<
 /** Full driver surface including the clearCache escape hatch (private to the module). */
 type IdbDriverInternal<Shape, Annotation> = IAnnotationsDriverV2<Shape, Annotation> & {
   clearCache(): Promise<void>;
-  sealed(): IAnnotationsDriverV2<Shape, Annotation>
+  sealed(): IAnnotationsDriverV2<Shape, Annotation>;
 };
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -283,13 +293,13 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
     sealed() {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
-      const driver = this
+      const driver = this;
       return {
         registerField: driver.registerField.bind(driver),
-        fetch:         driver.fetch.bind(driver),
-        create:        driver.create.bind(driver),
-        update:        driver.update.bind(driver),
-        delete:        driver.delete.bind(driver),
+        fetch: driver.fetch.bind(driver),
+        create: driver.create.bind(driver),
+        update: driver.update.bind(driver),
+        delete: driver.delete.bind(driver),
       };
     },
 
@@ -320,7 +330,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
       if (!synced) {
         let lastUpdated = await idbGetLastUpdated(db, entryId);
-        let page = 1, hasMore = true;
+        let page = 1,
+          hasMore = true;
         while (hasMore) {
           const response = await backend.list({
             filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },

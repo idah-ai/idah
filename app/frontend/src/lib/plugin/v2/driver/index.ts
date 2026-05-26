@@ -35,9 +35,7 @@ const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
 export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
-  private readonly rpc = new JsonRpcDatasource(
-    `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`
-  );
+  private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
 
@@ -73,9 +71,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._config = opts.config;
     this._workflowStep = opts.workflowStep;
     this.rpc.setErrorObserver((err) => {
-      this.syncErrorListeners.forEach((cb) =>
-        cb(err),
-      );
+      this.syncErrorListeners.forEach((cb) => cb(err));
     });
 
     // Build command & toolbar adapters
@@ -140,11 +136,10 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   #enqueue(op: Promise<unknown>): void {
     this.pendingCount++;
     this.#emitSyncChange();
-    op.catch(console.error)
-      .finally(() => {
-        this.pendingCount--;
-        this.#emitSyncChange();
-      });
+    op.catch(console.error).finally(() => {
+      this.pendingCount--;
+      this.#emitSyncChange();
+    });
   }
 
   #emitSyncChange(): void {
@@ -154,11 +149,21 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   // ── Readonly properties ───────────────────────────────────────────────
 
-  get id(): string { return this._id; }
-  get media(): IMediaInfo { return { ...this._media }; }
-  get workflowStep(): string { return this._workflowStep; }
-  get mode(): string { return this._mode; }
-  get config(): IConfig { return this._config; }
+  get id(): string {
+    return this._id;
+  }
+  get media(): IMediaInfo {
+    return { ...this._media };
+  }
+  get workflowStep(): string {
+    return this._workflowStep;
+  }
+  get mode(): string {
+    return this._mode;
+  }
+  get config(): IConfig {
+    return this._config;
+  }
 
   getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined {
     const raw = this._config[shapeType];
@@ -234,28 +239,45 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   sealed(): IIdahDriverV2 {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const driver = this
+    const driver = this;
     return {
-      get id()           { return driver.id; },
-      get media()        { return driver.media; },
-      get workflowStep() { return driver.workflowStep; },
-      get mode()         { return driver.mode; },
-      get config()       { return driver.config; },
-      get command()      { return driver.command; },
-      get toolbar()      { return driver.toolbar; },
-      get annotations()  { return driver.annotations; },
-      get notes()        { return driver.notes; },
+      get id() {
+        return driver.id;
+      },
+      get media() {
+        return driver.media;
+      },
+      get workflowStep() {
+        return driver.workflowStep;
+      },
+      get mode() {
+        return driver.mode;
+      },
+      get config() {
+        return driver.config;
+      },
+      get command() {
+        return driver.command;
+      },
+      get toolbar() {
+        return driver.toolbar;
+      },
+      get annotations() {
+        return driver.annotations;
+      },
+      get notes() {
+        return driver.notes;
+      },
 
-      setMode:           driver.setMode.bind(driver),
-      onModeChange:      driver.onModeChange.bind(driver),
-      onReady:           driver.onReady.bind(driver),
-      onSyncChange:      driver.onSyncChange.bind(driver),
-      onSyncError:       driver.onSyncError.bind(driver),
+      setMode: driver.setMode.bind(driver),
+      onModeChange: driver.onModeChange.bind(driver),
+      onReady: driver.onReady.bind(driver),
+      onSyncChange: driver.onSyncChange.bind(driver),
+      onSyncError: driver.onSyncError.bind(driver),
       getFilteredConfig: driver.getFilteredConfig.bind(driver),
-      handleKeydown:     driver.handleKeydown.bind(driver),
+      handleKeydown: driver.handleKeydown.bind(driver),
     };
   }
-
 }
 
 // ── Factory ──────────────────────────────────────────────────────────────
@@ -267,7 +289,6 @@ import { CommandDriverAdapter } from "./adapter/command";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
-
 
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const checkEntryRes = await entriesBackendDataSource.get(entryId, {

@@ -106,15 +106,13 @@ export class JsonRpcDatasource {
         this.failedCount = 0;
         this.processing = false;
         this.process();
-      }).catch((failure: BatchFailure) => {
+      })
+      .catch((failure: BatchFailure) => {
         this.queue.unshift(...failure.items);
         this.processing = false;
         this.failedCount++;
         if (failure.isNetworkError) {
-          const delay = Math.min(
-            this.retry_base_delay * Math.pow(2, this.failedCount),
-            this.retry_max_delay,
-          );
+          const delay = Math.min(this.retry_base_delay * Math.pow(2, this.failedCount), this.retry_max_delay);
           setTimeout(() => {
             if (!this.paused && !this.processing) this.flush();
           }, delay);
@@ -123,7 +121,7 @@ export class JsonRpcDatasource {
           this.errorObserver?.({
             message: failure.error?.message ?? "Server rejected the request.",
             code: failure.error?.code.toString(),
-            failedCount: this.failedCount
+            failedCount: this.failedCount,
           });
         }
       });
@@ -142,18 +140,21 @@ export class JsonRpcDatasource {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
-      })
+      });
       if ([502, 503, 504, 511].includes(response.status)) {
         return reject({
-          items: batch, isNetworkError: true, error: {
+          items: batch,
+          isNetworkError: true,
+          error: {
             code: response.status,
             message: "Network Issue",
-            data: response
-        }})
+            data: response,
+          },
+        });
       }
 
       try {
-        const body_response = await response.json() as unknown as JsonRpcResponse | JsonRpcResponse[];
+        const body_response = (await response.json()) as unknown as JsonRpcResponse | JsonRpcResponse[];
         if (!Array.isArray(body_response) && !body_response.id && body_response.error) {
           return reject({ items: batch, isNetworkError: false, error: body_response.error });
         }
@@ -181,11 +182,14 @@ export class JsonRpcDatasource {
         }
       } catch (err) {
         reject({
-          items: batch, isNetworkError: false, error: {
+          items: batch,
+          isNetworkError: false,
+          error: {
             message: "Error",
             code: -1,
-            data: err as object
-        }});
+            data: err as object,
+          },
+        });
       }
     });
   }
