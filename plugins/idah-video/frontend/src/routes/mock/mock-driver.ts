@@ -45,6 +45,48 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
       start: 0,
       end: 120,
       frames: [
+        // Person moving toward camera increasing height and width, with no rotation
+        {
+          frame: 0,
+          points: [
+            [0.7, 0.3],
+            [0.75, 0.3],
+            [0.75, 0.5],
+            [0.7, 0.5],
+          ],
+          angle: 0,
+        },
+        {
+          frame: 60,
+          points: [
+            [0.68, 0.28],
+            [0.77, 0.28],
+            [0.77, 0.52],
+            [0.68, 0.52],
+          ],
+          angle: 0,
+        },
+        {
+          frame: 120,
+          points: [
+            [0.65, 0.25],
+            [0.8, 0.25],
+            [0.8, 0.55],
+            [0.65, 0.55],
+          ],
+          angle: 0,
+        },
+      ],
+    } as IVideoAnnotationShape,
+    value: { category: "person", label: "person" },
+  },
+  {
+    id: uuidv7(),
+    shape: {
+      type: "idah-video:bounding-box",
+      start: 0,
+      end: 120,
+      frames: [
         {
           frame: 0,
           points: [
@@ -184,7 +226,61 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
         },
       ],
     } as IVideoAnnotationShape,
-    value: { category: "pedestrian", label: "pedestrian" },
+    value: { category: "road-sign", label: "road sign" },
+  },
+  {
+    id: uuidv7(),
+    shape: {
+      type: "idah-video:polygon",
+      start: 0,
+      end: 200,
+      frames: [
+        // Circle approximation with 20 vertices
+        {
+          frame: 0,
+          angle: 0,
+          points: Array.from({ length: 20 }, (_, i) => {
+            const theta = (i / 20) * 2 * Math.PI;
+            return [0.5 + 0.1 * Math.cos(theta), 0.5 + 0.1 * Math.sin(theta)];
+          }),
+        },
+        // Ellipse approximation with 15
+        {
+          frame: 100,
+          angle: 0,
+          points: Array.from({ length: 15 }, (_, i) => {
+            const theta = (i / 15) * 2 * Math.PI;
+            return [0.5 + 0.15 * Math.cos(theta), 0.5 + 0.05 * Math.sin(theta)];
+          }),
+        },
+        // Irregular blob with 18 vertices
+        {
+          frame: 200,
+          angle: 0,
+          points: [
+            [0.4, 0.5],
+            [0.45, 0.55],
+            [0.5, 0.52],
+            [0.55, 0.58],
+            [0.6, 0.5],
+            [0.58, 0.45],
+            [0.62, 0.4],
+            [0.57, 0.38],
+            [0.53, 0.32],
+            [0.48, 0.35],
+            [0.43, 0.3],
+            [0.4, 0.35],
+            [0.35, 0.33],
+            [0.32, 0.37],
+            [0.3, 0.42],
+            [0.33, 0.47],
+            [0.28, 0.52],
+            [0.38, 0.48],
+          ],
+        },
+      ],
+    } as IVideoAnnotationShape,
+    value: { category: "person", label: "person" },
   },
 ];
 
@@ -426,8 +522,8 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           text_color: "#FFFFFF",
           description: "A traffic light",
         },
-        { id: "pedestrian", color: "#AA00FF", label: "Pedestrian", text_color: "#FFFFFF", description: "A pedestrian" },
-        { id: "car", color: "#00BFA5", label: "Car", text_color: "#FFFFFF", description: "A car" },
+        // To test similar categories with different shapes
+        { id: "person", color: "#AA00FF", label: "Person", text_color: "#FFFFFF", description: "A person" },
       ],
       properties: [
         {
