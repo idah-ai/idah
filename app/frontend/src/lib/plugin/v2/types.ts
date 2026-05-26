@@ -24,6 +24,21 @@
  */
 export type IShortcut = string;
 
+// ─── Dataset info ─────────────────────────────────────────────────────────
+
+export interface IDatasetInfo {
+  id: string;
+  name: string;
+  modality: string;
+}
+
+// ─── Project info ─────────────────────────────────────────────────────────
+
+export interface IProjectInfo {
+  id: string;
+  name: string;
+}
+
 // ─── Media ────────────────────────────────────────────────────────────────
 
 export interface IMediaInfo {
@@ -510,6 +525,8 @@ export interface IToolbarDriverV2 {
 export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
+  readonly dataset: IDatasetInfo;
+  readonly project: IProjectInfo;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
   readonly mode: string;
