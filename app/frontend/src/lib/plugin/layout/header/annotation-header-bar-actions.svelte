@@ -33,6 +33,10 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
   // Props
   interface Props {
@@ -88,13 +92,34 @@
 
   async function submitAnnotation() {
     loading = true;
-    await driver.submit();
+    await submit();
   }
 
   async function reviewAnnotation(props: { approved: boolean }) {
     const { approved } = props;
     loading = true;
-    await driver.submit({ approved });
+    await submit({ approved });
+  }
+
+  async function submit(opts?: { approved: boolean }) {
+    entriesBackendDataSource.submit(driver.id, opts).then(async () => {
+      try {
+        const datasetsRes = await datasetsBackendDataSource.list({
+          fields: {
+            [DatasetRecord.type]: ["id"],
+          },
+          noCache: true,
+        });
+        if (datasetsRes.data.length) {
+          goto(resolve(`/projects/${driver.project.id}/datasets/${driver.dataset.id}/entries`));
+        } else {
+          goto(resolve(`/projects/${driver.project.id}/datasets`));
+        }
+      } catch (error) {
+        console.error(error);
+        goto(resolve(`/projects/${driver.project.id}/datasets`));
+      }
+    });
   }
 
   function toggleCommand() {

@@ -11,6 +11,8 @@
 // ---------------------------------------------------------------------------
 import type {
   IIdahDriverV2,
+  IProjectInfo,
+  IDatasetInfo,
   IMediaInfo,
   IConfig,
   IShapeConfig,
@@ -67,6 +69,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Activity context (set via constructor) ────────────────────────────
 
   private _id: string;
+  private _dataset: IDatasetInfo;
+  private _project: IProjectInfo;
   private _media: IMediaInfo;
   private _config: IConfig;
   private _workflowStep: string;
@@ -80,8 +84,17 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private syncChangeListeners: Set<(event: ISyncEvent) => void> = new Set();
   private syncErrorListeners: Set<(event: ISyncErrorEvent) => void> = new Set();
 
-  constructor(opts: { id: string; media: IMediaInfo; config: IConfig; workflowStep: string }) {
+  constructor(opts: {
+    id: string;
+    dataset: IDatasetInfo;
+    project: IProjectInfo;
+    media: IMediaInfo;
+    config: IConfig;
+    workflowStep: string;
+  }) {
     this._id = opts.id;
+    this._dataset = opts.dataset;
+    this._project = opts.project;
     this._media = opts.media;
     this._config = opts.config;
     this._workflowStep = opts.workflowStep;
@@ -128,6 +141,14 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   get id(): string {
     return this._id;
+  }
+
+  get dataset(): IDatasetInfo {
+    return { ...this._dataset };
+  }
+
+  get project(): IProjectInfo {
+    return { ...this._project };
   }
 
   get media(): IMediaInfo {
@@ -264,6 +285,17 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
   const entry = latestEntryRes.data;
   const dataset = entry.dataset;
 
+  const datasetInfo: IDatasetInfo = {
+    id: dataset.id,
+    name: dataset.name,
+    modality: dataset.modality,
+  };
+
+  const projectInfo: IProjectInfo = {
+    id: dataset.project.id,
+    name: dataset.project.name,
+  };
+
   // Get media info
   let mediaInfo: IMediaInfo;
   try {
@@ -297,6 +329,8 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
 
   return new IdahDriverV2({
     id: entry.id,
+    dataset: datasetInfo,
+    project: projectInfo,
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
     workflowStep: entry.wf_step,
