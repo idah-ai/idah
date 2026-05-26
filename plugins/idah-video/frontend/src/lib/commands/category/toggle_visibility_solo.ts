@@ -23,6 +23,7 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { isCategoryMatch } from "$lib/utils/category";
 
 export const command = {
   name: "annotation.toggle_category_visibility_solo",
@@ -35,14 +36,6 @@ export const command = {
 
 export interface ToggleCategoryVisibilitySoloProps {
   category: string;
-}
-
-function isCategoryMatch(annotationCategory: string | undefined, targetCategory: string): boolean {
-  if (!annotationCategory) {
-    return false;
-  }
-
-  return annotationCategory === targetCategory || annotationCategory.startsWith(`${targetCategory}/`);
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -64,9 +57,7 @@ export function register(driver: IIdahDriverV2): void {
       if (allAnnotations.length === 0) return noopAction(command);
 
       // Resolve annotations that belong to the target category
-      const targetAnnotations = allAnnotations.filter((ann) =>
-        isCategoryMatch(ann.value?.category, props.category),
-      );
+      const targetAnnotations = allAnnotations.filter((ann) => isCategoryMatch(ann.value?.category, props.category));
 
       if (targetAnnotations.length === 0) {
         return noopAction(command);
