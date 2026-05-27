@@ -103,18 +103,18 @@
     <DropdownMenuLabel>Playback speed</DropdownMenuLabel>
     <section class="flex flex-col gap-2 px-2 pb-2">
       <div class="flex flex-col items-center justify-center gap-4">
-        <ButtonGroup class="w-full">
+        <div class="grid w-full grid-cols-5">
           {#each availableSpeeds as speed (speed)}
             <Button
               variant={speed === currentSpeed ? "default" : "outline"}
               size="sm"
-              class="flex-1 focus:outline-none"
+              class="rounded-none first:rounded-tl-md first:rounded-bl-lg last:rounded-tr-md last:rounded-br-md focus:outline-none"
               onclick={() => setVideoSpeed(speed)}
             >
               {speed}X
             </Button>
           {/each}
-        </ButtonGroup>
+        </div>
       </div>
     </section>
 

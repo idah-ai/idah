@@ -21,6 +21,7 @@ export class ToolbarManagerV2 {
         mode,
         group: opts.group,
         onClick: opts.onClick,
+        name: opts.name,
         visibleWhen: opts.visibleWhen,
         whenToggled: opts.whenToggled ?? (() => false),
       });

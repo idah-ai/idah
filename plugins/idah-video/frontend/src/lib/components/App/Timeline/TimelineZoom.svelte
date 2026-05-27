@@ -42,19 +42,22 @@
     Math.round(Math.max(zoomMin, Math.min(zoomMax, currentZoom)) / SLIDER_STEP) * SLIDER_STEP,
   );
 
-  // Current frame to use as zoom center
-  const currentFrame = $derived(viewport.video.currentFrame.value);
-
   // --- Actions ---
 
   function zoomOut() {
     const newZoom = Math.max(Math.round((sliderValue / ZOOM_FACTOR) * 10) / 10, zoomMin);
-    zoomFn?.(newZoom, currentFrame);
+    zoomFn?.(newZoom, viewport.video.currentFrame.value);
   }
 
   function zoomIn() {
     const newZoom = Math.min(Math.round(sliderValue * ZOOM_FACTOR * 10) / 10, zoomMax);
-    zoomFn?.(newZoom, currentFrame);
+    zoomFn?.(newZoom, viewport.video.currentFrame.value);
+  }
+
+  // guards against bits-ui's spurious onValueChange fires by skipping values within half a step (0.05) of current,
+  function handleSliderZoom(v: number) {
+    if (Math.abs(v - sliderValue) < SLIDER_STEP / 2) return;
+    zoomFn?.(v, viewport.video.currentFrame.value);
   }
 
   function cmdShortcut(name: string): string | undefined {
@@ -75,11 +78,11 @@
   <Slider
     type="single"
     class="w-40"
-    min={0}
-    max={100}
-    step={0.1}
+    min={zoomMin}
+    max={zoomMax}
+    step={SLIDER_STEP}
     value={sliderValue}
-    onValueChange={(v) => zoomFn?.(v, currentFrame)}
+    onValueChange={handleSliderZoom}
   />
 
   <ToolTooltip label="Zoom In" shortcut={cmdShortcut("timeline.zoom_in")}>
