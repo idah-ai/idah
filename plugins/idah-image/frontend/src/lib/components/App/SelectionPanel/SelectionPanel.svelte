@@ -6,7 +6,7 @@
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
 
-  import { CrosshairIcon, Trash2Icon } from "@lucide/svelte";
+  import { EyeIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
@@ -19,6 +19,7 @@
   import SingleSelectProperty from "$lib/components/App/SelectionPanel/Properties/_SingleSelectProperty.svelte";
   import TextProperty from "$lib/components/App/SelectionPanel/Properties/_TextProperty.svelte";
 
+  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -27,7 +28,10 @@
   import { categoryValueToLabel, compareGroups } from "$lib/utils/annotation";
 
   import type { IConfigProperty } from "$idah/v2/types";
+  import type { Menus } from "$lib/components/App/ContextMenu/types";
+  import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
   import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
+  import { deleteAnnotation, getAnnotationActions } from "./menus";
 
   type Props = {
     selectedCategory: string;
@@ -158,6 +162,45 @@
 
     return sorted;
   });
+  let openConfirmCategoryDeleteDialog = $state(false);
+
+  // const annotations = $derived(data?.annotations?.items ?? []);
+
+  // const isAllHidden = $derived(annotations.length > 0 && annotations.every((ann) => ann.isHidden(ann)));
+
+  // const isAllLocked = $derived(annotations.length > 0 && annotations.every((ann) => ann.isLocked(ann)));
+
+  const menus = $derived<Menus>({
+    actions: {
+      items: {
+        "visibility-all": {
+          label: "Show/Hide All",
+          icon: EyeIcon,
+          onClick: () => {
+            getDriver().command.call("annotation.toggle_visibility_all");
+          },
+        },
+        "editability-all": {
+          label: "Lock/Unlock All",
+          icon: LockOpenIcon,
+          onClick: () => {
+            getDriver().command.call("annotation.toggle_editability_all");
+          },
+        },
+        "delete-all": {
+          label: "Delete all annotations",
+          icon: Trash2Icon,
+          onClick: () => {
+            showConfirmDialog({
+              title: "Delete all annotations",
+              description: "Are you sure you want to delete all annotations?",
+              onConfirm: () => getDriver().command.call("annotation.delete_all"),
+            });
+          },
+        },
+      },
+    },
+  });
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -175,28 +218,6 @@
 
   function reselectCategory(reselectedCategoryId: string) {
     onReSelectCategory?.(reselectedCategoryId);
-  }
-
-  function getAnnotationActions(ann: IImageAnnotationRecord) {
-    return [
-      {
-        label: "Focus Annotation",
-        icon: CrosshairIcon,
-        onclick: (e: MouseEvent) => {
-          e.stopPropagation();
-          selection.selectAnnotation(ann);
-          getDriver().command.call("timeline.focus");
-        },
-      },
-      {
-        label: "Delete Annotation",
-        icon: Trash2Icon,
-        onclick: (e: MouseEvent) => {
-          e.stopPropagation();
-          getDriver().command.call("annotation.delete", { annotationId: ann.id });
-        },
-      },
-    ];
   }
 </script>
 
@@ -256,7 +277,12 @@
       <div class="flex items-center gap-2">
         <Text weight="semibold">Annotations</Text>
         <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
-        <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
+
+        <div class="ml-auto flex items-center">
+          {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick }] (key)}
+            <CategoryAction {label} icon={Icon} onclick={onClick} />
+          {/each}
+        </div>
       </div>
       <div class="flex flex-col gap-1">
         <Separator class="my-2" />
@@ -290,16 +316,28 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions(ann) as { label, icon: Icon, onclick }}
+              {#each getAnnotationActions({ items: currentFrameAnnotations, onClickDelete: () => {
+                  openConfirmCategoryDeleteDialog = true;
+                } }) as { label, icon: Icon, onClick }}
                 <CategoryAction
                   {label}
                   icon={Icon}
-                  {onclick}
+                  onclick={onClick}
                   class="opacity-0 transition-opacity group-hover:opacity-100"
                 />
               {/each}
             </div>
           </div>
+
+          <ConfirmModal
+            title="Delete annotation"
+            description="Are you sure you want to delete this annotation?"
+            onConfirm={() => {
+              deleteAnnotation(ann.id);
+              openConfirmCategoryDeleteDialog = false;
+            }}
+            bind:open={openConfirmCategoryDeleteDialog}
+          />
         {/each}
       </div>
     </section>

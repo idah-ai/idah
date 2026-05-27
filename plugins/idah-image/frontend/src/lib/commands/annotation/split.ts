@@ -62,7 +62,7 @@ export function register(driver: IIdahDriverV2): void {
           const sel = selection.value as IAnnotationSelection;
 
           annotationId = sel.annotation.id;
-          at = viewport.video.currentFrame.value;
+          at = viewport.image.currentFrame.value;
         }
       }
 

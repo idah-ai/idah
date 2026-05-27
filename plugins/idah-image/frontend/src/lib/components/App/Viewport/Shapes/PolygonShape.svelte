@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { type Point } from "$lib/utils/math/point";
+  import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { viewport } from "$lib/state/viewport.svelte";
   import type { IImageAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import { pointInPolygon, hitTestVertex, moveVertex, addVertexOnEdge } from "./Polygon/utils";
-  import { showToast } from "$lib/components/ui/Toast/index.svelte";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { type Point } from "$lib/utils/math/point";
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
   import PolygonScaleHandler from "./Polygon/_PolygonScaleHandler.svelte";
+  import { addVertexOnEdge, hitTestVertex, moveVertex, pointInPolygon } from "./Polygon/utils";
 
   let {
     annotation,
@@ -36,7 +36,7 @@
   let baseVertices = $derived.by((): Point[] => {
     const shape = annotation?.shape as IImageAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.image.currentFrame.value);
     return result?.points ?? [];
   });
 

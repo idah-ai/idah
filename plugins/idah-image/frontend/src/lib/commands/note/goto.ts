@@ -5,8 +5,8 @@
 // Usage:
 //   driver.command.call("note.goto", { noteId: "..." });
 // ---------------------------------------------------------------------------
-import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
   name: "note.goto",
@@ -32,7 +32,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as NoteGotoProps | undefined;
-      const prevFrame = viewport.video.currentFrame.value;
+      const prevFrame = viewport.image.currentFrame.value;
       return {
         command: { ...command },
         async do() {
@@ -40,10 +40,14 @@ export function register(driver: IIdahDriverV2): void {
           _previousFrame = prevFrame;
         },
         undo() {
-          viewport.video.currentFrame.value = _previousFrame;
+          viewport.image.currentFrame.value = _previousFrame;
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

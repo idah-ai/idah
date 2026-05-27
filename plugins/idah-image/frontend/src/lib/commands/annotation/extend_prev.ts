@@ -9,13 +9,12 @@
 //
 // Prevents overlapping with the next annotation in the group.
 // ---------------------------------------------------------------------------
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import type { IIdahDriverV2 } from "$idah/v2/types";
 import { nearestKeyframe } from "$lib/utils/interpolation";
-import { noopAction } from "..";
-import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "annotation.extend_prev",
@@ -48,7 +47,7 @@ export function register(driver: IIdahDriverV2): void {
           // ── Resolve target annotation and frame ────────────────────────
           // If called with explicit props (context menu), use them.
           // Otherwise resolve from the current selection state (shortcut path).
-          const frame = (opts?.frame as number | undefined) ?? viewport.video.currentFrame.value;
+          const frame = (opts?.frame as number | undefined) ?? viewport.image.currentFrame.value;
 
           // Find the annotations in the currently selected group
           let groupAnnotations: {

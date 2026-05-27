@@ -14,7 +14,7 @@ function hasAnnotationAtCurrentFrame(): boolean {
   if (sel?.type !== "annotation") return false;
   const shape = (sel.annotation as any).shape as { start?: number; end?: number; frames?: unknown[] } | undefined;
   if (!shape?.frames || shape.frames.length === 0) return false;
-  const frame = viewport.video.currentFrame.value;
+  const frame = viewport.image.currentFrame.value;
   return frame >= (shape.start ?? 0) && frame <= (shape.end ?? 0);
 }
 
@@ -48,7 +48,7 @@ export function register(driver: IIdahDriverV2): void {
           const record = sel.annotation as any;
           const shape = record.shape as IImageAnnotationShape;
           if (!shape.frames || shape.frames.length === 0) return;
-          const currentFrame = viewport.video.currentFrame.value;
+          const currentFrame = viewport.image.currentFrame.value;
           const interpolated = getInterpolatedFrame(shape, currentFrame);
           if (!interpolated || !interpolated.points || interpolated.points.length === 0) return;
 

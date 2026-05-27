@@ -3,6 +3,8 @@ import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as I
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 
+import type { IImageAnnotationRecord } from "$lib/types";
+
 export interface CategoryAction {
   id: string;
   label: string;

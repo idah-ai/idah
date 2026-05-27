@@ -9,13 +9,12 @@
 //
 // Prevents overlapping with the previous annotation in the group.
 // ---------------------------------------------------------------------------
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import type { IIdahDriverV2 } from "$idah/v2/types";
 import { nearestKeyframe } from "$lib/utils/interpolation";
-import { noopAction } from "..";
-import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "annotation.extend_next",
@@ -46,7 +45,7 @@ export function register(driver: IIdahDriverV2): void {
         },
         do() {
           // ── Resolve target annotation and frame ────────────────────────
-          const frame = (opts?.frame as number | undefined) ?? viewport.video.currentFrame.value;
+          const frame = (opts?.frame as number | undefined) ?? viewport.image.currentFrame.value;
 
           // Resolve group annotations
           let groupAnnotations: {

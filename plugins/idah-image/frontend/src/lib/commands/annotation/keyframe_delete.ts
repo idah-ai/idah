@@ -35,7 +35,7 @@ function isCurrentFrameKeyframe(): boolean {
   const sel = selection.value;
   if (!sel || sel.type !== "annotation") return false;
   const frames = (sel.annotation.shape?.frames as IImageFrameSelection[]) ?? [];
-  const currentFrame = viewport.video.currentFrame.value;
+  const currentFrame = viewport.image.currentFrame.value;
   return frames.some((f) => f.frame === currentFrame);
 }
 
@@ -60,7 +60,7 @@ export function register(driver: IIdahDriverV2): void {
         const sel = selection.value;
         if (sel && sel.type === "annotation") {
           annotationId = sel.annotation.id;
-          frame = viewport.video.currentFrame.value;
+          frame = viewport.image.currentFrame.value;
         }
       }
 

@@ -44,7 +44,7 @@ const idahImagePlugin: IPluginDriver = {
     parent.innerHTML = "";
     // NOTE: The V2 driver is expected to be set up externally via
     //   initDriver(driver); initDataStores();
-    // before render() is called. The IdahVideoPlugin no longer wires them.
+    // before render() is called. The IdahImagePlugin no longer wires them.
     mounted = mount(Plugin, { target: parent });
   },
 

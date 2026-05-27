@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { normalizeRect } from "$lib/utils/math/bbox";
-  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
-  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { viewport } from "$lib/state/viewport.svelte";
   import type { IImageAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { normalizeRect } from "$lib/utils/math/bbox";
+  import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
+  import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
   import {
     boundingBoxHandle,
-    rotatePointN,
     inverseRotatePointN,
-    rotatedCursorSVG,
     rotateCursorSVG,
+    rotatedCursorSVG,
+    rotatePointN,
   } from "./BoundingBox/utils";
-  import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -46,7 +46,7 @@
   let baseAngle = $derived.by((): number => {
     const shape = annotation?.shape as IImageAnnotationShape | undefined;
     if (!shape?.frames) return 0;
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.image.currentFrame.value);
     return result?.angle ?? 0;
   });
 
@@ -67,7 +67,7 @@
   let basePoints = $derived.by((): Point[] => {
     const shape = annotation?.shape as IImageAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.image.currentFrame.value);
     return result?.points ?? [];
   });
 

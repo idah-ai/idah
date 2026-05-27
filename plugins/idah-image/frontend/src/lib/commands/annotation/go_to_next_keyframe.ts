@@ -43,7 +43,7 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (): ICommandAction => {
-      const currentFrame = viewport.video.currentFrame.value;
+      const currentFrame = viewport.image.currentFrame.value;
       const sel = selection.value;
 
       let groupId: string | undefined;
@@ -57,7 +57,7 @@ export function register(driver: IIdahDriverV2): void {
         return {
           command: command as any,
           do() {
-            viewport.video.currentFrame.value = Math.min(currentFrame + 1, 99999);
+            viewport.image.currentFrame.value = Math.min(currentFrame + 1, 99999);
           },
           isCombinable() {
             return false;
@@ -99,7 +99,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          viewport.video.currentFrame.value = target;
+          viewport.image.currentFrame.value = target;
           if (targetAnnotation) selection.selectAnnotation(targetAnnotation);
         },
         isCombinable() {
