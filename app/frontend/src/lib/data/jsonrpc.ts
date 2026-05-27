@@ -56,6 +56,7 @@ export class JsonRpcDatasource {
   private readonly retry_base_delay = 1000;
   private readonly retry_max_delay = 30000;
   private readonly batch_size: number;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;
@@ -71,6 +72,10 @@ export class JsonRpcDatasource {
 
   resume(): void {
     this.paused = false;
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
     this.process();
   }
 
@@ -113,7 +118,12 @@ export class JsonRpcDatasource {
         this.failedCount++;
         if (failure.isNetworkError) {
           const delay = Math.min(this.retry_base_delay * Math.pow(2, this.failedCount), this.retry_max_delay);
-          setTimeout(() => {
+          if (this.retryTimer !== null) {
+            clearTimeout(this.retryTimer);
+          }
+
+          this.retryTimer = setTimeout(() => {
+            this.retryTimer = null;
             if (!this.paused && !this.processing) this.flush();
           }, delay);
         } else {
