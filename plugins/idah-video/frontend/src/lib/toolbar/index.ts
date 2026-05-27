@@ -11,7 +11,8 @@ export function initToolbar(driver: IIdahDriverV2): void {
 
   t.add({
     icon: cursorIcon,
-    label: "Select",
+    label: "Selection",
+    name: "mode.default",
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
     onClick: () => driver.setMode("default"),
@@ -20,6 +21,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: rectIcon,
     label: "Bounding Box",
+    name: "mode.idah-video:bounding_box",
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
     onClick: (() =>
@@ -30,6 +32,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: polyIcon,
     label: "Polygon",
+    name: "mode.idah-video:polygon",
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
     onClick: (() =>
@@ -40,6 +43,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: noteIcon,
     label: "Note",
+    name: "mode.note",
     modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
     onClick: () => driver.setMode("note"),

@@ -2,7 +2,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "mode.bounding_box",
+  name: "mode.idah-video:bounding_box",
   group: "Tools",
   modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: "B",

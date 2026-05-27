@@ -22,8 +22,7 @@
   import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
-  import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
@@ -191,10 +190,6 @@
       count: filteredGroupedAnnotations.length,
     };
   }
-
-  function deleteCategoryAnnotations(categoryId: string) {
-    getDriver().command.call("annotation.delete_category", { category: categoryId });
-  }
 </script>
 
 <SidebarGroup>
@@ -236,7 +231,9 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
+      {@const annotations = items.filter(
+        (a) => a.value?.category?.startsWith(category.id) && a.shape.type === modalityShape,
+      )}
       {@const { count } = groupFilteredAnnotations(annotations)}
 
       <CollapsibleTrigger
@@ -336,6 +333,7 @@
             <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
             {@const actions = getCategoryActions({
               categoryId: category.id,
+              shapeType: modalityShape,
               items: annotations,
               onClickDelete: () => {
                 categoryToDelete = category.id;
@@ -393,9 +391,9 @@
 
 <ConfirmModal
   title="Delete annotations in this category"
-  description="Are you sure you want to delete all annotations in this category? This action cannot be undone."
+  description="Are you sure you want to delete all annotations in this category?"
   onConfirm={() => {
-    deleteCategoryAnnotations(categoryToDelete!);
+    deleteCategoryAnnotations({ categoryId: categoryToDelete!, shapeType: modalityShape });
     openConfirmCategoryDeleteDialog = false;
     categoryToDelete = null;
   }}

@@ -47,6 +47,7 @@ import { register as registerKeyframeDelete } from "./annotation/keyframe_delete
 import { register as registerGroupDelete } from "./group/delete";
 import { register as registerGroupToggleEditability } from "./group/toggle_editability";
 import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
+import { register as registerGroupToggleVisibilitySolo } from "./group/toggle_visibility_solo";
 
 import { register as registerNoteAdd } from "./note/add";
 import { register as registerNoteGoto } from "./note/goto";
@@ -79,6 +80,7 @@ import { register as registerTimelineZoomOut } from "./timeline/zoom-out";
 import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
+import { register as registerCategoryToggleVisibilitySolo } from "./category/toggle_visibility_solo";
 
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
@@ -116,6 +118,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Group ─────────────────────────────────────────────────────────────
   registerGroupDelete(driver);
   registerGroupToggleVisibility(driver);
+  registerGroupToggleVisibilitySolo(driver);
   registerGroupToggleEditability(driver);
 
   // ── Note ──────────────────────────────────────────────────────────────
@@ -141,6 +144,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
+  registerCategoryToggleVisibilitySolo(driver);
   registerCategoryDelete(driver);
 
   // ── Mode ──────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ const idahVideoPlugin: IPluginDriver = {
     initDataStores();
     registerAllCommands(driver);
     initToolbar(driver);
-    console.debug("Plugin initialized", { this: this });
+    console.debug("Plugin initialized", { this: this, driver });
   },
 
   render(parent: HTMLElement) {

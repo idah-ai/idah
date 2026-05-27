@@ -186,6 +186,11 @@ export interface IToolbarItem {
   /** Click handler. */
   onClick: Unsubscribe;
   /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
+  /**
    * Predicate — toolbar hides the item when `visibleWhen` returns `false`.
    * Default: always true.
    */
@@ -249,10 +254,7 @@ export interface IAnnotationValue {
  * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
  * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
  */
-export interface IAnnotationRecord<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   id: string;
 
   /**
@@ -273,8 +275,8 @@ export interface IAnnotationRecord<
   metadata?: IAnnotationMetadata;
 
   created_by_id?: string;
-  created_at?: Date;
-  updated_at?: Date;
+  created_at?: string;
+  updated_at?: string;
 
   /** Allow extensibility. */
   [key: string]: unknown;
@@ -318,10 +320,7 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
@@ -460,10 +459,7 @@ export interface ICommandDriverV2 {
    * across all modes, for use in the command palette.
    * Same shape as `IActivityContext.shortcutReferences`.
    */
-  getShortcutReferences(): Record<
-    string,
-    { label: string; description: string; keyCombinations: string[] }
-  >;
+  getShortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }>;
 }
 
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
@@ -482,6 +478,11 @@ export interface ToolbarItemOptions {
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
+  /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
   /**
    * Optional predicate — when returns `false`, the item is hidden.
    * Default: always visible.
@@ -506,10 +507,7 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2<
-  Shape = Record<string, unknown>,
-  Annotation = Record<string, unknown>,
-> {
+export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly media: IMediaInfo;

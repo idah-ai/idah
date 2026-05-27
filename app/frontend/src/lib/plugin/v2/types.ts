@@ -24,6 +24,21 @@
  */
 export type IShortcut = string;
 
+// ─── Dataset info ─────────────────────────────────────────────────────────
+
+export interface IDatasetInfo {
+  id: string;
+  name: string;
+  modality: string;
+}
+
+// ─── Project info ─────────────────────────────────────────────────────────
+
+export interface IProjectInfo {
+  id: string;
+  name: string;
+}
+
 // ─── Media ────────────────────────────────────────────────────────────────
 
 export interface IMediaInfo {
@@ -185,6 +200,11 @@ export interface IToolbarItem {
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
+  /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
   /**
    * Predicate — toolbar hides the item when `visibleWhen` returns `false`.
    * Default: always true.
@@ -474,6 +494,11 @@ export interface ToolbarItemOptions {
   /** Click handler. */
   onClick: Unsubscribe;
   /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
+  /**
    * Optional predicate — when returns `false`, the item is hidden.
    * Default: always visible.
    */
@@ -500,6 +525,8 @@ export interface IToolbarDriverV2 {
 export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
+  readonly dataset: IDatasetInfo;
+  readonly project: IProjectInfo;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
   readonly mode: string;
@@ -519,7 +546,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
    * Returns the config for a shape type with properties already filtered
    * by visibility rules against the given value.
    */
-  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined;
+  getFilteredConfig(shapeType: string, value: Record<string, unknown>, objectName?: string): IShapeConfig | undefined;
 
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
