@@ -136,20 +136,25 @@ export class JsonRpcDatasource {
         id: item.id,
       }));
 
-      const response = await fetch(this.base_url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
-      });
+      let response;
+      try {
+        response = await fetch(this.base_url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
+        });
+      } catch (err) {
+        console.error(err);
+        return reject({
+          items: batch,
+          isNetworkError: true,
+        });
+      }
+
       if ([502, 503, 504, 511].includes(response.status)) {
         return reject({
           items: batch,
           isNetworkError: true,
-          error: {
-            code: response.status,
-            message: "Network Issue",
-            data: response,
-          },
         });
       }
 
