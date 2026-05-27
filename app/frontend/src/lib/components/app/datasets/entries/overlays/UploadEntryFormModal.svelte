@@ -15,6 +15,7 @@
   import { mediaBackendDataSource, type SkippedFile } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
+  import { pluralizeUnit } from "@/utils/unit";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -179,7 +180,7 @@
           }
         }
 
-        for (const uploadedMedia of media.uploadedMedias) {
+        for (const uploadedMedia of media.uploadedMedias.slice(media.createdEntryCount)) {
           await entriesBackendDataSource.create(
             {
               attributes: { resource: uploadedMedia.resource, name: uploadedMedia.filename, status: "pending" },
@@ -187,6 +188,7 @@
             },
             { showErrorToast: false },
           );
+          media.createdEntryCount++;
         }
 
         media.errorMessage = undefined;
@@ -211,6 +213,7 @@
       media: media,
       status: "uploading",
       retryCount: 0,
+      createdEntryCount: 0,
       uploadedMedias: [],
       isUploaded() {
         return this.uploadedMedias.length > 0;
@@ -290,7 +293,7 @@
     <section class="flex w-full items-center">
       <Text>
         {#if view.isSelect() && media.any()}
-          {media.count()} files to uploaded
+          {media.count()} {pluralizeUnit(media.count(), "item")} to upload
         {/if}
 
         {#if view.isUpload()}

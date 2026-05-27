@@ -28,17 +28,18 @@
   const hasMultipleMedias = $derived(totalMedias > 1);
   const hasSkippedMedias = $derived(totalSkippedMedias > 0);
 
-  const progress = $derived((totalUploadMedias / totalMedias) * 100);
+  const progress = $derived(totalMedias > 0 ? (totalUploadMedias / totalMedias) * 100 : 0);
 
   const badgeInfo = $derived.by<{ variant: BadgeVariant }>(() => {
     switch (status) {
-      case "success": {
+      case "uploading":
+        return { variant: "default" };
+      case "retrying":
+        return { variant: "warning" };
+      case "success":
         return { variant: "success" };
-      }
-      /** Other statuses will be treated as failed */
-      default: {
+      default:
         return { variant: "destructive" };
-      }
     }
   });
 
@@ -77,7 +78,7 @@
         {#if hasMultipleMedias}
           {totalUploadMedias}/{totalMedias}
         {:else}
-          10%
+          {progress}%
         {/if}
       </Text>
     </div>

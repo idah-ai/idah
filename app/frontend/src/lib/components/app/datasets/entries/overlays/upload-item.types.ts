@@ -8,6 +8,7 @@ export interface UploadItem {
   skippedMedias: Array<SkippedFile>;
   status: "uploading" | "retrying" | "success" | "failed";
   retryCount: number; // auto-retry attempts consumed
+  createdEntryCount: number; // entries already persisted — used to resume partial entry creation on retry
   errorMessage?: string; // last error for display
   isUploaded(): boolean;
 }
