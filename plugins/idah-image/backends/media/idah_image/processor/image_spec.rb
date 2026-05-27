@@ -51,6 +51,7 @@ RSpec.describe IdahImage::Processor::Image do
     it "processes the image and generates a thumbnail by default" do
       expect(processor_context).to receive(:upload_media).with(any_args, "processed.webp", "image/webp")
       expect(processor_context).to receive(:upload_media).with(any_args, "thumbnail.jpg", "image/jpeg")
+      expect(processor_context).to receive(:update_original_metadata).with(hash_including(:width, :height, :format))
 
       # Cleanup verification
       expect(mock_image).to receive(:destroy!).once
@@ -69,6 +70,7 @@ RSpec.describe IdahImage::Processor::Image do
 
       it "does not generate a thumbnail and cleans up" do
         allow(processor_context).to receive(:upload_media)
+        allow(processor_context).to receive(:update_original_metadata)
         expect(processor_context).not_to receive(:upload_media).with(any_args, "thumbnail.jpg", "image/jpeg")
 
         expect(mock_image).to receive(:destroy!).once
@@ -83,6 +85,7 @@ RSpec.describe IdahImage::Processor::Image do
 
       it "uploads with the correct format and mime type" do
         allow(processor_context).to receive(:upload_media)
+        allow(processor_context).to receive(:update_original_metadata)
         expect(processor_context).to receive(:upload_media).with(any_args, "processed.jpg", "image/jpeg")
         subject.run
       end
@@ -94,6 +97,7 @@ RSpec.describe IdahImage::Processor::Image do
       it "raises a ValidationFailed error and cleans up" do
         expect(File).to receive(:delete).with(file_path).once
         expect(Magick::Image).not_to receive(:read)
+        expect(processor_context).not_to receive(:update_original_metadata)
 
         expect { subject.run }.to raise_error(Verse::Error::ValidationFailed, /Image width or height exceeded/)
       end
@@ -101,6 +105,7 @@ RSpec.describe IdahImage::Processor::Image do
 
     it "cleans up temporary files and objects even if an error occurs during processing" do
       allow(mock_image).to receive(:write).and_raise("Some error")
+      allow(processor_context).to receive(:update_original_metadata)
 
       expect(mock_image).to receive(:destroy!).once
       expect(File).to receive(:delete).with(file_path).once
