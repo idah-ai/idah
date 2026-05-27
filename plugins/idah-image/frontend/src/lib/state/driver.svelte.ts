@@ -38,7 +38,6 @@ export function getDriver(): IIdahDriverV2 {
 
 export function initDriver(d: IIdahDriverV2): void {
   _driver = d;
-  console.log("Driver initialized:", d);
 
   // Make mode reactive.
   d.onModeChange((ev) => {

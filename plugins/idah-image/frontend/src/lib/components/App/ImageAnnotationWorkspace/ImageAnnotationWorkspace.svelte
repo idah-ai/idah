@@ -110,8 +110,6 @@
   $effect(() => {
     if (typeof window === "undefined") return;
 
-    console.log({ media, mediaInfo });
-
     const handleKeydown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement as HTMLElement | null;
       const isTyping =
