@@ -58,8 +58,11 @@ export function rotateCursorSVG(color: string): string {
   return `data:image/svg+xml;base64,${btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
       <g transform="scale(0.75) translate(3, 3)">
+        <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" stroke="white" stroke-width="4" stroke-linecap="round"/>
         <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M17 3L18.1243 5.43938L15.5 6.5" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
         <path d="M17 3L18.1243 5.43938L15.5 6.5" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="${color}"/>
+        <circle cx="12" cy="12" r="3" fill="white"/>
         <circle cx="12" cy="12" r="2" fill="${color}"/>
       </g>
     </svg>`)}`;

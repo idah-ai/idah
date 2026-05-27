@@ -25,7 +25,7 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { getShortcut } from "@/components/ui/kbd/utils";
+  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
@@ -33,6 +33,10 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
   // Props
   interface Props {
@@ -88,28 +92,49 @@
 
   async function submitAnnotation() {
     loading = true;
-    await driver.submit();
+    await submit();
   }
 
   async function reviewAnnotation(props: { approved: boolean }) {
     const { approved } = props;
     loading = true;
-    await driver.submit({ approved });
+    await submit({ approved });
+  }
+
+  async function submit(opts?: { approved: boolean }) {
+    entriesBackendDataSource.submit(driver.id, opts).then(async () => {
+      try {
+        const datasetsRes = await datasetsBackendDataSource.list({
+          fields: {
+            [DatasetRecord.type]: ["id"],
+          },
+          noCache: true,
+        });
+        if (datasetsRes.data.length) {
+          goto(resolve(`/projects/${driver.project.id}/datasets/${driver.dataset.id}/entries`));
+        } else {
+          goto(resolve(`/projects/${driver.project.id}/datasets`));
+        }
+      } catch (error) {
+        console.error(error);
+        goto(resolve(`/projects/${driver.project.id}/datasets`));
+      }
+    });
   }
 
   function toggleCommand() {
     driver.command.openPalette();
   }
+
+  function cmdShortcut(name: string): string | undefined {
+    const s = driver.command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
+  }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
-    <ToolTooltip
-      label="Shortcuts"
-      shortcut={getShortcut(driver.shortcutReferences?.["command_dialog"].keyCombinations)}
-      align="center"
-      delayDuration={100}
-    >
+    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
           <KeyboardIcon />

@@ -52,6 +52,7 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          destructive: true,
           hidden: !canDeleteOrganization,
           description:
             relatedProjectRecords.length > 0 ? "Cannot delete organization when projects are associated." : undefined,

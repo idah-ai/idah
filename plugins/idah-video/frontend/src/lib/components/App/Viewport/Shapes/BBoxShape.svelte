@@ -6,6 +6,7 @@
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { resolveShapeStyles } from "$lib/utils/styles";
   import {
     boundingBoxHandle,
     rotatePointN,
@@ -37,6 +38,9 @@
   }: Props = $props();
 
   let color = $derived.by(() => resolveAnnotationColor(annotation));
+
+  // ── Shape display styles from property options ─────────────────────────
+  let shapeStyleString = $derived.by(() => resolveShapeStyles(annotation));
 
   // ── Media dimensions (pixel space) ─────────────────────────────────────
   let w = $derived(media.width);
@@ -249,9 +253,10 @@
   }
 
   // ── Selection API ─────────────────────────────────────────────────────
-  const HANDLE_RADIUS_PX = 8;
-  const ROTATE_RADIUS_PX = 16;
+  const HANDLE_RADIUS_PX = 6;
+  const ROTATE_RADIUS_PX = 7;
   const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX * HANDLE_RADIUS_PX;
+  const ROTATE_RADIUS_PX_SQR = ROTATE_RADIUS_PX * ROTATE_RADIUS_PX;
 
   export function startSelection(start: Point, _shiftKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
@@ -272,12 +277,15 @@
       startRotated[0] >= minX && startRotated[0] <= maxX && startRotated[1] >= minY && startRotated[1] <= maxY;
     if (!isInside) return false;
 
+    const scale = viewport.workspace.transform.scale;
+
     // 1. Check resize handles (nearest-first)
     const handles = boundingBoxHandle(points);
     for (let i = 0; i < handles.length; i++) {
       const handle = handles[i];
-      const dx = Math.abs(start[0] - handle[0]) * w;
-      const dy = Math.abs(start[1] - handle[1]) * h;
+      const dx = Math.abs(start[0] - handle[0]) * w * scale;
+      const dy = Math.abs(start[1] - handle[1]) * h * scale;
+      // If within handle radius, start resizing with this handle
       if (dx * dx + dy * dy < HANDLE_RADIUS_PX_SQR) {
         resizeHandleIndex = i;
         resizeInitialPoints = [...points];
@@ -300,9 +308,10 @@
       const rotHandleN: Point = [topMidN[0], topMidN[1] - handleOffset];
       const rotHandleRotated = rotatePointN(rotHandleN, centroidN, currentAngle(), w, h);
 
-      const rdx = Math.abs(start[0] - rotHandleRotated[0]) * w;
-      const rdy = Math.abs(start[1] - rotHandleRotated[1]) * h;
-      if (rdx * rdx + rdy * rdy < HANDLE_RADIUS_PX_SQR) {
+      const rdx = Math.abs(start[0] - rotHandleRotated[0]) * w * scale;
+      const rdy = Math.abs(start[1] - rotHandleRotated[1]) * h * scale;
+      // If within rotation handle radius, start rotating with this handle as the pivot
+      if (rdx * rdx + rdy * rdy < ROTATE_RADIUS_PX_SQR) {
         rotateStart = centroidN;
         rotateStartRevolutions = Math.round(currentAngle() / (2 * Math.PI));
         const cp: Point = [centroidN[0] * w, centroidN[1] * h];
@@ -371,6 +380,7 @@
     style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
+    style={shapeStyleString}
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
     class={bodyCursor}
