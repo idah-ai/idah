@@ -12,8 +12,8 @@
     class: className,
     acceptedFileTypes = null,
     onFilesSelected,
-    slotSelectedFiles,
-    slotInfo,
+    SelectedFilesSlot,
+    InfoSlot,
   }: FileUploadBaseProps = $props();
 
   // Variables
@@ -79,25 +79,23 @@
     disabled={uploading}
   />
 
-  {#if slotSelectedFiles}
-    {@render slotSelectedFiles({ selectedFiles })}
-  {:else}
-    <Text class="text-accent-foreground text-wrap" size="sm" weight="semibold">
-      {#if selectedFiles}
-        {#each selectedFiles as selectedFile (selectedFile.name)}
-          <span class="line-clamp-1">{selectedFile.name}</span>
-        {/each}
-      {:else}
-        Drag and drop files here or
-        <span class="group-hover:underline group-hover:underline-offset-4"> click to select files </span>
-      {/if}
-    </Text>
-  {/if}
+  <Text class="text-accent-foreground text-wrap" size="sm">
+    {#if SelectedFilesSlot}
+      {@render SelectedFilesSlot({ selectedFiles })}
+    {:else if selectedFiles}
+      {#each selectedFiles as selectedFile (selectedFile.name)}
+        <span class="line-clamp-1">{selectedFile.name}</span>
+      {/each}
+    {:else}
+      <span class="font-medium underline underline-offset-2">Click to select files</span>
+      <span class="text-muted-foreground">or drag and drop</span>
+    {/if}
+  </Text>
 
-  {#if slotInfo}
-    {@render slotInfo()}
+  {#if InfoSlot}
+    {@render InfoSlot()}
   {:else}
-    <Text class="text-muted-foreground" size="sm">
+    <Text class="text-muted-foreground text-center" size="sm">
       Supported file types: {acceptedFileTypesString ?? "All file types"}
     </Text>
   {/if}
