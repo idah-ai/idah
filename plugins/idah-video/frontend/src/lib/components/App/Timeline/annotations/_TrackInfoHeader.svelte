@@ -72,7 +72,7 @@
             size="icon-sm"
             onclick={(e: MouseEvent) => {
               e.stopPropagation();
-              onClick();
+              onClick(e);
             }}
           >
             <Icon />

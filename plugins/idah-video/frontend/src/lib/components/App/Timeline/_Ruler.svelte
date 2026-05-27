@@ -73,11 +73,13 @@
 </script>
 
 {#if shouldShowRuler}
-  <div class="ruler">
+  <div class="ruler bg-secondary border-b">
     {#each groupedMarks as mark, markIndex (markIndex)}
       {#if mark.isBig && bigStep > 0}
         <div class="mark big" style="left: {mark.position}px;">
-          <span class="label">{labelFormatter(mark.value, bigStep < media.fps ? "ruler-sub" : "ruler")}</span>
+          <span class="label text-secondary-foreground">
+            {labelFormatter(mark.value, bigStep < media.fps ? "ruler-sub" : "ruler")}
+          </span>
         </div>
       {:else if smallStep > 0}
         <div class="mark small" style="left: {mark.position}px;"></div>
@@ -90,8 +92,6 @@
   .ruler {
     position: relative;
     height: 30px;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #ddd;
     overflow: hidden;
   }
 
@@ -117,7 +117,7 @@
     bottom: 0;
     width: 1px;
     height: 16px;
-    background-color: #333;
+    background-color: #777;
     /* transform: rotateZ(15deg) translateX(2px); */
   }
 
@@ -128,7 +128,6 @@
     /* transform: translateX(-50%); */
     font-size: 12px;
     font-family: sans-serif;
-    color: #333;
     white-space: nowrap;
     padding-bottom: 2px;
   }

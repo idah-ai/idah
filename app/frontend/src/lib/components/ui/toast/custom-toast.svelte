@@ -30,10 +30,10 @@
     <button
       class={cn("absolute -top-2 -right-2 flex size-5 cursor-pointer items-center justify-center rounded-full border", {
         "bg-background": type === "default",
-        "bg-[#EFF8FE]": type === "info",
-        "bg-[#EDFDF3]": type === "success",
-        "bg-[#FFFCF0]": type === "warning",
-        "bg-[#FFEFF0]": type === "error",
+        "bg-info": type === "info",
+        "bg-success": type === "success",
+        "bg-warning text-primary-foreground": type === "warning",
+        "bg-destructive text-primary-foreground": type === "error",
       })}
       onclick={() => {
         toast.dismiss(toastId);

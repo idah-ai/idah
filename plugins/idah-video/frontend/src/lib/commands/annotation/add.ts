@@ -49,6 +49,7 @@ export function register(driver: IIdahDriverV2): void {
           (this as any)._createdId = created.id;
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
+          driver.command.call("timeline.scroll_to_annotation");
           // Exit drawing mode after successful creation
           driver.setMode("default");
         },
@@ -58,8 +59,12 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.delete(id);
           }
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,
