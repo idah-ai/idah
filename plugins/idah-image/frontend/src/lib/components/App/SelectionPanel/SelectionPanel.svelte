@@ -6,7 +6,7 @@
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
 
-  import { EyeIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
@@ -20,6 +20,7 @@
   import TextProperty from "$lib/components/App/SelectionPanel/Properties/_TextProperty.svelte";
 
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -164,25 +165,27 @@
   });
   let openConfirmCategoryDeleteDialog = $state(false);
 
-  // const annotations = $derived(data?.annotations?.items ?? []);
+  const isAllHidden = $derived(
+    currentFrameAnnotations.length > 0 && currentFrameAnnotations.every((ann) => annotation.isHidden(ann)),
+  );
 
-  // const isAllHidden = $derived(annotations.length > 0 && annotations.every((ann) => ann.isHidden(ann)));
-
-  // const isAllLocked = $derived(annotations.length > 0 && annotations.every((ann) => ann.isLocked(ann)));
+  const isAllLocked = $derived(
+    currentFrameAnnotations.length > 0 && currentFrameAnnotations.every((ann) => annotation.isLocked(ann)),
+  );
 
   const menus = $derived<Menus>({
     actions: {
       items: {
         "visibility-all": {
           label: "Show/Hide All",
-          icon: EyeIcon,
+          icon: isAllHidden ? EyeOffIcon : EyeIcon,
           onClick: () => {
             getDriver().command.call("annotation.toggle_visibility_all");
           },
         },
         "editability-all": {
           label: "Lock/Unlock All",
-          icon: LockOpenIcon,
+          icon: isAllLocked ? LockIcon : LockOpenIcon,
           onClick: () => {
             getDriver().command.call("annotation.toggle_editability_all");
           },
@@ -201,7 +204,6 @@
       },
     },
   });
-
   // -----------------------------------------------------------------------
   // Handlers
   // -----------------------------------------------------------------------
