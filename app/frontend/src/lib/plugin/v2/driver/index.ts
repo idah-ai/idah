@@ -2,19 +2,15 @@
 // IdahDriverV2 — Core app adapter
 // ---------------------------------------------------------------------------
 import type {
-  IIdahDriverV2,
-  IProjectInfo,
-  IDatasetInfo,
-  IMediaInfo,
-  IConfig,
-  IShapeConfig,
   IAnnotationsDriverV2,
   ICommandDriverV2,
   IConfig,
+  IDatasetInfo,
   IIdahDriverV2,
   IMediaInfo,
   IModeEvent,
   INotesDriverV2,
+  IProjectInfo,
   IShapeConfig,
   ISyncErrorEvent,
   ISyncEvent,
@@ -312,10 +308,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────
 
+import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
-import { JsonRpcDatasource } from "@/data/jsonrpc";
-import { CommandDriverAdapter } from "./adapter/command";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
 import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
