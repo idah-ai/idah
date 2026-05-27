@@ -62,7 +62,7 @@
   {#each toolbarItems as { icon, label, name, onClick, visibleWhen, whenToggled }, toolIndex (toolIndex)}
     <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
       {#snippet trigger()}
-        {#if visibleWhen?.()}
+        {#if (visibleWhen || (() => true))()}
           <Button
             variant={whenToggled?.() || false ? "default" : "ghost"}
             size="icon-sm"
