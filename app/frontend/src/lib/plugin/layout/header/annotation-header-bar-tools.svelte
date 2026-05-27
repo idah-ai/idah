@@ -21,7 +21,7 @@
   // Variables
   const disabledToolsIfWorkflowSteps = ["done"];
   let currentMode = $state(driver.mode);
-  let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbarMgr.getItemsForMode(currentMode));
+  let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
@@ -62,7 +62,7 @@
   {#each toolbarItems as { icon, label, name, onClick, visibleWhen, whenToggled }, toolIndex (toolIndex)}
     <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
       {#snippet trigger()}
-        {#if visibleWhen?.() || true}
+        {#if visibleWhen?.()}
           <Button
             variant={whenToggled?.() || false ? "default" : "ghost"}
             size="icon-sm"
