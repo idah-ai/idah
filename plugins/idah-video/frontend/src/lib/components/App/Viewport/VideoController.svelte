@@ -18,6 +18,7 @@
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
@@ -42,6 +43,7 @@
   let frameInputValue = $state<number | null>(viewport.video.currentFrame.value + 1);
 
   let disabledSplitButton = $derived.by(() => {
+    if (!isEditable()) return true;
     const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
     if (!ann) return true;
     if (annotation.isLocked(ann)) return true;

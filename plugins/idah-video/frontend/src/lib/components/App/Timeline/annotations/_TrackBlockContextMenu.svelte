@@ -18,6 +18,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
 
   // Props
   interface Props extends ContextMenuComponentProps {
@@ -55,6 +56,7 @@
                 icon: Trash2Icon,
                 disabled: annotationIsLocked,
                 destructive: true,
+                hidden: !isEditable(),
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_delete", {
                     annotationId: rawData.id,
@@ -68,6 +70,7 @@
                 label: `Add keyframe`,
                 icon: FramerIcon,
                 disabled: annotationIsLocked,
+                hidden: !isEditable(),
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_add", {
                     annotationId: rawData.id,
@@ -84,6 +87,7 @@
           label: `Split at frame ${frame + 1}`,
           icon: SquareSplitHorizontalIcon,
           disabled: annotationIsLocked,
+          hidden: !isEditable(),
           onClick: () => {
             getDriver().command.call("annotation.split", {
               annotationId: rawData.id,
@@ -100,6 +104,7 @@
           icon: Trash2Icon,
           disabled: annotationIsLocked,
           destructive: true,
+          hidden: !isEditable(),
           onClick: () => {
             selection.selectAnnotation(rawData);
             getDriver().command.call("selection.delete", {});

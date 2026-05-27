@@ -3,6 +3,7 @@ import { CrosshairIcon, EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon 
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import { selection } from "$lib/state/selection.svelte";
+import { isEditable } from "$lib/state/editor.svelte";
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
 import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -46,6 +47,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
+          hidden: !isEditable(),
           onClick: () => {
             showConfirmDialog({
               title: "Delete annotation group",
