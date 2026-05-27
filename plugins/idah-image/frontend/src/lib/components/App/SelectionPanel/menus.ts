@@ -1,7 +1,9 @@
 import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as IconType } from "@lucide/svelte";
 
+import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
+import { selection } from "$lib/state/selection.svelte";
 
 import type { IImageAnnotationRecord } from "$lib/types";
 
@@ -14,19 +16,15 @@ export interface AnnotationAction {
   onClick: (e: MouseEvent) => void;
 }
 
-export function toggleVisibility() {
-  getDriver().command.call("annotation.toggle_group_visibility");
+export function toggleVisibility(groupId: string) {
+  getDriver().command.call("annotation.toggle_group_visibility", { groupId });
 }
 
-export function toggleEditability() {
-  getDriver().command.call("annotation.toggle_category_editability");
+export function toggleEditability(groupId: string) {
+  getDriver().command.call("annotation.toggle_group_editability", { groupId });
 }
 
-export function deleteAnnotation(annotationId: string) {
-  getDriver().command.call("annotation.delete", { annotationId });
-}
-
-export function getVisibilityAction(items: IImageAnnotationRecord[]): AnnotationAction | null {
+export function getVisibilityAction(groupId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   const isSomeHidden = items.some((item) => annotation.isHidden(item));
@@ -38,12 +36,12 @@ export function getVisibilityAction(items: IImageAnnotationRecord[]): Annotation
     alwaysShow: isSomeHidden,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleVisibility();
+      toggleVisibility(groupId);
     },
   };
 }
 
-export function getEditabilityAction(items: IImageAnnotationRecord[]): AnnotationAction | null {
+export function getEditabilityAction(groupId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   const isSomeLocked = items.some((item) => annotation.isLocked(item));
@@ -55,12 +53,12 @@ export function getEditabilityAction(items: IImageAnnotationRecord[]): Annotatio
     alwaysShow: isSomeLocked,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleEditability();
+      toggleEditability(groupId);
     },
   };
 }
 
-export function getDeleteAction(items: IImageAnnotationRecord[], onClickDelete: () => void): AnnotationAction | null {
+export function getDeleteAction(groupId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   return {
@@ -68,20 +66,30 @@ export function getDeleteAction(items: IImageAnnotationRecord[], onClickDelete: 
     label: "Delete annotation",
     icon: Trash2Icon,
     destructive: true,
-    onClick: async (e: MouseEvent) => {
-      e.stopPropagation();
-      onClickDelete();
+    onClick: () => {
+      showConfirmDialog({
+        title: "Delete annotation group",
+        description: "Are you sure you want to delete this annotation group?",
+        onConfirm: () => {
+          selection.selectGroup(groupId);
+          getDriver().command.call("selection.delete", {
+            groupId,
+            annotations: items,
+          });
+        },
+      });
     },
   };
 }
 
-export function getAnnotationActions(props: {
-  items: IImageAnnotationRecord[];
-  onClickDelete: () => void;
-}): AnnotationAction[] {
-  const { items, onClickDelete } = props;
+export function getAnnotationActions(props: { items: IImageAnnotationRecord[]; groupId: string }): AnnotationAction[] {
+  const { items, groupId } = props;
 
-  const actions = [getVisibilityAction(items), getEditabilityAction(items), getDeleteAction(items, onClickDelete)];
+  const actions = [
+    getVisibilityAction(groupId, items),
+    getEditabilityAction(groupId, items),
+    getDeleteAction(groupId, items),
+  ];
 
   return actions.filter(Boolean) as AnnotationAction[];
 }

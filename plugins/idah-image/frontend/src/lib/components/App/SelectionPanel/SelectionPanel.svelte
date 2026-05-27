@@ -20,19 +20,19 @@
   import TextProperty from "$lib/components/App/SelectionPanel/Properties/_TextProperty.svelte";
 
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { IMAGE_POLYGON } from "$lib/types";
+  import { cn } from "$lib/utils";
   import { categoryValueToLabel, compareGroups } from "$lib/utils/annotation";
 
   import type { IConfigProperty } from "$idah/v2/types";
   import type { Menus } from "$lib/components/App/ContextMenu/types";
-  import ConfirmModal from "$lib/components/ui/Overlays/modals/ConfirmModal.svelte";
   import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
-  import { deleteAnnotation, getAnnotationActions } from "./menus";
 
   type Props = {
     selectedCategory: string;
@@ -163,12 +163,10 @@
 
     return sorted;
   });
-  let openConfirmCategoryDeleteDialog = $state(false);
 
   const isAllHidden = $derived(
     currentFrameAnnotations.length > 0 && currentFrameAnnotations.every((ann) => annotation.isHidden(ann)),
   );
-
   const isAllLocked = $derived(
     currentFrameAnnotations.length > 0 && currentFrameAnnotations.every((ann) => annotation.isLocked(ann)),
   );
@@ -318,28 +316,22 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions({ items: currentFrameAnnotations, onClickDelete: () => {
-                  openConfirmCategoryDeleteDialog = true;
-                } }) as { label, icon: Icon, onClick }}
+              {#each getAnnotationActions( { items: [ann], groupId: annGroupId }, ) as { label, icon: Icon, onClick, alwaysShow }, index (index)}
                 <CategoryAction
                   {label}
                   icon={Icon}
-                  onclick={onClick}
-                  class="opacity-0 transition-opacity group-hover:opacity-100"
-                />
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onClick(e);
+                  }}
+                  class={cn("opacity-0", {
+                    "opacity-100": alwaysShow,
+                    "group-hover:opacity-100": !alwaysShow,
+                  })}
+                ></CategoryAction>
               {/each}
             </div>
           </div>
-
-          <ConfirmModal
-            title="Delete annotation"
-            description="Are you sure you want to delete this annotation?"
-            onConfirm={() => {
-              deleteAnnotation(ann.id);
-              openConfirmCategoryDeleteDialog = false;
-            }}
-            bind:open={openConfirmCategoryDeleteDialog}
-          />
         {/each}
       </div>
     </section>
