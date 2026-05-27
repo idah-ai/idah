@@ -24,6 +24,9 @@ module IdahImage
 
         img = Magick::Image.read(file_path).first
 
+        # Update original media with image metadata
+        context.update_original_metadata(image_info.to_h)
+
         # optimized web asset
         generate_processed(img)
 
