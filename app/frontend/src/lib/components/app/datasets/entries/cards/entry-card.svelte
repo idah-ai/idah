@@ -175,7 +175,7 @@
            */
           if (!jobId) {
             /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await entriesBackendDataSource.get(entryId, { included: ["dataset"], noCache: true });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -204,7 +204,7 @@
           /** If progress = 100%, update entry status to 'ready' */
           if (jobProgress === 1) {
             entry.status = "ready";
-            await loadThumbnail();
+            entry = Object.assign(Object.create(Object.getPrototypeOf(entry)), entry); // force new object reference
             stopPeriodicCheckJobStatus();
             return;
           }
