@@ -13,6 +13,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.keyframe_add",
@@ -37,12 +38,16 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as KeyframeAddProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props || !data.annotations) return noopAction(command);
 
       const record = data.annotations.items.find((r) => r.id === props.annotationId);
       if (!record) return noopAction(command);
 
-      const snapshot: AnnotationItem = { ...record, shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] } };
+      const snapshot: AnnotationItem = {
+        ...record,
+        shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] },
+      };
 
       // If points are empty, interpolate from surrounding keyframes
       let selection = { ...props.selection };
@@ -75,8 +80,12 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

@@ -16,6 +16,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { nearestKeyframe } from "$lib/utils/interpolation";
 import { noopAction } from "..";
 import { annotation } from "$lib/state/annotation.svelte";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.extend_prev",
@@ -35,6 +36,8 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
+      if (!isEditable()) return noopAction(command);
+
       return {
         command: {
           name: "annotation.extend_prev",
