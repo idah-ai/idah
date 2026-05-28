@@ -54,9 +54,8 @@
               deleteKeyframe: {
                 label: `Delete keyframe`,
                 icon: Trash2Icon,
-                disabled: annotationIsLocked,
+                disabled: annotationIsLocked || !isEditable(),
                 destructive: true,
-                hidden: !isEditable(),
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_delete", {
                     annotationId: rawData.id,
@@ -69,8 +68,7 @@
               addKeyframe: {
                 label: `Add keyframe`,
                 icon: FramerIcon,
-                disabled: annotationIsLocked,
-                hidden: !isEditable(),
+                disabled: annotationIsLocked || !isEditable(),
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_add", {
                     annotationId: rawData.id,
@@ -86,8 +84,7 @@
         split: {
           label: `Split at frame ${frame + 1}`,
           icon: SquareSplitHorizontalIcon,
-          disabled: annotationIsLocked,
-          hidden: !isEditable(),
+          disabled: annotationIsLocked || !isEditable(),
           onClick: () => {
             getDriver().command.call("annotation.split", {
               annotationId: rawData.id,
@@ -102,9 +99,8 @@
         delete: {
           label: `Delete annotation`,
           icon: Trash2Icon,
-          disabled: annotationIsLocked,
+          disabled: annotationIsLocked || !isEditable(),
           destructive: true,
-          hidden: !isEditable(),
           onClick: () => {
             selection.selectAnnotation(rawData);
             getDriver().command.call("selection.delete", {});

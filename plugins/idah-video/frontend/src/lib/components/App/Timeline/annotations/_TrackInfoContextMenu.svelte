@@ -22,7 +22,8 @@
 
   // ── Track title context menus (existing) ──────────────────────────────
   let groupMenus = $derived(track ? getGroupContextMenus({ track }) : null);
-  let annotationIsLocked = $derived(trackId && items ? items.some(item => annotation.isLocked(item.rawData)) : false);
+  let annotationIsLocked = $derived(trackId && items ? items.some((item) => annotation.isLocked(item.rawData)) : false);
+  let disabled = $derived(annotationIsLocked || !isEditable());
 
   // ── Empty-area extend menus (new) ─────────────────────────────────────
   let prevAnnotation = $derived.by<TimelineItem | undefined>(() => {
@@ -59,7 +60,12 @@
       {#each Object.entries(group.items) as [menuKey, { label, icon: Icon, disabled, hidden, destructive, onClick }] (menuKey)}
         {#if !hidden}
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-          <div role="none" onclick={(e) => { if (disabled) e.stopPropagation(); }}>
+          <div
+            role="none"
+            onclick={(e) => {
+              if (disabled) e.stopPropagation();
+            }}
+          >
             <Button
               variant={destructive ? "destructive-ghost" : "ghost"}
               size="sm"
@@ -80,14 +86,19 @@
     {/each}
   {:else if trackId && frame !== undefined}
     <!-- Empty track area context menu — extend actions -->
-    {#if isEditable() && prevAnnotation}
+    {#if prevAnnotation}
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div role="none" onclick={(e) => { if (annotationIsLocked) e.stopPropagation(); }}>
+      <div
+        role="none"
+        onclick={(e) => {
+          if (disabled) e.stopPropagation();
+        }}
+      >
         <Button
           variant="ghost"
           size="sm"
           class="mx-1 w-full justify-start"
-          disabled={annotationIsLocked}
+          {disabled}
           onclick={() => {
             getDriver().command.call("annotation.extend_prev", {
               annotationId: prevAnnotation.rawData.id,
@@ -101,14 +112,19 @@
       </div>
     {/if}
 
-    {#if isEditable() && nextAnnotation}
+    {#if nextAnnotation}
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div role="none" onclick={(e) => { if (annotationIsLocked) e.stopPropagation(); }}>
+      <div
+        role="none"
+        onclick={(e) => {
+          if (disabled) e.stopPropagation();
+        }}
+      >
         <Button
           variant="ghost"
           size="sm"
           class="mx-1 w-full justify-start"
-          disabled={annotationIsLocked}
+          {disabled}
           onclick={() => {
             getDriver().command.call("annotation.extend_next", {
               annotationId: nextAnnotation.rawData.id,
@@ -122,7 +138,7 @@
       </div>
     {/if}
 
-    {#if isEditable() && !prevAnnotation && !nextAnnotation}
+    {#if !prevAnnotation && !nextAnnotation}
       <div class="text-muted-foreground px-4 py-2 text-xs">No annotations to extend</div>
     {/if}
   {/if}
