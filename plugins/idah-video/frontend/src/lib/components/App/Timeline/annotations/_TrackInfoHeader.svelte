@@ -28,7 +28,6 @@
         "visibility-all": {
           label: "Show/Hide All",
           icon: isAllHidden ? EyeOffIcon : EyeIcon,
-          disabled: !isEditable(),
           onClick: () => {
             getDriver().command.call("annotation.toggle_visibility_all");
           },
@@ -36,7 +35,6 @@
         "editability-all": {
           label: "Lock/Unlock All",
           icon: isAllLocked ? LockIcon : LockOpenIcon,
-          disabled: !isEditable(),
           onClick: () => {
             getDriver().command.call("annotation.toggle_editability_all");
           },

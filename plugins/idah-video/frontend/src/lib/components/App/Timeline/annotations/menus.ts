@@ -28,7 +28,6 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
         visibility: {
           label: "Show/Hide Group",
           icon: isSomeHidden ? EyeOffIcon : EyeIcon,
-          disabled: !isEditable(),
           alwaysShow: isSomeHidden,
           onClick: (e: MouseEvent) => {
             if (e.shiftKey) {
@@ -41,7 +40,6 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
         editability: {
           label: "Lock/Unlock Group",
           icon: isSomeLocked ? LockIcon : LockOpenIcon,
-          disabled: !isEditable(),
           alwaysShow: isSomeLocked,
           onClick: () => getDriver().command.call("annotation.toggle_group_editability", { groupId: track.id }),
         },
