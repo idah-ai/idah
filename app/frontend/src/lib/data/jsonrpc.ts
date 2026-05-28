@@ -56,6 +56,7 @@ export class JsonRpcDatasource {
   private readonly retry_base_delay = 1000;
   private readonly retry_max_delay = 30000;
   private readonly batch_size: number;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;
@@ -71,6 +72,10 @@ export class JsonRpcDatasource {
 
   resume(): void {
     this.paused = false;
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
     this.process();
   }
 
@@ -113,7 +118,12 @@ export class JsonRpcDatasource {
         this.failedCount++;
         if (failure.isNetworkError) {
           const delay = Math.min(this.retry_base_delay * Math.pow(2, this.failedCount), this.retry_max_delay);
-          setTimeout(() => {
+          if (this.retryTimer !== null) {
+            clearTimeout(this.retryTimer);
+          }
+
+          this.retryTimer = setTimeout(() => {
+            this.retryTimer = null;
             if (!this.paused && !this.processing) this.flush();
           }, delay);
         } else {
@@ -136,20 +146,25 @@ export class JsonRpcDatasource {
         id: item.id,
       }));
 
-      const response = await fetch(this.base_url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
-      });
+      let response;
+      try {
+        response = await fetch(this.base_url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requests.length === 1 ? requests[0] : requests),
+        });
+      } catch (err) {
+        console.error(err);
+        return reject({
+          items: batch,
+          isNetworkError: true,
+        });
+      }
+
       if ([502, 503, 504, 511].includes(response.status)) {
         return reject({
           items: batch,
           isNetworkError: true,
-          error: {
-            code: response.status,
-            message: "Network Issue",
-            data: response,
-          },
         });
       }
 
