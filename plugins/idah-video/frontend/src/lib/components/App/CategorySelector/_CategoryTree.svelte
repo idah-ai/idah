@@ -344,10 +344,11 @@
             <!-- Icon Actions -->
             <div class="ml-auto flex content-center items-center gap-0">
               {#if mode == DEFAULT_MODE}
-                {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+                {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
                   <CategoryAction
                     {label}
                     {icon}
+                    {disabled}
                     onclick={(e) => {
                       e.stopPropagation();
                       onClick(e);
