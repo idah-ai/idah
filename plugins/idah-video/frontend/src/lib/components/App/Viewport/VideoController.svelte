@@ -1,5 +1,7 @@
 <script lang="ts">
   import {
+    ChevronFirstIcon,
+    ChevronLastIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
     ChevronsLeftIcon,
@@ -108,6 +110,15 @@
 <div id="video-controller" class="flex w-full items-center justify-between gap-4">
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
+    <!-- VIDEO::FIRST FRAME -->
+    <ToolTooltip label="First frame" shortcut={cmdShortcut("timeline.go_to_first")}>
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go_to_first")}>
+          <ChevronFirstIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
+
     <!-- VIDEO::PREVIOUS FRAME STEP -->
     <ToolTooltip
       label={`Previous ${frameStep} frames`}
@@ -161,6 +172,15 @@
       {#snippet trigger()}
         <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip_forward")}>
           <ChevronsRightIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
+
+    <!-- VIDEO::LAST FRAME -->
+    <ToolTooltip label="Last frame" shortcut={cmdShortcut("timeline.go_to_last")}>
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go_to_last")}>
+          <ChevronLastIcon />
         </Button>
       {/snippet}
     </ToolTooltip>
