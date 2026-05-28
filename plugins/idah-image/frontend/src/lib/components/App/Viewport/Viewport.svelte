@@ -4,8 +4,10 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
   import { modKey } from "$lib/utils/browser";
-  import { type Point } from "$lib/utils/math/point";
+
   import SyncIndicator from "./SyncIndicator.svelte";
+
+  import { type Point } from "$lib/utils/math/point";
 
   // Props
   interface Props {
@@ -201,7 +203,13 @@
   <div
     class="target"
     style:transform-origin="top left"
-    style:transform={`translate(${viewport.workspace.transform.translate[0]}px, ${viewport.workspace.transform.translate[1]}px)  scale(${viewport.workspace.transform.scale})`}
+    style:transform={`
+    translate(
+      ${viewport.workspace.transform.translate[0]}px,
+      ${viewport.workspace.transform.translate[1]}px
+    )
+    scale(${viewport.workspace.transform.scale})
+  `}
   >
     {@render children()}
   </div>
@@ -210,9 +218,16 @@
 <style>
   .viewport {
     position: absolute;
-    display: flexbox;
+    display: flex;
+    inset: 0;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+
+    .target {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
   }
 </style>

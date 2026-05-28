@@ -58,7 +58,7 @@ class Viewport {
       if (vw <= 0 || vh <= 0 || mw <= 0 || mh <= 0) return;
       const scaleX = vw / mw;
       const scaleY = vh / mh;
-      const scale = Math.min(scaleX, scaleY);
+      const scale = Math.min(scaleX, scaleY, 1);
       this.transform = {
         translate: [(vw - mw * scale) / 2, (vh - mh * scale) / 2],
         scale,
