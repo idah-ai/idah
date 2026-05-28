@@ -2,13 +2,16 @@
   import { showToast } from "$lib/components/ui/Toast/index.svelte";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import type { IImageAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
-  import { type Point } from "$lib/utils/math/point";
+  import { resolveShapeStyles } from "$lib/utils/styles";
+  import { addVertexOnEdge, hitTestVertex, moveVertex, pointInPolygon } from "./Polygon/utils";
+
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
   import PolygonScaleHandler from "./Polygon/_PolygonScaleHandler.svelte";
-  import { addVertexOnEdge, hitTestVertex, moveVertex, pointInPolygon } from "./Polygon/utils";
+
+  import type { IImageAnnotationShape } from "$lib/types";
+  import { type Point } from "$lib/utils/math/point";
 
   let {
     annotation,
@@ -29,6 +32,9 @@
   } = $props();
 
   let color = $derived.by(() => resolveAnnotationColor(annotation));
+
+  // ── Shape display styles from property options ─────────────────────────
+  let shapeStyleString = $derived.by(() => resolveShapeStyles(annotation));
 
   let w = $derived(media.width);
   let h = $derived(media.height);
@@ -129,7 +135,7 @@
     if (!editable || baseVertices.length < 3) return false;
 
     // Check if clicking on a vertex
-    const vi = hitTestVertex(start, vertices, w, h, 8);
+    const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
     if (vi >= 0) {
       if (shiftKey) {
         // Shift+click on a vertex: delete it (but keep minimum 3 points)
@@ -254,6 +260,7 @@
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 1.5 : 1}
     vector-effect="non-scaling-stroke"
+    style={shapeStyleString}
     style:outline="none"
     onmouseenter={() => (over = true)}
     onmouseleave={() => (over = false)}
