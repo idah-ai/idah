@@ -11,7 +11,7 @@ export const command = {
   name: "viewport.go_to_end",
   group: "Viewport",
   modes: ["default", "review"],
-  shortcut: "Control+Alt+ArrowRight",
+  shortcut: "Control+Shift+ArrowRight",
   shortDescription: "Go to end",
   longDescription: "Jump to the last frame",
 };
