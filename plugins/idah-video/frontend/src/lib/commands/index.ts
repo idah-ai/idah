@@ -25,8 +25,6 @@ export function noopAction(command: {
   };
 }
 
-import { register as registerViewportGoToEnd } from "./viewport/go-to-end";
-import { register as registerViewportGoToStart } from "./viewport/go-to-start";
 import { register as registerViewportGoto } from "./viewport/goto";
 import { register as registerViewportNextFrame } from "./viewport/next-frame";
 import { register as registerViewportPlay } from "./viewport/play";
@@ -103,8 +101,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerViewportPreviousFrame(driver);
   registerViewportSkipForward(driver);
   registerViewportSkipBackward(driver);
-  registerViewportGoToStart(driver);
-  registerViewportGoToEnd(driver);
   registerViewportZoomIn(driver);
   registerViewportZoomOut(driver);
 
