@@ -3,12 +3,12 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import {
-      Dialog,
-      DialogClose,
-      DialogContent,
-      DialogDescription,
-      DialogFooter,
-      DialogTitle,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
   } from "@/components/ui/dialog";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
 
@@ -93,7 +93,8 @@
       if (!canClickOutside) {
         e.preventDefault();
       }
-    }}>
+    }}
+  >
     {#if modalTitle}
       {@render modalTitle()}
     {:else}

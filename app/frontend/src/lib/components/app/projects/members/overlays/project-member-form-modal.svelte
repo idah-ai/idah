@@ -8,9 +8,9 @@
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import {
-      ProjectMemberRecord,
-      projectMembersBackendDataSource,
-      type ProjectMemberRole,
+    ProjectMemberRecord,
+    projectMembersBackendDataSource,
+    type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
