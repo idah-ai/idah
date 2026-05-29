@@ -128,6 +128,6 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} canClickOutside bind:open>
   <OrganizationForm {organization} {fieldErrors} onValueChange={setValue} />
 </FormModal>
