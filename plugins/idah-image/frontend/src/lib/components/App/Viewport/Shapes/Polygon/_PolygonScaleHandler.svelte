@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { scalePolygon, polygonCentroid } from "./utils";
+  import { polygonCentroid, scalePolygon } from "./utils";
+
+  import type { Point } from "$lib/utils/math/point";
 
   let {
     baseVertices,
@@ -122,9 +123,33 @@
     pointer-events="none"
   />
   <!-- Labels -->
-  <text x={barX1} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none" style="user-select:none">0.5×</text>
-  <text x={centroidPx[0]} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none" style="user-select:none">1×</text>
-  <text x={barX2} y={barY - 10 * invScale} text-anchor="middle" fill="white" font-size={10 * invScale} pointer-events="none" style="user-select:none">2×</text>
+  <text
+    x={barX1}
+    y={barY - 10 * invScale}
+    text-anchor="middle"
+    fill="white"
+    font-size={10 * invScale}
+    pointer-events="none"
+    style="user-select:none">0.5×</text
+  >
+  <text
+    x={centroidPx[0]}
+    y={barY - 10 * invScale}
+    text-anchor="middle"
+    fill="white"
+    font-size={10 * invScale}
+    pointer-events="none"
+    style="user-select:none">1×</text
+  >
+  <text
+    x={barX2}
+    y={barY - 10 * invScale}
+    text-anchor="middle"
+    fill="white"
+    font-size={10 * invScale}
+    pointer-events="none"
+    style="user-select:none">2×</text
+  >
   <!-- Thumb (draggable) -->
   <circle
     cx={thumbXClamped}

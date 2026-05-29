@@ -186,6 +186,11 @@ export interface IToolbarItem {
   /** Click handler. */
   onClick: Unsubscribe;
   /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
+  /**
    * Predicate — toolbar hides the item when `visibleWhen` returns `false`.
    * Default: always true.
    */
@@ -270,8 +275,8 @@ export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation =
   metadata?: IAnnotationMetadata;
 
   created_by_id?: string;
-  created_at?: Date;
-  updated_at?: Date;
+  created_at?: string;
+  updated_at?: string;
 
   /** Allow extensibility. */
   [key: string]: unknown;
@@ -473,6 +478,11 @@ export interface ToolbarItemOptions {
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
+  /**
+   * Optional command name for shortcut lookup.
+   * If provided, the toolbar item's shortcut will be fetched from the command registry.
+   */
+  name?: string;
   /**
    * Optional predicate — when returns `false`, the item is hidden.
    * Default: always visible.

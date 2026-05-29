@@ -360,7 +360,10 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
       mime_type: m.mime_type,
       filename: m.filename,
       meta: m.meta,
-      url: entry.dataset.modality === "idah-video" ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8` : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+      url:
+        entry.dataset.modality === "idah-video"
+          ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+          : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
     };
   } catch {
     mediaInfo = {
@@ -370,7 +373,10 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
       mime_type: "",
       filename: entry.name,
       meta: {},
-      url: entry.dataset.modality === "idah-video" ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8` : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+      url:
+        entry.dataset.modality === "idah-video"
+          ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+          : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
     };
   }
 
