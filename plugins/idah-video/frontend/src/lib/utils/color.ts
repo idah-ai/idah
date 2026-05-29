@@ -57,15 +57,16 @@ function hslToHex(h: number, s: number, l: number): string {
  */
 export function annotationColor(
   colorMode: "category" | "random",
-  annotation: { id?: string; value?: { category?: string }; shape?: { type?: string } },
+  annotation: { id?: string; value?: { category?: string }; shape?: { type?: string }; metadata?: { group_id?: string } },
   getCategoryColor?: (categoryId: string) => string | null | undefined,
 ): string {
   if (colorMode === "category" && getCategoryColor && annotation.value?.category) {
     const catColor = getCategoryColor(annotation.value.category);
     if (catColor) return catColor;
   }
-  // Fallback: deterministic HSL from id
-  return hslFromId(annotation.id ?? "");
+  // Fallback: deterministic HSL from group_id (shared across grouped annotations) or annotation id
+  const seedId = annotation.metadata?.group_id ?? annotation.id ?? "";
+  return hslFromId(seedId);
 }
 
 /**
