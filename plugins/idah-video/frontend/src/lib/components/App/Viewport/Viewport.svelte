@@ -147,8 +147,14 @@
       }
     } else {
       // Scroll / two-finger drag → translate
+      // Shift + scroll wheel → horizontal scroll (cross-platform)
       const curTranslate = viewport.workspace.transform.translate;
-      viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
+      if (e.shiftKey) {
+        // The browser may or may not remap deltaY→deltaX; enforce horizontal scroll universally
+        viewport.workspace.transform.translate = [curTranslate[0] - e.deltaY, curTranslate[1]];
+      } else {
+        viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
+      }
       viewport.workspace.clampTranslate();
     }
   }
