@@ -4,6 +4,7 @@
 
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
+  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
   import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
   import Icon from "$lib/components/ui/Icon/Icon.svelte";
 
@@ -21,7 +22,6 @@
   import { annotation } from "$lib/state/annotation.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
-  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
 
   // Props
   interface Props {
@@ -125,11 +125,11 @@
     </div>
 
     <div class="ml-auto flex shrink-0 items-center">
-      {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, alwaysShow, onClick }] (key)}
+      {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, disabled, alwaysShow, onClick }] (key)}
         <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
           <ToolTooltip {label}>
             {#snippet trigger()}
-              <Button variant="ghost" size="icon-sm" class="focus:outline-none" onclick={onClick}>
+              <Button variant="ghost" size="icon-sm" class="focus:outline-none" {disabled} onclick={onClick}>
                 <Icon />
               </Button>
             {/snippet}

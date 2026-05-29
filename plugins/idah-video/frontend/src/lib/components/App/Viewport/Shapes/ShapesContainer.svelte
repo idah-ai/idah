@@ -29,6 +29,7 @@
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
@@ -278,7 +279,7 @@
     }
 
     // ── Default mode: try editing selected annotation ──────────────
-    if (toolSelection) {
+    if (toolSelection && isEditable()) {
       const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
       if (consumed) {
         e.stopPropagation();
