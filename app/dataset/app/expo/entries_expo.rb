@@ -104,6 +104,26 @@ class EntriesExpo < BaseExpo
     service.error(entry_id, **opts)
   end
 
+  expose on_resource_event(Resource::Dataset::Entries, "assigned") # for testing purpose, submission is broken atm
+  # expose on_resource_event(Resource::Dataset::Entries, "submitted")
+  def compute_stats_on_entry_submitted
+    submission_type = message.content.dig(:metadata, :submission_type)
+    submission_type = "submitted" # for testing purpose, submission is broken atm
+    return unless submission_type
+
+    entry_id = message.content[:resource_id]
+    entry = service.show(entry_id, included: [:dataset, :annotations])
+    # entry = Entry::Repository.new(nil).find!(entry_id, included: [:dataset, :annotations])
+    EntryStats::Recompute.call(entry)
+  end
+
+  expose on_resource_event(Resource::Dataset::Entries, "errored")
+  def compute_stats_on_entry_errored
+    entry_id = message.content[:resource_id]
+    entry = Entry::Repository.new(nil).find!(entry_id, included: [:dataset, :annotations])
+    EntryStats::Recompute.call(entry)
+  end
+
   expose on_resource_event(Resource::Media::Jobs, "completed")
   def on_job_completed
     job_id = message.content[:resource_id]
