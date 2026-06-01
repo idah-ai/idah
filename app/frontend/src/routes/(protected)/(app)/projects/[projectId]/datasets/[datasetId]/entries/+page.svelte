@@ -151,7 +151,7 @@
     filters: filters,
     included: ["assigned_to", "submitted_by", "reviewed_by"],
     fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
-    sort: ["priority"],
+    sort: ["priority", "-created_at"],
     count: true,
     pagination: {
       page: currentPage,
