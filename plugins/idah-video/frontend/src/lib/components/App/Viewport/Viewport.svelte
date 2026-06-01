@@ -109,6 +109,17 @@
     viewport.workspace.transform.translate = newOffset;
   }
 
+  /**
+   * Converts a WheelEvent delta to pixels.
+   * Linux/Windows mouse wheels typically use DOM_DELTA_LINE (mode 1) with small
+   * integer values (e.g. 3), which would be imperceptible without this conversion.
+   */
+  function normalizeWheelDelta(delta: number, deltaMode: number): number {
+    if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
+    if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * size[1];
+    return delta; // DOM_DELTA_PIXEL — already in pixels
+  }
+
   export function onWheel(e: WheelEvent) {
     if (viewport.mode === "note") return;
     e.preventDefault();
@@ -146,15 +157,14 @@
         viewport.workspace.clampTranslate();
       }
     } else {
-      // Scroll / two-finger drag → translate
-      // Shift + scroll wheel → horizontal scroll (cross-platform)
+      // Scroll / two-finger drag → translate.
+
+      // Normalise deltas to pixels first — on Linux and Windows a standard mouse
+      const dx = normalizeWheelDelta(e.deltaX, e.deltaMode);
+      const dy = normalizeWheelDelta(e.deltaY, e.deltaMode);
+
       const curTranslate = viewport.workspace.transform.translate;
-      if (e.shiftKey) {
-        // The browser may or may not remap deltaY→deltaX; enforce horizontal scroll universally
-        viewport.workspace.transform.translate = [curTranslate[0] - e.deltaY, curTranslate[1]];
-      } else {
-        viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
-      }
+      viewport.workspace.transform.translate = [curTranslate[0] - dx, curTranslate[1] - dy];
       viewport.workspace.clampTranslate();
     }
   }
