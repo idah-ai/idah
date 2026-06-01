@@ -28,7 +28,7 @@
     actions,
     confirm,
     children,
-    canClickOutside = false,
+    canClickOutside = true,
   }: FormModalBaseProps = $props();
 
   // Types

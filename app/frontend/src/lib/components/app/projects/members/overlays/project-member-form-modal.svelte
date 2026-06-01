@@ -155,7 +155,7 @@
   }
 </script>
 
-<FormModal {action} title="Members" onCancel={resetForm} onConfirm={submit} canClickOutside bind:open>
+<FormModal {action} title="Members" onCancel={resetForm} onConfirm={submit} bind:open>
   {#snippet modalTitle()}
     <DialogTitle>Invite Members</DialogTitle>
   {/snippet}
