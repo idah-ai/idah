@@ -115,6 +115,7 @@
    * integer values (e.g. 3), which would be imperceptible without this conversion.
    */
   function normalizeWheelDelta(delta: number, deltaMode: number): number {
+
     if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
     if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * size[1];
     return delta; // DOM_DELTA_PIXEL — already in pixels
@@ -160,8 +161,16 @@
       // Scroll / two-finger drag → translate.
 
       // Normalise deltas to pixels first — on Linux and Windows a standard mouse
-      const dx = normalizeWheelDelta(e.deltaX, e.deltaMode);
-      const dy = normalizeWheelDelta(e.deltaY, e.deltaMode);
+      let dx = normalizeWheelDelta(e.deltaX, e.deltaMode);
+      let dy = normalizeWheelDelta(e.deltaY, e.deltaMode);
+
+      // macOS natively swaps deltaX/deltaY when Shift is held (vertical wheel →
+      // horizontal pan). Windows/Linux do NOT — we must handle it here so
+      // Shift+wheel consistently provides horizontal panning across platforms.
+      if (e.shiftKey && dx === 0 && dy !== 0) {
+        dx = dy;
+        dy = 0;
+      }
 
       const curTranslate = viewport.workspace.transform.translate;
       viewport.workspace.transform.translate = [curTranslate[0] - dx, curTranslate[1] - dy];
