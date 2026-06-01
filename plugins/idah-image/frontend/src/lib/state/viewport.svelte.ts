@@ -55,13 +55,17 @@ class Viewport {
     fitToViewport() {
       const [vw, vh] = this.dimensions;
       const [mw, mh] = media.dimensions;
+
       if (vw <= 0 || vh <= 0 || mw <= 0 || mh <= 0) return;
+
       const scaleX = vw / mw;
       const scaleY = vh / mh;
-      const scale = Math.min(scaleX, scaleY, 1);
+
+      const scale = Math.min(scaleX, scaleY);
+
       this.transform = {
         translate: [(vw - mw * scale) / 2, (vh - mh * scale) / 2],
-        scale,
+        scale: Math.max(1, scale),
       };
     },
 
