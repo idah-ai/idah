@@ -191,14 +191,18 @@
           getDriver().command.call("timeline.focus");
         },
       },
-      ...(isEditable() ? [{
-        label: "Delete Annotation",
-        icon: Trash2Icon,
-        onclick: (e: MouseEvent) => {
-          e.stopPropagation();
-          getDriver().command.call("annotation.delete", { annotationId: ann.id });
-        },
-      }] : []),
+      ...(isEditable()
+        ? [
+            {
+              label: "Delete Annotation",
+              icon: Trash2Icon,
+              onclick: (e: MouseEvent) => {
+                e.stopPropagation();
+                getDriver().command.call("annotation.delete", { annotationId: ann.id });
+              },
+            },
+          ]
+        : []),
     ];
   }
 </script>
@@ -277,7 +281,10 @@
           <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
             <button
               class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-              onclick={() => selection.selectAnnotation(ann)}
+              onclick={() => {
+                selection.selectAnnotation(ann);
+                getDriver().command.call("timeline.scroll_to_annotation");
+              }}
             >
               {#if annShapeType === VIDEO_POLYGON}
                 <Icon src={polygonIconSvg} color={annColor} />
