@@ -48,8 +48,10 @@
     const y2 = Math.max(buildStart[1], cursor[1]);
     buildStart = undefined;
 
-    // Minimum size threshold (normalized: 0.5%)
-    if (Math.abs(x2 - x1) < 0.005 || Math.abs(y2 - y1) < 0.005) return false;
+    // Minimum size threshold: at least 2px width and 2px height
+    const pixelWidth  = Math.abs(x2 - x1) * mediaWidth;
+    const pixelHeight = Math.abs(y2 - y1) * mediaHeight;
+    if (pixelWidth < 1 || pixelHeight < 1) return false;
 
     const points: Point[] = [
       [x1, y1],
