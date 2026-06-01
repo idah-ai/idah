@@ -48,7 +48,7 @@
     const y2 = Math.max(buildStart[1], cursor[1]);
     buildStart = undefined;
 
-    // Minimum size threshold: at least 2px width and 2px height
+    // Minimum size threshold: at least 1px width and 1px height
     const pixelWidth  = Math.abs(x2 - x1) * mediaWidth;
     const pixelHeight = Math.abs(y2 - y1) * mediaHeight;
     if (pixelWidth < 1 || pixelHeight < 1) return false;
