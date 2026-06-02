@@ -58,6 +58,7 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          destructive: true,
           hidden: !canDeleteDataset,
           action: () => {
             openConfirmDeleteDatasetModal = true;

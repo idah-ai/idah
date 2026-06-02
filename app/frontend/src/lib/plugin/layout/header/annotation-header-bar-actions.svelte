@@ -1,8 +1,6 @@
 <script lang="ts">
   import {
     ChevronDownIcon,
-    ChevronsLeft,
-    ChevronsRight,
     KeyboardIcon,
     MessageCircleIcon,
     MoonIcon,
@@ -14,43 +12,40 @@
     TabletSmartphoneIcon,
   } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
-  import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { getShortcut } from "@/components/ui/kbd/utils";
+  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
 
-  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "@/plugin/layout/header/annotation-header-bar.constants";
-
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
+  import type { IIdahDriverV2 } from "@/plugin/v2/types";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
   // Props
   interface Props {
-    context: IActivityContext;
+    driver: IIdahDriverV2;
     pluginContainerElement: HTMLElement | null;
   }
-  let { context, pluginContainerElement }: Props = $props();
+  let { driver, pluginContainerElement }: Props = $props();
 
   // Variables
-  let frameStep: number = $state(Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10);
   let loading = $state(false);
   let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
@@ -87,58 +82,59 @@
     },
   };
 
-  // Lifecycle
-  onMount(() => {
-    /** If frame step is not set in localStorage, set it to 10 as default */
-    if (!localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) {
-      localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, "10");
-    }
-
-    frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP));
-  });
-
   // Functions
   function closeNoteSidebar() {
     openNoteSidebar = false;
 
     // Reset selected note feed when closing sidebar
-    context.notes.gotoFeed(null);
+    driver.notes.gotoFeed(null);
   }
 
   async function submitAnnotation() {
     loading = true;
-    await context.submit();
+    await submit();
   }
 
   async function reviewAnnotation(props: { approved: boolean }) {
     const { approved } = props;
     loading = true;
-    await context.submit({ approved });
+    await submit({ approved });
   }
 
-  function setFrameStep(inputValue: number) {
-    const minStep: number = 1;
-    let stepToSet: number = inputValue;
-
-    if (isNaN(inputValue)) stepToSet = minStep;
-    if (stepToSet < minStep) stepToSet = minStep;
-    frameStep = stepToSet;
-    localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, stepToSet.toString());
+  async function submit(opts?: { approved: boolean }) {
+    entriesBackendDataSource.submit(driver.id, opts).then(async () => {
+      try {
+        const datasetsRes = await datasetsBackendDataSource.list({
+          fields: {
+            [DatasetRecord.type]: ["id"],
+          },
+          noCache: true,
+        });
+        if (datasetsRes.data.length) {
+          goto(resolve(`/projects/${driver.project.id}/datasets/${driver.dataset.id}/entries`));
+        } else {
+          goto(resolve(`/projects/${driver.project.id}/datasets`));
+        }
+      } catch (error) {
+        console.error(error);
+        goto(resolve(`/projects/${driver.project.id}/datasets`));
+      }
+    });
   }
 
   function toggleCommand() {
-    context.commands.run("command_dialog");
+    driver.command.openPalette();
+  }
+
+  function cmdShortcut(name: string): string | undefined {
+    const s = driver.command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
   }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
-    <ToolTooltip
-      label="Shortcuts"
-      shortcut={getShortcut(context.shortcutReferences?.["command_dialog"].keyCombinations)}
-      align="center"
-      delayDuration={100}
-    >
+    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
           <KeyboardIcon />
@@ -185,40 +181,6 @@
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuLabel>Frame step</DropdownMenuLabel>
-        <section class="flex flex-col gap-2 px-2 pb-2">
-          <div class="text-muted-foreground text-sm">
-            Set the number of frames to move <br />
-            when clicking the
-            <div class="inline-flex items-center gap-1">
-              <Button variant="outline" size="icon-sm" disabled>
-                <ChevronsLeft class="size-3" />
-              </Button>
-
-              <span>or</span>
-
-              <Button variant="outline" size="icon-sm" disabled>
-                <ChevronsRight class="size-3" />
-              </Button>
-            </div>
-            buttons<br />
-
-            in the video player.
-          </div>
-
-          <NumberField
-            name="settings/frame-step"
-            class="w-1/2"
-            placeholder="Frame step"
-            min={1}
-            value={frameStep}
-            oninput={(e) => setFrameStep(e.currentTarget.valueAsNumber)}
-            onblur={(e) => setFrameStep(e.currentTarget.valueAsNumber)}
-          />
-        </section>
       </DropdownMenuContent>
     </DropdownMenu>
 
@@ -233,9 +195,9 @@
     {/each}
   </div>
 
-  {#if context.workflowStep === "done"}
+  {#if driver.workflowStep === "done"}
     <!-- TODO: What to show? -->
-  {:else if context.workflowStep === "review"}
+  {:else if driver.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>
       {#snippet trigger({ props })}
         <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
@@ -249,6 +211,6 @@
   {/if}
 </div>
 
-<NoteSidebar {context} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
+<NoteSidebar {driver} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
 
-<NoteOverlay {context} {pluginContainerElement} />
+<NoteOverlay {driver} {pluginContainerElement} />
