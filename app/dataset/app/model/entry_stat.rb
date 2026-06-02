@@ -104,7 +104,7 @@ module EntryStat
         }
       end
 
-      table.db[:entry_stats].multi_insert(rows)
+      table.db[:entry_stats].multi_insert(rows) unless rows.empty?
     end
   end
 end

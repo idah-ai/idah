@@ -24,7 +24,7 @@ module EntryStats
     def self.call(entry)
       config = entry.dataset.labeling_configuration || {}
 
-      category_field = config[:category_field] || :category
+      category_field = (config[:category_field] || :category).to_sym
 
       # Collect all configured category ids across all tool types (flat).
       # Values of labeling_configuration are tool configs (Hashes); skip anything else
