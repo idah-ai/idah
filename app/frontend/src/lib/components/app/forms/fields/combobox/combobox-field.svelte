@@ -45,6 +45,7 @@
   type Choice = LabelValue<string | number>;
   let filtering = $state(false);
   let filteredChoices = $state<LabelValue<string | number>[]>([]);
+  let inputValue = $state("");
 
   // Functions
   async function filterChoices(searchVal: string) {
@@ -72,9 +73,41 @@
     });
   }
 
-  function select(choice: Choice) {
-    value = choice.value;
-    onSelected?.(value);
+  function select(choice: Choice): void {
+    // Toggle selection: deselect if already selected, otherwise select
+    if (value === choice.value) {
+      value = null;
+      onSelected?.(null);
+      inputValue = ""; // Clear input on deselect
+    } else {
+      value = choice.value;
+      onSelected?.(value);
+      // bits-ui auto-sets inputValue to choice.label
+    }
+  }
+
+  function onInput(e: Event): void {
+    const newValue = (e.currentTarget as HTMLInputElement).value;
+    inputValue = newValue;
+
+    // Clear selection if input is fully cleared
+    if (!newValue) {
+      if (value !== null) {
+        value = null;
+        onSelected?.(null);
+      }
+      return;
+    }
+
+    // Trigger async filter for dropdown
+    filterChoices(newValue);
+  }
+
+  function onBlur(): void {
+    // If user types free-text without selecting a choice → commit as free-text value
+    if (inputValue && value === null) {
+      onSelected?.(inputValue);
+    }
   }
 </script>
 
@@ -85,7 +118,7 @@
     <FieldLabel for={name} {required}>{label}</FieldLabel>
   {/if}
 
-  <Combobox.Root type="single">
+  <Combobox.Root type="single" {inputValue}>
     <div class="relative">
       <Combobox.Input
         class={cn(
@@ -93,10 +126,8 @@
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         )}
-        oninput={(e) => {
-          filterChoices(e.currentTarget.value);
-          onSelected?.(e.currentTarget.value);
-        }}
+        oninput={onInput}
+        onblur={onBlur}
         autofocus={false}
         {disabled}
         {placeholder}
@@ -109,7 +140,7 @@
 
     <Combobox.Portal>
       <Combobox.Content
-        class="focus-override border-muted bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 h-96 max-h-[var(--bits-combobox-content-available-height)] w-auto min-w-[var(--bits-combobox-anchor-width)] rounded-lg border p-1 outline-hidden select-none data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1"
+        class="focus-override border-muted bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-[var(--bits-combobox-content-available-height)] w-auto min-w-[var(--bits-combobox-anchor-width)] overflow-y-auto rounded-lg border p-1 outline-hidden select-none data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1"
         sideOffset={4}
       >
         <Combobox.Viewport class="p-1">

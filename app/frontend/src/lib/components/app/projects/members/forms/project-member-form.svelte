@@ -30,8 +30,7 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
-  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
-  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
+  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails]);
 
   // Lifecycle
   onMount(() => {
@@ -39,7 +38,7 @@
   });
 
   // Functions
-  async function fetchProjectMembers() {
+  async function fetchProjectMembers(): Promise<void> {
     const projectMembersRes = await projectMembersBackendDataSource.list({
       fields: {
         [ProjectMemberRecord.type]: ["email"],
@@ -88,30 +87,36 @@
           }}
         >
           {#snippet slotChoice({ choice, select })}
-            {@const isSelected = choice.value === member.email}
-            {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
+            {@const isAlreadyAdded = projectMemberEmails.includes(String(choice.value))}
+            {@const isDisabled = disabledMemberEmails.includes(String(choice.value))}
+            {@const isSelected = choice.value === member.email && !isDisabled}
             <Combobox.Item
-              class={cn(
-                "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
-                {
-                  "text-muted-foreground cursor-not-allowed": choice.disabled || isAlreadyAdded,
-                },
-              )}
               value={String(choice.value)}
               label={choice.label}
-              disabled={choice.disabled || isAlreadyAdded}
+              disabled={choice.disabled || isDisabled}
               onclick={() => select(choice)}
             >
-              {choice.label}
+              <!-- wrap with div component for display cursor -->
+              <div
+                class={cn(
+                  "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
+                  {
+                    "text-muted-foreground cursor-not-allowed": choice.disabled || isDisabled,
+                    "cursor-pointer": !(choice.disabled || isDisabled),
+                  },
+                )}
+              >
+                {choice.label}
 
-              <div class="ml-auto">
-                {#if isSelected}
-                  <CheckIcon class="size-4" />
-                {/if}
+                <div class="ml-auto">
+                  {#if isSelected}
+                    <CheckIcon class="size-4" />
+                  {/if}
 
-                {#if isAlreadyAdded}
-                  <Badge variant="outline" rounded="full">Already added</Badge>
-                {/if}
+                  {#if isAlreadyAdded}
+                    <Badge variant="outline" rounded="full">Already added</Badge>
+                  {/if}
+                </div>
               </div>
             </Combobox.Item>
           {/snippet}
@@ -123,7 +128,7 @@
           class="flex-1"
           label="Role"
           placeholder="Select a role"
-          choices={projectMemberRoles}
+          choices={[...projectMemberRoles]}
           required
           searchable
           searchPlaceholder="Search a role"
