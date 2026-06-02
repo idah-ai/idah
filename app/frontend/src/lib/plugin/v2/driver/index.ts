@@ -270,6 +270,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get id() {
         return driver.id;
       },
+      get dataset() {
+        return driver.dataset;
+      },
+      get project() {
+        return driver.project;
+      },
       get media() {
         return driver.media;
       },
