@@ -8,6 +8,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
+import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
 
 export const command = {
@@ -27,6 +28,7 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: () => {
+      if (!isEditable()) return noopAction(command);
       if (!data.annotations) return noopAction(command);
 
       const snapshot: AnnotationItem[] = [...data.annotations.items];

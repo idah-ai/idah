@@ -25,8 +25,6 @@ export function noopAction(command: {
   };
 }
 
-import { register as registerViewportGoToEnd } from "./viewport/go-to-end";
-import { register as registerViewportGoToStart } from "./viewport/go-to-start";
 import { register as registerViewportGoto } from "./viewport/goto";
 import { register as registerViewportNextFrame } from "./viewport/next-frame";
 import { register as registerViewportPlay } from "./viewport/play";
@@ -73,6 +71,8 @@ import { register as registerToggleDebugConsole } from "./display/toggle-debug-c
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
 import { register as registerTimelineFocus } from "./timeline/focus";
+import { register as registerTimelineGoToFirst } from "./timeline/go-to-first";
+import { register as registerTimelineGoToLast } from "./timeline/go-to-last";
 import { register as registerTimelineScrollToAnnotation } from "./timeline/scroll-to-annotation";
 import { register as registerTimelineZoomIn } from "./timeline/zoom-in";
 import { register as registerTimelineZoomOut } from "./timeline/zoom-out";
@@ -101,8 +101,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerViewportPreviousFrame(driver);
   registerViewportSkipForward(driver);
   registerViewportSkipBackward(driver);
-  registerViewportGoToStart(driver);
-  registerViewportGoToEnd(driver);
   registerViewportZoomIn(driver);
   registerViewportZoomOut(driver);
 
@@ -155,6 +153,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
+  registerTimelineGoToFirst(driver);
+  registerTimelineGoToLast(driver);
   registerTimelineScrollToAnnotation(driver);
   registerTimelineZoomIn(driver);
   registerTimelineZoomOut(driver);
