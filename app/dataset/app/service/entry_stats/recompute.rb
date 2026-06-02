@@ -19,7 +19,8 @@ module EntryStats
         collect_plugin_stats(entry, stats)
       rescue StandardError => e
         Verse.logger.error(
-          "[EntryStats] Plugin generator for modality '#{entry.dataset.modality}' failed: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+          "[EntryStats] Plugin generator for modality '#{entry.dataset.modality}' " \
+          "failed: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
         )
       end
 
@@ -32,7 +33,7 @@ module EntryStats
       modality = entry.dataset.modality
       klass = EntryStats::Registry.get(modality)
 
-      Verse.logger.debug{ "[EntryStats] Plugin lookup — modality='#{modality}' generator=#{klass || 'none'}" }
+      Verse.logger.debug{ "[EntryStats] Plugin lookup — modality='#{modality}' generator=#{klass || "none"}" }
 
       return unless klass
 

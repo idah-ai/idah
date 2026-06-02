@@ -43,11 +43,14 @@ RSpec.describe EntryStats::Service, database: true do
 
   describe "#index" do
     before do
-      stat_repo.bulk_insert(entry_id, {
-        "annotation.count" => "3",
-        "category.cat.count" => "2",
-        "category.dog.count" => "1"
-      })
+      stat_repo.bulk_insert(
+        entry_id,
+        {
+          "annotation.count" => "3",
+          "category.cat.count" => "2",
+          "category.dog.count" => "1"
+        }
+      )
     end
 
     it "returns all stats" do
