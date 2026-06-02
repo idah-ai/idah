@@ -86,7 +86,7 @@
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
   let jobProgress: number = $state(1);
 
-  const processingStatuses: EntryStatusType[] = ["processing", "pending"];
+  const processingStatuses: EntryStatusType[] = ["pending", "processing"];
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
@@ -162,12 +162,6 @@
           }
           if (!jobId) return;
 
-          /** If entry is ready, stop the interval */
-          if (entry.status === "ready") {
-            stopPeriodicCheckJobStatus();
-            return;
-          }
-
           /** If the entry is no longer processing, stop the interval */
           if (!processingStatuses.includes(entry.status)) {
             stopPeriodicCheckJobStatus();
@@ -182,9 +176,9 @@
           });
           jobProgress = jobRes.data.progress;
 
-          /** If progress = 100%, update entry status to 'ready' */
+          /** If progress = 100%, update entry status to 'pending' (supposedly from 'processing') */
           if (jobProgress === 1) {
-            entry.status = "ready";
+            entry.status = "pending";
             await loadThumbnail();
             stopPeriodicCheckJobStatus();
             return;

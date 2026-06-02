@@ -92,14 +92,14 @@ module Entry
 
     def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: })
+        entries.assign(id, assigned_to_id)
         entries.find!(id)
       end
     end
 
     def unassign_member(id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: nil })
+        entries.unassign(id)
         entries.find!(id)
       end
     end
@@ -160,7 +160,7 @@ module Entry
 
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
-        system_entries_repo.update!(entry.id, { assigned_to_id: nil })
+        system_entries_repo.update!(entry.id, { assigned_to_id: nil, status: "pending" })
       end
     end
   end
