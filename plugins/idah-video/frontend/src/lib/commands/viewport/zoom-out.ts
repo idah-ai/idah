@@ -26,7 +26,7 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         const cur = viewport.workspace.transform.scale;
-        viewport.workspace.transform.scale = Math.max(0.4, cur - 0.1);
+        viewport.workspace.transform.scale = Math.max(0.05, cur - 0.1);
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },
