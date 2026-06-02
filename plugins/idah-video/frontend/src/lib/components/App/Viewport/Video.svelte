@@ -37,31 +37,51 @@
 
   // ── Helpers ────────────────────────────────────────────────────────
   // Video is 1-based (frame 1 = 1/fps sec), data/timeline is 0-based.
-  function timeToFrame(t: number) { return Math.round(t * fps) - 1; }
-  function frameToTime(f: number) { return (f + 1 + 0.001) / fps; }
+  function timeToFrame(t: number) {
+    return Math.round(t * fps) - 1;
+  }
+  function frameToTime(f: number) {
+    return (f + 1 + 0.001) / fps;
+  }
 
   // ── RAF loop (only runs while playing) ─────────────────────────────
   function startRAF() {
-    const tick = () => {
-      if (!videoElement) return;
-      const frame = timeToFrame(videoElement.currentTime);
-      viewport.video.currentFrame.value = frame;
-      onFrameUpdate?.(frame);
+    if ("requestVideoFrameCallback" in videoElement) {
+      const tick = (_now: number, metadata: VideoFrameCallbackMetadata) => {
+        if (!videoElement) return;
+        const frame = timeToFrame(metadata.mediaTime);
+        viewport.video.currentFrame.value = frame;
+        onFrameUpdate?.(frame);
+        animationFrameId = (videoElement as any).requestVideoFrameCallback(tick);
+      };
+      animationFrameId = (videoElement as any).requestVideoFrameCallback(tick);
+    } else {
+      // Fallback for browsers without rVFC support
+      const tick = () => {
+        if (!videoElement) return;
+        const frame = timeToFrame(videoElement.currentTime);
+        viewport.video.currentFrame.value = frame;
+        onFrameUpdate?.(frame);
+        animationFrameId = requestAnimationFrame(tick);
+      };
       animationFrameId = requestAnimationFrame(tick);
-    };
-    animationFrameId = requestAnimationFrame(tick);
+    }
   }
 
   function stopRAF() {
     if (animationFrameId != null) {
-      cancelAnimationFrame(animationFrameId);
+      if ("cancelVideoFrameCallback" in videoElement) {
+        (videoElement as any).cancelVideoFrameCallback(animationFrameId);
+      } else {
+        cancelAnimationFrame(animationFrameId);
+      }
       animationFrameId = null;
     }
   }
 
   // ── Derived play/pause requests ───────────────────────────────────
-  const requestPlay  = $derived(!isPlaying && viewport.video.status === "play");
-  const requestPause = $derived( isPlaying && viewport.video.status === "pause");
+  const requestPlay = $derived(!isPlaying && viewport.video.status === "play");
+  const requestPause = $derived(isPlaying && viewport.video.status === "pause");
 
   // ── Effect: play/pause ────────────────────────────────────────────
   $effect(() => {
@@ -79,9 +99,13 @@
       isPlaying = false;
       onTogglePlay(false);
       stopRAF();
-      // Final frame read (exact post-pause position)
+      // Final frame read (exact post-pause position).
+      // Sync lastSeekedFrame BEFORE writing back so the seek $effect sees
+      // target === lastSeekedFrame and returns early — preventing it from
+      // calling cancelRender() on the in-flight HQ render.
       if (videoElement) {
         const frame = timeToFrame(videoElement.currentTime);
+        lastSeekedFrame = frame;
         viewport.video.currentFrame.value = frame;
         onFrameUpdate?.(frame);
       }
@@ -116,14 +140,14 @@
   });
 
   // ── Exported API ─────────────────────────────────────────────────
-  export function seekToFrame(frame: number) {
+  export async function seekToFrame(frame: number) {
     viewport.video.currentFrame.value = frame;
   }
 
   export function togglePlay() {
     if (!videoElement) return;
     if (videoElement.paused) viewport.video.play();
-    else                    viewport.video.pause();
+    else viewport.video.pause();
   }
 
   export function nextFrame(step = 1) {
@@ -146,8 +170,6 @@
     videoElement.muted = level === 0;
     onVolumeChange(level, level === 0);
   }
-
-  export function getFrames() { return media.totalFrames; }
 
   // Expose raw <video> element to parent
   $effect(() => {
@@ -172,9 +194,13 @@
       viewport.video.status = "pause";
       onTogglePlay(false);
       stopRAF();
-      // Final frame read
+      // Final frame read.
+      // Sync lastSeekedFrame BEFORE writing back so the seek $effect sees
+      // target === lastSeekedFrame and returns early — preventing it from
+      // calling cancelRender() on the in-flight HQ render.
       if (videoElement) {
         const frame = timeToFrame(videoElement.currentTime);
+        lastSeekedFrame = frame;
         viewport.video.currentFrame.value = frame;
         onFrameUpdate?.(frame);
       }
@@ -190,8 +216,8 @@
       }
     };
 
-    videoElement.addEventListener("play",   handlePlay);
-    videoElement.addEventListener("pause",  handlePause);
+    videoElement.addEventListener("play", handlePlay);
+    videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("resize", () => onResize());
 
@@ -212,8 +238,8 @@
     return () => {
       stopRAF();
       clearTimeout(hlsReloadTimer);
-      videoElement.removeEventListener("play",   handlePlay);
-      videoElement.removeEventListener("pause",  handlePause);
+      videoElement.removeEventListener("play", handlePlay);
+      videoElement.removeEventListener("pause", handlePause);
       videoElement.removeEventListener("seeked", handleSeeked);
       streamHandler?.destroy();
     };
@@ -323,12 +349,23 @@
   }
 
   @keyframes slideIn {
-    from { transform: translateY(-10px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.4; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
   }
 </style>

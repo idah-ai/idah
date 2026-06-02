@@ -22,11 +22,7 @@ export class VideoStreamHandler {
   private maxQualityLevel: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
 
-  constructor(
-    videoElement: HTMLVideoElement,
-    sourceUrl: string,
-    options: VideoStreamHandlerOptions = {}
-  ) {
+  constructor(videoElement: HTMLVideoElement, sourceUrl: string, options: VideoStreamHandlerOptions = {}) {
     this.videoElement = videoElement;
     this.sourceUrl = sourceUrl;
     this.hls = null;
@@ -72,37 +68,20 @@ export class VideoStreamHandler {
 
     // Manifest parsed - get available quality levels
     this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-      console.log("HLS manifest loaded");
-      console.log("Available quality levels:", data.levels.length);
       this.maxQualityLevel = data.levels.length - 1;
 
       // Start with highest quality
       if (this.hls) {
         this.hls.currentLevel = this.maxQualityLevel; // Highest quality
-        console.log(`Initial quality set to: ${this.maxQualityLevel}`);
       }
-    });
-
-    // Track level switching
-    this.hls.on(Hls.Events.LEVEL_SWITCHING, (event, data) => {
-      const newLevel = data.level;
-      console.log(`Level switching to: ${newLevel}`);
     });
 
     // Track fragment loading
     this.hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
       this.fragmentsLoaded++;
-      const fragmentLevel = data.frag.level;
-
-      console.log(
-        `Fragment ${this.fragmentsLoaded} loaded (segment #${data.frag.sn}, level: ${fragmentLevel})`
-      );
 
       // Stop after initial fragments during initial load
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
-        console.log(
-          `Loaded ${this.initialFragmentCount} initial fragments, stopping load until play`
-        );
         if (this.hls) {
           this.hls.stopLoad();
         }
@@ -112,7 +91,6 @@ export class VideoStreamHandler {
 
     // Video play event
     this.videoElement.addEventListener("play", () => {
-      console.log("Video play - resuming segment loading");
       this.isPaused = false;
       this.isInitialLoad = false;
 
@@ -131,7 +109,6 @@ export class VideoStreamHandler {
 
     // Video pause event
     this.videoElement.addEventListener("pause", () => {
-      console.log("Video paused - loading highest quality");
       this.isPaused = true;
 
       // Switch to highest quality level
@@ -140,11 +117,9 @@ export class VideoStreamHandler {
 
         // Check if we're already at the best quality
         if (currentLevel === this.maxQualityLevel) {
-          console.log(`Already at max quality level (${this.maxQualityLevel}), skipping reload`);
           return;
         }
 
-        console.log(`Switching to max quality level: ${this.maxQualityLevel}`);
         this.hls.currentLevel = this.maxQualityLevel;
 
         // Load and render high quality frame immediately
@@ -179,20 +154,6 @@ export class VideoStreamHandler {
     });
   }
 
-  private hasBufferedCurrentPosition(): boolean {
-    // Check if current position has buffered data
-    const currentTime = this.videoElement.currentTime;
-    const buffered = this.videoElement.buffered;
-
-    for (let i = 0; i < buffered.length; i++) {
-      if (currentTime >= buffered.start(i) && currentTime <= buffered.end(i)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   private getQualityInfo(levelIndex?: number): QualityInfo | undefined {
     if (!this.hls || this.maxQualityLevel < 0) {
       return undefined;
@@ -222,14 +183,12 @@ export class VideoStreamHandler {
     };
   }
 
-
   private renderQualityFrame(level: number): void {
     if (!this.hls) return;
 
     // Save current time
     const currentTime = this.videoElement.currentTime;
     const currentLevel = this.hls.currentLevel;
-    console.log(`Rendering quality frame at time: ${currentTime}s (level: ${level}, current: ${currentLevel})`);
 
     // Get the quality level info
     const qualityInfo = this.getQualityInfo(level);
@@ -250,8 +209,6 @@ export class VideoStreamHandler {
 
     // Listen for fragment loaded events
     const onFragLoaded = (event: string, data: any) => {
-      console.log(`Quality level ${level} fragment loaded (count: ${fragmentLoadCount}, level: ${data.frag.level})`);
-
       // Only count fragments for the target quality level
       if (data.frag.level === level) {
         fragmentLoadCount++;
@@ -268,8 +225,6 @@ export class VideoStreamHandler {
             // Force a tiny seek to refresh the frame
             const oldTime = this.videoElement.currentTime;
             this.videoElement.currentTime = oldTime + 0.001;
-
-            console.log(`Quality level ${level} frame rendered after 2 fragments`);
 
             // Hide loader only if we showed it
             if (shouldShowLoader) {
