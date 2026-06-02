@@ -13,7 +13,7 @@ const mockMedia = vi.hoisted(() => ({
   mime_type: "image/jpeg",
   filename: "test.jpg",
   url: "/medias/master.jpg",
-  meta: { duration: 60, fps: 30, width: 1920, height: 1080 },
+  meta: { width: 1920, height: 1080 },
 }));
 
 vi.mock("./driver.svelte", () => ({
@@ -44,17 +44,17 @@ describe("media state", () => {
   });
 
   it("returns format from the driver media", () => {
-    expect(media.format).toBe("video/mp4");
+    expect(media.format).toBe("image/jpeg");
   });
 
   it("returns url from the driver media when url is set", () => {
-    expect(media.url).toBe("/medias/master.m3u8");
+    expect(media.url).toBe("/medias/master.jpg");
   });
 
   it("constructs url from resource/key when url is not set", () => {
     mockMedia.url = "";
-    mockMedia.key = "subdir/video.mp4";
-    expect(media.url).toBe("/medias/files/mock-entry-001/subdir/video.mp4");
+    mockMedia.key = "subdir/image.jpg";
+    expect(media.url).toBe("/medias/files/mock-entry-001/subdir/image.jpg");
   });
 
   it("constructs url from resource only when key is empty", () => {
@@ -72,12 +72,12 @@ describe("media state", () => {
 
 describe("media state — error cases", () => {
   it("throws when width is missing", () => {
-    mockMedia.meta = { duration: 60, fps: 30, height: 1080 } as any;
+    mockMedia.meta = { height: 1080 } as any;
     expect(() => media.width).toThrow("width not set in metadata");
   });
 
   it("throws when height is missing", () => {
-    mockMedia.meta = { duration: 60, fps: 30, width: 1920 } as any;
+    mockMedia.meta = { width: 1920 } as any;
     expect(() => media.height).toThrow("height not set in metadata");
   });
 });
