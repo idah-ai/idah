@@ -96,12 +96,16 @@
     viewport.workspace.clampTranslate();
   }
 
+  /** Minimum zoom: allows zooming out to fit even large media in a small viewport. */
+  const MIN_ZOOM = 0.05;
+  const MAX_ZOOM = 100;
+
   function scopedZoom(value: number) {
-    return Math.max(0.4, Math.min(100, value));
+    return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
   }
 
   export function setZoom(newZoom: number) {
-    const clamped = Math.max(0.4, Math.min(100, newZoom));
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
     viewport.workspace.transform.scale = clamped;
   }
 
@@ -146,7 +150,8 @@
         // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
         // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
-        const newScale = Math.max(0.4, Math.min(100, curScale * factor));
+        const MIN_ZOOM = 0.05;
+        const newScale = Math.max(MIN_ZOOM, Math.min(100, curScale * factor));
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
