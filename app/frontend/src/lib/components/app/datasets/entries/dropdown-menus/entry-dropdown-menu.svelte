@@ -146,7 +146,11 @@
       <DropdownMenuGroup>
         {#each menus as { label, icon: Icon, action, hidden, destructive }, index (index)}
           {#if !hidden}
-            <DropdownMenuItem variant={destructive ? "destructive" : "default"} onclick={action}>
+            <DropdownMenuItem
+              variant={destructive ? "destructive" : "default"}
+              disabled={entry.status === "completed"}
+              onclick={action}
+            >
               <Icon class="size-4" />
               {label}
             </DropdownMenuItem>
