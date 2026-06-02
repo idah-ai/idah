@@ -149,8 +149,11 @@
 
   let listOptions: ListOptions = $derived({
     filters: filters,
-    included: ["assigned_to", "submitted_by", "reviewed_by"],
-    fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
+    included: ["assigned_to", "submitted_by", "reviewed_by", "dataset"],
+    fields: {
+      [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
+      [DatasetRecord.type]: ["modality"],
+    },
     sort: ["priority"],
     count: true,
     pagination: {
@@ -513,7 +516,7 @@
 {/key}
 
 <!-- MODAL::ADD TASK -->
-<CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
+<CreateEntryFormModal action="create" modality={dataset.modality} title="Entry" bind:open={openNewEntryModal} />
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal
