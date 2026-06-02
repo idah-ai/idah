@@ -45,17 +45,14 @@ module IdahVideo
     # Fetch video metadata from the media service and emit duration / fps /
     # total frame count. Silently skips if media info is unavailable.
     #
-    # resource_info returns multiple records for the same resource (HLS segments,
-    # manifests, thumbnails, etc.). The master/original upload is identified by
-    # an empty key ("") and is the only record that carries real video metadata.
+    # resource_info called without a key defaults to the empty-key record,
+    # which is the original upload and the only record with fps/duration meta.
+    # The meta field is stored as a JSON string in the DB, so we parse it.
     def self.emit_video_stats(entry, emit)
-      media_info = Api[:idah].media.medias.resource_info(resource: entry.resource)
-      records    = Array(media_info&.data)
+      entry_media = Api[:idah].media.medias.resource_info(resource: entry.resource)
+      meta = entry_media.data[:attributes][:meta]
 
-      master = records.find { |r| r[:key].to_s == "" && r[:meta].is_a?(Hash) && r[:meta].any? }
-      meta   = master&.dig(:meta)
-
-      return unless meta
+      return unless meta.any?
 
       duration = meta[:duration].to_f
       fps      = meta[:fps].to_f
