@@ -314,7 +314,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────
 
-import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
 import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { CommandDriverAdapter } from "./adapter/command";
@@ -323,15 +323,6 @@ import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
-  // const checkEntryRes = await entriesBackendDataSource.get(entryId, {
-  //   fields: { [EntryRecord.type]: ["wf_step"] },
-  //   noCache: true,
-  // });
-
-  // if (checkEntryRes.data.wf_step === "start") {
-  //   await entriesBackendDataSource.submit(entryId);
-  // }
-
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
     included: ["dataset", "dataset.project"],
     noCache: true,
