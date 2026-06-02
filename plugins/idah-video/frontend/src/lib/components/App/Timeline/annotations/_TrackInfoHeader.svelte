@@ -11,6 +11,7 @@
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
+  import { isEditable } from "$lib/state/editor.svelte";
 
   // Props
   interface Props {
@@ -41,6 +42,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
+          disabled: !isEditable(),
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
@@ -64,12 +66,13 @@
   <p class="text-xs font-medium">Annotations</p>
 
   <div class="ml-auto flex items-center">
-    {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick }] (key)}
+    {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, disabled, onClick }] (key)}
       <ToolTooltip {label}>
         {#snippet trigger()}
           <Button
             variant="ghost"
             size="icon-sm"
+            {disabled}
             onclick={(e: MouseEvent) => {
               e.stopPropagation();
               onClick(e);

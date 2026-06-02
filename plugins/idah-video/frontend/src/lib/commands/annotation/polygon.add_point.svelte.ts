@@ -7,6 +7,7 @@
 //   driver.command.call("annotation.polygon.add_point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
 
 export const command = {
@@ -26,8 +27,12 @@ export interface PolygonAddPointProps {
 let _draftPoints: [number, number][] = $state([]);
 
 export const draft = {
-  get points() { return _draftPoints; },
-  reset() { _draftPoints = []; },
+  get points() {
+    return _draftPoints;
+  },
+  reset() {
+    _draftPoints = [];
+  },
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -39,6 +44,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as PolygonAddPointProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props) return noopAction(command);
 
       const point = props.point;
