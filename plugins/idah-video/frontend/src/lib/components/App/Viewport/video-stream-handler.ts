@@ -21,6 +21,11 @@ export class VideoStreamHandler {
   private initialFragmentCount: number;
   private maxQualityLevel: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  // Track the in-flight render so a new call can cancel the previous one
+  // before it fires its micro-seek, preventing stale FRAG_LOADED listeners
+  // from accumulating during rapid frame navigation (key-hold).
+  private pendingFragListener: ((event: string, data: any) => void) | null;
+  private pendingRenderTimer: ReturnType<typeof setTimeout> | null;
 
   constructor(videoElement: HTMLVideoElement, sourceUrl: string, options: VideoStreamHandlerOptions = {}) {
     this.videoElement = videoElement;
@@ -34,6 +39,8 @@ export class VideoStreamHandler {
     this.initialFragmentCount = options.initialFragmentCount || 1;
     this.maxQualityLevel = -1; // Will be set after manifest is parsed
     this.onLoadingChange = options.onLoadingChange || (() => {}); // Callback for loading state
+    this.pendingFragListener = null;
+    this.pendingRenderTimer = null;
 
     this.init();
   }
@@ -186,6 +193,17 @@ export class VideoStreamHandler {
   private renderQualityFrame(level: number): void {
     if (!this.hls) return;
 
+    // Cancel any in-flight render from a previous call so stale FRAG_LOADED
+    // listeners don't pile up and fire spurious micro-seeks later.
+    if (this.pendingFragListener) {
+      this.hls.off(Hls.Events.FRAG_LOADED, this.pendingFragListener);
+      this.pendingFragListener = null;
+    }
+    if (this.pendingRenderTimer) {
+      clearTimeout(this.pendingRenderTimer);
+      this.pendingRenderTimer = null;
+    }
+
     // Save current time
     const currentTime = this.videoElement.currentTime;
     const currentLevel = this.hls.currentLevel;
@@ -215,13 +233,15 @@ export class VideoStreamHandler {
 
         // Only process on the second fragment load
         if (fragmentLoadCount === 2) {
-          // Remove listener
+          // Remove listener and clear the tracked reference
           if (this.hls) {
             this.hls.off(Hls.Events.FRAG_LOADED, onFragLoaded);
           }
+          this.pendingFragListener = null;
 
           // Small delay to ensure decoder has processed the data
-          setTimeout(() => {
+          this.pendingRenderTimer = setTimeout(() => {
+            this.pendingRenderTimer = null;
             // Force a tiny seek to refresh the frame
             const oldTime = this.videoElement.currentTime;
             this.videoElement.currentTime = oldTime + 0.001;
@@ -235,6 +255,7 @@ export class VideoStreamHandler {
       }
     };
 
+    this.pendingFragListener = onFragLoaded;
     this.hls.on(Hls.Events.FRAG_LOADED, onFragLoaded);
   }
 

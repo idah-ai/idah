@@ -31,6 +31,19 @@ class Viewport {
 
   video = $state({
     currentFrame: { value: 0 },
+    // displayedFrame trails currentFrame — it is only updated once the video
+    // element has confirmed the new position (seeked event, RAF tick, pause).
+    // The annotation layer reads this so annotations never jump ahead of the
+    // actual video pixels on screen.
+    displayedFrame: { value: 0 },
+    // Consolidated loading state read by LoadingIndicator.svelte.
+    //   highQuality — true while an HLS high-quality fragment is being fetched.
+    //   qualityLabel — human-readable label for the quality level ("1080p", …).
+    //   framePending — true when currentFrame ≠ displayedFrame (seek in flight).
+    loading: {
+      highQuality: false,
+      qualityLabel: "",
+    },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
     play() {

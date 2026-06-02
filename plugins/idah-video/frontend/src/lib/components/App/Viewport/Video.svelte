@@ -23,8 +23,6 @@
   let streamHandler: VideoStreamHandler | undefined;
 
   // ── UI state ───────────────────────────────────────────────────────
-  let isLoadingHighQuality = $state(false);
-  let qualityLabel = $state("");
   let isPlaying = $state(false);
   let animationFrameId: number | null = $state(null);
 
@@ -51,6 +49,9 @@
         if (!videoElement) return;
         const frame = timeToFrame(metadata.mediaTime);
         viewport.video.currentFrame.value = frame;
+        // During playback the video is actively painting — keep displayedFrame
+        // in lockstep so the annotation layer stays in sync.
+        viewport.video.displayedFrame.value = frame;
         onFrameUpdate?.(frame);
         animationFrameId = (videoElement as any).requestVideoFrameCallback(tick);
       };
@@ -61,6 +62,7 @@
         if (!videoElement) return;
         const frame = timeToFrame(videoElement.currentTime);
         viewport.video.currentFrame.value = frame;
+        viewport.video.displayedFrame.value = frame;
         onFrameUpdate?.(frame);
         animationFrameId = requestAnimationFrame(tick);
       };
@@ -107,6 +109,8 @@
         const frame = timeToFrame(videoElement.currentTime);
         lastSeekedFrame = frame;
         viewport.video.currentFrame.value = frame;
+        // Confirm displayed position so annotation layer matches the paused frame.
+        viewport.video.displayedFrame.value = frame;
         onFrameUpdate?.(frame);
       }
     }
@@ -130,12 +134,15 @@
 
     if (streamHandler) {
       clearTimeout(hlsReloadTimer);
-      // Single-step (keyboard arrow, nextFrame/prevFrame): reload quickly.
-      // Rapid scrub (slider drag, large jump): wait for activity to settle.
-      const debounceMs = delta <= 2 ? 10 : 150;
+      // Use a single debounce window for all navigation types.
+      // A short debounce (10 ms) caused reloadCurrentQuality() to fire on
+      // virtually every keypress during key-hold (key repeat ~30 ms),
+      // stacking multiple renderQualityFrame calls whose FRAG_LOADED listeners
+      // fired independently and caused spurious frame jumps.
+      // 300 ms ensures the reload only fires after navigation has settled.
       hlsReloadTimer = setTimeout(() => {
         if (videoElement.paused) streamHandler!.reloadCurrentQuality();
-      }, debounceMs);
+      }, 300);
     }
   });
 
@@ -202,6 +209,8 @@
         const frame = timeToFrame(videoElement.currentTime);
         lastSeekedFrame = frame;
         viewport.video.currentFrame.value = frame;
+        // Confirm displayed position so annotation layer matches the paused frame.
+        viewport.video.displayedFrame.value = frame;
         onFrameUpdate?.(frame);
       }
     };
@@ -210,9 +219,22 @@
       // Only write back when paused — during play the RAF loop owns the frame.
       if (!isPlaying && videoElement) {
         const frame = timeToFrame(videoElement.currentTime);
+
+        // Ignore stale seeked events from previous interrupted seeks.
+        // lastSeekedFrame is set to the target by the seek $effect before
+        // videoElement.currentTime changes, so any seeked that reports a
+        // different frame is from an older, interrupted seek.
+        if (frame !== lastSeekedFrame) return;
+
         viewport.video.currentFrame.value = frame;
-        lastSeekedFrame = frame; // keep guard in sync
+
+        // Video element confirmed it is now at this frame — advance the
+        // displayed frame so the annotation layer catches up to what the user
+        // actually sees on screen.
+        viewport.video.displayedFrame.value = frame;
+
         onFrameUpdate?.(frame);
+        // lastSeekedFrame already === frame — no update needed
       }
     };
 
@@ -227,8 +249,10 @@
       streamHandler = new VideoStreamHandler(videoElement, src, {
         initialFragmentCount: initialFragments,
         onLoadingChange: (loading, info) => {
-          isLoadingHighQuality = loading;
-          if (info) qualityLabel = info.label;
+          // Write HLS quality loading state to shared viewport state so
+          // LoadingIndicator.svelte can display it outside the scaled viewport.
+          viewport.video.loading.highQuality = loading;
+          if (info) viewport.video.loading.qualityLabel = info.label;
         },
       });
     } else {
@@ -256,14 +280,6 @@
     <track kind="captions" />
     Your browser does not support the video tag.
   </video>
-
-  {#if isLoadingHighQuality}
-    <div class="loader-overlay">
-      <div class="quality-badge">
-        <span class="quality-label">Loading: {qualityLabel}</span>
-      </div>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -307,65 +323,5 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-
-  .loader-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .quality-badge {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 8px 16px;
-    border-radius: 20px;
-    animation: slideIn 0.3s ease-out;
-  }
-
-  .quality-label {
-    color: white;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-
-  .quality-label::before {
-    content: "\25CF";
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 8px;
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateY(-10px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
-    }
   }
 </style>
