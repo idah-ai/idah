@@ -386,7 +386,7 @@
             <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry} />
+          <EntryDropdownMenu bind:entry />
         </div>
       </div>
     </section>

@@ -296,18 +296,20 @@
   async function unAssignEntries(): Promise<void> {
     try {
       for (const entryId of selectedEntryIds) {
-        await entriesBackendDataSource.update(entryId, {
+        const entryRes = await entriesBackendDataSource.update(entryId, {
           attributes: {
             assigned_to_id: null,
           },
         });
+
+        response.data = response.data.map((entry) => (entry.id === entryId ? entryRes.data : entry));
       }
 
       const selectedToUnassignedRows = response.data.filter(
         (entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to_id,
       );
       const description =
-        selectedToUnassignedEntryIdsCount > 1
+        selectedToUnassignedRows.length > 1
           ? `${selectedToUnassignedRows.length} entries have been unassigned.`
           : `The entry "${selectedToUnassignedRows[0]?.name}" has been unassigned.`;
 
@@ -317,7 +319,7 @@
       });
 
       selectedEntryIds = [];
-      $refetches.entries.list = new Date();
+      // $refetches.entries.list = new Date();
       openConfirmUnassignEntriesModal = false;
     } catch (error) {
       showActionFailedToast(error);
@@ -372,6 +374,7 @@
 
   function resetSelectedRows(): void {
     selectedEntryIds = [];
+    $refetches.entries.list = new Date();
   }
 </script>
 

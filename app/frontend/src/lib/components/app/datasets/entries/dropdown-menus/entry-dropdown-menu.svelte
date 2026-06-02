@@ -26,7 +26,7 @@
   interface Props {
     entry: EntryRecord;
   }
-  let { entry }: Props = $props();
+  let { entry = $bindable() }: Props = $props();
 
   // Records
   let projectId = page.params.projectId as string;
@@ -81,14 +81,15 @@
 
   async function unAssignEntry() {
     try {
-      await entriesBackendDataSource.update(entry.id, {
+      const entryRes = await entriesBackendDataSource.update(entry.id, {
         attributes: {
           assigned_to_id: null,
         },
       });
 
+      entry = entryRes.data;
+
       openConfirmUnassignEntryModal = false;
-      $refetches.entries.list = new Date();
       showToast.success({
         title: "Entry unassigned",
         description: `The entry "${entry.name}" has been unassigned.`,
@@ -118,6 +119,17 @@
       });
     }
   }
+
+  async function onEntryAssigned(): Promise<void> {
+    await entriesBackendDataSource
+      .get(entry.id, {
+        noCache: true,
+        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by"],
+      })
+      .then((res) => {
+        entry = res.data;
+      });
+  }
 </script>
 
 {#if canUpdateEntry || canDeleteEntry}
@@ -145,7 +157,13 @@
   </DropdownMenu>
 
   <!-- MODAL::ASSIGN ANNOTATOR  -->
-  <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
+  <AssignEntryFormModal
+    action="update"
+    {entryRecord}
+    onAssigned={onEntryAssigned}
+    entryIds={[entry.id]}
+    bind:open={openAssignEntryFormModal}
+  />
 
   <!-- MODAL::CONFIRM UNASSIGN -->
   <ConfirmModal
