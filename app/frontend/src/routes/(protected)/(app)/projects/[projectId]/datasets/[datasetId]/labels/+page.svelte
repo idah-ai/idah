@@ -22,7 +22,7 @@
   import { humanize, slugify } from "@/utils/string";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
@@ -70,6 +70,7 @@
     shapes = showModalityRes.shapes;
 
     labelConfig = datasetRes.data.labeling_configuration;
+
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
 
@@ -295,31 +296,25 @@
   function removeCategory(labelConfigKey: string, categoryId: string) {
     if (!labelConfig) return;
     // Filter out the exact category with the given ID
-    // This will only remove the exact match, keeping any parent categories
+    // If remove children it's still have parent but if remove parent, all children will be removed as well
     const selectedLabelConfig = labelConfig[labelConfigKey];
-    const { color, text_color } = getColor({ labelConfigKey });
-    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => !cat.id.includes(categoryId));
+    if (!selectedLabelConfig) return;
 
-    // Check if we need to create a parent category
-    const categoryPaths = categoryId.split("/");
-    if (categoryPaths.length > 1) {
-      // Create the parent path by removing the last segment
-      const parentPath = categoryPaths.slice(0, -1).join("/");
-      // Check if any existing category starts with the parent path
-      const anyExistingCategoryStartsWithParent = selectedLabelConfig.values.some((cat) =>
-        cat.id.startsWith(parentPath + "/"),
-      );
+    const normalizedId = categoryId.trim();
 
-      // If parent doesn't exist, create it
-      if (!anyExistingCategoryStartsWithParent) {
-        selectedLabelConfig.values.push({
-          id: parentPath,
-          label: humanize(parentPath),
-          color,
-          text_color,
-        });
-      }
-    }
+    const hasChildren = selectedLabelConfig.values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
+
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((value) => {
+      const valueId = value.id.trim();
+
+      // remove self
+      if (valueId === normalizedId) return false;
+
+      // remove children (only when deleting parent)
+      if (hasChildren && valueId.startsWith(normalizedId + "/")) return false;
+
+      return true;
+    });
   }
 
   function setProperty(labelConfigKey: string, property: IConfigProperty) {
