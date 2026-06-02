@@ -1,16 +1,16 @@
 <script lang="ts" generics="T extends Record">
   import { CalendarDate, parseDate } from "@internationalized/date";
   import {
-      ArrowDownAZIcon,
-      ArrowDownZAIcon,
-      ArrowUpDownIcon,
-      CheckIcon,
-      EyeOffIcon,
-      FunnelIcon,
-      FunnelXIcon,
-      SquareCheckBigIcon,
-      SquareIcon,
-      type Icon as IconType,
+    ArrowDownAZIcon,
+    ArrowDownZAIcon,
+    ArrowUpDownIcon,
+    CheckIcon,
+    EyeOffIcon,
+    FunnelIcon,
+    FunnelXIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    type Icon as IconType,
   } from "@lucide/svelte";
   import type { DateRange } from "bits-ui";
   import { addDays, addMonths, endOfMonth, endOfWeek, startOfWeek } from "date-fns";
@@ -28,9 +28,9 @@
   import { delayedInput } from "@/utils/delayed";
 
   import type {
-      ColumnSettings,
-      FilterDataSourceParams,
-      SortDataSourceParams,
+    ColumnSettings,
+    FilterDataSourceParams,
+    SortDataSourceParams,
   } from "@/components/app/datasource-table/types";
   import type { Sort } from "@/data/DataSource";
   import type { Filters } from "@/data/filtering";
