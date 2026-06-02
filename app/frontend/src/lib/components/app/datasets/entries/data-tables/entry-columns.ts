@@ -13,7 +13,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "resource",
+      filterKey: "name",
       filterBy: "string",
       filterOperation: "match",
     },
