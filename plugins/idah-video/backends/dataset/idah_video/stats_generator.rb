@@ -61,7 +61,10 @@ module IdahVideo
       emit.call("video.fps", fps)
       emit.call("video.frame_count", (duration * fps).round)
     rescue StandardError => e
-      Verse.logger.warn("[IdahVideo::StatsGenerator] Could not fetch video metadata for entry #{entry.id}: #{e.class} — #{e.message}\n#{e.backtrace.first(3).join("\n")}")
+      Verse.logger.warn(
+        "[IdahVideo::StatsGenerator] Could not fetch video metadata for entry #{entry.id}: " \
+        "#{e.class} — #{e.message}\n#{e.backtrace.first(3).join("\n")}"
+      )
     end
   end
 end
