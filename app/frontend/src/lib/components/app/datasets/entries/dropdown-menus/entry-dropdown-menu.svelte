@@ -128,9 +128,9 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
-        {#each menus as { label, icon: Icon, action, hidden }, index (index)}
+        {#each menus as { label, icon: Icon, action, hidden, destructive }, index (index)}
           {#if !hidden}
-            <DropdownMenuItem onclick={action}>
+            <DropdownMenuItem variant={destructive ? "destructive" : "default"} onclick={action}>
               <Icon class="size-4" />
               {label}
             </DropdownMenuItem>
