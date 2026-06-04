@@ -7,6 +7,7 @@
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
   import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
   import NoteOverlay from "@/plugin/layout/notes/NoteOverlay.svelte";
+  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
 
   interface Props {
     driver: IdahDriverV2;
@@ -31,6 +32,8 @@
   let currentMode = $state(driver.mode);
   let paletteOpen = $state(driver.command.isPaletteOpen());
   let initialized = $state(false);
+
+  let noteSidebarOpen = $state(true);
 
   driver.onModeChange((event) => {
     currentMode = event.newValue;
@@ -98,4 +101,34 @@
       Could not find plugin
     {/await}
   </div>
+
+  <!-- Note Sidebar toggle button (visible when in review workspace and sidebar closed) -->
+  {#if initialized && (currentMode === "review" || currentMode === "note") && !noteSidebarOpen}
+    <button
+      class="bg-primary text-primary-foreground hover:bg-primary/90 fixed right-0 z-[100] flex h-12 w-7 items-center justify-center rounded-l-md shadow-md"
+      style="top: {headerBarHeight + 8}px;"
+      onclick={() => (noteSidebarOpen = true)}
+      title="Open notes"
+      aria-label="Open notes"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m18 18 -6-6 6-6" /></svg
+      >
+    </button>
+  {/if}
+
+  <!-- Note Sidebar (overlay) -->
+  <NoteSidebar
+    {driver}
+    open={initialized && (currentMode === "review" || currentMode === "note") && noteSidebarOpen}
+    onSidebarClose={() => (noteSidebarOpen = false)}
+  />
 </div>

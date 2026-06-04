@@ -26,8 +26,6 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
-
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
@@ -197,9 +195,3 @@
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
-
-<NoteSidebar
-  {driver}
-  open={currentMode === "review" || currentMode === "note"}
-  onSidebarClose={() => driver.setMode("editor")}
-/>
