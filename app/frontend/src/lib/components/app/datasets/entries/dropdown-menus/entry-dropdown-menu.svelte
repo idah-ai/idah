@@ -25,8 +25,10 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    onUnAssigned?: (entry: EntryRecord) => void;
+    onAssigned?: (entry: EntryRecord) => void;
   }
-  let { entry = $bindable() }: Props = $props();
+  let { entry, onUnAssigned, onAssigned }: Props = $props();
 
   // Records
   let projectId = page.params.projectId as string;
@@ -89,7 +91,7 @@
         },
       });
 
-      entry = entryRes.data;
+      onUnAssigned(entryRes.data);
 
       openConfirmUnassignEntryModal = false;
       showToast.success({
@@ -130,6 +132,7 @@
       })
       .then((res) => {
         entry = res.data;
+        onAssigned?.(entry);
       });
   }
 </script>

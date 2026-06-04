@@ -288,7 +288,6 @@
 
   async function unAssignEntries(): Promise<void> {
     try {
-       
       for (const entryId of unAssignableEntryIds) {
         const entryRes = await entriesBackendDataSource.update(entryId, {
           attributes: {
