@@ -151,7 +151,7 @@
     filters: filters,
     included: ["assigned_to", "submitted_by", "reviewed_by"],
     fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
-    sort: ["priority", "-created_at"],
+    sort: ["-created_at"],
     count: true,
     pagination: {
       page: currentPage,
@@ -224,19 +224,8 @@
       urlFilters = Object.fromEntries(newUrl.searchParams.entries());
     }
 
-    filters = updatedFilters;
-
-    /** Add or update filter */
-    listOptions = {
-      ...listOptions,
-      filters: {
-        ...filters,
-      },
-    };
-
     resetToFirstPage();
-
-    await fetchEntries();
+    filters = updatedFilters;
   }
 
   async function sortEntries(params: SortDataSourceParams): Promise<void> {
@@ -268,21 +257,15 @@
     }
 
     resetToFirstPage();
-
-    await fetchEntries();
   }
 
   async function changePage(changeToPage: number): Promise<void> {
     currentPage = changeToPage;
-
-    await fetchEntries();
   }
 
   async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
     resetToFirstPage();
     itemsPerPage = selectedItemsPerPage;
-
-    await fetchEntries();
   }
 
   function selectRow(selectedId: string): void {
