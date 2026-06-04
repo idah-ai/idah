@@ -121,3 +121,6 @@ class Viewport {
 }
 
 export const viewport = new Viewport();
+
+export const MIN_ZOOM = 0.05;
+export const MAX_ZOOM = 100;

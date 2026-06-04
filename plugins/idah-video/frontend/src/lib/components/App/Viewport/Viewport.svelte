@@ -4,7 +4,7 @@
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
   import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { viewport, MIN_ZOOM, MAX_ZOOM } from "$lib/state/viewport.svelte";
   import SyncIndicator from "./SyncIndicator.svelte";
   import { media } from "$lib/state/media.svelte";
 
@@ -95,10 +95,6 @@
     setOffset([ox * viewport.workspace.transform.scale + dsx / 2, oy * viewport.workspace.transform.scale + dsy / 2]);
     viewport.workspace.clampTranslate();
   }
-
-  /** Minimum zoom: allows zooming out to fit even large media in a small viewport. */
-  export const MIN_ZOOM = 0.05;
-  export const MAX_ZOOM = 100;
 
   function scopedZoom(value: number) {
     return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
