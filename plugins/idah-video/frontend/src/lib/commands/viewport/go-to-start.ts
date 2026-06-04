@@ -1,16 +1,18 @@
 // ---------------------------------------------------------------------------
-// viewport.reset — Reset viewport zoom/pan to fit the video (non-undoable)
+// viewport.go_to_start — Jump to the first frame
+// Shortcut: Ctrl+Alt+ArrowLeft
+// Not undoable.
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.reset",
+  name: "viewport.go_to_start",
   group: "Viewport",
   modes: ["editor", "review"],
-  shortcut: null,
-  shortDescription: "Reset view",
-  longDescription: "Reset zoom and pan to fit the full video",
+  shortcut: "Control+Alt+ArrowLeft",
+  shortDescription: "Go to start",
+  longDescription: "Jump to the first frame",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -23,7 +25,7 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        viewport.workspace.fitToViewport();
+        viewport.video.currentFrame.value = 0;
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

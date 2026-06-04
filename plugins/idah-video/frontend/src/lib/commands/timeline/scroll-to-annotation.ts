@@ -18,7 +18,7 @@ import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 export const command = {
   name: "timeline.scroll_to_annotation",
   group: "Timeline",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: null,
   shortDescription: "Scroll timeline to annotation",
   longDescription: "Pan the timeline to show the current frame without changing the zoom level",
