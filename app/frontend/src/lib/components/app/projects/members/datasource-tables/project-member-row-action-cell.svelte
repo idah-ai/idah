@@ -1,8 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { UserRoundXIcon } from "@lucide/svelte";
+  import { PencilIcon, UserRoundXIcon } from "@lucide/svelte";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import ProjectMemberEditModal from "@/components/app/projects/members/overlays/project-member-edit-modal.svelte";
   import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -27,6 +28,7 @@
 
   // Variables
   let projectId = page.params.projectId as string;
+  let openEditMemberModal: boolean = $state(false);
   let openConfirmRemoveMemberModal: boolean = $state(false);
 
   // Functions
@@ -49,6 +51,34 @@
     }
   }
 </script>
+
+<Can
+  action="update"
+  resource="dataset:project_members"
+  scopes={[
+    "as_org_owner",
+    {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    },
+  ]}
+>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={() => (openEditMemberModal = true)}>
+        <PencilIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      Edit "{projectMember.email}" role
+    {/snippet}
+  </Tooltips>
+
+  <ProjectMemberEditModal bind:open={openEditMemberModal} {projectMember} />
+</Can>
 
 <Can
   action="delete"
