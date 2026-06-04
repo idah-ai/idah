@@ -61,6 +61,8 @@
   }
 </script>
 
+{#snippet noLabel()}{/snippet}
+
 <FieldSet class="p-1">
   <FieldGroup>
     <!-- EACH MEMBERS -->
@@ -80,6 +82,7 @@
             },
           }}
           label="Member"
+          slotLabel={index === 0 ? undefined : noLabel}
           placeholder="Search account by email"
           required
           value={member.email}
@@ -122,6 +125,7 @@
           name="{resource}/role"
           class="flex-1"
           label="Role"
+          slotLabel={index === 0 ? undefined : noLabel}
           placeholder="Select a role"
           choices={projectMemberRoles}
           required
