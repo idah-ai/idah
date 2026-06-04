@@ -16,6 +16,7 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.keyframe_delete",
@@ -47,6 +48,8 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
+      if (!isEditable()) return noopAction(command);
+
       // Derive annotationId + frame from opts (programmatic call) or from current selection (shortcut invocation)
       let annotationId: string | undefined;
       let frame: number | undefined;
@@ -91,8 +94,12 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

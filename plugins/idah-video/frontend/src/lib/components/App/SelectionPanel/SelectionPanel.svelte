@@ -22,6 +22,7 @@
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { compareGroups, categoryValueToLabel } from "$lib/utils/annotation";
   import { VIDEO_POLYGON } from "$lib/types";
@@ -48,6 +49,8 @@
     onEditValue,
     disabled,
   }: Props = $props();
+
+  let effectiveDisabled = $derived(disabled || !isEditable());
 
   // -----------------------------------------------------------------------
   // Determine which shape type config to use based on selection state
@@ -188,14 +191,18 @@
           getDriver().command.call("timeline.focus");
         },
       },
-      {
-        label: "Delete Annotation",
-        icon: Trash2Icon,
-        onclick: (e: MouseEvent) => {
-          e.stopPropagation();
-          getDriver().command.call("annotation.delete", { annotationId: ann.id });
-        },
-      },
+      ...(isEditable()
+        ? [
+            {
+              label: "Delete Annotation",
+              icon: Trash2Icon,
+              onclick: (e: MouseEvent) => {
+                e.stopPropagation();
+                getDriver().command.call("annotation.delete", { annotationId: ann.id });
+              },
+            },
+          ]
+        : []),
     ];
   }
 </script>
@@ -215,35 +222,35 @@
         property={p}
         value={annotationValue.attributes?.[p.id] as any}
         onValueChange={(v: any) => onValueChange(p, v)}
-        {disabled}
+        disabled={effectiveDisabled}
       />
     {:else if p.type === "integer"}
       <IntegerProperty
         property={p}
         value={annotationValue.attributes?.[p.id] as any}
         onValueChange={(v: any) => onValueChange(p, v)}
-        {disabled}
+        disabled={effectiveDisabled}
       />
     {:else if p.type === "boolean"}
       <BooleanProperty
         property={p}
         value={annotationValue.attributes?.[p.id] as any}
         onValueChange={(v: any) => onValueChange(p, v)}
-        {disabled}
+        disabled={effectiveDisabled}
       />
     {:else if p.type === "single-select"}
       <SingleSelectProperty
         property={p}
         value={annotationValue.attributes?.[p.id] as any}
         onValueChange={(v: any) => onValueChange(p, v)}
-        {disabled}
+        disabled={effectiveDisabled}
       />
     {:else if p.type === "multi-select"}
       <MultipleSelectProperty
         property={p}
         value={annotationValue.attributes?.[p.id] as any}
         onValueChange={(v: any) => onValueChange(p, v)}
-        {disabled}
+        disabled={effectiveDisabled}
       />
     {/if}
   </div>
@@ -274,7 +281,10 @@
           <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
             <button
               class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-              onclick={() => selection.selectAnnotation(ann)}
+              onclick={() => {
+                selection.selectAnnotation(ann);
+                getDriver().command.call("timeline.scroll_to_annotation");
+              }}
             >
               {#if annShapeType === VIDEO_POLYGON}
                 <Icon src={polygonIconSvg} color={annColor} />
@@ -314,7 +324,7 @@
 
       <div class="flex flex-col gap-1">
         <Text size="sm" weight="semibold">Category</Text>
-        <Select type="single" onValueChange={onSelectCategory} {disabled}>
+        <Select type="single" onValueChange={onSelectCategory} disabled={effectiveDisabled}>
           <SelectTrigger
             class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
           >
@@ -379,7 +389,7 @@
 
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="semibold">Category</Text>
-      <Select type="single" onValueChange={reselectCategory} {disabled}>
+      <Select type="single" onValueChange={reselectCategory} disabled={effectiveDisabled}>
         <SelectTrigger
           class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
         >
@@ -438,7 +448,7 @@
 
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="semibold">Category</Text>
-      <Select type="single" onValueChange={reselectCategory} {disabled}>
+      <Select type="single" onValueChange={reselectCategory} disabled={effectiveDisabled}>
         <SelectTrigger
           class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
         >

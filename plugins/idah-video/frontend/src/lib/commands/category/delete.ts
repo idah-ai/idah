@@ -22,6 +22,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
+import { isEditable } from "$lib/state/editor.svelte";
 import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
 
@@ -51,9 +52,8 @@ export function register(driver: IIdahDriverV2): void {
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as DeleteCategoryProps;
 
-      if (!props || !data.annotations) {
-        return noopAction(command);
-      }
+      if (!isEditable()) return noopAction(command);
+      if (!props || !data.annotations) return noopAction(command);
 
       let categoryAnnotations: AnnotationItem[];
 

@@ -9,11 +9,12 @@
   // Props
   interface Props {
     class?: string | null;
-    onclick: (e: MouseEvent) => void;
     label: string;
     icon?: typeof IconType;
+    disabled?: boolean;
+    onclick: (e: MouseEvent) => void;
   }
-  let { class: className, onclick, icon: Icon, label }: Props = $props();
+  let { class: className, label, disabled, icon: Icon, onclick }: Props = $props();
 </script>
 
 <ToolTooltip {label}>
@@ -22,6 +23,7 @@
       variant="ghost"
       size="icon-sm"
       class={cn("text-muted-foreground shrink-0", className)}
+      {disabled}
       onclick={(e) => {
         e.stopPropagation();
         onclick(e);

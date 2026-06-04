@@ -1,18 +1,19 @@
 // ---------------------------------------------------------------------------
-// viewport.go_to_start — Jump to the first frame
-// Shortcut: Ctrl+Alt+ArrowLeft
+// timeline.go_to_last — Jump to the last frame
+// Shortcut: Ctrl+Shift+ArrowRight
 // Not undoable.
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
+import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.go_to_start",
-  group: "Viewport",
+  name: "timeline.go_to_last",
+  group: "Timeline",
   modes: ["default", "review"],
-  shortcut: "Control+Alt+ArrowLeft",
-  shortDescription: "Go to start",
-  longDescription: "Jump to the first frame",
+  shortcut: "Control+Shift+ArrowRight",
+  shortDescription: "Go to last frame",
+  longDescription: "Jump to the last frame",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -25,10 +26,14 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        viewport.video.currentFrame.value = 0;
+        viewport.video.currentFrame.value = media.totalFrames - 1;
       },
-      isCombinable() { return false; },
-      combine(prev) { return prev; },
+      isCombinable() {
+        return false;
+      },
+      combine(prev) {
+        return prev;
+      },
     }),
     group: command.group,
   });

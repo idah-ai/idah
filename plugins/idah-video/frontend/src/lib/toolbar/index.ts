@@ -1,5 +1,6 @@
 // toolbar/index.ts — Register toolbar items with the V2 driver
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { isEditable } from "$lib/state/editor.svelte";
 
 import cursorIcon from "$lib/assets/icons/cursor.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
@@ -33,9 +34,11 @@ export function initToolbar(driver: IIdahDriverV2): void {
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: "selection",
     visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
-    onClick: (() =>
-      (driver.mode === "idah-video:bounding-box") ? driver.setMode("editor") :
-        driver.setMode("idah-video:bounding-box")),
+    onClick: () => {
+      if (!isEditable()) return;
+      if (driver.mode === "idah-video:bounding-box") driver.setMode("editor");
+      else driver.setMode("idah-video:bounding-box");
+    },
     whenToggled: () => driver.mode === "idah-video:bounding-box",
   });
   t.add({
@@ -45,9 +48,11 @@ export function initToolbar(driver: IIdahDriverV2): void {
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: "selection",
     visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
-    onClick: (() =>
-      (driver.mode === "idah-video:polygon") ? driver.setMode("editor") :
-        driver.setMode("idah-video:polygon")),
+    onClick: () => {
+      if (!isEditable()) return;
+      if (driver.mode === "idah-video:polygon") driver.setMode("editor");
+      else driver.setMode("idah-video:polygon");
+    },
     whenToggled: () => driver.mode === "idah-video:polygon",
   });
   t.add({

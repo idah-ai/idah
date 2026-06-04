@@ -9,6 +9,7 @@ import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.update",
@@ -32,6 +33,8 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
+      if (!isEditable()) return noopAction(command);
+
       const props = opts as unknown as AnnotationUpdateProps | undefined;
       if (!props || !data.annotations) return noopAction(command);
 
@@ -52,8 +55,12 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

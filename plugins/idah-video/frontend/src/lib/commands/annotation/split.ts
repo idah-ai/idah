@@ -25,6 +25,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.split",
@@ -48,6 +49,8 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
+      if (!isEditable()) return noopAction(command);
+
       // Derive annotationId + at from opts (programmatic call) or from current selection (shortcut invocation)
       let annotationId: string | undefined;
       let at: number | undefined;
