@@ -44,6 +44,8 @@
         openConfirmDeleteEntryModal = true;
       },
       isAssigned: !!entry.assigned_to_id,
+      isAssignDisabled: entry.wf_step === "done",
+      isUnassignDisabled: entry.wf_step === "done",
     }).filter((m) => m.label !== "Set Priority"),
   );
 
@@ -132,9 +134,9 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
-        {#each menus as { label, icon: Icon, action, hidden, destructive }, index (index)}
+        {#each menus as { label, icon: Icon, action, hidden, destructive, disabled }, index (index)}
           {#if !hidden}
-            <DropdownMenuItem variant={destructive ? "destructive" : "default"} onclick={action}>
+            <DropdownMenuItem variant={destructive ? "destructive" : "default"} {disabled} onclick={action}>
               <Icon class="size-4" />
               {label}
             </DropdownMenuItem>
