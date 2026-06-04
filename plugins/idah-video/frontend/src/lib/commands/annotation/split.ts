@@ -29,7 +29,7 @@ import { noopAction } from "..";
 export const command = {
   name: "annotation.split",
   group: "Annotation",
-  modes: ["default", "review"] as string[],
+  modes: ["editor"] as string[],
   shortcut: "S",
   shortDescription: "Split annotation at frame",
   longDescription: null,

@@ -2,20 +2,27 @@ import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
 
 // List of viewport modes
-export const DEFAULT_MODE = "default";
+export const EDITOR_MODE = "editor";
+export const REVIEW_MODE = "review";
 export const NOTE_MODE = "note";
 export const BOUNDING_BOX_MODE = "idah-video:bounding-box";
 export const POLYGON_MODE = "idah-video:polygon";
 
 class Viewport {
   // Only mode needs special handling
-  #mode = $state(DEFAULT_MODE);
+  #mode = $state(EDITOR_MODE);
 
   get mode() {
     return this.#mode;
   }
   get isCreationMode() {
-    return ["idah-video:polygon", "idah-video:bounding-box"].includes(this.#mode);
+    return ["idah-video:polygon", "idah-video:bounding-box", "note"].includes(this.#mode);
+  }
+  get isEditorWorkspace() {
+    return this.#mode === EDITOR_MODE;
+  }
+  get isReviewWorkspace() {
+    return this.#mode === REVIEW_MODE || this.#mode === NOTE_MODE;
   }
 
   set mode(val: string) {
@@ -23,6 +30,9 @@ class Viewport {
     this.#mode = val;
     getDriver().setMode(val);
   }
+
+  /** Reference to the SVG element for screen coordinate calculations */
+  svgElement: SVGSVGElement | null = $state(null);
 
   timeline = $state({
     range: { startRange: 0, endRange: 0 },

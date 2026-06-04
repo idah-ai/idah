@@ -497,26 +497,57 @@ export function createDataStore<T extends DataItem>(
 //   data.annotations.preloadRange(-Infinity, Infinity);
 //   console.log(data.annotations.items);
 
+import type { INoteRecord } from "$idah/v2/types";
 import { getDriver } from "$lib/state/driver.svelte";
 
 let _annotations: DataStore<AnnotationItem> | null = $state(null);
-let _notes: DataStore<NoteItem> | null = $state(null);
+
+let _noteList: INoteRecord[] = $state([]);
+let _unsubNotes: (() => void) | null = null;
+
+let _pendingNoteScene: { x: number; y: number } | null = $state(null);
+
+export function setPendingNoteScene(pos: { x: number; y: number } | null): void {
+  _pendingNoteScene = pos;
+}
+
+export const pendingNoteScene = {
+  get value(): { x: number; y: number } | null { return _pendingNoteScene; },
+};
 
 /** Initialise the stores from the global driver. Call once after initDriver(). */
 export function initDataStores(): void {
   const d = getDriver();
   if (!d) throw new Error("Driver not initialized — call initDriver() first");
   _annotations = createAnnotationStore(d.annotations);
-  _notes = createNoteStore(d.notes);
   _annotations.preloadRange(-Infinity, Infinity);
-  _notes.preloadRange(-Infinity, Infinity);
+
+  _unsubNotes = d.notes.onNotesChange((notes: INoteRecord[]) => {
+    _noteList = notes;
+  });
+
+  // onFocusNote is registered in NoteMarkers.svelte onMount
 }
+
+/** Cleanup note subscriptions — call from plugin.close(). */
+export function destroyDataStores(): void {
+  _unsubNotes?.();
+  _unsubNotes = null;
+  _annotations = null;
+  _noteList = [];
+}
+
+/**
+ * Reactive note list — kept in sync via onNotesChange.
+ * Read-only accessor for the plugin's NoteMarkers component.
+ */
+export const notes = {
+  get list(): INoteRecord[] { return _noteList; },
+};
 
 /** Global stores — auto-initialised from the V2 driver. */
 export const data: {
   annotations: DataStore<AnnotationItem> | null;
-  notes: DataStore<NoteItem> | null;
 } = {
   get annotations() { return _annotations; },
-  get notes() { return _notes; },
 };

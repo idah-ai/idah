@@ -62,6 +62,14 @@
               ? ["pending"]
               : ["pending", "resolved"];
 
+            // Sync with plugin adapter so NoteMarkers/timeline reflect the same filter
+            const adapter = driver.notesAdapter;
+            if (adapter) {
+              const includeResolved = noteFeedFilters.status__in.includes("resolved");
+              adapter.setIncludeResolved(includeResolved);
+              adapter.fetchForEntry();
+            }
+
             $refetches.noteFeeds.list = new Date();
           },
         },
@@ -104,7 +112,25 @@
       }
 
       default: {
-        // driver.notes.gotoFeed(noteFeed.id);
+        // Not a general note — hand off to the plugin so it can seek to the anchor
+        const adapter = driver.notesAdapter;
+        if (adapter) {
+          adapter.focusNote({
+            id: noteFeed.id,
+            anchor: {
+              annotation_id: noteFeed.annotation_id,
+              anchor_type: noteFeed.anchor_type,
+              position: noteFeed.position,
+            },
+            content_md: noteFeed.content_md,
+            status: noteFeed.status,
+            resolved: noteFeed.status === "resolved",
+            created_by_email: noteFeed.created_by_email,
+            created_at: noteFeed.created_at?.toString(),
+            updated_at: noteFeed.updated_at?.toString(),
+            edited_at: noteFeed.edited_at?.toString() ?? null,
+          });
+        }
         break;
       }
     }
@@ -133,6 +159,9 @@
       },
       sort: ["-created_at"],
     });
+    // Sync the adapter cache so NoteMarkers re-renders
+    const adapter = driver.notesAdapter;
+    await adapter?.fetchForEntry();
     return noteFeedsRes.data;
   }
 
@@ -201,6 +230,11 @@
     if (!selectedNoteFeed) return;
 
     await deleteNoteFeed(selectedNoteFeed.id);
+
+    // Re-sync the notes adapter cache so NoteMarkers re-renders
+    const adapter = driver.notesAdapter;
+    await adapter?.fetchForEntry();
+
     backToNoteFeedList();
   }
 </script>
@@ -244,7 +278,11 @@
         {#if isDetailView && selectedNoteFeed}
           <ResolveNoteFeedButton
             noteFeed={selectedNoteFeed}
-            onNoteResolved={(resolvedNoteFeed) => (selectedNoteFeed = resolvedNoteFeed)}
+            onNoteResolved={(resolvedNoteFeed) => {
+              selectedNoteFeed = resolvedNoteFeed;
+              // Sync adapter cache so plugin markers reflect the status change
+              driver.notesAdapter?.fetchForEntry();
+            }}
           />
           <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable onDelete={deleteNote} />
         {/if}

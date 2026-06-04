@@ -6,6 +6,7 @@
 
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
   import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
+  import NoteOverlay from "@/plugin/layout/notes/NoteOverlay.svelte";
 
   interface Props {
     driver: IdahDriverV2;
@@ -17,6 +18,7 @@
   let headerBarElement = $state<HTMLElement | null>(null);
   let headerBarHeight = $derived(headerBarElement?.clientHeight ?? 50);
   let plugin: IPluginDriver | undefined = $state();
+  let notesReady = $state(false);
 
   let p: Promise<IPluginDriver> = new Promise<IPluginDriver>((ok, ko) => {
     if (!window.idah_plugin) {
@@ -35,9 +37,23 @@
   });
 
   onMount(() => {
+    // Initialise notes cache from backend
+    const na = driver.notesAdapter;
+    if (na) {
+      na.fetchForEntry()
+        .then(() => {
+          notesReady = true;
+        })
+        .catch(() => {
+          notesReady = true;
+        });
+    } else {
+      notesReady = true;
+    }
+
     p.then((_plugin) => {
       plugin = _plugin;
-      plugin.init(driver);
+      plugin.init(driver.sealed());
       initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
     });
     const unsub = driver.command.onPaletteChange((open: boolean) => {
@@ -59,6 +75,10 @@
 
 <div class="relative">
   {#if initialized}
+    {#if notesReady && (currentMode === "review" || currentMode === "note")}
+      <NoteOverlay notesAdapter={driver.notesAdapter} />
+    {/if}
+
     <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {driver} />
 
     <IdahCommandPalette

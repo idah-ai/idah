@@ -51,7 +51,7 @@ export function register(driver: IIdahDriverV2): void {
           selection.selectAnnotation(created as any);
           driver.command.call("timeline.scroll_to_annotation");
           // Exit drawing mode after successful creation
-          driver.setMode("default");
+          driver.setMode("editor");
         },
         async undo() {
           const id = (this as any)._createdId;

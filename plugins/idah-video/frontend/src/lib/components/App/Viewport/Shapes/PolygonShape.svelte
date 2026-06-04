@@ -271,6 +271,9 @@
       // to avoid interfering with the creation process
       if (viewport.isCreationMode) return;
 
+      // In review mode, let the event bubble for panning
+      if (viewport.mode === "review") return;
+
       if (editable && selected) {
         // Convert client coords to SVG viewBox coords, then to normalized (0-1) media coords.
         const svg = (e.currentTarget as SVGElement).ownerSVGElement;

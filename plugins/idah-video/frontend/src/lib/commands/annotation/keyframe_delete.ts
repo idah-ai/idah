@@ -20,7 +20,7 @@ import { noopAction } from "..";
 export const command = {
   name: "annotation.keyframe_delete",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Control+Delete",
   shortDescription: "Delete keyframe",
   longDescription: "Remove the selected keyframe from the annotation",

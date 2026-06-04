@@ -494,19 +494,27 @@
     return Promise.resolve(viewportAnnotations);
   });
 
-  function showNewNotePopup(params: OnAddNewNoteParams) {
-    const { anchorType, position, annotationId } = params;
-    getDriver().notes.create({
-      id: "",
-      annotation_id: annotationId ?? null,
-      content_md: "",
+  function showNewNotePopup(params: { anchorType: "entry" | "annotation"; position?: Record<string, unknown>; annotationId?: string | null; screenX?: number; screenY?: number }) {
+    const { anchorType, position, annotationId, screenX, screenY } = params;
+    const driver = getDriver();
+    driver.notes.requestCreateNote({
       anchor_type: anchorType,
+      annotation_id: annotationId ?? null,
       position: {
         ...position,
         sidebar_width: annotationSidebarWidthRem * 16,
       },
-      resolved: false,
     });
+    // Report the screen position so the core overlay opens at the click point.
+    // screenX/screenY are SVG-element-relative mouse pixel coords.
+    // Convert to viewport-fixed by adding the SVG's bounding rect.
+    const svgEl = document.querySelector(".shapes-container svg");
+    if (svgEl && screenX !== undefined && screenY !== undefined) {
+      const rect = svgEl.getBoundingClientRect();
+      driver.notes.reportNotePosition({ noteId: null, x: rect.left + screenX, y: rect.top + screenY });
+    } else {
+      console.warn("[NOTE] SVG not found or no screen coords, can't compute popup position");
+    }
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {

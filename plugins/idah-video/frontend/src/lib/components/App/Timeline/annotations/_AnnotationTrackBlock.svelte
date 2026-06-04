@@ -8,7 +8,14 @@
   } from "$lib/components/App/ContextMenu/store";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { notes } from "$lib/state/data.svelte";
+  import { data } from "$lib/state/data.svelte";
+  import { media } from "$lib/state/media.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import type { IVideoAnnotationShape } from "$lib/types";
+  import { centroid as centroidUtil } from "$lib/utils/math/point";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
@@ -21,7 +28,23 @@
   // Variables
   let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
   const rangeSize = $derived(Number(endRange - startRange) + 1);
-  const keyframes = $derived(annotation.shape.frames.map((f) => f.frame));
+  const keyframes = $derived.by(() => {
+    if (viewport.isReviewWorkspace) {
+      // In review workspace, show note anchor frames as keyframes
+      return notes.list
+        .filter(n =>
+          n.anchor.anchor_type === "annotation" &&
+          n.anchor.annotation_id === annotation.id
+        )
+        .map(n => {
+          const pos = n.anchor.position as { frame?: number } | undefined;
+          return pos?.frame ?? annotation.shape.start;
+        })
+        .sort((a, b) => a - b);
+    }
+    // In editor workspace, show annotation keyframes
+    return annotation.shape.frames.map((f) => f.frame);
+  });
 
   // Compute color using the same annotationColor() as the viewport shapes
   let color = $derived.by(() => resolveAnnotationColor(annotation));
@@ -60,6 +83,38 @@
 
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();
+
+    // In review workspace, clicking a keyframe selects the corresponding note
+    if (viewport.isReviewWorkspace) {
+      const note = notes.list.find(n => {
+        if (n.anchor.anchor_type !== "annotation" || n.anchor.annotation_id !== annotation.id) return false;
+        const pos = n.anchor.position as { frame?: number } | undefined;
+        return pos?.frame === keyframe;
+      });
+      if (note) {
+        const driver = getDriver();
+
+        // Jump to the note's saved frame
+        const naPos = note.anchor.position as { frame?: number } | undefined;
+        if (naPos?.frame !== undefined) viewport.video.currentFrame.value = naPos.frame;
+
+        // Focus the annotation if anchored to one (same as onFocusNote in NoteMarkers)
+        if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
+          const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+          if (ann) {
+            selection.selectAnnotation(ann);
+            driver.command.call("selection.center");
+          }
+        } else {
+          viewport.workspace.fitToViewport();
+        }
+
+        // Select the note — NoteMarkers handles popup positioning via its $effect
+        driver.notes.selectNote(note.id);
+        return;
+      }
+    }
+
     viewport.video.currentFrame.value = keyframe;
   }
 </script>

@@ -393,6 +393,9 @@
       // to avoid interfering with the creation process
       if (viewport.isCreationMode) return;
 
+      // In review mode, let the event bubble for panning
+      if (viewport.mode === "review") return;
+
       if (editable && selected && cursor) {
         startSelection(cursor);
       }

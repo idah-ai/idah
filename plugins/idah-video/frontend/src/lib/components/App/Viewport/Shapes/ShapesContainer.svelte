@@ -21,25 +21,31 @@
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
+  import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
-  import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { BOUNDING_BOX_MODE, EDITOR_MODE, NOTE_MODE, POLYGON_MODE, REVIEW_MODE, viewport } from "$lib/state/viewport.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
-  import { data } from "$lib/state/data.svelte";
+  import { data, setPendingNoteScene } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import type { IVideoAnnotationRecord } from "$lib/types";
+  import type { IVideoAnnotationRecord, IVideoAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
+  import { centroid as centroidUtil } from "$lib/utils/math/point";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
     anchorType: "entry" | "annotation";
     position: Record<string, unknown>;
     annotationId: string | null;
+    /** SVG-relative pixel coords for popup placement. */
+    screenX?: number;
+    screenY?: number;
   }
 
   type Props = {
@@ -176,6 +182,7 @@
   }
 
   onMount(() => {
+    viewport.svgElement = svgEl ?? null;
     const ro = new ResizeObserver(() => syncDimensions());
     if (svgEl) ro.observe(svgEl);
     syncDimensions();
@@ -229,7 +236,8 @@
     screenDimensions[0] > 0 &&
       screenDimensions[1] > 0 &&
       !isPlaying &&
-      viewport.mode !== DEFAULT_MODE &&
+      viewport.mode !== EDITOR_MODE &&
+      viewport.mode !== REVIEW_MODE &&
       viewport.mode !== NOTE_MODE,
   );
 
@@ -243,8 +251,8 @@
   // ── Event handlers ───────────────────────────────────────────────────
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
-    // Only pan in default mode
-    if (viewport.mode === DEFAULT_MODE) {
+    // Only pan in editor mode
+    if (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE) {
       zoomableElement.mouseMove(e);
     }
   }
@@ -277,6 +285,12 @@
       return;
     }
 
+    // ── Review mode: deselect and start panning (no shape editing) ─
+    if (viewport.mode === REVIEW_MODE) {
+      zoomableElement.mouseDown(e);
+      return;
+    }
+
     // ── Default mode: try editing selected annotation ──────────────
     if (toolSelection) {
       const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
@@ -305,9 +319,10 @@
       return;
     }
 
-    // Note mode — show new note popup anchored to cursor position
+    // Note mode — entry-note creation is handled via onClick on the <svg> element,
+    // not onMouseUp, because shape components call stopPropagation on mousedown
+    // which prevents mouseup from bubbling. The click event fires regardless.
     if (isNoteMode) {
-      showNewNoteFeedPopup();
       return;
     }
 
@@ -319,30 +334,83 @@
   }
 
   function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {
-    onAddNewNote({
-      anchorType: annotation ? "annotation" : "entry",
+    // Use scene-normalized cursor so markers track video content under pan/zoom.
+    // sceneNormalizedCursor is in 0-1 normalized media space.
+    const params: OnAddNewNoteParams = {
+      anchorType: annotation ? ("annotation" as const) : ("entry" as const),
       position: {
-        x: normalizedMousePosition[0],
-        y: normalizedMousePosition[1],
-        start: frame,
-        end: frame,
-        target_size: screenDimensions,
-        zoom_info: {
-          scale: viewport.workspace.transform.scale,
-          offset: viewport.workspace.transform.translate,
-        },
+        x: sceneNormalizedCursor[0],
+        y: sceneNormalizedCursor[1],
+        frame,
       },
       annotationId: (annotation?.metadata?.id as string | undefined) || null,
+      screenX: mousePosition[0],
+      screenY: mousePosition[1],
+    };
+    // Show a temporary marker at the click position
+    setPendingNoteScene({
+      x: sceneNormalizedCursor[0] * media.width,
+      y: sceneNormalizedCursor[1] * media.height,
     });
+    onAddNewNote(params);
+    // Exit note tool mode — return to review workspace
+    getDriver().setMode("review");
+  }
+
+  function onSvgClick(e: MouseEvent) {
+    // Note mode: if the click wasn't already handled by an annotation's onclick,
+    // create an entry-level note at the click position.
+    if (isNoteMode && !_noteHandledByClick) {
+      mousePosition = [e.offsetX, e.offsetY];
+      showNewNoteFeedPopup();
+    }
+    _noteHandledByClick = false;
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
     onSelection(viewport.mode, frame, points, angle, annId);
   }
 
+  let _noteHandledByClick = false;
+
   function handleClick(ann: IAnnotationRecord) {
+    // Note mode: create an annotation-anchored note
+    if (isNoteMode) {
+      _noteHandledByClick = true;
+
+      // Compute annotation centroid at current frame for offset
+      const shape = (ann as any).shape as IVideoAnnotationShape | undefined;
+      let centroidN: [number, number] = [0.5, 0.5];
+      if (shape?.frames?.length) {
+        const interp = getInterpolatedFrame(shape, frame);
+        if (interp?.points?.length) centroidN = centroidUtil(interp.points);
+      }
+
+      // Show a temporary marker at the click position
+      setPendingNoteScene({
+        x: sceneNormalizedCursor[0] * media.width,
+        y: sceneNormalizedCursor[1] * media.height,
+      });
+      onAddNewNote({
+        anchorType: "annotation",
+        position: {
+          x: sceneNormalizedCursor[0] - centroidN[0],
+          y: sceneNormalizedCursor[1] - centroidN[1],
+          frame,
+        },
+        annotationId: ann.id,
+        screenX: mousePosition[0],
+        screenY: mousePosition[1],
+      });
+      // Exit note tool mode — return to review workspace
+      getDriver().setMode("review");
+      return;
+    }
+
     // Don't select annotations in creation mode
-    if (viewport.isCreationMode) return;
+    if (viewport.isCreationMode) {
+      return;
+    }
 
     // Don't select already selected annotation
     if (selection.isAnnotationSelected(ann.id)) return;
@@ -370,6 +438,7 @@
     bind:this={svgEl}
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
+    onclick={onSvgClick}
     onmousemove={onMouseMove}
     onmouseleave={onMouseLeave}
     onwheel={onWheel}
@@ -408,7 +477,7 @@
           bind:this={_compRefs[i]}
           annotation={ann}
           selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE &&
+          editable={viewport.mode === EDITOR_MODE &&
             selection.isAnnotationSelected(ann.id) &&
             !annotation.isLocked(ann)}
           cursor={sceneNormalizedCursor}
@@ -417,6 +486,11 @@
           onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
         />
       {/each}
+
+      <!-- Note markers (SVG g — viewBox handles pan/zoom tracking automatically) -->
+      {#if viewport.isReviewWorkspace}
+        <NoteMarkers />
+      {/if}
     </g>
   </svg>
 </div>

@@ -12,20 +12,29 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: cursorIcon,
     label: "Selection",
-    name: "mode.default",
-    modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    name: "mode.selection",
+    modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: "selection",
-    onClick: () => driver.setMode("default"),
-    whenToggled: () => driver.mode === "default",
+    visibleWhen: () => true,
+    onClick: () => {
+      // Return to the parent resting mode of the current workspace
+      if (driver.mode === "review" || driver.mode === "note") {
+        driver.setMode("review");
+      } else {
+        driver.setMode("editor");
+      }
+    },
+    whenToggled: () => driver.mode === "editor" || driver.mode === "review",
   });
   t.add({
     icon: rectIcon,
     label: "Bounding Box",
     name: "mode.idah-video:bounding_box",
-    modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: "selection",
+    visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
     onClick: (() =>
-      (driver.mode === "idah-video:bounding-box") ? driver.setMode("default") :
+      (driver.mode === "idah-video:bounding-box") ? driver.setMode("editor") :
         driver.setMode("idah-video:bounding-box")),
     whenToggled: () => driver.mode === "idah-video:bounding-box",
   });
@@ -33,10 +42,11 @@ export function initToolbar(driver: IIdahDriverV2): void {
     icon: polyIcon,
     label: "Polygon",
     name: "mode.idah-video:polygon",
-    modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: "selection",
+    visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
     onClick: (() =>
-      (driver.mode === "idah-video:polygon") ? driver.setMode("default") :
+      (driver.mode === "idah-video:polygon") ? driver.setMode("editor") :
         driver.setMode("idah-video:polygon")),
     whenToggled: () => driver.mode === "idah-video:polygon",
   });
@@ -44,14 +54,16 @@ export function initToolbar(driver: IIdahDriverV2): void {
     icon: noteIcon,
     label: "Note",
     name: "mode.note",
-    modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["review", "note"],
     group: "selection",
+    visibleWhen: () => driver.mode === "review" || driver.mode === "note",
     onClick: () => driver.setMode("note"),
     whenToggled: () => driver.mode === "note",
   });
 
-  t.orderGroups("default", ["selection"]);
+  t.orderGroups("editor", ["selection"]);
   t.orderGroups("idah-video:bounding-box", ["selection"]);
   t.orderGroups("idah-video:polygon", ["selection"]);
+  t.orderGroups("review", ["selection"]);
   t.orderGroups("note", ["selection"]);
 }

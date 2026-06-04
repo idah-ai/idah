@@ -156,7 +156,7 @@
   export function mouseDown(e: MouseEvent) {
     switch (viewport.mode) {
       case "note": {
-        break; // Do not pan in note mode
+        break; // Do not pan — handled by ShapesContainer
       }
       default:
         if (!panOrigin) {
