@@ -97,8 +97,8 @@
   }
 
   /** Minimum zoom: allows zooming out to fit even large media in a small viewport. */
-  const MIN_ZOOM = 0.05;
-  const MAX_ZOOM = 100;
+  export const MIN_ZOOM = 0.05;
+  export const MAX_ZOOM = 100;
 
   function scopedZoom(value: number) {
     return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
@@ -150,8 +150,7 @@
         // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
         // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
-        const MIN_ZOOM = 0.05;
-        const newScale = Math.max(MIN_ZOOM, Math.min(100, curScale * factor));
+        const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, curScale * factor));
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
