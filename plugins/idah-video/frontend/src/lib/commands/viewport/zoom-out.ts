@@ -3,7 +3,7 @@
 // Shortcut: Minus (-/_ key)
 // Not undoable.
 // ---------------------------------------------------------------------------
-import { viewport, MIN_ZOOM } from "$lib/state/viewport.svelte";
+import { viewport, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
@@ -26,7 +26,7 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         const cur = viewport.workspace.transform.scale;
-        viewport.workspace.transform.scale = Math.max(MIN_ZOOM, cur - 0.1);
+        viewport.workspace.transform.scale = Math.max(VIEWPORT_MIN_ZOOM, cur - 0.1);
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },
