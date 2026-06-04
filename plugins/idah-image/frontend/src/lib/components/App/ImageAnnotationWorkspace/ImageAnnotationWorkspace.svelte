@@ -644,7 +644,12 @@
                     src={mediaUrl}
                     alt=""
                     onload={() => {
-                      // imageResizedAt = new Date();
+                      // Image loaded — container layout is now final. Re-fit.
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          viewport.workspace.fitToViewport();
+                        });
+                      });
                     }}
                   />
                 </ShapesContainer>
