@@ -101,15 +101,19 @@ export class VideoStreamHandler {
       this.isPaused = false;
       this.isInitialLoad = false;
 
-      // Hide loader if it's showing
-      this.onLoadingChange(false);
+      // Cancel any in-flight HQ render — the micro-seek timer must not fire
+      // during playback, and we want HLS to start loading from the current
+      // seek position (not from wherever it last buffered).
+      this.cancelPendingRender();
 
-      // Switch to adaptive quality for smooth playback based on connection
+      // Switch to adaptive quality for smooth playback based on connection.
+      // Pass currentTime so HLS loads from where the user actually seeked to,
+      // not from the previous buffer position (which may be far ahead).
       if (this.hls) {
         this.hls.currentLevel = -1;
 
         if (this.hls.media && this.hls.media.readyState > 0) {
-          this.hls.startLoad();
+          this.hls.startLoad(this.videoElement.currentTime);
         }
       }
     });
@@ -225,6 +229,18 @@ export class VideoStreamHandler {
     // Track fragment loads
     let fragmentLoadCount = 0;
 
+    // Determine how many fragments will be loaded at this position.
+    // At the last fragment there is nothing "next" to load, so count=1 is enough.
+    const levelDetails = this.hls.levels[level]?.details;
+    let requiredCount = 2; // default: fragment covering currentTime + next
+    if (levelDetails) {
+      const frags = levelDetails.fragments;
+      const lastFrag = frags[frags.length - 1];
+      if (lastFrag && currentTime >= lastFrag.start) {
+        requiredCount = 1;
+      }
+    }
+
     // Listen for fragment loaded events
     const onFragLoaded = (event: string, data: any) => {
       // Only count fragments for the target quality level
@@ -232,7 +248,7 @@ export class VideoStreamHandler {
         fragmentLoadCount++;
 
         // Only process on the second fragment load
-        if (fragmentLoadCount === 2) {
+        if (fragmentLoadCount >= requiredCount) {
           // Remove listener and clear the tracked reference
           if (this.hls) {
             this.hls.off(Hls.Events.FRAG_LOADED, onFragLoaded);
@@ -242,9 +258,12 @@ export class VideoStreamHandler {
           // Small delay to ensure decoder has processed the data
           this.pendingRenderTimer = setTimeout(() => {
             this.pendingRenderTimer = null;
-            // Force a tiny seek to refresh the frame
-            const oldTime = this.videoElement.currentTime;
-            this.videoElement.currentTime = oldTime + 0.001;
+            // Re-seek to the exact position captured when this render was initiated.
+            // The HTML5 spec guarantees 'seeked' fires even for a same-value seek,
+            // which flushes the decoder pipeline and forces it to render the fresh
+            // HQ data from the SourceBuffer. Unlike ±delta approaches, this can
+            // never overshoot a frame boundary or go past the video end.
+            this.videoElement.currentTime = currentTime;
 
             // Hide loader only if we showed it
             if (shouldShowLoader) {
@@ -261,6 +280,26 @@ export class VideoStreamHandler {
 
   private renderHighQualityFrame(): void {
     this.renderQualityFrame(this.maxQualityLevel);
+  }
+
+  /**
+   * Cancel any in-flight HQ render (fragment listener + micro-seek timer).
+   * Call this whenever the user navigates to a new position or starts playback
+   * so stale timers cannot seek the video element to old positions.
+   */
+  public cancelPendingRender(): void {
+    const wasLoading = this.pendingFragListener !== null || this.pendingRenderTimer !== null;
+    if (this.pendingFragListener && this.hls) {
+      this.hls.off(Hls.Events.FRAG_LOADED, this.pendingFragListener);
+      this.pendingFragListener = null;
+    }
+    if (this.pendingRenderTimer) {
+      clearTimeout(this.pendingRenderTimer);
+      this.pendingRenderTimer = null;
+    }
+    if (wasLoading) {
+      this.onLoadingChange(false);
+    }
   }
 
   public destroy(): void {

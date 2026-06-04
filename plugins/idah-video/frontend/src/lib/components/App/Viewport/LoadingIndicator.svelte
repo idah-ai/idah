@@ -23,10 +23,10 @@
   // Using {#if visible} directly destroys/recreates the DOM element each cycle,
   // restarting the CSS animation-delay and causing a visible flicker.
   //
-  // Instead, `displayed` turns ON immediately but only turns OFF after `visible`
-  // has been false for 300 ms (same window as the HLS reload debounce).
-  // Fast buffered seeks (<120 ms) never show the indicator because the CSS
-  // animation-delay handles that; only genuinely slow (network) seeks do.
+  // Instead, `displayed` turns ON after 150 ms of continuous `visible` state,
+  // ensuring fast buffered seeks never flash the indicator. Only genuinely slow
+  // (network-bound) seeks show it. `displayed` turns OFF immediately when
+  // `visible` goes false so the indicator hides promptly once loading completes.
   let displayed = $state(false);
   let showTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -73,11 +73,8 @@
     opacity: 0;
   }
 
-  /* Delay appearance so fast (buffered) seeks never flash the indicator.
-     The element stays mounted during navigation but only becomes visible
-     after 120 ms of continuous loading state. */
   .loading-indicator--active {
-    animation: fadeIn 0s 120ms forwards;
+    opacity: 1;
   }
 
   .loading-pill {
@@ -104,12 +101,6 @@
   .loading-text {
     white-space: nowrap;
     line-height: 1.4;
-  }
-
-  @keyframes fadeIn {
-    to {
-      opacity: 1;
-    }
   }
 
   @keyframes spin {

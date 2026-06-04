@@ -25,6 +25,9 @@
   // ── UI state ───────────────────────────────────────────────────────
   let isPlaying = $state(false);
   let animationFrameId: number | null = $state(null);
+  // Token for the one-shot rVFC requested after each paused seek.
+  // Cancelled when a new seek fires before the previous frame is painted.
+  let pendingFrameCallbackId: number | null = null;
 
   // ── Loop guard ─────────────────────────────────────────────────────
   // Tracks the last frame that was actually seeked to on the <video> element.
@@ -36,7 +39,7 @@
   // ── Helpers ────────────────────────────────────────────────────────
   // Video is 1-based (frame 1 = 1/fps sec), data/timeline is 0-based.
   function timeToFrame(t: number) {
-    return Math.round(t * fps) - 1;
+    return Math.min(Math.round(t * fps), media.totalFrames) - 1;
   }
   function frameToTime(f: number) {
     return (f + 1 + 0.001) / fps;
@@ -127,13 +130,33 @@
     let target = viewport.video.currentFrame.value;
     if (target === lastSeekedFrame) return;
 
-    const delta = Math.abs(target - lastSeekedFrame);
     lastSeekedFrame = target;
 
     videoElement.currentTime = frameToTime(target);
 
+    // Use rVFC to update displayedFrame exactly when the new frame is painted.
+    // rVFC fires atomically with the compositor — no lag from the async seeked event.
+    // Cancel any previous pending callback so only the latest seek updates the display.
+    if ("requestVideoFrameCallback" in videoElement) {
+      if (pendingFrameCallbackId !== null) {
+        (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
+      }
+      pendingFrameCallbackId = (videoElement as any).requestVideoFrameCallback(
+        (_now: number, metadata: VideoFrameCallbackMetadata) => {
+          pendingFrameCallbackId = null;
+          viewport.video.displayedFrame.value = timeToFrame(metadata.mediaTime);
+        },
+      );
+    }
+
     if (streamHandler) {
+      // Cancel any in-flight HQ render immediately so its micro-seek timer
+      // can never fire at an outdated position after the user has moved on.
+      streamHandler.cancelPendingRender();
+
+      // Cancel any pending HLS quality reload so it doesn't fire after the seek and cause
       clearTimeout(hlsReloadTimer);
+
       // Use a single debounce window for all navigation types.
       // A short debounce (10 ms) caused reloadCurrentQuality() to fire on
       // virtually every keypress during key-hold (key repeat ~30 ms),
@@ -220,21 +243,21 @@
       if (!isPlaying && videoElement) {
         const frame = timeToFrame(videoElement.currentTime);
 
-        // Ignore stale seeked events from previous interrupted seeks.
-        // lastSeekedFrame is set to the target by the seek $effect before
-        // videoElement.currentTime changes, so any seeked that reports a
-        // different frame is from an older, interrupted seek.
+        // Guard first: skip stale seeked events from previous interrupted seeks.
+        // lastSeekedFrame is set by the seek $effect before currentTime changes,
+        // so any seeked reporting a different frame is from an older interrupted seek.
+        // Writing currentFrame for stale events would re-trigger the seek $effect.
         if (frame !== lastSeekedFrame) return;
 
         viewport.video.currentFrame.value = frame;
-
-        // Video element confirmed it is now at this frame — advance the
-        // displayed frame so the annotation layer catches up to what the user
-        // actually sees on screen.
-        viewport.video.displayedFrame.value = frame;
-
         onFrameUpdate?.(frame);
-        // lastSeekedFrame already === frame — no update needed
+
+        // Update displayedFrame via seeked only when rVFC is not supported.
+        // When rVFC is available, the seek $effect's rVFC callback handles it
+        // at the exact moment the frame is painted — eliminating annotation lag.
+        if (!("requestVideoFrameCallback" in videoElement)) {
+          viewport.video.displayedFrame.value = frame;
+        }
       }
     };
 
