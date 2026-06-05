@@ -446,7 +446,7 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
 // ---------------------------------------------------------------------------
 class NotesDriverAdapter implements INotesDriverV2 {
   private notesChangeListeners: Set<(notes: INoteRecord[]) => void> = new Set();
-  private focusNoteListeners: Set<(note: INoteRecord) => void> = new Set();
+  private focusNoteListeners: Set<(note: INoteRecord | null) => void> = new Set();
 
   constructor(private store: InMemoryStore<INoteRecord>) {}
 
@@ -460,7 +460,7 @@ class NotesDriverAdapter implements INotesDriverV2 {
     return () => this.notesChangeListeners.delete(cb);
   }
 
-  onFocusNote(cb: (note: INoteRecord) => void): Unsubscribe {
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe {
     this.focusNoteListeners.add(cb);
     return () => this.focusNoteListeners.delete(cb);
   }
@@ -482,7 +482,7 @@ class NotesDriverAdapter implements INotesDriverV2 {
   // ── Mock helpers ────────────────────────────────────────────────────────
 
   /** Simulate a note being focused by the core. */
-  mockFocusNote(note: INoteRecord): void {
+  mockFocusNote(note: INoteRecord | null): void {
     for (const cb of this.focusNoteListeners) {
       cb(note);
     }

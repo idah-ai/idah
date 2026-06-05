@@ -45,7 +45,7 @@
     // so it stops reporting position on frame change.
     // Use a microtask to avoid re-entrant dispatch through onNoteSelection.
     queueMicrotask(() => {
-      notesAdapter?.selectNote(null);
+      notesAdapter?.focusNote(null);
       _closing = false;
     });
   }

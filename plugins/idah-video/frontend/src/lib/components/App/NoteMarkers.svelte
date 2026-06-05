@@ -102,8 +102,16 @@
       ro.observe(viewport.svgElement);
     }
 
-    const unsubFocus = driver.notes.onFocusNote((note: INoteRecord) => {
-      // Jump to the note's saved frame from its anchor position
+    const unsubFocus = driver.notes.onFocusNote((note: INoteRecord | null) => {
+      // Clear ghost marker on any focus/deselect event
+      setPendingNoteScene(null);
+
+      if (!note) {
+        // Null signal — core deselected/cancelled
+        activeNoteId = null;
+        return;
+      }
+
       const pos = note.anchor.position as { frame?: number } | undefined;
       if (pos?.frame !== undefined) viewport.video.currentFrame.value = pos.frame;
 

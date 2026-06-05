@@ -389,7 +389,7 @@ export interface INotesDriverV2 {
    * The plugin should seek to the note's anchor position and then
    * call `reportNotePosition` once the viewport has settled.
    */
-  onFocusNote(cb: (note: INoteRecord) => void): Unsubscribe;
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe;
 
   // ── Plugin → Core (commands) ───────────────────────────────────────────
 

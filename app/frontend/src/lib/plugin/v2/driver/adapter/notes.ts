@@ -67,7 +67,7 @@ export class NotesDriverAdapter implements INotesDriverV2 {
 
   // ── Core→Plugin listener sets (exposed on INotesDriverV2) ────────────
   private notesChangeListeners: Set<(notes: INoteRecord[]) => void> = new Set();
-  private focusNoteListeners: Set<(note: INoteRecord) => void> = new Set();
+  private focusNoteListeners: Set<(note: INoteRecord | null) => void> = new Set();
 
   // ── Entry context ──────────────────────────────────────────────────────
   private readonly entryId: string;
@@ -88,7 +88,7 @@ export class NotesDriverAdapter implements INotesDriverV2 {
     return () => this.notesChangeListeners.delete(cb);
   }
 
-  onFocusNote(cb: (note: INoteRecord) => void): Unsubscribe {
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe {
     this.focusNoteListeners.add(cb);
     return () => this.focusNoteListeners.delete(cb);
   }
@@ -169,9 +169,10 @@ export class NotesDriverAdapter implements INotesDriverV2 {
   }
 
   /** Focus a note — fires onFocusNote listeners on the plugin. */
-  focusNote(note: INoteRecord): void {
-    // Upsert into cache so NoteOverlay.onNoteSelection can look it up
-    this.cache.set(note.id, note);
+  focusNote(note: INoteRecord | null): void {
+    if (note) {
+      this.cache.set(note.id, note);
+    }
     for (const cb of this.focusNoteListeners) {
       cb(note);
     }
