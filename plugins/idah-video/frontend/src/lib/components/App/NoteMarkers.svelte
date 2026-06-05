@@ -88,13 +88,6 @@
   onMount(() => {
     const driver = getDriver();
 
-    // Bug 1: Clear ghost marker on popup dismiss
-    const unsubSelection = driver.notes.onNoteSelection((noteId: string | null) => {
-      // Clear the ghost marker on any selection change (create or cancel)
-      setPendingNoteScene(null);
-      activeNoteId = noteId;
-    });
-
     // SVG rect for viewport offset
     if (viewport.svgElement) {
       svgRect = viewport.svgElement.getBoundingClientRect();
