@@ -330,51 +330,68 @@ describe("clampTranslate", () => {
 describe("viewportSize", () => {
   beforeEach(() => resetViewport());
 
-  it("returns [0,0,1,1] when centered and scale=1 in a 1920×1080 viewport", () => {
+  it("returns scene pixel coordinates when centered and scale=1 in a 1920×1080 viewport", () => {
     setViewportDimensions(1920, 1080);
     viewport.workspace.transform.translate = [0, 0];
     viewport.workspace.transform.scale = 1;
-    // With media = 1920×1080 and viewport = 1920×1080:
-    // left   = 0 / 1920 = 0
-    // top    = 0 / 1080 = 0
-    // right  = 1920 / 1920 = 1
-    // bottom = 1080 / 1080 = 1
+    // With viewport = 1920×1080, translate = [0,0], scale = 1:
+    // left   = 0 / 1 = 0
+    // top    = 0 / 1 = 0
+    // right  = (0 + 1920) / 1 = 1920
+    // bottom = (0 + 1080) / 1 = 1080
     const vs = viewport.workspace.viewportSize;
     expect(vs[0]).toBeCloseTo(0);
     expect(vs[1]).toBeCloseTo(0);
-    expect(vs[2]).toBeCloseTo(1);
-    expect(vs[3]).toBeCloseTo(1);
+    expect(vs[2]).toBeCloseTo(1920);
+    expect(vs[3]).toBeCloseTo(1080);
   });
 
-  it("reflects a panned viewport", () => {
+  it("reflects a panned viewport in scene pixel space", () => {
     setViewportDimensions(1280, 720);
     viewport.workspace.transform.translate = [100, 50];
     viewport.workspace.transform.scale = 1;
-    // media = 1920×1080, viewport = 1280×720
-    // left   = -100 / 1920 ≈ -0.052
-    // top    = -50  / 1080 ≈ -0.046
-    // right  = (-100 + 1280) / 1920 ≈ 0.615
-    // bottom = (-50  + 720)  / 1080 ≈ 0.620
+    // viewport = 1280×720, translate = [100, 50], scale = 1
+    // left   = -100 / 1 = -100
+    // top    = -50  / 1 = -50
+    // right  = (-100 + 1280) / 1 = 1180
+    // bottom = (-50  + 720)  / 1 = 670
     const vs = viewport.workspace.viewportSize;
-    expect(vs[0]).toBeCloseTo(-100 / 1920, 5);
-    expect(vs[1]).toBeCloseTo(-50 / 1080, 5);
-    expect(vs[2]).toBeCloseTo(1180 / 1920, 5);
-    expect(vs[3]).toBeCloseTo(670 / 1080, 5);
+    expect(vs[0]).toBeCloseTo(-100, 5);
+    expect(vs[1]).toBeCloseTo(-50, 5);
+    expect(vs[2]).toBeCloseTo(1180, 5);
+    expect(vs[3]).toBeCloseTo(670, 5);
   });
 
-  it("scales correctly", () => {
+  it("accounts for scale in scene pixel space", () => {
     setViewportDimensions(1280, 720);
     viewport.workspace.transform.translate = [200, 100];
     viewport.workspace.transform.scale = 2;
-    // left   = -200 / (2 * 1920) = -200 / 3840 ≈ -0.052
-    // top    = -100 / (2 * 1080) = -100 / 2160 ≈ -0.046
-    // right  = (-200 + 1280) / 3840 ≈ 0.281
-    // bottom = (-100 + 720)  / 2160 ≈ 0.287
+    // viewport = 1280×720, translate = [200, 100], scale = 2
+    // left   = -200 / 2 = -100
+    // top    = -100 / 2 = -50
+    // right  = (-200 + 1280) / 2 = 540
+    // bottom = (-100 + 720)  / 2 = 310
     const vs = viewport.workspace.viewportSize;
-    expect(vs[0]).toBeCloseTo(-200 / 3840, 5);
-    expect(vs[1]).toBeCloseTo(-100 / 2160, 5);
-    expect(vs[2]).toBeCloseTo(1080 / 3840, 5);
-    expect(vs[3]).toBeCloseTo(620 / 2160, 5);
+    expect(vs[0]).toBeCloseTo(-100, 5);
+    expect(vs[1]).toBeCloseTo(-50, 5);
+    expect(vs[2]).toBeCloseTo(1080 / 2, 5);
+    expect(vs[3]).toBeCloseTo(620 / 2, 5);
+  });
+
+  it("shows zoomed-out viewport in scene pixel space", () => {
+    setViewportDimensions(1280, 720);
+    viewport.workspace.transform.translate = [400, 300];
+    viewport.workspace.transform.scale = 0.5;
+    // viewport = 1280×720, translate = [400, 300], scale = 0.5
+    // left   = -400 / 0.5 = -800
+    // top    = -300 / 0.5 = -600
+    // right  = (-400 + 1280) / 0.5 = 880 / 0.5 = 1760
+    // bottom = (-300 + 720)  / 0.5 = 420 / 0.5 = 840
+    const vs = viewport.workspace.viewportSize;
+    expect(vs[0]).toBeCloseTo(-800, 5);
+    expect(vs[1]).toBeCloseTo(-600, 5);
+    expect(vs[2]).toBeCloseTo(1760, 5);
+    expect(vs[3]).toBeCloseTo(840, 5);
   });
 });
 

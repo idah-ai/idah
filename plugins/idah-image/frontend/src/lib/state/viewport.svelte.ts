@@ -11,6 +11,9 @@ class Viewport {
   // Only mode needs special handling
   #mode = $state(DEFAULT_MODE);
 
+  // Reactive currentFrame — used for keyframe-based annotations
+  #currentFrame = $state({ value: 0 });
+
   get mode() {
     return this.#mode;
   }
@@ -24,22 +27,21 @@ class Viewport {
     getDriver().setMode(val);
   }
 
-  // video = $state({
-  //   currentFrame: { value: 0 },
-  //   status: "pause" as "play" | "pause",
-  //   sound: { level: 0.0, muted: true },
-  //   play() {
-  //     this.status = "play";
-  //   },
-  //   pause() {
-  //     this.status = "pause";
-  //   },
-  // });
-
-  image = $state({
-    currentFrame: { value: 0 },
-    dimensions: [0, 0] as [number, number],
-  });
+  /**
+   * Image state — currentFrame is reactive, dimensions are synced from media.
+   * The getter returns the same currentFrame object reference so writes work
+   * (e.g. `viewport.image.currentFrame.value = 5`), while dimensions always
+   * reflects the latest media dimensions.
+   */
+  get image() {
+    return {
+      currentFrame: this.#currentFrame,
+      get dimensions(): [number, number] {
+        console.log([media.width, media.height]);
+        return [media.width, media.height] as [number, number];
+      },
+    };
+  }
 
   workspace = $state({
     transform: {
@@ -111,15 +113,9 @@ class Viewport {
     get viewportSize(): number[] {
       const t = this.transform;
       const d = this.dimensions;
-      const m = media.dimensions;
       const s = t.scale;
 
-      return [
-        -t.translate[0] / (s * m[0]),
-        -t.translate[1] / (s * m[1]),
-        (-t.translate[0] + d[0]) / (s * m[0]),
-        (-t.translate[1] + d[1]) / (s * m[1]),
-      ];
+      return [-t.translate[0] / s, -t.translate[1] / s, (-t.translate[0] + d[0]) / s, (-t.translate[1] + d[1]) / s];
     },
   });
 }

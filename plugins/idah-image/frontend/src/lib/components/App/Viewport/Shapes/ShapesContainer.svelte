@@ -167,22 +167,7 @@
   let isPanning = $state(false);
   let isDragging = $state(false);
 
-  // ── Resize observer to sync dimensions ────────────────────────────────
-  function syncDimensions() {
-    if (!svgEl) return;
-    const rect = svgEl.getBoundingClientRect();
-    viewport.workspace.dimensions[0] = rect.width;
-    viewport.workspace.dimensions[1] = rect.height;
-  }
-
   onMount(() => {
-    const ro = new ResizeObserver(() => syncDimensions());
-    if (svgEl) ro.observe(svgEl);
-    syncDimensions();
-
-    // Fit image to viewport on initial load
-    requestAnimationFrame(() => viewport.workspace.fitToViewport());
-
     // Add a tiny stylesheet for cursor classes
     const style = document.createElement("style");
     style.textContent = `
@@ -196,7 +181,6 @@
     document.head.appendChild(style);
 
     return () => {
-      ro.disconnect();
       document.head.removeChild(style);
     };
   });

@@ -18,7 +18,6 @@
   let { children, onPanStart, onPanStop }: Props = $props();
 
   // Variables
-  let size: Point = $state([0, 0]);
   let sizeElement: HTMLDivElement;
   let panOrigin: Point | undefined = $state();
 
@@ -71,7 +70,7 @@
     const curScale = viewport.workspace.transform.scale;
     const curTranslate = viewport.workspace.transform.translate;
     let [ox, oy] = curTranslate;
-    let [sx, sy] = size;
+    let [sx, sy] = viewport.workspace.dimensions;
     ox = curTranslate[0] / curScale;
     oy = curTranslate[1] / curScale;
 
@@ -86,7 +85,7 @@
     const curScale = viewport.workspace.transform.scale;
     const curTranslate = viewport.workspace.transform.translate;
     let [ox, oy] = curTranslate;
-    let [sx, sy] = size;
+    let [sx, sy] = viewport.workspace.dimensions;
     ox = curTranslate[0] / curScale;
     oy = curTranslate[1] / curScale;
 
@@ -196,8 +195,8 @@
   role="grid"
   tabindex="-1"
   bind:this={sizeElement}
-  bind:clientHeight={size[1]}
-  bind:clientWidth={size[0]}
+  bind:clientHeight={viewport.workspace.dimensions[1]}
+  bind:clientWidth={viewport.workspace.dimensions[0]}
 >
   <SyncIndicator />
   <div
