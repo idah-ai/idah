@@ -82,7 +82,7 @@
       <NoteOverlay notesAdapter={driver.notesAdapter} />
     {/if}
 
-    <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {driver} />
+    <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />
 
     <IdahCommandPalette
       open={paletteOpen}

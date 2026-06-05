@@ -14,13 +14,8 @@
   // Props
   interface Props {
     driver: IdahDriverV2;
-    pluginContainerElement: HTMLElement | null;
   }
-  let {
-    ref = $bindable(null),
-    driver,
-    pluginContainerElement,
-  }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
+  let { ref = $bindable(null), driver }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
 </script>
 
 <nav bind:this={ref} id="annotation-header-bar" class="bg-sidebar grid grid-cols-3 border-b p-1">
