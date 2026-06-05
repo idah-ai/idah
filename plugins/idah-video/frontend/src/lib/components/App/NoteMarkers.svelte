@@ -124,7 +124,6 @@
 
     return () => {
       unsubFocus();
-      unsubSelection();
     };
   });
 

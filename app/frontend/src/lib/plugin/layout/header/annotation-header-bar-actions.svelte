@@ -36,9 +36,8 @@
   // Props
   interface Props {
     driver: IIdahDriverV2;
-    pluginContainerElement: HTMLElement | null;
   }
-  let { driver, pluginContainerElement }: Props = $props();
+  let { driver }: Props = $props();
 
   // Variables
   let loading = $state(false);

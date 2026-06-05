@@ -38,5 +38,5 @@
   <AnnotationHeaderBarTools {driver} />
 
   <!-- RIGHT::ACTIONS -->
-  <AnnotationHeaderBarActions {driver} {pluginContainerElement} />
+  <AnnotationHeaderBarActions {driver} />
 </nav>
