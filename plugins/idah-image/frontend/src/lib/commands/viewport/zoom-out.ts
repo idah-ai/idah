@@ -4,6 +4,7 @@
 // Not undoable.
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
+
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
@@ -26,10 +27,15 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         const cur = viewport.workspace.transform.scale;
-        viewport.workspace.transform.scale = Math.max(0.4, cur - 0.1);
+        const minScale = viewport.workspace.getMinScale();
+        viewport.workspace.transform.scale = Math.max(minScale, cur - 0.1);
       },
-      isCombinable() { return false; },
-      combine(prev) { return prev; },
+      isCombinable() {
+        return false;
+      },
+      combine(prev) {
+        return prev;
+      },
     }),
     group: command.group,
   });

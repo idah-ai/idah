@@ -97,11 +97,13 @@
   }
 
   function scopedZoom(value: number) {
-    return Math.max(0.4, Math.min(100, value));
+    const minScale = viewport.workspace.getMinScale();
+    return Math.max(minScale, Math.min(100, value));
   }
 
   export function setZoom(newZoom: number) {
-    const clamped = Math.max(0.4, Math.min(100, newZoom));
+    const minScale = viewport.workspace.getMinScale();
+    const clamped = Math.max(minScale, Math.min(100, newZoom));
     viewport.workspace.transform.scale = clamped;
   }
 
@@ -134,7 +136,8 @@
         // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
         // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
-        const newScale = Math.max(0.4, Math.min(100, curScale * factor));
+        const minScale = viewport.workspace.getMinScale();
+        const newScale = Math.max(minScale, Math.min(100, curScale * factor));
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
