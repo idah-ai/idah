@@ -86,7 +86,7 @@
     >
       <TriangleAlertIcon class="mt-0.5 size-4 shrink-0" />
       <div class="[&>div]:!text-current">
-        <AccountEntries accountId={projectMember.account_id} {projectId} />
+        <AccountEntries accountId={projectMember.account_id} {projectId} labelText="Entries on these datasets will be unassigned from this account:" />
       </div>
     </div>
   </ConfirmModal>
