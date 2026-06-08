@@ -29,8 +29,8 @@
   let stats = $state<EntryStat[]>([]);
   let loading = $state(false);
   let error = $state<string | null>(null);
-
-  const statsBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/entry_stats`;
+  // Static stats are computed once on first open — video meta never changes for an entry.
+  let cachedStaticStats: EntryStat[] | null = null;
 
   function humanizeKey(parts: string[]): string {
     // Everything after the section prefix, joined, then title-cased word by word
@@ -68,19 +68,93 @@
     return sections;
   });
 
-  async function fetchStats() {
+  // async function fetchStats() {
+  //   loading = true;
+  //   error = null;
+  //   try {
+  //     const res = await fetch(`${statsBasePath}?filter[entry_id__eq]=${driver.id}`);
+  //     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  //     const body = await res.json();
+  //     stats = (body.data ?? []).map((item: { attributes: { key: string; value: string } }) => ({
+  //       key: item.attributes.key,
+  //       value: item.attributes.value,
+  //     }));
+  //   } catch (e) {
+  //     error = e instanceof Error ? e.message : "Failed to load statistics";
+  //   } finally {
+  //     loading = false;
+  //   }
+  // }
+
+  async function calculateStats() {
     loading = true;
     error = null;
     try {
-      const res = await fetch(`${statsBasePath}?filter[entry_id__eq]=${driver.id}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json();
-      stats = (body.data ?? []).map((item: { attributes: { key: string; value: string } }) => ({
-        key: item.attributes.key,
-        value: item.attributes.value,
-      }));
+      // --- Static stats: computed once, cached for subsequent opens ---
+      if (cachedStaticStats === null) {
+        const staticResult: EntryStat[] = [];
+        const meta = driver.media.meta ?? {};
+        if (Object.keys(meta).length > 0) {
+          const duration = Number(meta.duration ?? 0);
+          const fps = Number(meta.fps ?? 0);
+          staticResult.push({ key: "video.duration_seconds", value: String(duration) });
+          staticResult.push({ key: "video.fps", value: String(fps) });
+          staticResult.push({ key: "video.frame_count", value: String(Math.round(duration * fps)) });
+        }
+        cachedStaticStats = staticResult;
+      }
+
+      // --- Dynamic stats: recomputed on every open ---
+      const annotations = await driver.annotations.fetch();
+      const rawConfig = driver.config as Record<string, unknown>;
+
+      // Category field can be overridden at the top level of labeling_configuration
+      const categoryField =
+        typeof rawConfig.category_field === "string" ? rawConfig.category_field : "category";
+
+      // Zero-fill all configured category ids (mirrors CoreStats)
+      const categoryCounts = new Map<string, number>();
+      for (const shapeConfig of Object.values(rawConfig)) {
+        if (typeof shapeConfig !== "object" || !shapeConfig || !("values" in shapeConfig)) continue;
+        const values = (shapeConfig as { values?: { id?: string }[] }).values ?? [];
+        for (const v of values) {
+          if (typeof v.id === "string" && !categoryCounts.has(v.id)) categoryCounts.set(v.id, 0);
+        }
+      }
+
+      const shapeCounts = new Map<string, number>();
+
+      for (const ann of annotations) {
+        // Category — read from annotation.value[categoryField]
+        const category = (ann.value as Record<string, unknown> | undefined)?.[categoryField];
+        if (typeof category === "string") {
+          categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+        }
+
+        // Shape type — strip "<modality>:" prefix (mirrors StatsGenerator)
+        const rawType = (ann.shape as Record<string, unknown> | undefined)?.type;
+        if (typeof rawType === "string") {
+          const colonIdx = rawType.indexOf(":");
+          const shapeKey = colonIdx >= 0 ? rawType.slice(colonIdx + 1) : rawType;
+          shapeCounts.set(shapeKey, (shapeCounts.get(shapeKey) ?? 0) + 1);
+        }
+      }
+
+      const dynamicResult: EntryStat[] = [];
+
+      dynamicResult.push({ key: "annotation.count", value: String(annotations.length) });
+
+      for (const [id, count] of categoryCounts) {
+        dynamicResult.push({ key: `category.${id}.count`, value: String(count) });
+      }
+
+      for (const [shape, count] of shapeCounts) {
+        dynamicResult.push({ key: `shape.${shape}.count`, value: String(count) });
+      }
+
+      stats = [...dynamicResult, ...cachedStaticStats];
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to load statistics";
+      error = e instanceof Error ? e.message : "Failed to calculate statistics";
     } finally {
       loading = false;
     }
@@ -88,7 +162,7 @@
 
   function handleOpen(isOpen: boolean) {
     open = isOpen;
-    if (isOpen) fetchStats();
+    if (isOpen) calculateStats();
   }
 </script>
 
