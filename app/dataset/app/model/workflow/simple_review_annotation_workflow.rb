@@ -5,13 +5,16 @@ require_relative "base"
 module Workflow
   class SimpleReviewAnnotationWorkflow < Workflow::Base
     aasm do
-      state :annotate, initial: true
+      state :start, initial: true
+      state :annotate
       state :review
       state :done
       state :error
 
       # Transitions
       event :submit, after: :on_submit do
+        transitions from: :start, to: :annotate
+
         transitions from: :annotate, to: :review, if: :should_sample?
         transitions from: :annotate, to: :done, unless: :should_sample?
 

@@ -282,7 +282,7 @@ module Entry
       entry = find_by!({ job_id: job_id, status: "processing" })
 
       transaction do
-        update!(entry.id, { status: status })
+        update!(entry.id, { status: })
       end
     end
 

@@ -122,14 +122,14 @@ class EntriesExpo < BaseExpo
   def on_job_completed
     job_id = message.content[:resource_id]
 
-    service.mark_entries_status_as(job_id, "pending")
+    service.complete_entry_processing(job_id)
   end
 
   expose on_resource_event(Resource::Media::Jobs, "errored")
   def on_job_errored
     job_id = message.content[:resource_id]
 
-    service.mark_entries_status_as(job_id, "processing_error")
+    service.mark_entries_status_as(job_id, "errored")
   end
 
   expose on_resource_event(Resource::Dataset::ProjectMembers, "updated")
