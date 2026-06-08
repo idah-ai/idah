@@ -124,12 +124,10 @@
       <SelectContent>
         {#each projectMemberRoles as role (role.value)}
           <SelectItem value={role.value} label={role.label}>
-            {#snippet children()}
-              <div>
-                <p>{role.label}</p>
-                <p class="text-muted-foreground text-xs">{roleDescriptions[role.value]}</p>
-              </div>
-            {/snippet}
+            <div>
+              <p>{role.label}</p>
+              <p class="text-muted-foreground text-xs">{roleDescriptions[role.value]}</p>
+            </div>
           </SelectItem>
         {/each}
       </SelectContent>
