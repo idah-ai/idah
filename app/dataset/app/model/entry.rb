@@ -121,10 +121,11 @@ module Entry
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
-                -- Annotators can access only assigned entries
+                -- Annotators can access only assigned annotate-stage entries
                 (
                   (pm.role IN :annotator_roles)
                   AND entries.assigned_to_id = :account_id
+                  AND entries.wf_step = 'annotate'
                 ) OR
                 -- Reviewers can access assigned and unassigned entries not submitted by themselves in review step
                 (
