@@ -11,9 +11,9 @@ export const command = {
   group: "Display",
   modes: ["default", "review", "idah-image:bounding-box", "idah-image:polygon", "note"],
   shortcut: null,
-  shortDescription: "Toggle video render mode",
+  shortDescription: "Toggle image render mode",
   longDescription:
-    "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video and placeholder",
+    "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the image and placeholder",
 };
 
 export function register(driver: IIdahDriverV2): void {

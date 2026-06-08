@@ -33,9 +33,6 @@ import { register as registerSelectionCenter } from "./selection/center";
 import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
 
-import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
-import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
-
 import { register as registerGroupDelete } from "./group/delete";
 import { register as registerGroupToggleEditability } from "./group/toggle_editability";
 import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
@@ -46,23 +43,14 @@ import { register as registerNoteGoto } from "./note/goto";
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
-import { register as registerAnnotationExtendNext } from "./annotation/extend_next";
-import { register as registerAnnotationExtendPrev } from "./annotation/extend_prev";
-import { register as registerAnnotationGoToNextGroup } from "./annotation/go_to_next_group";
-import { register as registerAnnotationGoToNextKeyframe } from "./annotation/go_to_next_keyframe";
-import { register as registerAnnotationGoToPrevGroup } from "./annotation/go_to_prev_group";
-import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_to_prev_keyframe";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
-import { register as registerAnnotationSplit } from "./annotation/split";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
-import { register as registerAnnotationUpdateGroupCategory } from "./annotation/updateGroupCategory";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
 import { register as registerToggleDebugConsole } from "./display/toggle-debug-console";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
-import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
 
 import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
@@ -89,10 +77,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerSelectionGoto(driver);
   registerSelectionCenter(driver);
 
-  // ── Keyframe ──────────────────────────────────────────────────────────
-  registerKeyframeAdd(driver);
-  registerKeyframeDelete(driver);
-
   // ── Group ─────────────────────────────────────────────────────────────
   registerGroupDelete(driver);
   registerGroupToggleVisibility(driver);
@@ -110,14 +94,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
-  registerAnnotationSplit(driver);
-  registerAnnotationExtendPrev(driver);
-  registerAnnotationExtendNext(driver);
-  registerAnnotationGoToNextKeyframe(driver);
-  registerAnnotationGoToPrevKeyframe(driver);
-  registerAnnotationGoToNextGroup(driver);
-  registerAnnotationGoToPrevGroup(driver);
-  registerAnnotationUpdateGroupCategory(driver);
 
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
@@ -131,7 +107,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);
-  registerToggleTimeDisplay(driver);
   registerToggleDebugConsole(driver);
   registerToggleRenderMode(driver);
 }
