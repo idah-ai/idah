@@ -64,7 +64,9 @@
 
 {#if entries.length > 0}
   <div class="text-muted-foreground text-sm">
-    <div>Entries on these datasets will be unassigned from this account:</div>
+    <div>Entries on these datasets are currently assigned to this account:</div>
+    <!-- TODO: use this once auto-unassigned is implemented
+    <div>Entries on these datasets will be unassigned from this account:</div> -->
     <ul class="mt-2 ml-5 max-h-40 overflow-y-auto">
       {#each Object.entries(countEntriesByDataset) as [datasetId, count] (datasetId)}
         <li>

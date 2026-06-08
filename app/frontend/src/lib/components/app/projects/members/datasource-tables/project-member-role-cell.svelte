@@ -38,13 +38,15 @@
     },
     reviewer: {
       project_owner: "will be granted full control of this project.",
-      annotator:
-        "will no longer be able to review entries and any review entries on these datasets currently assigned to this account will be unassigned.",
+      annotator: "will no longer be able to review entries.",
+      // TODO: use this once auto-unassigned is implemented
+      // "will no longer be able to review entries and any review entries on these datasets currently assigned to this account will be unassigned.",
     },
     project_owner: {
       reviewer: "will lose full control of this project.",
-      annotator:
-        "will lose full control of this project and any review entries on these datasets currently assigned to this account will be unassigned.",
+      annotator: "will no longer be able to review entries.",
+      // TODO: use this once auto-unassigned is implemented
+      // "will no longer be able to review entries and any review entries on these datasets currently assigned to this account will be unassigned.",
     },
   };
 
