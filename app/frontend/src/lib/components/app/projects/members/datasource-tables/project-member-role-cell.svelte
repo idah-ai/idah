@@ -23,6 +23,13 @@
   // Props
   let { record: projectMember }: DataTableCellBaseProps<ProjectMemberRecord> = $props();
 
+  // Role descriptions shown as secondary text in the dropdown
+  const roleDescriptions: Record<ProjectMemberRole, string> = {
+    project_owner: "Annotate, Review, Manage project",
+    reviewer: "Annotate, Review",
+    annotator: "Annotate",
+  };
+
   // Warning messages per (from → to) role pair
   const warningMessages: Partial<Record<ProjectMemberRole, Partial<Record<ProjectMemberRole, string>>>> = {
     annotator: {
@@ -116,7 +123,14 @@
       </SelectTrigger>
       <SelectContent>
         {#each projectMemberRoles as role (role.value)}
-          <SelectItem value={role.value} label={role.label} />
+          <SelectItem value={role.value} label={role.label}>
+            {#snippet children({ selected, highlighted })}
+              <div>
+                <p>{role.label}</p>
+                <p class="text-muted-foreground text-xs">{roleDescriptions[role.value]}</p>
+              </div>
+            {/snippet}
+          </SelectItem>
         {/each}
       </SelectContent>
     </Select>
