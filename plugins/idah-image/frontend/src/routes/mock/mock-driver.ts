@@ -393,7 +393,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
           required: true,
           visibility: [
             "in",
-            [["get", ["value.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
+            [["get", ["annotation.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
           ] as any,
           description: "How many wheels does the object have?",
         },
@@ -456,10 +456,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     id: "mock-entry-v2-001",
     resource: "mock-entry-v2-001",
     key: "",
-    mime_type: "video/mp4",
-    filename: "sample.mp4",
-    url: "/medias/master.m3u8",
-    meta: { duration: 60, fps: 30, width: 1920, height: 1080 },
+    mime_type: "image/jpeg",
+    filename: "mock-image.jpg",
+    url: "/mock-image.jpg",
+    meta: { duration: 0, fps: 0, width: 1920, height: 1080 },
   };
   private _workflowStep = "annotate";
   private _mode = "default";
@@ -601,10 +601,14 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     return this._config;
   }
 
-  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined {
+  getFilteredConfig(
+    shapeType: string,
+    value: Record<string, unknown>,
+    objectName: string = "annotation",
+  ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;
-    const ast = new AstProcessor(new Map(this.#objectVariables(value)));
+    const ast = new AstProcessor(new Map(this.#objectVariables(value, objectName)));
     return {
       values: raw.values,
       properties: raw.properties.filter((p) => {

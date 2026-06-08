@@ -22,6 +22,9 @@ export class CommandManagerV2 {
   /** Time window (ms) for auto-combine. */
   private combineWindow = 5000;
 
+  /** Serial chain — ensures async do/undo never run concurrently. */
+  private _chain: Promise<unknown> = Promise.resolve();
+
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
   currentMode: string = "default";
 
@@ -92,7 +95,7 @@ export class CommandManagerV2 {
             action: combined,
             timestamp: Date.now(),
           };
-          combined.do();
+          this._chain = this._chain.then(() => combined.do()).catch((e) => console.error("[cmd]", e));
           return;
         }
       }
@@ -104,7 +107,7 @@ export class CommandManagerV2 {
       }
     }
 
-    action.do();
+    this._chain = this._chain.then(() => action.do()).catch((e) => console.error("[cmd]", e));
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -122,7 +125,7 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.undoStack.pop();
       if (!entry) break;
-      entry.action.undo?.();
+      this._chain = this._chain.then(() => entry.action.undo?.()).catch((e) => console.error("[cmd]", e));
       this.redoStack.push(entry);
       did = true;
     }
@@ -134,7 +137,7 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.redoStack.pop();
       if (!entry) break;
-      entry.action.do();
+      this._chain = this._chain.then(() => entry.action.do()).catch((e) => console.error("[cmd]", e));
       this.undoStack.push(entry);
       did = true;
     }
