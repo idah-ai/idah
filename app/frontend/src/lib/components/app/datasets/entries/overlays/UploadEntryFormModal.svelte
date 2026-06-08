@@ -98,10 +98,11 @@
       return sumBy(this.items, (item) => item.uploadedMedias.length + item.skippedMedias.length);
     },
   });
+  const allItemsCompleted = $derived(upload.items.length > 0 && upload.items.every((i) => i.status === "completed"));
   const uploadProgressText = $derived.by<string>(() => {
     const done = upload.items.filter((i) => i.status === "completed").length;
     const total = upload.items.length;
-    return `${done} of ${total} ${pluralizeUnit(total, "file")} uploaded`;
+    return `${done} of ${total} ${pluralizeUnit(total, "item")} uploaded`;
   });
 
   let uploading: boolean = $state(false);
@@ -280,6 +281,8 @@
   {#snippet modalTitle()}
     {#if view.isSelect()}
       <DialogTitle>{newRecord ? `Add New ${title}` : `Edit ${title}`}</DialogTitle>
+    {:else if allItemsCompleted}
+      <DialogTitle>Uploaded</DialogTitle>
     {:else}
       <DialogTitle>Uploading media...</DialogTitle>
     {/if}

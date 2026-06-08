@@ -6,9 +6,10 @@
   import { Item, ItemContent } from "@/components/ui/item";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
+  import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { cn } from "@/utils";
-  import { humanize } from "@/utils/string";
+  import { humanize, truncateFilename } from "@/utils/string";
   import { pluralizeUnit } from "@/utils/unit";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
@@ -31,20 +32,20 @@
   const statusLabel = $derived.by<string>(() => {
     switch (status) {
       case "uploading":
-        return `${totalUploadMedias} of ${totalMedias} ${pluralizeUnit(totalMedias, "file")} uploaded`;
+        return `${totalUploadMedias} of ${totalMedias} ${pluralizeUnit(totalMedias, "item")} uploaded`;
       case "retrying":
         return `Retrying... (Attempt ${retryCount} of ${maxRetries})`;
       case "completed":
         if (errorMessage) {
-          const parts = [`${totalUploadMedias} ${pluralizeUnit(totalUploadMedias, "file")} processed`];
+          const parts = [`${totalUploadMedias} ${pluralizeUnit(totalUploadMedias, "item")} uploaded`];
           if (hasSkippedMedias) parts.push(`${totalSkippedMedias} skipped`);
           parts.push(uploadItem.errorMessage ?? "Upload failed");
           return parts.join(", ");
         }
         if (hasSkippedMedias) {
-          return `${totalUploadMedias} ${pluralizeUnit(totalUploadMedias, "file")} processed, ${totalSkippedMedias} ${pluralizeUnit(totalSkippedMedias, "file")} skipped`;
+          return `${totalUploadMedias} ${pluralizeUnit(totalUploadMedias, "item")} uploaded, ${totalSkippedMedias} ${pluralizeUnit(totalSkippedMedias, "file")} skipped`;
         }
-        return `${totalUploadMedias} ${pluralizeUnit(totalUploadMedias, "file")} processed`;
+        return `${totalUploadMedias} ${pluralizeUnit(totalUploadMedias, "item")} uploaded`;
       default:
         return "";
     }
@@ -82,7 +83,7 @@
         </div>
       {:else if status === "completed"}
         <div class="ml-auto">
-          <Badge variant="default" rounded="full" class="text-xs">Processed</Badge>
+          <Badge variant="default" rounded="full" class="text-xs">Uploaded</Badge>
         </div>
       {/if}
     </div>
@@ -116,8 +117,18 @@
           {/if}
 
           {#each skippedMedias as skippedMedia, skippedMediaIndex (skippedMediaIndex)}
-            <div class="rounded-sm bg-amber-100 p-2 dark:bg-amber-900/50">
-              <Text size="xs">{skippedMedia.filename}</Text>
+            {@const { text: displayName, truncated } = truncateFilename(skippedMedia.filename)}
+            <div class="flex flex-col items-start rounded-sm bg-amber-100 p-2 dark:bg-amber-900/50">
+              {#if truncated}
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Text size="xs">{displayName}</Text>
+                  </TooltipTrigger>
+                  <TooltipContent>{skippedMedia.filename}</TooltipContent>
+                </Tooltip>
+              {:else}
+                <Text size="xs">{displayName}</Text>
+              {/if}
               <Text size="xs" class="text-amber-700 dark:text-amber-300">{skippedMedia.message}</Text>
             </div>
           {/each}
