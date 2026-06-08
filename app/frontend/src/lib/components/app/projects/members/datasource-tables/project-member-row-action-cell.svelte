@@ -81,7 +81,9 @@
     onConfirm={removeProjectMember}
     bind:open={openConfirmRemoveMemberModal}
   >
-    <div class="hidden [&:has(div>div)]:!flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400">
+    <div
+      class="hidden gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400 [&:has(div>div)]:!flex"
+    >
       <TriangleAlertIcon class="mt-0.5 size-4 shrink-0" />
       <div class="[&>div]:!text-current">
         <AccountEntries accountId={projectMember.account_id} {projectId} />

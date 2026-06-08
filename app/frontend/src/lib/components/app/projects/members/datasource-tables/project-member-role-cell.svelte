@@ -140,7 +140,9 @@
       </p>
 
       {#if warningMessage}
-        <div class="mt-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400">
+        <div
+          class="mt-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400"
+        >
           <TriangleAlertIcon class="mt-0.5 size-4 shrink-0" />
           <div>
             <span><strong>{projectMember.email}</strong> {warningMessage}</span>
