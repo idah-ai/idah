@@ -7,6 +7,9 @@ export const NOTE_MODE = "note";
 export const BOUNDING_BOX_MODE = "idah-image:bounding-box";
 export const POLYGON_MODE = "idah-image:polygon";
 
+export const VIEWPORT_MIN_ZOOM = 0.05;
+export const VIEWPORT_MAX_ZOOM = 100;
+
 class Viewport {
   // Only mode needs special handling
   #mode = $state(DEFAULT_MODE);
@@ -34,20 +37,6 @@ class Viewport {
       scale: 1.0,
     },
     dimensions: [0, 0] as [number, number],
-
-    /**
-     * Compute the minimum allowed zoom scale dynamically based on
-     * viewport and media dimensions. This ensures large images
-     * (e.g. 6000×4000) can always be zoomed out to at least the
-     * fit-to-viewport scale.
-     */
-    getMinScale() {
-      const [vw, vh] = this.dimensions;
-      const [mw, mh] = media.dimensions;
-      if (vw <= 0 || vh <= 0 || mw <= 0 || mh <= 0) return 0.4;
-      const fitScale = Math.min(vw / mw, vh / mh);
-      return Math.min(fitScale, 0.4);
-    },
 
     /**
      * Fit the image to fill the viewport while maintaining aspect ratio.

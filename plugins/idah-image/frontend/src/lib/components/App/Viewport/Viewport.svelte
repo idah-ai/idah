@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { viewport, VIEWPORT_MAX_ZOOM, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
   import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
   import { modKey } from "$lib/utils/browser";
 
@@ -97,13 +97,11 @@
   }
 
   function scopedZoom(value: number) {
-    const minScale = viewport.workspace.getMinScale();
-    return Math.max(minScale, Math.min(100, value));
+    return Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, value));
   }
 
   export function setZoom(newZoom: number) {
-    const minScale = viewport.workspace.getMinScale();
-    const clamped = Math.max(minScale, Math.min(100, newZoom));
+    const clamped = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, newZoom));
     viewport.workspace.transform.scale = clamped;
   }
 
@@ -136,8 +134,7 @@
         // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
         // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
-        const minScale = viewport.workspace.getMinScale();
-        const newScale = Math.max(minScale, Math.min(100, curScale * factor));
+        const newScale = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, curScale * factor));
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 

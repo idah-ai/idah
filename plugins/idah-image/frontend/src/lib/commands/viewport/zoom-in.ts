@@ -3,7 +3,8 @@
 // Shortcut: Equal (+/= key)
 // Not undoable.
 // ---------------------------------------------------------------------------
-import { viewport } from "$lib/state/viewport.svelte";
+import { viewport, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
+
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
@@ -26,10 +27,14 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         const cur = viewport.workspace.transform.scale;
-        viewport.workspace.transform.scale = Math.min(100, cur + 0.1);
+        viewport.workspace.transform.scale = Math.min(VIEWPORT_MAX_ZOOM, cur + 0.05);
       },
-      isCombinable() { return false; },
-      combine(prev) { return prev; },
+      isCombinable() {
+        return false;
+      },
+      combine(prev) {
+        return prev;
+      },
     }),
     group: command.group,
   });
