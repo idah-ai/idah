@@ -16,18 +16,16 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { ui } from "$lib/state/ui.svelte";
   import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
+  import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
-  // import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
-  // import Image from "$lib/components/App/Viewport/Image.svelte";
-  import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+  import Image from "$lib/components/App/Viewport/Image.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
 
   import type { IImageAnnotationRecord, IImageAnnotationShape, IImageFrameSelection } from "$lib/types";
@@ -639,21 +637,7 @@
                   onAddNewNote={showNewNotePopup}
                 >
                   <!-- container context ?-->
-                  <img
-                    id="idah-image"
-                    bind:this={image_container}
-                    src={mediaUrl}
-                    alt=""
-                    class={["image-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-                    onload={() => {
-                      // Image loaded — container layout is now final. Re-fit.
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          viewport.workspace.fitToViewport();
-                        });
-                      });
-                    }}
-                  />
+                  <Image bind:element={image_container} src={mediaUrl}></Image>
                 </ShapesContainer>
               {/if}
 
@@ -669,17 +653,3 @@
 <DebugConsole />
 <ContextMenu />
 <ConfirmDialog />
-
-<style>
-  .image-element {
-    position: relative;
-    z-index: 1;
-    object-fit: fill;
-  }
-
-  .image-element.nearest,
-  .placeholder-image.nearest {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-</style>

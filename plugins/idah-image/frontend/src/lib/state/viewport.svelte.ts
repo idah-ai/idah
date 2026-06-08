@@ -52,7 +52,7 @@ class Viewport {
 
       this.transform = {
         translate: [(vw - mw * scale) / 2, (vh - mh * scale) / 2],
-        scale: Math.max(1, scale),
+        scale,
       };
     },
 

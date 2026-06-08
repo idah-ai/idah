@@ -6,7 +6,7 @@
 //   - isCreationMode based on current mode
 //   - mode setter delegates to driver
 //   - clampTranslate boundaries
-//   - fitToViewport with Math.max(1, scale) floor
+//   - fitToViewport with Math.min(scaleX, scaleY)
 //   - viewportSize (normalized 0-1 via media dimensions)
 // ---------------------------------------------------------------------------
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -137,49 +137,46 @@ describe("mode setter", () => {
 // ---------------------------------------------------------------------------
 // fitToViewport
 //
-// NOTE: fitToViewport uses Math.max(1, scale) — scale never goes below 1.0.
-// When the viewport is smaller than the media, scale = 1 and the image is
-// panned (negative translate) so the center of the media is visible.
+// NOTE: fitToViewport uses Math.min(scaleX, scaleY) — scale is NOT clamped
+// to a minimum of 1.0. When the viewport is smaller than the media, scale
+// will be < 1 (the image is shrunk to fit).
 // ---------------------------------------------------------------------------
 
 describe("fitToViewport", () => {
   beforeEach(() => resetViewport());
 
-  it("scale = 1 when viewport is smaller than 1920×1080 media (16:9 → 16:9)", () => {
+  it("scale < 1 when viewport is smaller than 1920×1080 media (16:9 → 16:9)", () => {
     setViewportDimensions(1280, 720);
     viewport.workspace.fitToViewport();
 
     const { translate, scale } = viewport.workspace.transform;
-    // raw scale = min(1280/1920, 720/1080) = 0.6667 → clamped to max(1, 0.6667) = 1
-    expect(scale).toBe(1);
-    // NOTE: translate is calculated with the unclamped scale (0.6667):
-    //   tx = (1280 - 1920*0.6667) / 2 ≈ 0, ty = (720 - 1080*0.6667) / 2 ≈ 0
+    // scale = min(1280/1920, 720/1080) = 0.6667
+    expect(scale).toBeCloseTo(1280 / 1920, 5);
+    // tx = (1280 - 1920*0.6667) / 2 ≈ 0, ty = (720 - 1080*0.6667) / 2 ≈ 0
     expect(translate[0]).toBeCloseTo(0, 1);
     expect(translate[1]).toBeCloseTo(0, 1);
   });
 
-  it("scale = 1 when narrower viewport forces width-constrained fit", () => {
+  it("scale < 1 when narrower viewport forces width-constrained fit", () => {
     setViewportDimensions(800, 600);
     viewport.workspace.fitToViewport();
 
     const { translate, scale } = viewport.workspace.transform;
-    // raw scale = min(800/1920, 600/1080) = min(0.4167, 0.5556) = 0.4167 → clamped to 1
-    expect(scale).toBe(1);
-    // NOTE: translate is calculated with the unclamped scale (0.4167):
-    //   tx = (800 - 1920*0.4167) / 2 ≈ 0, ty = (600 - 1080*0.4167) / 2 ≈ 75
+    // scale = min(800/1920, 600/1080) = min(0.4167, 0.5556) = 0.4167
+    expect(scale).toBeCloseTo(800 / 1920, 5);
+    // tx = (800 - 1920*0.4167) / 2 ≈ 0, ty = (600 - 1080*0.4167) / 2 ≈ 75
     expect(translate[0]).toBeCloseTo(0, 1);
     expect(translate[1]).toBeCloseTo((600 - 1080 * (800 / 1920)) / 2, 1);
   });
 
-  it("scale = 1 when taller viewport forces height-constrained fit", () => {
+  it("scale < 1 when taller viewport forces height-constrained fit", () => {
     setViewportDimensions(1024, 768);
     viewport.workspace.fitToViewport();
 
     const { translate, scale } = viewport.workspace.transform;
-    // raw scale = min(1024/1920, 768/1080) = min(0.5333, 0.7111) = 0.5333 → clamped to 1
-    expect(scale).toBe(1);
-    // NOTE: translate is calculated with the unclamped scale (0.5333):
-    //   tx = (1024 - 1920*0.5333) / 2 ≈ 0, ty = (768 - 1080*0.5333) / 2 ≈ 96
+    // scale = min(1024/1920, 768/1080) = min(0.5333, 0.7111) = 0.5333
+    expect(scale).toBeCloseTo(1024 / 1920, 5);
+    // tx = (1024 - 1920*0.5333) / 2 ≈ 0, ty = (768 - 1080*0.5333) / 2 ≈ 96
     expect(translate[0]).toBeCloseTo(0, 1);
     expect(translate[1]).toBeCloseTo((768 - 1080 * (1024 / 1920)) / 2, 1);
   });
@@ -196,13 +193,13 @@ describe("fitToViewport", () => {
     expect(translate[1]).toBeCloseTo(0, 1);
   });
 
-  it("clamps scale at 1 when viewport is taller but media short", () => {
+  it("scale > 1 when viewport is taller but media short", () => {
     // 2000×2000 viewport, 1920×1080 media — height-constrained
     setViewportDimensions(2000, 2000);
     viewport.workspace.fitToViewport();
 
     const { translate, scale } = viewport.workspace.transform;
-    // scaleX = 2000/1920 = 1.0417, scaleY = 2000/1080 = 1.8519 → raw = 1.0417 → max(1, 1.0417) = 1.0417
+    // scaleX = 2000/1920 = 1.0417, scaleY = 2000/1080 = 1.8519 → scale = min(1.0417, 1.8519) = 1.0417
     expect(scale).toBeCloseTo(2000 / 1920, 5);
     // tx = (2000 - 1920*1.0417) / 2 ≈ 0
     expect(translate[0]).toBeCloseTo(0, 1);
