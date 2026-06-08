@@ -60,6 +60,7 @@
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
   import type { Hash } from "@/utils/types";
+  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -113,9 +114,16 @@
   let itemsPerPage: number = $state(10);
   let selectedEntryIds: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedEntryIds.length);
-  let selectedToUnassignedEntryIdsCount: number = $derived(
-    response.data.filter((entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to?.id).length,
+  let assignableEntryIds: string[] = $derived(
+    selectedEntryIds.filter((id) => response.data.find((e) => e.id === id)?.wf_step !== "done"),
   );
+  let unAssignableEntryIds: string[] = $derived(
+    selectedEntryIds.filter((id) => {
+      const entry = response.data.find((e) => e.id === id);
+      return entry?.wf_step !== "done" && entry?.assigned_to_id !== null;
+    }),
+  );
+  let selectedToUnassignedEntryIdsCount: number = $derived(unAssignableEntryIds.length);
   let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
@@ -178,6 +186,8 @@
         openConfirmDeleteEntriesModal = true;
       },
       isAssigned: checkEntriesAssignedToAnyone(selectedEntryIds),
+      isAssignDisabled: assignableEntryIds.length === 0,
+      isUnassignDisabled: unAssignableEntryIds.length === 0,
     }),
   );
 
@@ -295,7 +305,7 @@
 
   async function unAssignEntries(): Promise<void> {
     try {
-      for (const entryId of selectedEntryIds) {
+      for (const entryId of unAssignableEntryIds) {
         await entriesBackendDataSource.update(entryId, {
           attributes: {
             assigned_to_id: null,
@@ -303,9 +313,7 @@
         });
       }
 
-      const selectedToUnassignedRows = response.data.filter(
-        (entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to_id,
-      );
+      const selectedToUnassignedRows = response.data.filter((entry) => unAssignableEntryIds.includes(entry.id));
       const description =
         selectedToUnassignedEntryIdsCount > 1
           ? `${selectedToUnassignedRows.length} entries have been unassigned.`
@@ -454,9 +462,9 @@
 
               <DropdownMenuContent>
                 <DropdownMenuGroup>
-                  {#each bulkActions as { label, icon: Icon, action, hidden }, index (index)}
+                  {#each bulkActions as { label, icon: Icon, action, disabled, hidden }, index (index)}
                     {#if !hidden}
-                      <DropdownMenuItem onclick={action}>
+                      <DropdownMenuItem {disabled} onclick={action}>
                         <Icon class="mr-2 size-4" />
                         {label}
                       </DropdownMenuItem>
@@ -518,9 +526,11 @@
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal
   action="update"
-  entryIds={selectedEntryIds}
+  entryIds={assignableEntryIds}
   onAssigned={resetSelectedRows}
-  entryRecord={selectedRowsCount === 1 ? response.data.find((entry) => entry.id === selectedEntryIds[0]) : undefined}
+  entryRecord={assignableEntryIds.length === 1
+    ? response.data.find((entry) => entry.id === assignableEntryIds[0])
+    : undefined}
   bind:open={openAssignEntryFormModal}
 />
 
