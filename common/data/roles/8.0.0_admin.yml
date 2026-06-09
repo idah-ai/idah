@@ -37,3 +37,6 @@ admin:
     - "sync:jobs.read.*"
     - "sync:exports.read.*"
     - "sync:exports.create.*"
+
+    # Audit Service
+    - "audit:logs.read.*"
