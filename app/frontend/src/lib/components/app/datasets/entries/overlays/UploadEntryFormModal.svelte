@@ -18,6 +18,7 @@
   import { pluralizeUnit } from "@/utils/unit";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
+  import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
@@ -223,18 +224,7 @@
       return;
     }
 
-    upload.items = media.selected!.map((media) => ({
-      uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
-      name: media.name,
-      media: media,
-      isZip: media.name.toLowerCase().endsWith(".zip"),
-      status: "uploading",
-      retryCount: 0,
-      createdEntryCount: 0,
-      uploadedMedias: [],
-      skippedMedias: [],
-      errorMedias: [],
-    }));
+    upload.items = media.selected!.map(createUploadItem);
 
     for (const media of upload.items) {
       await uploadSingleMedia(media); // never throws — loop always continues
