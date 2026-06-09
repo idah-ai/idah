@@ -2,7 +2,7 @@
 
 Download a sample image for annotation, for example from:
 
-- https://www.pexels.com/search/city%20street/ (or any free stock photo)
+- https://www.pexels.com/photo/highway-during-rush-hour-15610996/ (or any free stock photo)
 
 Recommendation: choose a 1920×1080 image with multiple objects (cars, people, traffic signs) to make the mock more realistic.
 

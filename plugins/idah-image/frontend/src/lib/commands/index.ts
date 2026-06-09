@@ -43,6 +43,8 @@ import { register as registerNoteGoto } from "./note/goto";
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
+import { register as registerAnnotationKeyframeAdd } from "./annotation/keyframe_add";
+import { register as registerAnnotationKeyframeDelete } from "./annotation/keyframe_delete";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
@@ -94,6 +96,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
+  registerAnnotationKeyframeAdd(driver);
+  registerAnnotationKeyframeDelete(driver);
 
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
