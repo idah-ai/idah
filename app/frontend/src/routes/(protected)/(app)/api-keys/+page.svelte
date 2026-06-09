@@ -40,8 +40,8 @@
 
   // Functions
   async function checkRights() {
-    canCreateApiKey = (await $authStatus.authContext?.can("create", "iam:accounts")) || false;
-    canDeleteApiKey = (await $authStatus.authContext?.can("delete", "iam:accounts")) || false;
+    canCreateApiKey = (await $authStatus.authContext?.can("create", "iam:api_keys")) || false;
+    canDeleteApiKey = (await $authStatus.authContext?.can("delete", "iam:api_keys")) || false;
     columns.action.visible = canCreateApiKey || canDeleteApiKey;
   }
 
