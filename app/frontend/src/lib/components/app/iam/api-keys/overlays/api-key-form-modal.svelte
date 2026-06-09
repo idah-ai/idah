@@ -1,6 +1,5 @@
 <script lang="ts">
   import ApiKeyForm from "@/components/app/iam/api-keys/forms/api-key-form.svelte";
-  import ApiKeyGeneratedModal from "@/components/app/iam/api-keys/overlays/api-key-generated-modal.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
   import { refetches } from "@/utils/refetch";
@@ -22,15 +21,14 @@
   // Props
   interface Props extends FormModalBaseProps {
     apiKeyRecord?: ApiKeyRecord;
+    onCreatedApiKey?: (apiKey: string) => void;
   }
-  let { action, open = $bindable(), title, apiKeyRecord }: Props = $props();
+  let { action, open = $bindable(), title, apiKeyRecord, onCreatedApiKey = () => {} }: Props = $props();
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
-  let openApiKeyGeneratedModal: boolean = $state(false);
-  let keyValue: string = $state("");
 
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
@@ -91,15 +89,15 @@
       },
     );
 
-    keyValue = createdApiKeyRes.data.key;
-
     closeThisModal();
-    openApiKeyGeneratedModal = true;
+
     $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key created",
       description: `The API Key "${apiKey.name}" has been created.`,
     });
+
+    onCreatedApiKey(createdApiKeyRes.data.key);
   }
 
   async function updateApiKey(): Promise<void> {
@@ -146,7 +144,6 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-        console.log("Validation errors:", fieldErrors);
 
         submitting = false;
         return;
@@ -167,5 +164,3 @@
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
   <ApiKeyForm {apiKey} {fieldErrors} {newRecord} onValueChange={setValue} />
 </FormModal>
-
-<ApiKeyGeneratedModal value={keyValue} bind:open={openApiKeyGeneratedModal} />

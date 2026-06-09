@@ -4,6 +4,7 @@
 
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import APIKeyFormModal from "@/components/app/iam/api-keys/overlays/api-key-form-modal.svelte";
+  import ApiKeyGeneratedModal from "@/components/app/iam/api-keys/overlays/api-key-generated-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -28,6 +29,9 @@
   let canDeleteApiKey = $state(false);
   let columns = $state(apiKeyColumns);
   let openNewAPIKeyFormModal: boolean = $state(false);
+
+  let openApiKeyGenerateFormModal: boolean = $state(false);
+  let keyValue: string = $state("");
 
   // Lifecycle
   onMount(async () => {
@@ -78,6 +82,11 @@
       projects: [...projectRes.data],
     };
   }
+
+  function openApiKeyGeneratedModal(apiKey: string): void {
+    keyValue = apiKey;
+    openApiKeyGenerateFormModal = true;
+  }
 </script>
 
 {#snippet AddNewAPIKeyButton()}
@@ -87,7 +96,12 @@
       New API Key
     </Button>
 
-    <APIKeyFormModal action="create" title="API Key" bind:open={openNewAPIKeyFormModal} />
+    <APIKeyFormModal
+      action="create"
+      title="API Key"
+      onCreatedApiKey={openApiKeyGeneratedModal}
+      bind:open={openNewAPIKeyFormModal}
+    />
   </Can>
 {/snippet}
 
@@ -130,3 +144,5 @@
     </DatasourceTable>
   {/key}
 </PageProvider>
+
+<ApiKeyGeneratedModal value={keyValue} bind:open={openApiKeyGenerateFormModal} />
