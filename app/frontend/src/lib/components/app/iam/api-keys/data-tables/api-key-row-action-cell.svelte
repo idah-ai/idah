@@ -22,13 +22,14 @@
   let currentAccount = $authStatus.authContext;
   let canUpdateAPIKey = $state(false);
   let canDeleteAPIKey = $state(false);
+  let alreadyRevoked = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
           label: "Edit",
           icon: SquarePenIcon,
-          hidden: !canUpdateAPIKey,
+          hidden: !canUpdateAPIKey || alreadyRevoked,
           action: async () => {
             const apiKeyRes = await fetchAPIKey();
             apiKeyRecord = apiKeyRes.data;
@@ -39,7 +40,7 @@
         {
           label: "Revoke",
           icon: CircleSlashIcon,
-          hidden: !canUpdateAPIKey,
+          hidden: !canUpdateAPIKey || alreadyRevoked,
           action: () => {
             openConfirmRevokeAPIKeyModal = true;
           },
@@ -62,10 +63,14 @@
 
   // Lifecycle
   onMount(async () => {
+    const apiRes = await fetchAPIKey();
+
     canUpdateAPIKey = (await currentAccount?.can("update", "iam:api_keys")) || false;
 
     // canRevokeAPIKey = (await currentAccount?.can("revoke", "iam:api_keys")) || false;
     canDeleteAPIKey = (await currentAccount?.can("delete", "iam:api_keys")) || false;
+
+    alreadyRevoked = apiRes.data.status === "revoked"
   });
 
   // Functions
@@ -117,7 +122,7 @@
   <ConfirmModal
     title="Delete API Key"
     confirmLabel="Delete API Key"
-    description={`Are you sure you want to delete the API key "${apiKey.name}"?`}
+    description={`Are you sure you want to delete the API key "${apiKey.name}"? This action cannot be undone.`}
     onConfirm={removeAPIKey}
     bind:open={openConfirmDeleteAPIKeyModal}
   />
@@ -125,7 +130,8 @@
   <ConfirmModal
     title="Revoke API Key"
     confirmLabel="Revoke API Key"
-    description="Revoking this key will immediately block all requests using it. Any applications relying on this key will stop working."
+    description={`Are you sure you want to revoke this API key "${apiKey.name}"?
+Revoking this key will immediately block all requests that use it. Any applications, integrations, or services relying on this key will stop working.`}
     onConfirm={revokeAPIKey}
     bind:open={openConfirmRevokeAPIKeyModal}
   />

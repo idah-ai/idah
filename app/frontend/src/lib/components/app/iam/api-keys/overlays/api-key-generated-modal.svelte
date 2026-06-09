@@ -46,7 +46,7 @@
       <DialogDescription>Do not share it with others or expose it in public repositories.</DialogDescription>
 
       <div class="inline-flex w-full items-end gap-1">
-        <InputField name="apiKey/generated" label="API Key" {value} required readonly />
+        <InputField name="apiKey/generated" label="API Key" {value}  readonly />
 
         <TooltipProvider disableCloseOnTriggerClick>
           <Tooltip delayDuration={0}>
