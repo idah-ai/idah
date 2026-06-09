@@ -1,7 +1,6 @@
 <script lang="ts">
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
 
-  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -35,6 +34,8 @@
     class: className,
     onSelected,
     slotLabel,
+    slotTrigger,
+    slotTriggerValues,
     slotSelectAll,
     slotChoice,
     slotInfo,
@@ -49,6 +50,11 @@
   // Functions
   function closePopover() {
     open = !closeOnSelect;
+  }
+
+  function openPopover(): void {
+    if (!disabled) return;
+    open = true;
   }
 
   async function select(choice: LabelValue<string | number>): Promise<void> {
@@ -97,20 +103,31 @@
         "border-destructive border-1": errors,
       })}
     >
-      {#snippet child({ props })}
-        <Button variant="outline" class="justify-between" role="combobox" {disabled} aria-expanded={open} {...props}>
+      {#if slotTrigger}
+        {@render slotTrigger({ selectedChoices, clearable, disabled })}
+      {:else}
+        <Button
+          variant="outline"
+          class="w-full justify-between"
+          {disabled}
+          role="combobox"
+          aria-expanded={open}
+          onclick={openPopover}
+        >
           {#if selectedChoices.length > 0}
-            {#each selectedChoices as selected, index (index)}
-              <Badge>{selected.label}</Badge>
-            {/each}
+            {#if slotTriggerValues}
+              {@render slotTriggerValues({ selectedChoices })}
+            {:else}
+              {selectedChoices.map((choice) => choice.label).join(", ")}
+            {/if}
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
 
-          <div class={cn("ml-auto inline-flex items-center gap-2")}>
+          <div class="ml-auto inline-flex items-center gap-2">
             <button
               type="button"
-              class={cn("cursor-pointer", clearable && selectedChoices ? "opacity-50" : "opacity-0")}
+              class={cn("cursor-pointer", clearable && selectedChoices.length > 0 ? "opacity-50" : "opacity-0")}
               onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0" />
@@ -119,7 +136,7 @@
             <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
           </div>
         </Button>
-      {/snippet}
+      {/if}
     </PopoverTrigger>
 
     <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">

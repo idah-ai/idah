@@ -9,7 +9,11 @@ class ApiKeysExpo < BaseExpo
     index do
       allowed_filters :name__match,
                       :expires_at__lte,
-                      :expires_at__gte
+                      :expires_at__gte,
+                      :scope_type,
+                      :status,
+                      :scope_type__in,
+                      :status__in
     end
 
     show
