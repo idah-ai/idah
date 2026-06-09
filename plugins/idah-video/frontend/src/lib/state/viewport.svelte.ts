@@ -44,6 +44,9 @@ class Viewport {
       highQuality: false,
       qualityLabel: "",
     },
+    get framePending() {
+      return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
+    },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
     play() {

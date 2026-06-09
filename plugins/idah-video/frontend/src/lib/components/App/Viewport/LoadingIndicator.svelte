@@ -8,9 +8,7 @@
   //   video element has not confirmed the seek yet (displayedFrame hasn't caught
   //   up). Suppressed during playback — the RAF loop keeps both in lockstep.
   let highQuality = $derived(viewport.video.loading.highQuality);
-  let framePending = $derived(
-    viewport.video.status === "pause" && viewport.video.currentFrame.value !== viewport.video.displayedFrame.value,
-  );
+  let framePending = $derived(viewport.video.framePending);
 
   let visible = $derived(highQuality || framePending);
 

@@ -17,6 +17,7 @@
   import { cn } from "$lib/utils";
 
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
+  import FramePendingOverlay from "$lib/components/App/Viewport/FramePendingOverlay.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
@@ -425,6 +426,9 @@
       {/each}
     </g>
   </svg>
+
+  <!-- Layer 2: Frame-pending blocking overlay -->
+  <FramePendingOverlay {zoomableElement} />
 </div>
 
 <style>
