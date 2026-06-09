@@ -204,6 +204,7 @@
           /** If progress = 100%, update entry status to 'ready' */
           if (jobProgress === 1) {
             entry.status = "ready";
+            await loadThumbnail();
             entry = Object.assign(Object.create(Object.getPrototypeOf(entry)), entry); // force new object reference
             stopPeriodicCheckJobStatus();
             return;
