@@ -16,6 +16,7 @@
   } from "$lib/components/ui/Command";
   import Highlight from "$lib/components/ui/Highlight.svelte";
   import { getShortcuts } from "$lib/components/ui/Kbd/utils";
+
   import type { ICommandDriverV2 } from "$idah/v2/types";
 
   interface Props {
@@ -33,13 +34,20 @@
   <CommandInput placeholder="Type a command or search..." />
   <CommandList>
     <CommandEmpty>No results found.</CommandEmpty>
-    {#each Array.from(commandManager.getAllCommands(mode).entries()).sort(([a], [b]) => a.localeCompare(b)) as [groupName, cmds]}
+    {#each Array.from(commandManager
+        .getAllCommands(mode)
+        .entries()).sort(([a], [b]) => a.localeCompare(b)) as [groupName, cmds], i (i)}
       <CommandGroup heading={groupName}>
-        {#each cmds.filter((c) => c.shortDescription).sort((a, b) => (a.shortDescription ?? a.name).localeCompare(b.shortDescription ?? b.name)) as cmd (cmd.name)}
+        {#each cmds
+          .filter((c) => c.shortDescription)
+          .sort((a, b) => (a.shortDescription ?? a.name).localeCompare(b.shortDescription ?? b.name)) as cmd (cmd.name)}
           <CommandItem
             value={cmd.shortDescription ?? cmd.name}
             title={cmd.longDescription ?? cmd.shortDescription ?? ""}
-            onSelect={() => { commandManager.call(cmd.name); open = false; }}
+            onSelect={() => {
+              commandManager.call(cmd.name);
+              open = false;
+            }}
           >
             <span class="palette-item-label">
               <Highlight text={cmd.shortDescription} query={searchValue} />

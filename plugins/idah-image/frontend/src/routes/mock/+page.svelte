@@ -2,10 +2,12 @@
   // -----------------------------------------------------------------------
   // /mock — V2 mock page showing the toolbar above the actual editor
   // -----------------------------------------------------------------------
-  import type { IToolbarItem } from "$idah/v2/types";
   import IdahCommandPalette from "./idah-command-palette.svelte";
   import IdahToolbar from "./idah-toolbar.svelte";
+
   import { IdahDriverV2 } from "./mock-driver";
+
+  import type { IToolbarItem } from "$idah/v2/types";
 
   // ── Create V2 driver ──────────────────────────────────────────────────
   const driver = new IdahDriverV2();
