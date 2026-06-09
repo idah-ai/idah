@@ -208,6 +208,9 @@
         return; // done
       } catch (error) {
         media.errorMessage = error instanceof Error ? error.message : "Upload failed";
+        if (media.isZip) {
+          media.errorMedias.push({ filename: media.media.name, message: media.errorMessage });
+        }
       }
     }
 
@@ -224,11 +227,13 @@
       uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
       name: media.name,
       media: media,
+      isZip: media.name.toLowerCase().endsWith(".zip"),
       status: "uploading",
       retryCount: 0,
       createdEntryCount: 0,
       uploadedMedias: [],
       skippedMedias: [],
+      errorMedias: [],
     }));
 
     for (const media of upload.items) {
