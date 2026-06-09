@@ -16,9 +16,10 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
+  import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
-  import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
+  import type { JsonApiErrorResponse } from "@/data/model/types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
@@ -208,7 +209,8 @@
         media.status = "completed";
         return; // done
       } catch (error) {
-        media.errorMessage = error instanceof Error ? error.message : "Upload failed";
+        const apiError = error as JsonApiErrorResponse;
+        media.errorMessage = apiError?.errors?.[0]?.detail ?? apiError?.errors?.[0]?.title ?? "Upload failed";
         if (media.isZip) {
           media.errorMedias.push({ filename: media.media.name, message: media.errorMessage });
         }
@@ -277,7 +279,7 @@
     {#if view.isSelect()}
       <DialogTitle>{newRecord ? `Add New ${title}` : `Edit ${title}`}</DialogTitle>
     {:else if allItemsCompleted}
-      <DialogTitle>Uploaded</DialogTitle>
+      <DialogTitle>Upload completed</DialogTitle>
     {:else}
       <DialogTitle>Uploading media...</DialogTitle>
     {/if}

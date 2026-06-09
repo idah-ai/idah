@@ -11,6 +11,7 @@
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
+  import { pluralizeUnit } from "@/utils/unit";
   import { getStatusLabel } from "./_upload-item-utils";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
@@ -36,8 +37,8 @@
 
   const collapsibleLabel = $derived.by<string>(() => {
     const parts: string[] = [];
-    if (hasSkippedMedias) parts.push(`${totalSkippedMedias} skipped`);
-    if (hasErrorMedias) parts.push(`${totalErrorMedias} failed`);
+    if (hasSkippedMedias) parts.push(`${totalSkippedMedias} ${pluralizeUnit(totalSkippedMedias, "file")} skipped`);
+    if (hasErrorMedias) parts.push(`${totalErrorMedias} ${pluralizeUnit(totalErrorMedias, "file")} failed`);
     return parts.join(", ");
   });
 

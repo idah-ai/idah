@@ -17,11 +17,7 @@ export function getStatusLabel(item: UploadItem, maxRetries: number): string {
         return `Retrying... (Attempt ${retryCount} of ${maxRetries})`;
       }
       case "completed": {
-        const parts = [];
-        if (totalUploaded > 0) parts.push(`${totalUploaded} ${pluralizeUnit(totalUploaded, "item")} uploaded`);
-        if (totalSkipped > 0) parts.push(`${totalSkipped} skipped`);
-        if (totalErrors > 0) parts.push(`${totalErrors} failed`);
-        return parts.join(", ");
+        return `${totalUploaded} ${pluralizeUnit(totalUploaded, "file")} uploaded`;
       }
       default: {
         return "";
@@ -38,10 +34,8 @@ export function getStatusLabel(item: UploadItem, maxRetries: number): string {
     }
     case "completed": {
       if (errorMessage) return errorMessage;
-      const parts = [];
-      if (totalUploaded > 0) parts.push(`${totalUploaded} ${pluralizeUnit(totalUploaded, "item")} uploaded`);
-      if (totalSkipped > 0) parts.push(`${totalSkipped} skipped`);
-      return parts.join(", ") || "Uploaded";
+      if (totalSkipped > 0) return skippedMedias.at(0)?.message ?? "Skipped";
+      if (totalUploaded > 0) return "Uploaded";
     }
     default: {
       return "";
