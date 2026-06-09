@@ -22,12 +22,17 @@ interface VideoStreamHandlerOptions {
  * Quality strategy:
  *  - Initial load  → max quality, stops after `initialFragmentCount` fragments
  *                    so only the first frames are buffered upfront.
- *  - Playback      → adaptive (ABR), HLS runs continuously forward.
+ *  - Playback      → starts at the current quality (no buffer flush), then
+ *                    smoothly transitions to adaptive (ABR) after 3 seconds
+ *                    of stable playback. This avoids the stutter caused by
+ *                    an immediate SourceBuffer flush on play.
  *  - Pause / seek  → max quality re-rendered on demand via renderQualityFrame().
  *
  * The two key async flows are:
- *  play  → isPaused=false, cancelPendingRender(), switch to adaptive, restart load.
- *  pause → isPaused=true,  renderHighQualityFrame() to upgrade the current frame.
+ *  play  → isPaused=false, cancelPendingRender(), restart load at current
+ *          quality, schedule deferred adaptive switch after 3 s.
+ *  pause → isPaused=true, cancel deferred adaptive switch (if pending),
+ *          renderHighQualityFrame() to upgrade the current frame.
  */
 export class VideoStreamHandler {
   private videoElement: HTMLVideoElement;
@@ -50,12 +55,10 @@ export class VideoStreamHandler {
   // Both are cancelled together on any new seek or play to prevent stale seeks.
   private pendingFragListener: ((event: string, data: any) => void) | null = null;
   private pendingRenderTimer: ReturnType<typeof setTimeout> | null = null;
-  // True while hls.startLoad() is active.
-  // Prevents a redundant startLoad() in the play listener: if renderQualityFrame
-  // already started HLS for an HQ frame, calling startLoad() again during the
-  // adaptive quality switch flushes the SourceBuffer and snaps currentTime to the
-  // buffer end instead of the seeked position.
-  private hlsRunning = false;
+  // Timer for the deferred adaptive (ABR) switch after play starts.
+  // Cancelled on pause or seek so a rapid play→pause→seek sequence doesn't
+  // trigger a SourceBuffer flush during paused playback.
+  private adaptiveTransitionTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(videoElement: HTMLVideoElement, sourceUrl: string, options: VideoStreamHandlerOptions = {}) {
     this.videoElement = videoElement;
@@ -85,7 +88,6 @@ export class VideoStreamHandler {
     this.setupEventListeners();
     // Kick off loading from the beginning so the first frame is ready immediately.
     this.hls.startLoad(0);
-    this.hlsRunning = true;
   }
 
   // ── Event listeners ───────────────────────────────────────────────
@@ -107,40 +109,56 @@ export class VideoStreamHandler {
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
         this.hls?.stopLoad();
         this.isInitialLoad = false;
-        this.hlsRunning = false;
       }
     });
 
     // Play flow:
     //   1. Mark not-paused and cancel any pending HQ render (stale after play).
-    //   2. Switch HLS to adaptive (ABR) so it selects quality based on bandwidth.
-    //   3. If HLS was stopped (post-initial-burst or post-pause), restart it from
-    //      the current position so it buffers forward from where playback begins.
-    //   4. Skip startLoad() if hlsRunning=true: renderQualityFrame already started
-    //      HLS; a second call would flush the SourceBuffer on the level change.
+    //   2. Cancel any deferred adaptive switch (stale after play→pause→play).
+    //   3. Restart HLS loading from the current position WITHOUT changing the
+    //      quality level. This avoids flushing the SourceBuffer, so buffered
+    //      data plays immediately with no stutter.
+    //   4. Schedule a deferred switch to adaptive (ABR, currentLevel = -1)
+    //      after 3 seconds of stable playback. By then the user sees smooth
+    //      video, and the brief SourceBuffer flush on the level change is
+    //      masked by active playback.
+    //   5. Handle ended state by using endOfFrameTime (same as renderQualityFrame)
+    //      so startLoad always lands inside a valid fragment boundary.
     this.videoElement.addEventListener("play", () => {
       this.isPaused = false;
       this.isInitialLoad = false;
       this.cancelPendingRender();
+      this.cancelAdaptiveTransition();
 
       if (!this.hls) return;
-      this.hls.currentLevel = -1; // adaptive for playback
 
-      if (this.hls.media && this.hls.media.readyState > 0 && !this.hlsRunning) {
-        this.hls.startLoad(this.videoElement.currentTime);
-        this.hlsRunning = true;
-      }
+      // Use endOfFrameTime when ended so startLoad targets a valid fragment.
+      const currentTime = this.videoElement.ended ? this.endOfFrameTime : this.videoElement.currentTime;
+
+      // Restart load — always safe to call, HLS adjusts its internal position.
+      this.hls.startLoad(currentTime);
+
+      // Deferred adaptive switch: wait 3 s of playback before switching to ABR.
+      this.adaptiveTransitionTimer = setTimeout(() => {
+        this.adaptiveTransitionTimer = null;
+        if (this.hls && !this.videoElement.paused) {
+          this.hls.currentLevel = -1;
+        }
+      }, 3000);
     });
 
     // Pause flow (fires for manual pause, end-of-video, and programmatic pause):
-    //   1. Mark paused.
-    //   2. If we are not already at max quality, reload the current frame at HQ.
+    //   1. Cancel the deferred adaptive switch if it hasn't fired yet (prevents
+    //      a SourceBuffer flush during paused frame viewing).
+    //   2. Mark paused.
+    //   3. If we are not already at max quality, reload the current frame at HQ.
     //      renderQualityFrame handles the ended case internally by substituting
     //      endOfFrameTime for videoElement.currentTime (see renderQualityFrame).
     //      Do NOT pre-set currentLevel here — renderQualityFrame reads it first to
     //      decide whether to show the loading indicator; setting it beforehand would
     //      always produce shouldShowLoader=false and hide the UI.
     this.videoElement.addEventListener("pause", () => {
+      this.cancelAdaptiveTransition();
       this.isPaused = true;
       if (this.maxQualityLevel < 0 || !this.hls) return;
       if (this.hls.currentLevel === this.maxQualityLevel) return;
@@ -162,6 +180,13 @@ export class VideoStreamHandler {
     if (!this.hls || level < 0 || level >= this.hls.levels.length) return undefined;
     const { height, width } = this.hls.levels[level];
     return { height, width, label: `${height}p` };
+  }
+
+  private cancelAdaptiveTransition(): void {
+    if (this.adaptiveTransitionTimer !== null) {
+      clearTimeout(this.adaptiveTransitionTimer);
+      this.adaptiveTransitionTimer = null;
+    }
   }
 
   // ── Core HQ render ────────────────────────────────────────────────
@@ -203,7 +228,6 @@ export class VideoStreamHandler {
     if (shouldShowLoader) this.onLoadingChange(true, this.getQualityInfo(level));
 
     this.hls.startLoad(currentTime);
-    this.hlsRunning = true;
 
     // At the last fragment we only need 1 loaded segment; elsewhere we need 2
     // (current + next) to satisfy the decoder's look-ahead requirement.
@@ -265,6 +289,7 @@ export class VideoStreamHandler {
   // ── Public API ────────────────────────────────────────────────────
 
   // Cancel any in-flight HQ render and hide the loading indicator.
+  // Also cancels any pending deferred adaptive switch.
   // Called by Video.svelte before play() and on every new seek to prevent a
   // stale timer from seeking to an outdated position.
   public cancelPendingRender(): void {
@@ -278,10 +303,12 @@ export class VideoStreamHandler {
       this.pendingRenderTimer = null;
     }
     if (wasLoading) this.onLoadingChange(false);
+    this.cancelAdaptiveTransition();
   }
 
   // Tear down HLS and release all resources.
   public destroy(): void {
+    this.cancelAdaptiveTransition();
     this.hls?.destroy();
     this.hls = null;
   }

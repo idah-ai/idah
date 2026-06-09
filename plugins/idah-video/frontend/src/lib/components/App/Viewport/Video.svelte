@@ -191,22 +191,6 @@
     viewport.video.currentFrame.value = frame;
   }
 
-  // Toggle between play and pause based on the current DOM state.
-  export function togglePlay() {
-    if (!videoElement) return;
-    if (videoElement.paused) viewport.video.play();
-    else viewport.video.pause();
-  }
-
-  // Advance or rewind by `step` frames (triggers the seek $effect when paused).
-  export function nextFrame(step = 1) {
-    viewport.video.currentFrame.value = viewport.video.currentFrame.value + step;
-  }
-
-  export function previousFrame(step = 1) {
-    viewport.video.currentFrame.value = viewport.video.currentFrame.value - step;
-  }
-
   // Set the playback speed multiplier (does not affect HLS quality switching).
   export function playbackRate(rate: number) {
     if (videoElement) videoElement.playbackRate = rate;
@@ -229,45 +213,23 @@
     videoElement.volume = 0;
     videoElement.muted = true;
 
-    // "play" fires for both programmatic (videoElement.play()) and browser-native
-    // play (context menu, media keys). Either path restarts the RAF loop and
-    // cancels any pending HLS reload since adaptive quality handles buffering.
+    // "play" fires for both programmatic (videoElement.play()) and browser-native play
     const handlePlay = () => {
       clearTimeout(hlsReloadTimer);
       isPlaying = true;
       viewport.video.status = "play";
       onTogglePlay(true);
-      startRAF();
     };
 
-    // "pause" fires after any pause, including natural end-of-video.
-    // Stops the RAF loop and snaps the displayed frame to the paused position.
-    // VideoStreamHandler's own "pause" listener also fires here to trigger the
-    // HLS HQ reload for the current frame.
+    // "pause" fires for both programmatic (videoElement.pause()) and browser-native pause
     const handlePause = () => {
       isPlaying = false;
       viewport.video.status = "pause";
       onTogglePlay(false);
-      stopRAF();
-      if (videoElement) syncPausedFrame();
-    };
-
-    // "seeked" fires when the browser finishes repositioning the decoder.
-    // Used as a lightweight fallback to update frame state when rVFC is
-    // unavailable. Stale events from interrupted/overridden seeks are discarded
-    // by comparing the resolved frame against lastSeekedFrame.
-    const handleSeeked = () => {
-      if (isPlaying || !videoElement) return;
-      const frame = timeToFrame(videoElement.currentTime);
-      if (frame !== lastSeekedFrame) return;
-      viewport.video.currentFrame.value = frame;
-      viewport.video.displayedFrame.value = frame;
-      onFrameUpdate?.(frame);
     };
 
     videoElement.addEventListener("play", handlePlay);
     videoElement.addEventListener("pause", handlePause);
-    videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("resize", () => onResize());
 
     // HLS streams get a VideoStreamHandler that manages adaptive quality during
@@ -297,7 +259,6 @@
       clearTimeout(hlsReloadTimer);
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);
-      videoElement.removeEventListener("seeked", handleSeeked);
       videoElement.removeEventListener("resize", () => onResize());
       streamHandler?.destroy();
     };
