@@ -1,1 +1,56 @@
+# Operating System
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+!*dev*.pem
+!*dev*.key
+!dev/nginx/ssl/*.pem
+!dev/nginx/ssl/*.key
+
+# IDE & Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.zed/
+
+# Dependencies
+node_modules/
+vendor/bundle/
+
+# Build outputs & Logs
+*.log
+tmp/
+coverage/
+.byebug_history
+dist/
+build/
+*.pid
+*.seed
+*.pid.lock
+
+# Test & Cache
+.cache/
+.rspec_status
+spec/reports/
+test/tmp/
+test/version_tmp/
+
+# Database
+*.sqlite3
+*.sqlite3-journal
+*.db
+
+# Temporary files
+*.tmp
+*.bak
+*.backup

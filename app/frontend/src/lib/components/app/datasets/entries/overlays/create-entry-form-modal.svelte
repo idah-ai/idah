@@ -90,6 +90,7 @@
           {
             attributes: {
               resource: createdMedia.data.resource,
+              name: createdMedia.data.filename,
               status: "pending",
             },
             relationships: {
@@ -138,6 +139,7 @@
   {title}
   description="Import media from your computer"
   loading={uploading}
+  canClickOutside={false}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open

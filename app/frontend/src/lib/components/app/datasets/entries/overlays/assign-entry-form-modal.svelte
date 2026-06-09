@@ -17,8 +17,9 @@
   interface Props extends FormModalBaseProps {
     entryRecord?: EntryRecord;
     entryIds: string[];
+    onAssigned?: () => void;
   }
-  let { action, open = $bindable(), title = "Assign to", entryRecord, entryIds }: Props = $props();
+  let { action, open = $bindable(), title = "Assign to", entryRecord, entryIds, onAssigned }: Props = $props();
 
   // Variables
   let submitting: boolean = $state(false);
@@ -54,9 +55,16 @@
 
     open = false;
     $refetches.entries.list = new Date();
+    selectedMemberAccountId = null;
+    const description =
+      entryIds.length > 1
+        ? `${entryIds.length} entries have been assigned to "${projectMemberRecord?.email}".`
+        : `The entry "${entryRecord?.name}" has been assigned to "${projectMemberRecord?.email}".`;
+
+    onAssigned?.();
     showToast.success({
       title: "Entry assigned",
-      description: `The entry "${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`,
+      description,
     });
   }
 
@@ -68,6 +76,8 @@
     } catch (error) {
       submitting = false;
       showActionFailedToast(error);
+    } finally {
+      submitting = false;
     }
   }
 </script>

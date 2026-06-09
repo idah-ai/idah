@@ -39,6 +39,7 @@
 
 {#snippet DropdownMenusItem(item: IDropdownMenuItem)}
   <DropdownMenuItem
+    variant={item.destructive ? "destructive" : "default"}
     class={cn("", {
       "cursor-not-allowed": item.disabled,
       "cursor-pointer": item.action,

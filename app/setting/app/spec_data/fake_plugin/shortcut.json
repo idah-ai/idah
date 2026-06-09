@@ -1,0 +1,8 @@
+{
+  "shortcuts": [
+    {
+      "key": "ctrl+p",
+      "action": "openPlugin"
+    }
+  ]
+}

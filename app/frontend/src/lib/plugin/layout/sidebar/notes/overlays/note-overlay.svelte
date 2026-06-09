@@ -20,9 +20,9 @@
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
-  import { parseNoteFeedRecordToINoteFeed } from "@/plugin/NoteDriver";
   import { refetches } from "@/utils/refetch";
 
+  // TODO: Replace IActivityContext with IIdahDriverV2 once the note overlay is migrated to V2 driver
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Props
@@ -70,27 +70,27 @@
     /**
      * Handle when a note feed is selected from sidebar
      */
-    context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
-      if (!noteFeedId) {
-        selectedNoteFeed = null;
-        selectedNoteCommentId = null;
-        return;
-      }
+    // context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
+    //   if (!noteFeedId) {
+    //     selectedNoteFeed = null;
+    //     selectedNoteCommentId = null;
+    //     return;
+    //   }
 
-      const noteFeed = await loadNoteFeed(noteFeedId);
-      selectedNoteCommentId = noteCommentId || null;
-      context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
-    });
+    //   const noteFeed = await loadNoteFeed(noteFeedId);
+    //   selectedNoteCommentId = noteCommentId || null;
+    //   context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
+    // });
 
     /**
      * Handle when a click is made to show new note feed popup
      */
-    context.notes.onNewNoteFeedOpenChange((data) => {
-      showNewNoteFeedPopup = true;
-      newNoteFeed.anchor_type = data.anchor_type;
-      newNoteFeed.position = data.position || {};
-      newNoteFeed.annotation_id = data.annotation_id || null;
-    });
+    // context.notes.onNewNoteFeedOpenChange((data) => {
+    //   showNewNoteFeedPopup = true;
+    //   newNoteFeed.anchor_type = data.anchor_type;
+    //   newNoteFeed.position = data.position || {};
+    //   newNoteFeed.annotation_id = data.annotation_id || null;
+    // });
   });
 
   function closeSelectedNoteFeedPopup() {
@@ -220,8 +220,9 @@
         class="absolute z-40 cursor-auto"
         style:top
         style:left
-        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
+        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY - 20}px)"
       />
+      <!-- Note: zoomOffsetY - 20 is the height need to shift down the svg icon to the tip of mouse arrow cursor -->
 
       <Dialog open={showNewNoteFeedPopup} onOpenChangeComplete={(open) => (showNewNoteFeedPopup = open)}>
         <NoteDialogContent
@@ -260,12 +261,13 @@
         class="absolute z-40 cursor-auto"
         style:top
         style:left
-        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
+        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY - 20}px)"
       />
+      <!-- Note: zoomOffsetY - 20 is the height need to shift down the svg icon to the tip of mouse arrow cursor -->
 
       <Dialog open={!!selectedNoteFeed} onOpenChangeComplete={closeSelectedNoteFeedPopup}>
         <NoteDialogContent
-          class="w-80 gap-1 px-0 py-2"
+          class="w-80 gap-1 p-2"
           style="
             top: {top};
             left: {left};
@@ -296,7 +298,7 @@
                 <NoteFeedCard noteFeedRecord={selectedNoteFeed} editable {onNoteFeedUpdated} />
 
                 {#key $refetches.noteComments.list}
-                  {#await loadNoteComments(selectedNoteFeed.id) then}
+                  {#await loadNoteComments(selectedNoteFeed.id) then _}
                     {#each noteComments as noteComment (noteComment.id)}
                       <NoteCommentCard
                         noteCommentRecord={noteComment}
@@ -309,7 +311,7 @@
             </ScrollArea>
           {/key}
 
-          <DialogFooter class="px-2">
+          <DialogFooter>
             <NoteInputField
               value={contentMd}
               placeholder="Reply to this note"

@@ -23,22 +23,6 @@
         "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
-        },
-        "frame-tagging": {
-          "label": "Frame Tagging",
-          "icon": "api/v1/plugins/idah-video/assets/frame-tagging-icon.svg"
-        },
-        "framerange-tagging": {
-          "label": "Frame Range Tagging",
-          "icon": "api/v1/plugins/idah-video/assets/frame-range-tagging-icon.svg"
-        },
-        "polyline": {
-          "label": "Polyline",
-          "icon": "api/v1/plugins/idah-video/assets/polyline-icon.svg"
-        },
-        "point": {
-          "label": "Point",
-          "icon": "api/v1/plugins/idah-video/assets/point-icon.svg"
         }
       }
     }
@@ -46,8 +30,8 @@
 
   "entryPoints": {
     "entryPlugin": {
-      "script": "/frontend/build/plugins/idah-video.umd.js",
-      "style": "/frontend/build/plugins/idah-video.css"
+      "script": "/frontend/build/plugin.umd.js",
+      "style": "/frontend/build/plugin.css"
     },
     "entryDetails": {
       "script": "/frontend/build/entryDetailsBuild.js",

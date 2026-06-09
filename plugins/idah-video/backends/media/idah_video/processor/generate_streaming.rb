@@ -64,6 +64,7 @@ module IdahVideo
           dir: tmpdir,
           file: file_path,
           variants:,
+          fps: video_info.fps,
           streaming_time_per_segment: options.streaming_time_per_segment
         ) do |progress|
           block&.call(progress / video_info.duration)

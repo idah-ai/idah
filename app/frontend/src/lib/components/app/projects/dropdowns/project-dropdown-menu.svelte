@@ -11,7 +11,6 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
-  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -44,6 +43,7 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          destructive: true,
           hidden: !canDeleteProject,
           action: () => {
             openConfirmDeleteProjectModal = true;
@@ -99,7 +99,10 @@
         description: `The project "${projectRecord?.name}" has been deleted.`,
       });
     } catch (error) {
-      showActionFailedToast(error);
+      showToast.error({
+        title: "Unable to delete project",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+      });
     }
   }
 </script>

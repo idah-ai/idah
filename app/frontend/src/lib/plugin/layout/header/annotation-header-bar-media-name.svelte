@@ -7,7 +7,7 @@
   interface Props {
     name: string;
   }
-  let { name }: Props = $props();
+  let { name = "" }: Props = $props();
 </script>
 
 <TooltipProvider>

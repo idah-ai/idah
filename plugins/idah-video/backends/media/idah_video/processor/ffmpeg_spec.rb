@@ -21,6 +21,7 @@ RSpec.describe IdahVideo::Processor::Ffmpeg do
         described_class.gen_stream(
           dir: tmpdir,
           file: File.expand_path(sample_path),
+          fps: 30,
           variants: [variant]
         )
 
@@ -54,6 +55,7 @@ RSpec.describe IdahVideo::Processor::Ffmpeg do
             described_class.gen_stream(
               dir: tmpdir,
               file: File.expand_path(invalid_file),
+              fps: 30,
               variants: [variant]
             )
           end.to raise_error(/Failed to execute `ffmpeg/)

@@ -1,48 +1,75 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
+  import type { IdahDriverV2 } from "./v2/driver";
+  import type { IPluginDriver } from "./v2/types";
+
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
+  import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
 
-  import type { IActivityContext, IActivityView } from "./interface/Activity";
-
-  // Props
   interface Props {
-    context: IActivityContext;
+    driver: IdahDriverV2;
   }
-  let { context }: Props = $props();
+  let { driver }: Props = $props();
 
   // Variables
   let pluginContainerElement = $state<HTMLElement | null>(null);
   let headerBarElement = $state<HTMLElement | null>(null);
   let headerBarHeight = $derived(headerBarElement?.clientHeight ?? 50);
-  let plugin: IActivityView | undefined = $state();
+  let plugin: IPluginDriver | undefined = $state();
 
-  let p: Promise<IActivityView> = new Promise<IActivityView>((ok, ko) => {
+  let p: Promise<IPluginDriver> = new Promise<IPluginDriver>((ok, ko) => {
     if (!window.idah_plugin) {
       ko();
     } else {
-      ok(window.idah_plugin as IActivityView);
+      ok(window.idah_plugin as IPluginDriver);
     }
+  });
+  // ── Listen to mode changes to refresh toolbar ────────────────────────
+  let currentMode = $state(driver.mode);
+  let paletteOpen = $state(driver.command.isPaletteOpen());
+  let initialized = $state(false);
+
+  driver.onModeChange((event) => {
+    currentMode = event.newValue;
   });
 
   onMount(() => {
     p.then((_plugin) => {
       plugin = _plugin;
-      // console.debug({ plugin: $state.snapshot(plugin), pluginContainerElement, context });
-      plugin.render?.(pluginContainerElement, context);
+      plugin.init(driver);
+      initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
     });
+    const unsub = driver.command.onPaletteChange((open: boolean) => {
+      paletteOpen = open;
+    });
+    return unsub;
+  });
+
+  $effect(() => {
+    if (!plugin) return;
+    if (!pluginContainerElement) return;
+    if (initialized) plugin.render(pluginContainerElement);
   });
 
   onDestroy(() => {
-    plugin?.close?.();
+    plugin?.close();
   });
 </script>
 
 <div class="relative">
-  <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {context} />
+  {#if initialized}
+    <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {driver} />
 
+    <IdahCommandPalette
+      open={paletteOpen}
+      onOpenChange={(o) => driver.command.openPalette(o)}
+      commandManager={driver.command}
+      mode={currentMode}
+    />
+  {/if}
   <!-- Plugin Container -->
-  <div style:height={`calc(100vh - ${headerBarHeight}px)`} bind:this={pluginContainerElement}>
+  <div style:height={`calc(100vh - ${headerBarHeight + 1}px)`} bind:this={pluginContainerElement}>
     {#await p}
       Loading Plugins
     {:then}

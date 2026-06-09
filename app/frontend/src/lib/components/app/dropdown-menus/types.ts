@@ -9,6 +9,7 @@ export interface IDropdownMenuItem {
   icon?: typeof IconType;
   disabled?: boolean;
   hidden?: boolean;
+  destructive?: boolean;
   action?: () => Promise<void> | void;
   items?: {
     [group: string]: {

@@ -9,6 +9,7 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
+  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
@@ -62,17 +63,18 @@
 
   async function getLabelConfig() {
     let labelConfig: IConfig = {};
+    let selectedId = selectedDatasetId || (datasetRecord?.id as string);
 
-    /** Get label config, if selected dataset */
-    if (selectedDatasetId) {
-      const datasetRes = await datasetsBackendDataSource.get(selectedDatasetId, {
-        fields: {
-          [DatasetRecord.type]: ["labeling_configuration"],
-        },
-        noCache: true,
-      });
-      labelConfig = datasetRes.data.labeling_configuration;
-    }
+    if (!selectedId) return labelConfig;
+
+    const datasetRes = await datasetsBackendDataSource.get(selectedId, {
+      fields: {
+        [DatasetRecord.type]: ["labeling_configuration"],
+      },
+      noCache: true,
+    });
+
+    labelConfig = datasetRes.data.labeling_configuration;
 
     return labelConfig;
   }
@@ -91,7 +93,7 @@
         relationships: {
           project: {
             data: {
-              type: "datasets:projects",
+              type: ProjectRecord.type,
               id: projectId!,
             },
           },
@@ -130,6 +132,7 @@
 
     open = false;
     $refetches.datasets.list = new Date();
+    $refetches.datasets.get = new Date();
     showToast.success({
       title: "Dataset updated",
       description: `The dataset "${dataset.name}" has been updated.`,

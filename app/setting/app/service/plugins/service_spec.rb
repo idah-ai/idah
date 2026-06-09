@@ -2,23 +2,58 @@
 
 RSpec.describe Plugins::Service, type: :service, as: :system do
   describe "#serve_file" do
-    it "serves the plugin file if found (manual)" do
-      plugin_name = "fake_plugin"
+    let(:plugin_name) { "fake_plugin" }
 
+    before do
       allow(Verse.config).to receive(:extra_fields).and_return(
         idah: {
           plugins: {
-            manual: [plugin_name],
-            path: "app/spec_data"
+            path: "app/spec_data/**"
           }
         }
       )
+    end
 
+    it "serves the plugin.js file if found (manual)" do
       filename = "plugin.js"
 
       output = service.serve_file(plugin_name, filename)
 
       expect(output).to eq("/* I am a javascript plugin file */")
+    end
+
+    it "serves the details.js file when requested" do
+      filename = "details.js"
+
+      output = service.serve_file(plugin_name, filename)
+
+      expect(output).to eq("/* I am a javascript plugin file */")
+    end
+
+    it "serves the details.css file when requested" do
+      filename = "details.css"
+
+      output = service.serve_file(plugin_name, filename)
+
+      expect(output).not_to be_nil
+    end
+
+    it "serves the dataset_config.json file when requested" do
+      filename = "dataset_config.json"
+
+      output = service.serve_file(plugin_name, filename)
+
+      expect(output).to include("Fake Dataset Config")
+      expect(output).to include("Test dataset configuration")
+    end
+
+    it "serves the plugin_shortcut.json file when requested" do
+      filename = "plugin_shortcut.json"
+
+      output = service.serve_file(plugin_name, filename)
+
+      expect(output).to include("shortcuts")
+      expect(output).to include("ctrl+p")
     end
   end
 
@@ -29,8 +64,7 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       allow(Verse.config).to receive(:extra_fields).and_return(
         idah: {
           plugins: {
-            manual: [plugin_name],
-            path: "app/spec_data"
+            path: "app/spec_data/**"
           }
         }
       )

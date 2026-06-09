@@ -3,9 +3,13 @@
 
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
+  import { CheckIcon } from "@lucide/svelte";
+  import { CommandItem } from "@/components/ui/command";
+  import { cn } from "@/utils";
+  import ProjectMemberRoleBadge from "@/components/app/projects/members/badges/project-member-role-badge.svelte";
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
-  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { projectMembersBackendDataSource, ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
@@ -44,14 +48,42 @@
         filters: {
           project_id: projectId,
           enabled: true,
-          role__in: wfStep === "review" ? ["reviewer", "project_owner"] : ["annotator", "project_owner"],
+          role__in: wfStep === "review" ? ["reviewer", "project_owner"] : ["annotator", "reviewer", "project_owner"],
         },
       }}
+      searchable
       searchKeyWithOperation="email__match"
       value={assignedToAccountId}
-      onSelected={(value: string | number) => {
+      onSelected={(value: string | number | null) => {
         assignedToAccountId = value as number;
       }}
-    ></SingleSelectDatasourceField>
+    >
+      {#snippet slotTriggerValue({ selectedChoice })}
+        {#if selectedChoice}
+          <div class="flex min-w-0 flex-1 items-center gap-2">
+            <span class="truncate">{selectedChoice.label}</span>
+            <div class="ml-auto shrink-0">
+              <ProjectMemberRoleBadge projectMemberRecord={selectedChoice.data as ProjectMemberRecord} />
+            </div>
+          </div>
+        {/if}
+      {/snippet}
+
+      {#snippet slotChoice({ choice, select })}
+        <CommandItem onclick={() => select(choice)}>
+          <CheckIcon
+            class={cn("mr-2 size-4 shrink-0", {
+              "opacity-0": choice.value != assignedToAccountId,
+            })}
+          />
+          <div class="flex min-w-0 flex-1 items-center gap-2">
+            <span class="truncate">{choice.label}</span>
+            <div class="ml-auto shrink-0">
+              <ProjectMemberRoleBadge projectMemberRecord={choice.data as ProjectMemberRecord} />
+            </div>
+          </div>
+        </CommandItem>
+      {/snippet}
+    </SingleSelectDatasourceField>
   </FieldGroup>
 </FieldSet>

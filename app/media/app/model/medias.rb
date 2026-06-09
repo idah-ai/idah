@@ -19,6 +19,8 @@ module Medias
 
     field :public, type: TrueClass
 
+    field :meta, type: Hash
+
     field :created_at, type: Time
     field :updated_at, type: Time
 
@@ -36,6 +38,8 @@ module Medias
   class Repository < Verse::Sequel::Repository
     self.table = "medias"
     self.resource = Resource::Media::Medias
+
+    encoder :meta, Verse::Sequel::JsonEncoder
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|

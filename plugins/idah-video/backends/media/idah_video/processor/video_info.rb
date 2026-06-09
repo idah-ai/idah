@@ -6,6 +6,7 @@ module IdahVideo
       :width,
       :height,
       :duration,
+      :r_frame_rate,
       :fps,
       :has_audio
     ) do
@@ -25,7 +26,8 @@ module IdahVideo
         json_format = json[:format]
 
         # From fractional to float:
-        fps = Rational(json_streams[:r_frame_rate]).to_f
+        r_frame_rate = json_streams[:r_frame_rate]
+        fps = Rational(r_frame_rate).to_f
         width = json_streams[:width].to_i
         height = json_streams[:height].to_i
         duration = json_format[:duration].to_f
@@ -34,6 +36,7 @@ module IdahVideo
           width:,
           height:,
           duration:,
+          r_frame_rate:,
           fps:,
           has_audio:
         )

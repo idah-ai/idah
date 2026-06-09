@@ -2,12 +2,10 @@
 import Logo from "@components/app/brands/Logo.astro";
 
 import { Separator } from "$lib/components/ui/separator";
-import { Button } from "$lib/components/ui/button";
 import SidebarToggleButton from "$lib/app/button/sidebar-toggle-button.svelte";
 import SearchBar from "$lib/app/bar/search-bar.svelte";
-import { Download } from "@lucide/astro";
-import ModeSwitcher from "./app/switchers/ModeSwitcher.astro";
 import SearchIconButton from "$lib/app/button/search-icon-button.svelte";
+import HeaderActions from "./app/HeaderActions.astro";
 ---
 
 <header
@@ -17,19 +15,27 @@ import SearchIconButton from "$lib/app/button/search-icon-button.svelte";
 >
   <div class="mx-auto flex h-full w-full items-center gap-3">
     <!-- left -->
-    <a href="/" class="transition-opacity hover:opacity-80">
-      <div class="flex shrink-0 items-center">
+    <div class="flex shrink-0 items-center">
+      <a
+        href="https://idah.ai"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="transition-all duration-200 hover:-translate-y-0.5"
+      >
         <Logo id="header-logo" />
+      </a>
 
-        <Separator orientation="vertical" class="mx-3 ml-3 h-6 bg-blue-200 dark:bg-blue-700" />
+      <Separator orientation="vertical" class="mx-3 ml-3 h-6 bg-blue-200 dark:bg-blue-700" />
+
+      <a href="/" class="transition-all duration-200 hover:-translate-y-0.5">
         <div
           class="text-lg font-bold sm:block"
           style="background: linear-gradient(to right, #2391ea, #1e7ac9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
         >
           Docs
         </div>
-      </div>
-    </a>
+      </a>
+    </div>
 
     <SearchBar client:load />
 
@@ -37,16 +43,9 @@ import SearchIconButton from "$lib/app/button/search-icon-button.svelte";
     <div class="ml-auto flex shrink-0 items-center gap-3">
       <SearchIconButton client:load />
 
-      <ModeSwitcher />
-
-      <Button
-        href="/install/"
-        class="flex border-0 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl"
-        style="background: linear-gradient(to right, #2391ea, #1e7ac9);"
-      >
-        <Download class="h-4 w-4" stroke-width={2} />
-        Install IDAH
-      </Button>
+      <div class="hidden md:flex">
+        <HeaderActions />
+      </div>
 
       <SidebarToggleButton client:load />
     </div>

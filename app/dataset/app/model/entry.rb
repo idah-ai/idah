@@ -17,6 +17,8 @@ module Entry
 
     field :resource, type: String
 
+    field :name, type: String
+
     field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
     field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
     field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
@@ -55,6 +57,16 @@ module Entry
       SQL
 
       collection.where(Sequel.lit(where_fragment, account_id: value))
+    end
+
+    custom_filter :assigned do |collection, value|
+      assigned = value.to_s.downcase == "true"
+
+      if assigned
+        collection.where(Sequel.lit("assigned_to_id IS NOT NULL"))
+      else
+        collection.where(Sequel.lit("assigned_to_id IS NULL"))
+      end
     end
 
     def scoped(action)
@@ -108,10 +120,11 @@ module Entry
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
-                -- Annotators can access only assigned entries
+                -- Annotators can access only assigned annotate-stage entries
                 (
                   (pm.role IN :annotator_roles)
                   AND entries.assigned_to_id = :account_id
+                  AND entries.wf_step = 'annotate'
                 ) OR
                 -- Reviewers can access assigned and unassigned entries not submitted by themselves in review step
                 (

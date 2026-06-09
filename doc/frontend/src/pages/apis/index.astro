@@ -1,0 +1,197 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
+import { Code, BookOpen, CheckCircle, Layers, ArrowRight } from "@lucide/astro";
+import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import { Braces } from "@lucide/svelte";
+
+const apiUrls = await getApiUrls();
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl p-3" style="background: rgba(245, 158, 11, 0.1);">
+        <Code class="h-9 w-9 text-orange-600 dark:text-orange-400" stroke-width={2} />
+      </div>
+      API Reference
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH's backend services expose RESTful APIs that follow the <strong>JSON:API</strong> specification, providing a standardized
+        approach to building and consuming APIs.
+      </p>
+
+      <h2
+        id="jsonapi-format"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#jsonapi-format" class="hover:underline">JSON:API Format</a>
+      </h2>
+
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        <a
+          href="https://jsonapi.org/"
+          class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+          target="_blank"
+          rel="noopener noreferrer">JSON:API</a
+        > is a specification for building APIs in JSON. It provides conventions for:
+      </p>
+
+      <div class="not-prose mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+          <div class="flex items-start gap-3">
+            <CheckCircle class="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" stroke-width={2} />
+            <div>
+              <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Resource Structure</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Consistent format for resources, attributes, and relationships
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+          <div class="flex items-start gap-3">
+            <CheckCircle class="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-400" stroke-width={2} />
+            <div>
+              <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Fetching Data</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Filtering, sorting, pagination, and sparse fieldsets
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
+          <div class="flex items-start gap-3">
+            <CheckCircle class="mt-0.5 h-5 w-5 shrink-0 text-purple-600 dark:text-purple-400" stroke-width={2} />
+            <div>
+              <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Creating & Updating</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Standard format for POST, PATCH, and DELETE operations
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
+          <div class="flex items-start gap-3">
+            <CheckCircle class="mt-0.5 h-5 w-5 shrink-0 text-orange-600 dark:text-orange-400" stroke-width={2} />
+            <div>
+              <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Error Handling</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Standardized error format with detailed information
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-8 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-6 dark:bg-blue-900/20">
+        <p class="flex items-start gap-3 leading-relaxed text-gray-800 dark:text-gray-200">
+          <BookOpen class="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" stroke-width={2} />
+          <span>
+            Learn more about the JSON:API specification at <a
+              href="https://jsonapi.org/"
+              class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">jsonapi.org</a
+            >
+          </span>
+        </p>
+      </div>
+
+      <h2
+        id="api-endpoints"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#api-endpoints" class="hover:underline">API Endpoints</a>
+      </h2>
+
+      <p class="mb-6 leading-relaxed text-gray-700 dark:text-gray-300">IDAH provides APIs across different services:</p>
+
+      <div class="not-prose mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {
+          apiUrls.map((api) => {
+            return (
+              <div class="rounded-lg border-2 border-gray-200 p-6 dark:border-gray-700">
+                <div class="mb-3">
+                  <div class="mb-2 flex items-center gap-3">
+                    <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+                      <Braces class="h-6 w-6 text-blue-600 dark:text-blue-400" stroke-width={2} />
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">{api.title}</h3>
+                  </div>
+                  {api.description && <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">{api.description}</p>}
+                </div>
+                <div>
+                  <p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                    Available Resources:
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    {api.tags?.map((tag: string) => (
+                      <a
+                        href={`/apis/${api.name}/${encodeURIComponent(tag)}/`}
+                        class="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition-all hover:bg-gray-200 hover:shadow-sm dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                      >
+                        {tag}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        }
+      </div>
+
+      <h2
+        id="resources"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#resources" class="hover:underline">Additional Resources</a>
+      </h2>
+
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a
+            href="https://jsonapi.org/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">JSON:API Specification</a
+          > - Official specification
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://jsonapi.org/examples/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">JSON:API Examples</a
+          > - Real-world examples
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://github.com/verse-rb/verse-jsonapi"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">verse-jsonapi</a
+          > - Ruby gem used by IDAH
+        </li>
+      </ul>
+
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          📖 Ready to explore? Click on any resource tag above to see detailed endpoint documentation.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>
