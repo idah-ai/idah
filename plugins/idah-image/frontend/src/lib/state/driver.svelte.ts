@@ -41,7 +41,12 @@ export function initDriver(d: IIdahDriverV2): void {
 
   // Make mode reactive.
   d.onModeChange((ev) => {
-    viewport.mode = ev.newValue;
+    const reactiveViewport = viewport as { mode: string; applyDriverMode?: (mode: string) => void };
+    if (reactiveViewport.applyDriverMode) {
+      reactiveViewport.applyDriverMode(ev.newValue);
+    } else {
+      reactiveViewport.mode = ev.newValue;
+    }
   });
 
   // Track sync queue depth.

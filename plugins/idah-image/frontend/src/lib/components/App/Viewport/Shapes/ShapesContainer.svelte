@@ -27,7 +27,6 @@
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
@@ -328,7 +327,6 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
-    getDriver().command.call("timeline.scroll_to_annotation");
   }
 </script>
 

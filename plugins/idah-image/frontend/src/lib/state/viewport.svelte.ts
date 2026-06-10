@@ -27,6 +27,10 @@ class Viewport {
     getDriver().setMode(val);
   }
 
+  applyDriverMode(val: string) {
+    this.#mode = val;
+  }
+
   image = $state({
     currentFrame: { value: 0 },
   });

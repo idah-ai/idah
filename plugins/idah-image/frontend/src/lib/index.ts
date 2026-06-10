@@ -19,7 +19,7 @@ interface IPluginDriver {
   close(): void;
 }
 
-let mounted: object;
+let mounted: object | undefined;
 
 const idahImagePlugin: IPluginDriver = {
   name: "idah-image",
@@ -49,9 +49,10 @@ const idahImagePlugin: IPluginDriver = {
   },
 
   close() {
-    console.debug("Closing Plugin", { this: this, parent, mounted });
+    console.debug("Closing Plugin", { this: this, mounted });
     if (mounted) {
       unmount(mounted);
+      mounted = undefined;
     }
   },
 };

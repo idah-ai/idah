@@ -28,7 +28,6 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         const cur = viewport.workspace.transform.scale;
         viewport.workspace.transform.scale = Math.max(VIEWPORT_MIN_ZOOM, cur - 0.05);
-        console.log(`Zoomed out to ${viewport.workspace.transform.scale} from ${cur}`);
       },
       isCombinable() {
         return false;

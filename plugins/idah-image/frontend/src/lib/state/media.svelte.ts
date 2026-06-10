@@ -3,7 +3,6 @@
 //
 // Usage:
 //   import { media } from "$lib/state/media.svelte";
-//   console.log(media.fps, media.totalFrames);
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
 

@@ -110,7 +110,7 @@ export interface DataStore<T extends DataItem> {
 
 export type AnnotationItem = {
   id: string;
-  shape: { type: string; start: number; end: number } & Record<string, unknown>;
+  shape: { type: string; start?: number; end?: number } & Record<string, unknown>;
   value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
   metadata?: {
     id: string;
@@ -338,12 +338,16 @@ export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
       const item = { ...data, id } as NoteItem;
       originalUpsert(item);
       try {
-        await driver.create(data);
+        const created = (await driver.create($state.snapshot(item))) as NoteItem;
+        if (created.id !== id) {
+          store.remove(id);
+        }
+        originalUpsert(created);
+        return created;
       } catch {
         store.remove(id);
         throw new Error("Failed to create note");
       }
-      return item;
     },
 
     async delete(id: string): Promise<void> {
@@ -548,7 +552,6 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
 // Usage:
 //   import { data } from "$lib/state/data.svelte";
 //   data.annotations.preloadRange(-Infinity, Infinity);
-//   console.log(data.annotations.items);
 
 import { getDriver } from "$lib/state/driver.svelte";
 

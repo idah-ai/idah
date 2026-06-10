@@ -81,33 +81,44 @@ export class CommandManagerV2 {
     const props = opts.length > 0 ? opts[0] : undefined;
     const action = entry.callback(props);
 
+    let actionToRun = action;
+    let replaceLast = false;
+
     if (action.undo) {
-      // Clear redo stack — we're creating a new undoable action
-      this.redoStack = [];
       // Attempt combine with the previous action in the stack
       const last = this.undoStack[this.undoStack.length - 1];
       if (last) {
         const diff = Date.now() - last.timestamp;
         if (diff < this.combineWindow && action.isCombinable(last.action)) {
-          const combined = action.combine(last.action);
-          // Replace the last entry with the combined action
-          this.undoStack[this.undoStack.length - 1] = {
-            action: combined,
-            timestamp: Date.now(),
-          };
-          this._chain = this._chain.then(() => combined.do()).catch((e) => console.error("[cmd]", e));
-          return;
+          actionToRun = action.combine(last.action);
+          replaceLast = true;
         }
-      }
-
-      // Normal push
-      this.undoStack.push({ action, timestamp: Date.now() });
-      if (this.undoStack.length > this.maxStack) {
-        this.undoStack.shift();
       }
     }
 
-    this._chain = this._chain.then(() => action.do()).catch((e) => console.error("[cmd]", e));
+    this._chain = this._chain
+      .then(async () => {
+        await actionToRun.do();
+
+        if (!actionToRun.undo) return;
+
+        // Clear redo stack only after the new undoable action succeeds.
+        this.redoStack = [];
+
+        if (replaceLast) {
+          this.undoStack[this.undoStack.length - 1] = {
+            action: actionToRun,
+            timestamp: Date.now(),
+          };
+          return;
+        }
+
+        this.undoStack.push({ action: actionToRun, timestamp: Date.now() });
+        if (this.undoStack.length > this.maxStack) {
+          this.undoStack.shift();
+        }
+      })
+      .catch((e) => console.error("[cmd]", e));
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -125,8 +136,17 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.undoStack.pop();
       if (!entry) break;
-      this._chain = this._chain.then(() => entry.action.undo?.()).catch((e) => console.error("[cmd]", e));
-      this.redoStack.push(entry);
+      this._chain = this._chain
+        .then(async () => {
+          try {
+            await entry.action.undo?.();
+            this.redoStack.push(entry);
+          } catch (e) {
+            this.undoStack.push(entry);
+            throw e;
+          }
+        })
+        .catch((e) => console.error("[cmd]", e));
       did = true;
     }
     return did;
@@ -137,8 +157,17 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.redoStack.pop();
       if (!entry) break;
-      this._chain = this._chain.then(() => entry.action.do()).catch((e) => console.error("[cmd]", e));
-      this.undoStack.push(entry);
+      this._chain = this._chain
+        .then(async () => {
+          try {
+            await entry.action.do();
+            this.undoStack.push(entry);
+          } catch (e) {
+            this.redoStack.push(entry);
+            throw e;
+          }
+        })
+        .catch((e) => console.error("[cmd]", e));
       did = true;
     }
     return did;

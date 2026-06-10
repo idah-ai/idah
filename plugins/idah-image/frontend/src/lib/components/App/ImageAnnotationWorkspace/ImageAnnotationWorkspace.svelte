@@ -130,8 +130,6 @@
   $effect(() => {
     const viewportMode = viewport.mode;
 
-    getDriver().setMode(viewportMode);
-
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
     if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE) {
@@ -446,16 +444,14 @@
 
   function showNewNotePopup(params: OnAddNewNoteParams) {
     const { anchorType, position, annotationId } = params;
-    getDriver().notes.create({
-      id: "",
-      annotation_id: annotationId ?? null,
-      content_md: "",
-      anchor_type: anchorType,
+    getDriver().command.call("note.add", {
+      annotationId: annotationId ?? null,
+      contentMd: "",
+      anchorType,
       position: {
         ...position,
         sidebar_width: annotationSidebarWidthRem * 16,
       },
-      resolved: false,
     });
   }
 
@@ -482,7 +478,7 @@
           if (!canConfirm) return;
           showPopOver = false;
           if (mode === "entry:root") {
-            onShapeSelection("entry:root", viewport.image.currentFrame.value);
+            addAnnotation({ type: "entry:root" }, $state.snapshot(pendingValue));
           } else if (shapeSelectionArgs) {
             confirmCreateAnnotation(...shapeSelectionArgs);
           }
@@ -541,7 +537,7 @@
             showPopOver = false;
             switch (mode) {
               case "entry:root":
-                onShapeSelection("entry:root", viewport.image.currentFrame.value);
+                addAnnotation({ type: "entry:root" }, $state.snapshot(pendingValue));
                 break;
               default:
                 if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
