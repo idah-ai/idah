@@ -176,8 +176,9 @@
           if (!jobId) {
             /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
             const entryRes = await entriesBackendDataSource.get(entryId, {
-              included: ["dataset"], 
-              noCache: true });
+              included: ["dataset"],
+              noCache: true,
+            });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
