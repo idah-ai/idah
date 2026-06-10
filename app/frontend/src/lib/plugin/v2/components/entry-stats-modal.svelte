@@ -29,6 +29,10 @@
   let stats = $state<EntryStat[]>([]);
   let loading = $state(false);
   let error = $state<string | null>(null);
+  // INFO(backend-stats): Restore this constant and swap to the backend fetchStats() implementation
+  // below to retrieve stats from the backend API instead of calculating locally.
+  // const statsBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/entry_stats`;
+
   // Static stats are computed once on first open — video meta never changes for an entry.
   let cachedStaticStats: EntryStat[] | null = null;
 
@@ -68,6 +72,8 @@
     return sections;
   });
 
+  // INFO(backend-stats): Backend API implementation of fetchStats().
+  // To use: uncomment below, restore statsBasePath above, and comment out the frontend implementation below.
   // async function fetchStats() {
   //   loading = true;
   //   error = null;
@@ -86,7 +92,10 @@
   //   }
   // }
 
-  async function calculateStats() {
+  // INFO(frontend-stats): Frontend IDB implementation of fetchStats().
+  // Calculates stats locally from driver.annotations.fetch(), mirroring backend CoreStats + StatsGenerator.
+  // To switch to backend API: comment this out and uncomment the backend implementation above.
+  async function fetchStats() {
     loading = true;
     error = null;
     try {
@@ -162,7 +171,7 @@
 
   function handleOpen(isOpen: boolean) {
     open = isOpen;
-    if (isOpen) calculateStats();
+    if (isOpen) fetchStats();
   }
 </script>
 
