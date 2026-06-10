@@ -66,6 +66,9 @@
   }
 
   function handleClick() {
+    // Don't set any selection in review mode
+    if (viewport.isReviewWorkspace) return;
+
     /**
      * Select annotation group only — don't change the current drawing mode
      */
