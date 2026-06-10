@@ -19,13 +19,13 @@ module IdahImage
         # rmagick has limited width and height to 16k pixels by default
         if image_info.width > max_size || image_info.height > max_size
           raise Verse::Error::ValidationFailed,
-                "Image width or height exceeded the default limit of #{max_size}"
+                "Image width or height exceeded the limit of #{max_size}"
         end
 
         img = Magick::Image.read(file_path).first
 
         # Update original media with image metadata
-        context.update_original_metadata(image_info.to_h)
+        context.update_original_metadata(image_info.to_h.slice(:width, :height, :format))
 
         # optimized web asset
         generate_processed(img)

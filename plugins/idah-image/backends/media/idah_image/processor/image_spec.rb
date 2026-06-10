@@ -50,8 +50,8 @@ RSpec.describe IdahImage::Processor::Image do
   describe "#run" do
     it "processes the image and generates a thumbnail by default" do
       expect(processor_context).to receive(:upload_media).with(any_args, "processed.webp", "image/webp")
-      expect(processor_context).to receive(:upload_media).with(any_args, "thumbnail.jpg", "image/jpeg")
-      expect(processor_context).to receive(:update_original_metadata).with(hash_including(:width, :height, :format))
+      expect(processor_context).to receive(:upload_media).with(any_args, "thumbnail.webp", "image/webp")
+      expect(processor_context).to receive(:update_original_metadata).with({ width: 800, height: 600, format: "jpeg" })
 
       # Cleanup verification
       expect(mock_image).to receive(:destroy!).once
@@ -71,7 +71,7 @@ RSpec.describe IdahImage::Processor::Image do
       it "does not generate a thumbnail and cleans up" do
         allow(processor_context).to receive(:upload_media)
         allow(processor_context).to receive(:update_original_metadata)
-        expect(processor_context).not_to receive(:upload_media).with(any_args, "thumbnail.jpg", "image/jpeg")
+        expect(processor_context).not_to receive(:upload_media).with(any_args, "thumbnail.webp", "image/webp")
 
         expect(mock_image).to receive(:destroy!).once
         expect(mock_thumb).not_to receive(:destroy!)
@@ -87,6 +87,17 @@ RSpec.describe IdahImage::Processor::Image do
         allow(processor_context).to receive(:upload_media)
         allow(processor_context).to receive(:update_original_metadata)
         expect(processor_context).to receive(:upload_media).with(any_args, "processed.jpg", "image/jpeg")
+        subject.run
+      end
+    end
+
+    context "with thumbnail_format jpg" do
+      let(:options) { { thumbnail_format: "jpg" } }
+
+      it "uploads thumbnail with jpeg mime type" do
+        allow(processor_context).to receive(:upload_media)
+        allow(processor_context).to receive(:update_original_metadata)
+        expect(processor_context).to receive(:upload_media).with(any_args, "thumbnail.jpg", "image/jpeg")
         subject.run
       end
     end
