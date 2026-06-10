@@ -545,6 +545,18 @@ export const notes = {
   get list(): INoteRecord[] { return _noteList; },
 };
 
+let _activeNoteId: string | null = $state(null);
+
+/**
+ * The currently selected/focused note ID.
+ * Set by NoteMarkers when a marker is clicked, or by timeline when a note keyframe is clicked.
+ * NoteMarkers uses this to trigger the position-reporting rAF loop.
+ */
+export const activeNoteId = {
+  get value(): string | null { return _activeNoteId; },
+  set value(id: string | null) { _activeNoteId = id; },
+};
+
 /** Global stores — auto-initialised from the V2 driver. */
 export const data: {
   annotations: DataStore<AnnotationItem> | null;

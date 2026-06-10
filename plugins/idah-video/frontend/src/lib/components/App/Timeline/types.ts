@@ -1,3 +1,4 @@
+import type { IAnnotationRecord, INoteRecord } from "$idah/v2/types";
 import type { IVideoAnnotationRecord } from "$lib/types";
 import type { Component, Snippet } from "svelte";
 
@@ -10,7 +11,7 @@ export interface TimelineItem<T extends Record<string, unknown> = Record<string,
   trackId: string;
   startRange: number;
   endRange: number;
-  rawData: IVideoAnnotationRecord;
+  rawData: any;
   component: Component<{ item: TimelineItem<T> }>;
 }
 

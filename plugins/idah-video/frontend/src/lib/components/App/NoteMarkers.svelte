@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getDriver } from "$lib/state/driver.svelte";
-  import { data, notes, pendingNoteScene, setPendingNoteScene } from "$lib/state/data.svelte";
+  import { activeNoteId, data, notes, pendingNoteScene, setPendingNoteScene } from "$lib/state/data.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -8,7 +8,7 @@
   import type { IVideoAnnotationShape } from "$lib/types";
   import { centroid as centroidUtil } from "$lib/utils/math/point";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   let svgRect = $state<DOMRect | null>(null);
 
@@ -27,7 +27,8 @@
     if (note.anchor.anchor_type === "entry") {
       const pos = note.anchor.position as { frame?: number; x?: number; y?: number } | undefined;
       if (pos && pos.frame !== undefined && pos.frame !== currentFrame) return null;
-      return { x: (pos?.x ?? 0.5) * media.width, y: (pos?.y ?? 0.5) * media.height };
+      if (!pos?.x || !pos?.y) return null // general ?
+      return { x: pos.x * media.width, y: pos.y * media.height };
     }
     if (note.anchor.anchor_type === "annotation") {
       const annId = note.anchor.annotation_id;
@@ -43,7 +44,8 @@
         if (!interp || !interp.points?.length) return null;
         centroid = centroidUtil(interp.points);
       } else {
-        centroid = [0.5, 0.5];
+        return null
+        // centroid = [0.5, 0.5];
       }
       const pos = note.anchor.position as { x?: number; y?: number } | undefined;
       return {
@@ -54,7 +56,7 @@
     return null;
   }
 
-  let activeNoteId: string | null = $state(null);
+  let rafId = 0;
 
   let markers = $derived.by(() => {
     const result: Array<{ note: INoteRecord; x: number; y: number }> = [];
@@ -65,30 +67,69 @@
     return result;
   });
 
-  let activeNoteScreenPos = $derived.by((): { x: number; y: number } | null => {
-    if (!activeNoteId) return null;
-    const marker = markers.find(m => m.note.id === activeNoteId);
-    if (!marker) return null;
-    return sceneToScreen(marker.x, marker.y);
-  });
-
-  $effect(() => {
-    const _tx = viewport.workspace.transform.translate[0];
-    const _ty = viewport.workspace.transform.translate[1];
-    const _s = viewport.workspace.transform.scale;
-    const pos = activeNoteScreenPos;
-    if (!activeNoteId) {
-      return;
+  function getSvgScreenOffset(): { left: number; top: number } {
+    if (viewport.svgElement) {
+      const r = viewport.svgElement.getBoundingClientRect();
+      return { left: r.left, top: r.top };
     }
+    return { left: 0, top: 0 };
+  }
+
+  function reportPosition(): void {
     const driver = getDriver();
-    if (pos) driver.notes.reportNotePosition({ noteId: activeNoteId, x: pos.x, y: pos.y });
-    else driver.notes.reportNotePosition({ noteId: activeNoteId });
+    const { translate, scale } = viewport.workspace.transform;
+    const off = getSvgScreenOffset();
+
+    if (pendingNoteScene.value) {
+      const sx = pendingNoteScene.value.x;
+      const sy = pendingNoteScene.value.y;
+      const screenX = sx * scale + translate[0] + off.left;
+      const screenY = sy * scale + translate[1] + off.top;
+      driver.notes.reportNotePosition({ noteId: null, x: screenX, y: screenY });
+    } else if (activeNoteId.value) {
+      // Compute screen position directly from scene coords + current transform
+      const marker = markers.find(m => m.note.id === activeNoteId.value);
+      if (marker) {
+        const screenX = marker.x * scale + translate[0] + off.left;
+        const screenY = marker.y * scale + translate[1] + off.top;
+        driver.notes.reportNotePosition({ noteId: activeNoteId.value, x: screenX, y: screenY });
+      } else {
+        driver.notes.reportNotePosition({ noteId: activeNoteId.value });
+      }
+    }
+  }
+
+  function startPositionLoop(): void {
+    stopPositionLoop();
+    rafId = requestAnimationFrame(function tick() {
+      reportPosition();
+      rafId = requestAnimationFrame(tick);
+    });
+  }
+
+  function stopPositionLoop(): void {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  }
+
+  // Start/stop the rAF loop when a note is active or pending creation
+  $effect(() => {
+    const hasPending = !!pendingNoteScene.value;
+    const hasActive = !!activeNoteId.value;
+    if (hasPending || hasActive) {
+      startPositionLoop();
+    } else {
+      stopPositionLoop();
+    }
   });
 
+  // Also run the loop when the SVG rect might change (resize/scroll)
   onMount(() => {
     const driver = getDriver();
 
-    // SVG rect for viewport offset
+    // SVG rect for initial offset
     if (viewport.svgElement) {
       svgRect = viewport.svgElement.getBoundingClientRect();
       const ro = new ResizeObserver(() => { svgRect = viewport.svgElement!.getBoundingClientRect(); });
@@ -101,7 +142,7 @@
 
       if (!note) {
         // Null signal — core deselected/cancelled
-        activeNoteId = null;
+        activeNoteId.value = null;
         return;
       }
 
@@ -118,7 +159,7 @@
         viewport.workspace.fitToViewport();
       }
 
-      activeNoteId = note.id;
+      activeNoteId.value = note.id;
       driver.notes.selectNote(note.id);
     });
 
@@ -127,9 +168,15 @@
     };
   });
 
+  onDestroy(() => {
+    stopPositionLoop();
+  });
+
   function handleMarkerClick(note: INoteRecord, sceneX: number, sceneY: number): void {
     const driver = getDriver();
-    activeNoteId = note.id;
+    // Dismiss any pending (temp) ghost marker
+    setPendingNoteScene(null);
+    activeNoteId.value = note.id;
     const screen = sceneToScreen(sceneX, sceneY);
     driver.notes.selectNote(note.id);
     driver.notes.reportNotePosition({ noteId: note.id, x: screen.x, y: screen.y });

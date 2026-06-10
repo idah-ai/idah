@@ -83,17 +83,49 @@
       const [_noteFeed, noteFeedIdFromURL, _noteComment, noteCommentIdFromURL] = page.url.hash.split("/");
       if (noteFeedIdFromURL) {
         const noteFeedRes = await noteFeedsBackendDataSource.get(noteFeedIdFromURL);
+        const feed = noteFeedRes.data;
 
         /**
-         * Only go to detail view if note feed is general note
+         * General notes (no spatial anchor) open in the sidebar detail view.
+         * Anchor notes (video_frame / annotation) are handed to the plugin
+         * via focusNote() so it seeks to the anchor position and shows the overlay.
          */
-        if (
-          noteFeedRes.data.anchor_type === "entry" &&
-          noteFeedRes.data.annotation_id === null &&
-          !Object.keys(noteFeedRes.data.position || {}).includes("x")
-        ) {
-          selectedNoteFeed = noteFeedRes.data;
+        const isGeneral =
+          feed.anchor_type === "entry" &&
+          feed.annotation_id === null &&
+          !Object.keys(feed.position || {}).includes("x");
+
+        if (isGeneral) {
+          selectedNoteFeed = feed;
           open = true;
+        } else {
+          // Hand off to the plugin — same flow as selectNoteFeed() for non-general notes
+          const adapter = driver.notesAdapter;
+          if (adapter) {
+            // Ensure the plugin is in review mode so overlays/markers are visible
+            if (driver.mode !== "review") {
+              driver.setMode("review");
+            }
+            // Wait for the adapter cache to be populated
+            if (!adapter.getNote(feed.id)) {
+              await adapter.fetchForEntry();
+            }
+            adapter.focusNote({
+              id: feed.id,
+              anchor: {
+                annotation_id: feed.annotation_id,
+                anchor_type: feed.anchor_type,
+                position: feed.position,
+              },
+              content_md: feed.content_md,
+              status: feed.status,
+              resolved: feed.status === "resolved",
+              created_by_email: feed.created_by_email,
+              created_at: feed.created_at?.toString(),
+              updated_at: feed.updated_at?.toString(),
+              edited_at: feed.edited_at?.toString() ?? null,
+            });
+          }
         }
       }
 
@@ -242,7 +274,7 @@
 {#if open}
   <div
     transition:slide={{ axis: "x" }}
-    class="bg-background absolute top-11 right-0 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
+    class="bg-background absolute top-11 right-0 z-30 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
   >
     <!-- HEADER -->
     <section class="flex items-center gap-1 border-b p-2">

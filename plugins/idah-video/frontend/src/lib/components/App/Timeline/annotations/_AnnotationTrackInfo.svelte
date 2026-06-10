@@ -31,7 +31,7 @@
 
   // Variables
   let { id, title, subtitle, items } = $derived(track);
-  let shapeType = $derived(items[0]?.rawData.shape.type ?? "");
+  let shapeType = $derived(items[0]?.rawData.shape?.type ?? "");
   let color = $derived.by(() => {
     const ann = items[0]?.rawData;
     return ann ? resolveAnnotationColor(ann) : "gray";

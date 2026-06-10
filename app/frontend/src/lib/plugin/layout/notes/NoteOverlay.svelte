@@ -1,10 +1,17 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import { page } from "$app/state";
+  import { SvelteSet, SvelteURL } from "svelte/reactivity";
 
-  import type { INoteAnchor, INoteRecord, INoteScreenPosition } from "@/plugin/v2/types";
+  import type { INoteAnchor, INoteComment, INoteRecord, INoteScreenPosition } from "@/plugin/v2/types";
   import type { NotesDriverAdapter } from "@/plugin/v2/driver/adapter/notes";
   import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
+  import DateText from "@/components/app/texts/date-text.svelte";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+  import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { refetches } from "@/utils/refetch";
 
   interface Props {
@@ -19,44 +26,68 @@
   let contentMd = $state("");
   let loading = $state(false);
 
+  let comments: INoteComment[] = $state([]);
+  let editingContentMd = $state("");
+  let editingCommentId: string | null = $state(null);
+  let editingFeedContent = $state(false);
+
   let isVisible = $derived(x !== undefined && y !== undefined && (selectedNote !== null || pendingAnchor !== null));
   let isCreating = $derived(pendingAnchor !== null);
-  let noteTitle = $derived(
-    isCreating
-      ? "New Note"
-      : selectedNote
-        ? `${(selectedNote as Record<string, unknown>).created_by_email ?? "Unknown"}`
-        : "",
-  );
+
+  let highlightedCommentId: string | null = $state(null);
+  let highlightedFeedId: string | null = $state(null);
+  let scrollContainer: HTMLDivElement | null = $state(null);
 
   let unsubFns: Array<() => void> = [];
 
-  let _closing = false;
+  function formatEditedTooltip(dateStr?: string | null): string {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      return (
+        "Edited " +
+        d.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      return "";
+    }
+  }
 
   function close(): void {
-    if (_closing) return;
-    _closing = true;
+    if (selectedNote === null && pendingAnchor === null) return;
+
     selectedNote = null;
     pendingAnchor = null;
     x = undefined;
     y = undefined;
     contentMd = "";
-    // Notify the plugin that the note is no longer selected
-    // so it stops reporting position on frame change.
-    // Use a microtask to avoid re-entrant dispatch through onNoteSelection.
+    comments = [];
+    editingCommentId = null;
+    editingFeedContent = false;
+    editingContentMd = "";
+    highlightedCommentId = null;
+    highlightedFeedId = null;
+
     queueMicrotask(() => {
-      notesAdapter?.focusNote(null);
-      _closing = false;
+      notesAdapter?.selectNote(null);
     });
   }
 
   onMount(() => {
     const na = notesAdapter;
-    if (!na) {
-      return;
-    }
+    if (!na) return;
+
     unsubFns = [
       na.onNotePosition((pos: INoteScreenPosition) => {
+        if (pendingAnchor !== null && pos.noteId !== null) return;
+        if (selectedNote !== null && pos.noteId !== selectedNote.id) return;
+        if (pendingAnchor === null && selectedNote === null) return;
         x = pos.x;
         y = pos.y;
       }),
@@ -69,6 +100,10 @@
           if (found) {
             selectedNote = found;
             pendingAnchor = null;
+            contentMd = "";
+            editingCommentId = null;
+            editingFeedContent = false;
+            editingContentMd = "";
           }
         }
       }),
@@ -76,14 +111,59 @@
         selectedNote = null;
         pendingAnchor = anchor;
         contentMd = "";
+        comments = [];
+        editingCommentId = null;
+        editingFeedContent = false;
       }),
     ];
   });
 
   onDestroy(() => {
     for (const fn of unsubFns) fn();
-    // Clean up pending note creation on unmount
     notesAdapter?.selectNote(null);
+  });
+
+  // Load comments when a note is selected
+  $effect(() => {
+    const note = selectedNote;
+    if (note) {
+      const na = notesAdapter;
+      if (na) {
+        na.fetchComments(note.id).then((c) => {
+          comments = c;
+          // Re-parse URL hash for comment highlighting now that comments are loaded
+          const parts = page.url.hash.split("/");
+          // parts: ["#feed", feedId, "comments", commentId]
+          if (parts.length >= 2 && parts[0] === "#feed" && parts[1]) {
+            highlightedFeedId = parts[1];
+          }
+          if (parts.length >= 4 && parts[0] === "#feed" && parts[1] && parts[2] === "comments" && parts[3]) {
+            highlightedCommentId = parts[3];
+            // Scroll immediately
+            requestAnimationFrame(() => {
+              const el = scrollContainer?.querySelector(`[data-comment-id="${parts[3]}"]`);
+              if (el) {
+                el.scrollIntoView({ block: "center", behavior: "smooth" });
+              }
+            });
+          }
+        });
+      }
+    }
+  });
+
+  // Scroll to highlighted comment when comments load or hash changes
+  $effect(() => {
+    const cid = highlightedCommentId;
+    const container = scrollContainer;
+    if (cid && container) {
+      requestAnimationFrame(() => {
+        const el = container.querySelector(`[data-comment-id="${cid}"]`);
+        if (el) {
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+      });
+    }
   });
 
   async function handleSubmit(): Promise<void> {
@@ -95,10 +175,10 @@
         await na.createNote({ content_md: contentMd, anchor: pendingAnchor });
         close();
       } else if (selectedNote) {
-        await na.updateNote(selectedNote.id, {
-          content_md: (selectedNote.content_md ?? "") + "\n\n---\n" + contentMd,
-        });
-        close();
+        await na.replyToNote(selectedNote.id, contentMd);
+        await na.fetchComments(selectedNote.id);
+        comments = na.getComments(selectedNote.id);
+        contentMd = "";
       }
     } catch (e) {
       console.error("Failed to save note:", e);
@@ -107,16 +187,74 @@
     }
   }
 
-  async function handleDelete(): Promise<void> {
+  async function handleUpdateFeedContent(newMd: string): Promise<void> {
     const na = notesAdapter;
     if (!na || !selectedNote) return;
-    loading = true;
+    try {
+      await na.updateNote(selectedNote.id, { content_md: newMd });
+      selectedNote.content_md = newMd;
+      selectedNote.edited_at = new Date().toISOString();
+      editingFeedContent = false;
+      editingContentMd = "";
+    } catch (e) {
+      console.error("Failed to update note:", e);
+    }
+  }
+
+  async function handleUpdateComment(commentId: string, newMd: string): Promise<void> {
+    if (!selectedNote) return;
+    try {
+      await noteCommentsBackendDataSource.update(commentId, { attributes: { content_md: newMd } });
+      const na = notesAdapter!;
+      await na.fetchComments(selectedNote.id);
+      comments = na.getComments(selectedNote.id);
+      editingCommentId = null;
+      editingContentMd = "";
+    } catch (e) {
+      console.error("Failed to update comment:", e);
+    }
+  }
+
+  async function handleDeleteFeed(): Promise<void> {
+    const na = notesAdapter;
+    if (!na || !selectedNote) return;
     try {
       await na.deleteNote(selectedNote.id);
       close();
-    } finally {
-      loading = false;
+    } catch (e) {
+      console.error("Failed to delete note:", e);
     }
+  }
+
+  async function handleDeleteComment(commentId: string): Promise<void> {
+    if (!selectedNote) return;
+    try {
+      await noteCommentsBackendDataSource.delete(commentId);
+      const na = notesAdapter!;
+      await na.fetchComments(selectedNote.id);
+      comments = na.getComments(selectedNote.id);
+      $refetches.noteComments.list = new Date();
+    } catch (e) {
+      console.error("Failed to delete comment:", e);
+    }
+  }
+
+  function startEditFeed(): void {
+    editingContentMd = selectedNote?.content_md ?? "";
+    editingFeedContent = true;
+    editingCommentId = null;
+  }
+
+  function startEditComment(comment: INoteComment): void {
+    editingContentMd = comment.content_md;
+    editingCommentId = comment.id;
+    editingFeedContent = false;
+  }
+
+  function cancelEdit(): void {
+    editingFeedContent = false;
+    editingCommentId = null;
+    editingContentMd = "";
   }
 
   async function handleResolve(): Promise<void> {
@@ -125,9 +263,10 @@
     loading = true;
     try {
       await noteFeedsBackendDataSource.markAsResolved(selectedNote.id);
+      selectedNote.status = "resolved";
+      selectedNote.resolved = true;
       await na.fetchForEntry();
       $refetches.noteFeeds.list = new Date();
-      close();
     } finally {
       loading = false;
     }
@@ -139,9 +278,10 @@
     loading = true;
     try {
       await na.updateNote(selectedNote.id, { status: "pending" });
+      selectedNote.status = "pending";
+      selectedNote.resolved = false;
       await na.fetchForEntry();
       $refetches.noteFeeds.list = new Date();
-      close();
     } finally {
       loading = false;
     }
@@ -149,59 +289,241 @@
 </script>
 
 {#if isVisible}
-  <div role="presentation" class="fixed inset-0 z-30" onclick={close}></div>
-
   <div
     class="fixed z-40"
     style="left: {x}px; top: {y}px;"
     role="dialog"
     aria-label={isCreating ? "New note" : "Note details"}
   >
-    <div class="bg-background border-border w-72 rounded-lg border shadow-lg">
-      <div class="flex items-center gap-2 border-b px-3 py-2">
-        <span class="text-sm font-semibold">{noteTitle}</span>
-        <span class="text-muted-foreground ml-auto text-xs">
-          {selectedNote?.status === "resolved" ? "Resolved" : "Pending"}
+    <div class="bg-background border-border w-80 rounded-lg border shadow-lg">
+      <!-- HEADER -->
+      <div class="flex items-center gap-1 border-b px-3 py-2">
+        <span class="text-sm font-semibold">
+          {isCreating ? "New Note" : "Note"}
         </span>
-      </div>
-      <div class="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+
         {#if !isCreating && selectedNote}
-          <div class="px-3 py-2 text-sm">
-            <MarkdownPreview value={selectedNote.content_md ?? ""} />
+          <div class="ml-auto flex items-center gap-1">
+            <!-- Resolve/Reopen check button (same as sidebar) -->
+            <Tooltips align="center" ignoreNonKeyboardFocus>
+              {#snippet trigger()}
+                <button
+                  class="hover:bg-muted inline-flex size-5 items-center justify-center rounded-full"
+                  class:bg-green-600={selectedNote!.status === "resolved"}
+                  class:text-primary-foreground={selectedNote!.status === "resolved"}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    if (selectedNote!.status === "resolved") handleReopen();
+                    else handleResolve();
+                  }}
+                  aria-label={selectedNote!.status === "resolved" ? "Resolved" : "Mark as Resolved"}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="size-3"><polyline points="20 6 9 17 4 12" /></svg
+                  >
+                </button>
+              {/snippet}
+              {#snippet content()}
+                {selectedNote!.status === "resolved" ? "Resolved" : "Mark as Resolved"}
+              {/snippet}
+            </Tooltips>
+
+            <NoteDropdownMenus
+              noteFeedId={selectedNote!.id}
+              editable
+              deletable
+              onSwitchToEditMode={startEditFeed}
+              onDelete={handleDeleteFeed}
+            />
           </div>
-        {:else}
-          <p class="text-muted-foreground text-xs">
+        {/if}
+
+        <button
+          class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex size-5 items-center justify-center rounded"
+          onclick={close}
+          aria-label="Close"
+          type="button"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg
+          >
+        </button>
+      </div>
+
+      <!-- BODY -->
+      <div bind:this={scrollContainer} class="max-h-80 space-y-2 overflow-y-auto px-3 py-2">
+        {#if isCreating}
+          <p class="text-muted-foreground px-1 text-xs">
             Attaching note to {pendingAnchor?.anchor_type === "annotation" ? "annotation" : "entry"}
           </p>
+        {:else if selectedNote}
+          <!-- Original note feed -->
+          <div class="bg-muted/30 rounded px-2 py-1.5">
+            <div class="flex items-center gap-1.5 text-xs">
+              <span class="font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
+              <div class="ml-auto flex items-center">
+                <NoteDropdownMenus
+                  noteFeedId={selectedNote.id}
+                  editable
+                  onSwitchToEditMode={startEditFeed}
+                  onDelete={handleDeleteFeed}
+                />
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs">
+              <DateText
+                class="text-muted-foreground"
+                datetime={new Date(selectedNote.created_at ?? "")}
+                datetimeFormat="MMM dd, yyyy HH:mm:ss"
+                size="xs"
+                weight="normal"
+                showDistance
+              />
+              {#if selectedNote.edited_at}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger class="inline-block">
+                      <span class="text-muted-foreground text-xs">(Edited)</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{formatEditedTooltip(selectedNote.edited_at)}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              {/if}
+            </div>
+
+            {#if editingFeedContent}
+              <textarea
+                class="border-border mt-1 w-full resize-none rounded border p-1.5 text-xs"
+                rows="3"
+                bind:value={editingContentMd}
+              ></textarea>
+              <div class="mt-1 flex items-center gap-1">
+                <button class="hover:bg-muted rounded px-2 py-0.5 text-xs" onclick={cancelEdit}>Cancel</button>
+                <button
+                  class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-xs"
+                  onclick={() => handleUpdateFeedContent(editingContentMd)}
+                  disabled={!editingContentMd.trim()}>Save</button
+                >
+              </div>
+            {:else}
+              <div class="mt-0.5 text-xs"><MarkdownPreview value={selectedNote.content_md ?? ""} /></div>
+            {/if}
+          </div>
+
+          <!-- Comments -->
+          {#each comments as comment (comment.id)}
+            <div
+              data-comment-id={comment.id}
+              class={["rounded px-2 py-1.5", highlightedCommentId === comment.id ? "bg-muted" : ""].join(" ")}
+            >
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="font-semibold">{comment.created_by_email}</span>
+                <div class="ml-auto flex items-center">
+                  <NoteDropdownMenus
+                    noteFeedId={selectedNote.id}
+                    noteCommentId={comment.id}
+                    editable
+                    deletable
+                    onSwitchToEditMode={() => startEditComment(comment)}
+                    onDelete={() => handleDeleteComment(comment.id)}
+                  />
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs">
+                <DateText
+                  class="text-muted-foreground"
+                  datetime={new Date(comment.created_at)}
+                  datetimeFormat="MMM dd, yyyy HH:mm:ss"
+                  size="xs"
+                  weight="normal"
+                  showDistance
+                />
+                {#if comment.edited_at}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger class="inline-block">
+                        <span class="text-muted-foreground text-xs">(Edited)</span>
+                      </TooltipTrigger>
+                      <TooltipContent>{formatEditedTooltip(comment.edited_at)}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                {/if}
+              </div>
+
+              {#if editingCommentId === comment.id}
+                <textarea
+                  class="border-border mt-1 w-full resize-none rounded border p-1.5 text-xs"
+                  rows="2"
+                  bind:value={editingContentMd}
+                ></textarea>
+                <div class="mt-1 flex items-center gap-1">
+                  <button class="hover:bg-muted rounded px-2 py-0.5 text-xs" onclick={cancelEdit}>Cancel</button>
+                  <button
+                    class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-xs"
+                    onclick={() => handleUpdateComment(comment.id, editingContentMd)}
+                    disabled={!editingContentMd.trim()}>Save</button
+                  >
+                </div>
+              {:else}
+                <div class="mt-0.5 text-xs"><MarkdownPreview value={comment.content_md} /></div>
+              {/if}
+            </div>
+          {/each}
         {/if}
       </div>
+
+      <!-- FOOTER -->
       <div class="border-t px-3 py-2">
-        <textarea
-          class="border-border w-full resize-none rounded border p-2 text-sm"
-          rows="2"
-          placeholder={isCreating ? "Write your note..." : "Reply..."}
-          bind:value={contentMd}
-          disabled={loading}
-        ></textarea>
-        <div class="mt-2 flex items-center gap-1">
-          {#if !isCreating}
-            <button
-              class="hover:bg-muted rounded px-2 py-1 text-xs"
-              onclick={selectedNote?.status === "resolved" ? handleReopen : handleResolve}
-              disabled={loading}
-            >
-              {selectedNote?.status === "resolved" ? "Reopen" : "Resolve"}
-            </button>
-            <button class="hover:bg-muted rounded px-2 py-1 text-xs" onclick={handleDelete} disabled={loading}>
-              Delete
-            </button>
-          {/if}
+        <div class="relative">
+          <textarea
+            class="border-border w-full resize-none rounded border p-2 pr-8 text-sm"
+            rows="2"
+            placeholder={isCreating ? "Write your note..." : "Reply..."}
+            bind:value={contentMd}
+            disabled={loading}
+          ></textarea>
           <button
-            class="bg-primary text-primary-foreground ml-auto rounded px-3 py-1 text-xs"
+            class="text-muted-foreground hover:text-foreground absolute right-2 bottom-2 inline-flex size-5 items-center justify-center rounded"
             onclick={handleSubmit}
             disabled={loading || !contentMd.trim()}
+            aria-label="Send"
+            type="button"
           >
-            {loading ? "Saving..." : isCreating ? "Create" : "Reply"}
+            {#if loading}
+              <svg
+                class="size-3.5 animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="30" /></svg
+              >
+            {:else}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="size-3.5"><path d="M22 2 11 13" /><path d="m22 2-7 20-4-9-9-4Z" /></svg
+              >
+            {/if}
           </button>
         </div>
       </div>

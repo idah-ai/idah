@@ -332,6 +332,20 @@ export interface INoteScreenPosition {
 }
 
 /**
+ * A comment within a note's thread.
+ * Stored as a separate NoteComment record on the backend.
+ */
+export interface INoteComment {
+  id: string;
+  note_feed_id: string;
+  content_md: string;
+  created_by_email: string;
+  created_at: string;
+  updated_at: string;
+  edited_at: string | null;
+}
+
+/**
  * A note record as transmitted between core and plugin.
  * All spatial/temporal position info lives inside the opaque `anchor.position`.
  */
@@ -341,7 +355,7 @@ export interface INoteRecord {
   /** The anchor — what and where this note is attached to. */
   anchor: INoteAnchor;
 
-  /** Markdown content of the note. */
+  /** Markdown content of the initial note (first message in the thread). */
   content_md?: string;
 
   /** Whether the note thread is resolved. */
@@ -404,7 +418,7 @@ export interface INotesDriverV2 {
    * The plugin should seek to the note's anchor position and then
    * call `reportNotePosition` once the viewport has settled.
    */
-  onFocusNote(cb: (note: INoteRecord) => void): Unsubscribe;
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe;
 
   // ── Plugin → Core (commands) ───────────────────────────────────────────
 

@@ -55,7 +55,7 @@
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
-  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
+  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep) && !viewport.isReviewWorkspace);
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === "note");
 

@@ -66,6 +66,7 @@
         {
           label: noteCommentId ? "Delete comment" : "Delete feed",
           icon: Trash2Icon,
+          destructive: true,
           hidden: !deletable,
           action: () => {
             openConfirmDeleteModal = true;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import TrackBlockContextMenu from "$lib/components/App/Timeline/annotations/_TrackBlockContextMenu.svelte";
+  import NoteKeyframeContextMenu from "$lib/components/App/Timeline/review/_NoteKeyframeContextMenu.svelte";
 
   import {
     showContextMenu,
@@ -13,9 +14,9 @@
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import type { IVideoAnnotationShape } from "$lib/types";
-  import { centroid as centroidUtil } from "$lib/utils/math/point";
-  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import type { IVideoAnnotationRecord } from "$lib/types";
+  import { activeNoteId } from "$lib/state/data.svelte";
+  import type { INoteRecord } from "$idah/v2/types";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
@@ -27,6 +28,7 @@
 
   // Variables
   let { trackId, startRange, endRange, rawData: annotation } = $derived(item);
+
   const rangeSize = $derived(Number(endRange - startRange) + 1);
   const keyframes = $derived.by(() => {
     if (viewport.isReviewWorkspace) {
@@ -81,16 +83,51 @@
     selection.selectAnnotation(annotation);
   }
 
+  function handleKeyframeContextMenu(e: MouseEvent, keyframe: number) {
+    e.preventDefault();
+    if (viewport.isReviewWorkspace) {
+      // In review mode — show note selection menu
+      const notesAtFrame = notes.list.filter(n => {
+        if (n.anchor.anchor_type !== "annotation" || n.anchor.annotation_id !== annotation.id) return false;
+        const pos = n.anchor.position as { frame?: number } | undefined;
+        return pos?.frame === keyframe;
+      });
+      if (notesAtFrame.length > 1) {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        showContextMenu(
+          NoteKeyframeContextMenu as unknown as ContextMenuComponent,
+          { annotationId: annotation.id, annotationStart: annotation.shape.start, frame: keyframe },
+          e.clientX,
+          rect.bottom,
+        );
+      }
+      return;
+    }
+    // Editor mode — show annotation menu
+    handleOnContextMenu(e);
+  }
+
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();
 
     // In review workspace, clicking a keyframe selects the corresponding note
     if (viewport.isReviewWorkspace) {
-      const note = notes.list.find(n => {
+      const notesAtFrame = notes.list.filter(n => {
         if (n.anchor.anchor_type !== "annotation" || n.anchor.annotation_id !== annotation.id) return false;
         const pos = n.anchor.position as { frame?: number } | undefined;
         return pos?.frame === keyframe;
       });
+
+      let note: INoteRecord | undefined;
+      if (notesAtFrame.length >= 1) {
+        // Multiple notes — cycle to the next one
+        const currentIndex = notesAtFrame.findIndex(n => n.id === activeNoteId.value);
+        const nextIndex = (currentIndex + 1) % notesAtFrame.length;
+        note = notesAtFrame[nextIndex];
+      } else {
+        note = notesAtFrame[0];
+      }
+
       if (note) {
         const driver = getDriver();
 
@@ -110,8 +147,8 @@
         }
 
         // Select the note — NoteMarkers handles popup positioning via its $effect
+        activeNoteId.value = note.id;
         driver.notes.selectNote(note.id);
-        return;
       }
     }
 
@@ -127,10 +164,10 @@
   style:border-color={color}
   style:--tw-ring-color={isSelected ? color : "transparent"}
   onclick={handleAnnotationClick}
-  oncontextmenu={handleOnContextMenu}
+  oncontextmenu={(e) => { e.preventDefault(); viewport.isReviewWorkspace ? null : handleOnContextMenu(e); }}
 >
   <!-- KEYFRAMES -->
-  {#each keyframes as keyframe (keyframe)}
+  {#each keyframes as keyframe, idx (`${keyframe}-${idx}`)}
     {@const position = ((keyframe - startRange) / rangeSize) * 100}
     {@const width = (100 / rangeSize) * 0.9}
     <div
@@ -143,6 +180,7 @@
       style:width="{width}%"
       style:background-color={color}
       onclick={(e) => handleKeyframeClick(e, keyframe)}
+      oncontextmenu={(e) => handleKeyframeContextMenu(e, keyframe)}
       onkeypress={() => {}}
     ></div>
   {/each}
