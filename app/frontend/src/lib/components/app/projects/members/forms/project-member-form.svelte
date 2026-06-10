@@ -76,7 +76,7 @@
           valueKey="email"
           listOptions={{
             filters: {
-              role_name__nin: ["system", "admin"],
+              role_name__nin: ["system", "admin", "api_service"],
             },
           }}
           label="Member"
