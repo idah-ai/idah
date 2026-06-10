@@ -330,7 +330,6 @@
                     e.stopPropagation();
                     onClick(e);
                   }}
-                  {disabled}
                   class={cn("opacity-0", {
                     "opacity-100": alwaysShow,
                     "group-hover:opacity-100": !alwaysShow && !disabled,

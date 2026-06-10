@@ -346,17 +346,19 @@
             <!-- Icon Actions -->
             <div class="ml-auto flex content-center items-center gap-0">
               {#if mode == DEFAULT_MODE}
-                {#each actions as { label, icon, onClick, alwaysShow }, index (index)}
+                {#each actions as { label, icon, onClick, alwaysShow, disabled }, index (index)}
                   <CategoryAction
                     {label}
                     {icon}
                     onclick={(e) => {
+                      if (disabled) return;
                       e.stopPropagation();
                       onClick(e);
                     }}
                     class={cn("opacity-0", {
                       "opacity-100": alwaysShow,
-                      "group-hover:opacity-100": !alwaysShow,
+                      "group-hover:opacity-100": !alwaysShow && !disabled,
+                      "cursor-not-allowed group-hover:opacity-50": disabled,
                     })}
                   ></CategoryAction>
                 {/each}

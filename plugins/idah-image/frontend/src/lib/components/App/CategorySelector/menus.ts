@@ -10,6 +10,7 @@ export interface CategoryAction {
   label: string;
   icon: typeof IconType;
   destructive?: boolean;
+  disabled?: boolean;
   alwaysShow?: boolean;
   onClick: (e: MouseEvent) => void;
 }
@@ -83,6 +84,7 @@ export function getCategoryDeleteAction(
     label: "Delete this category annotations",
     icon: Trash2Icon,
     destructive: true,
+    disabled: items.some((item) => annotation.isLocked(item)),
     onClick: async (e: MouseEvent) => {
       e.stopPropagation();
       onClickDelete();
