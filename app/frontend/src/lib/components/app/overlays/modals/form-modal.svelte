@@ -92,7 +92,7 @@
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
   <DialogContent
-    class={cn(className)
+    class={cn(className)}
     onInteractOutside={(e) => {
       if (!canClickOutside) {
         e.preventDefault();
