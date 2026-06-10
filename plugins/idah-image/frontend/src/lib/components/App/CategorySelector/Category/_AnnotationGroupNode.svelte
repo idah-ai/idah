@@ -57,14 +57,6 @@
     onSelectAnnotationGroup(annotationGroup);
   }
 
-  function toggleAnnotationGroupVisibility() {
-    getDriver().command.call("annotation.toggle_group_visibility", { groupId });
-  }
-
-  function toggleAnnotationGroupEditability() {
-    getDriver().command.call("annotation.toggle_group_editability", { groupId });
-  }
-
   function deleteAnnotationGroup() {
     getDriver().command.call("annotation.delete_group", { groupId });
   }
