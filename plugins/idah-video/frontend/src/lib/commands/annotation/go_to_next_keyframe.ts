@@ -56,7 +56,7 @@ export function register(driver: IIdahDriverV2): void {
       if (!groupId) {
         return {
           command: command as any,
-          do() { viewport.video.currentFrame.value = Math.min(currentFrame + 1, 99999); },
+          do() { viewport.video.goToFrame(Math.min(currentFrame + 1, 99999)); },
           isCombinable() { return false; },
           combine(p: any) { return p; },
         };
@@ -89,7 +89,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          viewport.video.currentFrame.value = target;
+          viewport.video.goToFrame(target);
           if (targetAnnotation) selection.selectAnnotation(targetAnnotation);
         },
         isCombinable() { return false; },

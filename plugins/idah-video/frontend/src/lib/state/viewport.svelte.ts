@@ -55,6 +55,9 @@ class Viewport {
     pause() {
       this.status = "pause";
     },
+    goToFrame(frame: number) {
+      this.currentFrame.value = frame;
+    },
   });
 
   workspace = $state({

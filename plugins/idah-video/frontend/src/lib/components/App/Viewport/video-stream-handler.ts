@@ -59,6 +59,9 @@ export class VideoStreamHandler {
   // Cancelled on pause or seek so a rapid play→pause→seek sequence doesn't
   // trigger a SourceBuffer flush during paused playback.
   private adaptiveTransitionTimer: ReturnType<typeof setTimeout> | null = null;
+  // Stored references for the play/pause DOM listeners so destroy() can remove them.
+  private boundPlayHandler: (() => void) | null = null;
+  private boundPauseHandler: (() => void) | null = null;
 
   constructor(videoElement: HTMLVideoElement, sourceUrl: string, options: VideoStreamHandlerOptions = {}) {
     this.videoElement = videoElement;
@@ -124,7 +127,7 @@ export class VideoStreamHandler {
     //      masked by active playback.
     //   5. Handle ended state by using endOfFrameTime (same as renderQualityFrame)
     //      so startLoad always lands inside a valid fragment boundary.
-    this.videoElement.addEventListener("play", () => {
+    this.boundPlayHandler = () => {
       this.isPaused = false;
       this.isInitialLoad = false;
       this.cancelPendingRender();
@@ -145,7 +148,8 @@ export class VideoStreamHandler {
           this.hls.currentLevel = -1;
         }
       }, 3000);
-    });
+    };
+    this.videoElement.addEventListener("play", this.boundPlayHandler);
 
     // Pause flow (fires for manual pause, end-of-video, and programmatic pause):
     //   1. Cancel the deferred adaptive switch if it hasn't fired yet (prevents
@@ -157,13 +161,14 @@ export class VideoStreamHandler {
     //      Do NOT pre-set currentLevel here — renderQualityFrame reads it first to
     //      decide whether to show the loading indicator; setting it beforehand would
     //      always produce shouldShowLoader=false and hide the UI.
-    this.videoElement.addEventListener("pause", () => {
+    this.boundPauseHandler = () => {
       this.cancelAdaptiveTransition();
       this.isPaused = true;
       if (this.maxQualityLevel < 0 || !this.hls) return;
       if (this.hls.currentLevel === this.maxQualityLevel) return;
       this.renderHighQualityFrame();
-    });
+    };
+    this.videoElement.addEventListener("pause", this.boundPauseHandler);
 
     // Fatal HLS errors: attempt recovery before giving up entirely.
     this.hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -308,7 +313,16 @@ export class VideoStreamHandler {
 
   // Tear down HLS and release all resources.
   public destroy(): void {
+    this.cancelPendingRender();
     this.cancelAdaptiveTransition();
+    if (this.boundPlayHandler) {
+      this.videoElement.removeEventListener("play", this.boundPlayHandler);
+      this.boundPlayHandler = null;
+    }
+    if (this.boundPauseHandler) {
+      this.videoElement.removeEventListener("pause", this.boundPauseHandler);
+      this.boundPauseHandler = null;
+    }
     this.hls?.destroy();
     this.hls = null;
   }

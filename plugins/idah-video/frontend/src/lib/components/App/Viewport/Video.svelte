@@ -188,7 +188,7 @@
 
   // Jump directly to a frame index (0-based).
   export async function seekToFrame(frame: number) {
-    viewport.video.currentFrame.value = frame;
+    viewport.video.goToFrame(frame);
   }
 
   // Set the playback speed multiplier (does not affect HLS quality switching).
@@ -213,24 +213,23 @@
     videoElement.volume = 0;
     videoElement.muted = true;
 
-    // "play" fires for both programmatic (videoElement.play()) and browser-native play
+    // "play" fires for both programmatic (videoElement.play()) and browser-native play.
+    // Only update status — the $effect reacts and runs all side effects (startRAF, onTogglePlay, etc.)
     const handlePlay = () => {
-      clearTimeout(hlsReloadTimer);
-      isPlaying = true;
       viewport.video.status = "play";
-      onTogglePlay(true);
     };
 
     // "pause" fires for both programmatic (videoElement.pause()) and browser-native pause
+    // (including natural end-of-video). Only update status so the $effect fires and handles
+    // stopRAF / syncPausedFrame for both the programmatic and natural-end cases.
     const handlePause = () => {
-      isPlaying = false;
       viewport.video.status = "pause";
-      onTogglePlay(false);
     };
 
+    const handleResize = () => onResize();
     videoElement.addEventListener("play", handlePlay);
     videoElement.addEventListener("pause", handlePause);
-    videoElement.addEventListener("resize", () => onResize());
+    videoElement.addEventListener("resize", handleResize);
 
     // HLS streams get a VideoStreamHandler that manages adaptive quality during
     // playback and switches to the highest quality level on every pause/seek.
@@ -259,7 +258,7 @@
       clearTimeout(hlsReloadTimer);
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);
-      videoElement.removeEventListener("resize", () => onResize());
+      videoElement.removeEventListener("resize", handleResize);
       streamHandler?.destroy();
     };
   });

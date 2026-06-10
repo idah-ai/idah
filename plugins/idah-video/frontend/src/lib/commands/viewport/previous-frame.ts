@@ -26,7 +26,7 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         const current = viewport.video.currentFrame.value;
-        viewport.video.currentFrame.value = Math.max(current - 1, 0);
+        viewport.video.goToFrame(Math.max(current - 1, 0));
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

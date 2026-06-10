@@ -40,7 +40,7 @@ export function register(driver: IIdahDriverV2): void {
           _previousFrame = prevFrame;
         },
         undo() {
-          viewport.video.currentFrame.value = _previousFrame;
+          viewport.video.goToFrame(_previousFrame);
         },
         isCombinable() { return false; },
         combine(p) { return p; },

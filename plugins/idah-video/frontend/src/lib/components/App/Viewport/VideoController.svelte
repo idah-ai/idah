@@ -77,7 +77,7 @@
     // Clamp to valid range [1, media.totalFrames]
     value = Math.max(1, Math.min(media.totalFrames, value));
     frameInputValue = value;
-    viewport.video.currentFrame.value = value - 1;
+    viewport.video.goToFrame(value - 1);
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {

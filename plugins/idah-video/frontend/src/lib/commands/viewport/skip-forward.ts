@@ -15,7 +15,7 @@ function makeAction(): ICommandAction {
   return {
     command: { name: "viewport.skip_forward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip forward", longDescription: "Jump forward by the configured number of frames" },
     do() {
-      viewport.video.currentFrame.value = Math.min(current + step, max - 1);
+      viewport.video.goToFrame(Math.min(current + step, max - 1));
     },
     isCombinable() { return false; },
     combine(prev: ICommandAction) { return prev; },

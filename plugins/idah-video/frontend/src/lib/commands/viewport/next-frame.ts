@@ -27,7 +27,7 @@ export function register(driver: IIdahDriverV2): void {
       command: { ...command },
       do() {
         const current = viewport.video.currentFrame.value;
-        viewport.video.currentFrame.value = Math.min(current + 1, media.totalFrames - 1);
+        viewport.video.goToFrame(Math.min(current + 1, media.totalFrames - 1));
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

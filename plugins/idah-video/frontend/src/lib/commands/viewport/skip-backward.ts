@@ -13,7 +13,7 @@ function makeAction(): ICommandAction {
   return {
     command: { name: "viewport.skip_backward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip backward", longDescription: "Jump backward by the configured number of frames" },
     do() {
-      viewport.video.currentFrame.value = Math.max(current - step, 0);
+      viewport.video.goToFrame(Math.max(current - step, 0));
     },
     isCombinable() { return false; },
     combine(prev: ICommandAction) { return prev; },
