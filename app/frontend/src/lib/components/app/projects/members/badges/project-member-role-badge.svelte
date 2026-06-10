@@ -6,14 +6,14 @@
 
   // Props
   interface Props {
-    projectMemberRecord: ProjectMemberRecord;
+    projectMemberRecord: ProjectMemberRecord | undefined;
   }
   let { projectMemberRecord }: Props = $props();
 
   // Variables
-  let foundRole = $derived(projectMemberRoles.find((role) => role.value === projectMemberRecord.role));
+  let foundRole = $derived(projectMemberRoles.find((role) => role.value === projectMemberRecord?.role));
 </script>
 
 <Badge variant="outline" rounded="full">
-  {foundRole ? foundRole.label : humanize(projectMemberRecord.role)}
+  {foundRole ? foundRole.label : humanize(projectMemberRecord?.role ?? "")}
 </Badge>

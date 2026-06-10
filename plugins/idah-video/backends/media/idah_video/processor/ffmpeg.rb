@@ -11,20 +11,25 @@ module IdahVideo
         :name, :width, :height, :bitrate, :audiobitrate
       )
 
-      DECODING_THREADS = Verse.config.extra_fields.dig(
-        :idah,
-        :plugins,
-        :config,
-        :idah_video,
-        :decoding_threads
-      )&.to_s
-      ENCODING_THREADS = Verse.config.extra_fields.dig(
-        :idah,
-        :plugins,
-        :config,
-        :idah_video,
-        :encoding_threads
-      )&.to_s
+      def decoding_threads
+        @decoding_threads ||= Verse.config&.extra_fields&.dig(
+          :idah,
+          :plugins,
+          :config,
+          :idah_video,
+          :decoding_threads
+        )&.to_s
+      end
+
+      def encoding_threads
+        @encoding_threads ||= Verse.config&.extra_fields&.dig(
+          :idah,
+          :plugins,
+          :config,
+          :idah_video,
+          :encoding_threads
+        )&.to_s
+      end
 
       def gen_stream(
         dir:,
@@ -79,7 +84,7 @@ module IdahVideo
           args += ["-ar", "48000"]             # Audio sample rate: 48kHz
         end
 
-        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
+        args += ["-threads", encoding_threads] if encoding_threads
 
         # HLS output format and settings
         args += ["-f", "hls"] # Output format: HLS
@@ -129,7 +134,7 @@ module IdahVideo
         output: "thumb_%02d.jpg"
       )
         args = []
-        args += ["-threads", DECODING_THREADS] if DECODING_THREADS
+        args += ["-threads", decoding_threads] if decoding_threads
         args += [
           "-i",
           file,
@@ -142,7 +147,7 @@ module IdahVideo
           "-q:v",
           "2"
         ]
-        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
+        args += ["-threads", encoding_threads] if encoding_threads
         args += [output, "-y"]
 
         call(*args, chdir:)

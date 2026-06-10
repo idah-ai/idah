@@ -1,38 +1,38 @@
-export const delayed = async <T>(milliseconds: number, realPromise: () => Promise<T>) => {
-  await setTimeout(() => {}, milliseconds);
-  return realPromise();
-};
+/**
+ * Debounced input helper for auto-complete / search-as-you-type.
+ * Each call resets the timer; only the last call within `delay` ms fires.
+ */
+export function debouncedInput<T>(
+  input: T,
+  delay: number = 300,
+): Promise<T> {
+  return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-function timeout(milliseconds: number) {
-  return new Promise(resolve => setTimeout(resolve, milliseconds));
-}
+    const check = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        resolve(input);
+      }, delay);
+    };
 
-export async function sleep(milliseconds: number) {
-  await timeout(milliseconds);
-
-  return Promise.resolve();
-}
-
-export const delayInput = (() => {
-  let timer: number | NodeJS.Timeout = 0;
-  return (callback: () => void, ms: number) => {
-    clearTimeout(timer);
-    return (timer = setTimeout(callback, ms));
-  };
-})();
-
-let currentTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-export function delayedInput<T>(input: T, delay: number = 300): Promise<T> {
-  // Clear the previous timeout if it exists
-  if (currentTimeoutId !== null) {
-    clearTimeout(currentTimeoutId);
-  }
-
-  return new Promise(resolve => {
-    currentTimeoutId = setTimeout(() => {
-      resolve(input);
-      currentTimeoutId = null; // Clear the timeout ID after resolving
-    }, delay);
+    check();
   });
+}
+
+/**
+ * Sleep for `ms` milliseconds.
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Execute `fn` after a minimum delay of `ms` milliseconds.
+ * Useful for ensuring a loading spinner shows for at least `ms`.
+ */
+export async function delayed<T>(ms: number, fn: () => Promise<T>): Promise<T> {
+  const [result] = await Promise.all([fn(), sleep(ms)]);
+  return result;
 }
