@@ -11,6 +11,18 @@ const MODIFIER_SYMBOLS: Record<string, string> = {
   Meta: "⌘",
 };
 
+const KEY_SYMBOLS: Record<string, string> = {
+  Space: "␣",
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+  BracketLeft: "[",
+  BracketRight: "]",
+  Minus: "-",
+  Equal: "=",
+};
+
 const _isMac = isMac();
 
 /**
@@ -27,12 +39,12 @@ export function getShortcutLabel(shortcut: string): string {
   const modifiers = parts.slice(0, -1);
 
   const modLabel = modifiers
-    .map((m) => (_isMac ? MODIFIER_SYMBOLS[m] ?? m : m === "Control" ? modKeyLabel() : m))
-    .join(_isMac ? "" : "+");
+    .map((m) => (_isMac ? (MODIFIER_SYMBOLS[m] ?? m) : m === "Control" ? modKeyLabel() : m))
+    .join(" ");
 
-  const keyLabel = key === "Space" ? "␣" : key === "ArrowRight" ? "→" : key === "ArrowLeft" ? "←" : key;
+  const keyLabel = KEY_SYMBOLS[key] ?? key;
 
-  return _isMac ? `${modLabel} ${keyLabel}` : modLabel ? `${modLabel} + ${keyLabel}` : keyLabel;
+  return modLabel ? `${modLabel} ${keyLabel}` : keyLabel;
 }
 
 /**
