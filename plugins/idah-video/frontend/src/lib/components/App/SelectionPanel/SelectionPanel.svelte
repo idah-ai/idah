@@ -23,6 +23,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { compareGroups, categoryValueToLabel } from "$lib/utils/annotation";
   import { VIDEO_POLYGON } from "$lib/types";
@@ -191,7 +192,7 @@
           getDriver().command.call("timeline.focus");
         },
       },
-      ...(isEditable()
+      ...(isEditable() && !annotation.isLocked(ann)
         ? [
             {
               label: "Delete Annotation",
