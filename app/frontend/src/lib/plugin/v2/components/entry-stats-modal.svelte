@@ -122,7 +122,7 @@
         typeof rawConfig.category_field === "string" ? rawConfig.category_field : "category";
 
       // Zero-fill all configured category ids (mirrors CoreStats)
-      const categoryCounts = new Map<string, number>();
+      const categoryCounts = new SvelteMap<string, number>();
       for (const shapeConfig of Object.values(rawConfig)) {
         if (typeof shapeConfig !== "object" || !shapeConfig || !("values" in shapeConfig)) continue;
         const values = (shapeConfig as { values?: { id?: string }[] }).values ?? [];
@@ -131,7 +131,7 @@
         }
       }
 
-      const shapeCounts = new Map<string, number>();
+      const shapeCounts = new SvelteMap<string, number>();
 
       for (const ann of annotations) {
         // Category — read from annotation.value[categoryField]
