@@ -333,7 +333,7 @@
                   class={cn("opacity-0", {
                     "opacity-100": alwaysShow,
                     "group-hover:opacity-100": !alwaysShow && !disabled,
-                    "cursor-not-allowed group-hover:opacity-50": disabled,
+                    "cursor-not-allowed group-hover:opacity-30": disabled,
                   })}
                 ></CategoryAction>
               {/each}
