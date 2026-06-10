@@ -217,9 +217,8 @@ module Entry
             project_id: duping_entry.project_id,
             dataset_id: dataset_id,
             entry_id: entry_id,
-            # keeping original created_at/updated_at ? skip them if so
-            # created_at: now,
-            # updated_at: now,
+            created_at: now,
+            updated_at: now,
           }
           annotations.create(attributes)
         end
