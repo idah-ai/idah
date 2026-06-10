@@ -124,7 +124,6 @@ module Entry
                 (
                   (pm.role IN :annotator_roles)
                   AND entries.assigned_to_id = :account_id
-                  AND entries.wf_step = 'annotate'
                 ) OR
                 -- Reviewers can access assigned and unassigned entries not submitted by themselves in review step
                 (
