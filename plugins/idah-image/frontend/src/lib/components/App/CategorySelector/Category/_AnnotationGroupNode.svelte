@@ -10,13 +10,13 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
+  import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { IImageAnnotationRecord } from "$lib/types";
-  import { getCategoryActions } from "../menus";
 
   type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
