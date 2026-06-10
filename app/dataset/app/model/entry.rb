@@ -218,8 +218,9 @@ module Entry
     def select(id)
       no_event do
         transaction do
+          entry = find!(id)
           # Use read scope when updating as anyone with read access can select
-          update!(id, { assigned_to_id: auth_context.metadata[:id], status: "in_progress" }, scope: scoped(:read))
+          update!(id, { assigned_to_id: auth_context.metadata[:id], status: "in_progress" }, scope: scoped(:read)) if entry.status == "pending"
         end
       end
     end
