@@ -70,7 +70,7 @@
     // canRevokeAPIKey = (await currentAccount?.can("revoke", "iam:api_keys")) || false;
     canDeleteAPIKey = (await currentAccount?.can("delete", "iam:api_keys")) || false;
 
-    alreadyRevoked = apiRes.data.status === "revoked"
+    alreadyRevoked = apiRes.data.status === "revoked";
   });
 
   // Functions
