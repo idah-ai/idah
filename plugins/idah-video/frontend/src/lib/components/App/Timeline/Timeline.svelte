@@ -11,6 +11,7 @@
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { viewport as vp } from "$lib/state/viewport.svelte";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { getAnnotationGroupId } from "$lib/types";
 
@@ -561,6 +562,7 @@
     bind:this={bodyScrollEl}
     bind:clientHeight={bodyScrollClientHeight}
     onscroll={handleBodyScroll}
+    oncontextmenu={(e) => { if (vp.isReviewWorkspace) e.preventDefault(); }}
   >
     <div class="timeline-main">
       <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">

@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { notes, activeNoteId } from "$lib/state/data.svelte";
+  import { notes, activeNoteId, focusNote } from "$lib/state/data.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { media } from "$lib/state/media.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
   import { showContextMenu, type ContextMenuComponent } from "$lib/components/App/ContextMenu/store";
   import NoteKeyframeContextMenu from "$lib/components/App/Timeline/review/_NoteKeyframeContextMenu.svelte";
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
@@ -22,16 +20,6 @@
   let keyframes = $derived([...new Set(entryNotes.map((n) => (n.anchor.position as { frame: number }).frame))]);
 
   const rangeSize = $derived(Number(endRange - startRange) + 1);
-
-  function focusNote(note: INoteRecord): void {
-    const driver = getDriver();
-    const pos = note.anchor.position as { frame?: number; x?: number; y?: number } | undefined;
-    if (pos?.frame !== undefined) viewport.video.currentFrame.value = pos.frame;
-    viewport.workspace.fitToViewport();
-
-    activeNoteId.value = note.id;
-    driver.notes.selectNote(note.id);
-  }
 
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();

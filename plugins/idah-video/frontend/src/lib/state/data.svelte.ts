@@ -9,7 +9,6 @@
 // collection grows beyond a threshold.
 // ---------------------------------------------------------------------------
 import { uuidv7 } from "uuidv7";
-import { selection } from "$lib/state/selection.svelte";
 
 /** Minimum interface an item must expose. */
 export interface DataItem {
@@ -499,6 +498,8 @@ export function createDataStore<T extends DataItem>(
 
 import type { INoteRecord } from "$idah/v2/types";
 import { getDriver } from "$lib/state/driver.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
+import { selection } from "$lib/state/selection.svelte";
 
 let _annotations: DataStore<AnnotationItem> | null = $state(null);
 
@@ -558,6 +559,49 @@ export const activeNoteId = {
 };
 
 /** Global stores — auto-initialised from the V2 driver. */
+/**
+ * Focus a note — seek to its anchor frame, center the annotation (or fit viewport),
+ * set it as the active note, and notify the core.
+ * The position-reporting $effect in NoteMarkers.svelte handles the follow-up
+ * `reportNotePosition` call automatically.
+ */
+export function focusNote(note: INoteRecord): void {
+  const driver = getDriver();
+
+  // 1. Seek to frame
+  const pos = note.anchor.position as { frame?: number; x?: number; y?: number } | undefined;
+  if (pos?.frame !== undefined) {
+    viewport.video.currentFrame.value = pos.frame;
+  }
+
+  // 2. Select & center annotation if annotation-anchored
+  if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
+    const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+    if (ann) {
+      selection.selectAnnotation(ann);
+      driver.command.call("selection.center");
+    } else {
+      // Annotations not loaded yet — defer until they are
+      const stop = $effect.root(() => {
+        $effect(() => {
+          const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+          if (!found) return;
+          selection.selectAnnotation(found);
+          driver.command.call("selection.center");
+          stop();
+        });
+      });
+    }
+  } else {
+    viewport.workspace.fitToViewport();
+  }
+
+  // 3. Set active note and notify core
+  activeNoteId.value = note.id;
+  driver.notes.selectNote(note.id);
+  // reportNotePosition will follow automatically via NoteMarkers' $effect
+}
+
 export const data: {
   annotations: DataStore<AnnotationItem> | null;
 } = {

@@ -9,13 +9,9 @@
   } from "$lib/components/App/ContextMenu/store";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { notes } from "$lib/state/data.svelte";
-  import { data } from "$lib/state/data.svelte";
-  import { media } from "$lib/state/media.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { notes, activeNoteId, data, focusNote } from "$lib/state/data.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import type { IVideoAnnotationRecord } from "$lib/types";
-  import { activeNoteId } from "$lib/state/data.svelte";
   import type { INoteRecord } from "$idah/v2/types";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
@@ -129,26 +125,7 @@
       }
 
       if (note) {
-        const driver = getDriver();
-
-        // Jump to the note's saved frame
-        const naPos = note.anchor.position as { frame?: number } | undefined;
-        if (naPos?.frame !== undefined) viewport.video.currentFrame.value = naPos.frame;
-
-        // Focus the annotation if anchored to one (same as onFocusNote in NoteMarkers)
-        if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
-          const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
-          if (ann) {
-            selection.selectAnnotation(ann);
-            driver.command.call("selection.center");
-          }
-        } else {
-          viewport.workspace.fitToViewport();
-        }
-
-        // Select the note — NoteMarkers handles popup positioning via its $effect
-        activeNoteId.value = note.id;
-        driver.notes.selectNote(note.id);
+        focusNote(note);
       }
     }
 
