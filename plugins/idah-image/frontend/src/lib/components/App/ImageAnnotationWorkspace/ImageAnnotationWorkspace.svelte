@@ -5,10 +5,7 @@
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
-  import {
-    findClosestAnnotationInGroup,
-    groupAnnotations,
-  } from "$lib/components/App/ImageAnnotationWorkspace/utils/group-annotation.svelte";
+  import { findClosestAnnotationInGroup } from "$lib/components/App/ImageAnnotationWorkspace/utils/group-annotation.svelte";
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
@@ -44,7 +41,6 @@
   let selAnnotation = $derived(
     selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
   );
-  let selGroup = $derived(selection.value?.type === "group" ? selection.value : undefined);
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -308,12 +304,6 @@
     } else if (selAnnotation) {
       selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
       if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
-    } else if (selGroup) {
-      // Update category for all annotations in the group
-      getDriver().command.call("annotation.updateGroupCategory", {
-        groupId: selGroup.groupId,
-        categoryIdToBeUpdate: value.category,
-      });
     } else if (valueMode !== "entry:root") {
       // Sidebar category click: store category and enter drawing mode
       pendingValue = value;
@@ -424,18 +414,6 @@
     }
   }
 
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<IImageAnnotationRecord>, selectedFrame?: number) {
-    selection.selectGroup(annotationGroup.groupId);
-
-    if (isNoteMode) return;
-
-    const firstAnnotation = annotationGroup.annotations[0];
-    if (selectedFrame && firstAnnotation?.shape.type && editable) {
-      viewport.mode = firstAnnotation.shape.type;
-      selectClosestAnnotation(annotationGroup, selectedFrame);
-    }
-  }
-
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<IImageAnnotationRecord>, frame: number) {
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup,
@@ -444,29 +422,6 @@
     selectAnnotation(closestAnnotation);
 
     return closestAnnotation;
-  }
-
-  function setAnnotationFrame(frame: number) {
-    if (!selGroup) return;
-
-    const annotationGroups = groupAnnotations(viewportAnnotations);
-
-    // Find the annotation group to get all annotations in the group
-    const newSelectedAnnotationGroup = annotationGroups.find((group) => group.groupId === selGroup?.groupId);
-
-    if (newSelectedAnnotationGroup) {
-      const closestAnnotation = findClosestAnnotationInGroup({
-        annotationGroup: newSelectedAnnotationGroup,
-        frame: frame,
-      });
-
-      if (closestAnnotation.metadata!.id === selAnnotation?.metadata?.id) {
-        return;
-      }
-
-      selection.selectAnnotation(closestAnnotation as any);
-      selection.selectGroup(newSelectedAnnotationGroup.groupId);
-    }
   }
 
   // Derive viewport annotations from the global store
