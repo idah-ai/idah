@@ -101,7 +101,7 @@ RSpec.describe Annotation::Service, database: true do
       dataset_id: first_dataset_id,
       priority: 1,
       resource: "http://example.com/first.mp4",
-      wf_step: "annotate",
+      wf_step: "start",
       status: "pending",
       assigned_to_id: annotator_account_id
     )
