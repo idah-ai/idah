@@ -55,7 +55,7 @@
         selectAll = false;
         selectedEntryIds = [];
       } else if (selectAll) {
-        selectedEntryIds = datasetEntryRecords.map((e) => e.id);
+        selectedEntryIds = undefined;
       }
     }
   });
@@ -64,21 +64,16 @@
     submitting = false;
     newDatasetName = "";
     selectAll = !isDatasetEmpty;
-    selectedEntryIds = isDatasetEmpty ? [] : datasetEntryRecords.map((e) => e.id);
+    selectedEntryIds = isDatasetEmpty ? [] : undefined;
   }
 
   function handleSelectAllChange(checked: boolean) {
     selectAll = checked;
-    if (checked) {
-      selectedEntryIds = datasetEntryRecords.map((e) => e.id); // in case selectedEntryIds will be used somehow
-      // selectedEntryIds = undefined;
-    } else {
-      selectedEntryIds = [];
-    }
+    selectedEntryIds = checked ? undefined : [];
   }
 
   function handleEntryToggle(entryId: string, checked: boolean) {
-    const currentIds = selectedEntryIds ?? [];
+    const currentIds = selectedEntryIds ?? datasetEntryRecords.map((e) => e.id);
     if (checked) {
       if (!currentIds.includes(entryId)) {
         selectedEntryIds = [...currentIds, entryId];
@@ -236,7 +231,7 @@
       {#each datasetEntryRecords as entry (entry.id)}
         <EntrySelectionCard
           {entry}
-          selected={selectedEntryIds?.includes(entry.id) ?? false}
+          selected={selectAll || (selectedEntryIds?.includes(entry.id) ?? false)}
           onToggle={handleEntryToggle}
         />
       {:else}
