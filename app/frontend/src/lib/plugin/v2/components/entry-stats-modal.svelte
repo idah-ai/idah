@@ -118,8 +118,7 @@
       const rawConfig = driver.config as Record<string, unknown>;
 
       // Category field can be overridden at the top level of labeling_configuration
-      const categoryField =
-        typeof rawConfig.category_field === "string" ? rawConfig.category_field : "category";
+      const categoryField = typeof rawConfig.category_field === "string" ? rawConfig.category_field : "category";
 
       // Zero-fill all configured category ids (mirrors CoreStats)
       const categoryCounts = new SvelteMap<string, number>();
