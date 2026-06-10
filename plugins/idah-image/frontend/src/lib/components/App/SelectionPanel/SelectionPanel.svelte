@@ -171,6 +171,10 @@
     currentFrameAnnotations.length > 0 && currentFrameAnnotations.every((ann) => annotation.isLocked(ann)),
   );
 
+  const isSomeLocked = $derived(
+    currentFrameAnnotations.length > 0 && currentFrameAnnotations.some((ann) => annotation.isLocked(ann)),
+  );
+
   const menus = $derived<Menus>({
     actions: {
       items: {
@@ -191,6 +195,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
+          disabled: isSomeLocked,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
@@ -279,8 +284,8 @@
         <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
 
         <div class="ml-auto flex items-center">
-          {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick }] (key)}
-            <CategoryAction {label} icon={Icon} onclick={onClick} />
+          {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick, disabled }] (key)}
+            <CategoryAction {label} icon={Icon} {disabled} onclick={onClick} />
           {/each}
         </div>
       </div>
@@ -316,17 +321,20 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions( { items: [ann], groupId: annGroupId }, ) as { label, icon: Icon, onClick, alwaysShow }, index (index)}
+              {#each getAnnotationActions( { items: [ann], groupId: annGroupId }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
                 <CategoryAction
                   {label}
                   icon={Icon}
                   onclick={(e) => {
+                    if (disabled) return;
                     e.stopPropagation();
                     onClick(e);
                   }}
+                  {disabled}
                   class={cn("opacity-0", {
                     "opacity-100": alwaysShow,
-                    "group-hover:opacity-100": !alwaysShow,
+                    "group-hover:opacity-100": !alwaysShow && !disabled,
+                    "cursor-not-allowed group-hover:opacity-50": disabled,
                   })}
                 ></CategoryAction>
               {/each}

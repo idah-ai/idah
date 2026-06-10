@@ -13,6 +13,8 @@ export interface AnnotationAction {
   icon: typeof IconType;
   destructive?: boolean;
   alwaysShow?: boolean;
+  hidden?: boolean;
+  disabled?: boolean;
   onClick: (e: MouseEvent) => void;
 }
 
@@ -66,6 +68,7 @@ export function getDeleteAction(groupId: string, items: IImageAnnotationRecord[]
     label: "Delete annotation",
     icon: Trash2Icon,
     destructive: true,
+    disabled: items.some((item) => annotation.isLocked(item)),
     onClick: () => {
       showConfirmDialog({
         title: "Delete annotation group",
