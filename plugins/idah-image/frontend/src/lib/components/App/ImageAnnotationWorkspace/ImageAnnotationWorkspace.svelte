@@ -5,7 +5,6 @@
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
-  import { findClosestAnnotationInGroup } from "$lib/components/App/ImageAnnotationWorkspace/utils/group-annotation.svelte";
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
@@ -412,16 +411,6 @@
     }
   }
 
-  function selectClosestAnnotation(annotationGroup: AnnotationGroup<IImageAnnotationRecord>, frame: number) {
-    const closestAnnotation = findClosestAnnotationInGroup({
-      annotationGroup,
-      frame,
-    });
-    selectAnnotation(closestAnnotation);
-
-    return closestAnnotation;
-  }
-
   // Derive viewport annotations from the global store
   let viewportAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
     const raw = data.annotations?.items ?? [];
@@ -564,8 +553,7 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={(annotationGroup) =>
-                selectClosestAnnotation(annotationGroup, viewport.image.currentFrame.value)}
+              onSelectAnnotationGroup={() => {}}
               onDeleteAnnotation={deleteAnnotation}
             />
           </ResizablePane>
