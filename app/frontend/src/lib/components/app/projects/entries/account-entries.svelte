@@ -17,7 +17,11 @@
   let entries: EntryRecord[] = $state([]);
   let countEntriesByDataset: Record<string, number> = $state({});
   let nameDatasetMap: Record<string, string> = $state({});
-  let { accountId, projectId, labelText = "Entries on these datasets are currently assigned to this account:" }: Props = $props();
+  let {
+    accountId,
+    projectId,
+    labelText = "Entries on these datasets are currently assigned to this account:",
+  }: Props = $props();
 
   // Functions
   async function fetchEntries(): Promise<void> {
