@@ -61,8 +61,8 @@ export function register(driver: IIdahDriverV2): void {
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
-      // Locked groups must not be deletable.
-      if (annotation.isLocked(props.groupId)) return noopAction(command);
+      // Locked groups must not be deletable — check member annotations so individually-locked annotations are also caught.
+      if (groupAnnotations.some((ann) => annotation.isLocked(ann))) return noopAction(command);
 
       const snapshot = [...groupAnnotations];
 
