@@ -25,8 +25,6 @@ export function noopAction(command: {
   };
 }
 
-import { register as registerViewportGoToEnd } from "./viewport/go-to-end";
-import { register as registerViewportGoToStart } from "./viewport/go-to-start";
 import { register as registerViewportGoto } from "./viewport/goto";
 import { register as registerViewportNextFrame } from "./viewport/next-frame";
 import { register as registerViewportPlay } from "./viewport/play";
@@ -47,6 +45,7 @@ import { register as registerKeyframeDelete } from "./annotation/keyframe_delete
 import { register as registerGroupDelete } from "./group/delete";
 import { register as registerGroupToggleEditability } from "./group/toggle_editability";
 import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
+import { register as registerGroupToggleVisibilitySolo } from "./group/toggle_visibility_solo";
 
 import { register as registerNoteAdd } from "./note/add";
 import { register as registerNoteGoto } from "./note/goto";
@@ -72,6 +71,8 @@ import { register as registerToggleDebugConsole } from "./display/toggle-debug-c
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
 import { register as registerTimelineFocus } from "./timeline/focus";
+import { register as registerTimelineGoToFirst } from "./timeline/go-to-first";
+import { register as registerTimelineGoToLast } from "./timeline/go-to-last";
 import { register as registerTimelineScrollToAnnotation } from "./timeline/scroll-to-annotation";
 import { register as registerTimelineZoomIn } from "./timeline/zoom-in";
 import { register as registerTimelineZoomOut } from "./timeline/zoom-out";
@@ -79,6 +80,7 @@ import { register as registerTimelineZoomOut } from "./timeline/zoom-out";
 import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
+import { register as registerCategoryToggleVisibilitySolo } from "./category/toggle_visibility_solo";
 
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
@@ -99,8 +101,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerViewportPreviousFrame(driver);
   registerViewportSkipForward(driver);
   registerViewportSkipBackward(driver);
-  registerViewportGoToStart(driver);
-  registerViewportGoToEnd(driver);
   registerViewportZoomIn(driver);
   registerViewportZoomOut(driver);
 
@@ -116,6 +116,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Group ─────────────────────────────────────────────────────────────
   registerGroupDelete(driver);
   registerGroupToggleVisibility(driver);
+  registerGroupToggleVisibilitySolo(driver);
   registerGroupToggleEditability(driver);
 
   // ── Note ──────────────────────────────────────────────────────────────
@@ -141,6 +142,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
+  registerCategoryToggleVisibilitySolo(driver);
   registerCategoryDelete(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
@@ -151,6 +153,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
+  registerTimelineGoToFirst(driver);
+  registerTimelineGoToLast(driver);
   registerTimelineScrollToAnnotation(driver);
   registerTimelineZoomIn(driver);
   registerTimelineZoomOut(driver);

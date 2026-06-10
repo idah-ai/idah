@@ -7,6 +7,7 @@ import { selection } from "$lib/state/selection.svelte";
 import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "selection.delete",
@@ -26,6 +27,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: () => {
       const sel = selection.value;
+      if (!isEditable()) return noopAction(command);
       if (!sel || !data.annotations) return noopAction(command);
 
       if (sel.type === "annotation") {
@@ -40,15 +42,19 @@ export function register(driver: IIdahDriverV2): void {
             if (!data.annotations) return;
             await data.annotations!.create({ ...record, id: record.id });
           },
-          isCombinable() { return false; },
-          combine(p) { return p; },
+          isCombinable() {
+            return false;
+          },
+          combine(p) {
+            return p;
+          },
         };
       }
 
       // Resolve annotations for the group from the data store
       const groupId = (sel as any).groupId as string;
       const records = data.annotations.items.filter(
-        (ann) => (ann as any).metadata?.group_id === groupId || ann.id === groupId
+        (ann) => (ann as any).metadata?.group_id === groupId || ann.id === groupId,
       );
       if (records.length === 0) return noopAction(command);
 
@@ -66,8 +72,12 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations!.create({ ...r, id: r.id });
           }
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

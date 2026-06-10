@@ -29,6 +29,7 @@
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
@@ -91,15 +92,48 @@
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
 
-  // Build a flat list of visible annotations (filtered by current frame and hidden state)
+  // Build a flat list of visible annotations (filtered by current frame and hidden state).
+  // The list is ordered so the selected annotation always comes last (highest z-order
+  // in SVG), and non-selected annotations are ordered by creation (earliest first).
+  // This ensures overlapping shapes always have the selected one on top.
+  //
+  // Performance note: uses a single O(n) reduce pass to both filter visibility and
+  // separate the selected annotation — no extra findIndex() pass needed.
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
-    const f = viewport.video.currentFrame.value;
+    const frame = viewport.video.currentFrame.value;
     const items = data.annotations?.items ?? [];
-    return items.filter((ann) => {
-      if (annotation.isHidden(ann)) return false;
-      const s = ann.shape as { start?: number; end?: number };
-      return s.start != null && s.end != null && f >= s.start && f <= s.end;
+
+    // Single-pass: filter visible annotations while partitioning selected vs rest
+    const { rest, selected } = items.reduce<{
+      rest: IAnnotationRecord[];
+      selected: IAnnotationRecord[];
+    }>(
+      (acc, ann) => {
+        // Skip hidden annotations
+        if (annotation.isHidden(ann)) return acc;
+        // Skip annotations outside the current frame range
+        const { start, end } = (ann.shape ?? {}) as { start?: number; end?: number };
+        if (start == null || end == null || frame < start || frame > end) return acc;
+        // Separate selected annotation (goes at end for z-order) from the rest
+        if (selection.isAnnotationSelected(ann.id)) {
+          acc.selected.push(ann);
+        } else {
+          acc.rest.push(ann);
+        }
+        return acc;
+      },
+      { rest: [], selected: [] },
+    );
+
+    // Sort non-selected by creation order (earliest first) for stable z-ordering.
+    // The selected annotation is appended unsorted — only one, so no sort needed.
+    rest.sort((a, b) => {
+      const aTime = a.created_at ? Date.parse(a.created_at) : 0;
+      const bTime = b.created_at ? Date.parse(b.created_at) : 0;
+      return aTime - bTime;
     });
+
+    return [...rest, ...selected];
   });
 
   // Keep refs array sized to match visible annotations
@@ -245,7 +279,7 @@
     }
 
     // ── Default mode: try editing selected annotation ──────────────
-    if (toolSelection) {
+    if (toolSelection && isEditable()) {
       const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
       if (consumed) {
         e.stopPropagation();

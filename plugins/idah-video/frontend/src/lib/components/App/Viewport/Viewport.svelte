@@ -4,7 +4,7 @@
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
   import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { viewport, VIEWPORT_MIN_ZOOM, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
   import SyncIndicator from "./SyncIndicator.svelte";
   import { media } from "$lib/state/media.svelte";
 
@@ -97,16 +97,28 @@
   }
 
   function scopedZoom(value: number) {
-    return Math.max(0.4, Math.min(100, value));
+    return Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, value));
   }
 
   export function setZoom(newZoom: number) {
-    const clamped = Math.max(0.4, Math.min(100, newZoom));
+    const clamped = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, newZoom));
     viewport.workspace.transform.scale = clamped;
   }
 
   export function setOffset(newOffset: Point) {
     viewport.workspace.transform.translate = newOffset;
+  }
+
+  /**
+   * Converts a WheelEvent delta to pixels.
+   * Linux/Windows mouse wheels typically use DOM_DELTA_LINE (mode 1) with small
+   * integer values (e.g. 3), which would be imperceptible without this conversion.
+   */
+  function normalizeWheelDelta(delta: number, deltaMode: number): number {
+
+    if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
+    if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * size[1];
+    return delta; // DOM_DELTA_PIXEL — already in pixels
   }
 
   export function onWheel(e: WheelEvent) {
@@ -134,7 +146,7 @@
         // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
         // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
-        const newScale = Math.max(0.4, Math.min(100, curScale * factor));
+        const newScale = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, curScale * factor));
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
@@ -146,9 +158,22 @@
         viewport.workspace.clampTranslate();
       }
     } else {
-      // Scroll / two-finger drag → translate
+      // Scroll / two-finger drag → translate.
+
+      // Normalise deltas to pixels first — on Linux and Windows a standard mouse
+      let dx = normalizeWheelDelta(e.deltaX, e.deltaMode);
+      let dy = normalizeWheelDelta(e.deltaY, e.deltaMode);
+
+      // macOS natively swaps deltaX/deltaY when Shift is held (vertical wheel →
+      // horizontal pan). Windows/Linux do NOT — we must handle it here so
+      // Shift+wheel consistently provides horizontal panning across platforms.
+      if (e.shiftKey && dx === 0 && dy !== 0) {
+        dx = dy;
+        dy = 0;
+      }
+
       const curTranslate = viewport.workspace.transform.translate;
-      viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
+      viewport.workspace.transform.translate = [curTranslate[0] - dx, curTranslate[1] - dy];
       viewport.workspace.clampTranslate();
     }
   }

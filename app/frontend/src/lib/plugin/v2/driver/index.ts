@@ -1,16 +1,10 @@
 // ---------------------------------------------------------------------------
 // IdahDriverV2 — Core app adapter
-//
-// Bridges the V2 IIdahDriverV2 interface with the actual backend data
-// sources using the IndexedDB-backed annotations driver for offline-first
-// annotation caching.
-//
-// The annotations sub-module uses createIndexedDbAnnotationsDriver with a
-// BackendCrudDriver that talks to the real JSON:API / JSON-RPC endpoints.
-// Notes use the BackendDataSource directly (no IDB layer yet).
 // ---------------------------------------------------------------------------
 import type {
   IIdahDriverV2,
+  IProjectInfo,
+  IDatasetInfo,
   IMediaInfo,
   IConfig,
   IShapeConfig,
@@ -41,21 +35,11 @@ const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
 // Main IdahDriverV2 — Core App Adapter
 // ---------------------------------------------------------------------------
 export class IdahDriverV2 implements IIdahDriverV2 {
-  /** Command manager (exposed for direct access). */
-  readonly commandMgr = new CommandManagerV2();
+  private readonly commandMgr = new CommandManagerV2();
+  private readonly toolbarMgr = new ToolbarManagerV2();
+  private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
-  /** Toolbar manager (exposed for direct access). */
-  readonly toolbarMgr = new ToolbarManagerV2();
-
-  /** Sync queue for IDB background operations. */
-  readonly syncQueueMgr = new SyncQueueManager(
-    (event) => {
-      this.syncChangeListeners.forEach((cb) => cb(event));
-    },
-    (event) => {
-      this.syncErrorListeners.forEach((cb) => cb(event));
-    },
-  );
+  private pendingCount = 0;
 
   // ── Adapters exposed to the user ──────────────────────────────────────
 
@@ -64,9 +48,11 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   readonly annotations: IAnnotationsDriverV2;
   readonly notes: INotesDriverV2;
 
-  // ── Activity context (set via constructor) ────────────────────────────
+  // ── Activity context ──────────────────────────────────────────────────
 
   private _id: string;
+  private _dataset: IDatasetInfo;
+  private _project: IProjectInfo;
   private _media: IMediaInfo;
   private _config: IConfig;
   private _workflowStep: string;
@@ -80,32 +66,49 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private syncChangeListeners: Set<(event: ISyncEvent) => void> = new Set();
   private syncErrorListeners: Set<(event: ISyncErrorEvent) => void> = new Set();
 
-  constructor(opts: { id: string; media: IMediaInfo; config: IConfig; workflowStep: string }) {
+  // ── Internal IDB driver reference (has clearCache) ────────────────────
+  private idbAnnotationsDriver: (IAnnotationsDriverV2 & { clearCache(): Promise<void> }) | null = null;
+
+  constructor(opts: {
+    id: string;
+    dataset: IDatasetInfo;
+    project: IProjectInfo;
+    media: IMediaInfo;
+    config: IConfig;
+    workflowStep: string;
+  }) {
     this._id = opts.id;
+    this._dataset = opts.dataset;
+    this._project = opts.project;
     this._media = opts.media;
     this._config = opts.config;
     this._workflowStep = opts.workflowStep;
+    this.rpc.setErrorObserver((err) => {
+      this.syncErrorListeners.forEach((cb) => cb(err));
+    });
 
     // Build command & toolbar adapters
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
 
-    // Build the IDB-backed annotations driver or fall back to AnnotationsDriver
+    const backendDriver = createBackendCrudDriver(this._id, this.rpc);
     const idbDriver = IdbBackedAnnotationsDriverAdapter({
       entryId: this._id,
       pluginId: PLUGIN_ID,
-      backend: createBackendCrudDriver(this._id),
-      enqueue: (op: Promise<unknown>) => this.syncQueueMgr.enqueue(op),
+      backend: backendDriver,
+      enqueue: (op: Promise<unknown>) => this.#enqueue(op),
     });
-    this.annotations = idbDriver ?? new AnnotationsDriverAdapter(this._id);
+    this.idbAnnotationsDriver = idbDriver;
+    this.annotations = idbDriver?.sealed() ?? new AnnotationsDriverAdapter(this._id, this.rpc);
+
     // Build notes driver (no IDB layer yet)
     this.notes = new NotesDriverAdapter();
 
-    // ── Register default idah commands ────────────────────────────────
+    // ── Register default commands ─────────────────────────────────────
     registerCommands(this);
 
     this.onSyncChange((syncChangeEvent) => {
-      console.warn({ syncChangeEvent });
+      console.log({ syncChangeEvent });
       this._ready = syncChangeEvent.queued == 0;
       if (this._ready) for (const cb of this.readyCallbacks) cb();
     });
@@ -115,13 +118,46 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     });
 
     this.onReady(() => {
-      console.warn("SYNC READY");
+      console.log("SYNC READY");
     });
-    // Mark ready after a microtask (simulate async init)
+
     queueMicrotask(() => {
       this._ready = true;
       for (const cb of this.readyCallbacks) cb();
     });
+  }
+
+  // ── Internal — used by core commands only ──────────────────────────────
+
+  /**
+   * @internal Used by core.reset command only.
+   * Clears the IDB cache. Not on IIdahDriverV2; not reachable from the
+   * sealed object returned by createIdahDriverV2.
+   */
+  async resetCache(): Promise<void> {
+    await (this.idbAnnotationsDriver?.clearCache() ?? Promise.resolve());
+  }
+
+  /**
+   * @internal Used by core.retry command only.
+   * Resumes the RPC queue after a sync error.
+   */
+  resumeSync(): void {
+    this.rpc.resume();
+  }
+
+  #enqueue(op: Promise<unknown>): void {
+    this.pendingCount++;
+    this.#emitSyncChange();
+    op.catch(console.error).finally(() => {
+      this.pendingCount--;
+      this.#emitSyncChange();
+    });
+  }
+
+  #emitSyncChange(): void {
+    const event: ISyncEvent = { queued: this.pendingCount };
+    this.syncChangeListeners.forEach((cb) => cb(event));
   }
 
   // ── Readonly properties ───────────────────────────────────────────────
@@ -130,26 +166,35 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     return this._id;
   }
 
+  get dataset(): IDatasetInfo {
+    return { ...this._dataset };
+  }
+
+  get project(): IProjectInfo {
+    return { ...this._project };
+  }
+
   get media(): IMediaInfo {
     return { ...this._media };
   }
-
   get workflowStep(): string {
     return this._workflowStep;
   }
-
   get mode(): string {
     return this._mode;
   }
-
   get config(): IConfig {
     return this._config;
   }
 
-  getFilteredConfig(shapeType: string, value: Record<string, unknown>): IShapeConfig | undefined {
+  getFilteredConfig(
+    shapeType: string,
+    value: Record<string, unknown>,
+    objectName: string = "annotation",
+  ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;
-    const ast = new AstProcessor(new Map(this.#objectVariables(value)));
+    const ast = new AstProcessor(new Map(this.#objectVariables(value, objectName)));
     return {
       values: raw.values,
       properties: raw.properties.filter((p) => {
@@ -166,7 +211,6 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     if (oldValue === mode) return;
     this._mode = mode;
     this.commandMgr.currentMode = mode;
-
     const event: IModeEvent = { oldValue, newValue: mode };
     for (const cb of this.modeChangeListeners) cb(event);
   }
@@ -179,11 +223,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Lifecycle callbacks ───────────────────────────────────────────────
 
   onReady(cb: () => void): void {
-    if (this._ready) {
-      cb();
-    } else {
-      this.readyCallbacks.add(cb);
-    }
+    if (this._ready) cb();
+    this.readyCallbacks.add(cb);
   }
 
   onSyncChange(cb: (event: ISyncEvent) => void): Unsubscribe {
@@ -199,15 +240,14 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 
   handleKeydown(event: KeyboardEvent): boolean {
-    // Ctrl/Cmd+Space → toggle command palette (handled here, not via command)
     if (modKey(event) && event.code === "Space") {
       (this.command as CommandDriverAdapter).openPalette();
       return true;
     }
-    return this.commandMgr.resolveKeyEvent(event, this._mode);
+    return this.command.resolveKeyEvent(event, this._mode);
   }
 
-  // ── Private helpers ──────────────────────────────────────────────────
+  // ── Private helpers ───────────────────────────────────────────────────
 
   #objectVariables(
     obj: Record<string, unknown>,
@@ -222,28 +262,69 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       return acc;
     }, []);
   }
+
+  sealed(): IIdahDriverV2 {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const driver = this;
+    return {
+      get id() {
+        return driver.id;
+      },
+      get dataset() {
+        return driver.dataset;
+      },
+      get project() {
+        return driver.project;
+      },
+      get media() {
+        return driver.media;
+      },
+      get workflowStep() {
+        return driver.workflowStep;
+      },
+      get mode() {
+        return driver.mode;
+      },
+      get config() {
+        return driver.config;
+      },
+      get command() {
+        return driver.command;
+      },
+      get toolbar() {
+        return driver.toolbar;
+      },
+      get annotations() {
+        return driver.annotations;
+      },
+      get notes() {
+        return driver.notes;
+      },
+
+      setMode: driver.setMode.bind(driver),
+      onModeChange: driver.onModeChange.bind(driver),
+      onReady: driver.onReady.bind(driver),
+      onSyncChange: driver.onSyncChange.bind(driver),
+      onSyncError: driver.onSyncError.bind(driver),
+      getFilteredConfig: driver.getFilteredConfig.bind(driver),
+      handleKeydown: driver.handleKeydown.bind(driver),
+    };
+  }
 }
 
 // ── Factory ──────────────────────────────────────────────────────────────
 
-/**
- * Create an IdahDriverV2 from an entry record and its dataset.
- * This is the main factory used by the plugin page.
- */
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
+import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { CommandDriverAdapter } from "./adapter/command";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
-import { SyncQueueManager } from "./manager/syncQueueManager";
 
-export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2> {
-  // Start workflow if needed
+export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const checkEntryRes = await entriesBackendDataSource.get(entryId, {
-    fields: {
-      [EntryRecord.type]: ["wf_step"],
-    },
+    fields: { [EntryRecord.type]: ["wf_step"] },
     noCache: true,
   });
 
@@ -251,7 +332,6 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
     await entriesBackendDataSource.submit(entryId);
   }
 
-  // Get the latest entry record with dataset
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
     included: ["dataset", "dataset.project"],
     noCache: true,
@@ -259,6 +339,17 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
 
   const entry = latestEntryRes.data;
   const dataset = entry.dataset;
+
+  const datasetInfo: IDatasetInfo = {
+    id: dataset.id,
+    name: dataset.name,
+    modality: dataset.modality,
+  };
+
+  const projectInfo: IProjectInfo = {
+    id: dataset.project.id,
+    name: dataset.project.name,
+  };
 
   // Get media info
   let mediaInfo: IMediaInfo;
@@ -278,8 +369,6 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
       url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
     };
   } catch {
-    // Fallback if media info is not available
-    // todo throw accordingly
     mediaInfo = {
       id: entry.id,
       resource: entry.resource,
@@ -291,10 +380,14 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
     };
   }
 
-  return new IdahDriverV2({
+  const driver = new IdahDriverV2({
     id: entry.id,
+    dataset: datasetInfo,
+    project: projectInfo,
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
     workflowStep: entry.wf_step,
   });
+
+  return driver.sealed();
 }

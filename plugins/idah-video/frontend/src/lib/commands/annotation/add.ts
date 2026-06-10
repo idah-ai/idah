@@ -13,6 +13,7 @@ import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.add",
@@ -37,6 +38,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as AnnotationAddProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props || !data.annotations) return noopAction(command);
 
       return {
@@ -49,6 +51,7 @@ export function register(driver: IIdahDriverV2): void {
           (this as any)._createdId = created.id;
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
+          driver.command.call("timeline.scroll_to_annotation");
           // Exit drawing mode after successful creation
           driver.setMode("default");
         },
@@ -58,8 +61,12 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.delete(id);
           }
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

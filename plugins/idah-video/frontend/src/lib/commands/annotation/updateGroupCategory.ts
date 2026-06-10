@@ -12,6 +12,7 @@ import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.updateGroupCategory",
@@ -35,23 +36,22 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
+      if (!isEditable()) return noopAction(command);
+
       const props = opts as unknown as UpdateGroupCategoryProps | undefined;
       if (!props || !data.annotations) return noopAction(command);
 
       // Find all annotations in this group by checking metadata.group_id (with id fallback)
       const allItems = data.annotations.items;
-      const groupAnnotations = allItems.filter(
-        (ann) => ((ann as any).metadata?.group_id ?? ann.id) === props.groupId
-      );
+      const groupAnnotations = allItems.filter((ann) => ((ann as any).metadata?.group_id ?? ann.id) === props.groupId);
 
       if (groupAnnotations.length === 0) return noopAction(command);
 
       // Snapshot old values
-      const snapshots: Array<{ annotation: AnnotationItem; oldCategory?: string }> =
-        groupAnnotations.map((ann) => ({
-          annotation: ann,
-          oldCategory: ann.value?.category as string | undefined,
-        }));
+      const snapshots: Array<{ annotation: AnnotationItem; oldCategory?: string }> = groupAnnotations.map((ann) => ({
+        annotation: ann,
+        oldCategory: ann.value?.category as string | undefined,
+      }));
 
       return {
         command: { ...command },
@@ -78,8 +78,12 @@ export function register(driver: IIdahDriverV2): void {
             });
           }
         },
-        isCombinable() { return false; },
-        combine(p) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p) {
+          return p;
+        },
       };
     },
     group: command.group,

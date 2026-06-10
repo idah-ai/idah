@@ -18,6 +18,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
 
   // Props
   interface Props extends ContextMenuComponentProps {
@@ -38,7 +39,11 @@
         focus: {
           label: "Focus",
           icon: CrosshairIcon,
-          onClick: () => getDriver().command.call("timeline.focus"),
+          onClick: () => {
+            /** Select an annotation before focus it */
+            selection.selectAnnotation(rawData);
+            getDriver().command.call("timeline.focus");
+          },
         },
       },
     },
@@ -49,7 +54,7 @@
               deleteKeyframe: {
                 label: `Delete keyframe`,
                 icon: Trash2Icon,
-                disabled: annotationIsLocked,
+                disabled: annotationIsLocked || !isEditable(),
                 destructive: true,
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_delete", {
@@ -63,7 +68,7 @@
               addKeyframe: {
                 label: `Add keyframe`,
                 icon: FramerIcon,
-                disabled: annotationIsLocked,
+                disabled: annotationIsLocked || !isEditable(),
                 onClick: () => {
                   getDriver().command.call("annotation.keyframe_add", {
                     annotationId: rawData.id,
@@ -79,7 +84,7 @@
         split: {
           label: `Split at frame ${frame + 1}`,
           icon: SquareSplitHorizontalIcon,
-          disabled: annotationIsLocked,
+          disabled: annotationIsLocked || !isEditable(),
           onClick: () => {
             getDriver().command.call("annotation.split", {
               annotationId: rawData.id,
@@ -94,7 +99,7 @@
         delete: {
           label: `Delete annotation`,
           icon: Trash2Icon,
-          disabled: annotationIsLocked,
+          disabled: annotationIsLocked || !isEditable(),
           destructive: true,
           onClick: () => {
             selection.selectAnnotation(rawData);
@@ -113,7 +118,12 @@
     {#each Object.entries(group.items) as [menuKey, { label, icon: Icon, disabled, hidden, destructive, onClick }] (menuKey)}
       {#if !hidden}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <div role="none" onclick={(e) => { if (disabled) e.stopPropagation(); }}>
+        <div
+          role="none"
+          onclick={(e) => {
+            if (disabled) e.stopPropagation();
+          }}
+        >
           <Button
             variant={destructive ? "destructive-ghost" : "ghost"}
             size="sm"

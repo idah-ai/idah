@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // V2 Toolbar Manager — items, groups, ordering (V2 duplicate)
 // ---------------------------------------------------------------------------
-import type { IToolbarItem, ToolbarItemOptions } from "./types";
+import type { IToolbarItem, ToolbarItemOptions } from "../../types";
 
 export class ToolbarManagerV2 {
   /** All registered items. */
@@ -21,6 +21,7 @@ export class ToolbarManagerV2 {
         mode,
         group: opts.group,
         onClick: opts.onClick,
+        name: opts.name,
         visibleWhen: opts.visibleWhen,
         whenToggled: opts.whenToggled ?? (() => false),
       });
