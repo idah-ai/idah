@@ -52,9 +52,7 @@
       />
     </div>
   {:else if thumbnailError}
-    <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
-      Unable to load thumbnail
-    </div>
+    <div class="text-muted-foreground flex h-full items-center justify-center text-sm">Unable to load thumbnail</div>
   {:else}
     <div class="flex h-full items-center justify-center">
       <div class="bg-muted/50 h-full w-full animate-pulse rounded-lg"></div>
