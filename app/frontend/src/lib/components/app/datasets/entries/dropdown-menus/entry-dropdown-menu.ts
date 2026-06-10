@@ -8,21 +8,25 @@ interface Params {
   onSetPriority: () => Promise<void> | void;
   onDelete: () => Promise<void> | void;
   isAssigned?: boolean;
+  isAssignDisabled?: boolean;
+  isUnassignDisabled?: boolean;
 }
 export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[] {
-  const { onAssign, onUnassign, onSetPriority, onDelete, isAssigned } = params;
+  const { onAssign, onUnassign, onSetPriority, onDelete, isAssigned, isAssignDisabled, isUnassignDisabled } = params;
 
   return [
     {
       label: "Assign to",
       icon: UserRoundPlusIcon,
       action: onAssign,
+      disabled: isAssignDisabled,
     },
     {
       label: "Unassign",
       icon: UserRoundPlusIcon,
       action: onUnassign,
       hidden: !isAssigned,
+      disabled: isUnassignDisabled,
     },
     {
       label: "Set Priority",
