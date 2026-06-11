@@ -1,14 +1,17 @@
 <script lang="ts">
+  import { PlusIcon, RotateCcwIcon } from "@lucide/svelte";
+
   import * as Command from "$lib/components/ui/command";
-  import * as Dialog from "$lib/components/ui/dialog";
+  import * as Kbd from "@/components/ui/kbd";
+
   import Highlight from "$lib/components/ui/Highlight.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import Input from "@/components/ui/input/input.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import { cn } from "@/utils";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
+  import { buildKeyCombination } from "$lib/plugin/v2/utils/shortcut-utils";
 
   import type { ICommandDescriptor, ICommandDriverV2 } from "$lib/plugin/v2/types";
 
@@ -20,27 +23,79 @@
   }
   let { cmd, commandManager, searchValue, onCommandCalled }: Props = $props();
 
+  let localShortcut = $state<string | null>(cmd.shortcut);
+  let listeningForShortcutPress = $state(false);
   let assignKeys = $state("");
-  let isConflict = $derived(checkConflict(cmd));
-  let assignKeyBindingDialogOpen = $state(false);
-
-  function handleClickAssignKeyBindingButton(e: MouseEvent) {
-    e.stopPropagation();
-    assignKeyBindingDialogOpen = true;
-  }
+  let isConflict = $derived(checkConflict(assignKeys));
+  let containerRef = $state<HTMLElement | null>(null);
 
   function handleShortcutAssignment(e: MouseEvent) {
     e.stopPropagation();
+    listeningForShortcutPress = true;
   }
 
-  function checkConflict(cmd: ICommandDescriptor): boolean {
-    // TODO: Implement shortcut key conflicts
+  function checkConflict(shortcut: string): boolean {
+    if (!shortcut) return false;
+    const all = commandManager.getAllCommands();
+    for (const descriptors of all.values()) {
+      for (const d of descriptors) {
+        if (d.name !== cmd.name && d.shortcut === shortcut) return true;
+      }
+    }
     return false;
   }
+
+  $effect(() => {
+    if (!listeningForShortcutPress) return;
+
+    const onKeydown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === "Escape") {
+        listeningForShortcutPress = false;
+        assignKeys = "";
+        return;
+      }
+
+      if (["Control", "Alt", "Shift", "Meta", "OS"].includes(e.key)) return;
+
+      if (e.key === "Enter") {
+        if (assignKeys) {
+          localShortcut = assignKeys;
+          listeningForShortcutPress = false;
+          assignKeys = "";
+        }
+        return;
+      }
+
+      assignKeys = buildKeyCombination(e);
+    };
+
+    window.addEventListener("keydown", onKeydown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeydown, { capture: true });
+  });
+
+  $effect(() => {
+    if (!listeningForShortcutPress) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (containerRef && !containerRef.contains(e.target as Node)) {
+        if (assignKeys) {
+          localShortcut = assignKeys;
+        }
+        listeningForShortcutPress = false;
+        assignKeys = "";
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  });
 </script>
 
 <Command.Item
-  class={cn("", {
+  class={cn("group/item aria-selected:bg-primary/5", {
     "bg-warning": isConflict,
   })}
   value={cmd.shortDescription ?? cmd.name}
@@ -55,42 +110,74 @@
       <Highlight text={cmd.shortDescription} query={searchValue} />
     </div>
 
-    {#if cmd.longDescription}
-      <span class="text-muted-foreground text-xs">{cmd.longDescription}</span>
+    {#if cmd.longDescription || listeningForShortcutPress}
+      <span class="text-muted-foreground text-xs">
+        {#if listeningForShortcutPress && isConflict}
+          Conflict detected — shortcut already assigned to another command.
+        {:else if listeningForShortcutPress}
+          Listening for shortcut. "ENTER" to save, "ESC" to cancel recording.
+        {:else}
+          {cmd.longDescription}
+        {/if}
+      </span>
     {/if}
   </div>
 
-  <Command.Shortcut>
-    <Button
-      variant="outline"
-      size="sm"
-      class={cn("w-40", {
-        "bg-background": !cmd.shortcut,
-        "bg-primary/10": cmd.shortcut,
-        "bg-warning": isConflict,
-      })}
-      onclick={handleClickAssignKeyBindingButton}
-    >
-      {#if cmd.shortcut}
-        {getShortcutLabel(cmd.shortcut)}
-      {:else}
-        Set key bind
-      {/if}
-    </Button>
-  </Command.Shortcut>
+  <div class="group ml-auto flex shrink-0 items-center gap-1" bind:this={containerRef}>
+    <Tooltips align="center">
+      {#snippet trigger()}
+        <Button variant="ghost" size="icon-sm" class="opacity-0 group-hover/item:opacity-100">
+          <RotateCcwIcon />
+        </Button>
+      {/snippet}
+
+      {#snippet content()}
+        Reset default
+      {/snippet}
+    </Tooltips>
+
+    {#if listeningForShortcutPress}
+      <Button variant={isConflict ? "destructive-outline" : "outline"} size="sm" onclick={(e) => e.stopPropagation()}>
+        {#if assignKeys}
+          <Kbd.Group>
+            {#each getShortcutLabel(assignKeys).split(" ") as key, i (i)}
+              <Kbd.Root class={cn({ "bg-orange-200 text-orange-700": isConflict })}>{key}</Kbd.Root>
+            {/each}
+          </Kbd.Group>
+        {:else}
+          Press keys...
+        {/if}
+      </Button>
+    {:else if localShortcut}
+      <Tooltips align="center">
+        {#snippet trigger()}
+          <Button variant="ghost" size="sm" class="hover:bg-primary/10 justify-end" onclick={handleShortcutAssignment}>
+            <Kbd.Group>
+              {#each getShortcutLabel(localShortcut!).split(" ") as shortcutKey, i (i)}
+                <Kbd.Root>{shortcutKey}</Kbd.Root>
+              {/each}
+            </Kbd.Group>
+          </Button>
+        {/snippet}
+
+        {#snippet content()}
+          Change shortcut
+        {/snippet}
+      </Tooltips>
+    {:else}
+      <Tooltips align="center">
+        {#snippet trigger()}
+          <Button variant="outline" size="sm" class="border-dashed" onclick={handleShortcutAssignment}>
+            <PlusIcon />
+            Add shortcut
+          </Button>
+        {/snippet}
+
+        {#snippet content()}
+          Add shortcut
+        {/snippet}
+      </Tooltips>
+    {/if}
+  </div>
 </Command.Item>
 <Separator />
-
-<Dialog.Root bind:open={assignKeyBindingDialogOpen}>
-  <Dialog.Content>
-    <div class="flex w-full flex-col gap-4 text-center">
-      <Text size="sm" class="text-muted-foreground">Press desired key combination then press ENTER</Text>
-
-      <Input class="text-center" value={assignKeys} />
-
-      <div class="rounded-md border-1 border-orange-500 bg-orange-100 p-2">
-        <span class="text-sm">If there any conflicts of key bindings, we will list it here.</span>
-      </div>
-    </div>
-  </Dialog.Content>
-</Dialog.Root>
