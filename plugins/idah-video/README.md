@@ -18,8 +18,8 @@ idah-video/
 │   └── README.md         # Frontend quick start guide
 ├── backends/              # Backend Ruby services (if enabled)
 │   └── README.md         # Backend quick start guide
-├── Gemfile                # Ruby dependencies
-└── Rakefile               # Build tasks
+│   └── Gemfile           # Ruby dependencies
+│   └── Rakefile          # Build tasks
 ```
 
 ## Quick Start

@@ -2,7 +2,7 @@
 
 class FakeProcessorContext
   attr_accessor :progress
-  attr_reader :uploaded, :resource, :config, :job
+  attr_reader :uploaded, :resource, :config, :job, :metadata
 
   def initialize(
     file_path: "/tmp/fake_image.jpg",
@@ -12,6 +12,7 @@ class FakeProcessorContext
     @file_path = file_path
     @resource = resource
     @uploaded = []
+    @metadata = nil
     # @config = IdahImage::Processor::Options.new(options)
     @config = IdahImage::Processor::Options.new(**options)
   end
@@ -36,5 +37,9 @@ class FakeProcessorContext
 
   def error!(message)
     @error_message = message
+  end
+
+  def update_original_metadata(metadata)
+    @metadata = metadata
   end
 end

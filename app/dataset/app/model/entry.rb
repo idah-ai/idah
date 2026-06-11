@@ -120,7 +120,7 @@ module Entry
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
-                -- Annotators can access only assigned entries
+                -- Annotators can access only assigned annotate-stage entries
                 (
                   (pm.role IN :annotator_roles)
                   AND entries.assigned_to_id = :account_id

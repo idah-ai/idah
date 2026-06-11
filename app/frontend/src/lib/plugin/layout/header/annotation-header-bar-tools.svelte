@@ -1,79 +1,78 @@
 <script lang="ts">
   import { RedoIcon, UndoIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
 
-  import { getShortcut } from "@/components/ui/kbd/utils";
-  import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
+  import type { IToolbarItem } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
 
   // Props
   interface Props {
-    context: IActivityContext;
+    driver: IdahDriverV2;
   }
-  let { context }: Props = $props();
+  let { driver }: Props = $props();
 
   // Variables
-  interface HeaderBarModeTool extends AnnotationHeaderBarBaseTool {
-    type: string;
+  const disabledToolsIfWorkflowSteps = ["done"];
+  let currentMode = $state(driver.mode);
+  let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
+  let canUndo = $state(driver.command.canUndo());
+  let canRedo = $state(driver.command.canRedo());
+
+  function refreshToolbar() {
+    currentMode = driver.mode;
+    canUndo = driver.command.canUndo();
+    canRedo = driver.command.canRedo();
   }
 
-  const disabledToolsIfWorkflowSteps = ["done"];
-  let tools: HeaderBarModeTool[] = $state([]);
-  let mode: string | undefined = $state();
+  driver.onModeChange((_) => refreshToolbar());
+  driver.onSyncChange(() => refreshToolbar());
+  onMount(refreshToolbar);
 
-  context.tools.onToolsChange((_tools: HeaderBarModeTool[]) => (tools = _tools));
-  context.tools.onToolChange((_tool: string) => (mode = _tool));
+  function cmdShortcut(name: string): string | undefined {
+    const s = driver.command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
+  }
 
-  const commands: AnnotationHeaderBarBaseTool[] = [
+  const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
-      name: "undo",
+      name: "core.undo",
       label: "Undo",
       icon: UndoIcon,
-      disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
-      handleClick: () => context.commands.undo(),
+      disabled: !canUndo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
+      handleClick: () => driver.command.undo(),
     },
     {
-      name: "redo",
+      name: "core.redo",
       label: "Redo",
       icon: RedoIcon,
-      disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
-      handleClick: () => context.commands.redo(),
+      disabled: !canRedo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
+      handleClick: () => driver.command.redo(),
     },
-  ];
-
-  // Functions
-  async function loadIcon(iconName: string | undefined) {
-    if (!iconName) return "";
-
-    const pluginIconRes = await pluginsBackendDataSource.serveAsset(context.type, `${iconName}.svg`);
-    return await pluginIconRes.text();
-  }
+  ]);
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each tools as { name, label, type, iconName, disabled, handleClick }, toolIndex (toolIndex)}
-    <ToolTooltip
-      {label}
-      shortcut={getShortcut(context.shortcutReferences?.[name].keyCombinations)}
-      align="center"
-      delayDuration={100}
-    >
+  {#each toolbarItems as { icon, label, name, onClick, visibleWhen, whenToggled }, toolIndex (toolIndex)}
+    <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
       {#snippet trigger()}
-        {#await loadIcon(iconName) then iconSvg}
-          <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" {disabled} onclick={handleClick}>
+        {#if (visibleWhen || (() => true))()}
+          <Button
+            variant={whenToggled?.() || false ? "default" : "ghost"}
+            size="icon-sm"
+            onclick={onClick}
+            disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
+          >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconSvg}
-
-            <!-- NOTE: We might want to display icon with <img> later after we fix the mime-type from backend -->
-            <!-- NOTE: For now lets keep using {@html iconSvg} -->
-            <!-- <img src="/api/v1/setting/plugins/idah-video/assets/message-circle.svg" alt={label} /> -->
+            {@html icon}
           </Button>
-        {/await}
+        {/if}
       {/snippet}
     </ToolTooltip>
   {/each}
@@ -81,12 +80,7 @@
   <Separator orientation="vertical"></Separator>
 
   {#each commands as { name, label, icon: Icon, disabled, handleClick }, commandIndex (commandIndex)}
-    <ToolTooltip
-      {label}
-      shortcut={getShortcut(context.shortcutReferences?.[name].keyCombinations)}
-      align="center"
-      delayDuration={100}
-    >
+    <ToolTooltip {label} shortcut={cmdShortcut(name)} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" {disabled} onclick={handleClick}>
           <Icon />

@@ -166,6 +166,7 @@
   {title}
   description="Import media from your computer"
   loading={uploading}
+  canClickOutside={false}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open
