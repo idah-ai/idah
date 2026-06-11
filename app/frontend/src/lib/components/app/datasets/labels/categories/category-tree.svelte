@@ -24,6 +24,9 @@
   let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory, onChangeSelectableCategory }: Props =
     $props();
 
+  // Persistent order map: keeps positions stable when categories are added/deleted
+  let orderMap: Record<string, number> = {};
+
   // Functions
   function constructCategoryTree(values: IConfigValue[]) {
     type TreeNode = ICategoryTreeNode;
@@ -31,7 +34,10 @@
     const root: TreeNode[] = [];
     const nodeMap: Record<string, TreeNode> = {};
 
-    for (const value of values) {
+    // Collect all paths in the current values set
+    const currentPaths: Record<string, boolean> = {};
+
+    values.forEach((value) => {
       const parts = value.id.split("/");
 
       let currentChildren = root;
@@ -39,6 +45,7 @@
 
       parts.forEach((part, index) => {
         currentPath = currentPath ? `${currentPath}/${part}` : part;
+        currentPaths[currentPath] = true;
 
         const parent = currentPath.includes("/") ? currentPath.split("/").slice(0, -1).join("/") : null;
 
@@ -46,6 +53,14 @@
 
         if (!existingNode) {
           const isLeaf = index === parts.length - 1;
+
+          // Assign order: reuse from orderMap, or assign next available for new paths
+          if (!(currentPath in orderMap)) {
+            // Compute next order relative to parent group
+            const siblings = findSiblingOrders(currentPath, parent);
+            const nextOrder = siblings.length > 0 ? Math.max(...siblings) + 1 : 0;
+            orderMap[currentPath] = nextOrder;
+          }
 
           existingNode = {
             id: currentPath,
@@ -55,17 +70,56 @@
             expanded: true,
             parent,
             children: [],
+            order: orderMap[currentPath]!,
           };
 
           nodeMap[currentPath] = existingNode;
           currentChildren.push(existingNode);
         }
 
+        // Actual category node
+        if (index === parts.length - 1) {
+          existingNode.label = value.label;
+          existingNode.color = value.color;
+          existingNode.text_color = value.text_color;
+        }
+
         currentChildren = existingNode.children;
       });
+    });
+
+    // Clean up stale entries from orderMap (paths no longer in values)
+    for (const key of Object.keys(orderMap)) {
+      if (!currentPaths[key]) {
+        delete orderMap[key];
+      }
     }
 
+    function sortTree(nodes: TreeNode[]) {
+      nodes.sort((a, b) => a.order - b.order);
+      nodes.forEach((node) => sortTree(node.children));
+    }
+
+    sortTree(root);
     return root;
+  }
+
+  // Find sibling orders for a given path, helping assign new siblings at the end
+  function findSiblingOrders(path: string, parent: string | null): number[] {
+    const orders: number[] = [];
+    const prefix = parent ? parent + "/" : "";
+
+    for (const [key, order] of Object.entries(orderMap)) {
+      if (key === path) continue;
+
+      const isSibling = parent ? key.startsWith(prefix) && !key.slice(prefix.length).includes("/") : !key.includes("/");
+
+      if (isSibling) {
+        orders.push(order);
+      }
+    }
+
+    return orders;
   }
 
   function toggleExpand(id: string) {
@@ -83,7 +137,7 @@
     treeItems = toggleNodeExpansion(treeItems);
   }
 
-  function addNewCategory() {
+  function addNewCategory(): void {
     onAddCategory(undefined);
   }
 

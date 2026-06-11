@@ -14,6 +14,7 @@
     parent: string | null;
     children: Array<ICategoryTreeNode>;
     expanded: boolean;
+    order: number;
   }
 
   // Props
