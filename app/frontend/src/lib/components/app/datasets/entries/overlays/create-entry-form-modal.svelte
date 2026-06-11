@@ -33,6 +33,12 @@
     name: string;
     compressedName: string | null;
     status: "uploading" | "success" | "error" | "skipped" | "archive";
+    message?: string;
+  }
+
+  interface SkippedFile {
+    filename: string;
+    message: string;
   }
 
   let projectId = page.params.projectId as string;
@@ -87,12 +93,33 @@
 
     const allSkippedFiles: string[] = [];
     let processedCount = 0;
+    let errorCount = 0;
+
+    /** One "uploading" placeholder per selected file; final rows replace the placeholder
+     * in place, with extracted zip contents inserted right after their archive row */
+    uploadStatuses = Array.from(selectedMedias).map((media) => ({
+      name: media.name,
+      compressedName: null,
+      status: "uploading" as const,
+    }));
+    let cursor = 0;
 
     for (const media of selectedMedias) {
       const uuid = crypto.randomUUID().replace(/-/g, "").substring(0, 16);
       const fileExtension = getFileExtension(media.name);
       const resourceKey = `${uuid}${fileExtension}`;
       const isZip = isZipFile(media.name);
+
+      let placeholderReplaced = false;
+      const finalizeRow = (row: UploadStatuses): void => {
+        if (placeholderReplaced) {
+          uploadStatuses.splice(cursor, 0, row);
+        } else {
+          uploadStatuses[cursor] = row;
+          placeholderReplaced = true;
+        }
+        cursor++;
+      };
 
       try {
         const createdMedias = await mediaBackendDataSource.upload(media, resourceKey, projectId, "", modality);
@@ -102,38 +129,80 @@
         }
 
         if (isZip) {
-          uploadStatuses.push({ name: media.name, compressedName: null, status: "archive" });
+          finalizeRow({ name: media.name, compressedName: null, status: "archive" });
         }
 
         if (createdMedias.meta?.skipped) {
-          for (const skippedFile of createdMedias.meta.skipped as string[]) {
-            allSkippedFiles.push(skippedFile);
-            uploadStatuses.push({ name: skippedFile, compressedName: isZip ? media.name : null, status: "skipped" });
+          for (const skippedFile of createdMedias.meta.skipped as SkippedFile[]) {
+            allSkippedFiles.push(skippedFile.filename);
+            finalizeRow({
+              name: skippedFile.filename,
+              compressedName: isZip ? media.name : null,
+              status: "skipped",
+              message: skippedFile.message,
+            });
+          }
+        }
+
+        if (createdMedias.meta?.errored) {
+          for (const erroredFile of createdMedias.meta.errored as SkippedFile[]) {
+            errorCount++;
+            finalizeRow({
+              name: erroredFile.filename,
+              compressedName: isZip ? media.name : null,
+              status: "error",
+              message: erroredFile.message,
+            });
           }
         }
 
         for (const createdMedia of createdMedias.data) {
-          await entriesBackendDataSource.create(
-            {
-              attributes: { resource: createdMedia.resource, name: createdMedia.filename, status: "pending" },
-              relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
-            },
-            { showErrorToast: false },
-          );
-          processedCount++;
-          uploadStatuses.push({
-            name: createdMedia.filename,
-            compressedName: isZip ? media.name : null,
-            status: "success",
-          });
+          try {
+            await entriesBackendDataSource.create(
+              {
+                attributes: { resource: createdMedia.resource, name: createdMedia.filename, status: "pending" },
+                relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
+              },
+              { showErrorToast: false },
+            );
+            processedCount++;
+            finalizeRow({
+              name: createdMedia.filename,
+              compressedName: isZip ? media.name : null,
+              status: "success",
+            });
+          } catch (error) {
+            /** A failed entry must not abort the rest of the batch */
+            console.error(`Entry creation failed for ${createdMedia.filename}:`, error);
+            errorCount++;
+            finalizeRow({
+              name: createdMedia.filename,
+              compressedName: isZip ? media.name : null,
+              status: "error",
+              message: "Entry creation failed",
+            });
+          }
         }
       } catch (error) {
-        uploadStatuses.push({ name: media.name, compressedName: null, status: "error" });
-        throw error;
+        /** Continue with the remaining files instead of aborting the batch */
+        console.error(`Upload failed for ${media.name}:`, error);
+        finalizeRow({
+          name: media.name,
+          compressedName: null,
+          status: "error",
+          message: error instanceof Error ? error.message : undefined,
+        });
+        errorCount++;
       }
     }
 
-    if (allSkippedFiles.length > 0) {
+    if (errorCount > 0) {
+      const skippedNote = allSkippedFiles.length > 0 ? ` ${allSkippedFiles.length} files were skipped.` : "";
+      showToast.error({
+        title: "Some files failed to upload",
+        description: `Successfully uploaded ${processedCount} entries.${skippedNote} ${errorCount} files failed.`,
+      });
+    } else if (allSkippedFiles.length > 0) {
       showToast.success({
         title: "Entries uploaded with skips",
         description: `Successfully uploaded ${processedCount} entries. ${allSkippedFiles.length} files were skipped.`,
@@ -145,7 +214,9 @@
       });
     }
 
-    $refetches.entries.list = new Date();
+    if (processedCount > 0) {
+      $refetches.entries.list = new Date();
+    }
   }
 
   async function submit(): Promise<void> {
@@ -173,7 +244,7 @@
 >
   {#if showUploadStatus}
     <div class="flex w-full flex-col gap-4">
-      {#each uploadStatuses as { name, compressedName, status }, i (i)}
+      {#each uploadStatuses as { name, compressedName, status, message }, i (i)}
         {@const displayName = truncateFront(name, 35)}
         <div class="flex w-full items-center gap-4">
           {#if compressedName !== null}
@@ -187,13 +258,17 @@
               {displayName}
             {/if}
           </Text>
-          <div class="ml-auto">
+          <div class="ml-auto flex items-center gap-2">
+            {#if message}
+              <Text size="xs" class="text-muted-foreground">{message}</Text>
+            {/if}
+
             {#if status === "uploading"}
               <Spinner size="sm" />
             {:else if status === "success"}
               <Badge>Uploaded</Badge>
             {:else if status === "skipped"}
-              <Badge variant="secondary">Incorrect File Type</Badge>
+              <Badge variant="secondary">Skipped</Badge>
             {:else if status === "error"}
               <Badge variant="destructive">Error</Badge>
             {/if}

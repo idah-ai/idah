@@ -167,6 +167,60 @@ RSpec.describe Medias::Service, as: :system, database: true do
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
 
+    it "continues extracting when one zip entry fails to store" do
+      require "zip"
+
+      zip_path = Tempfile.create(["partial", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("bad.jpg")
+        zip.write("fake-jpg-bad")
+        zip.put_next_entry("good.jpg")
+        zip.write("fake-jpg-good")
+      end
+
+      allow(subject).to receive(:store_media).and_wrap_original do |original, **kwargs|
+        raise "storage exploded" if kwargs[:filename] == "bad.jpg"
+
+        original.call(**kwargs)
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "partial.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.filename).to eq("good.jpg")
+      expect(result[:skipped]).to be_empty
+      expect(result[:errored]).to eq([{ filename: "bad.jpg", message: "storage exploded" }])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "raises validation error for a corrupted zip file" do
+      corrupt_path = Tempfile.create(["corrupt", ".zip"]).path
+      File.write(corrupt_path, "this is not a zip archive")
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "corrupt.zip",
+          type: "application/zip",
+          tempfile: File.open(corrupt_path, "rb")
+        }
+      )
+
+      expect do
+        subject.upload(zip_file, resource: "res", project_id: "pid")
+      end.to raise_error(Verse::Error::ValidationFailed, /zip archive/)
+    ensure
+      FileUtils.rm_f(corrupt_path) if corrupt_path && File.exist?(corrupt_path)
+    end
+
     it "detects zip file by extension even if mime type is generic" do
       require "zip"
 

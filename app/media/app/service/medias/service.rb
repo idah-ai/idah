@@ -42,36 +42,47 @@ module Medias
 
       results = []
       skipped = []
+      errored = []
 
       if zip_file?(file)
-        Zip::File.open_buffer(file.tempfile) do |zip|
-          zip.each do |zip_entry|
-            next if system_artifact?(zip_entry) # skip unrelated artifacts in compressed
+        begin
+          Zip::File.open_buffer(file.tempfile) do |zip|
+            zip.each do |zip_entry|
+              next if system_artifact?(zip_entry) # skip unrelated artifacts in compressed
 
-            ext = File.extname(zip_entry.name).downcase
+              ext = File.extname(zip_entry.name).downcase
 
-            entry_io = StreamWithPath.new(
-              zip_entry.get_input_stream,
-              File.basename(zip_entry.name)
-            )
+              entry_io = StreamWithPath.new(
+                zip_entry.get_input_stream,
+                File.basename(zip_entry.name)
+              )
 
-            result = store_media(
-              io: entry_io, # Stream directly from zip entry to storage - no tempfiles
-              filename: File.basename(zip_entry.name),
-              size: zip_entry.size,
-              mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
-              resource: "#{SecureRandom.hex(8)}#{ext}",
-              key:,
-              project_id:,
-              modality:
-            )
+              begin
+                result = store_media(
+                  io: entry_io, # Stream directly from zip entry to storage - no tempfiles
+                  filename: File.basename(zip_entry.name),
+                  size: zip_entry.size,
+                  mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
+                  resource: "#{SecureRandom.hex(8)}#{ext}",
+                  key:,
+                  project_id:,
+                  modality:
+                )
 
-            if result.is_a?(Medias::Record)
-              results << result
-            else
-              skipped << { filename: zip_entry.name, message: result }
+                if result.is_a?(Medias::Record)
+                  results << result
+                else
+                  # store_media returns a reason string when the file is intentionally rejected
+                  skipped << { filename: zip_entry.name, message: result }
+                end
+              rescue StandardError => e
+                # A failing entry must not abort the rest of the archive
+                errored << { filename: zip_entry.name, message: e.message }
+              end
             end
           end
+        rescue Zip::Error
+          raise Verse::Error::ValidationFailed, "Invalid or corrupted zip archive"
         end
       else
         # Verify that the resource/key combination is not already used
@@ -97,7 +108,7 @@ module Medias
         end
       end
 
-      { processed: results, skipped: skipped }
+      { processed: results, skipped: skipped, errored: errored }
     end
 
     private
