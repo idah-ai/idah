@@ -122,17 +122,31 @@ module Medias
     # OS-generated metadata entries that should be silently ignored when
     # extracting a zip archive. No zip library handles this automatically —
     # it is the application's responsibility.
-    SYSTEM_ARTIFACT_PATHS = [
-      "__MACOSX/",   # macOS AppleDouble container (._filename sidecars)
+
+    # Exact filenames (matched against the entry's basename).
+    SYSTEM_ARTIFACT_FILES = [
       ".DS_Store",   # macOS folder-view settings
       "Thumbs.db",   # Windows thumbnail cache
+      "ehthumbs.db", # Windows (legacy) thumbnail cache
       "desktop.ini"  # Windows folder configuration
+    ].freeze
+
+    # Directory names that mark the entry as an artifact when present anywhere in its path.
+    SYSTEM_ARTIFACT_DIRS = [
+      "__MACOSX" # macOS AppleDouble container (._filename sidecars)
     ].freeze
 
     def system_artifact?(entry)
       return true unless entry.file?
 
-      SYSTEM_ARTIFACT_PATHS.any? { |pattern| entry.name.include?(pattern) }
+      basename = File.basename(entry.name)
+
+      return true if (entry.name.split("/") & SYSTEM_ARTIFACT_DIRS).any?
+      return true if SYSTEM_ARTIFACT_FILES.include?(basename)
+
+      # macOS AppleDouble resource forks ("._filename") may also appear loose,
+      # outside the __MACOSX container.
+      basename.start_with?("._")
     end
 
     def store_media(io:, filename:, mime_type:, resource:, key:, project_id:, size: nil, modality: nil)

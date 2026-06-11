@@ -146,8 +146,15 @@ RSpec.describe Medias::Service, as: :system, database: true do
         zip.write("fake-jpg-content-1")
         zip.put_next_entry("__MACOSX/._photo1.jpg")
         zip.write("apple-double")
+        zip.put_next_entry("._loose.jpg") # AppleDouble sidecar outside __MACOSX
+        zip.write("apple-double-loose")
         zip.put_next_entry(".DS_Store")
         zip.write("ds-store")
+        zip.put_next_entry("ehthumbs.db")
+        zip.write("win-thumbs")
+        # near-miss: artifact name as a substring must NOT be skipped
+        zip.put_next_entry("my.DS_Store.jpg")
+        zip.write("legit-image")
       end
 
       zip_file = Verse::Http::UploadedFileStruct.new(
@@ -160,8 +167,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
 
       result = subject.upload(zip_file, resource: "res", project_id: "pid")
 
-      expect(result[:processed].length).to eq(1)
-      expect(result[:processed].first.filename).to eq("photo1.jpg")
+      expect(result[:processed].map(&:filename)).to contain_exactly("photo1.jpg", "my.DS_Store.jpg")
       expect(result[:skipped]).to be_empty
     ensure
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
