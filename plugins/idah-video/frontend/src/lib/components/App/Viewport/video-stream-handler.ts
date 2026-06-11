@@ -86,6 +86,18 @@ export class VideoStreamHandler {
   // Deferred ABR switch during playback.
   private adaptiveTransitionTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Time of the most recent successful renderLevelAt(maxQualityLevel) settle.
+  // The fast path treats a target as "already HQ" only when it falls in the
+  // same SourceBuffer range as this value AND forward of it (forward buffering
+  // by hls.js at maxQualityLevel extends the HQ region; backward of the render
+  // position may still hold pre-existing LQ data, so it is excluded).
+  // Cleared whenever a level switch invalidates the buffer's HQ status —
+  // see renderLevelAt, boundPlayHandler, the ABR transition.
+  // Trusting `hls.currentLevel === maxQualityLevel` alone is wrong: the level
+  // is set synchronously by renderLevelAt before any HQ fragment loads, so a
+  // cancelled HQ render leaves currentLevel=maxQL with LQ still in the buffer.
+  private lastHQRenderTime: number | null = null;
+
   // DOM event references stored for clean removal on destroy.
   private boundPlayHandler: (() => void) | null = null;
   private boundPauseHandler: (() => void) | null = null;
@@ -156,12 +168,19 @@ export class VideoStreamHandler {
       this.isPaused = false;
       this.isInitialLoad = false;
       this.cancelPendingRender();
+      // Playback moves the playhead and (after ABR) may fill the buffer at
+      // varied levels — the HQ marker established before play is no longer a
+      // reliable claim about what the user is now looking at.
+      this.lastHQRenderTime = null;
       if (!this.hls) return;
       this.hls.startLoad(this.seekTime());
       // Switch to ABR after a few seconds of stable playback.
       this.adaptiveTransitionTimer = setTimeout(() => {
         this.adaptiveTransitionTimer = null;
-        if (this.hls && !this.videoElement.paused) this.hls.currentLevel = -1;
+        if (this.hls && !this.videoElement.paused) {
+          this.hls.currentLevel = -1;
+          this.lastHQRenderTime = null;
+        }
       }, PLAYBACK_ABR_DELAY_MS);
     };
     this.videoElement.addEventListener("play", this.boundPlayHandler);
@@ -197,6 +216,31 @@ export class VideoStreamHandler {
       if (b.start(i) <= t + 0.1 && t <= b.end(i) + 0.1) return true;
     }
     return false;
+  }
+
+  private bufferedRangeContaining(t: number): { start: number; end: number } | null {
+    const b = this.videoElement.buffered;
+    for (let i = 0; i < b.length; i++) {
+      if (b.start(i) <= t + 0.1 && t <= b.end(i) + 0.1) {
+        return { start: b.start(i), end: b.end(i) };
+      }
+    }
+    return null;
+  }
+
+  // True when `time` is forward of the last confirmed HQ render and still
+  // sits in the same SourceBuffer range. That range grows as hls.js continues
+  // buffering forward at maxQualityLevel after a settled render, so this
+  // captures the common "step one frame inside the HQ window" case.
+  // Returns false when the reference position has been evicted (range null),
+  // which forces a normal upgrade cycle that will re-establish tracking.
+  private isHQConfirmedAt(time: number): boolean {
+    if (this.lastHQRenderTime === null) return false;
+    const tol = 0.1;
+    if (time + tol < this.lastHQRenderTime) return false;
+    const range = this.bufferedRangeContaining(this.lastHQRenderTime);
+    if (!range) return false;
+    return time <= range.end + tol;
   }
 
   private getQualityInfo(level: number): QualityInfo | undefined {
@@ -241,6 +285,12 @@ export class VideoStreamHandler {
     if (!this.hls) return;
     this.clearPendingRender();
 
+    // Switching levels (or restarting a load) makes any prior HQ-confirmed
+    // range stale: the upcoming load can append non-HQ data. The settle
+    // timer below re-establishes the marker when level === maxQualityLevel
+    // after the render actually completes.
+    this.lastHQRenderTime = null;
+
     const loaderShown = showLoader && this.hls.currentLevel !== level;
     this.hls.currentLevel = level;
     if (loaderShown) this.onLoadingChange(true, this.getQualityInfo(level));
@@ -264,6 +314,10 @@ export class VideoStreamHandler {
         this.pendingRender = null;
         if (this.videoElement.paused && this.isBufferedAt(time)) {
           this.videoElement.currentTime = time;
+          // Confirm HQ tracking only on successful HQ render — this is the
+          // signal isHQConfirmedAt relies on. Set after the settle so a
+          // cancelled render never marks the buffer as HQ.
+          if (level === this.maxQualityLevel) this.lastHQRenderTime = time;
         }
         if (loaderShown) this.onLoadingChange(false);
       }, SETTLE_MS);
@@ -304,6 +358,14 @@ export class VideoStreamHandler {
   private upgradeToHQ(time: number): void {
     this.cancelUpgradeTimer();
     if (!this.hls || !this.isPaused || this.maxQualityLevel <= 0) return;
+
+    // Target is forward of a confirmed HQ render and still in its buffered
+    // range — nothing to upgrade. Mirrors the loadQuality fast path; protects
+    // this entry point when called directly (boundPauseHandler, the deferred
+    // upgradeTimer after navigation).
+    if (this.isHQConfirmedAt(time)) {
+      return;
+    }
 
     if (this.isBufferedAt(time)) {
       this.renderLevelAt(this.maxQualityLevel, time, true);
@@ -348,6 +410,20 @@ export class VideoStreamHandler {
     if (!this.hls || this.maxQualityLevel < 0) return;
 
     this.cancelPendingRender();
+
+    // Fast path: the target sits forward of a confirmed HQ render and still
+    // in its buffered range, so the decoder will paint from HQ when the seek
+    // already done in Video.svelte lands. Running the LQ→HQ cycle would only
+    // call hls.startLoad(time) again and churn the forward HQ buffer. Common
+    // case for single-frame steps inside the HQ window.
+    // The check requires a *settled* HQ render — not just hls.currentLevel ===
+    // maxQualityLevel — because the level is set synchronously by
+    // renderLevelAt before any HQ fragment loads. A cancelled HQ render would
+    // otherwise leave currentLevel=maxQL with LQ residue in the buffer, and
+    // we'd wrongly skip the upgrade.
+    if (this.isHQConfirmedAt(time)) {
+      return;
+    }
 
     // LQ phase — instant, no loader. The caller (Video.svelte seek effect)
     // already set currentTime, so a buffered frame is already painting and

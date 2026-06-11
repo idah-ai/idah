@@ -148,6 +148,29 @@ quality cycle:
 Every new seek resets the 300 ms timer, so holding an arrow key
 streams LQ frames continuously and never tries to upgrade in between.
 
+**Fast path — already at HQ.** If a previous HQ render *actually
+settled* and the new position lies forward of that render inside the
+same buffered range, the cycle is skipped. The decoder paints from the
+existing HQ buffer and no further work is scheduled. This is the
+common case when stepping one frame inside the HQ window that was
+filled by the previous upgrade.
+
+The condition is about a *settled* HQ render, not about which level
+the loader is currently pointed at. The HLS loader's level is set
+synchronously at the start of a render — well before the first HQ
+fragment arrives — so a render that gets cancelled mid-flight (e.g.
+the user navigates again before HQ fragments load) leaves the loader
+at max quality with no actual HQ data in the buffer. Trusting the
+loader's level in that state would skip the upgrade and leave the
+user stuck on LQ. The marker is only set when the settle timer fires
+after fragments have landed.
+
+The forward-only restriction is for the same reason: hls.js extends
+the buffer forward at max quality after a settled HQ render, but
+positions *before* the render position in the same buffered range
+were populated earlier and may still hold LQ data. Backward
+navigation always runs the full upgrade cycle.
+
 ### Upgrading to high quality
 
 The HQ upgrade is a careful operation, because flushing the decoder
