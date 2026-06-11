@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { getContext, onMount } from "svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
+  import { writable, type Writable } from "svelte/store";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
@@ -45,6 +47,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -60,7 +63,6 @@
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
   import type { Hash } from "@/utils/types";
-  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -76,42 +78,91 @@
   let projectId: string = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
 
-  // Optional URL Params
-  let urlFiltersHash = $derived(Object.fromEntries(page.url.searchParams.entries()));
-  let urlFilters: Hash<string> = $derived.by(() => {
-    /**
-     * Regex to extract column key and operator from URL filter
-     *
-     * Example:
-     * - key: "filters[name__match]"
-     * - value: "John"
-     * - match: ["filters[name__match]", "filters", "name__match"]
-     * - listOptionsKey: "filters" (can be: filters, included, pagination, fields, sort, all, noCache, count)
-     * - columnKeyWithOperator: "name__match"
-     */
-    const urlFilterRegex: RegExp = /^([^[]+)\[([^\]]+)\]$/;
-    const out: Hash<string> = {};
-
-    Object.entries(urlFiltersHash).forEach(([key, value]) => {
-      const match = key.match(urlFilterRegex);
-      if (match) {
-        const [, _listOptionsKey, columnKeyWithOperator] = match;
-        out[columnKeyWithOperator] = value;
+  /**
+   * Parse filter entries from a URL's searchParams.
+   * Handles scalar values (filters[name]=val) and arrays (filters[name][]=val1&filters[name][]=val2).
+   */
+  function parseUrlFilters(url: URL): Hash {
+    const out: Hash = {};
+    url.searchParams.forEach((value, key) => {
+      const scalarMatch = key.match(/^filters\[([^\]]+)\]$/);
+      const arrayMatch = key.match(/^filters\[([^\]]+)\]\[\]$/);
+      if (arrayMatch) {
+        const k = arrayMatch[1];
+        if (!out[k]) out[k] = [];
+        (out[k] as unknown[]).push(value);
+      } else if (scalarMatch) {
+        out[scalarMatch[1]] = value;
       }
     });
-
     return out;
+  }
+
+  /**
+   * Serialize filter values into URL search params.
+   * Scalar values → filters[key]=val; arrays → filters[key][]=val1&filters[key][]=val2.
+   */
+  function writeFilterToUrl(params: URLSearchParams, key: string, value: unknown): void {
+    params.delete(`filters[${key}]`);
+    params.delete(`filters[${key}][]`);
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(`filters[${key}][]`, String(item));
+      }
+    } else if (value !== undefined && value !== null) {
+      params.set(`filters[${key}]`, String(value));
+    }
+  }
+
+  // ── View preferences persisted via writable store (matching getTablePreferences pattern) ──
+
+  const viewStateStorageKey = `idah:entries:${datasetId}:viewState`;
+
+  interface ViewPreferences {
+    filters: Hash;
+    sort: string[];
+    itemsPerPage: number;
+    currentPage: number;
+  }
+
+  const defaultPreferences: ViewPreferences = {
+    filters: {},
+    sort: ["-created_at"],
+    itemsPerPage: 10,
+    currentPage: 1,
+  };
+
+  // Eagerly initialize from sessionStorage at module scope (browser guard for SSR safety).
+  let savedPrefs: ViewPreferences | null = null;
+  if (browser) {
+    try {
+      const raw = sessionStorage.getItem(viewStateStorageKey);
+      if (raw) savedPrefs = JSON.parse(raw) as ViewPreferences;
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  const preferences: Writable<ViewPreferences> = writable<ViewPreferences>(savedPrefs ?? defaultPreferences);
+
+  // Subscribe to auto-persist on any change (only fires in browser)
+  const unsub = preferences.subscribe((value) => {
+    if (browser) {
+      sessionStorage.setItem(viewStateStorageKey, JSON.stringify(value));
+    }
   });
 
-  let filters: Hash = $derived({
-    dataset_id: datasetId,
-    ...urlFilters,
-  });
+  onDestroy(() => unsub());
+
+  // $state variables — separated for reactive Svelte binding
+  let urlFilters: Hash = $state({});
+  let filters: Hash = $state({ dataset_id: datasetId });
+  let _sort: string[] = $state(["-created_at"]);
+  let _currentPage: number = $state(1);
+  let _itemsPerPage: number = $state(10);
 
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
-  let currentPage: number = $state(1);
-  let itemsPerPage: number = $state(10);
   let selectedEntryIds: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedEntryIds.length);
   let assignableEntryIds: string[] = $derived(
@@ -139,12 +190,44 @@
   };
 
   // Lifecycle
+
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
     canUpdateEntry =
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+
+    // Sync from store into local $state
+    let prefValue: ViewPreferences;
+    const unsubInit = preferences.subscribe((v) => (prefValue = v));
+    unsubInit();
+
+    _sort = prefValue!.sort;
+    _itemsPerPage = prefValue!.itemsPerPage;
+    _currentPage = prefValue!.currentPage;
+
+    if (prefValue!.filters && Object.keys(prefValue!.filters).length > 0) {
+      urlFilters = { ...prefValue!.filters };
+      filters = { dataset_id: datasetId, ...prefValue!.filters };
+
+      // Reconstruct URL search params from saved filters
+      const newUrl = new URL(page.url);
+      for (const [key, value] of Object.entries(prefValue!.filters)) {
+        writeFilterToUrl(newUrl.searchParams, key, value);
+      }
+      /* eslint-disable svelte/no-navigation-without-resolve */
+      goto(newUrl.href, { replaceState: true });
+      /* eslint-enable svelte/no-navigation-without-resolve */
+    } else {
+      // Sync from the current URL
+      urlFilters = parseUrlFilters(page.url);
+      filters = { dataset_id: datasetId, ...urlFilters };
+      persistFilters();
+    }
+
+    // Re-fetch with restored state so the list renders with correct filters/sort
+    $refetches.entries.list = new Date();
   });
 
   pageBreadcrumbsStore.set([
@@ -155,15 +238,17 @@
     { label: "Entries" },
   ]);
 
+  //Derived
+
   let listOptions: ListOptions = $derived({
     filters: filters,
     included: ["assigned_to", "submitted_by", "reviewed_by"],
     fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
-    sort: ["-created_at"],
+    sort: _sort,
     count: true,
     pagination: {
-      page: currentPage,
-      itemsPerPage,
+      page: _currentPage,
+      itemsPerPage: _itemsPerPage,
     },
   });
   let isFiltering: boolean = $derived(
@@ -192,6 +277,18 @@
   );
 
   // Functions
+
+  /** Strip dataset_id from filters before persisting — only user-applied filters are saved. */
+  function persistFilters(): void {
+    const { dataset_id: _, ...userFilters } = filters as Hash & { dataset_id?: unknown };
+    preferences.set({
+      filters: userFilters,
+      sort: _sort,
+      itemsPerPage: _itemsPerPage,
+      currentPage: _currentPage,
+    });
+  }
+
   function checkEntriesAssignedToAnyone(entryIds: string[]): boolean {
     return response.data.some((entry) => entryIds.includes(entry.id) && !!entry.assigned_to_id);
   }
@@ -205,77 +302,66 @@
   }
 
   function resetToFirstPage(): void {
-    currentPage = 1;
+    _currentPage = 1;
   }
 
   async function filterEntries(params: FilterDataSourceParams): Promise<void> {
     const newUrl = new URL(page.url);
-
-    let updatedFilters = { ...listOptions.filters };
+    let updatedFilters = { ...filters };
 
     for (const [key, value] of Object.entries(params.filters)) {
       if (value === undefined) {
-        /** Remove filter */
         delete updatedFilters[key];
-
-        /** Manage filters[key] from URL if exists */
-        if (key in urlFilters) {
-          /** 1. Remove filters[key] from URL */
-          newUrl.searchParams.delete(`filters[${key}]`);
-          /** 2. Update URL */
-          /* eslint-disable svelte/no-navigation-without-resolve */
-          goto(newUrl.href, { replaceState: true });
-          /* eslint-enable svelte/no-navigation-without-resolve */
-        }
+        newUrl.searchParams.delete(`filters[${key}]`);
+        newUrl.searchParams.delete(`filters[${key}][]`);
       } else {
         updatedFilters[key] = value;
+        writeFilterToUrl(newUrl.searchParams, key, value);
       }
-
-      urlFilters = Object.fromEntries(newUrl.searchParams.entries());
     }
 
+    /* eslint-disable svelte/no-navigation-without-resolve */
+    goto(newUrl.href, { replaceState: true });
+    /* eslint-enable svelte/no-navigation-without-resolve */
+
     resetToFirstPage();
+
+    urlFilters = parseUrlFilters(newUrl);
     filters = updatedFilters;
+
+    persistFilters();
+    $refetches.entries.list = new Date();
   }
 
   async function sortEntries(params: SortDataSourceParams): Promise<void> {
     const { columnKey, sortDirection } = params;
-    const sortPrefix: string = sortDirection === "desc" ? "-" : "";
-    const sortKey: string = `${sortPrefix}${columnKey}`;
+    const sortPrefix = sortDirection === "desc" ? "-" : "";
+    const sortKey = `${sortPrefix}${columnKey}`;
 
     if (sortDirection === "none") {
-      /** Remove all sortKey from listOptions */
-      listOptions = {
-        ...listOptions,
-        sort: listOptions.sort?.filter((currentSorting) => !currentSorting.endsWith(sortKey)),
-      };
+      _sort = _sort.filter((s) => !s.endsWith(sortKey));
+    } else if (_sort.some((s) => s.endsWith(columnKey))) {
+      _sort = _sort.map((s) => (s.endsWith(columnKey) ? sortKey : s));
     } else {
-      /** Add or update sortKey to listOptions */
-      if (listOptions.sort?.some((currentSorting) => currentSorting.endsWith(columnKey))) {
-        listOptions = {
-          ...listOptions,
-          sort: listOptions.sort?.map((currentSorting) =>
-            currentSorting.endsWith(columnKey) ? sortKey : currentSorting,
-          ),
-        };
-      } else {
-        listOptions = {
-          ...listOptions,
-          sort: [...(listOptions.sort || []), sortKey],
-        };
-      }
+      _sort = [..._sort, sortKey];
     }
 
     resetToFirstPage();
+    persistFilters();
+    $refetches.entries.list = new Date();
   }
 
   async function changePage(changeToPage: number): Promise<void> {
-    currentPage = changeToPage;
+    _currentPage = changeToPage;
+    persistFilters();
+    $refetches.entries.list = new Date();
   }
 
   async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
     resetToFirstPage();
-    itemsPerPage = selectedItemsPerPage;
+    _itemsPerPage = selectedItemsPerPage;
+    persistFilters();
+    $refetches.entries.list = new Date();
   }
 
   function selectRow(selectedId: string): void {
@@ -290,11 +376,8 @@
     try {
       for (const entryId of unAssignableEntryIds) {
         const entryRes = await entriesBackendDataSource.update(entryId, {
-          attributes: {
-            assigned_to_id: null,
-          },
+          attributes: { assigned_to_id: null },
         });
-
         response.data = response.data.map((entry) => (entry.id === entryId ? entryRes.data : entry));
       }
 
@@ -304,13 +387,9 @@
           ? `${selectedToUnassignedRows.length} entries have been unassigned.`
           : `The entry "${selectedToUnassignedRows[0]?.name}" has been unassigned.`;
 
-      showToast.success({
-        title: "Entry unassigned",
-        description,
-      });
-
+      showToast.success({ title: "Entry unassigned", description });
       selectedEntryIds = [];
-      // $refetches.entries.list = new Date();
+      $refetches.entries.list = new Date();
       openConfirmUnassignEntriesModal = false;
     } catch (error) {
       showActionFailedToast(error);
@@ -320,9 +399,7 @@
   async function deleteEntries(): Promise<void> {
     try {
       for (const entryId of selectedEntryIds) {
-        await entriesBackendDataSource.delete(entryId, {
-          showErrorToast: false,
-        });
+        await entriesBackendDataSource.delete(entryId, { showErrorToast: false });
       }
 
       const description =
@@ -330,11 +407,7 @@
           ? `${selectedRowsCount} entries have been deleted.`
           : `The entry "${response.data.find((entry) => entry.id === selectedEntryIds[0])?.resource}" has been deleted.`;
 
-      showToast.success({
-        title: "Entry deleted",
-        description,
-      });
-
+      showToast.success({ title: "Entry deleted", description });
       selectedEntryIds = [];
       $refetches.entries.list = new Date();
       openConfirmDeleteEntriesModal = false;
@@ -393,9 +466,7 @@
           <div class="flex flex-wrap gap-2">
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
               <FilterSortDropdownMenu
-                contexts={{
-                  projectId: page.params.projectId,
-                }}
+                contexts={{ projectId: page.params.projectId }}
                 {columnKey}
                 columnSetting={columnSetting as ColumnSettings<EntryRecord>}
                 filters={listOptions.filters || {}}
@@ -496,8 +567,8 @@
     </div>
 
     <AppPaginator
-      page={listOptions.pagination?.page || currentPage}
-      itemsPerPage={listOptions.pagination?.itemsPerPage || itemsPerPage}
+      page={listOptions.pagination?.page || _currentPage}
+      itemsPerPage={listOptions.pagination?.itemsPerPage || _itemsPerPage}
       count={response.meta?.count ?? 0}
       hasMore={response.meta?.more || false}
       onPageChange={changePage}
