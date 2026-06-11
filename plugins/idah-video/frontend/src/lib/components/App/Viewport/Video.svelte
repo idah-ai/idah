@@ -183,7 +183,7 @@
   // and the RAF loop share a single authoritative position.
 
   // Jump directly to a frame index (0-based).
-  export async function seekToFrame(frame: number) {
+  export function seekToFrame(frame: number) {
     viewport.video.goToFrame(frame);
   }
 
