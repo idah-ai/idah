@@ -4,7 +4,7 @@
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
   import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import { viewport, VIEWPORT_MIN_ZOOM, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
   import SyncIndicator from "./SyncIndicator.svelte";
   import LoadingIndicator from "./LoadingIndicator.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -98,11 +98,11 @@
   }
 
   function scopedZoom(value: number) {
-    return Math.max(0.4, Math.min(100, value));
+    return Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, value));
   }
 
   export function setZoom(newZoom: number) {
-    const clamped = Math.max(0.4, Math.min(100, newZoom));
+    const clamped = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, newZoom));
     viewport.workspace.transform.scale = clamped;
   }
 
@@ -146,7 +146,7 @@
         // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
         // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
         const factor = Math.pow(1.05, steps);
-        const newScale = Math.max(0.4, Math.min(100, curScale * factor));
+        const newScale = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, curScale * factor));
 
         if (Math.abs(newScale - curScale) < 0.001) return;
 
