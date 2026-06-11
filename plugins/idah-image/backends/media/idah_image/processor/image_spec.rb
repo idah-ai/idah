@@ -17,21 +17,19 @@ RSpec.describe IdahImage::Processor::Image do
 
   let(:mock_image) { instance_double(Magick::Image, columns: 800, rows: 600, filename: "sample.jpg", format: "JPEG") }
   let(:mock_thumb) { instance_double(Magick::Image) }
+  let(:test_tmpdir) { "/tmp/idah-image-processor-test" }
 
   before do
     allow(processor_context).to receive(:download_original).and_return(file_path)
     allow(File).to receive(:exist?).and_call_original
     allow(File).to receive(:exist?).with(file_path).and_return(true)
-    allow(File).to receive(:exist?).with(include("processed")).and_return(true)
-    allow(File).to receive(:exist?).with(include("thumbnail")).and_return(true)
 
     allow(File).to receive(:delete).with(file_path)
-    allow(File).to receive(:delete).with(include("processed"))
-    allow(File).to receive(:delete).with(include("thumbnail"))
 
-    # Mock RMagick ping for ImageInfo (if still used elsewhere, though not in processor anymore)
+    allow(Dir).to receive(:mktmpdir).with("idah-image-processor").and_return(test_tmpdir)
+    allow(FileUtils).to receive(:rm_rf)
+
     allow(Magick::Image).to receive(:ping).with(file_path).and_return([mock_image])
-    # Mock RMagick read for Image processor - should only be called once in run
     allow(Magick::Image).to receive(:read).with(file_path).once.and_return([mock_image])
 
     allow(mock_image).to receive(:write)
@@ -57,8 +55,7 @@ RSpec.describe IdahImage::Processor::Image do
       expect(mock_image).to receive(:destroy!).once
       expect(mock_thumb).to receive(:destroy!).once
       expect(File).to receive(:delete).with(file_path).once
-      expect(File).to receive(:delete).with(include("processed")).once
-      expect(File).to receive(:delete).with(include("thumbnail")).once
+      expect(FileUtils).to receive(:rm_rf).with(test_tmpdir).once
 
       subject.run
 
@@ -120,7 +117,7 @@ RSpec.describe IdahImage::Processor::Image do
 
       expect(mock_image).to receive(:destroy!).once
       expect(File).to receive(:delete).with(file_path).once
-      expect(File).to receive(:delete).with(include("processed")).once
+      expect(FileUtils).to receive(:rm_rf).with(test_tmpdir).once
 
       expect { subject.run }.to raise_error("Some error")
     end

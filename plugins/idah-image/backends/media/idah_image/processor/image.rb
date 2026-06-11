@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "fileutils"
 require "rmagick"
 
 module IdahImage
@@ -23,28 +24,25 @@ module IdahImage
         end
 
         img = Magick::Image.read(file_path).first
+        tmpdir = Dir.mktmpdir("idah-image-processor")
 
-        # Update original media with image metadata
         context.update_original_metadata(image_info.to_h.slice(:width, :height, :format))
 
-        # optimized web asset
-        generate_processed(img)
-
-        # thumbnail
-        generate_thumbnail(img) if context.config.generate_thumbnail
+        generate_processed(img, tmpdir:)
+        generate_thumbnail(img, tmpdir:) if context.config.generate_thumbnail
 
         context.progress = 1.0
       ensure
         File.delete(file_path) if file_path && File.exist?(file_path)
+        FileUtils.rm_rf(tmpdir) if tmpdir
         img&.destroy!
       end
 
       private
 
-      def generate_processed(img)
+      def generate_processed(img, tmpdir:)
         format = context.config.processed_format
-
-        tmp_path = File.join(Dir.tmpdir, "processed.#{format}")
+        tmp_path = File.join(tmpdir, "processed.#{format}")
         img.write(tmp_path) { |i| i.quality = context.config.processed_quality }
 
         File.open(tmp_path, "rb") do |file|
@@ -54,16 +52,14 @@ module IdahImage
             "image/#{format == "jpg" ? "jpeg" : format}"
           )
         end
-      ensure
-        File.delete(tmp_path) if tmp_path && File.exist?(tmp_path)
       end
 
-      def generate_thumbnail(img)
+      def generate_thumbnail(img, tmpdir:)
         format = context.config.thumbnail_format
         size = context.config.thumbnail_size
         thumb = img.resize_to_fit(size, size)
 
-        tmp_path = File.join(Dir.tmpdir, "thumbnail.#{format}")
+        tmp_path = File.join(tmpdir, "thumbnail.#{format}")
         thumb.write(tmp_path) { |i| i.quality = context.config.processed_quality }
 
         File.open(tmp_path, "rb") do |file|
@@ -74,7 +70,6 @@ module IdahImage
           )
         end
       ensure
-        File.delete(tmp_path) if tmp_path && File.exist?(tmp_path)
         thumb&.destroy!
       end
     end
