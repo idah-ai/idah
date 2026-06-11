@@ -82,7 +82,7 @@
           ],
         },
         filters: {
-          role_name__nin: ["system"],
+          role_name__nin: ["system", "api_service"],
         },
       }}
       disabledActiveStateFilterSortKeys={["role_name__nin"]}
