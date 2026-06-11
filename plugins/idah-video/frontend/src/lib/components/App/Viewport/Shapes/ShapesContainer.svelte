@@ -31,6 +31,7 @@
   import { media } from "$lib/state/media.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
@@ -191,10 +192,10 @@
     // Fit video to viewport on initial load
     requestAnimationFrame(() => viewport.workspace.fitToViewport());
 
-    // Add a tiny stylesheet for cursor classes
+    const cursorSvg = encodeURIComponent(noteIconSvg);
     const style = document.createElement("style");
     style.textContent = `
-      .cursor-note { cursor: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIiBmaWxsPSJub25lIj48cGF0aCBkPSJNNC45ODkgMjEuNTU2YTIuNjY3IDIuNjY3IDAgMCAxIC4xMjUgMS41NTZsLTEuNDIgNC4zODdhMS4zMzMgMS4zMzMgMCAwIDAgMS42NDggMS41NThsNC41NTEtMS4zMzFhMi42NjcgMi42NjcgMCAwIDEgMS40NjUuMTIzIDEzLjMzMyAxMy4zMzMgMCAxIDAtNi4zNjktNi4yOTJ6IiBmaWxsPSIjNmI3MGIwIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+'), auto; }
+      .cursor-note { cursor: url('data:image/svg+xml;charset=utf-8,${cursorSvg}') 0 24, auto; }
       .cursor-crosshair { cursor: crosshair; }
       .cursor-grab { cursor: grab; }
       .cursor-grabbing { cursor: grabbing; }
@@ -224,9 +225,9 @@
 
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
+    if (isNoteMode) return "cursor-note";
     if (hoveringFirstPoint) return "cursor-target";
     if (viewport.isCreationMode) return "cursor-crosshair";
-    if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
     if (isPanning) return "cursor-grabbing";
 
@@ -241,8 +242,6 @@
       viewport.mode !== REVIEW_MODE &&
       viewport.mode !== NOTE_MODE,
   );
-
-
 
   const viewBox = $derived.by(() => {
     const [tx, ty] = viewport.workspace.transform.translate;
@@ -353,8 +352,10 @@
     };
     // Show a temporary marker at the click position
     setPendingNoteScene({
+      type: "entry",
       x: sceneNormalizedCursor[0] * media.width,
       y: sceneNormalizedCursor[1] * media.height,
+      frame,
     });
     onAddNewNote(params);
     // Exit note tool mode — return to review workspace
@@ -390,10 +391,13 @@
         if (interp?.points?.length) centroidN = centroidUtil(interp.points);
       }
 
-      // Show a temporary marker at the click position
+      // Show a temporary marker at the click position — tracks annotation centroid across frames
       setPendingNoteScene({
-        x: sceneNormalizedCursor[0] * media.width,
-        y: sceneNormalizedCursor[1] * media.height,
+        type: "annotation",
+        annotationId: ann.id,
+        offsetX: sceneNormalizedCursor[0] - centroidN[0],
+        offsetY: sceneNormalizedCursor[1] - centroidN[1],
+        frame,
       });
       onAddNewNote({
         anchorType: "annotation",
@@ -449,8 +453,6 @@
   >
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
-
-
 
     <g>
       <!-- Build mode: bounding box creation preview -->
