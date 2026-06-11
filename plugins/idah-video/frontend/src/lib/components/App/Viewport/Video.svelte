@@ -263,6 +263,13 @@
 
     return () => {
       stopRAF();
+      // stopRAF only cancels the playback loop's token. The seek effect's
+      // one-shot rVFC is tracked separately and must be cancelled here so it
+      // can't fire after unmount and write to displayedFrame.
+      if (pendingFrameCallbackId !== null && "cancelVideoFrameCallback" in videoElement) {
+        (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
+        pendingFrameCallbackId = null;
+      }
       videoElement.removeEventListener("seeked", handleSeeked);
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);

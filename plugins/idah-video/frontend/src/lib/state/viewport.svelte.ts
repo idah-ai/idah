@@ -56,7 +56,14 @@ class Viewport {
       this.status = "pause";
     },
     goToFrame(frame: number) {
-      this.currentFrame.value = frame;
+      // Clamp to the valid range so `framePending` (derived from
+      // currentFrame !== displayedFrame) can never latch on out-of-range
+      // writes — displayedFrame is always clamped by timeToFrame, so an
+      // unclamped currentFrame would leave the two permanently unequal and
+      // freeze the FramePendingOverlay over the annotation layer.
+      const total = media.totalFrames;
+      const max = total > 0 ? total - 1 : frame;
+      this.currentFrame.value = Math.max(0, Math.min(frame, max));
     },
   });
 
