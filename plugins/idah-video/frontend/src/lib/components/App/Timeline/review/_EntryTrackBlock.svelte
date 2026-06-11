@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { notes, activeNoteId, focusNote } from "$lib/state/data.svelte";
+  import { notes, activeNoteId, focusNote, pendingNoteScene } from "$lib/state/data.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { showContextMenu, type ContextMenuComponent } from "$lib/components/App/ContextMenu/store";
   import NoteKeyframeContextMenu from "$lib/components/App/Timeline/review/_NoteKeyframeContextMenu.svelte";
@@ -16,13 +16,29 @@
   // Collect all entry-level notes with frame positions, sorted
   let entryNotes = $derived(item.rawData as INoteRecord[]);
 
-  // Unique sorted keyframe values
-  let keyframes = $derived([...new Set(entryNotes.map((n) => (n.anchor.position as { frame: number }).frame))]);
+  // Unique sorted keyframe values, plus pending note frame when applicable
+  let keyframes = $derived.by(() => {
+    const existing = new Set(entryNotes.map((n) => (n.anchor.position as { frame: number }).frame));
+    // Add pending entry-level note frame as a ghost keyframe marker
+    const p = pendingNoteScene.value;
+    if (p?.type === "entry") {
+      existing.add(p.frame);
+    }
+    return [...existing].sort((a, b) => a - b);
+  });
 
   const rangeSize = $derived(Number(endRange - startRange) + 1);
 
+  function isPendingFrame(keyframe: number): boolean {
+    const p = pendingNoteScene.value;
+    return p?.type === "entry" && p.frame === keyframe;
+  }
+
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();
+    // Don't navigate to a pending (ghost) keyframe with no real note
+    if (isPendingFrame(keyframe)) return;
+
     const notesAtFrame = entryNotes.filter((n) => (n.anchor.position as { frame: number }).frame === keyframe);
     if (notesAtFrame.length > 1) {
       // Cycle
@@ -58,7 +74,11 @@
     <div
       role="button"
       tabindex="-1"
-      class="absolute translate-x-[5%] rounded-sm focus:outline-none cursor-pointer bg-primary"
+      class="absolute translate-x-[5%] rounded-sm focus:outline-none"
+      class:cursor-pointer={!isPendingFrame(keyframe)}
+      class:opacity-60={isPendingFrame(keyframe)}
+      class:bg-primary={!isPendingFrame(keyframe)}
+      class:bg-muted-foreground={isPendingFrame(keyframe)}
       style:top="6px"
       style:height="calc(100% - {6 * 2}px)"
       style:left="{position}%"

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { page } from "$app/state";
-  import { SvelteSet, SvelteURL } from "svelte/reactivity";
 
   import type { INoteAnchor, INoteComment, INoteRecord, INoteScreenPosition } from "@/plugin/v2/types";
   import type { NotesDriverAdapter } from "@/plugin/v2/driver/adapter/notes";
@@ -75,7 +74,7 @@
     highlightedFeedId = null;
 
     queueMicrotask(() => {
-      notesAdapter?.selectNote(null);
+      notesAdapter?.focusNote(null);
     });
   }
 
@@ -120,7 +119,7 @@
 
   onDestroy(() => {
     for (const fn of unsubFns) fn();
-    notesAdapter?.selectNote(null);
+    notesAdapter?.focusNote(null);
   });
 
   // Load comments when a note is selected
@@ -495,6 +494,12 @@
             placeholder={isCreating ? "Write your note..." : "Reply..."}
             bind:value={contentMd}
             disabled={loading}
+            onkeydown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
           ></textarea>
           <button
             class="text-muted-foreground hover:text-foreground absolute right-2 bottom-2 inline-flex size-5 items-center justify-center rounded"

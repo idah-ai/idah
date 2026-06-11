@@ -70,6 +70,37 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private idbAnnotationsDriver: (IAnnotationsDriverV2 & { clearCache(): Promise<void> }) | null = null;
   #notesAdapter: NotesDriverAdapter | null = null;
 
+  // ── Note sidebar state ─────────────────────────────────────────────────
+  #noteSidebarOpen = true;
+  private noteSidebarListeners: Set<(open: boolean) => void> = new Set();
+
+  get noteSidebarOpen(): boolean {
+    return this.#noteSidebarOpen;
+  }
+
+  toggleNoteSidebar(): void {
+    this.#noteSidebarOpen = !this.#noteSidebarOpen;
+    for (const cb of this.noteSidebarListeners) cb(this.#noteSidebarOpen);
+  }
+
+  openNoteSidebar(): void {
+    if (this.#noteSidebarOpen) return;
+    this.#noteSidebarOpen = true;
+    for (const cb of this.noteSidebarListeners) cb(true);
+  }
+
+  closeNoteSidebar(): void {
+    if (!this.#noteSidebarOpen) return;
+    this.#noteSidebarOpen = false;
+    for (const cb of this.noteSidebarListeners) cb(false);
+  }
+
+  onNoteSidebarChange(cb: (open: boolean) => void): Unsubscribe {
+    this.noteSidebarListeners.add(cb);
+    cb(this.#noteSidebarOpen);
+    return () => this.noteSidebarListeners.delete(cb);
+  }
+
   constructor(opts: {
     id: string;
     dataset: IDatasetInfo;
@@ -104,7 +135,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
     // Build notes driver with observer-based push interface
     const notesAdapter = new NotesDriverAdapter(this._id);
-    this.notes = notesAdapter;
+    this.notes = notesAdapter.sealed();
     this.#notesAdapter = notesAdapter;
 
     // ── Register default commands ─────────────────────────────────────

@@ -506,14 +506,42 @@ let _annotations: DataStore<AnnotationItem> | null = $state(null);
 let _noteList: INoteRecord[] = $state([]);
 let _unsubNotes: (() => void) | null = null;
 
-let _pendingNoteScene: { x: number; y: number } | null = $state(null);
+/** A pending (ghost) marker for a note being created.
+ *
+ * - `"entry"` type stores a fixed scene pixel position.
+ * - `"annotation"` type stores the annotation ID and an offset from its centroid
+ *   (in normalised 0-1 media space) so it tracks the annotation across frames.
+ */
+export interface PendingNoteEntry {
+  type: "entry";
+  /** Scene position in pixels */
+  x: number;
+  y: number;
+  /** The frame the note was created at — marker hides when current frame differs */
+  frame: number;
+}
 
-export function setPendingNoteScene(pos: { x: number; y: number } | null): void {
+export interface PendingNoteAnnotation {
+  type: "annotation";
+  /** Annotation ID the note is anchored to */
+  annotationId: string;
+  /** Offset from the annotation centroid (normalised 0-1 media space) */
+  offsetX: number;
+  offsetY: number;
+  /** The frame the note was created at */
+  frame: number;
+}
+
+export type PendingNoteScene = PendingNoteEntry | PendingNoteAnnotation | null;
+
+let _pendingNoteScene: PendingNoteScene = $state(null);
+
+export function setPendingNoteScene(pos: PendingNoteScene): void {
   _pendingNoteScene = pos;
 }
 
 export const pendingNoteScene = {
-  get value(): { x: number; y: number } | null { return _pendingNoteScene; },
+  get value(): PendingNoteScene { return _pendingNoteScene; },
 };
 
 /** Initialise the stores from the global driver. Call once after initDriver(). */

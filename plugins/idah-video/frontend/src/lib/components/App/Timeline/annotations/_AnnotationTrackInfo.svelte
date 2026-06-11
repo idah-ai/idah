@@ -66,9 +66,6 @@
   }
 
   function handleClick() {
-    // Don't set any selection in review mode
-    if (viewport.isReviewWorkspace) return;
-
     /**
      * Select annotation group only — don't change the current drawing mode
      */
@@ -130,7 +127,7 @@
       {/if}
     </div>
 
-    {#if !viewport.isReviewWorkspace}
+    {#if id !== "__entry_notes__"}
       <div class="ml-auto flex shrink-0 items-center">
         {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, disabled, alwaysShow, onClick }] (key)}
           <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>

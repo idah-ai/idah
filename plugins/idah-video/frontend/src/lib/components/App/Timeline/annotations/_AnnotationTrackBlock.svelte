@@ -9,7 +9,7 @@
   } from "$lib/components/App/ContextMenu/store";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { notes, activeNoteId, data, focusNote } from "$lib/state/data.svelte";
+  import { notes, activeNoteId, data, focusNote, pendingNoteScene } from "$lib/state/data.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import type { IVideoAnnotationRecord } from "$lib/types";
   import type { INoteRecord } from "$idah/v2/types";
@@ -29,16 +29,23 @@
   const keyframes = $derived.by(() => {
     if (viewport.isReviewWorkspace) {
       // In review workspace, show note anchor frames as keyframes
-      return notes.list
-        .filter(n =>
-          n.anchor.anchor_type === "annotation" &&
-          n.anchor.annotation_id === annotation.id
-        )
-        .map(n => {
-          const pos = n.anchor.position as { frame?: number } | undefined;
-          return pos?.frame ?? annotation.shape.start;
-        })
-        .sort((a, b) => a - b);
+      const result = new Set(
+        notes.list
+          .filter(n =>
+            n.anchor.anchor_type === "annotation" &&
+            n.anchor.annotation_id === annotation.id
+          )
+          .map(n => {
+            const pos = n.anchor.position as { frame?: number } | undefined;
+            return pos?.frame ?? annotation.shape.start;
+          })
+      );
+      // Add pending annotation-anchored note frame as a ghost keyframe
+      const p = pendingNoteScene.value;
+      if (p?.type === "annotation" && p.annotationId === annotation.id) {
+        result.add(p.frame);
+      }
+      return [...result].sort((a, b) => a - b);
     }
     // In editor workspace, show annotation keyframes
     return annotation.shape.frames.map((f) => f.frame);
@@ -103,8 +110,16 @@
     handleOnContextMenu(e);
   }
 
+  function isPendingFrame(keyframe: number): boolean {
+    const p = pendingNoteScene.value;
+    return p?.type === "annotation" && p.annotationId === annotation.id && p.frame === keyframe;
+  }
+
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();
+
+    // Don't navigate to a pending (ghost) keyframe with no real note
+    if (isPendingFrame(keyframe)) return;
 
     // In review workspace, clicking a keyframe selects the corresponding note
     if (viewport.isReviewWorkspace) {
@@ -151,11 +166,13 @@
       role="button"
       tabindex="-1"
       class="absolute translate-x-[5%] rounded-sm focus:outline-none"
+      class:opacity-50={isPendingFrame(keyframe)}
+      class:cursor-pointer={!isPendingFrame(keyframe)}
       style:top="6px"
       style:height="calc(100% - {6 * 2}px)"
       style:left="{position}%"
       style:width="{width}%"
-      style:background-color={color}
+      style:background-color={isPendingFrame(keyframe) ? 'var(--muted-foreground)' : color}
       onclick={(e) => handleKeyframeClick(e, keyframe)}
       oncontextmenu={(e) => handleKeyframeContextMenu(e, keyframe)}
       onkeypress={() => {}}

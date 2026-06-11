@@ -225,6 +225,19 @@ export class NotesDriverAdapter implements INotesDriverV2 {
     return this.cache.get(id);
   }
 
+  /** Return a sealed view exposing only the INotesDriverV2 public interface. */
+  sealed(): INotesDriverV2 {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const adapter = this;
+    return {
+      onNotesChange: adapter.onNotesChange.bind(adapter),
+      onFocusNote: adapter.onFocusNote.bind(adapter),
+      reportNotePosition: adapter.reportNotePosition.bind(adapter),
+      selectNote: adapter.selectNote.bind(adapter),
+      requestCreateNote: adapter.requestCreateNote.bind(adapter),
+    };
+  }
+
   /** Focus a note — fires onFocusNote listeners on the plugin. */
   focusNote(note: INoteRecord | null): void {
     if (note === null) {

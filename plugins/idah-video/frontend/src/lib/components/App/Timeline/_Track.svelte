@@ -67,9 +67,6 @@
   // ── Click on track background → select the group ──────────────────────
 
   function handleTrackClick(e: MouseEvent) {
-    // Don't set any selection in review mode
-    if (vp.isReviewWorkspace) return;
-
     // Only for clicks directly on the track div (not on TrackItem children)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
     if (trackId) {

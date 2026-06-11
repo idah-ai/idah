@@ -33,10 +33,14 @@
   let paletteOpen = $state(driver.command.isPaletteOpen());
   let initialized = $state(false);
 
-  let noteSidebarOpen = $state(true);
+  let noteSidebarOpen = $state(driver.noteSidebarOpen);
 
   driver.onModeChange((event) => {
     currentMode = event.newValue;
+  });
+
+  driver.onNoteSidebarChange((open) => {
+    noteSidebarOpen = open;
   });
 
   onMount(() => {
@@ -107,7 +111,10 @@
     <button
       class="bg-primary text-primary-foreground hover:bg-primary/90 fixed right-0 z-[100] flex h-12 w-7 items-center justify-center rounded-l-md shadow-md"
       style="top: {headerBarHeight + 8}px;"
-      onclick={() => (noteSidebarOpen = true)}
+      onclick={() => {
+        noteSidebarOpen = true;
+        driver.openNoteSidebar();
+      }}
       title="Open notes"
       aria-label="Open notes"
     >
@@ -129,6 +136,9 @@
   <NoteSidebar
     {driver}
     open={initialized && (currentMode === "review" || currentMode === "note") && noteSidebarOpen}
-    onSidebarClose={() => (noteSidebarOpen = false)}
+    onSidebarClose={() => {
+      noteSidebarOpen = false;
+      driver.closeNoteSidebar();
+    }}
   />
 </div>
