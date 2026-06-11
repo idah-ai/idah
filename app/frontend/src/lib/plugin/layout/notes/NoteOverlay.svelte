@@ -172,7 +172,6 @@
     try {
       if (isCreating && pendingAnchor) {
         await na.createNote({ content_md: contentMd, anchor: pendingAnchor });
-        close();
       } else if (selectedNote) {
         await na.replyToNote(selectedNote.id, contentMd);
         await na.fetchComments(selectedNote.id);
