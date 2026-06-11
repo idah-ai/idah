@@ -25,17 +25,15 @@
   // One-shot rVFC token for a paused seek. Cancelled if another seek fires before
   // the frame is painted so only the latest seek updates displayedFrame.
   let pendingFrameCallbackId: number | null = null;
-  // Set to the target frame *before* writing currentTime so the seeked handler
-  // and the seek $effect can detect and discard stale / redundant events.
+  // Set to the target frame *before* writing currentTime so the seek $effect
+  // can detect and discard stale / redundant events.
   let lastSeekedFrame = $state(-1);
-  // Debounce timer that triggers an HLS HQ reload after the user stops seeking.
-  let hlsReloadTimer: ReturnType<typeof setTimeout> | undefined;
 
   // ── Frame ↔ time helpers ─────────────────────────────────────────
   // The browser uses seconds; the rest of the app is 0-based frame indices.
   // Video is 1-based internally so frame 0 maps to t = 1/fps, not t = 0.
   function timeToFrame(t: number) {
-    return Math.min(Math.round(t * fps), media.totalFrames) - 1;
+    return Math.max(0, Math.min(Math.round(t * fps), media.totalFrames) - 1);
   }
   function frameToTime(f: number) {
     return (f + 1 + 0.001) / fps;
@@ -122,7 +120,6 @@
 
     if (requestPlay) {
       streamHandler?.cancelPendingRender();
-      clearTimeout(hlsReloadTimer);
       videoElement.play();
       isPlaying = true;
       onTogglePlay(true);
@@ -145,18 +142,23 @@
   // Seek flow (paused):
   //   1. Detect a new target frame (currentFrame changed, differs from last seek).
   //   2. Set lastSeekedFrame before writing currentTime so later stale events
-  //      can be discarded by the seeked handler and this effect itself.
+  //      can be discarded by this effect itself.
   //   3. Update videoElement.currentTime to jump the decoder.
   //   4. Register a one-shot rVFC callback to update displayedFrame the instant
-  //      the new frame is actually painted (more precise than the "seeked" event).
-  //   5. Debounce an HLS HQ reload by 300 ms: while the user holds an arrow key
-  //      the seeks stack rapidly (~30 ms apart); we reload only after they stop.
+  //      the new frame is actually painted (complements the seeked fallback handler).
+  //   5. Call streamHandler.loadQuality() which handles LQ-first navigation and
+  //      a 300 ms debounce before upgrading to HQ (managed inside VideoStreamHandler).
   $effect(() => {
     if (!videoElement || isPlaying) return;
 
     const target = viewport.video.currentFrame.value;
     if (target === lastSeekedFrame) return;
 
+    // Capture whether this is the initialization seek (lastSeekedFrame starts at
+    // -1 and the first run positions the video without user input). On that first
+    // run we still seek the video element but skip loadQuality so we don't
+    // interfere with the startup HQ load triggered by the FRAG_LOADED handler.
+    const isInitSeeked = lastSeekedFrame === -1;
     lastSeekedFrame = target;
     videoElement.currentTime = frameToTime(target);
 
@@ -173,13 +175,7 @@
       );
     }
 
-    if (streamHandler) {
-      streamHandler.cancelPendingRender();
-      clearTimeout(hlsReloadTimer);
-      hlsReloadTimer = setTimeout(() => {
-        if (videoElement.paused) streamHandler!.reloadCurrentQuality();
-      }, 300);
-    }
+    if (!isInitSeeked) streamHandler?.loadQuality(frameToTime(target));
   });
 
   // ── Public API ────────────────────────────────────────────────────
@@ -226,7 +222,19 @@
       viewport.video.status = "pause";
     };
 
+    // Update displayedFrame whenever the browser finishes a seek. This is the
+    // primary fallback for cases where rVFC fires with a wrong mediaTime, or
+    // for browsers that don't support requestVideoFrameCallback.
+    // The settle timer inside renderQualityFrame also triggers this (same-value
+    // re-seek for decoder flush), but currentTime is unchanged so the result is
+    // identical — no stale value can be introduced.
+    const handleSeeked = () => {
+      if (isPlaying) return;
+      viewport.video.displayedFrame.value = timeToFrame(videoElement.currentTime);
+    };
+
     const handleResize = () => onResize();
+    videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("play", handlePlay);
     videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("resize", handleResize);
@@ -255,7 +263,7 @@
 
     return () => {
       stopRAF();
-      clearTimeout(hlsReloadTimer);
+      videoElement.removeEventListener("seeked", handleSeeked);
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);
       videoElement.removeEventListener("resize", handleResize);

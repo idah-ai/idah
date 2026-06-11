@@ -1,30 +1,15 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
 
-  // ── Loading states ────────────────────────────────────────────────
-  // highQuality: HLS is fetching a new quality fragment (written by Video.svelte
-  //   via the VideoStreamHandler onLoadingChange callback).
-  // framePending: the user requested a new frame (currentFrame changed) but the
-  //   video element has not confirmed the seek yet (displayedFrame hasn't caught
-  //   up). Suppressed during playback — the RAF loop keeps both in lockstep.
   let highQuality = $derived(viewport.video.loading.highQuality);
   let framePending = $derived(viewport.video.framePending);
 
   let visible = $derived(highQuality || framePending);
-
-  // When both are active, the HQ label is more informative — prefer it.
-  let label = $derived(highQuality ? `Loading: ${viewport.video.loading.qualityLabel}` : "Loading frame…");
+  let label = $derived(highQuality ? `Loading: ${viewport.video.loading.qualityLabel}` : "Loading Frame");
 
   // ── Debounced display state ───────────────────────────────────────
-  // `visible` toggles rapidly during key-hold navigation (true while the seek
-  // is in-flight, false once seeked fires, true again on the next keypress).
-  // Using {#if visible} directly destroys/recreates the DOM element each cycle,
-  // restarting the CSS animation-delay and causing a visible flicker.
-  //
-  // Instead, `displayed` turns ON after 150 ms of continuous `visible` state,
-  // ensuring fast buffered seeks never flash the indicator. Only genuinely slow
-  // (network-bound) seeks show it. `displayed` turns OFF immediately when
-  // `visible` goes false so the indicator hides promptly once loading completes.
+  // Turns ON after 150 ms of continuous `visible` so fast buffered seeks
+  // never flash the indicator. Turns OFF immediately once loading clears.
   let displayed = $state(false);
   let showTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -51,10 +36,26 @@
 
 {#if displayed}
   <div class="loading-indicator" class:loading-indicator--active={visible}>
-    <div class="loading-pill" aria-live="polite" aria-label={label}>
-      <span class="loading-spinner" aria-hidden="true"></span>
-      <span class="loading-text">{label}</span>
-    </div>
+    {#if highQuality}
+      <!-- Image icon with animated stripes; hover reveals the quality label -->
+      <div class="loading-image" aria-label={label} role="status">
+        <div class="image-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21,15 16,10 5,21"/>
+          </svg>
+          <div class="stripe-overlay"></div>
+        </div>
+        <span class="image-label">{label}</span>
+      </div>
+    {:else}
+      <!-- Subtle pill for frame seek -->
+      <div class="loading-pill" aria-live="polite" aria-label={label} role="status">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span class="loading-text">Loading Frame</span>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -66,34 +67,34 @@
     z-index: 100;
     pointer-events: none;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 13px;
-    /* Hidden until the active class is applied */
+    font-size: 12px;
     opacity: 0;
+    transition: opacity 0.2s ease;
   }
 
   .loading-indicator--active {
     opacity: 1;
   }
 
+  /* ── Frame loading pill ─────────────────────────────────────────── */
   .loading-pill {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 20px;
-    backdrop-filter: blur(4px);
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4px 9px;
+    border-radius: 10px;
   }
 
   .loading-spinner {
     flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-top-color: rgba(255, 255, 255, 0.65);
     border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+    animation: spin 0.7s linear infinite;
   }
 
   .loading-text {
@@ -101,9 +102,82 @@
     line-height: 1.4;
   }
 
+  /* ── Quality loading image badge ────────────────────────────────── */
+  .loading-image {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    /* icon-only collapsed state */
+    max-width: 26px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    padding: 3px;
+    pointer-events: auto;
+    cursor: default;
+    transition: max-width 0.25s ease, padding 0.25s ease, background 0.2s ease;
+  }
+
+  .loading-image:hover {
+    max-width: 220px;
+    padding: 3px 9px 3px 3px;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .image-icon {
+    position: relative;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .image-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Diagonal moving stripes over the icon */
+  .stripe-overlay {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(255, 255, 255, 0.18) 3px,
+      rgba(255, 255, 255, 0.18) 6px
+    );
+    background-size: 12px 12px;
+    animation: stripe-move 0.55s linear infinite;
+  }
+
+  /* Label hidden until hover expands the badge */
+  .image-label {
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-width 0.25s ease, opacity 0.15s ease 0.08s, margin-left 0.25s ease;
+    margin-left: 0;
+  }
+
+  .loading-image:hover .image-label {
+    max-width: 180px;
+    opacity: 1;
+    margin-left: 6px;
+  }
+
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes stripe-move {
+    to { background-position: 12px 12px; }
   }
 </style>
