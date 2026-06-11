@@ -7,6 +7,8 @@
   import { Textarea } from "@/components/ui/textarea";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
 
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
   import { cn } from "@/utils";
   import { truncate, truncateEmail } from "@/utils/string";
 
@@ -54,6 +56,25 @@
   let mode = $state<"view" | "edit">("view");
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
+
+  function formatEditedTooltip(dateStr?: Date | string | null): string {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      return (
+        "Edited " +
+        d.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      return "";
+    }
+  }
 
   // Functions
   function switchToViewMode() {
@@ -120,7 +141,14 @@
       <MarkdownPreview value={truncate(content_md, 140)} />
 
       {#if edited_at}
-        <span class="text-muted-foreground text-xs">(Edited)</span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger class="inline-block">
+              <span class="text-muted-foreground text-xs">(Edited)</span>
+            </TooltipTrigger>
+            <TooltipContent>{formatEditedTooltip(edited_at)}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       {/if}
 
       {@render contentActions?.()}

@@ -192,7 +192,7 @@
     // Fit video to viewport on initial load
     requestAnimationFrame(() => viewport.workspace.fitToViewport());
 
-    const cursorSvg = encodeURIComponent(noteIconSvg);
+    const cursorSvg = encodeURIComponent(noteIconSvg.replace('fill="none"', 'fill="white"'));
     const style = document.createElement("style");
     style.textContent = `
       .cursor-note { cursor: url('data:image/svg+xml;charset=utf-8,${cursorSvg}') 0 24, auto; }
@@ -353,8 +353,8 @@
     // Show a temporary marker at the click position
     setPendingNoteScene({
       type: "entry",
-      x: sceneNormalizedCursor[0] * media.width,
-      y: sceneNormalizedCursor[1] * media.height,
+      x: sceneNormalizedCursor[0],
+      y: sceneNormalizedCursor[1],
       frame,
     });
     onAddNewNote(params);
@@ -395,8 +395,8 @@
       setPendingNoteScene({
         type: "annotation",
         annotationId: ann.id,
-        offsetX: sceneNormalizedCursor[0] - centroidN[0],
-        offsetY: sceneNormalizedCursor[1] - centroidN[1],
+        x: sceneNormalizedCursor[0] - centroidN[0],
+        y: sceneNormalizedCursor[1] - centroidN[1],
         frame,
       });
       onAddNewNote({

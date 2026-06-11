@@ -514,7 +514,7 @@ let _unsubNotes: (() => void) | null = null;
  */
 export interface PendingNoteEntry {
   type: "entry";
-  /** Scene position in pixels */
+  /** Scene normalized position */
   x: number;
   y: number;
   /** The frame the note was created at — marker hides when current frame differs */
@@ -525,9 +525,9 @@ export interface PendingNoteAnnotation {
   type: "annotation";
   /** Annotation ID the note is anchored to */
   annotationId: string;
-  /** Offset from the annotation centroid (normalised 0-1 media space) */
-  offsetX: number;
-  offsetY: number;
+  /** Normalised offset from the annotation centroid or position in media (0-1) */
+  x: number;
+  y: number;
   /** The frame the note was created at */
   frame: number;
 }

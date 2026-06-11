@@ -363,7 +363,13 @@
   //   "cursor-grabbing"  → actively dragging (pan, resize, or rotate in progress)
   //   "cursor-grab"      → editable & selected (ready to start a drag)
   //   "cursor-pointer"   → otherwise
-  let bodyCursor = $derived(isEditing ? "cursor-grabbing" : editable && selected ? "cursor-grab" : "cursor-pointer");
+  //   "cursor-note"       → hovering in note mode
+  let bodyCursor = $derived(
+    mode === "note" ? "cursor-note" :
+    isEditing ? "cursor-grabbing" :
+    editable && selected ? "cursor-grab" :
+    "cursor-pointer"
+  );
 
   // ── Hover state for body cursor ───────────────────────────────────────
   let over = $state(false);

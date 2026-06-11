@@ -225,10 +225,6 @@
           content_md: contentMd,
         },
       });
-      showToast.success({
-        title: "Note added",
-        description: "The note has been added.",
-      });
       $refetches.noteFeeds.list = new Date();
     }
 
@@ -247,10 +243,6 @@
             },
           },
         },
-      });
-      showToast.success({
-        title: "Comment added",
-        description: "The note comment has been added.",
       });
       $refetches.noteComments.list = new Date();
     }

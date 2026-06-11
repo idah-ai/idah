@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { SendHorizontalIcon } from "@lucide/svelte";
+  import MarkdownEditor from "@/components/app/markdown/markdown-editor.svelte";
+  import { InputGroupButton } from "@/components/ui/input-group";
+  import { Kbd, KbdGroup } from "@/components/ui/kbd";
   import { onDestroy, onMount } from "svelte";
   import { page } from "$app/state";
 
@@ -12,6 +16,7 @@
   import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { refetches } from "@/utils/refetch";
+  import { modKeyLabel } from "@/plugin/v2/utils/browser";
 
   interface Props {
     notesAdapter: NotesDriverAdapter | null;
@@ -38,6 +43,8 @@
   let scrollContainer: HTMLDivElement | null = $state(null);
 
   let unsubFns: Array<() => void> = [];
+
+  let modKey = $derived(modKeyLabel());
 
   function formatEditedTooltip(dateStr?: string | null): string {
     if (!dateStr) return "";
@@ -171,7 +178,15 @@
     loading = true;
     try {
       if (isCreating && pendingAnchor) {
-        await na.createNote({ content_md: contentMd, anchor: pendingAnchor });
+        const note = await na.createNote({ content_md: contentMd, anchor: pendingAnchor });
+        // Clear creating state and switch to viewing the newly created note
+        pendingAnchor = null;
+        selectedNote = note;
+        contentMd = "";
+        comments = [];
+        na.focusNote(note);
+        na.selectNote(note.id);
+        na.fetchComments(note.id).then((c) => (comments = c));
       } else if (selectedNote) {
         await na.replyToNote(selectedNote.id, contentMd);
         await na.fetchComments(selectedNote.id);
@@ -300,8 +315,8 @@
           {isCreating ? "New Note" : "Note"}
         </span>
 
-        {#if !isCreating && selectedNote}
-          <div class="ml-auto flex items-center gap-1">
+        <div class="ml-auto flex items-center gap-1">
+          {#if !isCreating && selectedNote}
             <!-- Resolve/Reopen check button (same as sidebar) -->
             <Tooltips align="center" ignoreNonKeyboardFocus>
               {#snippet trigger()}
@@ -340,26 +355,27 @@
               onSwitchToEditMode={startEditFeed}
               onDelete={handleDeleteFeed}
             />
-          </div>
-        {/if}
+          {/if}
 
-        <button
-          class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex size-5 items-center justify-center rounded"
-          onclick={close}
-          aria-label="Close"
-          type="button"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-3.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg
+          <!-- Close button -->
+          <button
+            class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex size-5 items-center justify-center rounded"
+            onclick={close}
+            aria-label="Close"
+            type="button"
           >
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-3.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg
+            >
+          </button>
+        </div>
       </div>
 
       <!-- BODY -->
@@ -486,49 +502,49 @@
 
       <!-- FOOTER -->
       <div class="border-t px-3 py-2">
-        <div class="relative">
-          <textarea
-            class="border-border w-full resize-none rounded border p-2 pr-8 text-sm"
-            rows="2"
-            placeholder={isCreating ? "Write your note..." : "Reply..."}
-            bind:value={contentMd}
+        <div
+          onkeydown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+        >
+          <MarkdownEditor
             disabled={loading}
-            onkeydown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-          ></textarea>
-          <button
-            class="text-muted-foreground hover:text-foreground absolute right-2 bottom-2 inline-flex size-5 items-center justify-center rounded"
-            onclick={handleSubmit}
-            disabled={loading || !contentMd.trim()}
-            aria-label="Send"
-            type="button"
+            placeholder={isCreating ? "Write your note..." : "Reply..."}
+            value={contentMd}
+            onInput={(e) => (contentMd = e.currentTarget.value)}
           >
-            {#if loading}
-              <svg
-                class="size-3.5 animate-spin"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="30" /></svg
-              >
-            {:else}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="size-3.5"><path d="M22 2 11 13" /><path d="m22 2-7 20-4-9-9-4Z" /></svg
-              >
-            {/if}
-          </button>
+            {#snippet actions()}
+              <Tooltips class="ml-auto" align="center">
+                {#snippet trigger()}
+                  <InputGroupButton
+                    aria-label="Send"
+                    class="rounded-full"
+                    variant="default"
+                    size="icon-xs"
+                    disabled={!contentMd.trim() || loading}
+                    onclick={handleSubmit}
+                  >
+                    <SendHorizontalIcon class="size-3" />
+                    <span class="sr-only"> Send </span>
+                  </InputGroupButton>
+                {/snippet}
+
+                {#snippet content()}
+                  <div class="flex items-center gap-2">
+                    <KbdGroup>
+                      <Kbd>{modKey}</Kbd>
+                      <Kbd>Enter</Kbd>
+                    </KbdGroup>
+
+                    <span>to submit</span>
+                  </div>
+                {/snippet}
+              </Tooltips>
+            {/snippet}
+          </MarkdownEditor>
         </div>
       </div>
     </div>
