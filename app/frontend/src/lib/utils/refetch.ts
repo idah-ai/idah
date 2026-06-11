@@ -8,6 +8,7 @@ interface Refetch {
 export interface Refetches {
   /** IAM */
   accounts: Refetch;
+  apiKeys: Refetch;
 
   /** DATASET */
   projects: Refetch;
@@ -34,6 +35,10 @@ export type RefetchesKey = keyof Refetches;
 export const refetches = writable<Refetches>({
   /** IAM */
   accounts: {
+    list: new Date(),
+    get: new Date(),
+  },
+  apiKeys: {
     list: new Date(),
     get: new Date(),
   },
