@@ -135,6 +135,9 @@
             "status",
           ],
         },
+        filters: {
+          account_id: $authStatus.authContext?.id,
+        },
       }}
       {onLoadSetContexts}
     >
