@@ -32,13 +32,8 @@
       noteCommentRecord = updatedNoteCommentRes.data;
 
       $refetches.noteComments.list = new Date();
-      showToast.success({
-        title: "Comment updated",
-        description: "The note comment has been updated.",
-      });
     } catch (error) {
       console.error(error);
-      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 
@@ -47,13 +42,8 @@
       await noteCommentsBackendDataSource.delete(id, { showErrorToast: false });
 
       $refetches.noteComments.list = new Date();
-      showToast.success({
-        title: "Comment deleted",
-        description: "The note comment has been deleted.",
-      });
     } catch (error) {
       console.log(error);
-      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 </script>

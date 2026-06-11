@@ -142,7 +142,6 @@
       },
     });
 
-    showToast.success({ title: "Note added successfully." });
     $refetches.noteFeeds.list = new Date();
 
     context.notes.gotoFeed(createdNoteFeedRes.data.id);
@@ -173,7 +172,6 @@
     });
     await loadNoteFeed(selectedNoteFeed.id);
     $refetches.noteFeeds.list = new Date();
-    showToast.success({ title: "Note added successfully." });
 
     // Reset
     contentMd = "";

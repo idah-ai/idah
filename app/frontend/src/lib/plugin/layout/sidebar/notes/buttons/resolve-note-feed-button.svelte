@@ -30,13 +30,8 @@
 
       onNoteResolved?.(resolvedNoteFeedRes.data);
       $refetches.noteFeeds.list = new Date();
-      showToast.success({
-        title: "Note resolved",
-        description: "The note has been resolved.",
-      });
     } catch (error) {
       console.error(error);
-      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 </script>
