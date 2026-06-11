@@ -4,8 +4,24 @@ import { parseSingleElementError, parseCollectionReturn } from "@/data/model/jso
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
-import type { CollectionResponse, JsonApiErrorResponse } from "@/data/model/types";
+import type { CollectionResponse, JsonApiErrorResponse, JsonApiMeta } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+
+// A file the backend did not turn into a media record: either intentionally
+// skipped (e.g. unsupported type) or failed to store. Same shape for both.
+export interface UploadIssueFile {
+  filename: string;
+  message: string;
+}
+
+// Upload response, narrowing `meta` to the skipped/errored lists the backend
+// reports when extracting a zip archive.
+export type MediaUploadResponse = Omit<CollectionResponse<MediaRecord>, "meta"> & {
+  meta?: JsonApiMeta & {
+    skipped?: UploadIssueFile[];
+    errored?: UploadIssueFile[];
+  };
+};
 
 @type("media:medias")
 export class MediaRecord extends Record {
@@ -96,7 +112,7 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
     project_id: string,
     key: string = "",
     modality?: string,
-  ): Promise<CollectionResponse<MediaRecord> | JsonApiErrorResponse> => {
+  ): Promise<MediaUploadResponse | JsonApiErrorResponse> => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("project_id", project_id);
@@ -125,7 +141,9 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
       return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
     }
 
-    if (body && body.data) return Promise.resolve(parseCollectionReturn<MediaRecord>(body));
+    // `meta` is narrowed to the upload-specific shape at this single boundary;
+    // the generic parser types it as the open-ended JsonApiMeta.
+    if (body && body.data) return Promise.resolve(parseCollectionReturn<MediaRecord>(body) as MediaUploadResponse);
 
     throw "No data returned";
   },

@@ -36,11 +36,6 @@
     message?: string;
   }
 
-  interface SkippedFile {
-    filename: string;
-    message: string;
-  }
-
   let projectId = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
   let selectedMedias: FileList | null = $state(null);
@@ -91,8 +86,8 @@
       return;
     }
 
-    const allSkippedFiles: string[] = [];
     let processedCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
 
     /** One "uploading" placeholder per selected file; final rows replace the placeholder
@@ -133,8 +128,8 @@
         }
 
         if (createdMedias.meta?.skipped) {
-          for (const skippedFile of createdMedias.meta.skipped as SkippedFile[]) {
-            allSkippedFiles.push(skippedFile.filename);
+          for (const skippedFile of createdMedias.meta.skipped) {
+            skippedCount++;
             finalizeRow({
               name: skippedFile.filename,
               compressedName: isZip ? media.name : null,
@@ -145,7 +140,7 @@
         }
 
         if (createdMedias.meta?.errored) {
-          for (const erroredFile of createdMedias.meta.errored as SkippedFile[]) {
+          for (const erroredFile of createdMedias.meta.errored) {
             errorCount++;
             finalizeRow({
               name: erroredFile.filename,
@@ -197,15 +192,15 @@
     }
 
     if (errorCount > 0) {
-      const skippedNote = allSkippedFiles.length > 0 ? ` ${allSkippedFiles.length} files were skipped.` : "";
+      const skippedNote = skippedCount > 0 ? ` ${skippedCount} files were skipped.` : "";
       showToast.error({
         title: "Some files failed to upload",
         description: `Successfully uploaded ${processedCount} entries.${skippedNote} ${errorCount} files failed.`,
       });
-    } else if (allSkippedFiles.length > 0) {
+    } else if (skippedCount > 0) {
       showToast.success({
         title: "Entries uploaded with skips",
-        description: `Successfully uploaded ${processedCount} entries. ${allSkippedFiles.length} files were skipped.`,
+        description: `Successfully uploaded ${processedCount} entries. ${skippedCount} files were skipped.`,
       });
     } else {
       showToast.success({
