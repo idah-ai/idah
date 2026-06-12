@@ -21,13 +21,18 @@
   let streamHandler: VideoStreamHandler | undefined;
 
   let isPlaying = $state(false);
-  let animationFrameId: number | null = $state(null);
+  let animationFrameId: number | null = null;
   // One-shot rVFC token for a paused seek. Cancelled if another seek fires before
   // the frame is painted so only the latest seek updates displayedFrame.
   let pendingFrameCallbackId: number | null = null;
   // Set to the target frame *before* writing currentTime so the seek $effect
   // can detect and discard stale / redundant events.
-  let lastSeekedFrame = $state(-1);
+  let lastSeekedFrame = -1;
+  // Whether requestVideoFrameCallback is supported. Set once at mount; used in
+  // startRAF, stopRAF, and the seek effect to avoid repeated `in` checks and
+  // TypeScript narrowing issues (the `in` guard narrows videoElement to never
+  // after a return, which breaks downstream .currentTime access).
+  let hasRVFC = false;
 
   // ── Frame ↔ time helpers ─────────────────────────────────────────
   // The browser uses seconds; the rest of the app is 0-based frame indices.
@@ -48,7 +53,7 @@
   // Falls back to requestAnimationFrame on unsupported browsers (slightly less
   // accurate but functionally equivalent).
   function startRAF() {
-    if ("requestVideoFrameCallback" in videoElement) {
+    if (hasRVFC) {
       const tick = (_now: number, metadata: VideoFrameCallbackMetadata) => {
         if (!videoElement) return;
         const frame = timeToFrame(metadata.mediaTime);
@@ -74,7 +79,7 @@
   // Stops the active RAF/rVFC loop started by startRAF().
   function stopRAF() {
     if (animationFrameId == null) return;
-    if ("cancelVideoFrameCallback" in videoElement) {
+    if (hasRVFC) {
       (videoElement as any).cancelVideoFrameCallback(animationFrameId);
     } else {
       cancelAnimationFrame(animationFrameId);
@@ -112,13 +117,10 @@
   //   1. Call videoElement.pause() → browser fires "pause" event.
   //   2. Stop the RAF/rVFC loop.
   //   3. Sync the displayed frame to the exact paused position.
-  const requestPlay = $derived(!isPlaying && viewport.video.status === "play");
-  const requestPause = $derived(isPlaying && viewport.video.status === "pause");
-
   $effect(() => {
     if (!videoElement) return;
 
-    if (requestPlay) {
+    if (!isPlaying && viewport.video.status === "play") {
       streamHandler?.cancelPendingRender();
       videoElement.play();
       isPlaying = true;
@@ -126,7 +128,7 @@
       startRAF();
     }
 
-    if (requestPause) {
+    if (isPlaying && viewport.video.status === "pause") {
       videoElement.pause();
       isPlaying = false;
       onTogglePlay(false);
@@ -172,7 +174,7 @@
     // currentFrame and framePending would latch, leaving the "Loading Frame"
     // pill stuck on that frame. The callback is cancelled whenever a newer
     // seek fires, so `target` is always the seek this paint belongs to.
-    if ("requestVideoFrameCallback" in videoElement) {
+    if (hasRVFC) {
       if (pendingFrameCallbackId !== null) {
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
       }
@@ -217,9 +219,7 @@
   onMount(() => {
     videoElement.volume = 0;
     videoElement.muted = true;
-    // Captured once — capability doesn't change during the component's lifetime.
-    // Used to skip handleSeeked on rVFC-capable browsers (see comment there).
-    const hasRVFC = "requestVideoFrameCallback" in videoElement;
+    hasRVFC = "requestVideoFrameCallback" in videoElement;
 
     // "play" fires for both programmatic (videoElement.play()) and browser-native play.
     // Only update status — the $effect reacts and runs all side effects (startRAF, onTogglePlay, etc.)
@@ -288,7 +288,7 @@
       // stopRAF only cancels the playback loop's token. The seek effect's
       // one-shot rVFC is tracked separately and must be cancelled here so it
       // can't fire after unmount and write to displayedFrame.
-      if (pendingFrameCallbackId !== null && "cancelVideoFrameCallback" in videoElement) {
+      if (pendingFrameCallbackId !== null && hasRVFC) {
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
         pendingFrameCallbackId = null;
       }

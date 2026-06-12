@@ -27,14 +27,14 @@ interface TimeRange {
 
 // One in-flight "replace with HQ at time T, then repaint" operation (or the
 // LQ-fallback handoff that precedes it on slow networks).
-//   detach       — removes the FRAG_BUFFERED listener this render waits on.
+//   fragListener — the FRAG_BUFFERED handler awaiting coverage; unregistered on cancel.
 //   settleTimer  — short delay before nudging currentTime once coverage is met.
 //   timeoutTimer — safety fallback that tears the render down if the awaited
 //                  appends never arrive, so the loader can never hang on.
 //   loaderShown  — whether onLoadingChange(true) was emitted for this render
 //                  (so cancellation knows whether to emit onLoadingChange(false)).
 interface PendingRender {
-  detach: () => void;
+  fragListener: (event: string, data: any) => void;
   settleTimer: ReturnType<typeof setTimeout> | null;
   timeoutTimer: ReturnType<typeof setTimeout> | null;
   loaderShown: boolean;
@@ -253,7 +253,7 @@ export class VideoStreamHandler {
     // on non-HQ data. No debounce — when the annotator stops, they want
     // detail now.
     this.boundPauseHandler = () => {
-      this.cancelAdaptiveTransition();
+      this.cancelTimer("adaptiveTransitionTimer");
       this.isPaused = true;
       if (this.maxQualityLevel < 0 || !this.hls) return;
       this.hls.loadLevel = this.maxQualityLevel;
@@ -301,33 +301,19 @@ export class VideoStreamHandler {
     return { height, width, label: `${height}p` };
   }
 
-  private cancelAdaptiveTransition(): void {
-    if (this.adaptiveTransitionTimer !== null) {
-      clearTimeout(this.adaptiveTransitionTimer);
-      this.adaptiveTransitionTimer = null;
+  private cancelTimer(key: "upgradeTimer" | "hqDeadlineTimer" | "adaptiveTransitionTimer"): void {
+    if (this[key] !== null) {
+      clearTimeout(this[key]!);
+      this[key] = null;
     }
   }
 
-  private cancelUpgradeTimer(): void {
-    if (this.upgradeTimer !== null) {
-      clearTimeout(this.upgradeTimer);
-      this.upgradeTimer = null;
-    }
-  }
-
-  private cancelHQDeadline(): void {
-    if (this.hqDeadlineTimer !== null) {
-      clearTimeout(this.hqDeadlineTimer);
-      this.hqDeadlineTimer = null;
-    }
-  }
-
-  // Tear down the in-flight render: detach its listener, clear its settle
-  // timer, and hide the loader if it had been shown for this render.
+  // Tear down the in-flight render: unregister its listener, clear its timers,
+  // and hide the loader if it had been shown for this render.
   private clearPendingRender(): void {
     if (!this.pendingRender) return;
-    const { detach, settleTimer, timeoutTimer, loaderShown } = this.pendingRender;
-    detach();
+    const { fragListener, settleTimer, timeoutTimer, loaderShown } = this.pendingRender;
+    this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener);
     if (settleTimer !== null) clearTimeout(settleTimer);
     if (timeoutTimer !== null) clearTimeout(timeoutTimer);
     this.pendingRender = null;
@@ -496,7 +482,7 @@ export class VideoStreamHandler {
       }, RENDER_TIMEOUT_MS);
 
     this.pendingRender = {
-      detach: () => this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener),
+      fragListener,
       settleTimer: null,
       timeoutTimer: armWatchdog(),
       loaderShown: true,
@@ -542,7 +528,7 @@ export class VideoStreamHandler {
     };
 
     this.pendingRender = {
-      detach: () => this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener),
+      fragListener,
       settleTimer: null,
       timeoutTimer: null,
       loaderShown: false,
@@ -558,7 +544,7 @@ export class VideoStreamHandler {
   // are being filled at HQ by the seek-follow load (the pending element seek
   // paints when the data arrives).
   private upgradeToHQ(time: number): void {
-    this.cancelUpgradeTimer();
+    this.cancelTimer("upgradeTimer");
     if (!this.hls || !this.isPaused || this.maxQualityLevel <= 0) return;
     if (!this.lqRangeAt(time)) return;
     this.renderHQAt(time);
@@ -627,14 +613,14 @@ export class VideoStreamHandler {
   }
 
   public cancelPendingRender(): void {
-    this.cancelUpgradeTimer();
-    this.cancelHQDeadline();
+    this.cancelTimer("upgradeTimer");
+    this.cancelTimer("hqDeadlineTimer");
     this.clearPendingRender();
-    this.cancelAdaptiveTransition();
   }
 
   public destroy(): void {
     this.cancelPendingRender();
+    this.cancelTimer("adaptiveTransitionTimer");
     if (this.boundPlayHandler) {
       this.videoElement.removeEventListener("play", this.boundPlayHandler);
       this.boundPlayHandler = null;
