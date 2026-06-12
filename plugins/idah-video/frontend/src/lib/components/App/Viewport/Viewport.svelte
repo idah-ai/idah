@@ -1,12 +1,13 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
+  import { viewport, VIEWPORT_MAX_ZOOM, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
-  import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
-  import { viewport, VIEWPORT_MIN_ZOOM, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
+
   import SyncIndicator from "./SyncIndicator.svelte";
-  import { media } from "$lib/state/media.svelte";
+
+  import { type Point } from "$lib/utils/math/point";
 
   // Props
   interface Props {
@@ -115,7 +116,6 @@
    * integer values (e.g. 3), which would be imperceptible without this conversion.
    */
   function normalizeWheelDelta(delta: number, deltaMode: number): number {
-
     if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
     if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * size[1];
     return delta; // DOM_DELTA_PIXEL — already in pixels

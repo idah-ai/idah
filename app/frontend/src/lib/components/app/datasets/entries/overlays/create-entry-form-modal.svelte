@@ -17,8 +17,13 @@
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
+  // Types
+  interface CreateEntryFormModalProps extends FormModalBaseProps {
+    modality: string;
+  }
+
   // Props
-  let { action, title, open = $bindable() }: FormModalBaseProps = $props();
+  let { action, title, open = $bindable(), modality }: CreateEntryFormModalProps = $props();
 
   // Variables
   interface UploadStatuses {
@@ -45,6 +50,9 @@
 
     return false;
   });
+
+  const acceptedFileTypes =
+    modality === "idah-video" ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"] : [".jpg", ".jpeg", ".png"];
 
   // Functions
   function resetForm(): void {
@@ -163,11 +171,7 @@
       {/each}
     </div>
   {:else}
-    <FileUpload
-      class="py-12"
-      acceptedFileTypes={[".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"]}
-      onFilesSelected={handleFilesSelected}
-    />
+    <FileUpload class="py-12" {acceptedFileTypes} onFilesSelected={handleFilesSelected} />
   {/if}
 
   {#snippet actions()}
