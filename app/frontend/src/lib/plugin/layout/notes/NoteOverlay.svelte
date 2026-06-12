@@ -388,7 +388,7 @@
           <!-- Original note feed -->
           <div class="bg-muted/30 rounded px-2 py-1.5">
             <div class="flex items-center gap-1.5 text-xs">
-              <span class="text-base font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
+              <span class="text-sm font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
               <div class="ml-auto flex items-center">
                 <NoteDropdownMenus
                   noteFeedId={selectedNote.id}
@@ -445,7 +445,7 @@
               data-comment-id={comment.id}
               class={["rounded px-2 py-1.5", highlightedCommentId === comment.id ? "bg-muted" : ""].join(" ")}
             >
-              <div class="flex items-center gap-1.5 text-base">
+              <div class="flex items-center gap-1.5 text-sm">
                 <span class="font-semibold">{comment.created_by_email}</span>
                 <div class="ml-auto flex items-center">
                   <NoteDropdownMenus

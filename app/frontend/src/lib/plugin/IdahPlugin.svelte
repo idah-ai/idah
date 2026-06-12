@@ -86,7 +86,15 @@
       <NoteOverlay notesAdapter={driver.notesAdapter} />
     {/if}
 
-    <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />
+    <AnnotationHeaderBar
+      bind:ref={headerBarElement}
+      {driver}
+      {noteSidebarOpen}
+      onNoteToggle={() => {
+        noteSidebarOpen = !noteSidebarOpen;
+        driver.toggleNoteSidebar();
+      }}
+    />
 
     <IdahCommandPalette
       open={paletteOpen}
@@ -105,32 +113,6 @@
       Could not find plugin
     {/await}
   </div>
-
-  <!-- Note Sidebar toggle button (visible when in review workspace and sidebar closed) -->
-  {#if initialized && (currentMode === "review" || currentMode === "note") && !noteSidebarOpen}
-    <button
-      class="bg-primary text-primary-foreground hover:bg-primary/90 fixed right-0 z-[100] flex h-12 w-7 items-center justify-center rounded-l-md shadow-md"
-      style="top: {headerBarHeight + 8}px;"
-      onclick={() => {
-        noteSidebarOpen = true;
-        driver.openNoteSidebar();
-      }}
-      title="Open notes"
-      aria-label="Open notes"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"><path d="m18 18 -6-6 6-6" /></svg
-      >
-    </button>
-  {/if}
 
   <!-- Note Sidebar (overlay) -->
   <NoteSidebar

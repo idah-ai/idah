@@ -2,6 +2,7 @@
   import {
     ChevronDownIcon,
     KeyboardIcon,
+    MessageCircleDashedIcon,
     MoonIcon,
     Settings2Icon,
     SquareCheckIcon,
@@ -36,8 +37,10 @@
   // Props
   interface Props {
     driver: IIdahDriverV2;
+    noteSidebarOpen?: boolean;
+    onNoteToggle?: () => void;
   }
-  let { driver }: Props = $props();
+  let { driver, noteSidebarOpen = false, onNoteToggle }: Props = $props();
 
   // Variables
   let loading = $state(false);
@@ -111,6 +114,16 @@
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
+    {#if !noteSidebarOpen && (currentMode === "note" || currentMode === "review")}
+      <ToolTooltip label="Notes" shortcut={cmdShortcut("core.toggle_note_sidebar")} align="center" delayDuration={100}>
+        {#snippet trigger()}
+          <Button variant="ghost" size="icon-sm" onclick={onNoteToggle}>
+            <MessageCircleDashedIcon />
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
+
     <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
