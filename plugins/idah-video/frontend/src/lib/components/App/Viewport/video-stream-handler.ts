@@ -14,12 +14,16 @@ interface VideoStreamHandlerOptions {
   onLoadingChange?: (loading: boolean, qualityInfo?: QualityInfo) => void;
 }
 
-// One in-flight "load level N at time T, then repaint" operation.
+interface TimeRange {
+  start: number;
+  end: number;
+}
+
+// One in-flight "replace with HQ at time T, then repaint" operation.
 //   fragListener — FRAG_LOADED listener awaiting the target fragment(s).
 //   settleTimer  — append-settle delay before nudging currentTime.
 //   timeoutTimer — safety fallback that tears the render down if the awaited
-//                  fragment(s) never arrive (e.g. already buffered so hls.js
-//                  emits no FRAG_LOADED), so the loader can never hang on.
+//                  fragment(s) never arrive, so the loader can never hang on.
 //   loaderShown  — whether onLoadingChange(true) was emitted for this render
 //                  (so cancellation knows whether to emit onLoadingChange(false)).
 interface PendingRender {
@@ -32,30 +36,43 @@ interface PendingRender {
 // Wait this long after FRAG_LOADED for the SourceBuffer append to complete
 // before nudging currentTime to repaint.
 const SETTLE_MS = 50;
-// Debounce after the last navigation seek before upgrading the frame to HQ.
+// Debounce after the last navigation seek before upgrading an LQ frame to HQ.
 const UPGRADE_DEBOUNCE_MS = 300;
 // Switch to ABR this long after playback starts and stays stable.
 const PLAYBACK_ABR_DELAY_MS = 3000;
-// renderLevelAt inactivity watchdog: abandon a render only after this long with
+// renderHQAt inactivity watchdog: abandon a render only after this long with
 // no fragment in flight (so the loader can't hang when the required FRAG_LOADED
 // never fires). It re-arms while a fragment is downloading, so a slow HQ load
 // that takes longer than this is never cut off.
 const RENDER_TIMEOUT_MS = 15000;
+// Slack when comparing a time against buffered / tracked range boundaries,
+// matching the tolerance hls.js itself applies to fragment lookups.
+const RANGE_TOLERANCE_S = 0.1;
 
 /**
  * Manages HLS adaptive streaming for a paused-frame annotation workflow.
  *
- * The job is small: while the annotator navigates frames (paused, rapid
- * seeking) show the LOWEST quality so frames appear instantly; once they stop
- * on a frame, upgrade it to the HIGHEST quality. Playback uses HLS ABR.
+ * HQ-first design: after a short low-quality burst paints the first frame,
+ * the loader is pinned to the highest quality level and every fragment that
+ * enters the buffer from then on is HQ. A paused seek into buffered territory
+ * therefore needs no quality work at all — the decoder paints HQ straight
+ * from the buffer, with no level switch, no flush, and no repaint nudge.
+ * This is what eliminates the buffer churn and frame jumping the old
+ * LQ-first cycle caused on every navigation.
  *
- * It is built from one reusable primitive, renderLevelAt(level, time):
- *   - point HLS at `level`, load around `time`, wait for the fragment(s),
- *     then nudge currentTime to flush the decoder and paint the new quality.
+ * The only quality work left is replacing tracked non-HQ data (the initial
+ * burst region, fragments appended by ABR during playback) when the user
+ * settles on a frame inside it. That replacement is targeted: it flushes just
+ * the contaminated interval — never the whole buffer — using the same
+ * BUFFER_FLUSHING event hls.js fires internally for evictions.
  *
- * Navigation (loadQuality) renders level 0 immediately, then schedules an HQ
- * upgrade UPGRADE_DEBOUNCE_MS after the last seek. Pause/initial-load upgrade
- * immediately.
+ * Two hls.js API facts this class is built around:
+ *   - `hls.currentLevel = N` force-flushes the buffer to switch immediately;
+ *     `hls.loadLevel = N` only changes what future loads fetch. We use
+ *     loadLevel exclusively so buffered data is never thrown away wholesale.
+ *   - While load is started, the stream controller follows media "seeking"
+ *     events on its own (aborting stale fragment requests and re-ticking at
+ *     the new position), so unbuffered seeks need no manual startLoad call.
  */
 export class VideoStreamHandler {
   private videoElement: HTMLVideoElement;
@@ -68,13 +85,23 @@ export class VideoStreamHandler {
   private isPaused = true;
 
   // True while hls.js has a fragment request in flight (between FRAG_LOADING and
-  // FRAG_LOADED/error). The renderLevelAt watchdog uses this to distinguish a
+  // FRAG_LOADED/error). The renderHQAt watchdog uses this to distinguish a
   // genuinely stuck render (nothing downloading) from a slow-but-progressing one.
   private fragLoadInFlight = false;
 
   private endOfFrameTime: number;
   private initialFragmentCount: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
+
+  // ── LQ range bookkeeping ──────────────────────────────────────────
+  // One SourceBuffer holds exactly one quality per time range, and MSE does
+  // not expose which level the bytes came from — so the handler keeps its own
+  // map. Every appended non-HQ fragment adds its window here; every appended
+  // HQ fragment subtracts it. FRAG_BUFFERED reports what actually landed in
+  // the buffer (not what was requested), so this map is ground truth even
+  // when loads race or get aborted. A buffered seek consults it to decide
+  // between "free — decoder paints HQ from buffer" and "schedule an upgrade".
+  private lqRanges: TimeRange[] = [];
 
   // The single in-flight render. Only one exists at a time; starting a new one
   // (or cancelling) clears the previous.
@@ -85,18 +112,6 @@ export class VideoStreamHandler {
 
   // Deferred ABR switch during playback.
   private adaptiveTransitionTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Time of the most recent successful renderLevelAt(maxQualityLevel) settle.
-  // The fast path treats a target as "already HQ" only when it falls in the
-  // same SourceBuffer range as this value AND forward of it (forward buffering
-  // by hls.js at maxQualityLevel extends the HQ region; backward of the render
-  // position may still hold pre-existing LQ data, so it is excluded).
-  // Cleared whenever a level switch invalidates the buffer's HQ status —
-  // see renderLevelAt, boundPlayHandler, the ABR transition.
-  // Trusting `hls.currentLevel === maxQualityLevel` alone is wrong: the level
-  // is set synchronously by renderLevelAt before any HQ fragment loads, so a
-  // cancelled HQ render leaves currentLevel=maxQL with LQ still in the buffer.
-  private lastHQRenderTime: number | null = null;
 
   // DOM event references stored for clean removal on destroy.
   private boundPlayHandler: (() => void) | null = null;
@@ -121,7 +136,7 @@ export class VideoStreamHandler {
       return;
     }
 
-    // A generous buffer window keeps level-0 fragments around the playhead so
+    // A generous buffer window keeps HQ fragments around the playhead so
     // most navigation seeks land in already-buffered territory.
     this.hls = new Hls({
       maxBufferLength: 30,
@@ -140,10 +155,12 @@ export class VideoStreamHandler {
   private setupEventListeners(): void {
     if (!this.hls) return;
 
-    // Record quality levels; start at LQ so the first frames appear fast.
+    // Record quality levels; run the initial burst at LQ so the first frame
+    // appears fast. loadLevel (not currentLevel) — nothing to flush yet, but
+    // the invariant is that this class never uses the flushing setter.
     this.hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
       this.maxQualityLevel = data.levels.length - 1;
-      if (this.hls) this.hls.currentLevel = 0;
+      if (this.hls) this.hls.loadLevel = 0;
     });
 
     // Track in-flight fragment requests so the render watchdog can tell a slow
@@ -152,15 +169,30 @@ export class VideoStreamHandler {
       this.fragLoadInFlight = true;
     });
 
-    // After the initial LQ burst, stop loading and immediately upgrade the
-    // first frame to HQ so the annotator sees full quality from the start.
+    // Maintain the LQ range map from what actually lands in the SourceBuffer.
+    this.hls.on(Hls.Events.FRAG_BUFFERED, (_event, data) => {
+      const frag = data.frag;
+      if (frag.type !== "main") return;
+      const start = frag.start;
+      const end = frag.start + frag.duration;
+      if (frag.level === this.maxQualityLevel) this.subtractLQRange(start, end);
+      else this.addLQRange(start, end);
+    });
+
+    // After the initial LQ burst: pin the loader to HQ for good, and replace
+    // the burst region under the current frame so the annotator sees full
+    // quality from the start. renderHQAt is called unconditionally (not via
+    // upgradeToHQ) because FRAG_BUFFERED for the newest burst fragment may
+    // not have fired yet — the burst region is LQ by construction.
     this.hls.on(Hls.Events.FRAG_LOADED, () => {
       this.fragLoadInFlight = false;
       this.fragmentsLoaded++;
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
-        this.hls?.stopLoad();
         this.isInitialLoad = false;
-        if (this.maxQualityLevel > 0) this.upgradeToHQ(this.seekTime());
+        if (this.hls && this.maxQualityLevel > 0) {
+          this.hls.loadLevel = this.maxQualityLevel;
+          this.renderHQAt(this.seekTime());
+        }
       }
     });
 
@@ -168,29 +200,30 @@ export class VideoStreamHandler {
       this.isPaused = false;
       this.isInitialLoad = false;
       this.cancelPendingRender();
-      // Playback moves the playhead and (after ABR) may fill the buffer at
-      // varied levels — the HQ marker established before play is no longer a
-      // reliable claim about what the user is now looking at.
-      this.lastHQRenderTime = null;
       if (!this.hls) return;
       this.hls.startLoad(this.seekTime());
-      // Switch to ABR after a few seconds of stable playback.
+      // Hand quality selection to ABR after a few seconds of stable playback.
+      // loadLevel = -1 switches future loads only — no flush, no stutter.
+      // Whatever levels ABR appends are recorded by the FRAG_BUFFERED map,
+      // so any non-HQ playback data is upgraded on the next paused visit.
       this.adaptiveTransitionTimer = setTimeout(() => {
         this.adaptiveTransitionTimer = null;
         if (this.hls && !this.videoElement.paused) {
-          this.hls.currentLevel = -1;
-          this.lastHQRenderTime = null;
+          this.hls.loadLevel = -1;
         }
       }, PLAYBACK_ABR_DELAY_MS);
     };
     this.videoElement.addEventListener("play", this.boundPlayHandler);
 
-    // On pause (from play or natural end): bypass the debounce and upgrade
-    // to HQ immediately so the settled frame is always full quality.
+    // On pause (from play or natural end): re-pin the loader to HQ (playback
+    // may have handed it to ABR) and upgrade the settled frame if it landed
+    // on non-HQ data. No debounce — when the annotator stops, they want
+    // detail now.
     this.boundPauseHandler = () => {
       this.cancelAdaptiveTransition();
       this.isPaused = true;
       if (this.maxQualityLevel < 0 || !this.hls) return;
+      this.hls.loadLevel = this.maxQualityLevel;
       this.upgradeToHQ(this.seekTime());
     };
     this.videoElement.addEventListener("pause", this.boundPauseHandler);
@@ -213,34 +246,19 @@ export class VideoStreamHandler {
   private isBufferedAt(t: number): boolean {
     const b = this.videoElement.buffered;
     for (let i = 0; i < b.length; i++) {
-      if (b.start(i) <= t + 0.1 && t <= b.end(i) + 0.1) return true;
+      if (b.start(i) <= t + RANGE_TOLERANCE_S && t <= b.end(i) + RANGE_TOLERANCE_S) return true;
     }
     return false;
   }
 
-  private bufferedRangeContaining(t: number): { start: number; end: number } | null {
+  private bufferedRangeContaining(t: number): TimeRange | null {
     const b = this.videoElement.buffered;
     for (let i = 0; i < b.length; i++) {
-      if (b.start(i) <= t + 0.1 && t <= b.end(i) + 0.1) {
+      if (b.start(i) <= t + RANGE_TOLERANCE_S && t <= b.end(i) + RANGE_TOLERANCE_S) {
         return { start: b.start(i), end: b.end(i) };
       }
     }
     return null;
-  }
-
-  // True when `time` is forward of the last confirmed HQ render and still
-  // sits in the same SourceBuffer range. That range grows as hls.js continues
-  // buffering forward at maxQualityLevel after a settled render, so this
-  // captures the common "step one frame inside the HQ window" case.
-  // Returns false when the reference position has been evicted (range null),
-  // which forces a normal upgrade cycle that will re-establish tracking.
-  private isHQConfirmedAt(time: number): boolean {
-    if (this.lastHQRenderTime === null) return false;
-    const tol = 0.1;
-    if (time + tol < this.lastHQRenderTime) return false;
-    const range = this.bufferedRangeContaining(this.lastHQRenderTime);
-    if (!range) return false;
-    return time <= range.end + tol;
   }
 
   private getQualityInfo(level: number): QualityInfo | undefined {
@@ -276,24 +294,98 @@ export class VideoStreamHandler {
     if (loaderShown) this.onLoadingChange(false);
   }
 
+  // ── LQ range map ──────────────────────────────────────────────────
+
+  private addLQRange(start: number, end: number): void {
+    const merged: TimeRange[] = [];
+    let s = start;
+    let e = end;
+    for (const r of this.lqRanges) {
+      if (r.end < s - RANGE_TOLERANCE_S || r.start > e + RANGE_TOLERANCE_S) {
+        merged.push(r);
+      } else {
+        s = Math.min(s, r.start);
+        e = Math.max(e, r.end);
+      }
+    }
+    merged.push({ start: s, end: e });
+    merged.sort((a, b) => a.start - b.start);
+    this.lqRanges = merged;
+  }
+
+  private subtractLQRange(start: number, end: number): void {
+    const next: TimeRange[] = [];
+    for (const r of this.lqRanges) {
+      if (r.end <= start || r.start >= end) {
+        next.push(r);
+        continue;
+      }
+      if (r.start < start) next.push({ start: r.start, end: start });
+      if (r.end > end) next.push({ start: end, end: r.end });
+    }
+    this.lqRanges = next;
+  }
+
+  // Drop tracked ranges whose data has been evicted from the SourceBuffer
+  // (browser quota eviction, flushes we didn't initiate). Called lazily
+  // before any lookup so the map never claims LQ where nothing is buffered.
+  private pruneLQRanges(): void {
+    const b = this.videoElement.buffered;
+    this.lqRanges = this.lqRanges.filter((r) => {
+      for (let i = 0; i < b.length; i++) {
+        if (b.start(i) < r.end && r.start < b.end(i)) return true;
+      }
+      return false;
+    });
+  }
+
+  private lqRangeAt(time: number): TimeRange | null {
+    this.pruneLQRanges();
+    return this.lqRanges.find((r) => time >= r.start - RANGE_TOLERANCE_S && time <= r.end + RANGE_TOLERANCE_S) ?? null;
+  }
+
   // ── Core primitive ────────────────────────────────────────────────
 
-  // Load `level` at `time`, wait for enough fragments, then flush the decoder
-  // with a same-value seek so the new quality paints. `showLoader` toggles the
-  // loading indicator (used for HQ upgrades, not for instant LQ navigation).
-  private renderLevelAt(level: number, time: number, showLoader: boolean): void {
+  // Replace the non-HQ data covering `time` with max-quality fragments, then
+  // flush the decoder with a same-value seek so the new quality paints.
+  //
+  // The flush is targeted: only the tracked LQ intervals inside the buffered
+  // range containing `time` are dropped, via the same BUFFER_FLUSHING event
+  // hls.js triggers internally for evictions (the buffer controller performs
+  // the remove, the fragment tracker forgets the fragments, and the stream
+  // controller re-ticks after BUFFER_FLUSHED to refill the gap at loadLevel).
+  // HQ data elsewhere in the buffer — including elsewhere in the same range —
+  // survives untouched.
+  private renderHQAt(time: number): void {
     if (!this.hls) return;
     this.clearPendingRender();
 
-    // Switching levels (or restarting a load) makes any prior HQ-confirmed
-    // range stale: the upcoming load can append non-HQ data. The settle
-    // timer below re-establishes the marker when level === maxQualityLevel
-    // after the render actually completes.
-    this.lastHQRenderTime = null;
+    const level = this.maxQualityLevel;
+    // This is only called when a frame is already painting at `time` (the
+    // buffered LQ frame), so framePending stays false — surface the upgrade
+    // through the HQ badge instead.
+    this.onLoadingChange(true, this.getQualityInfo(level));
 
-    const loaderShown = showLoader && this.hls.currentLevel !== level;
-    this.hls.currentLevel = level;
-    if (loaderShown) this.onLoadingChange(true, this.getQualityInfo(level));
+    // Stop the loader before flushing so it can't append mid-flush. An
+    // aborted in-flight fragment never fires FRAG_LOADED, so reset the
+    // in-flight marker by hand or the watchdog would re-arm forever.
+    this.hls.stopLoad();
+    this.fragLoadInFlight = false;
+
+    const range = this.bufferedRangeContaining(time);
+    let toFlush = range ? this.lqRanges.filter((r) => r.start < range.end && range.start < r.end) : [];
+    // The map can trail reality: FRAG_BUFFERED for the newest fragment may
+    // not have fired yet (this is the normal state right after the initial
+    // burst). If data is buffered at `time` but nothing is tracked there,
+    // flush the whole containing range — re-downloading it at HQ is exactly
+    // the recovery we want, and it can only happen for freshly-appended LQ.
+    if (range && !toFlush.some((r) => time >= r.start - RANGE_TOLERANCE_S && time <= r.end + RANGE_TOLERANCE_S)) {
+      toFlush = [range];
+    }
+    for (const r of toFlush) {
+      this.hls.trigger(Hls.Events.BUFFER_FLUSHING, { startOffset: r.start, endOffset: r.end, type: null });
+      this.subtractLQRange(r.start, r.end);
+    }
 
     this.hls.startLoad(time);
 
@@ -314,24 +406,18 @@ export class VideoStreamHandler {
         this.pendingRender = null;
         if (this.videoElement.paused && this.isBufferedAt(time)) {
           this.videoElement.currentTime = time;
-          // Confirm HQ tracking only on successful HQ render — this is the
-          // signal isHQConfirmedAt relies on. Set after the settle so a
-          // cancelled render never marks the buffer as HQ.
-          if (level === this.maxQualityLevel) this.lastHQRenderTime = time;
         }
-        if (loaderShown) this.onLoadingChange(false);
+        this.onLoadingChange(false);
       }, SETTLE_MS);
 
       if (this.pendingRender) this.pendingRender.settleTimer = settleTimer;
     };
 
-    // Safety net for the "already buffered, so hls.js emits no FRAG_LOADED"
-    // case where the required fragments never arrive and the loader would hang.
-    // This is an *inactivity* watchdog, not an absolute deadline: as long as a
-    // fragment is actually downloading (fragLoadInFlight) it re-arms, so a
-    // legitimately slow HQ load — which can exceed RENDER_TIMEOUT_MS on poor
-    // connections — is never cut off. It only tears the render down when nothing
-    // is in flight and the required fragments still haven't landed.
+    // Inactivity watchdog, not an absolute deadline: as long as a fragment is
+    // actually downloading (fragLoadInFlight) it re-arms, so a legitimately
+    // slow HQ load — which can exceed RENDER_TIMEOUT_MS on poor connections —
+    // is never cut off. It only tears the render down when nothing is in
+    // flight and the required fragments still haven't landed.
     const armWatchdog = (): ReturnType<typeof setTimeout> =>
       setTimeout(() => {
         if (this.fragLoadInFlight) {
@@ -341,59 +427,22 @@ export class VideoStreamHandler {
         this.clearPendingRender();
       }, RENDER_TIMEOUT_MS);
 
-    this.pendingRender = { fragListener, settleTimer: null, timeoutTimer: armWatchdog(), loaderShown };
+    this.pendingRender = { fragListener, settleTimer: null, timeoutTimer: armWatchdog(), loaderShown: true };
     this.hls.on(Hls.Events.FRAG_LOADED, fragListener);
   }
 
   // ── Quality upgrade ───────────────────────────────────────────────
 
-  // Upgrade the frame at `time` to max quality — but only once the LQ fragment
-  // for that position is confirmed in the SourceBuffer.
-  //
-  // On fast networks LQ is already buffered, so this renders HQ immediately.
-  // On slow networks LQ may still be downloading; flushing to HQ now would drop
-  // the unbuffered LQ frame and show nothing until HQ arrives (potentially 10+ s).
-  // So we wait for the level-0 fragment to land, keeping the LQ frame on screen,
-  // then flush to HQ.
+  // Upgrade the frame at `time` to max quality if — and only if — it sits on
+  // tracked non-HQ data. With the loader pinned to HQ, every other case needs
+  // nothing: buffered-clean positions are already HQ, and unbuffered positions
+  // are being filled at HQ by the seek-follow load (the pending element seek
+  // paints when the data arrives).
   private upgradeToHQ(time: number): void {
     this.cancelUpgradeTimer();
     if (!this.hls || !this.isPaused || this.maxQualityLevel <= 0) return;
-
-    // Target is forward of a confirmed HQ render and still in its buffered
-    // range — nothing to upgrade. Mirrors the loadQuality fast path; protects
-    // this entry point when called directly (boundPauseHandler, the deferred
-    // upgradeTimer after navigation).
-    if (this.isHQConfirmedAt(time)) {
-      return;
-    }
-
-    if (this.isBufferedAt(time)) {
-      this.renderLevelAt(this.maxQualityLevel, time, true);
-      return;
-    }
-
-    // LQ not buffered yet — wait for the level-0 fragment. No loader is shown
-    // in this phase (the LQ frame should appear without an HQ indicator). Each
-    // level-0 FRAG_LOADED resets a settle check; only once `time` is actually
-    // buffered do we hand off to the HQ render.
-    this.clearPendingRender();
-    const fragListener = (_event: string, data: any) => {
-      if (data.frag.level !== 0) return;
-      if (this.pendingRender?.settleTimer) clearTimeout(this.pendingRender.settleTimer);
-      const settleTimer = setTimeout(() => {
-        if (!this.isPaused || !this.hls) return;
-        if (!this.isBufferedAt(time)) return; // not our fragment yet — keep listening
-        // Do NOT null pendingRender here: renderLevelAt() begins with
-        // clearPendingRender(), which is the only path that detaches this
-        // listener from FRAG_LOADED. Clearing the pointer first would make that
-        // early-return and leak this listener.
-        this.renderLevelAt(this.maxQualityLevel, time, true);
-      }, SETTLE_MS);
-      if (this.pendingRender) this.pendingRender.settleTimer = settleTimer;
-    };
-
-    this.pendingRender = { fragListener, settleTimer: null, timeoutTimer: null, loaderShown: false };
-    this.hls.on(Hls.Events.FRAG_LOADED, fragListener);
+    if (!this.lqRangeAt(time)) return;
+    this.renderHQAt(time);
   }
 
   // ── Public API ────────────────────────────────────────────────────
@@ -401,39 +450,28 @@ export class VideoStreamHandler {
   /**
    * Single entry point for all paused seeks.
    *
-   * Renders LQ at `time` immediately so the frame appears as fast as possible,
-   * then schedules an upgrade to the highest available quality. Every new call
-   * resets the upgrade timer, so rapid navigation (arrow-key hold) stays at LQ
-   * until the user stops.
+   * The dominant case — the target is buffered and clean — costs nothing:
+   * the seek already performed in Video.svelte paints HQ straight from the
+   * buffer. Only seeks landing on tracked LQ data schedule work, and only
+   * after navigation rests (so arrow-key holds stream buffered frames at
+   * full responsiveness, exactly as before).
    */
   public loadQuality(time: number): void {
     if (!this.hls || this.maxQualityLevel < 0) return;
 
     this.cancelPendingRender();
 
-    // Fast path: the target sits forward of a confirmed HQ render and still
-    // in its buffered range, so the decoder will paint from HQ when the seek
-    // already done in Video.svelte lands. Running the LQ→HQ cycle would only
-    // call hls.startLoad(time) again and churn the forward HQ buffer. Common
-    // case for single-frame steps inside the HQ window.
-    // The check requires a *settled* HQ render — not just hls.currentLevel ===
-    // maxQualityLevel — because the level is set synchronously by
-    // renderLevelAt before any HQ fragment loads. A cancelled HQ render would
-    // otherwise leave currentLevel=maxQL with LQ residue in the buffer, and
-    // we'd wrongly skip the upgrade.
-    if (this.isHQConfirmedAt(time)) {
-      return;
-    }
+    // Unbuffered target: the loader is pinned to HQ and follows the element
+    // seek on its own, so HQ fragments for the new position are already on
+    // their way. framePending drives the "Loading Frame" pill meanwhile.
+    if (!this.isBufferedAt(time)) return;
 
-    // LQ phase — instant, no loader. The caller (Video.svelte seek effect)
-    // already set currentTime, so a buffered frame is already painting and
-    // there is nothing to do; only load+repaint when it isn't buffered yet.
-    if (!this.isBufferedAt(time)) {
-      this.renderLevelAt(0, time, false);
-    }
+    // Buffered and clean: already HQ, the decoder paints it — free.
+    if (!this.lqRangeAt(time)) return;
 
-    // HQ phase — fires UPGRADE_DEBOUNCE_MS after the last call with no further
-    // navigation.
+    // Buffered but LQ: the LQ frame paints instantly; upgrade after
+    // navigation rests. Every new call resets the timer, so rapid
+    // navigation never upgrades mid-flight.
     this.upgradeTimer = setTimeout(() => {
       this.upgradeTimer = null;
       this.upgradeToHQ(time);
@@ -468,12 +506,12 @@ export class VideoStreamHandler {
     return this.hls?.currentLevel ?? -1;
   }
 
+  // Manual quality override. Only affects what future loads fetch (-1 = ABR);
+  // already-buffered data is left in place and tracked by the FRAG_BUFFERED
+  // map, so a non-HQ override is upgraded again the next time the user
+  // settles on a frame inside it while paused.
   public setQualityLevel(level: number): void {
-    if (!this.hls || this.hls.currentLevel === level) return;
-    if (this.isPaused && level !== -1) {
-      this.renderLevelAt(level, this.seekTime(), true);
-    } else {
-      this.hls.currentLevel = level;
-    }
+    if (!this.hls || this.hls.loadLevel === level) return;
+    this.hls.loadLevel = level;
   }
 }

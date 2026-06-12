@@ -146,8 +146,9 @@
   //   3. Update videoElement.currentTime to jump the decoder.
   //   4. Register a one-shot rVFC callback to update displayedFrame the instant
   //      the new frame is actually painted (complements the seeked fallback handler).
-  //   5. Call streamHandler.loadQuality() which handles LQ-first navigation and
-  //      a 300 ms debounce before upgrading to HQ (managed inside VideoStreamHandler).
+  //   5. Call streamHandler.loadQuality() which is a no-op for buffered HQ
+  //      positions and schedules a debounced HQ replacement when the target
+  //      sits on low-quality data (managed inside VideoStreamHandler).
   $effect(() => {
     if (!videoElement || isPlaying) return;
 
@@ -239,8 +240,9 @@
     videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("resize", handleResize);
 
-    // HLS streams get a VideoStreamHandler that manages adaptive quality during
-    // playback and switches to the highest quality level on every pause/seek.
+    // HLS streams get a VideoStreamHandler that buffers at the highest quality
+    // while paused (so buffered seeks always paint HQ) and manages adaptive
+    // quality during playback.
     // endOfFrameTime is the exact timestamp of the last frame derived from the
     // database metadata (frameToTime(totalFrames - 1)). It is passed explicitly
     // because videoElement.duration reported by the browser can differ from the
