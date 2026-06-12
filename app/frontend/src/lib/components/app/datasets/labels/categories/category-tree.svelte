@@ -3,8 +3,8 @@
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import {
-    CategoryTreeNode,
-    type ICategoryTreeNode,
+      CategoryTreeNode,
+      type ICategoryTreeNode,
   } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
@@ -32,8 +32,32 @@
     const root: TreeNode[] = [];
     const nodeMap: Record<string, TreeNode> = {};
 
-    // Collect all paths in the current values set
-    const currentPaths: Record<string, boolean> = {};
+    // Seed the persistent order map from array positions ONLY for leaf
+    // entries that don't already have a position.  This preserves existing
+    // positions across deletions (deleting "language/english/e" won't
+    // shift "language/english/n" from its original spot).
+    values.forEach((value, index) => {
+      if (!(value.id in categoryOrderMap)) {
+        categoryOrderMap[value.id] = index;
+      }
+    });
+
+    const usedIndices: Record<number, boolean> = {};
+    for (const v of Object.values(categoryOrderMap)) {
+      usedIndices[v] = true;
+    }
+    function nextAvailableIndex(): number {
+      let i = 0;
+      while (usedIndices[i]) i++;
+      usedIndices[i] = true;
+      return i;
+    }
+
+    // Collect all leaf ids currently present
+    const currentLeafIds: Record<string, boolean> = {};
+    for (const v of values) {
+      currentLeafIds[v.id] = true;
+    }
 
     values.forEach((value) => {
       const parts = value.id.split("/");
@@ -43,7 +67,6 @@
 
       parts.forEach((part, index) => {
         currentPath = currentPath ? `${currentPath}/${part}` : part;
-        currentPaths[currentPath] = true;
 
         const parent = currentPath.includes("/") ? currentPath.split("/").slice(0, -1).join("/") : null;
 
@@ -52,29 +75,15 @@
         if (!existingNode) {
           const isLeaf = index === parts.length - 1;
 
-          // Assign order.
-          // If this is a new leaf and the path previously existed only as an
-          // intermediate parent (had children that are now gone), use the minimum
-          // of its stale descendants' orders to preserve the original position.
-          if (!(currentPath in categoryOrderMap)) {
-            const staleDescendantOrders = findStaleDescendantOrders(currentPath, currentPaths);
-            if (staleDescendantOrders.length > 0) {
-              categoryOrderMap[currentPath] = Math.min(...staleDescendantOrders);
-            } else {
-              // Compute next order relative to parent group
-              const orderMapSiblings = findSiblingOrders(currentPath, parent);
-              const currentSiblings = currentChildren.map((n) => n.order);
-              const allSiblingOrders = Array.from(new Set([...orderMapSiblings, ...currentSiblings]));
-              const nextOrder = allSiblingOrders.length > 0 ? Math.max(...allSiblingOrders) + 1 : 0;
-              categoryOrderMap[currentPath] = nextOrder;
-            }
-          } else if (isLeaf) {
-            // Path already in orderMap (e.g. was an intermediate parent now becoming leaf).
-            // Update its order to reflect its previous subtree position.
-            const staleDescendantOrders = findStaleDescendantOrders(currentPath, currentPaths);
-            if (staleDescendantOrders.length > 0) {
-              categoryOrderMap[currentPath] = Math.min(...staleDescendantOrders);
-            }
+          // Leaf: use persisted order or assign new one at end.
+          // Intermediate: set to 0 initially, will be corrected by
+          // assignParentOrders to match first child.
+          let order: number;
+          if (isLeaf) {
+            order = categoryOrderMap[currentPath] ?? nextAvailableIndex();
+            categoryOrderMap[currentPath] = order;
+          } else {
+            order = 0;
           }
 
           existingNode = {
@@ -85,14 +94,14 @@
             expanded: true,
             parent,
             children: [],
-            order: categoryOrderMap[currentPath]!,
+            order,
           };
 
           nodeMap[currentPath] = existingNode;
           currentChildren.push(existingNode);
         }
 
-        // Actual category node
+        // Actual category node — update label/color from leaf
         if (index === parts.length - 1) {
           existingNode.label = value.label;
           existingNode.color = value.color;
@@ -103,71 +112,64 @@
       });
     });
 
-    // Clean up stale entries from orderMap (paths no longer in values).
-    // Preserve intermediate parent paths of stale descendants so their order
-    // can be reused if they later become leaf nodes (e.g. "language/thai/south" +
-    // "language/thai/east" deleted → keep "language/thai" order; if user later
-    // adds "language/thai" as leaf, it reuses its old position).
-    const staleKeys = Object.keys(categoryOrderMap).filter((k) => !currentPaths[k]);
-    const preservedParents: Record<string, boolean> = {};
-    for (const key of staleKeys) {
-      // Walk up parent chain: any ancestor of a stale key should be preserved
-      const segments = key.split("/");
-      for (let i = 1; i < segments.length; i++) {
-        const parent = segments.slice(0, i).join("/");
-        if (!currentPaths[parent]) {
-          preservedParents[parent] = true;
+    // Intermediate parent nodes: use the persisted order from the
+    // orderMap to keep their position stable across child deletions
+    // (e.g. "language" stays at order 1 even after "language/english/e"
+    // is deleted).  On first creation, store the order based on the
+    // first child so the position is established.
+    function assignParentOrders(nodes: TreeNode[]) {
+      for (const node of nodes) {
+        if (node.children.length > 0) {
+          assignParentOrders(node.children);
+          if (node.id in categoryOrderMap) {
+            node.order = categoryOrderMap[node.id];
+          } else {
+            node.order = node.children[0].order;
+            categoryOrderMap[node.id] = node.order;
+          }
         }
       }
     }
-    for (const key of staleKeys) {
-      if (!preservedParents[key]) {
-        delete categoryOrderMap[key];
-      }
-    }
+    assignParentOrders(root);
 
+    // Sort siblings at every level by order
     function sortTree(nodes: TreeNode[]) {
       nodes.sort((a, b) => a.order - b.order);
       nodes.forEach((node) => sortTree(node.children));
     }
 
     sortTree(root);
+
+    // Update the global orderMap for intermediate nodes so downstream
+    // consumers (sortValuesByTreeOrder, changeSelectableCategory) see
+    // consistent values.
+    function syncIntermediateOrders(nodes: TreeNode[]) {
+      for (const node of nodes) {
+        categoryOrderMap[node.id] = node.order;
+        if (node.children.length > 0) syncIntermediateOrders(node.children);
+      }
+    }
+    syncIntermediateOrders(root);
+
+    // Prune orderMap entries whose leaves are no longer in the current
+    // values set (e.g. "language/english/e" was deleted) AND whose path
+    // is not an ancestor of any current leaf.
+    const currentPaths: Record<string, boolean> = {};
+    for (const node of Object.values(nodeMap)) {
+      currentPaths[node.id] = true;
+    }
+    for (const key of Object.keys(categoryOrderMap)) {
+      if (!currentPaths[key] && !currentLeafIds[key]) {
+        // Only delete if no current leaf has this as an ancestor path
+        const prefix = key + "/";
+        const isAncestorOfCurrent = Object.keys(currentLeafIds).some((id) => id.startsWith(prefix));
+        if (!isAncestorOfCurrent) {
+          delete categoryOrderMap[key];
+        }
+      }
+    }
+
     return root;
-  }
-
-  // Find orders of stale descendants: entries in orderMap that start with path + "/"
-  // but are NOT in the current values. Used to preserve position when a subtree
-  // is collapsed into a single leaf (e.g. "language/thai/south" + "language/thai/east"
-  // deleted, "language/thai" added → use min of their old orders).
-  function findStaleDescendantOrders(path: string, currentPaths: Record<string, boolean>): number[] {
-    const orders: number[] = [];
-    const prefix = path + "/";
-
-    for (const [key, order] of Object.entries(categoryOrderMap)) {
-      if (key.startsWith(prefix) && !currentPaths[key]) {
-        orders.push(order);
-      }
-    }
-
-    return orders;
-  }
-
-  // Find sibling orders from the module-level order map for a given path
-  function findSiblingOrders(path: string, parent: string | null): number[] {
-    const orders: number[] = [];
-    const prefix = parent ? parent + "/" : "";
-
-    for (const [key, order] of Object.entries(categoryOrderMap)) {
-      if (key === path) continue;
-
-      const isSibling = parent ? key.startsWith(prefix) && !key.slice(prefix.length).includes("/") : !key.includes("/");
-
-      if (isSibling) {
-        orders.push(order);
-      }
-    }
-
-    return orders;
   }
 
   function toggleExpand(id: string) {
