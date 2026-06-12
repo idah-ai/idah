@@ -146,15 +146,23 @@ export function computeScaleFactor(centroid: Point, dragStart: Point, currentCur
 /**
  * Check if a normalized cursor is within `hitRadiusPx` pixels of the first polygon draft point.
  * Used to determine when to close a polygon during creation.
+ *
+ * @param cursor - normalized cursor position [0-1]
+ * @param mediaWidth - media width in pixels
+ * @param mediaHeight - media height in pixels
+ * @param points - polygon draft points as normalized coordinates [0-1]
+ * @param viewportScale - current viewport zoom scale (media pixels → screen pixels)
  */
 export function nearFirstPolygonPoint(
   cursor: Point,
   mediaWidth: number,
   mediaHeight: number,
   points: Point[],
+  viewportScale: number = 1,
 ): boolean {
   if (points.length < 3) return false;
-  const CLOSE_RADIUS_PX = 7;
+  const invScale = (1 / viewportScale);
+  const CLOSE_RADIUS_PX = 7 * invScale;
   const CLOSE_RADIUS_SQ = CLOSE_RADIUS_PX * CLOSE_RADIUS_PX;
   const first = points[0];
   const dx = Math.abs(cursor[0] - first[0]) * mediaWidth;
