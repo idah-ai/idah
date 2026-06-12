@@ -8,6 +8,7 @@
   } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { categoryOrderMap } from "@/components/app/datasets/labels/categories/utils";
   import { humanize } from "@/utils/string";
 
   import type { IConfigValue } from "@/plugin/v2/types";
@@ -23,9 +24,6 @@
   }
   let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory, onChangeSelectableCategory }: Props =
     $props();
-
-  // Persistent order map: keeps positions stable when categories are added/deleted
-  let orderMap: Record<string, number> = {};
 
   // Functions
   function constructCategoryTree(values: IConfigValue[]) {
@@ -54,12 +52,29 @@
         if (!existingNode) {
           const isLeaf = index === parts.length - 1;
 
-          // Assign order: reuse from orderMap, or assign next available for new paths
-          if (!(currentPath in orderMap)) {
-            // Compute next order relative to parent group
-            const siblings = findSiblingOrders(currentPath, parent);
-            const nextOrder = siblings.length > 0 ? Math.max(...siblings) + 1 : 0;
-            orderMap[currentPath] = nextOrder;
+          // Assign order.
+          // If this is a new leaf and the path previously existed only as an
+          // intermediate parent (had children that are now gone), use the minimum
+          // of its stale descendants' orders to preserve the original position.
+          if (!(currentPath in categoryOrderMap)) {
+            const staleDescendantOrders = findStaleDescendantOrders(currentPath, currentPaths);
+            if (staleDescendantOrders.length > 0) {
+              categoryOrderMap[currentPath] = Math.min(...staleDescendantOrders);
+            } else {
+              // Compute next order relative to parent group
+              const orderMapSiblings = findSiblingOrders(currentPath, parent);
+              const currentSiblings = currentChildren.map((n) => n.order);
+              const allSiblingOrders = Array.from(new Set([...orderMapSiblings, ...currentSiblings]));
+              const nextOrder = allSiblingOrders.length > 0 ? Math.max(...allSiblingOrders) + 1 : 0;
+              categoryOrderMap[currentPath] = nextOrder;
+            }
+          } else if (isLeaf) {
+            // Path already in orderMap (e.g. was an intermediate parent now becoming leaf).
+            // Update its order to reflect its previous subtree position.
+            const staleDescendantOrders = findStaleDescendantOrders(currentPath, currentPaths);
+            if (staleDescendantOrders.length > 0) {
+              categoryOrderMap[currentPath] = Math.min(...staleDescendantOrders);
+            }
           }
 
           existingNode = {
@@ -70,7 +85,7 @@
             expanded: true,
             parent,
             children: [],
-            order: orderMap[currentPath]!,
+            order: categoryOrderMap[currentPath]!,
           };
 
           nodeMap[currentPath] = existingNode;
@@ -88,10 +103,26 @@
       });
     });
 
-    // Clean up stale entries from orderMap (paths no longer in values)
-    for (const key of Object.keys(orderMap)) {
-      if (!currentPaths[key]) {
-        delete orderMap[key];
+    // Clean up stale entries from orderMap (paths no longer in values).
+    // Preserve intermediate parent paths of stale descendants so their order
+    // can be reused if they later become leaf nodes (e.g. "language/thai/south" +
+    // "language/thai/east" deleted → keep "language/thai" order; if user later
+    // adds "language/thai" as leaf, it reuses its old position).
+    const staleKeys = Object.keys(categoryOrderMap).filter((k) => !currentPaths[k]);
+    const preservedParents: Record<string, boolean> = {};
+    for (const key of staleKeys) {
+      // Walk up parent chain: any ancestor of a stale key should be preserved
+      const segments = key.split("/");
+      for (let i = 1; i < segments.length; i++) {
+        const parent = segments.slice(0, i).join("/");
+        if (!currentPaths[parent]) {
+          preservedParents[parent] = true;
+        }
+      }
+    }
+    for (const key of staleKeys) {
+      if (!preservedParents[key]) {
+        delete categoryOrderMap[key];
       }
     }
 
@@ -104,12 +135,29 @@
     return root;
   }
 
-  // Find sibling orders for a given path, helping assign new siblings at the end
+  // Find orders of stale descendants: entries in orderMap that start with path + "/"
+  // but are NOT in the current values. Used to preserve position when a subtree
+  // is collapsed into a single leaf (e.g. "language/thai/south" + "language/thai/east"
+  // deleted, "language/thai" added → use min of their old orders).
+  function findStaleDescendantOrders(path: string, currentPaths: Record<string, boolean>): number[] {
+    const orders: number[] = [];
+    const prefix = path + "/";
+
+    for (const [key, order] of Object.entries(categoryOrderMap)) {
+      if (key.startsWith(prefix) && !currentPaths[key]) {
+        orders.push(order);
+      }
+    }
+
+    return orders;
+  }
+
+  // Find sibling orders from the module-level order map for a given path
   function findSiblingOrders(path: string, parent: string | null): number[] {
     const orders: number[] = [];
     const prefix = parent ? parent + "/" : "";
 
-    for (const [key, order] of Object.entries(orderMap)) {
+    for (const [key, order] of Object.entries(categoryOrderMap)) {
       if (key === path) continue;
 
       const isSibling = parent ? key.startsWith(prefix) && !key.slice(prefix.length).includes("/") : !key.includes("/");

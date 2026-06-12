@@ -11,6 +11,7 @@
   import Can from "@/security/can.svelte";
 
   import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
+  import { getCategoryOrder, getSiblingOrders } from "@/components/app/datasets/labels/categories/utils";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -24,6 +25,21 @@
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { ProjectMemberScope } from "@/security/types";
+
+  /**
+   * Sort values array by tree order so persisted order matches display order.
+   * Uses categoryOrderMap from the tree component if available, otherwise
+   * falls back to positional order.  On cold start (empty map), the existing
+   * array order is used as-is.
+   */
+  function sortValuesByTreeOrder(values: IConfigValue[]): IConfigValue[] {
+    return [...values].sort((a, b) => {
+      const aOrder = getCategoryOrder(a.id) ?? Infinity;
+      const bOrder = getCategoryOrder(b.id) ?? Infinity;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return 0;
+    });
+  }
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -82,7 +98,10 @@
     const cleanedLabelConfig: IConfig = {};
     Object.entries(labelConfig).forEach(([key, config]) => {
       if (config.values.length > 0 || config.properties.length > 0) {
-        cleanedLabelConfig[key] = config;
+        cleanedLabelConfig[key] = {
+          ...config,
+          values: sortValuesByTreeOrder(config.values),
+        };
       }
     });
 
@@ -282,12 +301,36 @@
     const { color, text_color } = getColor({ labelConfigKey });
 
     if (selectable) {
-      selectedLabelConfig.values.push({
+      const newEntry: IConfigValue = {
         id: editedCategory.id,
         label: editedCategory.label,
         color,
         text_color,
-      });
+      };
+
+      // Insert at the correct tree position based on category order map,
+      // rather than always pushing to the end.
+      const parentPrefix = editedCategory.id.includes("/") ? editedCategory.id.split("/").slice(0, -1).join("/") : "";
+      const siblings = getSiblingOrders(parentPrefix);
+      const targetOrder = getCategoryOrder(editedCategory.id);
+
+      if (targetOrder !== undefined && siblings.length > 0) {
+        // Find insertion index: insert before the first sibling with higher order
+        let insertIndex = selectedLabelConfig.values.length;
+        for (let i = 0; i < siblings.length; i++) {
+          if (siblings[i].order > targetOrder) {
+            // Find the position of this sibling in the values array
+            const siblingIndex = selectedLabelConfig.values.findIndex((v) => v.id === siblings[i].path);
+            if (siblingIndex !== -1) {
+              insertIndex = siblingIndex;
+              break;
+            }
+          }
+        }
+        selectedLabelConfig.values.splice(insertIndex, 0, newEntry);
+      } else {
+        selectedLabelConfig.values.push(newEntry);
+      }
     } else {
       selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => cat.id !== editedCategory.id);
     }
