@@ -107,16 +107,28 @@
       {@render headerIcon?.()}
 
       <!-- HEADER::CREATED BY & CREATED AT -->
-      <div class="flex flex-col -space-y-1 text-left text-xs">
+      <div class="flex flex-col text-left text-xs">
         <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
-        <DateText
-          class="text-muted-foreground"
-          datetime={new Date(created_at)}
-          datetimeFormat="MMM dd, yyyy HH:mm:ss"
-          size="xs"
-          weight="normal"
-          showDistance
-        ></DateText>
+        <div>
+          <DateText
+            class="text-muted-foreground"
+            datetime={new Date(created_at)}
+            datetimeFormat="MMM dd, yyyy HH:mm:ss"
+            size="xs"
+            weight="normal"
+            showDistance
+          ></DateText>
+          {#if edited_at}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger class="inline-block">
+                  <span class="text-muted-foreground text-xs">• Edited</span>
+                </TooltipTrigger>
+                <TooltipContent>{formatEditedTooltip(edited_at)}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          {/if}
+        </div>
       </div>
 
       <!-- HEADER::ACTIONS -->
@@ -139,17 +151,6 @@
   <div class="flex flex-1 flex-col items-start gap-1 text-xs">
     {#if isViewMode}
       <MarkdownPreview value={truncate(content_md, 140)} />
-
-      {#if edited_at}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger class="inline-block">
-              <span class="text-muted-foreground text-xs">(Edited)</span>
-            </TooltipTrigger>
-            <TooltipContent>{formatEditedTooltip(edited_at)}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      {/if}
 
       {@render contentActions?.()}
     {/if}
