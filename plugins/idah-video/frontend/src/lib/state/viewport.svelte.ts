@@ -39,20 +39,20 @@ class Viewport {
     // Consolidated loading state read by LoadingIndicator.svelte.
     //   highQuality — true while an HLS high-quality fragment is being fetched.
     //   qualityLabel — human-readable label for the quality level ("1080p", …).
-    //   lowQualityFrame — true while the frame on screen is backed by
-    //     low-quality data (slow-network fallback or leftover playback data
-    //     awaiting upgrade).
     //   framePending — true when currentFrame ≠ displayedFrame (seek in flight).
     loading: {
       highQuality: false,
       qualityLabel: "",
-      lowQualityFrame: false,
     },
     get framePending() {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
     },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
+    // When the last position-changing navigation was requested. stepBy uses
+    // it to tell a seek that is still loading (block further steps) from one
+    // that is stuck (let the user move again).
+    lastSeekRequestAt: 0,
     play() {
       this.status = "play";
     },
@@ -67,7 +67,25 @@ class Viewport {
       // freeze the FramePendingOverlay over the annotation layer.
       const total = media.totalFrames;
       const max = total > 0 ? total - 1 : frame;
-      this.currentFrame.value = Math.max(0, Math.min(frame, max));
+      const next = Math.max(0, Math.min(frame, max));
+      if (next !== this.currentFrame.value) this.lastSeekRequestAt = Date.now();
+      this.currentFrame.value = next;
+    },
+    // Relative stepping (arrow keys, skip buttons). Steps are *dropped* while
+    // the previous paused seek hasn't painted yet, so the user only moves
+    // through frames they have actually seen — annotations track every
+    // painted frame instead of snapping several frames at once when a slow
+    // load lands. Buffered seeks confirm on the next video frame callback
+    // (~one vsync), so the gate is imperceptible there; it only bites while
+    // data is loading. Dropped, not queued: queued steps would replay
+    // invisible movement later, recreating the jump this exists to prevent.
+    // Absolute jumps (goToFrame callers: timeline, keyframe navigation, the
+    // frame input) stay ungated, and a pending seek older than the escape
+    // window stops blocking — a seek that never paints (network died
+    // mid-load) must not lock navigation.
+    stepBy(delta: number) {
+      if (this.framePending && Date.now() - this.lastSeekRequestAt < FRAME_STEP_ESCAPE_MS) return;
+      this.goToFrame(this.currentFrame.value + delta);
     },
   });
 
@@ -149,6 +167,11 @@ class Viewport {
     },
   });
 }
+
+// How long stepBy keeps dropping steps for one pending seek. After this the
+// seek is considered stuck and stepping is allowed again (each retry re-arms
+// the window, so a dead network degrades to one step per window, not a lock).
+export const FRAME_STEP_ESCAPE_MS = 2000;
 
 export const viewport = new Viewport();
 

@@ -18,9 +18,6 @@ interface VideoStreamHandlerOptions {
   // that hasn't buffered the target gives up and falls back to LQ.
   slowNetworkThresholdMs?: number;
   onLoadingChange?: (loading: boolean, qualityInfo?: QualityInfo) => void;
-  // Reports whether the data under the paused playhead is tracked low-quality,
-  // so the UI can show a persistent reduced-detail badge until it is upgraded.
-  onDisplayQualityChange?: (isLQ: boolean) => void;
 }
 
 interface TimeRange {
@@ -28,31 +25,37 @@ interface TimeRange {
   end: number;
 }
 
-// One in-flight "replace with HQ at time T, then repaint" operation.
-//   fragListener — FRAG_LOADED listener awaiting the target fragment(s).
-//   settleTimer  — append-settle delay before nudging currentTime.
+// One in-flight "replace with HQ at time T, then repaint" operation (or the
+// LQ-fallback handoff that precedes it on slow networks).
+//   detach       — removes the FRAG_BUFFERED listener this render waits on.
+//   settleTimer  — short delay before nudging currentTime once coverage is met.
 //   timeoutTimer — safety fallback that tears the render down if the awaited
-//                  fragment(s) never arrive, so the loader can never hang on.
+//                  appends never arrive, so the loader can never hang on.
 //   loaderShown  — whether onLoadingChange(true) was emitted for this render
 //                  (so cancellation knows whether to emit onLoadingChange(false)).
 interface PendingRender {
-  fragListener: (event: string, data: any) => void;
+  detach: () => void;
   settleTimer: ReturnType<typeof setTimeout> | null;
   timeoutTimer: ReturnType<typeof setTimeout> | null;
   loaderShown: boolean;
 }
 
-// Wait this long after FRAG_LOADED for the SourceBuffer append to complete
-// before nudging currentTime to repaint.
+// Wait this long after buffer coverage is reached before nudging currentTime
+// to repaint — lets appends that land in the same tick settle first.
 const SETTLE_MS = 50;
+// Forward coverage required beyond the target time before a render repaints:
+// a seek landing near a fragment boundary needs a little of the next fragment
+// to present the frame. Capped at the end of the stream, where there is
+// nothing further to wait for.
+const RENDER_COVERAGE_S = 0.5;
 // Debounce after the last navigation seek before upgrading an LQ frame to HQ.
 const UPGRADE_DEBOUNCE_MS = 300;
 // Switch to ABR this long after playback starts and stays stable.
 const PLAYBACK_ABR_DELAY_MS = 3000;
 // renderHQAt inactivity watchdog: abandon a render only after this long with
-// no fragment in flight (so the loader can't hang when the required FRAG_LOADED
-// never fires). It re-arms while a fragment is downloading, so a slow HQ load
-// that takes longer than this is never cut off.
+// no fragment in flight (so the loader can't hang when the awaited append
+// never happens). It re-arms while a fragment is downloading, so a slow HQ
+// load that takes longer than this is never cut off.
 const RENDER_TIMEOUT_MS = 15000;
 // Slack when comparing a time against buffered / tracked range boundaries,
 // matching the tolerance hls.js itself applies to fragment lookups.
@@ -116,7 +119,6 @@ export class VideoStreamHandler {
   private initialFragmentCount: number;
   private slowNetworkThresholdMs: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
-  private onDisplayQualityChange: (isLQ: boolean) => void;
 
   // ── LQ range bookkeeping ──────────────────────────────────────────
   // One SourceBuffer holds exactly one quality per time range, and MSE does
@@ -154,7 +156,6 @@ export class VideoStreamHandler {
     this.initialFragmentCount = options.initialFragmentCount ?? 1;
     this.slowNetworkThresholdMs = options.slowNetworkThresholdMs ?? SLOW_NETWORK_THRESHOLD_MS;
     this.onLoadingChange = options.onLoadingChange ?? (() => {});
-    this.onDisplayQualityChange = options.onDisplayQualityChange ?? (() => {});
     this.init();
   }
 
@@ -209,9 +210,6 @@ export class VideoStreamHandler {
       const end = frag.start + frag.duration;
       if (frag.level === this.maxQualityLevel) this.subtractLQRange(start, end);
       else this.addLQRange(start, end);
-      // The map changed — the badge may need to flip (e.g. the HQ replacement
-      // for the paused frame just landed, or the slow-path LQ frame did).
-      this.notifyDisplayQuality();
     });
 
     // After the initial LQ burst: pin the loader to HQ for good, and replace
@@ -259,7 +257,6 @@ export class VideoStreamHandler {
       this.isPaused = true;
       if (this.maxQualityLevel < 0 || !this.hls) return;
       this.hls.loadLevel = this.maxQualityLevel;
-      this.notifyDisplayQuality();
       this.upgradeToHQ(this.seekTime());
     };
     this.videoElement.addEventListener("pause", this.boundPauseHandler);
@@ -329,8 +326,8 @@ export class VideoStreamHandler {
   // timer, and hide the loader if it had been shown for this render.
   private clearPendingRender(): void {
     if (!this.pendingRender) return;
-    const { fragListener, settleTimer, timeoutTimer, loaderShown } = this.pendingRender;
-    if (this.hls) this.hls.off(Hls.Events.FRAG_LOADED, fragListener);
+    const { detach, settleTimer, timeoutTimer, loaderShown } = this.pendingRender;
+    detach();
     if (settleTimer !== null) clearTimeout(settleTimer);
     if (timeoutTimer !== null) clearTimeout(timeoutTimer);
     this.pendingRender = null;
@@ -385,13 +382,6 @@ export class VideoStreamHandler {
   private lqRangeAt(time: number): TimeRange | null {
     this.pruneLQRanges();
     return this.lqRanges.find((r) => time >= r.start - RANGE_TOLERANCE_S && time <= r.end + RANGE_TOLERANCE_S) ?? null;
-  }
-
-  // Report whether the data under the playhead is tracked LQ. Re-emitted on
-  // every change point (seeks, appends, pause) — the consumer treats it as a
-  // level, not an edge, so redundant emissions are harmless.
-  private notifyDisplayQuality(): void {
-    this.onDisplayQualityChange(this.lqRangeAt(this.videoElement.currentTime) !== null);
   }
 
   // Estimated seconds to download one max-quality fragment at the measured
@@ -459,17 +449,25 @@ export class VideoStreamHandler {
     this.hls.loadLevel = level;
     this.hls.startLoad(time);
 
-    // Need 2 fragments to safely span a mid-fragment seek, but only 1 when the
-    // target is inside the final fragment (there is no "next" to wait for).
-    const frags = this.hls.levels[level]?.details?.fragments ?? [];
-    const lastFrag = frags[frags.length - 1];
-    const requiredCount = lastFrag && time >= lastFrag.start ? 1 : 2;
-    let loaded = 0;
-
+    // Completion is *coverage*-based on FRAG_BUFFERED (the append actually
+    // landed), not a count of FRAG_LOADED events (only downloaded — the
+    // append may still be transmuxing, and a buffered-check 50 ms later can
+    // race it). The render is done when the buffer holds data at `time` and
+    // slightly beyond — already-buffered HQ forward of the flushed gap
+    // counts. Counting fragment loads here would hang when the gap is a
+    // single fragment surrounded by HQ: hls.js reloads that one fragment,
+    // goes idle, and a second load never comes — the watchdog would then
+    // tear the render down without ever repainting, leaving an LQ frame on
+    // screen with HQ data sitting in the buffer.
     const fragListener = (_event: string, data: any) => {
-      if (data.frag.level !== level) return;
-      if (++loaded < requiredCount) return;
-      this.hls?.off(Hls.Events.FRAG_LOADED, fragListener);
+      if (data.frag.level !== level || data.frag.type !== "main") return;
+      const range = this.bufferedRangeContaining(time);
+      if (!range) return; // the fragment covering `time` hasn't appended yet
+      const frags = this.hls?.levels[level]?.details?.fragments ?? [];
+      const lastFrag = frags[frags.length - 1];
+      const streamEnd = lastFrag ? lastFrag.start + lastFrag.duration : time;
+      if (range.end + RANGE_TOLERANCE_S < Math.min(time + RENDER_COVERAGE_S, streamEnd)) return;
+      this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener);
 
       const settleTimer = setTimeout(() => {
         if (this.pendingRender?.timeoutTimer) clearTimeout(this.pendingRender.timeoutTimer);
@@ -497,8 +495,13 @@ export class VideoStreamHandler {
         this.clearPendingRender();
       }, RENDER_TIMEOUT_MS);
 
-    this.pendingRender = { fragListener, settleTimer: null, timeoutTimer: armWatchdog(), loaderShown: true };
-    this.hls.on(Hls.Events.FRAG_LOADED, fragListener);
+    this.pendingRender = {
+      detach: () => this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener),
+      settleTimer: null,
+      timeoutTimer: armWatchdog(),
+      loaderShown: true,
+    };
+    this.hls.on(Hls.Events.FRAG_BUFFERED, fragListener);
   }
 
   // ── Slow-network fallback ─────────────────────────────────────────
@@ -522,26 +525,29 @@ export class VideoStreamHandler {
     this.hls.startLoad(time);
 
     // No loader badge: the pending element seek keeps framePending true, so
-    // the "Loading Frame" pill already covers this phase. Each level-0
-    // fragment resets a settle check; only once `time` is actually buffered
-    // does the debounced upgrade get scheduled.
+    // the "Loading Frame" pill already covers this phase. The handoff waits
+    // on FRAG_BUFFERED (append landed) rather than FRAG_LOADED (only
+    // downloaded): with FRAG_LOADED, a buffered-check could race the append
+    // and — when `time` sits in the last LQ fragment this load will produce —
+    // wait forever for another fragment that never comes.
     const fragListener = (_event: string, data: any) => {
-      if (data.frag.level !== 0) return;
-      if (this.pendingRender?.settleTimer) clearTimeout(this.pendingRender.settleTimer);
-      const settleTimer = setTimeout(() => {
-        if (!this.isPaused || !this.hls) return;
-        if (!this.isBufferedAt(time)) return; // not our fragment yet — keep listening
-        this.clearPendingRender();
-        this.upgradeTimer = setTimeout(() => {
-          this.upgradeTimer = null;
-          this.upgradeToHQ(time);
-        }, UPGRADE_DEBOUNCE_MS);
-      }, SETTLE_MS);
-      if (this.pendingRender) this.pendingRender.settleTimer = settleTimer;
+      if (data.frag.level !== 0 || data.frag.type !== "main") return;
+      if (!this.isBufferedAt(time)) return; // a different fragment — keep listening
+      this.clearPendingRender();
+      if (!this.isPaused) return;
+      this.upgradeTimer = setTimeout(() => {
+        this.upgradeTimer = null;
+        this.upgradeToHQ(time);
+      }, UPGRADE_DEBOUNCE_MS);
     };
 
-    this.pendingRender = { fragListener, settleTimer: null, timeoutTimer: null, loaderShown: false };
-    this.hls.on(Hls.Events.FRAG_LOADED, fragListener);
+    this.pendingRender = {
+      detach: () => this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener),
+      settleTimer: null,
+      timeoutTimer: null,
+      loaderShown: false,
+    };
+    this.hls.on(Hls.Events.FRAG_BUFFERED, fragListener);
   }
 
   // ── Quality upgrade ───────────────────────────────────────────────
@@ -573,7 +579,6 @@ export class VideoStreamHandler {
     if (!this.hls || this.maxQualityLevel < 0) return;
 
     this.cancelPendingRender();
-    this.notifyDisplayQuality();
 
     // Unbuffered target: decide by measured bandwidth whether HQ is
     // affordable. On a fast network the HQ-pinned loader follows the element

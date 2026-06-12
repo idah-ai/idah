@@ -163,15 +163,23 @@
     lastSeekedFrame = target;
     videoElement.currentTime = frameToTime(target);
 
-    // Update displayedFrame exactly when the compositor paints the decoded frame.
+    // Update displayedFrame exactly when the compositor paints the decoded
+    // frame. Confirms the captured target rather than recomputing the index
+    // from metadata.mediaTime: mediaTime is the painted frame's PTS, which
+    // can sit off the ideal 1/fps grid (encoder timebase rounding, fps
+    // metadata drift), and rounding it back can map to a neighbouring index
+    // for specific frames — displayedFrame would then never equal
+    // currentFrame and framePending would latch, leaving the "Loading Frame"
+    // pill stuck on that frame. The callback is cancelled whenever a newer
+    // seek fires, so `target` is always the seek this paint belongs to.
     if ("requestVideoFrameCallback" in videoElement) {
       if (pendingFrameCallbackId !== null) {
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
       }
       pendingFrameCallbackId = (videoElement as any).requestVideoFrameCallback(
-        (_now: number, metadata: VideoFrameCallbackMetadata) => {
+        (_now: number, _metadata: VideoFrameCallbackMetadata) => {
           pendingFrameCallbackId = null;
-          viewport.video.displayedFrame.value = timeToFrame(metadata.mediaTime);
+          viewport.video.displayedFrame.value = target;
         },
       );
     }
@@ -223,15 +231,20 @@
       viewport.video.status = "pause";
     };
 
-    // Update displayedFrame whenever the browser finishes a seek. This is the
-    // primary fallback for cases where rVFC fires with a wrong mediaTime, or
-    // for browsers that don't support requestVideoFrameCallback.
-    // The settle timer inside renderQualityFrame also triggers this (same-value
-    // re-seek for decoder flush), but currentTime is unchanged so the result is
-    // identical — no stale value can be introduced.
+    // Confirm the seek whenever the browser finishes one (fallback for
+    // browsers without requestVideoFrameCallback, and for paints the one-shot
+    // rVFC misses). Confirms lastSeekedFrame — the frame we *asked* for —
+    // rather than recomputing the index from currentTime: the browser clamps
+    // seeks past the real end of the stream (which can be shorter than the
+    // database frame count), and rounding the clamped time back would yield a
+    // smaller index forever, latching framePending and the "Loading Frame"
+    // pill on that frame. The settle timer inside renderHQAt also triggers
+    // this (same-value re-seek for decoder flush); lastSeekedFrame is
+    // unchanged there so the result is identical.
     const handleSeeked = () => {
       if (isPlaying) return;
-      viewport.video.displayedFrame.value = timeToFrame(videoElement.currentTime);
+      viewport.video.displayedFrame.value =
+        lastSeekedFrame >= 0 ? lastSeekedFrame : timeToFrame(videoElement.currentTime);
     };
 
     const handleResize = () => onResize();
@@ -257,9 +270,6 @@
         onLoadingChange: (loading, info) => {
           viewport.video.loading.highQuality = loading;
           if (info) viewport.video.loading.qualityLabel = info.label;
-        },
-        onDisplayQualityChange: (isLQ) => {
-          viewport.video.loading.lowQualityFrame = isLQ;
         },
       });
     } else {

@@ -116,9 +116,6 @@ the same code path.
 - `loading.highQuality` — an HQ replacement for the current frame is
   being fetched.
 - `loading.qualityLabel` — human-readable label of that quality.
-- `loading.lowQualityFrame` — the frame on screen is backed by
-  low-quality data (slow-network fallback or leftover playback data
-  awaiting upgrade).
 - `framePending` (above) — a seek hasn't painted yet.
 
 ### Stream state (internal to the HLS layer)
@@ -221,21 +218,45 @@ and the stream controller refills the gap at max quality. HQ data
 elsewhere in the buffer survives untouched. Because the LQ frame is
 already on screen when this starts, the user never sees a blank gap.
 
+Completion is judged by **buffer coverage, not fragment counts**: the
+render is done when appended data (`FRAG_BUFFERED`, not merely
+downloaded) covers the frame and slightly beyond, with already-buffered
+HQ ahead of the refilled gap counting toward coverage. A fixed count
+would hang when the gap is a single fragment surrounded by HQ — hls.js
+reloads one fragment and goes idle — and the repaint would silently
+never happen.
+
 ### Rapid navigation (holding arrow keys)
 
-Each keystroke moves `currentFrame`. Inside buffered HQ territory —
-the common case — every step paints full quality straight from the
-buffer at zero cost, in either direction. Through LQ territory or
-unbuffered territory on a slow network, the annotator sees a
-continuous stream of LQ frames, and the HQ upgrade kicks in only when
-they let go. Every keystroke cancels any in-flight upgrade work.
+Relative steps (arrow keys, skip buttons) go through `stepBy`, which is
+**gated on the previous frame having painted**: while a paused seek is
+still pending, further steps are dropped. The user only ever moves
+through frames they have actually seen, so annotations visibly track
+every frame instead of the position running ahead and the video
+snapping several frames at once when a slow load lands. Dropped, not
+queued — queued steps would replay invisible movement later,
+recreating the very jump the gate prevents.
+
+Inside buffered HQ territory — the common case — paint confirmation
+arrives on the next video frame callback, so the gate is imperceptible
+and every step paints full quality straight from the buffer at zero
+cost, in either direction. On a slow network, stepping is paced by the
+LQ fragments arriving: a continuous, consecutive stream of LQ frames,
+with the HQ upgrade kicking in when the user lets go. Each accepted
+step cancels any in-flight upgrade work.
+
+Two pressure valves keep the gate from ever trapping the user:
+absolute jumps (timeline clicks, the frame input, keyframe and note
+navigation) are never gated, and a pending seek older than a couple of
+seconds stops blocking — a seek that never paints (network died
+mid-load) degrades to slow stepping, not a lockout.
 
 ### The render watchdog
 
-A quality replacement waits for fragment-loaded events that, in rare
-states, may never come (e.g. stale bookkeeping says a range is LQ when
-its data was already replaced). Every render therefore arms a
-15-second *inactivity* watchdog: if nothing is downloading and the
+A quality replacement waits for fragment appends that, in rare states,
+may never come (e.g. stale bookkeeping says a range is LQ when its
+data was already replaced). Every render therefore arms a 15-second
+*inactivity* watchdog: if nothing is downloading and the
 expected fragments still haven't arrived, the render gives up. The
 watchdog re-arms while data is moving, so a slow HQ load on a poor
 connection is never cut off — only a truly stuck render is.
@@ -275,7 +296,9 @@ viewport.video = {
   framePending,                    // derived
   status: "play" | "pause",
   sound:  { level, muted },
-  play(), pause(), goToFrame(frame),
+  play(), pause(),
+  goToFrame(frame),   // absolute jump — never gated
+  stepBy(delta),      // relative step — dropped while a seek is pending
 }
 ```
 

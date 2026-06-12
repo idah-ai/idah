@@ -3,14 +3,8 @@
 
   let highQuality = $derived(viewport.video.loading.highQuality);
   let framePending = $derived(viewport.video.framePending);
-  // The reduced-detail badge only makes sense while paused (the handler can't
-  // track the moving playhead during playback) and yields to the two transient
-  // indicators, which already imply or supersede it.
-  let lowQualityFrame = $derived(
-    viewport.video.loading.lowQualityFrame && viewport.video.status === "pause" && !highQuality && !framePending,
-  );
 
-  let visible = $derived(highQuality || framePending || lowQualityFrame);
+  let visible = $derived(highQuality || framePending);
   let label = $derived(highQuality ? `Loading: ${viewport.video.loading.qualityLabel}` : "Loading Frame");
 
   // ── Debounced display state ───────────────────────────────────────
@@ -42,30 +36,32 @@
 
 {#if displayed}
   <div class="loading-indicator" class:loading-indicator--active={visible}>
-    {#if highQuality}
-      <!-- Image icon with animated stripes; hover reveals the quality label -->
-      <div class="loading-image" aria-label={label} role="status">
-        <div class="image-icon" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21,15 16,10 5,21"/>
-          </svg>
-          <div class="stripe-overlay"></div>
-        </div>
-        <span class="image-label">{label}</span>
-      </div>
-    {:else if framePending}
+    {#if framePending}
       <!-- Subtle pill for frame seek -->
       <div class="loading-pill" aria-live="polite" aria-label={label} role="status">
         <span class="loading-spinner" aria-hidden="true"></span>
         <span class="loading-text">Loading Frame</span>
       </div>
-    {:else}
-      <!-- Persistent badge: the frame on screen is low quality (slow network);
-           it stays until the HQ replacement lands -->
-      <div class="lq-badge" aria-label="Low quality frame" role="status" title="Low quality frame — full quality loads when the network allows">
-        LQ
+    {:else if highQuality}
+      <!-- Image icon with animated stripes; hover reveals the quality label -->
+      <div class="loading-image" aria-label={label} role="status">
+        <div class="image-icon" aria-hidden="true">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21,15 16,10 5,21" />
+          </svg>
+          <div class="stripe-overlay"></div>
+        </div>
+        <span class="image-label">{label}</span>
       </div>
     {/if}
   </div>
@@ -139,7 +135,10 @@
     padding: 3px;
     pointer-events: auto;
     cursor: default;
-    transition: max-width 0.25s ease, padding 0.25s ease, background 0.2s ease;
+    transition:
+      max-width 0.25s ease,
+      padding 0.25s ease,
+      background 0.2s ease;
   }
 
   .loading-image:hover {
@@ -188,7 +187,10 @@
     max-width: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-width 0.25s ease, opacity 0.15s ease 0.08s, margin-left 0.25s ease;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.15s ease 0.08s,
+      margin-left 0.25s ease;
     margin-left: 0;
   }
 
@@ -199,10 +201,14 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @keyframes stripe-move {
-    to { background-position: 12px 12px; }
+    to {
+      background-position: 12px 12px;
+    }
   }
 </style>
