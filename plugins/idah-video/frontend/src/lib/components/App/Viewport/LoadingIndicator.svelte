@@ -5,7 +5,7 @@
   let framePending = $derived(viewport.video.framePending);
 
   let visible = $derived(highQuality || framePending);
-  let label = $derived(highQuality ? `Loading: ${viewport.video.loading.qualityLabel}` : "Loading Frame");
+  let label = $derived(highQuality ? `High Quality: ${viewport.video.loading.qualityLabel}` : "Loading Frame");
 
   // ── Debounced display state ───────────────────────────────────────
   // Turns ON after 150 ms of continuous `visible` so fast buffered seeks

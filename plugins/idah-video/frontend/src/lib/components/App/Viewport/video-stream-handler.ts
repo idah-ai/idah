@@ -18,6 +18,15 @@ interface VideoStreamHandlerOptions {
   // that hasn't buffered the target gives up and falls back to LQ.
   slowNetworkThresholdMs?: number;
   onLoadingChange?: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  // Mirrors the paint-path download state to the component layer: true while
+  // a non-HQ fragment — the LQ fallback a pending seek is waiting on (or any
+  // fragment on single-level streams, where every download is the paint
+  // path) — is downloading. The stepBy escape valve reads it so it never
+  // opens mid-download and cancels/restarts the same slow fragment forever
+  // (the 3G livelock). Background HQ work (upgrades, buffer filling) is
+  // deliberately excluded: the frame under it is already painted, cancelling
+  // it is always safe, so it must never block navigation.
+  onFragmentInFlightChange?: (inFlight: boolean) => void;
 }
 
 interface TimeRange {
@@ -115,10 +124,16 @@ export class VideoStreamHandler {
   // genuinely stuck render (nothing downloading) from a slow-but-progressing one.
   private fragLoadInFlight = false;
 
+  // Subset of fragLoadInFlight that gates stepping: the in-flight fragment is
+  // one a pending paused seek may be waiting on (non-HQ paint path). Mirrored
+  // to the component via onFragmentInFlightChange.
+  private gatingFragInFlight = false;
+
   private endOfFrameTime: number;
   private initialFragmentCount: number;
   private slowNetworkThresholdMs: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  private onFragmentInFlightChange: (inFlight: boolean) => void;
 
   // ── LQ range bookkeeping ──────────────────────────────────────────
   // One SourceBuffer holds exactly one quality per time range, and MSE does
@@ -156,6 +171,7 @@ export class VideoStreamHandler {
     this.initialFragmentCount = options.initialFragmentCount ?? 1;
     this.slowNetworkThresholdMs = options.slowNetworkThresholdMs ?? SLOW_NETWORK_THRESHOLD_MS;
     this.onLoadingChange = options.onLoadingChange ?? (() => {});
+    this.onFragmentInFlightChange = options.onFragmentInFlightChange ?? (() => {});
     this.init();
   }
 
@@ -198,8 +214,8 @@ export class VideoStreamHandler {
 
     // Track in-flight fragment requests so the render watchdog can tell a slow
     // download apart from a truly stalled one.
-    this.hls.on(Hls.Events.FRAG_LOADING, () => {
-      this.fragLoadInFlight = true;
+    this.hls.on(Hls.Events.FRAG_LOADING, (_event, data) => {
+      this.setFragLoadInFlight(true, data.frag);
     });
 
     // Maintain the LQ range map from what actually lands in the SourceBuffer.
@@ -218,7 +234,7 @@ export class VideoStreamHandler {
     // upgradeToHQ) because FRAG_BUFFERED for the newest burst fragment may
     // not have fired yet — the burst region is LQ by construction.
     this.hls.on(Hls.Events.FRAG_LOADED, () => {
-      this.fragLoadInFlight = false;
+      this.setFragLoadInFlight(false);
       this.fragmentsLoaded++;
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
         this.isInitialLoad = false;
@@ -262,7 +278,7 @@ export class VideoStreamHandler {
     this.videoElement.addEventListener("pause", this.boundPauseHandler);
 
     this.hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (data.frag) this.fragLoadInFlight = false;
+      if (data.frag) this.setFragLoadInFlight(false);
       if (!data.fatal) return;
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) this.hls?.startLoad();
       else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) this.hls?.recoverMediaError();
@@ -274,6 +290,21 @@ export class VideoStreamHandler {
 
   private seekTime(): number {
     return this.videoElement.ended ? this.endOfFrameTime : this.videoElement.currentTime;
+  }
+
+  // All fragLoadInFlight mutations go through here. The component layer is
+  // only told about non-HQ main-track downloads — the paint path a pending
+  // seek is actually waiting on — so arrow-key stepping is paced by those
+  // and never by background HQ work (upgrades, buffer filling), which is
+  // always safe to cancel. On single-level streams (maxQualityLevel <= 0)
+  // every download is the paint path, so all of them gate.
+  private setFragLoadInFlight(inFlight: boolean, frag?: { type: string; level: number }): void {
+    this.fragLoadInFlight = inFlight;
+    const gating =
+      inFlight && frag?.type === "main" && (frag.level !== this.maxQualityLevel || this.maxQualityLevel <= 0);
+    if (gating === this.gatingFragInFlight) return;
+    this.gatingFragInFlight = gating;
+    this.onFragmentInFlightChange(gating);
   }
 
   private isBufferedAt(t: number): boolean {
@@ -413,7 +444,7 @@ export class VideoStreamHandler {
     // aborted in-flight fragment never fires FRAG_LOADED, so reset the
     // in-flight marker by hand or the watchdog would re-arm forever.
     this.hls.stopLoad();
-    this.fragLoadInFlight = false;
+    this.setFragLoadInFlight(false);
 
     const range = this.bufferedRangeContaining(time);
     let toFlush = range ? this.lqRanges.filter((r) => r.start < range.end && range.start < r.end) : [];
@@ -506,7 +537,7 @@ export class VideoStreamHandler {
     // Redirect the loader to LQ deterministically. The aborted in-flight
     // fragment never fires FRAG_LOADED, so reset the in-flight marker.
     this.hls.stopLoad();
-    this.fragLoadInFlight = false;
+    this.setFragLoadInFlight(false);
     this.hls.loadLevel = 0;
     this.hls.startLoad(time);
 
@@ -621,6 +652,9 @@ export class VideoStreamHandler {
   public destroy(): void {
     this.cancelPendingRender();
     this.cancelTimer("adaptiveTransitionTimer");
+    // The viewport state outlives this handler (it's a singleton); a stale
+    // true here would keep gating arrow keys on the next loaded video.
+    this.setFragLoadInFlight(false);
     if (this.boundPlayHandler) {
       this.videoElement.removeEventListener("play", this.boundPlayHandler);
       this.boundPlayHandler = null;

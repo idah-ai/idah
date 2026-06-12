@@ -39,10 +39,17 @@ class Viewport {
     // Consolidated loading state read by LoadingIndicator.svelte.
     //   highQuality — true while an HLS high-quality fragment is being fetched.
     //   qualityLabel — human-readable label for the quality level ("1080p", …).
+    //   fragmentInFlight — mirrored from the HLS layer: a fragment a pending
+    //     seek may be waiting on (the non-HQ paint path) is downloading right
+    //     now. stepBy reads it so the escape window can't open mid-download
+    //     and cancel a slow fragment (the 3G livelock). Background HQ work
+    //     (upgrades, buffer filling) never sets it — it must not block
+    //     navigation, and cancelling it is always safe.
     //   framePending — true when currentFrame ≠ displayedFrame (seek in flight).
     loading: {
       highQuality: false,
       qualityLabel: "",
+      fragmentInFlight: false,
     },
     get framePending() {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
@@ -82,9 +89,22 @@ class Viewport {
     // Absolute jumps (goToFrame callers: timeline, keyframe navigation, the
     // frame input) stay ungated, and a pending seek older than the escape
     // window stops blocking — a seek that never paints (network died
-    // mid-load) must not lock navigation.
+    // mid-load) must not lock navigation. The escape only fires when no
+    // paint-path fragment is downloading: an escaped step re-runs the
+    // quality logic, which stops and restarts the loader — on a connection
+    // where every fragment takes longer than the window, escaping
+    // mid-download would cancel and re-request the same fragment forever and
+    // the pending frame would never paint. Background HQ downloads don't set
+    // the flag (see loading.fragmentInFlight above), and a dead network
+    // drops it via error/timeout events, so the stuck-seek escape still
+    // opens in both cases.
     stepBy(delta: number) {
-      if (this.framePending && Date.now() - this.lastSeekRequestAt < FRAME_STEP_ESCAPE_MS) return;
+      if (
+        this.framePending &&
+        (this.loading.fragmentInFlight || Date.now() - this.lastSeekRequestAt < FRAME_STEP_ESCAPE_MS)
+      ) {
+        return;
+      }
       this.goToFrame(this.currentFrame.value + delta);
     },
   });

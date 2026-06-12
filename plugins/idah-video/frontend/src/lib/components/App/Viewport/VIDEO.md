@@ -128,7 +128,10 @@ the same code path.
   promise to repaint at HQ (or to hand off an LQ fallback to its
   upgrade) once enough fragments have arrived.
 - It tracks whether a fragment is currently **in flight**, so it can
-  tell a slow-but-progressing load apart from a stalled one.
+  tell a slow-but-progressing load apart from a stalled one. The
+  non-HQ subset of this — paint-path downloads only, not background
+  HQ work — is mirrored into `viewport.video.loading.fragmentInFlight`
+  so the step gate can pace on it (see *Rapid navigation* below).
 
 ## Actions
 
@@ -249,7 +252,21 @@ Two pressure valves keep the gate from ever trapping the user:
 absolute jumps (timeline clicks, the frame input, keyframe and note
 navigation) are never gated, and a pending seek older than a couple of
 seconds stops blocking — a seek that never paints (network died
-mid-load) degrades to slow stepping, not a lockout.
+mid-load) degrades to slow stepping, not a lockout. The stuck-seek
+valve only opens while **no paint-path fragment is downloading**: an
+escaped step re-runs the quality logic, which stops and restarts the
+loader, so on a connection where every fragment outlasts the window
+the escape would cancel and re-request the same fragment forever — one
+phantom step every window, a download that never completes, a frame
+that never paints. Only non-HQ downloads count here — the LQ fallback
+a pending seek is actually waiting on (or any download on
+single-level streams, where everything is the paint path). Background
+HQ work — the settle upgrade, forward buffer filling — never engages
+the valve: the frame under it is already painted and cancelling it is
+always safe, so it must not freeze stepping. The handler mirrors this
+flag into the viewport state; a dead network drops it via
+error/timeout events, so the valve still opens when the seek is
+genuinely stuck.
 
 ### The render watchdog
 

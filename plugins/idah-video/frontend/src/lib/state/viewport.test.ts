@@ -479,6 +479,7 @@ describe("stepBy", () => {
     viewport.video.currentFrame.value = 10;
     viewport.video.displayedFrame.value = 10;
     viewport.video.lastSeekRequestAt = 0;
+    viewport.video.loading.fragmentInFlight = false;
     mediaState.totalFrames = 100;
   }
 
@@ -518,6 +519,31 @@ describe("stepBy", () => {
     viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
     viewport.video.stepBy(1);
     expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
+  it("keeps dropping steps past the escape window while a fragment is downloading", () => {
+    // Escaping mid-download would cancel and restart the same fragment, so a
+    // slow connection (every fragment > escape window) would never converge.
+    viewport.video.stepBy(1);
+    viewport.video.loading.fragmentInFlight = true;
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("re-opens the escape once the in-flight fragment ends without painting", () => {
+    viewport.video.stepBy(1);
+    viewport.video.loading.fragmentInFlight = true;
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.loading.fragmentInFlight = false; // load aborted / errored
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
+  it("does not gate on an in-flight fragment when no seek is pending", () => {
+    viewport.video.loading.fragmentInFlight = true; // e.g. background buffering
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
   });
 
   it("does not gate during playback (framePending is pause-only)", () => {
