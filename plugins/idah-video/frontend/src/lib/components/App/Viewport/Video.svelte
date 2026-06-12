@@ -217,6 +217,9 @@
   onMount(() => {
     videoElement.volume = 0;
     videoElement.muted = true;
+    // Captured once — capability doesn't change during the component's lifetime.
+    // Used to skip handleSeeked on rVFC-capable browsers (see comment there).
+    const hasRVFC = "requestVideoFrameCallback" in videoElement;
 
     // "play" fires for both programmatic (videoElement.play()) and browser-native play.
     // Only update status — the $effect reacts and runs all side effects (startRAF, onTogglePlay, etc.)
@@ -231,18 +234,22 @@
       viewport.video.status = "pause";
     };
 
-    // Confirm the seek whenever the browser finishes one (fallback for
-    // browsers without requestVideoFrameCallback, and for paints the one-shot
-    // rVFC misses). Confirms lastSeekedFrame — the frame we *asked* for —
-    // rather than recomputing the index from currentTime: the browser clamps
-    // seeks past the real end of the stream (which can be shorter than the
-    // database frame count), and rounding the clamped time back would yield a
-    // smaller index forever, latching framePending and the "Loading Frame"
-    // pill on that frame. The settle timer inside renderHQAt also triggers
-    // this (same-value re-seek for decoder flush); lastSeekedFrame is
-    // unchanged there so the result is identical.
+    // Confirm the seek whenever the browser finishes one — fallback for
+    // browsers without requestVideoFrameCallback. On rVFC-capable browsers
+    // (Chrome) we skip this handler entirely: seeked fires when the media
+    // pipeline accepts the new currentTime, before the frame is composited,
+    // so letting it write displayedFrame would briefly misalign annotations
+    // (showing frame N's overlays while pixels still show N−1). rVFC fires
+    // after the compositor paints and is the authoritative source there.
+    // Confirms lastSeekedFrame — the frame we *asked* for — rather than
+    // recomputing from currentTime: the browser clamps seeks past the real
+    // end of the stream, and rounding the clamped time back would yield a
+    // smaller index forever, latching framePending. The settle timer inside
+    // renderHQAt triggers seeked too (same-value re-seek for decoder flush);
+    // lastSeekedFrame is unchanged there so the result is idempotent.
     const handleSeeked = () => {
       if (isPlaying) return;
+      if (hasRVFC) return;
       viewport.video.displayedFrame.value =
         lastSeekedFrame >= 0 ? lastSeekedFrame : timeToFrame(videoElement.currentTime);
     };

@@ -110,19 +110,6 @@
     line-height: 1.4;
   }
 
-  /* ── Low-quality frame badge ────────────────────────────────────── */
-  .lq-badge {
-    background: rgba(0, 0, 0, 0.45);
-    color: rgba(255, 200, 80, 0.9);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    pointer-events: auto;
-    cursor: default;
-  }
-
   /* ── Quality loading image badge ────────────────────────────────── */
   .loading-image {
     display: flex;

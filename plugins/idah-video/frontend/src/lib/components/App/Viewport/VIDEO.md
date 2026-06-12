@@ -263,19 +263,16 @@ connection is never cut off — only a truly stuck render is.
 
 ## Feedback to the user
 
-The loading indicator surfaces three situations:
+The loading indicator surfaces two situations:
 
 - **High-quality replacement in progress.** A small image badge
   appears in the corner. Hovering it reveals the quality label.
 - **Seek in progress.** A subtle pill with a spinner reads "Loading
   Frame".
-- **Low-quality frame on screen.** A persistent "LQ" badge, shown only
-  while paused, warns that the frame's detail is reduced. It disappears
-  the moment the HQ replacement lands.
 
-The two transient states wait 150 ms before appearing, so fast buffered
-seeks — the common case during navigation — never flash an indicator.
-They disappear immediately once the work finishes.
+Both states wait 150 ms before appearing, so fast buffered seeks — the
+common case during navigation — never flash an indicator. They disappear
+immediately once the work finishes.
 
 ## Public surface
 
@@ -292,7 +289,7 @@ Everything else is driven by writing to `viewport.video`:
 viewport.video = {
   currentFrame:   { value: 0 },   // target
   displayedFrame: { value: 0 },   // reality
-  loading: { highQuality, qualityLabel, lowQualityFrame },
+  loading: { highQuality, qualityLabel },
   framePending,                    // derived
   status: "play" | "pause",
   sound:  { level, muted },
