@@ -388,7 +388,7 @@
           <!-- Original note feed -->
           <div class="bg-muted/30 rounded px-2 py-1.5">
             <div class="flex items-center gap-1.5 text-xs">
-              <span class="font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
+              <span class="text-base font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
               <div class="ml-auto flex items-center">
                 <NoteDropdownMenus
                   noteFeedId={selectedNote.id}
@@ -400,7 +400,7 @@
             </div>
             <div class="flex items-center gap-1.5 text-xs">
               <DateText
-                class="text-muted-foreground"
+                class="text-muted-foreground text-xs"
                 datetime={new Date(selectedNote.created_at ?? "")}
                 datetimeFormat="MMM dd, yyyy HH:mm:ss"
                 size="xs"
@@ -411,7 +411,7 @@
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger class="inline-block">
-                      <span class="text-muted-foreground text-xs">(Edited)</span>
+                      <span class="text-muted-foreground text-xs">• Edited</span>
                     </TooltipTrigger>
                     <TooltipContent>{formatEditedTooltip(selectedNote.edited_at)}</TooltipContent>
                   </Tooltip>
@@ -421,30 +421,31 @@
 
             {#if editingFeedContent}
               <textarea
-                class="border-border mt-1 w-full resize-none rounded border p-1.5 text-xs"
+                class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
                 rows="3"
                 bind:value={editingContentMd}
               ></textarea>
-              <div class="mt-1 flex items-center gap-1">
-                <button class="hover:bg-muted rounded px-2 py-0.5 text-xs" onclick={cancelEdit}>Cancel</button>
+              <div class="mt-2 flex items-center gap-1">
+                <button class="hover:bg-muted rounded px-2 py-0.5 text-sm" onclick={cancelEdit}>Cancel</button>
                 <button
-                  class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-xs"
+                  class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-sm"
                   onclick={() => handleUpdateFeedContent(editingContentMd)}
                   disabled={!editingContentMd.trim()}>Save</button
                 >
               </div>
             {:else}
-              <div class="mt-0.5 text-xs"><MarkdownPreview value={selectedNote.content_md ?? ""} /></div>
+              <div class="mt-2 text-sm"><MarkdownPreview value={selectedNote.content_md ?? ""} /></div>
             {/if}
           </div>
 
           <!-- Comments -->
           {#each comments as comment (comment.id)}
+            <hr />
             <div
               data-comment-id={comment.id}
               class={["rounded px-2 py-1.5", highlightedCommentId === comment.id ? "bg-muted" : ""].join(" ")}
             >
-              <div class="flex items-center gap-1.5 text-xs">
+              <div class="flex items-center gap-1.5 text-base">
                 <span class="font-semibold">{comment.created_by_email}</span>
                 <div class="ml-auto flex items-center">
                   <NoteDropdownMenus
@@ -470,7 +471,7 @@
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger class="inline-block">
-                        <span class="text-muted-foreground text-xs">(Edited)</span>
+                        <span class="text-muted-foreground text-xs">• Edited</span>
                       </TooltipTrigger>
                       <TooltipContent>{formatEditedTooltip(comment.edited_at)}</TooltipContent>
                     </Tooltip>
@@ -480,20 +481,20 @@
 
               {#if editingCommentId === comment.id}
                 <textarea
-                  class="border-border mt-1 w-full resize-none rounded border p-1.5 text-xs"
+                  class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
                   rows="2"
                   bind:value={editingContentMd}
                 ></textarea>
-                <div class="mt-1 flex items-center gap-1">
-                  <button class="hover:bg-muted rounded px-2 py-0.5 text-xs" onclick={cancelEdit}>Cancel</button>
+                <div class="mt-2 flex items-center gap-1">
+                  <button class="hover:bg-muted rounded px-2 py-0.5 text-sm" onclick={cancelEdit}>Cancel</button>
                   <button
-                    class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-xs"
+                    class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-sm"
                     onclick={() => handleUpdateComment(comment.id, editingContentMd)}
                     disabled={!editingContentMd.trim()}>Save</button
                   >
                 </div>
               {:else}
-                <div class="mt-0.5 text-xs"><MarkdownPreview value={comment.content_md} /></div>
+                <div class="mt-2 text-sm"><MarkdownPreview value={comment.content_md} /></div>
               {/if}
             </div>
           {/each}
