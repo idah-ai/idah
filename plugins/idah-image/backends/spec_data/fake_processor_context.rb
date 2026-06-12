@@ -13,7 +13,6 @@ class FakeProcessorContext
     @resource = resource
     @uploaded = []
     @metadata = nil
-    # @config = IdahImage::Processor::Options.new(options)
     @config = IdahImage::Processor::Options.new(**options)
   end
 
