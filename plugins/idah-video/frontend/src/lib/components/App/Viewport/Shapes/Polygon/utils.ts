@@ -161,13 +161,13 @@ export function nearFirstPolygonPoint(
   viewportScale: number = 1,
 ): boolean {
   if (points.length < 3) return false;
-  const invScale = (1 / viewportScale);
-  const CLOSE_RADIUS_PX = 7 * invScale;
-  const CLOSE_RADIUS_SQ = CLOSE_RADIUS_PX * CLOSE_RADIUS_PX;
+  const screenToMediaScale = (1 / viewportScale);
+  const closeRadiusMediaPx = 7 * screenToMediaScale;
+  const closeRadiusMediaPxSq = closeRadiusMediaPx * closeRadiusMediaPx;
   const first = points[0];
   const dx = Math.abs(cursor[0] - first[0]) * mediaWidth;
   const dy = Math.abs(cursor[1] - first[1]) * mediaHeight;
-  return dx * dx + dy * dy < CLOSE_RADIUS_SQ;
+  return dx * dx + dy * dy < closeRadiusMediaPxSq;
 }
 
 /** SVG data URL for a dot sight crosshair cursor (crosshair with a central dot). */
