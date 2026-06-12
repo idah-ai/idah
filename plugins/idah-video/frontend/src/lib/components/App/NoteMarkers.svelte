@@ -173,6 +173,17 @@
         if (ann) {
           selection.selectAnnotation(ann);
           driver.command.call("selection.center");
+        } else {
+          // Annotations not loaded yet — defer until they are
+          const stop = $effect.root(() => {
+            $effect(() => {
+              const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+              if (!found) return;
+              selection.selectAnnotation(found);
+              driver.command.call("selection.center");
+              stop();
+            });
+          });
         }
       } else {
         viewport.workspace.fitToViewport();
