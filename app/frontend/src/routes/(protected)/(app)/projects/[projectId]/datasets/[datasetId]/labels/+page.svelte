@@ -37,7 +37,7 @@
       const aOrder = getCategoryOrder(a.id) ?? Infinity;
       const bOrder = getCategoryOrder(b.id) ?? Infinity;
       if (aOrder !== bOrder) return aOrder - bOrder;
-      return 0;
+      return a.id.localeCompare(b.id);
     });
   }
 
