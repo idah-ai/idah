@@ -129,6 +129,20 @@ export class VideoStreamHandler {
   // to the component via onFragmentInFlightChange.
   private gatingFragInFlight = false;
 
+  // The window of the fragment currently downloading (from FRAG_LOADING).
+  // renderLQFallbackAt consults it to recognise a load that already covers
+  // its target, so rapid navigation retargets the wait instead of cancelling
+  // and re-requesting the same bytes.
+  private inFlightFrag: TimeRange & { level: number } | null = null;
+
+  // Latched when the "HQ is affordable" prediction was proven wrong — the
+  // verify deadline fired with the target still unbuffered. While set,
+  // unbuffered seeks skip the doomed HQ attempt and paint LQ-first
+  // immediately, instead of burning the deadline budget (plus a cancelled
+  // HQ request) on every single navigation step. Cleared when a max-level
+  // fragment download completes: fresh evidence HQ is affordable again.
+  private hqDeadlineMissed = false;
+
   private endOfFrameTime: number;
   private initialFragmentCount: number;
   private slowNetworkThresholdMs: number;
@@ -233,8 +247,11 @@ export class VideoStreamHandler {
     // quality from the start. renderHQAt is called unconditionally (not via
     // upgradeToHQ) because FRAG_BUFFERED for the newest burst fragment may
     // not have fired yet — the burst region is LQ by construction.
-    this.hls.on(Hls.Events.FRAG_LOADED, () => {
+    this.hls.on(Hls.Events.FRAG_LOADED, (_event, data) => {
       this.setFragLoadInFlight(false);
+      // A completed max-level download is fresh evidence HQ is affordable —
+      // let the predict-then-verify path try HQ again on future seeks.
+      if (data.frag.level === this.maxQualityLevel) this.hqDeadlineMissed = false;
       this.fragmentsLoaded++;
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
         this.isInitialLoad = false;
@@ -298,8 +315,13 @@ export class VideoStreamHandler {
   // and never by background HQ work (upgrades, buffer filling), which is
   // always safe to cancel. On single-level streams (maxQualityLevel <= 0)
   // every download is the paint path, so all of them gate.
-  private setFragLoadInFlight(inFlight: boolean, frag?: { type: string; level: number }): void {
+  private setFragLoadInFlight(
+    inFlight: boolean,
+    frag?: { type: string; level: number; start: number; duration: number },
+  ): void {
     this.fragLoadInFlight = inFlight;
+    this.inFlightFrag =
+      inFlight && frag ? { start: frag.start, end: frag.start + frag.duration, level: frag.level } : null;
     const gating =
       inFlight && frag?.type === "main" && (frag.level !== this.maxQualityLevel || this.maxQualityLevel <= 0);
     if (gating === this.gatingFragInFlight) return;
@@ -534,12 +556,27 @@ export class VideoStreamHandler {
     if (!this.hls) return;
     this.clearPendingRender();
 
-    // Redirect the loader to LQ deterministically. The aborted in-flight
-    // fragment never fires FRAG_LOADED, so reset the in-flight marker.
-    this.hls.stopLoad();
-    this.setFragLoadInFlight(false);
     this.hls.loadLevel = 0;
-    this.hls.startLoad(time);
+    // When the fragment already downloading is LQ and covers `time`, keep
+    // it: stopping the loader here would discard its progress and
+    // re-request the same bytes — under rapid navigation (one step usually
+    // lands in the same fragment) that cycle can repeat until no frame ever
+    // paints. The listener below waits on coverage of the *new* time, so
+    // retargeting is just letting the load finish.
+    const f = this.inFlightFrag;
+    const coversTarget =
+      this.fragLoadInFlight &&
+      f !== null &&
+      f.level === 0 &&
+      time >= f.start - RANGE_TOLERANCE_S &&
+      time <= f.end + RANGE_TOLERANCE_S;
+    if (!coversTarget) {
+      // Redirect the loader to LQ deterministically. The aborted in-flight
+      // fragment never fires FRAG_LOADED, so reset the in-flight marker.
+      this.hls.stopLoad();
+      this.setFragLoadInFlight(false);
+      this.hls.startLoad(time);
+    }
 
     // No loader badge: the pending element seek keeps framePending true, so
     // the "Loading Frame" pill already covers this phase. The handoff waits
@@ -547,9 +584,22 @@ export class VideoStreamHandler {
     // downloaded): with FRAG_LOADED, a buffered-check could race the append
     // and — when `time` sits in the last LQ fragment this load will produce —
     // wait forever for another fragment that never comes.
+    //
+    // Completion requires the same forward coverage as renderHQAt, not just
+    // data at `time`: a seek landing near a fragment's end needs a little of
+    // the next fragment before the decoder will present the frame. Handing
+    // off on bare isBufferedAt would arm the upgrade while the seek is still
+    // unpaintable — the upgrade would then flush this very data and stop the
+    // forward fill that was about to complete the paint, leaving the frame
+    // pending forever (and the stepped position running ahead of the pixels).
     const fragListener = (_event: string, data: any) => {
       if (data.frag.level !== 0 || data.frag.type !== "main") return;
-      if (!this.isBufferedAt(time)) return; // a different fragment — keep listening
+      const range = this.bufferedRangeContaining(time);
+      if (!range) return; // a different fragment — keep listening
+      const frags = this.hls?.levels[0]?.details?.fragments ?? [];
+      const lastFrag = frags[frags.length - 1];
+      const streamEnd = lastFrag ? lastFrag.start + lastFrag.duration : time;
+      if (range.end + RANGE_TOLERANCE_S < Math.min(time + RENDER_COVERAGE_S, streamEnd)) return;
       this.clearPendingRender();
       if (!this.isPaused) return;
       this.upgradeTimer = setTimeout(() => {
@@ -577,6 +627,11 @@ export class VideoStreamHandler {
   private upgradeToHQ(time: number): void {
     this.cancelTimer("upgradeTimer");
     if (!this.hls || !this.isPaused || this.maxQualityLevel <= 0) return;
+    // Never upgrade under a pending element seek: the user hasn't settled —
+    // the frame hasn't even painted — and the flush below would remove the
+    // data that pending seek is waiting on, making it unpaintable. The next
+    // settle (pause, or a seek that lands) re-triggers the upgrade.
+    if (this.videoElement.seeking) return;
     if (!this.lqRangeAt(time)) return;
     this.renderHQAt(time);
   }
@@ -605,8 +660,13 @@ export class VideoStreamHandler {
     // LQ frame is painted first and upgraded once the user settles.
     if (!this.isBufferedAt(time)) {
       const estimate = this.estimateHQFragmentSeconds();
-      if (estimate !== null && estimate * 1000 > this.slowNetworkThresholdMs) {
-        // Confidently slow: don't wait, paint LQ now.
+      const predictedSlow = estimate !== null && estimate * 1000 > this.slowNetworkThresholdMs;
+      // LQ-first when either the bandwidth estimate says one HQ fragment
+      // won't fit the budget, or a previous deadline miss proved the
+      // estimate too optimistic (hqDeadlineMissed) — without the latch,
+      // every step of a held arrow key would re-predict "fast", issue an
+      // HQ request, and have the deadline cancel it one second later.
+      if (predictedSlow || this.hqDeadlineMissed) {
         this.renderLQFallbackAt(time);
         return;
       }
@@ -626,6 +686,9 @@ export class VideoStreamHandler {
         this.hqDeadlineTimer = null;
         if (!this.isPaused || !this.hls) return;
         if (this.isBufferedAt(time)) return; // HQ made it in time
+        // The prediction was wrong — remember that, so the next seeks go
+        // LQ-first directly instead of repeating this doomed attempt.
+        this.hqDeadlineMissed = true;
         this.renderLQFallbackAt(time);
       }, this.slowNetworkThresholdMs);
       return;

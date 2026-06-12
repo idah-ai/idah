@@ -540,6 +540,28 @@ describe("stepBy", () => {
     expect(viewport.video.currentFrame.value).toBe(12);
   });
 
+  it("keeps dropping steps in the gap between consecutive fragment downloads", () => {
+    // The in-flight flag drops at download-complete and rises again at the
+    // next fragment request. A key-repeat landing in that gap must not slip
+    // through: the transition re-arms the escape window.
+    viewport.video.stepBy(1);
+    viewport.video.setFragmentInFlight(true);
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1; // long download
+    viewport.video.setFragmentInFlight(false); // download done, paint imminent
+    viewport.video.stepBy(10);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("still escapes after fragment activity stops for the whole window", () => {
+    viewport.video.stepBy(1);
+    viewport.video.setFragmentInFlight(true);
+    viewport.video.setFragmentInFlight(false);
+    // No activity since: the seek is genuinely stuck.
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
   it("does not gate on an in-flight fragment when no seek is pending", () => {
     viewport.video.loading.fragmentInFlight = true; // e.g. background buffering
     viewport.video.stepBy(1);

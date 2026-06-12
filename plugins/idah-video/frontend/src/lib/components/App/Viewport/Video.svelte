@@ -279,7 +279,7 @@
           if (info) viewport.video.loading.qualityLabel = info.label;
         },
         onFragmentInFlightChange: (inFlight) => {
-          viewport.video.loading.fragmentInFlight = inFlight;
+          viewport.video.setFragmentInFlight(inFlight);
         },
       });
     } else {

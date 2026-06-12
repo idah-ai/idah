@@ -200,14 +200,26 @@ halves:
   playlist and init-segment requests plus round trips, so a "fast"
   prediction can still stall. If the target isn't buffered when the
   budget expires, the handler stops waiting and paints LQ instead.
+- **Remember.** A deadline miss latches: the prediction was proven
+  wrong, so subsequent unbuffered seeks go LQ-first directly instead
+  of re-running the doomed HQ attempt — without this, every step of a
+  held arrow key would issue an HQ request, burn the whole budget,
+  cancel it, and only then fetch LQ. The latch clears when a max-level
+  fragment download actually completes (e.g. a settle upgrade): fresh
+  evidence that HQ is affordable again, so the predict path gets
+  another try.
 
 Either way the appended level-0 range is recorded in the LQ map, and
-only once the LQ data has actually landed does the 300 ms upgrade
-debounce start (starting earlier could fire while nothing is buffered
-and skip the upgrade). The user sees a fast LQ frame with an "LQ"
-badge, then the HQ replacement when the network allows — and never
-waits longer than the budget for *something* to appear once data
-starts flowing.
+only once the LQ data has actually landed — with the same forward
+coverage the HQ render requires, since a seek near a fragment's end
+cannot present until a little of the next fragment exists — does the
+300 ms upgrade debounce start (starting earlier could fire while the
+frame is still unpaintable, and the upgrade's flush would then remove
+the very data the pending seek was waiting on). As a second line of
+defence, an upgrade never starts while the element is still seeking.
+The user sees a fast LQ frame with an "LQ" badge, then the HQ
+replacement when the network allows — and never waits longer than the
+budget for *something* to appear once data starts flowing.
 
 ### Upgrading to high quality
 
@@ -246,7 +258,11 @@ and every step paints full quality straight from the buffer at zero
 cost, in either direction. On a slow network, stepping is paced by the
 LQ fragments arriving: a continuous, consecutive stream of LQ frames,
 with the HQ upgrade kicking in when the user lets go. Each accepted
-step cancels any in-flight upgrade work.
+step cancels any in-flight upgrade work — but never a download that
+already covers its own target: when the new time falls inside the LQ
+fragment currently downloading, the fallback keeps the load and merely
+retargets what it is waiting for, so navigation can only redirect
+progress, not destroy it.
 
 Two pressure valves keep the gate from ever trapping the user:
 absolute jumps (timeline clicks, the frame input, keyframe and note
@@ -264,9 +280,15 @@ single-level streams, where everything is the paint path). Background
 HQ work — the settle upgrade, forward buffer filling — never engages
 the valve: the frame under it is already painted and cancelling it is
 always safe, so it must not freeze stepping. The handler mirrors this
-flag into the viewport state; a dead network drops it via
-error/timeout events, so the valve still opens when the seek is
-genuinely stuck.
+flag into the viewport state, and **every transition of it re-arms the
+escape window**: the flag is momentarily false between consecutive
+fragments (download complete → append → paint, or → next request), and
+without the re-arm a key-repeat landing in that gap would slip through
+— jumping the target onto a new fragment and discarding the one that
+just finished, so the pixels would never advance. With it, the valve
+only opens after a full window with *no* paint-path activity at all —
+a dead network stops producing transitions once its error/timeout
+events settle, so a genuinely stuck seek still unlocks.
 
 ### The render watchdog
 

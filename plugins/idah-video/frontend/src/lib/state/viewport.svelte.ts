@@ -56,10 +56,24 @@ class Viewport {
     },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
-    // When the last position-changing navigation was requested. stepBy uses
-    // it to tell a seek that is still loading (block further steps) from one
-    // that is stuck (let the user move again).
+    // When the pending seek last showed signs of life: set on every
+    // position-changing navigation and re-armed by every paint-path fragment
+    // transition (setFragmentInFlight). stepBy uses it to tell a seek that
+    // is still progressing (block further steps) from one that is stuck
+    // (let the user move again).
     lastSeekRequestAt: 0,
+    // Mirror of the HLS paint-path download state (wired in Video.svelte).
+    // Any transition counts as seek progress and re-arms the stuck-seek
+    // escape window: the flag is momentarily false between consecutive
+    // fragments (download done → append → paint, or → next fragment
+    // request), and without the re-arm a key-repeat landing in that gap
+    // would be accepted — jumping currentFrame onto a new fragment and
+    // discarding the one that just finished, so the video pixels would
+    // never advance.
+    setFragmentInFlight(inFlight: boolean) {
+      this.loading.fragmentInFlight = inFlight;
+      this.lastSeekRequestAt = Date.now();
+    },
     play() {
       this.status = "play";
     },
