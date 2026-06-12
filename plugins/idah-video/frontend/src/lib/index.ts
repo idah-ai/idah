@@ -1,11 +1,11 @@
 // place files you want to import through the `$lib` alias in this folder.
 import { mount, unmount } from "svelte";
 
+import { type IIdahDriverV2 } from "$idah/v2/types";
 import Plugin from "$lib/components/Plugin.svelte";
-import { type IIdahDriverV2 } from "$idah/v2/types"
-import { initDriver } from "./state/driver.svelte";
-import { initDataStores } from "./state/data.svelte";
 import { registerAllCommands } from "./commands";
+import { initDataStores } from "./state/data.svelte";
+import { initDriver } from "./state/driver.svelte";
 import { initToolbar } from "./toolbar";
 
 interface IPluginDriver {
@@ -14,7 +14,7 @@ interface IPluginDriver {
   description: string;
   version: string;
   type: string;
-  init(driver:  IIdahDriverV2): void;
+  init(driver: IIdahDriverV2): void;
   render(parent: HTMLElement): void;
   close(): void;
 }
