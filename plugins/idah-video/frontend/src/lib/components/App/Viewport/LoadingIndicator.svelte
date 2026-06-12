@@ -3,8 +3,14 @@
 
   let highQuality = $derived(viewport.video.loading.highQuality);
   let framePending = $derived(viewport.video.framePending);
+  // The reduced-detail badge only makes sense while paused (the handler can't
+  // track the moving playhead during playback) and yields to the two transient
+  // indicators, which already imply or supersede it.
+  let lowQualityFrame = $derived(
+    viewport.video.loading.lowQualityFrame && viewport.video.status === "pause" && !highQuality && !framePending,
+  );
 
-  let visible = $derived(highQuality || framePending);
+  let visible = $derived(highQuality || framePending || lowQualityFrame);
   let label = $derived(highQuality ? `Loading: ${viewport.video.loading.qualityLabel}` : "Loading Frame");
 
   // ── Debounced display state ───────────────────────────────────────
@@ -49,11 +55,17 @@
         </div>
         <span class="image-label">{label}</span>
       </div>
-    {:else}
+    {:else if framePending}
       <!-- Subtle pill for frame seek -->
       <div class="loading-pill" aria-live="polite" aria-label={label} role="status">
         <span class="loading-spinner" aria-hidden="true"></span>
         <span class="loading-text">Loading Frame</span>
+      </div>
+    {:else}
+      <!-- Persistent badge: the frame on screen is low quality (slow network);
+           it stays until the HQ replacement lands -->
+      <div class="lq-badge" aria-label="Low quality frame" role="status" title="Low quality frame — full quality loads when the network allows">
+        LQ
       </div>
     {/if}
   </div>
@@ -100,6 +112,19 @@
   .loading-text {
     white-space: nowrap;
     line-height: 1.4;
+  }
+
+  /* ── Low-quality frame badge ────────────────────────────────────── */
+  .lq-badge {
+    background: rgba(0, 0, 0, 0.45);
+    color: rgba(255, 200, 80, 0.9);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    pointer-events: auto;
+    cursor: default;
   }
 
   /* ── Quality loading image badge ────────────────────────────────── */

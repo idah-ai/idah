@@ -39,10 +39,14 @@ class Viewport {
     // Consolidated loading state read by LoadingIndicator.svelte.
     //   highQuality — true while an HLS high-quality fragment is being fetched.
     //   qualityLabel — human-readable label for the quality level ("1080p", …).
+    //   lowQualityFrame — true while the frame on screen is backed by
+    //     low-quality data (slow-network fallback or leftover playback data
+    //     awaiting upgrade).
     //   framePending — true when currentFrame ≠ displayedFrame (seek in flight).
     loading: {
       highQuality: false,
       qualityLabel: "",
+      lowQualityFrame: false,
     },
     get framePending() {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;

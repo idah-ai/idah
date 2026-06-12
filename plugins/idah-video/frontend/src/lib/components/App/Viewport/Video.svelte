@@ -258,6 +258,9 @@
           viewport.video.loading.highQuality = loading;
           if (info) viewport.video.loading.qualityLabel = info.label;
         },
+        onDisplayQualityChange: (isLQ) => {
+          viewport.video.loading.lowQualityFrame = isLQ;
+        },
       });
     } else {
       videoElement.src = src;
