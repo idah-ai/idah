@@ -292,29 +292,29 @@
     }
   }
 
-function removeCategory(labelConfigKey: string, categoryId: string) {
-  if (!labelConfig) return;
-  // Filter out the exact category with the given ID
-  // If remove children it's still have parent but if remove parent, all children will be removed as well
-  const selectedLabelConfig = labelConfig[labelConfigKey];
-  if (!selectedLabelConfig) return;
+  function removeCategory(labelConfigKey: string, categoryId: string) {
+    if (!labelConfig) return;
+    // Filter out the exact category with the given ID
+    // If remove children it's still have parent but if remove parent, all children will be removed as well
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    if (!selectedLabelConfig) return;
 
-  const normalizedId = categoryId.trim();
+    const normalizedId = categoryId.trim();
 
-  const hasChildren = selectedLabelConfig.values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
+    const hasChildren = selectedLabelConfig.values.some((value) => value.id.trim().startsWith(normalizedId + "/"));
 
-  selectedLabelConfig.values = selectedLabelConfig.values.filter((value) => {
-    const valueId = value.id.trim();
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((value) => {
+      const valueId = value.id.trim();
 
-    // remove self
-    if (valueId === normalizedId) return false;
+      // remove self
+      if (valueId === normalizedId) return false;
 
-    // remove children (only when deleting parent)
-    if (hasChildren && valueId.startsWith(normalizedId + "/")) return false;
+      // remove children (only when deleting parent)
+      if (hasChildren && valueId.startsWith(normalizedId + "/")) return false;
 
-    return true;
-  });
-}
+      return true;
+    });
+  }
 
   function setProperty(labelConfigKey: string, property: IConfigProperty) {
     if (!labelConfig) return;
