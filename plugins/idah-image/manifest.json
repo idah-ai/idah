@@ -20,14 +20,6 @@
         "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-image/assets/polygon-icon.svg"
-        },
-        "polyline": {
-          "label": "Polyline",
-          "icon": "api/v1/plugins/idah-image/assets/polyline-icon.svg"
-        },
-        "point": {
-          "label": "Point",
-          "icon": "api/v1/plugins/idah-image/assets/point-icon.svg"
         }
       }
     }
