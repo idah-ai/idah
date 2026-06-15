@@ -235,4 +235,49 @@ RSpec.describe Dataset::Service, database: true do
       expect(::Service::Notification).to have_received(:email).once
     end
   end
+
+  describe "#duplicate" do
+    let!(:original_dataset_id) do
+      repo.create(
+        attributes.merge(
+          name: "Original Dataset",
+          entries_total_count: 0
+        )
+      )
+    end
+
+    before do
+      allow(subject).to receive(:authorize_creation).and_return(true)
+    end
+
+    it "duplicates the dataset with basic fields reset" do
+      duplicated = subject.duplicate(original_dataset_id)
+
+      expect(duplicated.id).not_to eq(original_dataset_id)
+      expect(duplicated.name).to eq("Original Dataset - duplicated")
+      expect(duplicated.status).to eq("pending")
+      expect(duplicated.entries_total_count).to eq(0)
+      expect(duplicated.entries_completed_count).to eq(0)
+      expect(duplicated.entries_in_progress_count).to eq(0)
+    end
+
+    it "calls duplicated on repository when dataset has entries" do
+      repo.update!(original_dataset_id, { entries_total_count: 5 })
+
+      allow(subject.send(:datasets)).to receive(:duplicated)
+
+      duplicated = subject.duplicate(
+        original_dataset_id,
+        entry_ids: [1, 2, 3],
+        with_annotations: true
+      )
+
+      expect(subject.send(:datasets)).to have_received(:duplicated).with(
+        duplicated.id,
+        duping_dataset_id: original_dataset_id,
+        entry_ids: [1, 2, 3],
+        with_annotations: true
+      )
+    end
+  end
 end

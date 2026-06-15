@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { cn } from "$lib/utils.js";
 
   import Button from "@/components/ui/button/button.svelte";
   import {
@@ -21,6 +22,7 @@
     title,
     description,
     loading,
+    disabled,
     onCancel,
     onConfirm,
     modalTitle,
@@ -28,6 +30,7 @@
     actions,
     confirm,
     children,
+    class: className,
     canClickOutside = true,
   }: FormModalBaseProps = $props();
 
@@ -89,6 +92,7 @@
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
   <DialogContent
+    class={cn(className)}
     onInteractOutside={(e) => {
       if (!canClickOutside) {
         e.preventDefault();
@@ -123,7 +127,7 @@
           {#if confirm}
             {@render confirm()}
           {:else}
-            <Button {loading} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
+            <Button {loading} {disabled} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
               {confirmButtonProps.label}
             </Button>
           {/if}

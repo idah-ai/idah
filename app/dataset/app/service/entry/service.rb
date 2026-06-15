@@ -2,7 +2,7 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository, annotations: Annotation::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -161,6 +161,67 @@ module Entry
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
         system_entries_repo.update!(entry.id, { assigned_to_id: nil })
+      end
+    end
+
+    def duplicate_entries(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
+      duping_entries = if entry_ids
+                         # INFO: also filter with duping_dataset_id to ensure the entries are in the duping dataset
+                         system_entries_repo.index({ id: entry_ids, dataset_id: duping_dataset_id })
+                       else
+                         system_entries_repo.index({ dataset_id: duping_dataset_id })
+                       end
+
+      duping_entries.each do |duping_entry|
+        # check if media is already successfully processed
+        is_media_ready = %w[ready in_progress completed].include?(duping_entry.status)
+
+        now = Time.now
+
+        entry_id = UUIDv7.generate
+
+        attributes = {
+          **duping_entry.fields,
+          id: entry_id,
+          project_id: duping_entry.project_id,
+          dataset_id: dataset_id,
+          job_id: nil,
+          wf_step: "start",
+          status: is_media_ready ? "ready" : "pending",
+          assigned_to_id: nil,
+          submitted_by_id: nil,
+          reviewed_by_id: nil,
+          created_at: now,
+          updated_at: now,
+        }
+
+        if is_media_ready
+          # INFO: media is already good -> skip processing job
+          entries.no_event do
+            entries.create(attributes)
+          end
+        else
+          # media needs processing (was in processing or errored) -> trigger new job
+          # the event listener will pick up the 'pending' status and start a new job
+          entries.create(attributes)
+        end
+
+        next unless with_annotations
+
+        entry_annotations = annotations.index({ entry_id: duping_entry.id })
+
+        entry_annotations.each do |annotation|
+          attributes = {
+            **annotation.fields,
+            id: UUIDv7.generate,
+            project_id: duping_entry.project_id,
+            dataset_id: dataset_id,
+            entry_id: entry_id,
+            created_at: now,
+            updated_at: now,
+          }
+          annotations.create(attributes)
+        end
       end
     end
   end

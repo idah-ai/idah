@@ -12,7 +12,7 @@
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import { AspectRatio } from "@/components/ui/aspect-ratio";
+  import EntryThumbnailPreview from "@/components/app/datasets/entries/cards/entry-thumbnail-preview.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
@@ -76,19 +76,15 @@
   });
 
   // State for thumbnail
-  let imgContainer: HTMLDivElement | undefined = $state(undefined);
   let containerWidth: number = $state(240);
   let thumbnailImg: HTMLImageElement = $state(new Image());
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
-  let currentImagePosition = $state(0);
-  let animationInterval: number | null = $state(null);
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
-  const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
   $effect(() => {
@@ -202,31 +198,11 @@
     }
   }
 
-  // Animation functions
-  function startAnimation() {
-    if (animationInterval) return;
-
-    animationInterval = setInterval(() => {
-      currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;
-    }, ANIMATION_INTERVAL_MS);
-  }
-
-  function stopAnimation() {
-    if (animationInterval) {
-      clearInterval(animationInterval);
-      animationInterval = null;
-    }
-
-    currentImagePosition = 0; // Reset to first image
-  }
-
-  // Clean up blob URL and animation when component is destroyed
   function stopPeriodicCheckJobStatus() {
     clearInterval($progressInterval);
   }
 
   function cleanup() {
-    stopAnimation();
     stopPeriodicCheckJobStatus();
 
     if (thumbnailUrl) {
@@ -250,35 +226,7 @@
 
       <!-- THUMBNAIL -->
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
-        <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
-          {#if thumbnailUrl}
-            <div
-              bind:this={imgContainer}
-              role="img"
-              class="relative h-full w-full overflow-hidden rounded-lg"
-              onmouseenter={startAnimation}
-              onmouseleave={stopAnimation}
-            >
-              <img
-                src={thumbnailUrl}
-                alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
-                style:height="{imgContainer?.clientHeight}px"
-                style:width="{containerWidth * TOTAL_POSITIONS}px"
-                style:max-width="none"
-                style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
-              />
-            </div>
-          {:else if thumbnailError}
-            <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
-              Unable to load thumbnail
-            </div>
-          {:else}
-            <div class="flex h-full items-center justify-center">
-              <div class="bg-muted/50 h-full w-full animate-pulse rounded-lg"></div>
-            </div>
-          {/if}
-        </AspectRatio>
+        <EntryThumbnailPreview {thumbnailUrl} {thumbnailError} />
       </div>
 
       <!-- INFO -->
