@@ -1,10 +1,11 @@
 <script lang="ts">
   import { PlusIcon, WorkflowIcon } from "@lucide/svelte";
+  import { SvelteSet } from "svelte/reactivity";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import {
-    CategoryTreeNode,
-    type ICategoryTreeNode,
+      CategoryTreeNode,
+      type ICategoryTreeNode,
   } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
@@ -24,6 +25,11 @@
   }
   let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory, onChangeSelectableCategory }: Props =
     $props();
+
+  /** IDs of nodes the user has collapsed.  All nodes start expanded.
+   *  Stored separately from tree nodes so that expand/collapse doesn't
+   *  break the $derived reactivity chain on treeItems. */
+  let collapsedIds = new SvelteSet<string>();
 
   // Functions
   function constructCategoryTree(values: IConfigValue[]) {
@@ -91,7 +97,7 @@
             label: isLeaf ? value.label : humanize(part),
             color: isLeaf ? value.color : null,
             text_color: isLeaf ? value.text_color : null,
-            expanded: true,
+            expanded: !collapsedIds.has(currentPath),
             parent,
             children: [],
             order,
@@ -101,11 +107,13 @@
           currentChildren.push(existingNode);
         }
 
-        // Actual category node — update label/color from leaf
+        // Actual category node — update label/color from leaf.
+        // Also sync expanded state from the collapsedIds set.
         if (index === parts.length - 1) {
           existingNode.label = value.label;
           existingNode.color = value.color;
           existingNode.text_color = value.text_color;
+          existingNode.expanded = !collapsedIds.has(currentPath);
         }
 
         currentChildren = existingNode.children;
@@ -121,6 +129,8 @@
       for (const node of nodes) {
         if (node.children.length > 0) {
           assignParentOrders(node.children);
+          // Intermediate nodes also reflect collapsed state
+          node.expanded = !collapsedIds.has(node.id);
           if (node.id in categoryOrderMap) {
             node.order = categoryOrderMap[node.id];
           } else {
@@ -151,21 +161,13 @@
     }
     syncIntermediateOrders(root);
 
-    // Prune orderMap entries whose leaves are no longer in the current
-    // values set (e.g. "language/english/e" was deleted) AND whose path
-    // is not an ancestor of any current leaf.
-    const currentPaths: Record<string, boolean> = {};
-    for (const node of Object.values(nodeMap)) {
-      currentPaths[node.id] = true;
-    }
+    // Prune orderMap entries whose paths are no longer in the current
+    // tree.  nodeMap contains every node created during tree construction
+    // (both leaves and intermediates), so any key not in nodeMap is truly
+    // stale — not an ancestor of any current leaf.
     for (const key of Object.keys(categoryOrderMap)) {
-      if (!currentPaths[key] && !currentLeafIds[key]) {
-        // Only delete if no current leaf has this as an ancestor path
-        const prefix = key + "/";
-        const isAncestorOfCurrent = Object.keys(currentLeafIds).some((id) => id.startsWith(prefix));
-        if (!isAncestorOfCurrent) {
-          delete categoryOrderMap[key];
-        }
+      if (!nodeMap[key] && !currentLeafIds[key]) {
+        delete categoryOrderMap[key];
       }
     }
 
@@ -173,18 +175,11 @@
   }
 
   function toggleExpand(id: string) {
-    function toggleNodeExpansion(nodes: Array<ICategoryTreeNode>): Array<ICategoryTreeNode> {
-      return nodes.map((node) => {
-        if (node.id === id) {
-          return { ...node, expanded: !node.expanded };
-        } else if (node.children.length > 0) {
-          return { ...node, children: toggleNodeExpansion(node.children) };
-        }
-        return node;
-      });
+    if (collapsedIds.has(id)) {
+      collapsedIds.delete(id);
+    } else {
+      collapsedIds.add(id);
     }
-
-    treeItems = toggleNodeExpansion(treeItems);
   }
 
   function addNewCategory(): void {
