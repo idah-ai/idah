@@ -39,7 +39,7 @@
   });
 
   // Functions
-  async function fetchProjectMembers() {
+  async function fetchProjectMembers(): Promise<void> {
     const projectMembersRes = await projectMembersBackendDataSource.list({
       fields: {
         [ProjectMemberRecord.type]: ["email"],
@@ -76,7 +76,7 @@
           valueKey="email"
           listOptions={{
             filters: {
-              role_name__nin: ["system", "admin"],
+              role_name__nin: ["system", "admin", "api_service"],
             },
           }}
           label="Member"
@@ -84,12 +84,13 @@
           required
           value={member.email}
           onSelected={(selectedValue) => {
-            member.email = selectedValue as string;
+            member.email = (selectedValue ?? "") as string;
           }}
         >
-          {#snippet slotChoice({ choice, select })}
+          {#snippet slotChoice({ choice })}
+            {@const isAlreadyAdded =
+              disabledMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
             {@const isSelected = choice.value === member.email}
-            {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
             <Combobox.Item
               class={cn(
                 "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
@@ -100,7 +101,6 @@
               value={String(choice.value)}
               label={choice.label}
               disabled={choice.disabled || isAlreadyAdded}
-              onclick={() => select(choice)}
             >
               {choice.label}
 
@@ -123,7 +123,7 @@
           class="flex-1"
           label="Role"
           placeholder="Select a role"
-          choices={projectMemberRoles}
+          choices={[...projectMemberRoles]}
           required
           searchable
           searchPlaceholder="Search a role"

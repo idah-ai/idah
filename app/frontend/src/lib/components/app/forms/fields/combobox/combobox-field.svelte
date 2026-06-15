@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends Record">
   import { CheckIcon, ChevronsUpDownIcon } from "@lucide/svelte";
   import { Combobox } from "bits-ui";
+  import { onMount } from "svelte";
 
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -42,9 +43,13 @@
   }: Props = $props();
 
   // Variables
-  type Choice = LabelValue<string | number>;
   let filtering = $state(false);
   let filteredChoices = $state<LabelValue<string | number>[]>([]);
+  let inputValue = $state("");
+  let selectedLabel = $state("");
+
+  // Convert external value to string for bits-ui controlled value
+  let comboboxValue = $derived(value != null ? String(value) : undefined);
 
   // Functions
   async function filterChoices(searchVal: string) {
@@ -72,11 +77,95 @@
     });
   }
 
-  function select(choice: Choice) {
-    value = choice.value;
-    onSelected?.(value);
+  function onValueChange(newValue: string | undefined): void {
+    if (!newValue) {
+      value = null;
+      selectedLabel = "";
+      onSelected?.(null);
+      filterChoices("");
+      return;
+    }
+
+    // Find the choice to get its typed value and label
+    const choice = filteredChoices.find((c) => String(c.value) === newValue);
+    if (choice) {
+      value = choice.value;
+      selectedLabel = String(choice.label);
+      onSelected?.(value);
+    }
   }
+
+  function onInput(e: Event): void {
+    const newValue = (e.currentTarget as HTMLInputElement).value;
+    inputValue = newValue;
+
+    // bits-ui auto-fills input after selection — don't clear the selection
+    if (newValue === selectedLabel) {
+      filterChoices(newValue);
+      return;
+    }
+    selectedLabel = "";
+
+    // Clear selection if input is fully cleared — reload all choices
+    if (!newValue) {
+      if (value !== null) {
+        value = null;
+        onSelected?.(null);
+      }
+      return;
+    }
+
+    // When user starts typing a new value, clear previous selection
+    if (value !== null) {
+      value = null;
+      onSelected?.(null);
+    }
+    // Trigger async filter for dropdown
+    filterChoices(newValue);
+  }
+
+  function onBlur(): void {
+    // If user types free-text without selecting a choice → commit as free-text value
+    if (inputValue && value === null) {
+      onSelected?.(inputValue);
+    }
+  }
+
+  // Lifecycle
+  onMount(() => {
+    filterChoices("");
+  });
 </script>
+
+{#snippet emptyState()}
+  {#if filtering}
+    <Spinner class="mx-auto h-full" />
+  {:else}
+    <span class="text-muted-foreground block p-2 text-sm"> No results found. </span>
+  {/if}
+{/snippet}
+
+{#snippet choiceItem(choice: LabelValue<string | number>)}
+  <Combobox.Item
+    class={cn(
+      "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
+      {
+        "text-muted-foreground cursor-not-allowed": choice.disabled,
+      },
+    )}
+    value={String(choice.value)}
+    label={choice.label}
+    disabled={choice.disabled}
+  >
+    {choice.label}
+
+    {#if String(choice.value) === comboboxValue}
+      <div class="ml-auto">
+        <CheckIcon class="size-4" />
+      </div>
+    {/if}
+  </Combobox.Item>
+{/snippet}
 
 <Field id={name} class={cn("", className)}>
   {#if slotLabel}
@@ -85,7 +174,7 @@
     <FieldLabel for={name} {required}>{label}</FieldLabel>
   {/if}
 
-  <Combobox.Root type="single">
+  <Combobox.Root type="single" value={comboboxValue} {onValueChange}>
     <div class="relative">
       <Combobox.Input
         class={cn(
@@ -93,10 +182,8 @@
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         )}
-        oninput={(e) => {
-          filterChoices(e.currentTarget.value);
-          onSelected?.(e.currentTarget.value);
-        }}
+        oninput={onInput}
+        onblur={onBlur}
         autofocus={false}
         {disabled}
         {placeholder}
@@ -109,42 +196,21 @@
 
     <Combobox.Portal>
       <Combobox.Content
-        class="focus-override border-muted bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 h-96 max-h-[var(--bits-combobox-content-available-height)] w-auto min-w-[var(--bits-combobox-anchor-width)] rounded-lg border p-1 outline-hidden select-none data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1"
+        class="focus-override border-muted bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-[var(--bits-combobox-content-available-height)] w-auto min-w-[var(--bits-combobox-anchor-width)] overflow-y-auto rounded-lg border p-1 outline-hidden select-none data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1"
         sideOffset={4}
       >
         <Combobox.Viewport class="p-1">
           {#each filteredChoices as choice (choice.value)}
-            {@const isSelected = choice.value === value}
             {#if slotChoice}
-              {@render slotChoice({ choice, select })}
+              {@render slotChoice({
+                choice,
+                select: (c: LabelValue<string | number>) => onValueChange(String(c.value)),
+              })}
             {:else}
-              <Combobox.Item
-                class={cn(
-                  "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
-                  {
-                    "text-muted-foreground cursor-not-allowed": choice.disabled,
-                  },
-                )}
-                value={String(choice.value)}
-                label={choice.label}
-                disabled={choice.disabled}
-                onclick={() => select(choice)}
-              >
-                {choice.label}
-
-                {#if isSelected}
-                  <div class="ml-auto">
-                    <CheckIcon class="size-4" />
-                  </div>
-                {/if}
-              </Combobox.Item>
+              {@render choiceItem(choice)}
             {/if}
           {:else}
-            {#if filtering}
-              <Spinner class="mx-auto h-full" />
-            {:else}
-              <span class="block p-2 text-sm text-muted-foreground"> No results found. </span>
-            {/if}
+            {@render emptyState()}
           {/each}
         </Combobox.Viewport>
       </Combobox.Content>
