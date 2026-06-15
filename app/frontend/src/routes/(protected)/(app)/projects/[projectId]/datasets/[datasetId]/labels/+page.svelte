@@ -154,6 +154,14 @@
   function duplicateConfig(sourceLabelConfigKey: string, targetLabelConfigKey: string) {
     if (!labelConfig) return;
 
+    if (labelConfig[targetLabelConfigKey]) {
+      showToast.error({
+        title: "Configuration already exists",
+        description: `A configuration named "${targetLabelConfigKey}" already exists.`,
+      });
+      return;
+    }
+
     labelConfig[targetLabelConfigKey] = JSON.parse(JSON.stringify(labelConfig[sourceLabelConfigKey]));
   }
 
