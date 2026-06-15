@@ -1,95 +1,109 @@
 # Video subsystem
 
-Frame-accurate video playback for an annotation workflow. The pieces below
-exist to serve one design goal: annotators move between frames quickly while
-paused, then settle on the one they want to mark. The system optimises for
-that — instant response during navigation, full fidelity when they stop.
+This subsystem handles frame-accurate video playback for annotators. The core
+design principle is simple: annotators pause the video, rapidly jump between
+frames to find the right one, and then mark it. We optimize for speed during
+that frame-hunting phase (instant navigation) and full picture quality when
+they stop on a frame (to see details for marking).
 
 ## Files
 
 | File                                | Role                                                            |
 | ----------------------------------- | --------------------------------------------------------------- |
-| `Video.svelte`                      | The `<video>` element, its lifecycle, and frame ↔ time mapping. |
-| `video-stream-handler.ts`           | The HLS stream and its quality decisions.                       |
-| `LoadingIndicator.svelte`           | Feedback to the user about what the system is doing.            |
-| `../../../state/viewport.svelte.ts` | The shared reactive state everything else writes to.            |
+| `Video.svelte`                      | Wraps the HTML `<video>` element, manages its lifecycle, and converts between frame numbers (what the app uses) and time in seconds (what the browser uses). |
+| `video-stream-handler.ts`           | Manages the HLS video stream, decides what quality level to fetch, and handles the switching between low and high quality based on network speed. |
+| `LoadingIndicator.svelte`           | Shows the user what's happening: displays a badge when upgrading to high quality, or a "Loading Frame" pill when waiting for a frame to appear. |
+| `../../../state/viewport.svelte.ts` | Central state store that all other components read from and write to. All position changes, loading states, and playback status flow through here. |
 
 ## Design philosophy
 
 ### One source of truth
 
-Every position change — from a toolbar click, a keyboard shortcut, the
-RAF loop, or a programmatic seek — flows through a single value:
-`viewport.video.currentFrame`. The video element, the annotation layer,
-and the UI all read from the same place, so they can never disagree
-about where the user is in the timeline.
+Every position change — whether from a toolbar button click, keyboard arrow key,
+animation frame loop, or programmatic jump — updates a single number:
+`viewport.video.currentFrame`. This is the "target" position the user wants to go to.
+
+The video element, the annotation layer overlay, and the UI all read from this
+same value, so they can never fall out of sync about where the user actually is
+in the timeline. If they all pulled from different sources, the video might show
+frame 50 while the annotation layer showed frame 47, causing confusing mismatches.
 
 ### Target vs. reality
 
-The system distinguishes between *where the user wants to be* and
-*what is actually painted on screen*:
+There's an important distinction between what the user *wants* and what's
+actually *showing* on the screen:
 
-- **`currentFrame`** is the target. It changes the instant the user
-  acts.
-- **`displayedFrame`** is reality. It changes only when the video
-  element confirms the new frame has been rendered.
+- **`currentFrame`** is what the user wants. It changes instantly when they
+  press a key or click.
+- **`displayedFrame`** is what's actually painted. It only changes after the
+  browser loads the frame and renders it to the screen.
 
-The annotation layer reads `displayedFrame` so overlays never jump
-ahead of the pixels behind them. When the two disagree (a seek is in
-flight), the UI surfaces that with a "Loading Frame" pill.
+The annotation layer overlay reads from `displayedFrame` instead of `currentFrame`.
+This prevents the overlay from jumping ahead of the actual video pixels — if you're
+on frame 50 but the video is still loading frame 51, your annotations stay on 50,
+not speculatively jumping to 51.
+
+When these two values disagree (the user asked for a new frame but it hasn't
+finished loading yet), the UI shows a "Loading Frame" pill to tell the user "your
+request is being processed."
 
 ### High quality by default
 
-The buffer holds the highest quality level, always. After a short
-low-quality burst paints the first frame, the loader is pinned to max
-quality, and every fragment that enters the buffer from then on is HQ.
-A paused seek into buffered territory therefore needs **no quality work
-at all** — the decoder paints full quality straight from the buffer,
-with no level switch, no flush, and no repaint nudge. Annotators can
-step frame by frame in either direction without ever seeing a quality
-flicker or a re-download.
+The system keeps high-quality video in the buffer at all times. Here's how:
 
-Low quality exists only as a **slow-network fallback**. When the
-measured bandwidth says one HQ fragment would take longer than a
-threshold (~1 s by default) to download, an unbuffered seek paints LQ
-first so navigation stays instant — the 3G/4G case — and upgrades once
-the user settles. On a fast connection, LQ is never fetched after the
-initial burst.
+1. When the video first loads, it quickly grabs a few low-quality frames so the
+   user sees *something* fast.
+2. Once those frames arrive, the loader switches permanently to high quality,
+   and every new fragment it downloads is full resolution.
 
-Two hls.js facts shape the whole implementation:
+This design means that when you jump between frames that are already loaded
+(the common case), the video element pulls high-quality pixels straight from
+the buffer — no network request, no quality switch, no flicker. You can step
+frame-by-frame left or right and everything stays crisp.
 
-- `hls.currentLevel = N` force-flushes the buffer to switch
-  immediately; `hls.loadLevel = N` only changes what future loads
-  fetch. The handler uses `loadLevel` exclusively, so buffered data is
-  never thrown away wholesale. (The old design switched `currentLevel`
-  on every navigation settle, which flushed and re-downloaded the
-  buffer constantly and caused visible frame jumps.)
-- While load is started, the stream controller follows media `seeking`
-  events on its own — aborting stale fragment requests and re-ticking
-  at the new position — so unbuffered seeks need no manual
-  orchestration: the loader chases the playhead at the pinned level.
+**Low quality only appears as a fallback on slow networks:** If the system
+measures that downloading one high-quality chunk would take longer than about
+1 second, it shows a low-quality frame immediately to keep navigation snappy
+(important on 3G/4G), then upgrades to high quality once you stop hopping around.
+On a fast connection, low quality is never fetched after that initial burst.
+
+Two implementation details from hls.js drive this:
+
+- When you change quality, you can either flush the old data (`currentLevel`) or
+  just change what future downloads fetch (`loadLevel`). We use `loadLevel` so
+  the buffer never gets discarded — preventing the old bug where settling on a
+  frame would trash the buffer and force a slow re-download.
+- The HLS stream controller watches for browser seek events automatically and
+  re-aims at the new position. We don't have to manually orchestrate seeks;
+  the system just chases the frame position at the current quality level.
 
 ### The LQ range map
 
-One SourceBuffer holds exactly one quality per time range, and MSE does
-not expose which level the bytes came from. The handler therefore keeps
-its own interval map of low-quality territory, maintained from
-`FRAG_BUFFERED` events — i.e. from what *actually landed* in the
-buffer, not what was requested, so aborted or racing loads can't
-corrupt it. Non-HQ appends add intervals; HQ appends subtract them;
-ranges evicted from the buffer are pruned lazily.
+The browser's Media Source Extensions (MSE) don't tell you what quality level
+each piece of buffered video came from — they just store bytes. So we keep our
+own map that tracks which time ranges hold low-quality data.
 
-The map answers the only quality question navigation ever asks: *is the
-data under this frame full quality?* If yes, nothing happens. If no, a
-debounced upgrade replaces just that interval.
+We build this map by listening to actual fragment append events (what really
+made it into the buffer), not just download requests (which might fail or get
+cancelled). When we append a low-quality chunk, we mark that time range as LQ.
+When we append high-quality data over it, we remove the LQ marking. If the
+browser evicts data from the buffer, we clean up our map too.
+
+When you jump to a frame, we check the map: "Is this frame's data high-quality?"
+If yes, we're done — it paints instantly from the buffer. If no, we schedule an
+upgrade to fetch and replace just that low-quality interval with high-quality
+data (debounced so rapid key presses don't trigger a dozen upgrades).
 
 ### Frame numbering
 
-The browser thinks in seconds; the rest of the app thinks in zero-based
-frame indices. A small mapping layer translates between them. The video
-is one-based internally, so frame `0` of the app lives at `t = 1/fps`
-in the browser, plus a tiny nudge to avoid landing on a fragment
-boundary.
+The browser's video element thinks in time (seconds), but the annotation app
+thinks in frames (frame 0, 1, 2, etc.). A small conversion layer translates
+between them.
+
+Internally, the video is one-based (starting at frame 1), so frame 0 in the app
+maps to 1/fps seconds in the browser (e.g., if the video is 30 fps, frame 0 is
+at 0.033 seconds). We also add a tiny extra offset to avoid landing exactly on
+fragment boundaries, which can cause timing issues.
 
 ## States
 
@@ -97,246 +111,326 @@ boundary.
 
 | Status   | Meaning                                                |
 | -------- | ------------------------------------------------------ |
-| `play`   | RAF loop owns position; frames advance on their own.   |
-| `pause`  | The user owns position; seeks move the playhead.       |
+| `play`   | The animation loop is running; frames advance automatically at the video's playback rate. |
+| `pause`  | The animation loop is stopped; the user manually controls the position with seeks. |
 
-The status drives everything else. Toggling it makes the system play
-or pause; the DOM `play`/`pause` events on the element also feed back
-into status, so natural end-of-video and programmatic pause land in
-the same code path.
+The playback status drives almost everything else. When you toggle it:
+- Switching to `play` starts an animation loop that updates the frame position
+  as the browser plays the video.
+- Switching to `pause` stops the loop and hands control to the user's keyboard
+  and clicks.
+
+The system also listens to the browser's native `play` and `pause` events on the
+video element itself — so if the video naturally ends or something programmatically
+pauses it, that feeds back into the same system.
 
 ### Frame state
 
-- `currentFrame` — target position.
-- `displayedFrame` — what is actually on screen.
-- `framePending` — derived: paused and the two disagree.
+- `currentFrame` — the target frame the user wants (changed instantly when they press a key).
+- `displayedFrame` — the actual frame currently visible on screen (only updates when the browser confirms it's rendered).
+- `framePending` — derived boolean: true if paused and the target and displayed frames differ (meaning a seek is in progress).
 
 ### Loading state
 
-- `loading.highQuality` — an HQ replacement for the current frame is
-  being fetched.
-- `loading.qualityLabel` — human-readable label of that quality.
-- `framePending` (above) — a seek hasn't painted yet.
+- `loading.highQuality` — a high-quality replacement for the current frame is
+  being downloaded (upgrading from low quality).
+- `loading.qualityLabel` — a human-readable label describing that quality level
+  (e.g., "1080p" or "720p").
+- `framePending` (above) — a new frame was requested but hasn't rendered yet.
 
 ### Stream state (internal to the HLS layer)
 
-- The handler knows whether it is in **initial-load mode** (first
-  fragments still coming in) and whether the user is paused.
-- The **LQ range map** (above) tracks which buffered intervals hold
-  non-HQ data.
-- It tracks whether there is currently a **pending render** — a
-  promise to repaint at HQ (or to hand off an LQ fallback to its
-  upgrade) once enough fragments have arrived.
-- It tracks whether a fragment is currently **in flight**, so it can
-  tell a slow-but-progressing load apart from a stalled one. The
-  non-HQ subset of this — paint-path downloads only, not background
-  HQ work — is mirrored into `viewport.video.loading.fragmentInFlight`
-  so the step gate can pace on it (see *Rapid navigation* below).
+The HLS handler tracks several internal flags:
+
+- **Initial-load mode** — whether the very first fragments are still being
+  downloaded. Once the first frame paints, we exit this mode and switch to
+  full quality.
+- **The LQ range map** (described above) — which time ranges in the buffer
+  hold low-quality data.
+- **Pending render** — whether we're waiting for fragments to arrive so we
+  can upgrade a low-quality frame to high quality (or paint an LQ fallback
+  while waiting for HQ).
+- **Fragment in flight** — whether a download is currently happening. This
+  helps distinguish "network is slow but working" from "network stalled."
+  For low-quality downloads (the ones that block frame painting), this flag
+  is mirrored into `viewport.video.loading.fragmentInFlight` so the keyboard
+  stepping system can pause stepping while waiting for frames to arrive.
 
 ## Actions
 
-This section describes what happens in response to each thing the user
-or browser can do. It is intentionally light on mechanics — the inline
-comments in each file cover those.
+This section describes what happens when the user or browser does something.
+The inline code comments in each file cover the mechanical details.
 
 ### Initial load
 
-When the component mounts, the stream pulls in a few low-quality
-fragments so the first frame can paint as soon as possible (they also
-warm up the bandwidth estimator). Once they arrive, the loader is
-pinned to max quality for good, and the burst region under the first
-frame is replaced with HQ. The user sees a fast LQ frame and, a moment
-later, the HQ replacement — and from then on, everything buffered is HQ.
+When the video component first mounts:
+
+1. The system immediately starts downloading a few low-quality fragments so
+   the user sees *something* fast. (These early fragments also let hls.js
+   measure bandwidth so it can make smart quality choices later.)
+2. Once those LQ frames arrive and paint, the loader switches permanently to
+   high quality and stays there.
+3. The early LQ region is then "backfilled" — replaced with high-quality
+   fragments covering the same time range.
+
+From the user's perspective: they see a quick, blurry frame appear, then a
+moment later it sharpens to full quality. After that, everything you see is
+high quality (unless the network gets slow).
 
 ### Pressing play
 
-Playback takes over. The RAF/rVFC loop starts ticking and updates
-position on every decoded frame. The HLS layer cancels any pending
-quality work and, after a few seconds of stable playback, hands quality
-selection to HLS's adaptive bitrate algorithm — via `loadLevel`, so the
-handoff itself never flushes or stutters. Whatever levels ABR appends
-are recorded in the LQ range map, fragment by fragment.
+When you press play:
+
+1. The animation loop (RAF/rVFC) starts running. It updates the frame position
+   on every frame that the browser decodes, so playback advances smoothly.
+2. Any pending quality work (like an upgrade from LQ to HQ) is cancelled — we're
+   playing, so there's no point upgrading a frame we've already moved past.
+3. After a few seconds of stable playback, the system hands quality selection
+   over to hls.js's adaptive bitrate algorithm. This algorithm automatically
+   picks the best quality for your network speed (lower quality on slow networks
+   to avoid buffering, higher quality on fast networks).
+4. Whatever quality level the adaptive algorithm chooses, we record it in our
+   LQ range map so we know which parts of the buffer are low-quality later.
 
 ### Pressing pause
 
-Playback stops. The RAF loop stops with it. The position is
-re-synchronised to whatever frame the video is actually showing,
-including the special case of natural end-of-video where the
-last-frame timestamp comes from database metadata rather than the
-browser's reported duration. The HLS layer re-pins the loader to max
-quality and — only if the paused frame actually sits on tracked LQ
-data — upgrades it immediately, with no debounce.
+When you press pause:
+
+1. The animation loop stops. Playback halts.
+2. The system syncs `displayedFrame` to whatever frame the video actually shows.
+   (This includes a special case: at the very end of the video, we use the
+   last-frame position from the database metadata instead of what the browser
+   reports, since the browser's duration can be slightly off.)
+3. The loader switches back to pinning high-quality downloads only (no more
+   adaptive bitrate adjustments).
+4. If the paused frame is in a low-quality region (according to our LQ map),
+   we immediately upgrade it to high quality — no waiting, no debounce. You
+   stop, you see quality.
 
 ### Seeking while paused
 
-The target changes; the browser is asked to move to the new frame; the
-system waits for confirmation that the frame has been painted before
-updating `displayedFrame`. The HLS layer then looks at the target and
-picks one of three cases:
+When you press an arrow key or click to jump to a different frame:
 
-1. **Buffered, clean — the common case.** The decoder paints HQ from
-   the buffer. Zero network traffic, zero quality work, zero flicker.
-2. **Buffered, but tracked LQ.** The LQ frame paints instantly; an
-   upgrade is scheduled for 300 ms after the last seek, so holding an
-   arrow key streams frames at full responsiveness and never upgrades
-   mid-flight.
-3. **Unbuffered.** Decided by measured bandwidth: on a fast network
-   the loader (already pinned to HQ) simply fills the gap and the
-   frame paints directly at full quality; on a slow network the
-   handler paints LQ first (see below).
+1. The target (`currentFrame`) changes immediately.
+2. The browser is told to seek to that frame's timestamp.
+3. The system waits for the browser to confirm it has painted the new frame,
+   then updates `displayedFrame`.
+4. The HLS handler looks at the target frame and decides what to do:
+
+**Case 1: Buffered and high-quality (the common case)**
+- The frame's data is already in the buffer and it's all high-quality.
+- The decoder paints immediately from the buffer.
+- Zero network requests, zero quality work, zero flicker. Just instant
+  responsiveness.
+
+**Case 2: Buffered but low-quality**
+- The frame's data is in the buffer, but it's low-quality (according to our LQ map).
+- The low-quality frame paints instantly for responsiveness.
+- An upgrade is scheduled to fire 300ms after you stop seeking. This way, if
+  you're rapidly stepping through frames with arrow keys, each new frame paints
+  quickly without triggering a dozen quality upgrades.
+
+**Case 3: Not buffered yet**
+- The frame's data isn't in the buffer — we need to fetch it.
+- On a fast network: the loader (already set to high-quality) simply downloads
+  the missing fragment and the frame paints at full quality.
+- On a slow network: see the "Slow-network fallback" section below.
 
 ### Slow-network fallback
 
-The fallback works predict-then-verify, with one budget governing both
-halves:
+When seeking to an unbuffered frame on a slow network, the system uses a
+"predict-then-verify" strategy with one time budget (roughly 1 second):
 
-- **Predict.** When one HQ fragment is estimated to take longer than
-  the budget to download (manifest bitrate ÷ hls.js's continuously
-  updated bandwidth measurement), the seek doesn't wait at all: the
-  handler redirects the loader to level 0 and paints the target fast.
-- **Verify.** When the prediction says HQ is affordable, the seek
-  loads HQ directly — but under a deadline. The estimate only counts
-  one fragment's bytes, and the real time-to-paint also includes
-  playlist and init-segment requests plus round trips, so a "fast"
-  prediction can still stall. If the target isn't buffered when the
-  budget expires, the handler stops waiting and paints LQ instead.
-- **Remember.** A deadline miss latches: the prediction was proven
-  wrong, so subsequent unbuffered seeks go LQ-first directly instead
-  of re-running the doomed HQ attempt — without this, every step of a
-  held arrow key would issue an HQ request, burn the whole budget,
-  cancel it, and only then fetch LQ. The latch clears when a max-level
-  fragment download actually completes (e.g. a settle upgrade): fresh
-  evidence that HQ is affordable again, so the predict path gets
-  another try.
+**Predict: Should we try high-quality?**
+- The system estimates how long it would take to download one high-quality
+  fragment: `(fragment size) / (current measured bandwidth)`.
+- If that estimate exceeds the budget (~1 second), skip the HQ attempt entirely.
+  Jump straight to low-quality to paint something fast (important on 3G/4G).
+- Otherwise, attempt high-quality.
 
-Either way the appended level-0 range is recorded in the LQ map, and
-only once the LQ data has actually landed — with the same forward
-coverage the HQ render requires, since a seek near a fragment's end
-cannot present until a little of the next fragment exists — does the
-300 ms upgrade debounce start (starting earlier could fire while the
-frame is still unpaintable, and the upgrade's flush would then remove
-the very data the pending seek was waiting on). As a second line of
-defence, an upgrade never starts while the element is still seeking.
-The user sees a fast LQ frame with an "LQ" badge, then the HQ
-replacement when the network allows — and never waits longer than the
-budget for *something* to appear once data starts flowing.
+**Verify: Did the prediction hold true?**
+- If you predicted HQ would work, the system tries to load high-quality but
+  watches the clock. The prediction only counted one fragment's bytes, but
+  reality also includes playlist requests, init segments, and network latency —
+  so a "fast" prediction can still turn out to be wrong.
+- If the frame still isn't buffered when the budget expires, the system gives
+  up on high-quality and switches to low-quality instead, painting something
+  immediately.
+
+**Remember: Learn from what happened**
+- If the deadline expires, the system "latches": it remembers "HQ was too slow
+  in this network state." Future unbuffered seeks now go straight to low-quality,
+  skipping the failed HQ attempt entirely. (Without this, holding down an arrow
+  key would repeatedly try HQ, burn the budget, fail, then paint LQ — wasting
+  time with every step.)
+- The latch clears when a high-quality fragment actually *completes* — proof
+  that HQ is affordable again. The system then tries the predict-and-attempt
+  approach again.
+
+**Final presentation:**
+- Whatever low-quality data lands is marked in the LQ map.
+- The upgrade debounce (300ms) doesn't start until the low-quality frame is
+  actually paintable — this prevents the upgrade from firing while the frame
+  is still waiting for more data.
+- The upgrade also never starts while the video element is actively seeking.
+- From the user's perspective: a fast LQ frame with a tiny "LQ" badge appears,
+  then a moment later the high-quality replacement (or just stays LQ if the
+  network is very slow). You never wait more than ~1 second for *something*
+  to appear.
 
 ### Upgrading to high quality
 
-The upgrade replaces tracked LQ intervals with HQ fragments, then
-flushes the decoder with a same-value seek so the new quality paints.
-The flush is **targeted**: only the contaminated intervals inside the
-buffered range containing the frame are dropped, via the same
-`BUFFER_FLUSHING` event hls.js uses internally for evictions — the
-buffer controller removes the data, the fragment tracker forgets it,
-and the stream controller refills the gap at max quality. HQ data
-elsewhere in the buffer survives untouched. Because the LQ frame is
-already on screen when this starts, the user never sees a blank gap.
+When a low-quality frame needs to be upgraded to high-quality:
 
-Completion is judged by **buffer coverage, not fragment counts**: the
-render is done when appended data (`FRAG_BUFFERED`, not merely
-downloaded) covers the frame and slightly beyond, with already-buffered
-HQ ahead of the refilled gap counting toward coverage. A fixed count
-would hang when the gap is a single fragment surrounded by HQ — hls.js
-reloads one fragment and goes idle — and the repaint would silently
-never happen.
+1. **Identify and download:** The system looks at the LQ map, finds the
+   time range holding low-quality data, and tells the loader to fetch
+   high-quality fragments covering that range.
+
+2. **Flush the decoder:** Once the high-quality data arrives, the decoder
+   needs to re-decode it. The system triggers a "flush" — a seek to the
+   same frame position — which forces the decoder to re-render using the
+   new, high-quality data.
+
+3. **Smart buffer management:** The flush is **surgical** — it only discards
+   the low-quality data inside the buffered range that contains the frame.
+   High-quality data elsewhere in the buffer (earlier or later frames) is
+   left untouched. This is important: we're not throwing out the whole buffer
+   and restarting, just removing the contaminated part.
+
+4. **No visual gap:** Because the low-quality frame was already on screen when
+   this started, the user never sees a blank frame. It just sharpens from
+   blurry to clear.
+
+5. **Wait for coverage:** The upgrade is considered done when the newly appended
+   high-quality data covers the frame and a little bit beyond (hls.js needs
+   some forward data to seamlessly decode). We judge completion by **actual
+   buffered coverage**, not by counting fragments. This matters: if the gap is
+   a single fragment surrounded by HQ data, hls.js just reloads that one
+   fragment and goes idle — we need to wait for those bytes to actually arrive
+   and be appended, not just requested.
 
 ### Rapid navigation (holding arrow keys)
 
-Relative steps (arrow keys, skip buttons) go through `stepBy`, which is
-**gated on the previous frame having painted**: while a paused seek is
-still pending, further steps are dropped. The user only ever moves
-through frames they have actually seen, so annotations visibly track
-every frame instead of the position running ahead and the video
-snapping several frames at once when a slow load lands. Dropped, not
-queued — queued steps would replay invisible movement later,
-recreating the very jump the gate prevents.
+When you press arrow keys to step through frames, the system is gated on the
+**previous frame having already painted**. Here's why:
 
-Inside buffered HQ territory — the common case — paint confirmation
-arrives on the next video frame callback, so the gate is imperceptible
-and every step paints full quality straight from the buffer at zero
-cost, in either direction. On a slow network, stepping is paced by the
-LQ fragments arriving: a continuous, consecutive stream of LQ frames,
-with the HQ upgrade kicking in when the user lets go. Each accepted
-step cancels any in-flight upgrade work — but never a download that
-already covers its own target: when the new time falls inside the LQ
-fragment currently downloading, the fallback keeps the load and merely
-retargets what it is waiting for, so navigation can only redirect
-progress, not destroy it.
+**The stepping gate:**
+- While a seek is pending (the target frame hasn't rendered yet), further
+  arrow key presses are **dropped** (not queued).
+- This ensures the user only ever moves through frames they've actually seen.
+  Annotations visibly track each frame. Without this gate, position would run
+  ahead of the video, and the user would see a sudden jump of several frames
+  when a slow load finally finishes.
+- Dropped, not queued: if we queued steps, they'd replay invisibly later,
+  recreating the exact jump the gate prevents.
 
-Two pressure valves keep the gate from ever trapping the user:
-absolute jumps (timeline clicks, the frame input, keyframe and note
-navigation) are never gated, and a pending seek older than a couple of
-seconds stops blocking — a seek that never paints (network died
-mid-load) degrades to slow stepping, not a lockout. The stuck-seek
-valve only opens while **no paint-path fragment is downloading**: an
-escaped step re-runs the quality logic, which stops and restarts the
-loader, so on a connection where every fragment outlasts the window
-the escape would cancel and re-request the same fragment forever — one
-phantom step every window, a download that never completes, a frame
-that never paints. Only non-HQ downloads count here — the LQ fallback
-a pending seek is actually waiting on (or any download on
-single-level streams, where everything is the paint path). Background
-HQ work — the settle upgrade, forward buffer filling — never engages
-the valve: the frame under it is already painted and cancelling it is
-always safe, so it must not freeze stepping. The handler mirrors this
-flag into the viewport state, and **every transition of it re-arms the
-escape window**: the flag is momentarily false between consecutive
-fragments (download complete → append → paint, or → next request), and
-without the re-arm a key-repeat landing in that gap would slip through
-— jumping the target onto a new fragment and discarding the one that
-just finished, so the pixels would never advance. With it, the valve
-only opens after a full window with *no* paint-path activity at all —
-a dead network stops producing transitions once its error/timeout
-events settle, so a genuinely stuck seek still unlocks.
+**In the common case (buffered HQ):**
+- Paint confirmation arrives on the very next video frame callback (~16ms).
+- The gate is imperceptible and every step paints instantly from the buffer at
+  zero cost in either direction.
+
+**On a slow network:**
+- Stepping is paced by low-quality fragments arriving. You get a continuous
+  stream of LQ frames as you hold the arrow key.
+- When you let go, the system upgrades to high-quality.
+- Each new step cancels pending upgrades — but with a smart optimization: if
+  the new frame falls inside an LQ fragment that's currently downloading, we
+  keep that download and just retarget what we're waiting for. This means
+  navigation redirects progress, never destroys it.
+
+**Two "pressure valves" prevent the gate from trapping you:**
+
+1. **Absolute jumps are never gated.** Clicking the timeline, typing a frame
+   number, or using keyframe/note navigation always work immediately, even if
+   a seek is pending.
+
+2. **The stuck-seek timeout.** If a seek hasn't painted for a couple of seconds
+   (network died mid-load), the gate gives up and lets more steps through.
+   Slow stepping replaces lockout.
+
+**The stuck-seek valve mechanics:**
+- The valve opens only while **no paint-path fragment is downloading**. We
+  distinguish paint-path downloads (LQ fallback, the frame we need to paint)
+  from background work (settle upgrades, forward buffer filling).
+- When an escape step happens, it re-runs the quality logic, potentially
+  starting new downloads. So the valve only opens after a full timeout window
+  with zero paint-path activity.
+- **Every transition of the "fragment in flight" flag re-arms the timeout
+  window.** Between consecutive fragments (download complete → append → paint
+  → next request), the flag goes false momentarily. Without re-arming, a
+  key-repeat landing in that gap would slip through, jumping to a new fragment
+  and discarding the one that just finished — the pixels would never advance.
+  With re-arming, the valve truly opens only after a full window with *no*
+  activity.
 
 ### The render watchdog
 
-A quality replacement waits for fragment appends that, in rare states,
-may never come (e.g. stale bookkeeping says a range is LQ when its
-data was already replaced). Every render therefore arms a 15-second
-*inactivity* watchdog: if nothing is downloading and the
-expected fragments still haven't arrived, the render gives up. The
-watchdog re-arms while data is moving, so a slow HQ load on a poor
-connection is never cut off — only a truly stuck render is.
+When the system is waiting for high-quality fragments to arrive during an
+upgrade, in rare edge cases those fragments might never arrive (e.g., stale
+bookkeeping says a range is LQ when it was actually replaced already).
+
+To protect against hangs, every quality upgrade arms a **15-second inactivity
+watchdog**:
+- If nothing has been downloading for 15 seconds and the expected fragments
+  still haven't arrived, the upgrade gives up.
+- While data is actively moving (downloads happening, fragments arriving), the
+  watchdog re-arms, so a slow but progressing high-quality load is never cut
+  off prematurely.
+- Only truly stuck renders time out.
 
 ## Feedback to the user
 
-The loading indicator surfaces two situations:
+The loading indicator shows the user what's happening in two situations:
 
-- **High-quality replacement in progress.** A small image badge
-  appears in the corner. Hovering it reveals the quality label.
-- **Seek in progress.** A subtle pill with a spinner reads "Loading
-  Frame".
+**High-quality replacement in progress:**
+- A small badge appears in the corner.
+- Hover it to see the quality level (e.g., "1080p").
 
-Both states wait 150 ms before appearing, so fast buffered seeks — the
-common case during navigation — never flash an indicator. They disappear
-immediately once the work finishes.
+**Seek in progress:**
+- A small pill appears with a spinner that says "Loading Frame".
+
+Both indicators wait 150 milliseconds before appearing. This is important: most
+frame seeks (jumping between buffered high-quality frames) happen instantly,
+and you don't want an indicator flashing on and off constantly. Only if the
+system is still waiting after 150ms does the indicator show.
+
+Both disappear immediately when the work finishes.
 
 ## Public surface
 
-The `Video.svelte` component exposes a small API for the toolbar and
-keyboard layer:
+The `Video.svelte` component exposes methods for direct control:
 
-- `seekToFrame(frame)` — go to a specific frame.
-- `playbackRate(rate)` — change playback speed.
-- `setVolume(level)` — 0–100, mutes at 0.
+- `seekToFrame(frame)` — Jump to a specific frame number.
+- `playbackRate(rate)` — Change playback speed (e.g., 1x, 2x, 0.5x).
+- `setVolume(level)` — Set volume 0–100. 0 mutes.
 
-Everything else is driven by writing to `viewport.video`:
+Everything else flows through the `viewport.video` state object:
 
 ```ts
 viewport.video = {
-  currentFrame:   { value: 0 },   // target
-  displayedFrame: { value: 0 },   // reality
-  loading: { highQuality, qualityLabel },
-  framePending,                    // derived
-  status: "play" | "pause",
-  sound:  { level, muted },
+  // Position (frames and what's visible)
+  currentFrame:   { value: 0 },   // target frame
+  displayedFrame: { value: 0 },   // actual frame on screen
+  framePending,                    // true if target != displayed
+  
+  // Playback control
+  status: "play" | "pause",        // play/pause mode
   play(), pause(),
-  goToFrame(frame),   // absolute jump — never gated
-  stepBy(delta),      // relative step — dropped while a seek is pending
+  goToFrame(frame),                // absolute jump (never gated)
+  stepBy(delta),                   // relative step (gated while seeking)
+  
+  // Sound
+  sound: { level, muted },
+  
+  // Loading feedback
+  loading: { highQuality, qualityLabel }
 }
 ```
 
-The status is a switch; the frame is a position; the rest is feedback.
-That's the whole vocabulary.
+**In plain English:**
+- `status` is the play/pause switch.
+- `currentFrame` and `displayedFrame` are the target and reality positions.
+- `goToFrame()` and `stepBy()` are how you move around (goToFrame bypasses
+  the step gate, stepBy respects it).
+- `play()` and `pause()` control playback.
+- Everything else is read-only feedback about what's happening.
