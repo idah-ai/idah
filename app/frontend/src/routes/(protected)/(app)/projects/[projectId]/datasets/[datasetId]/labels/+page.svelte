@@ -53,10 +53,11 @@
   let modality = $state("");
   let shapes = $state<ModalityShapes>({});
   let labelConfig: IConfig = $state({});
-  let initialLabelConfig: IConfig | undefined = $state(undefined);
-  let isLabelConfigChanged = $derived.by(() => {
-    return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
-  });
+
+  /** Snapshot of the last saved / loaded state.  Compared against current
+   *  config to detect whether there are unsaved changes. */
+  let savedSnapshot = $state("");
+  let hasUnsavedChanges = $derived(JSON.stringify(labelConfig) !== savedSnapshot);
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -86,8 +87,7 @@
     shapes = showModalityRes.shapes;
 
     labelConfig = datasetRes.data.labeling_configuration;
-
-    initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
+    savedSnapshot = JSON.stringify(labelConfig);
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
@@ -118,8 +118,8 @@
         },
       );
 
-      initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       labelConfig = updatedDatasetRes.data.labeling_configuration;
+      savedSnapshot = JSON.stringify(labelConfig);
       showToast.success({
         title: "Label configurations updated",
         description: "The changes has been saved.",
@@ -397,11 +397,11 @@
           class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
-          disabled={!isLabelConfigChanged}
+          disabled={!hasUnsavedChanges}
           onclick={saveLabelConfigChanges}
         >
           <SaveIcon />
-          {isLabelConfigChanged ? "Save Changes" : "Saved"}
+          {hasUnsavedChanges ? "Save Changes" : "Saved"}
         </Button>
       </Can>
     {/snippet}
