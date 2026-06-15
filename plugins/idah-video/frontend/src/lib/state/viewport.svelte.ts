@@ -31,13 +31,95 @@ class Viewport {
 
   video = $state({
     currentFrame: { value: 0 },
+    // displayedFrame trails currentFrame — it is only updated once the video
+    // element has confirmed the new position (seeked event, RAF tick, pause).
+    // The annotation layer reads this so annotations never jump ahead of the
+    // actual video pixels on screen.
+    displayedFrame: { value: 0 },
+    // Consolidated loading state read by LoadingIndicator.svelte.
+    //   highQuality — true while an HLS high-quality fragment is being fetched.
+    //   qualityLabel — human-readable label for the quality level ("1080p", …).
+    //   fragmentInFlight — mirrored from the HLS layer: a fragment a pending
+    //     seek may be waiting on (the non-HQ paint path) is downloading right
+    //     now. stepBy reads it so the escape window can't open mid-download
+    //     and cancel a slow fragment (the 3G livelock). Background HQ work
+    //     (upgrades, buffer filling) never sets it — it must not block
+    //     navigation, and cancelling it is always safe.
+    //   framePending — true when currentFrame ≠ displayedFrame (seek in flight).
+    loading: {
+      highQuality: false,
+      qualityLabel: "",
+      fragmentInFlight: false,
+    },
+    get framePending() {
+      return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
+    },
     status: "pause" as "play" | "pause",
     sound: { level: 0.0, muted: true },
+    // When the pending seek last showed signs of life: set on every
+    // position-changing navigation and re-armed by every paint-path fragment
+    // transition (setFragmentInFlight). stepBy uses it to tell a seek that
+    // is still progressing (block further steps) from one that is stuck
+    // (let the user move again).
+    lastSeekRequestAt: 0,
+    // Mirror of the HLS paint-path download state (wired in Video.svelte).
+    // Any transition counts as seek progress and re-arms the stuck-seek
+    // escape window: the flag is momentarily false between consecutive
+    // fragments (download done → append → paint, or → next fragment
+    // request), and without the re-arm a key-repeat landing in that gap
+    // would be accepted — jumping currentFrame onto a new fragment and
+    // discarding the one that just finished, so the video pixels would
+    // never advance.
+    setFragmentInFlight(inFlight: boolean) {
+      this.loading.fragmentInFlight = inFlight;
+      this.lastSeekRequestAt = Date.now();
+    },
     play() {
       this.status = "play";
     },
     pause() {
       this.status = "pause";
+    },
+    goToFrame(frame: number) {
+      // Clamp to the valid range so `framePending` (derived from
+      // currentFrame !== displayedFrame) can never latch on out-of-range
+      // writes — displayedFrame is always clamped by timeToFrame, so an
+      // unclamped currentFrame would leave the two permanently unequal and
+      // freeze the FramePendingOverlay over the annotation layer.
+      const total = media.totalFrames;
+      const max = total > 0 ? total - 1 : frame;
+      const next = Math.max(0, Math.min(frame, max));
+      if (next !== this.currentFrame.value) this.lastSeekRequestAt = Date.now();
+      this.currentFrame.value = next;
+    },
+    // Relative stepping (arrow keys, skip buttons). Steps are *dropped* while
+    // the previous paused seek hasn't painted yet, so the user only moves
+    // through frames they have actually seen — annotations track every
+    // painted frame instead of snapping several frames at once when a slow
+    // load lands. Buffered seeks confirm on the next video frame callback
+    // (~one vsync), so the gate is imperceptible there; it only bites while
+    // data is loading. Dropped, not queued: queued steps would replay
+    // invisible movement later, recreating the jump this exists to prevent.
+    // Absolute jumps (goToFrame callers: timeline, keyframe navigation, the
+    // frame input) stay ungated, and a pending seek older than the escape
+    // window stops blocking — a seek that never paints (network died
+    // mid-load) must not lock navigation. The escape only fires when no
+    // paint-path fragment is downloading: an escaped step re-runs the
+    // quality logic, which stops and restarts the loader — on a connection
+    // where every fragment takes longer than the window, escaping
+    // mid-download would cancel and re-request the same fragment forever and
+    // the pending frame would never paint. Background HQ downloads don't set
+    // the flag (see loading.fragmentInFlight above), and a dead network
+    // drops it via error/timeout events, so the stuck-seek escape still
+    // opens in both cases.
+    stepBy(delta: number) {
+      if (
+        this.framePending &&
+        (this.loading.fragmentInFlight || Date.now() - this.lastSeekRequestAt < FRAME_STEP_ESCAPE_MS)
+      ) {
+        return;
+      }
+      this.goToFrame(this.currentFrame.value + delta);
     },
   });
 
@@ -119,6 +201,11 @@ class Viewport {
     },
   });
 }
+
+// How long stepBy keeps dropping steps for one pending seek. After this the
+// seek is considered stuck and stepping is allowed again (each retry re-arms
+// the window, so a dead network degrades to one step per window, not a lock).
+export const FRAME_STEP_ESCAPE_MS = 2000;
 
 export const viewport = new Viewport();
 

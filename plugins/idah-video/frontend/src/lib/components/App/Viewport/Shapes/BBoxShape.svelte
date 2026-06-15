@@ -47,10 +47,12 @@
   let h = $derived(media.height);
 
   // ── Interpolated values ──────────────────────────────────────────────
+  // Use displayedFrame (not currentFrame) so shape positions stay in sync
+  // with the actual video pixels on screen during rapid frame navigation.
   let baseAngle = $derived.by((): number => {
     const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return 0;
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     return result?.angle ?? 0;
   });
 
@@ -71,7 +73,7 @@
   let basePoints = $derived.by((): Point[] => {
     const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     return result?.points ?? [];
   });
 

@@ -60,7 +60,7 @@
 
   function handleKeyframeClick(e: MouseEvent, keyframe: number) {
     e.preventDefault();
-    viewport.video.currentFrame.value = keyframe;
+    viewport.video.goToFrame(keyframe);
   }
 </script>
 

@@ -17,6 +17,7 @@
   import { cn } from "$lib/utils";
 
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
+  import FramePendingOverlay from "$lib/components/App/Viewport/FramePendingOverlay.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
@@ -99,8 +100,13 @@
   //
   // Performance note: uses a single O(n) reduce pass to both filter visibility and
   // separate the selected annotation — no extra findIndex() pass needed.
+  //
+  // NOTE: uses displayedFrame (not currentFrame) so annotations only update once
+  // the video element has confirmed the seek via the `seeked` event. This prevents
+  // the annotation layer from jumping ahead of the actual video pixels on screen
+  // when the user rapidly steps through frames on a slow connection.
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
-    const frame = viewport.video.currentFrame.value;
+    const frame = viewport.video.displayedFrame.value;
     const items = data.annotations?.items ?? [];
 
     // Single-pass: filter visible annotations while partitioning selected vs rest
@@ -427,6 +433,9 @@
       {/each}
     </g>
   </svg>
+
+  <!-- Layer 2: Frame-pending blocking overlay -->
+  <FramePendingOverlay {zoomableElement} />
 </div>
 
 <style>
