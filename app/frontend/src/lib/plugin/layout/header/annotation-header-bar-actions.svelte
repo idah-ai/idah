@@ -29,6 +29,7 @@
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
+  import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
@@ -183,6 +184,8 @@
         </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <EntryStatsModal {driver} />
 
     {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
       <ToolTooltip {label} align="center" delayDuration={100}>

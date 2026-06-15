@@ -31,6 +31,7 @@ org_owner:
     - "dataset:annotations.*.as_org_owner"
     - "dataset:note_feeds.*.as_org_owner"
     - "dataset:note_comments.*.as_org_owner"
+    - "dataset:entry_stats.read.as_org_owner"
 
     # Media Service
     - "media:medias.*.as_org_owner"
