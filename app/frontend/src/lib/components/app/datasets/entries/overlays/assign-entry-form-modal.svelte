@@ -59,7 +59,7 @@
     const description =
       entryIds.length > 1
         ? `${entryIds.length} entries have been assigned to "${projectMemberRecord?.email}".`
-        : `The entry "${entryRecord?.name}" has been assigned to "${projectMemberRecord?.email}".`;
+        : `The entry "${entryRecord?.name || entryRecord?.id}" has been assigned to "${projectMemberRecord?.email}".`;
 
     onAssigned?.();
     showToast.success({
