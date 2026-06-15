@@ -71,8 +71,8 @@ export function getDeleteAction(groupId: string, items: IImageAnnotationRecord[]
     disabled: items.some((item) => annotation.isLocked(item)),
     onClick: () => {
       showConfirmDialog({
-        title: "Delete annotation group",
-        description: "Are you sure you want to delete this annotation group?",
+        title: "Delete annotation",
+        description: "Are you sure you want to delete this annotation?",
         onConfirm: () => {
           selection.selectGroup(groupId);
           getDriver().command.call("selection.delete", {
