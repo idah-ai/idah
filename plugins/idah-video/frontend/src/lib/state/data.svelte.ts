@@ -596,6 +596,11 @@ export const activeNoteId = {
 export function focusNote(note: INoteRecord): void {
   const driver = getDriver();
 
+  // Clear any pending (ghost) note marker — we're focusing a real note now.
+  // This prevents stale ghost markers from remaining in the timeline or
+  // causing NoteMarkers to report the wrong overlay position.
+  setPendingNoteScene(null);
+
   // 1. Seek to frame
   const pos = note.anchor.position as { frame?: number; x?: number; y?: number } | undefined;
   if (pos?.frame !== undefined) {
