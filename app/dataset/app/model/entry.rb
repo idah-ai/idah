@@ -218,25 +218,45 @@ module Entry
     def select(id)
       no_event do
         transaction do
+          entry = find!(id)
           # Use read scope when updating as anyone with read access can select
-          update!(id, { assigned_to_id: auth_context.metadata[:id] }, scope: scoped(:read))
+          if entry.status == "pending"
+            update!(id, { assigned_to_id: auth_context.metadata[:id], status: "in_progress" }, scope: scoped(:read))
+          end
         end
       end
     end
 
     event(name: "assigned")
-    def assign(id, attributes)
+    def assign(id, assigned_to_id)
       entry = find!(id)
 
       add_event_metadata(
-        project_id: attributes[:project_id] || entry.project_id,
-        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        project_id: entry.project_id,
+        dataset_id: entry.dataset_id,
         entry_id: id
       )
 
       no_event do
         transaction do
-          update!(id, attributes)
+          update!(id, { assigned_to_id:, status: "in_progress" })
+        end
+      end
+    end
+
+    event(name: "unassigned")
+    def unassign(id)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: entry.project_id,
+        dataset_id: entry.dataset_id,
+        entry_id: id
+      )
+
+      no_event do
+        transaction do
+          update!(id, { assigned_to_id: nil, status: "pending" })
         end
       end
     end
@@ -264,7 +284,7 @@ module Entry
       entry = find_by!({ job_id: job_id, status: "processing" })
 
       transaction do
-        update!(entry.id, { status: status })
+        update!(entry.id, { status: })
       end
     end
 

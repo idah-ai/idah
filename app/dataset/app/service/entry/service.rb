@@ -76,6 +76,15 @@ module Entry
       entries.mark_entries_status_as(job_id, status)
     end
 
+    def complete_entry_processing(job_id)
+      system_entries_repo.transaction do
+        entry = system_entries_repo.find_by!({ job_id:, status: "processing" }, included: [:dataset])
+        entry_workflow = entry.dataset.entry_workflow.new(system_entries_repo, entry)
+        entry_workflow.submit!
+        system_datasets_repo.update_progress!(entry.dataset.id)
+      end
+    end
+
     def update(record)
       entries.update!(record.id, record.attributes)
       entries.find!(record.id)
@@ -92,14 +101,14 @@ module Entry
 
     def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: })
+        entries.assign(id, assigned_to_id)
         entries.find!(id)
       end
     end
 
     def unassign_member(id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: nil })
+        entries.unassign(id)
         entries.find!(id)
       end
     end
@@ -160,7 +169,7 @@ module Entry
 
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
-        system_entries_repo.update!(entry.id, { assigned_to_id: nil })
+        system_entries_repo.update!(entry.id, { assigned_to_id: nil, status: "pending" })
       end
     end
   end

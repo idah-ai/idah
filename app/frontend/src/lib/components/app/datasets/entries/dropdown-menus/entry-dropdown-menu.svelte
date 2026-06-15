@@ -83,11 +83,7 @@
 
   async function unAssignEntry() {
     try {
-      await entriesBackendDataSource.update(entry.id, {
-        attributes: {
-          assigned_to_id: null,
-        },
-      });
+      await entriesBackendDataSource.unassign(entry.id);
 
       openConfirmUnassignEntryModal = false;
       $refetches.entries.list = new Date();
