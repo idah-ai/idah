@@ -6,6 +6,7 @@ mkdir -p /app/frontend/build/plugins
 ln -s /app/plugins/* /app/frontend/build/plugins/
 ln -s /app/plugins_dev/plugins/* /app/frontend/build/plugins/
 
+pnpm install
 pnpm svelte-kit sync
 pnpm run build:parser
 
