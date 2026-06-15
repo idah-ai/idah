@@ -43,7 +43,9 @@
    */
   export function handleMouseDown(cursor: Point): boolean {
     // ── Close polygon (click near first point with ≥3 points) ──────────
-    if (nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points)) {
+    if (
+      nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points, viewport.workspace.transform.scale)
+    ) {
       const pts = [...polygonDraft.points];
       polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)

@@ -220,7 +220,14 @@
 
   // ── Check if cursor is hovering the first polygon draft point ────────
   let hoveringFirstPoint = $derived(
-    isPolygonMode && nearFirstPolygonPoint(sceneNormalizedCursor, media.width, media.height, polygonDraft.points),
+    isPolygonMode &&
+      nearFirstPolygonPoint(
+        sceneNormalizedCursor,
+        media.width,
+        media.height,
+        polygonDraft.points,
+        viewport.workspace.transform.scale,
+      ),
   );
 
   // ── Cursor class ─────────────────────────────────────────────────────
