@@ -41,7 +41,6 @@
   let isCreating = $derived(pendingAnchor !== null);
 
   let highlightedCommentId: string | null = $state(null);
-  let highlightedFeedId: string | null = $state(null);
   let scrollContainer: HTMLDivElement | null = $state(null);
 
   let unsubFns: Array<() => void> = [];
@@ -395,7 +394,12 @@
           </p>
         {:else if selectedNote}
           <!-- Original note feed -->
-          <div class="bg-muted/30 rounded px-2 py-1.5">
+          <div
+            data-feed-id={selectedNote.id}
+            class={["bg-muted/30 rounded px-2 py-1.5", highlightedFeedId === selectedNote.id ? "bg-muted" : ""].join(
+              " ",
+            )}
+          >
             <div class="flex items-center gap-1.5 text-xs">
               <span class="text-sm font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
               <div class="ml-auto flex items-center">

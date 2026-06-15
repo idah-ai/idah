@@ -6,7 +6,6 @@
 
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 

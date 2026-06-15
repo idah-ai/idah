@@ -48,7 +48,7 @@
       return [...result].sort((a, b) => a - b);
     }
     // In editor workspace, show annotation keyframes
-    return annotation.shape.frames.map((f) => f.frame);
+    return annotation.shape.frames.map((f: { frame: number }) => f.frame);
   });
 
   // Compute color using the same annotationColor() as the viewport shapes

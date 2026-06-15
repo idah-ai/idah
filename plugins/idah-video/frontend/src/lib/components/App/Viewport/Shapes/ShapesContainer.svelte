@@ -45,7 +45,7 @@
     anchorType: "entry" | "annotation";
     position: Record<string, unknown>;
     annotationId: string | null;
-    /** SVG-relative pixel coords for popup placement. */
+    /** Screen (viewport-fixed) pixel coords for popup placement. */
     screenX?: number;
     screenY?: number;
   }
@@ -346,6 +346,9 @@
   function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {
     // Use scene-normalized cursor so markers track video content under pan/zoom.
     // sceneNormalizedCursor is in 0-1 normalized media space.
+    const rect = viewport.svgElement!.getBoundingClientRect();
+    const screenX = rect.left + mousePosition[0];
+    const screenY = rect.top + mousePosition[1];
     const params: OnAddNewNoteParams = {
       anchorType: annotation ? ("annotation" as const) : ("entry" as const),
       position: {
@@ -354,8 +357,8 @@
         frame,
       },
       annotationId: (annotation?.metadata?.id as string | undefined) || null,
-      screenX: mousePosition[0],
-      screenY: mousePosition[1],
+      screenX,
+      screenY,
     };
     // Show a temporary marker at the click position
     setPendingNoteScene({
@@ -406,6 +409,9 @@
         y: sceneNormalizedCursor[1] - centroidN[1],
         frame,
       });
+      const rect = viewport.svgElement!.getBoundingClientRect();
+      const screenX = rect.left + mousePosition[0];
+      const screenY = rect.top + mousePosition[1];
       onAddNewNote({
         anchorType: "annotation",
         position: {
@@ -414,8 +420,8 @@
           frame,
         },
         annotationId: ann.id,
-        screenX: mousePosition[0],
-        screenY: mousePosition[1],
+        screenX,
+        screenY,
       });
       // Exit note tool mode — return to review workspace
       getDriver().setMode("review");
