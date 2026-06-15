@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends Record">
   import { CheckIcon, ChevronsUpDownIcon } from "@lucide/svelte";
   import { Combobox } from "bits-ui";
+  import { onMount } from "svelte";
 
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -42,10 +43,13 @@
   }: Props = $props();
 
   // Variables
-  type Choice = LabelValue<string | number>;
   let filtering = $state(false);
   let filteredChoices = $state<LabelValue<string | number>[]>([]);
   let inputValue = $state("");
+  let selectedLabel = $state("");
+
+  // Convert external value to string for bits-ui controlled value
+  let comboboxValue = $derived(value != null ? String(value) : undefined);
 
   // Functions
   async function filterChoices(searchVal: string) {
@@ -73,16 +77,21 @@
     });
   }
 
-  function select(choice: Choice): void {
-    // Toggle selection: deselect if already selected, otherwise select
-    if (value === choice.value) {
+  function onValueChange(newValue: string | undefined): void {
+    if (!newValue) {
       value = null;
+      selectedLabel = "";
       onSelected?.(null);
-      inputValue = ""; // Clear input on deselect
-    } else {
+      filterChoices("");
+      return;
+    }
+
+    // Find the choice to get its typed value and label
+    const choice = filteredChoices.find((c) => String(c.value) === newValue);
+    if (choice) {
       value = choice.value;
+      selectedLabel = String(choice.label);
       onSelected?.(value);
-      // bits-ui auto-sets inputValue to choice.label
     }
   }
 
@@ -90,7 +99,14 @@
     const newValue = (e.currentTarget as HTMLInputElement).value;
     inputValue = newValue;
 
-    // Clear selection if input is fully cleared
+    // bits-ui auto-fills input after selection — don't clear the selection
+    if (newValue === selectedLabel) {
+      filterChoices(newValue);
+      return;
+    }
+    selectedLabel = "";
+
+    // Clear selection if input is fully cleared — reload all choices
     if (!newValue) {
       if (value !== null) {
         value = null;
@@ -99,6 +115,11 @@
       return;
     }
 
+    // When user starts typing a new value, clear previous selection
+    if (value !== null) {
+      value = null;
+      onSelected?.(null);
+    }
     // Trigger async filter for dropdown
     filterChoices(newValue);
   }
@@ -109,7 +130,42 @@
       onSelected?.(inputValue);
     }
   }
+
+  // Lifecycle
+  onMount(() => {
+    filterChoices("");
+  });
 </script>
+
+{#snippet emptyState()}
+  {#if filtering}
+    <Spinner class="mx-auto h-full" />
+  {:else}
+    <span class="text-muted-foreground block p-2 text-sm"> No results found. </span>
+  {/if}
+{/snippet}
+
+{#snippet choiceItem(choice: LabelValue<string | number>)}
+  <Combobox.Item
+    class={cn(
+      "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
+      {
+        "text-muted-foreground cursor-not-allowed": choice.disabled,
+      },
+    )}
+    value={String(choice.value)}
+    label={choice.label}
+    disabled={choice.disabled}
+  >
+    {choice.label}
+
+    {#if String(choice.value) === comboboxValue}
+      <div class="ml-auto">
+        <CheckIcon class="size-4" />
+      </div>
+    {/if}
+  </Combobox.Item>
+{/snippet}
 
 <Field id={name} class={cn("", className)}>
   {#if slotLabel}
@@ -118,7 +174,7 @@
     <FieldLabel for={name} {required}>{label}</FieldLabel>
   {/if}
 
-  <Combobox.Root type="single" {inputValue}>
+  <Combobox.Root type="single" value={comboboxValue} {onValueChange}>
     <div class="relative">
       <Combobox.Input
         class={cn(
@@ -145,37 +201,16 @@
       >
         <Combobox.Viewport class="p-1">
           {#each filteredChoices as choice (choice.value)}
-            {@const isSelected = choice.value === value}
             {#if slotChoice}
-              {@render slotChoice({ choice, select })}
+              {@render slotChoice({
+                choice,
+                select: (c: LabelValue<string | number>) => onValueChange(String(c.value)),
+              })}
             {:else}
-              <Combobox.Item
-                class={cn(
-                  "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
-                  {
-                    "text-muted-foreground cursor-not-allowed": choice.disabled,
-                  },
-                )}
-                value={String(choice.value)}
-                label={choice.label}
-                disabled={choice.disabled}
-                onclick={() => select(choice)}
-              >
-                {choice.label}
-
-                {#if isSelected}
-                  <div class="ml-auto">
-                    <CheckIcon class="size-4" />
-                  </div>
-                {/if}
-              </Combobox.Item>
+              {@render choiceItem(choice)}
             {/if}
           {:else}
-            {#if filtering}
-              <Spinner class="mx-auto h-full" />
-            {:else}
-              <span class="block p-2 text-sm text-muted-foreground"> No results found. </span>
-            {/if}
+            {@render emptyState()}
           {/each}
         </Combobox.Viewport>
       </Combobox.Content>

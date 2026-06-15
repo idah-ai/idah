@@ -30,7 +30,8 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
-  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails]);
+  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
+  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
 
   // Lifecycle
   onMount(() => {
@@ -75,7 +76,7 @@
           valueKey="email"
           listOptions={{
             filters: {
-              role_name__nin: ["system", "admin"],
+              role_name__nin: ["system", "admin", "api_service"],
             },
           }}
           label="Member"
@@ -83,40 +84,34 @@
           required
           value={member.email}
           onSelected={(selectedValue) => {
-            member.email = selectedValue as string;
+            member.email = (selectedValue ?? "") as string;
           }}
         >
-          {#snippet slotChoice({ choice, select })}
-            {@const isAlreadyAdded = projectMemberEmails.includes(String(choice.value))}
-            {@const isDisabled = disabledMemberEmails.includes(String(choice.value))}
-            {@const isSelected = choice.value === member.email && !isDisabled}
+          {#snippet slotChoice({ choice })}
+            {@const isAlreadyAdded =
+              disabledMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
+            {@const isSelected = choice.value === member.email}
             <Combobox.Item
+              class={cn(
+                "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
+                {
+                  "text-muted-foreground cursor-not-allowed": choice.disabled || isAlreadyAdded,
+                },
+              )}
               value={String(choice.value)}
               label={choice.label}
-              disabled={choice.disabled || isDisabled}
-              onclick={() => select(choice)}
+              disabled={choice.disabled || isAlreadyAdded}
             >
-              <!-- wrap with div component for display cursor -->
-              <div
-                class={cn(
-                  "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
-                  {
-                    "text-muted-foreground cursor-not-allowed": choice.disabled || isDisabled,
-                    "cursor-pointer": !(choice.disabled || isDisabled),
-                  },
-                )}
-              >
-                {choice.label}
+              {choice.label}
 
-                <div class="ml-auto">
-                  {#if isSelected}
-                    <CheckIcon class="size-4" />
-                  {/if}
+              <div class="ml-auto">
+                {#if isSelected}
+                  <CheckIcon class="size-4" />
+                {/if}
 
-                  {#if isAlreadyAdded}
-                    <Badge variant="outline" rounded="full">Already added</Badge>
-                  {/if}
-                </div>
+                {#if isAlreadyAdded}
+                  <Badge variant="outline" rounded="full">Already added</Badge>
+                {/if}
               </div>
             </Combobox.Item>
           {/snippet}
