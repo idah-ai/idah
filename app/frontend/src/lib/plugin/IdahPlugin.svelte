@@ -86,15 +86,7 @@
       <NoteOverlay notesAdapter={driver.notesAdapter} />
     {/if}
 
-    <AnnotationHeaderBar
-      bind:ref={headerBarElement}
-      {driver}
-      {noteSidebarOpen}
-      onNoteToggle={() => {
-        noteSidebarOpen = !noteSidebarOpen;
-        driver.notesAdapter!.toggleNoteSidebar();
-      }}
-    />
+    <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />
 
     <IdahCommandPalette
       open={paletteOpen}
