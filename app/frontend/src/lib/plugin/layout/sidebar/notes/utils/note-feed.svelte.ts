@@ -1,6 +1,5 @@
 import { SvelteDate } from "svelte/reactivity";
 
-import { showToast } from "@/components/ui/toast/index.svelte";
 import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
 import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 import { refetches } from "@/utils/refetch";
@@ -30,15 +29,10 @@ export async function updateNoteFeedContentMd(id: string, newContentMd: string) 
     );
 
     refetchNoteFeeds();
-    showToast.success({
-      title: "Note updated",
-      description: "The note has been updated.",
-    });
 
     return updatedNoteFeedRes.data;
   } catch (error) {
     console.error(error);
-    showToast.error({ title: "You are not authorized to do this action." });
     return null;
   }
 }
@@ -64,13 +58,8 @@ export async function deleteNoteFeed(id: string) {
 
     await noteFeedsBackendDataSource.delete(id, { showErrorToast: false });
 
-    showToast.success({
-      title: "Note deleted",
-      description: "The note has been deleted.",
-    });
     refetchNoteFeeds();
   } catch (error) {
     console.error(error);
-    showToast.error({ title: "You are not authorized to do this action." });
   }
 }

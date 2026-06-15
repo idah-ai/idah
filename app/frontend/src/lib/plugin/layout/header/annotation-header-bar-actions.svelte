@@ -2,7 +2,7 @@
   import {
     ChevronDownIcon,
     KeyboardIcon,
-    MessageCircleIcon,
+    MessageCircleDashedIcon,
     MoonIcon,
     Settings2Icon,
     SquareCheckIcon,
@@ -27,11 +27,7 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
-  import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
-
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -41,29 +37,20 @@
   // Props
   interface Props {
     driver: IIdahDriverV2;
-    pluginContainerElement: HTMLElement | null;
+    noteSidebarOpen?: boolean;
+    onNoteToggle?: () => void;
   }
-  let { driver, pluginContainerElement }: Props = $props();
+  let { driver, noteSidebarOpen = false, onNoteToggle }: Props = $props();
 
   // Variables
   let loading = $state(false);
-  let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
-  let menus: AnnotationHeaderBarBaseTool[] = $derived([
-    {
-      name: "notes",
-      label: "All Notes",
-      icon: MessageCircleIcon,
-      isActive: openNoteSidebar,
-      handleClick: () => {
-        if (!openNoteSidebar) {
-          openNoteSidebar = true;
-        } else {
-          closeNoteSidebar();
-        }
-      },
-    },
-  ]);
+
+  // Track mode changes reactively
+  let currentMode = $state(driver.mode);
+  driver.onModeChange((event) => {
+    currentMode = event.newValue;
+  });
 
   const reviewMenus: IDropdownMenus = {
     actions: {
@@ -83,13 +70,6 @@
   };
 
   // Functions
-  function closeNoteSidebar() {
-    openNoteSidebar = false;
-
-    // Reset selected note feed when closing sidebar
-    driver.notes.gotoFeed(null);
-  }
-
   async function submitAnnotation() {
     loading = true;
     await submit();
@@ -134,6 +114,16 @@
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
+    {#if !noteSidebarOpen && (currentMode === "note" || currentMode === "review")}
+      <ToolTooltip label="Notes" shortcut={cmdShortcut("core.toggle_note_sidebar")} align="center" delayDuration={100}>
+        {#snippet trigger()}
+          <Button variant="ghost" size="icon-sm" onclick={onNoteToggle}>
+            <MessageCircleDashedIcon />
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
+
     <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
@@ -183,16 +173,23 @@
         </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
-
-    {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <ToolTooltip {label} align="center" delayDuration={100}>
-        {#snippet trigger()}
-          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
-            <Icon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
-    {/each}
+  </div>
+  <!-- Editor / Review segmented toggle -->
+  <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
+    <Button
+      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("editor")}
+    >
+      Editor
+    </Button>
+    <Button
+      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("review")}
+    >
+      Review
+    </Button>
   </div>
 
   {#if driver.workflowStep === "done"}
@@ -210,7 +207,3 @@
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
-
-<NoteSidebar {driver} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
-
-<NoteOverlay {driver} {pluginContainerElement} />

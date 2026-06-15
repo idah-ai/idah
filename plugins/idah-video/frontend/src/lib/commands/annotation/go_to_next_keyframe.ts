@@ -16,7 +16,7 @@ import type { IVideoAnnotationShape } from "$lib/types";
 export const command = {
   name: "annotation.go_to_next_keyframe",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Control+ArrowRight",
   shortDescription: "Next keyframe",
   longDescription: "Jump to the next keyframe in the current group",
