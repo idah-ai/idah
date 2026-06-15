@@ -12,6 +12,7 @@ import { selection, type IAnnotationSelection } from "$lib/state/selection.svelt
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "annotation.delete",
@@ -40,6 +41,8 @@ export function register(driver: IIdahDriverV2): void {
 
       const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
       if (!record) return noopAction(command);
+      // Locked annotations (or those belonging to a locked group) must not be deletable.
+      if (annotation.isLocked(record)) return noopAction(command);
 
       return {
         command: { ...command },
