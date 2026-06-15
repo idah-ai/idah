@@ -11,7 +11,11 @@
   import Can from "@/security/can.svelte";
 
   import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
-  import { categoryOrderMap, getCategoryOrder, getSiblingOrders } from "@/components/app/datasets/labels/categories/utils";
+  import {
+    categoryOrderMap,
+    getCategoryOrder,
+    getSiblingOrders,
+  } from "@/components/app/datasets/labels/categories/utils";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -306,6 +310,12 @@
     const { color, text_color } = getColor({ labelConfigKey });
 
     if (selectable) {
+      const alreadyExists = selectedLabelConfig.values.some((value) => value.id === editedCategory.id);
+
+      if (alreadyExists) {
+        return;
+      }
+
       const newEntry: IConfigValue = {
         id: editedCategory.id,
         label: editedCategory.label,
@@ -316,22 +326,24 @@
       // Insert at the correct tree position based on category order map,
       // rather than always pushing to the end.
       const parentPrefix = editedCategory.id.includes("/") ? editedCategory.id.split("/").slice(0, -1).join("/") : "";
+
       const siblings = getSiblingOrders(parentPrefix);
       const targetOrder = getCategoryOrder(editedCategory.id);
 
       if (targetOrder !== undefined && siblings.length > 0) {
-        // Find insertion index: insert before the first sibling with higher order
         let insertIndex = selectedLabelConfig.values.length;
+
         for (let i = 0; i < siblings.length; i++) {
           if (siblings[i].order > targetOrder) {
-            // Find the position of this sibling in the values array
             const siblingIndex = selectedLabelConfig.values.findIndex((v) => v.id === siblings[i].path);
+
             if (siblingIndex !== -1) {
               insertIndex = siblingIndex;
               break;
             }
           }
         }
+
         selectedLabelConfig.values.splice(insertIndex, 0, newEntry);
       } else {
         selectedLabelConfig.values.push(newEntry);
