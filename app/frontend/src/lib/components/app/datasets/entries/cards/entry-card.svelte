@@ -235,6 +235,10 @@
   }
 
   onDestroy(cleanup);
+
+  function getEntryValue(thisEntry: EntryRecord) {
+    entry = thisEntry;
+  }
 </script>
 
 <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
@@ -386,7 +390,7 @@
             <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry} />
+          <EntryDropdownMenu {entry} onUnAssigned={getEntryValue} onAssigned={getEntryValue} />
         </div>
       </div>
     </section>
