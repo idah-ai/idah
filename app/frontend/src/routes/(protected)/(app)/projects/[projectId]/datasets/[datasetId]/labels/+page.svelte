@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { SaveIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
+  import { SvelteSet } from "svelte/reactivity";
 
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
@@ -315,7 +316,7 @@
           };
         });
 
-      const existingIds = new Set(selectedLabelConfig.values.map((cat) => cat.id));
+      const existingIds = new SvelteSet(selectedLabelConfig.values.map((cat) => cat.id));
 
       childUpdates.forEach((update) => {
         existingIds.delete(update.oldId);
@@ -354,7 +355,7 @@
       newId: newId + cat.id.slice(oldId.length),
     }));
 
-    const existingIds = new Set(selectedLabelConfig.values.map((cat) => cat.id));
+    const existingIds = new SvelteSet(selectedLabelConfig.values.map((cat) => cat.id));
 
     existingIds.delete(oldId);
 
