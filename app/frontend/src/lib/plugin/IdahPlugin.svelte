@@ -33,13 +33,13 @@
   let paletteOpen = $state(driver.command.isPaletteOpen());
   let initialized = $state(false);
 
-  let noteSidebarOpen = $state(driver.noteSidebarOpen);
+  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
 
   driver.onModeChange((event) => {
     currentMode = event.newValue;
   });
 
-  driver.onNoteSidebarChange((open) => {
+  driver.notesAdapter!.onNoteSidebarChange((open) => {
     noteSidebarOpen = open;
   });
 
@@ -92,7 +92,7 @@
       {noteSidebarOpen}
       onNoteToggle={() => {
         noteSidebarOpen = !noteSidebarOpen;
-        driver.toggleNoteSidebar();
+        driver.notesAdapter!.toggleNoteSidebar();
       }}
     />
 
@@ -120,7 +120,7 @@
     open={initialized && (currentMode === "review" || currentMode === "note") && noteSidebarOpen}
     onSidebarClose={() => {
       noteSidebarOpen = false;
-      driver.closeNoteSidebar();
+      driver.notesAdapter!.closeNoteSidebar();
     }}
   />
 </div>

@@ -18,7 +18,7 @@ export function register(driver: IdahDriverV2) {
         longDescription: null,
       },
       do() {
-        driver.toggleNoteSidebar();
+        driver.notesAdapter!.toggleNoteSidebar();
       },
       isCombinable() {
         return false;

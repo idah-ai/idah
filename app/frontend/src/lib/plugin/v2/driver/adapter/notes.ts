@@ -88,6 +88,37 @@ export class NotesDriverAdapter implements INotesDriverV2 {
   // ── Filter state (synced with sidebar) ──────────────────────────────
   private _includeResolved = false;
 
+  // ── Note sidebar state ─────────────────────────────────────────────────
+  #noteSidebarOpen = true;
+  private noteSidebarListeners: Set<(open: boolean) => void> = new Set();
+
+  get noteSidebarOpen(): boolean {
+    return this.#noteSidebarOpen;
+  }
+
+  toggleNoteSidebar(): void {
+    this.#noteSidebarOpen = !this.#noteSidebarOpen;
+    for (const cb of this.noteSidebarListeners) cb(this.#noteSidebarOpen);
+  }
+
+  openNoteSidebar(): void {
+    if (this.#noteSidebarOpen) return;
+    this.#noteSidebarOpen = true;
+    for (const cb of this.noteSidebarListeners) cb(true);
+  }
+
+  closeNoteSidebar(): void {
+    if (!this.#noteSidebarOpen) return;
+    this.#noteSidebarOpen = false;
+    for (const cb of this.noteSidebarListeners) cb(false);
+  }
+
+  onNoteSidebarChange(cb: (open: boolean) => void): Unsubscribe {
+    this.noteSidebarListeners.add(cb);
+    cb(this.#noteSidebarOpen);
+    return () => this.noteSidebarListeners.delete(cb);
+  }
+
   // ── Core→Plugin listener sets (exposed on INotesDriverV2) ────────────
   private notesChangeListeners: Set<(notes: INoteRecord[]) => void> = new Set();
   private focusNoteListeners: Set<(note: INoteRecord | null) => void> = new Set();
