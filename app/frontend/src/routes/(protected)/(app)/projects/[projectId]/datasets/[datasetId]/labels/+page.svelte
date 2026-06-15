@@ -11,7 +11,7 @@
   import Can from "@/security/can.svelte";
 
   import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
-  import { getCategoryOrder, getSiblingOrders } from "@/components/app/datasets/labels/categories/utils";
+  import { categoryOrderMap, getCategoryOrder, getSiblingOrders } from "@/components/app/datasets/labels/categories/utils";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -76,6 +76,11 @@
 
   // Functions
   async function fetchData(): Promise<void> {
+    // Clear stale order entries from any previously visited dataset
+    for (const key of Object.keys(categoryOrderMap)) {
+      delete categoryOrderMap[key];
+    }
+
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
         [DatasetRecord.type]: ["modality", "labeling_configuration"],
