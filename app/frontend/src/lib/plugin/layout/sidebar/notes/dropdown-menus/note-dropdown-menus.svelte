@@ -58,7 +58,7 @@
         {
           label: "Edit",
           icon: PenSquareIcon,
-          hidden: !editable,
+          disabled: !editable,
           action: async () => {
             onSwitchToEditMode?.();
           },
@@ -67,7 +67,7 @@
           label: noteCommentId ? "Delete comment" : "Delete feed",
           icon: Trash2Icon,
           destructive: true,
-          hidden: !deletable,
+          disabled: !deletable,
           action: () => {
             openConfirmDeleteModal = true;
           },

@@ -23,7 +23,7 @@
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
+  import { AuthContext } from "@/security/AuthContext";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
@@ -50,6 +50,8 @@
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
   let isFilteringResolved = $derived(noteFeedFilters.status__in.includes("resolved"));
   let contentMd = $state<string>("");
+
+  let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
 
   const filterMenus: IDropdownMenus = $derived({
     filters: {
@@ -266,7 +268,7 @@
 {#if open}
   <div
     transition:slide={{ axis: "x" }}
-    class="bg-background absolute top-11 right-0 z-30 ml-auto flex max-h-[calc(100vh-3rem)] w-80 flex-col rounded-bl-md border shadow-lg"
+    class="bg-background absolute top-11 right-0 z-30 ml-auto flex h-[calc(100vh-3rem)] w-80 flex-col rounded-bl-md border shadow-lg"
   >
     <!-- HEADER -->
     <section class="flex items-center gap-1 border-b p-2">
@@ -308,7 +310,7 @@
               driver.notesAdapter?.fetchForEntry();
             }}
           />
-          <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable onDelete={deleteNote} />
+          <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable={isSelectedFeedOwner} onDelete={deleteNote} />
         {/if}
 
         <Button variant="ghost" size="icon-sm" onclick={onSidebarClose}>
@@ -329,8 +331,6 @@
                 noteFeedRecord={noteFeed}
                 showReplyCount
                 resolvable
-                editable
-                deletable
                 onSelectNoteFeed={() => selectNoteFeed(noteFeed)}
               />
             {:else}
@@ -350,7 +350,7 @@
         {#if isDetailView && selectedNoteFeed}
           {#await loadNoteComments() then { noteFeed, noteComments }}
             {#if noteFeed}
-              <NoteFeedCard noteFeedRecord={noteFeed} editable />
+              <NoteFeedCard noteFeedRecord={noteFeed} />
             {/if}
 
             {#each noteComments as noteComment (noteComment.id)}

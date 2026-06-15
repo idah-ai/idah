@@ -97,28 +97,22 @@
   }))
 
   let items = $derived.by(() => {
-    let tracks = transformAnnotationsToTracks({
+    return transformAnnotationsToTracks({
       annotations: viewportAnnotations,
       labelConfig: getDriver().config
     })
-    // Filter pin notes — entry-level notes that have a frame position (not general notes)
-    // Add entry-level pin notes track as first row (if any)
-    if (viewport.isReviewWorkspace && sortedPinnedNotes.length > 0) {
-      tracks.unshift({
-        id: "__entry_notes__",
-        title: "Pinned Notes",
-        subtitle: "",
-        top: 0,
-        items: [{
-          trackId: "__entry_notes__",
-          startRange: (sortedPinnedNotes.at(0)?.anchor.position as {frame: number}).frame,
-          endRange: (sortedPinnedNotes.at(-1)?.anchor.position as {frame: number}).frame,
-          rawData: sortedPinnedNotes,
-          component: EntryTrackBlock,
-        }],
-      })
-    }
-    return tracks
+  })
+
+  // Entry notes row — rendered as a sticky row between ruler and tracks
+  let noteItems = $derived.by(() => {
+    if (!viewport.isReviewWorkspace || sortedPinnedNotes.length === 0) return [];
+    return [{
+      trackId: "__entry_notes__",
+      startRange: (sortedPinnedNotes.at(0)?.anchor.position as {frame: number}).frame,
+      endRange: (sortedPinnedNotes.at(-1)?.anchor.position as {frame: number}).frame,
+      rawData: sortedPinnedNotes,
+      component: EntryTrackBlock,
+    }]
   })
 </script>
 
@@ -133,6 +127,7 @@
     bind:viewport={viewport.timeline.range}
     {items}
     {length}
+    {noteItems}
     remainingHeight={panelHeight - toolbarHeight}
     rulerSmallStep={effectiveRulerMinorStep}
     rulerBigStep={effectiveRulerMajorStep}
@@ -147,6 +142,16 @@
 
     {#snippet TrackInfoSlot({ track })}
       <AnnotationTrackInfo {track} />
+    {/snippet}
+
+    {#snippet NoteTrackInfoSlot()}
+      <div
+        role="button"
+        tabindex="-1"
+        class="flex h-full cursor-pointer items-center px-2 select-none"
+      >
+        <p class="text-xs font-medium">Notes</p>
+      </div>
     {/snippet}
   </Timeline>
 </TimelinePanel>

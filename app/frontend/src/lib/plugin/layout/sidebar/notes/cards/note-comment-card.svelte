@@ -1,8 +1,8 @@
 <script lang="ts">
   import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { noteCommentsBackendDataSource, type NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
+  import { AuthContext } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   // Props
@@ -14,6 +14,8 @@
 
   // Variables
   let { id, content_md, created_by_email, created_at, edited_at, note_feed_id } = $derived(noteCommentRecord);
+
+  let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
   // Functions
   async function updateNoteCommentMd(newContentMd: string) {
@@ -55,8 +57,8 @@
   {created_by_email}
   {created_at}
   {edited_at}
-  editable
-  deletable
+  editable={isOwner}
+  deletable={isOwner}
   {highlighted}
   onUpdateContentMd={updateNoteCommentMd}
   onDelete={deleteNoteComment}

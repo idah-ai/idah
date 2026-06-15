@@ -16,7 +16,7 @@
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
   import NoteDialogContent from "@/plugin/layout/sidebar/notes/overlays/note-dialog-content.svelte";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
+  import { AuthContext } from "@/security/AuthContext";
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
@@ -53,6 +53,8 @@
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
   let selectedNoteCommentId: string | null = $state(null);
   let noteComments: NoteCommentRecord[] = $state([]);
+
+  let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
 
   onMount(() => {
     const [_noteFeed, noteFeedIdFromURL, _noteComment, noteCommentIdFromURL] = page.url.hash.split("/");
@@ -283,7 +285,11 @@
                 <!-- Note: This span is to prevent resolve note feed button being open unintentionally -->
               </span>
               <ResolveNoteFeedButton noteFeed={selectedNoteFeed} onNoteResolved={closeSelectedNoteFeedPopup} />
-              <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable onDelete={deleteNote} />
+              <NoteDropdownMenus
+                noteFeedId={selectedNoteFeed.id}
+                deletable={isSelectedFeedOwner}
+                onDelete={deleteNote}
+              />
               <Button variant="ghost" size="icon-sm" onclick={closeSelectedNoteFeedPopup}>
                 <XIcon />
               </Button>
@@ -293,7 +299,7 @@
           {#key $refetches.noteFeeds.list}
             <ScrollArea class="max-h-64">
               <div class="flex flex-col">
-                <NoteFeedCard noteFeedRecord={selectedNoteFeed} editable {onNoteFeedUpdated} />
+                <NoteFeedCard noteFeedRecord={selectedNoteFeed} {onNoteFeedUpdated} />
 
                 {#key $refetches.noteComments.list}
                   {#await loadNoteComments(selectedNoteFeed.id) then _}

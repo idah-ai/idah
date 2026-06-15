@@ -79,8 +79,8 @@
       class:opacity-60={isPendingFrame(keyframe)}
       class:bg-primary={!isPendingFrame(keyframe)}
       class:bg-muted-foreground={isPendingFrame(keyframe)}
-      style:top="6px"
-      style:height="calc(100% - {6 * 2}px)"
+      style:top="3px"
+      style:height="calc(100% - {3 * 2}px)"
       style:left="{position}%"
       style:width="{width}%"
       onclick={(e) => handleKeyframeClick(e, keyframe)}

@@ -13,8 +13,10 @@
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
+  import { AuthContext } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
   import { modKeyLabel } from "@/plugin/v2/utils/browser";
 
@@ -45,6 +47,13 @@
   let unsubFns: Array<() => void> = [];
 
   let modKey = $derived(modKeyLabel());
+
+  // Owner checks
+  let isSelectedNoteOwner = $derived(AuthContext.currentAuthContext?.email === selectedNote?.created_by_email);
+
+  function isCommentOwner(comment: INoteComment): boolean {
+    return AuthContext.currentAuthContext?.email === comment.created_by_email;
+  }
 
   function formatEditedTooltip(dateStr?: string | null): string {
     if (!dateStr) return "";
@@ -350,8 +359,8 @@
 
             <NoteDropdownMenus
               noteFeedId={selectedNote!.id}
-              editable
-              deletable
+              editable={isSelectedNoteOwner}
+              deletable={isSelectedNoteOwner}
               onSwitchToEditMode={startEditFeed}
               onDelete={handleDeleteFeed}
             />
@@ -392,7 +401,8 @@
               <div class="ml-auto flex items-center">
                 <NoteDropdownMenus
                   noteFeedId={selectedNote.id}
-                  editable
+                  editable={isSelectedNoteOwner}
+                  deletable={isSelectedNoteOwner}
                   onSwitchToEditMode={startEditFeed}
                   onDelete={handleDeleteFeed}
                 />
@@ -425,12 +435,12 @@
                 rows="3"
                 bind:value={editingContentMd}
               ></textarea>
-              <div class="mt-2 flex items-center gap-1">
-                <button class="hover:bg-muted rounded px-2 py-0.5 text-sm" onclick={cancelEdit}>Cancel</button>
-                <button
-                  class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-sm"
+              <div class="mt-2 ml-auto flex w-fit items-center gap-2">
+                <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
+                <Button
+                  size="sm"
                   onclick={() => handleUpdateFeedContent(editingContentMd)}
-                  disabled={!editingContentMd.trim()}>Save</button
+                  disabled={!editingContentMd.trim()}>Save</Button
                 >
               </div>
             {:else}
@@ -451,8 +461,8 @@
                   <NoteDropdownMenus
                     noteFeedId={selectedNote.id}
                     noteCommentId={comment.id}
-                    editable
-                    deletable
+                    editable={isCommentOwner(comment)}
+                    deletable={isCommentOwner(comment)}
                     onSwitchToEditMode={() => startEditComment(comment)}
                     onDelete={() => handleDeleteComment(comment.id)}
                   />
@@ -485,12 +495,12 @@
                   rows="2"
                   bind:value={editingContentMd}
                 ></textarea>
-                <div class="mt-2 flex items-center gap-1">
-                  <button class="hover:bg-muted rounded px-2 py-0.5 text-sm" onclick={cancelEdit}>Cancel</button>
-                  <button
-                    class="bg-primary text-primary-foreground rounded px-2 py-0.5 text-sm"
+                <div class="mt-2 ml-auto flex w-fit items-center gap-2">
+                  <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
+                  <Button
+                    size="sm"
                     onclick={() => handleUpdateComment(comment.id, editingContentMd)}
-                    disabled={!editingContentMd.trim()}>Save</button
+                    disabled={!editingContentMd.trim()}>Save</Button
                   >
                 </div>
               {:else}

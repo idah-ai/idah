@@ -28,6 +28,11 @@ export interface TimelineProps extends RulerProps {
 
   TrackInfoHeaderSlot?: Snippet<[]>;
   TrackInfoSlot?: Snippet<[{ track: TrackData }]>;
+
+  /** Items to render in the pinned-notes row (always visible between ruler and tracks). */
+  noteItems?: TimelineItem[];
+  /** Label slot for the notes row's left spacer. */
+  NoteTrackInfoSlot?: Snippet<[]>;
 }
 
 /**
