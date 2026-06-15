@@ -41,6 +41,8 @@
   let isCreating = $derived(pendingAnchor !== null);
 
   let highlightedCommentId: string | null = $state(null);
+  let highlightedFeedId: string | null = $state(null);
+
   let scrollContainer: HTMLDivElement | null = $state(null);
 
   let unsubFns: Array<() => void> = [];
