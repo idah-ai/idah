@@ -201,8 +201,12 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const { color, text_color } = getColor({ labelConfigKey });
 
-    /** Add a new root category, if nodeId is not provided */
+    const categoryExists = (id: string) => selectedLabelConfig.values.some((cat) => cat.id === id);
+
+    /** Add a new root category */
     if (!nodeId) {
+      if (categoryExists(newId)) return;
+
       selectedLabelConfig.values.push({
         id: newId,
         label: newLabel,
@@ -212,11 +216,19 @@
       return;
     }
 
+    const childId = `${nodeId}/${currentTime}`;
+
+    /** Prevent duplicate exact IDs */
+    if (categoryExists(childId)) {
+      return;
+    }
+
     const parentCategories = selectedLabelConfig.values.filter((cat) => cat.id.startsWith(nodeId));
+
     /** Add a new sub-category, if parent category not exists */
     if (!parentCategories.length) {
       selectedLabelConfig.values.push({
-        id: `${nodeId}/${currentTime}`,
+        id: childId,
         label: newLabel,
         color,
         text_color,
@@ -227,17 +239,16 @@
     /** Add a new sub-category, if parent category exists */
     if (parentCategories.length === 1) {
       const parentCategoryIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === nodeId);
+
       if (parentCategoryIndex !== -1) {
-        /** Update the existing one with currentTime */
         selectedLabelConfig.values[parentCategoryIndex] = {
           ...selectedLabelConfig.values[parentCategoryIndex],
-          id: `${selectedLabelConfig.values[parentCategoryIndex].id}/${currentTime}`,
+          id: childId,
           label: newLabel,
         };
       } else {
-        /** Just in case, if not found, add a new one */
         selectedLabelConfig.values.push({
-          id: `${nodeId}/${currentTime}`,
+          id: childId,
           label: newLabel,
           color,
           text_color,
@@ -249,7 +260,7 @@
 
     /** Add a new sub-category, if multiple parent categories exist */
     selectedLabelConfig.values.push({
-      id: `${nodeId}/${currentTime}`,
+      id: childId,
       label: newLabel,
       color,
       text_color,
@@ -262,11 +273,20 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === category.id);
 
+    // Editing an existing selectable category
     if (categoryToUpdateIndex >= 0) {
-      /** If the edited category is exactly the same as an existing one */
       const existingCategory = selectedLabelConfig.values[categoryToUpdateIndex];
-      const slugifiedLabel: string = slugify(category.label);
-      const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
+
+      const newId = existingCategory.id.split("/").slice(0, -1).concat(slugify(category.label)).join("/");
+
+      const duplicateExists = selectedLabelConfig.values.some(
+        (cat) => cat.id === newId && cat.id !== existingCategory.id,
+      );
+
+      if (duplicateExists) {
+        showDuplicateCategoryError(newId);
+        return;
+      }
 
       selectedLabelConfig.values[categoryToUpdateIndex] = {
         ...existingCategory,
@@ -274,40 +294,93 @@
         label: category.label,
         id: newId,
       };
-    } else {
-      /** Check if there are any categories with parent ID starts with the edited category's ID */
-      if (selectedLabelConfig.values.some((cat) => cat.id.startsWith(category.id + "/"))) {
-        /** Update all child categories to reflect the new parent ID */
-        selectedLabelConfig.values = selectedLabelConfig.values.map((cat) => {
-          if (cat.id.startsWith(category.id + "/")) {
-            const suffix = cat.id.slice(category.id.length);
-            const slugifiedLabel: string = slugify(category.label);
-            const newId = category.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/") + suffix;
-            return {
-              ...cat,
-              id: newId,
-            };
-          }
-          return cat;
-        });
-      } else {
-        selectedLabelConfig.values.push(category);
-      }
+      return;
     }
+
+    // Editing an intermediate category (update descendants)
+    const hasChildren = selectedLabelConfig.values.some((cat) => cat.id.startsWith(category.id + "/"));
+
+    if (hasChildren) {
+      const slugifiedLabel = slugify(category.label);
+      const parentPrefix = category.id.split("/").slice(0, -1).join("/");
+
+      const childUpdates = selectedLabelConfig.values
+        .filter((cat) => cat.id.startsWith(category.id + "/"))
+        .map((cat) => {
+          const suffix = cat.id.slice(category.id.length);
+
+          return {
+            oldId: cat.id,
+            newId: `${parentPrefix ? `${parentPrefix}/` : ""}${slugifiedLabel}${suffix}`,
+          };
+        });
+
+      const existingIds = new Set(selectedLabelConfig.values.map((cat) => cat.id));
+
+      childUpdates.forEach((update) => {
+        existingIds.delete(update.oldId);
+      });
+
+      const collision = childUpdates.find((update) => existingIds.has(update.newId));
+
+      if (collision) {
+        showDuplicateCategoryError(collision.newId);
+        return;
+      }
+
+      selectedLabelConfig.values = applyCategoryIdUpdates(selectedLabelConfig.values, childUpdates);
+      return;
+    }
+
+    selectedLabelConfig.values.push(category);
   }
 
   function editCategoryId(labelConfigKey: string, oldId: string, newId: string) {
     if (!labelConfig) return;
 
     const selectedLabelConfig = labelConfig[labelConfigKey];
+
+    const duplicateExists = selectedLabelConfig.values.some((cat) => cat.id === newId && cat.id !== oldId);
+
+    if (duplicateExists) {
+      showDuplicateCategoryError(newId);
+      return;
+    }
+
+    const affectedChildren = selectedLabelConfig.values.filter((cat) => cat.id.startsWith(oldId + "/"));
+
+    const childUpdates = affectedChildren.map((cat) => ({
+      oldId: cat.id,
+      newId: newId + cat.id.slice(oldId.length),
+    }));
+
+    const existingIds = new Set(selectedLabelConfig.values.map((cat) => cat.id));
+
+    existingIds.delete(oldId);
+
+    childUpdates.forEach((update) => {
+      existingIds.delete(update.oldId);
+    });
+
+    const collision = childUpdates.find((update) => existingIds.has(update.newId));
+
+    if (collision) {
+      showDuplicateCategoryError(collision.newId);
+      return;
+    }
+
     const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === oldId);
+
     if (categoryToUpdateIndex >= 0) {
       selectedLabelConfig.values[categoryToUpdateIndex] = {
         ...selectedLabelConfig.values[categoryToUpdateIndex],
         id: newId,
-        /** Update the label to be the last part of the new ID */
-        label: humanize(newId.split("/")[newId.split("/").length - 1]) || "",
+        label: humanize(newId.split("/").at(-1) || "") || "",
       };
+    }
+
+    if (childUpdates.length > 0) {
+      selectedLabelConfig.values = applyCategoryIdUpdates(selectedLabelConfig.values, childUpdates);
     }
   }
 
@@ -409,6 +482,28 @@
     if (!labelConfig) return;
     const selectedLabelConfig = labelConfig[labelConfigKey];
     selectedLabelConfig.properties = selectedLabelConfig.properties.filter((p) => p.id !== propertyId);
+  }
+
+  function showDuplicateCategoryError(id: string) {
+    showToast.error({
+      title: "Duplicate category",
+      description: `Category "${id}" already exists.`,
+    });
+  }
+
+  function applyCategoryIdUpdates(values: IConfigValue[], childUpdates: { oldId: string; newId: string }[]) {
+    const updateMap = new Map(childUpdates.map((update) => [update.oldId, update.newId]));
+
+    return values.map((cat) => {
+      const newId = updateMap.get(cat.id);
+
+      return newId
+        ? {
+            ...cat,
+            id: newId,
+          }
+        : cat;
+    });
   }
 </script>
 
