@@ -16,6 +16,7 @@
   // Props
   interface Props extends SingleSelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
+    onInput?: () => void;
   }
   let {
     dataSource,
@@ -36,6 +37,7 @@
     errors,
     class: className,
     onSelected,
+    onInput,
     slotLabel,
     slotChoice,
     slotInfo,
@@ -95,7 +97,7 @@
     }
   }
 
-  function onInput(e: Event): void {
+  function onComboboxInput(e: Event): void {
     const newValue = (e.currentTarget as HTMLInputElement).value;
     inputValue = newValue;
 
@@ -122,6 +124,8 @@
     }
     // Trigger async filter for dropdown
     filterChoices(newValue);
+
+    onInput?.();
   }
 
   function onBlur(): void {
@@ -182,7 +186,7 @@
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         )}
-        oninput={onInput}
+        oninput={onComboboxInput}
         onblur={onBlur}
         autofocus={false}
         {disabled}
