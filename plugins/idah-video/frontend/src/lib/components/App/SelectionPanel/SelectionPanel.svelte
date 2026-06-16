@@ -23,6 +23,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { compareGroups, categoryValueToLabel } from "$lib/utils/annotation";
   import { VIDEO_POLYGON } from "$lib/types";
@@ -196,6 +197,7 @@
             {
               label: "Delete Annotation",
               icon: Trash2Icon,
+              disabled: annotation.isLocked(ann),
               onclick: (e: MouseEvent) => {
                 e.stopPropagation();
                 getDriver().command.call("annotation.delete", { annotationId: ann.id });
@@ -300,13 +302,10 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions(ann) as { label, icon: Icon, onclick }}
-                <CategoryAction
-                  {label}
-                  icon={Icon}
-                  {onclick}
-                  class="opacity-0 transition-opacity group-hover:opacity-100"
-                />
+              {#each getAnnotationActions(ann) as { label, icon: Icon, disabled, onclick }}
+                <div class="opacity-0 transition-opacity group-hover:opacity-100">
+                  <CategoryAction {label} icon={Icon} {disabled} {onclick} />
+                </div>
               {/each}
             </div>
           </div>

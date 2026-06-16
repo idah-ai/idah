@@ -13,6 +13,7 @@ import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
+import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "annotation.delete_group",
@@ -60,6 +61,8 @@ export function register(driver: IIdahDriverV2): void {
       }
 
       if (groupAnnotations.length === 0) return noopAction(command);
+      // Locked groups must not be deletable — check member annotations so individually-locked annotations are also caught.
+      if (groupAnnotations.some((ann) => annotation.isLocked(ann))) return noopAction(command);
 
       const snapshot = [...groupAnnotations];
 
