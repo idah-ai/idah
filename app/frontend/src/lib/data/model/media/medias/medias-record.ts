@@ -22,7 +22,6 @@ export type MediaUploadResponse = Omit<CollectionResponse<MediaRecord>, "meta"> 
   };
 };
 
-
 @type("media:medias")
 export class MediaRecord extends Record {
   @field() public resource!: string;
