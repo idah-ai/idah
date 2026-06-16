@@ -224,7 +224,9 @@
       return;
     }
 
-    const parentCategories = selectedLabelConfig.values.filter((cat) => cat.id.startsWith(nodeId));
+    const parentCategories = selectedLabelConfig.values.filter(
+      (cat) => cat.id === nodeId || cat.id.startsWith(`${nodeId}/`),
+    );
 
     /** Add a new sub-category, if parent category not exists */
     if (!parentCategories.length) {
