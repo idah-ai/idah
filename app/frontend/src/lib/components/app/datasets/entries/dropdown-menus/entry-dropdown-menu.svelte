@@ -74,7 +74,7 @@
   });
 
   // Functions
-  async function openAssignEntryModal() {
+  async function openAssignEntryModal(): Promise<void> {
     const entryRes = await entriesBackendDataSource.get(entry.id, {
       noCache: true,
     });
@@ -83,7 +83,7 @@
     openAssignEntryFormModal = true;
   }
 
-  async function unAssignEntry() {
+  async function unAssignEntry(): Promise<void> {
     try {
       const entryRes = await entriesBackendDataSource.update(entry.id, {
         attributes: {
@@ -91,7 +91,7 @@
         },
       });
 
-      onUnAssigned(entryRes.data);
+      onUnAssigned?.(entryRes.data);
 
       openConfirmUnassignEntryModal = false;
       showToast.success({
@@ -106,7 +106,7 @@
     }
   }
 
-  async function deleteEntry() {
+  async function deleteEntry(): Promise<void> {
     try {
       await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 

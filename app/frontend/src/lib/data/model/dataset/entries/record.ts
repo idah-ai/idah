@@ -106,10 +106,6 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     id: string;
     memberAccountId: number;
   }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
-    // Cache Management
-    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
-    clearCache(cacheIndexKey);
-
     const res = await fetch(`${entriesBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
@@ -117,6 +113,10 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     });
 
     const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    clearCache(cacheIndexKey);
 
     if (body && body.errors) {
       if (body.errors.length > 0) {
