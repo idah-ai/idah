@@ -47,9 +47,6 @@ import { register as registerGroupToggleEditability } from "./group/toggle_edita
 import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
 import { register as registerGroupToggleVisibilitySolo } from "./group/toggle_visibility_solo";
 
-import { register as registerNoteAdd } from "./note/add";
-import { register as registerNoteGoto } from "./note/goto";
-
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
@@ -118,10 +115,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerGroupToggleVisibility(driver);
   registerGroupToggleVisibilitySolo(driver);
   registerGroupToggleEditability(driver);
-
-  // ── Note ──────────────────────────────────────────────────────────────
-  registerNoteAdd(driver);
-  registerNoteGoto(driver);
 
   // ── Annotation ────────────────────────────────────────────────────────
   registerAnnotationAdd(driver);

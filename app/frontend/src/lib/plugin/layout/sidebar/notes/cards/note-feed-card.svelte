@@ -8,14 +8,13 @@
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed, updateNoteFeedContentMd } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
+  import { AuthContext } from "@/security/AuthContext";
   import { cn } from "@/utils";
 
   // Props
   interface Props {
     noteFeedRecord: NoteFeedRecord;
     resolvable?: boolean;
-    editable?: boolean;
-    deletable?: boolean;
     highlighted?: boolean;
     showReplyCount?: boolean;
     onSelectNoteFeed?: () => void;
@@ -24,8 +23,6 @@
   let {
     noteFeedRecord,
     resolvable = false,
-    editable = false,
-    deletable = false,
     highlighted,
     showReplyCount = false,
     onSelectNoteFeed,
@@ -34,6 +31,8 @@
 
   // Variables
   let { id, content_md, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
+
+  let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
   // Functions
   function selectNoteFeed() {
@@ -65,8 +64,8 @@
   {created_by_email}
   {created_at}
   {edited_at}
-  {editable}
-  {deletable}
+  editable={isOwner}
+  deletable={isOwner}
   {highlighted}
   onClick={selectNoteFeed}
   onUpdateContentMd={updateNoteFeed}

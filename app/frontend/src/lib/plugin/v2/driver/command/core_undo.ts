@@ -5,7 +5,7 @@ export function register(driver: IdahDriverV2) {
     name: "core.undo",
     group: "General",
     // TODO modes ['*'] ?
-    modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     shortcut: "Control+Z",
     shortDescription: "Undo",
     longDescription: "Undo the last action",
