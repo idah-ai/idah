@@ -25,6 +25,7 @@ import { data } from "$lib/state/data.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
+import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "annotation.delete_category",
@@ -79,6 +80,8 @@ export function register(driver: IIdahDriverV2): void {
       if (categoryAnnotations.length === 0) {
         return noopAction(command);
       }
+      // Block category deletion if any annotation in the category belongs to a locked group.
+      if (categoryAnnotations.some((ann) => annotation.isLocked(ann))) return noopAction(command);
 
       const snapshot = [...categoryAnnotations];
 
