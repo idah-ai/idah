@@ -30,10 +30,12 @@ RSpec.describe ApiKey::Service, database: true do
     end
 
     describe "#index" do
-      it "returns a list of API keys" do
+      it "returns a list of API keys created by the current user" do
+        # Create a key owned by the current admin (id: 1)
         api_keys_repo.create(
           account_id: service_account_id,
-          name: "Test Key 1",
+          created_by_id: 1,
+          name: "My Key",
           key_label: "IDAH_1234...abcd",
           key_sha: Digest::SHA256.hexdigest("test_key_1"),
           permissions: %w[org_rw_all],
@@ -44,10 +46,25 @@ RSpec.describe ApiKey::Service, database: true do
           status: "active"
         )
 
+        # Create a key owned by another user (id: 2)
+        api_keys_repo.create(
+          account_id: service_account_id,
+          created_by_id: 2,
+          name: "Other User Key",
+          key_label: "IDAH_5678...efgh",
+          key_sha: Digest::SHA256.hexdigest("test_key_2"),
+          permissions: %w[org_rw_all],
+          scope_type: "org",
+          scope_value: ["org-456"],
+          expires_at: Time.now + 30 * 24 * 60 * 60,
+          revoked_at: nil,
+          status: "active"
+        )
+
         result = subject.index({})
 
         expect(result.size).to eq(1)
-        expect(result[0].name).to eq("Test Key 1")
+        expect(result[0].name).to eq("My Key")
       end
     end
 
