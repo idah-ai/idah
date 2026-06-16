@@ -7,6 +7,7 @@ module ApiKey
     field :id, type: String, primary: true
 
     field :account_id, type: Integer, readonly: true
+    field :created_by_id, type: Integer, readonly: true
 
     field :name, type: String
     field :key_label, type: String, readonly: true
@@ -71,7 +72,7 @@ module ApiKey
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { projects_from_organization_scoped }
+        scope.own? { table.where(created_by_id: auth_context.metadata[:id]) }
 
         scope.array? { |_x|
           auth_context.reject("only for create") unless action == :create
@@ -114,21 +115,6 @@ module ApiKey
         actor_account_email: auth_context.metadata[:email],
         actor_account_role_name: auth_context.metadata[:role],
         **opts
-      )
-    end
-
-    def projects_from_organization_scoped
-      organization_id = auth_context.custom_scopes[:org]&.first
-      return table.where(Sequel.lit("false")) unless organization_id
-
-      projects = Api[:idah].dataset.projects.index(filter: { organization_id: }).data
-
-      table.where(
-        Sequel.lit(
-          "(scope_type = 'project' AND scope_value && ?) OR (scope_type = 'org' AND scope_value @> ?)",
-          Sequel.pg_array(projects.map(&:id)),
-          Sequel.pg_array([organization_id])
-        )
       )
     end
   end

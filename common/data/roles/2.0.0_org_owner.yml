@@ -19,9 +19,9 @@ org_owner:
 
     # API Keys
     - "iam:api_keys.create.{org_ro_org, project_ro_org, project_rw_org}"
-    - "iam:api_keys.read.as_org_owner"
-    - "iam:api_keys.update.as_org_owner"
-    - "iam:api_keys.delete.as_org_owner"
+    - "iam:api_keys.read.own"
+    - "iam:api_keys.update.own"
+    - "iam:api_keys.delete.own"
 
     # Dataset Service
     - "dataset:projects.*.as_org_owner"

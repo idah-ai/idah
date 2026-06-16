@@ -13,7 +13,8 @@ class ApiKeysExpo < BaseExpo
                       :scope_type,
                       :status,
                       :scope_type__in,
-                      :status__in
+                      :status__in,
+                      :created_by_id
     end
 
     show
