@@ -18,6 +18,7 @@ export const resources = [
   "iam:accounts",
   "iam:account_sessions",
   "iam:organizations",
+  "iam:api_keys",
 
   /** DATASET */
   "dataset:datasets",

@@ -42,36 +42,47 @@ module Medias
 
       results = []
       skipped = []
+      errored = []
 
       if zip_file?(file)
-        Zip::File.open_buffer(file.tempfile) do |zip|
-          zip.each do |zip_entry|
-            next if system_artifact?(zip_entry) # skip unrelated artifacts in compressed
+        begin
+          Zip::File.open_buffer(file.tempfile) do |zip|
+            zip.each do |zip_entry|
+              next if system_artifact?(zip_entry) # skip unrelated artifacts in compressed
 
-            ext = File.extname(zip_entry.name).downcase
+              ext = File.extname(zip_entry.name).downcase
 
-            entry_io = StreamWithPath.new(
-              zip_entry.get_input_stream,
-              File.basename(zip_entry.name)
-            )
+              entry_io = StreamWithPath.new(
+                zip_entry.get_input_stream,
+                File.basename(zip_entry.name)
+              )
 
-            result = store_media(
-              io: entry_io, # Stream directly from zip entry to storage - no tempfiles
-              filename: File.basename(zip_entry.name),
-              size: zip_entry.size,
-              mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
-              resource: "#{SecureRandom.hex(8)}#{ext}",
-              key:,
-              project_id:,
-              modality:
-            )
+              begin
+                result = store_media(
+                  io: entry_io, # Stream directly from zip entry to storage - no tempfiles
+                  filename: File.basename(zip_entry.name),
+                  size: zip_entry.size,
+                  mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
+                  resource: "#{SecureRandom.hex(8)}#{ext}",
+                  key:,
+                  project_id:,
+                  modality:
+                )
 
-            if result.is_a?(Medias::Record)
-              results << result
-            else
-              skipped << { filename: zip_entry.name, message: result }
+                if result.is_a?(Medias::Record)
+                  results << result
+                else
+                  # store_media returns a reason string when the file is intentionally rejected
+                  skipped << { filename: zip_entry.name, message: result }
+                end
+              rescue StandardError => e
+                # A failing entry must not abort the rest of the archive
+                errored << { filename: zip_entry.name, message: e.message }
+              end
             end
           end
+        rescue Zip::Error
+          raise Verse::Error::ValidationFailed, "Invalid or corrupted zip archive"
         end
       else
         # Verify that the resource/key combination is not already used
@@ -97,7 +108,7 @@ module Medias
         end
       end
 
-      { processed: results, skipped: skipped }
+      { processed: results, skipped: skipped, errored: errored }
     end
 
     private
@@ -111,17 +122,31 @@ module Medias
     # OS-generated metadata entries that should be silently ignored when
     # extracting a zip archive. No zip library handles this automatically —
     # it is the application's responsibility.
-    SYSTEM_ARTIFACT_PATHS = [
-      "__MACOSX/",   # macOS AppleDouble container (._filename sidecars)
+
+    # Exact filenames (matched against the entry's basename).
+    SYSTEM_ARTIFACT_FILES = [
       ".DS_Store",   # macOS folder-view settings
       "Thumbs.db",   # Windows thumbnail cache
+      "ehthumbs.db", # Windows (legacy) thumbnail cache
       "desktop.ini"  # Windows folder configuration
+    ].freeze
+
+    # Directory names that mark the entry as an artifact when present anywhere in its path.
+    SYSTEM_ARTIFACT_DIRS = [
+      "__MACOSX" # macOS AppleDouble container (._filename sidecars)
     ].freeze
 
     def system_artifact?(entry)
       return true unless entry.file?
 
-      SYSTEM_ARTIFACT_PATHS.any? { |pattern| entry.name.include?(pattern) }
+      basename = File.basename(entry.name)
+
+      return true if (entry.name.split("/") & SYSTEM_ARTIFACT_DIRS).any?
+      return true if SYSTEM_ARTIFACT_FILES.include?(basename)
+
+      # macOS AppleDouble resource forks ("._filename") may also appear loose,
+      # outside the __MACOSX container.
+      basename.start_with?("._")
     end
 
     def store_media(io:, filename:, mime_type:, resource:, key:, project_id:, size: nil, modality: nil)

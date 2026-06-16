@@ -12,6 +12,7 @@ export interface FormModalBaseProps extends ModalBaseProps {
   closeOnOutsideClick?: boolean;
   actions?: Snippet;
   confirm?: Snippet;
+  canClickOutside?: boolean;
   onCancel?: () => Promise<void> | void;
   onConfirm?: () => Promise<void> | void;
 }

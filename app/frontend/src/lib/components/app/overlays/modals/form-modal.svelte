@@ -29,6 +29,7 @@
     actions,
     confirm,
     children,
+    canClickOutside = true,
   }: FormModalBaseProps = $props();
 
   // Types
@@ -88,7 +89,7 @@
 </script>
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
-  <DialogContent interactOutsideBehavior={closeOnOutsideClick ? "close" : "ignore"}>
+  <DialogContent interactOutsideBehavior={(closeOnOutsideClick && canClickOutside) ? "close" : "ignore"}>
     {#if modalTitle}
       {@render modalTitle()}
     {:else}

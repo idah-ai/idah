@@ -80,7 +80,7 @@ class MediasExpo < BaseExpo
         desc: "The modality of the media; optional"
       )
     end
-    output Verse::JsonApi::Util.jsonapi_record(
+    output Verse::JsonApi::Util.jsonapi_collection(
       Medias::Record
     )
   end
@@ -93,7 +93,10 @@ class MediasExpo < BaseExpo
       modality: params[:modality]
     )
 
-    renderer.meta = { skipped: result[:skipped] } if result[:skipped].any?
+    meta = {}
+    meta[:skipped] = result[:skipped] if result[:skipped].any?
+    meta[:errored] = result[:errored] if result[:errored].any?
+    renderer.meta = meta if meta.any?
 
     result[:processed]
   end

@@ -1,4 +1,4 @@
-# fr
+# frozen_string_literal: true
 
 require "spec_helper"
 require_relative "media"
@@ -10,7 +10,8 @@ RSpec.describe IdahVideo::Media do
       expect(context).to receive(:register_processor).with(
         "idah-video",
         class_name: "IdahVideo::Processor::Video",
-        options_class_name: "IdahVideo::Processor::Options"
+        options_class_name: "IdahVideo::Processor::Options",
+        mime_types: ["^video/.*$"]
       )
 
       described_class.init(context)
