@@ -65,7 +65,7 @@
   <FieldGroup>
     <!-- EACH MEMBERS -->
     {#each members as member, index (index)}
-      <div class="flex w-full items-end gap-2">
+      <div class="flex w-full items-start gap-2">
         <!-- EMAIL -->
         <ComboboxField
           name="{resource}/member"
@@ -84,6 +84,7 @@
           placeholder="Search account by email"
           required
           value={member.email}
+          errors={member.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email) ? ["Invalid email address"] : []}
           onSelected={(selectedValue) => {
             member.email = (selectedValue ?? "") as string;
           }}
@@ -124,7 +125,7 @@
           class="flex-1"
           label="Role"
           placeholder="Select a role"
-          choices={[...projectMemberRoles]}
+          choices={projectMemberRoles}
           required
           searchable
           searchPlaceholder="Search a role"

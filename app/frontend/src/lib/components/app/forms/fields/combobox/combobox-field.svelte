@@ -187,6 +187,7 @@
         autofocus={false}
         {disabled}
         {placeholder}
+        aria-invalid={errors && errors.length > 0 ? "true" : "false"}
       ></Combobox.Input>
 
       <Combobox.Trigger class="absolute end-2 top-1/2 size-4 -translate-y-1/2 touch-none">
