@@ -236,7 +236,7 @@
 
   onDestroy(cleanup);
 
-  function getEntryValue(thisEntry: EntryRecord) {
+  function updateEntry(thisEntry: EntryRecord): void {
     entry = thisEntry;
   }
 </script>
@@ -390,7 +390,7 @@
             <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry} onUnAssigned={getEntryValue} onAssigned={getEntryValue} />
+          <EntryDropdownMenu {entry} onUnAssigned={updateEntry} onAssigned={updateEntry} />
         </div>
       </div>
     </section>
