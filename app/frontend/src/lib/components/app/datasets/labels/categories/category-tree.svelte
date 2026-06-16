@@ -4,8 +4,8 @@
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import {
-      CategoryTreeNode,
-      type ICategoryTreeNode,
+    CategoryTreeNode,
+    type ICategoryTreeNode,
   } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
