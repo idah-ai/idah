@@ -71,7 +71,10 @@
   {highlighted}
   onClick={selectNoteFeed}
   onUpdateContentMd={updateNoteFeed}
-  onDelete={async () => { await deleteNoteFeed(id); await onNoteFeedDeleted?.(); }}
+  onDelete={async () => {
+    await deleteNoteFeed(id);
+    await onNoteFeedDeleted?.();
+  }}
 >
   {#snippet headerIcon()}
     <div
