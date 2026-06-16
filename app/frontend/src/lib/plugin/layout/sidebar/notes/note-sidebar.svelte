@@ -350,7 +350,7 @@
         {#if isDetailView && selectedNoteFeed}
           {#await loadNoteComments() then { noteFeed, noteComments }}
             {#if noteFeed}
-              <NoteFeedCard noteFeedRecord={noteFeed} />
+              <NoteFeedCard noteFeedRecord={noteFeed} onNoteFeedUpdated={(updatedFeed) => { selectedNoteFeed = updatedFeed; }} onNoteFeedDeleted={backToNoteFeedList} />
             {/if}
 
             {#each noteComments as noteComment (noteComment.id)}

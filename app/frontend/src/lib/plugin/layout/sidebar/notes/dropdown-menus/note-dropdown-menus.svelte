@@ -78,7 +78,11 @@
 
   // Functions
   async function deleteNote() {
-    await onDelete?.();
+    try {
+      await onDelete?.();
+    } finally {
+      openConfirmDeleteModal = false;
+    }
   }
 </script>
 

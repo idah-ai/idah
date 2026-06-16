@@ -19,6 +19,7 @@
     showReplyCount?: boolean;
     onSelectNoteFeed?: () => void;
     onNoteFeedUpdated?: (updatedNoteFeedRecord: NoteFeedRecord) => Promise<void> | void;
+    onNoteFeedDeleted?: () => Promise<void> | void;
   }
   let {
     noteFeedRecord,
@@ -27,6 +28,7 @@
     showReplyCount = false,
     onSelectNoteFeed,
     onNoteFeedUpdated,
+    onNoteFeedDeleted,
   }: Props = $props();
 
   // Variables
@@ -69,7 +71,7 @@
   {highlighted}
   onClick={selectNoteFeed}
   onUpdateContentMd={updateNoteFeed}
-  onDelete={() => deleteNoteFeed(id)}
+  onDelete={async () => { await deleteNoteFeed(id); await onNoteFeedDeleted?.(); }}
 >
   {#snippet headerIcon()}
     <div
