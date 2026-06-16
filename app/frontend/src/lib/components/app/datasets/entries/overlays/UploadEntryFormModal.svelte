@@ -12,7 +12,7 @@
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { mediaBackendDataSource, type SkippedFile } from "@/data/model/media/medias/medias-record";
+  import { mediaBackendDataSource, type ZipFileReport } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
@@ -188,8 +188,14 @@
           media.uploadedMedias = createdMedias.data;
 
           if (createdMedias.meta?.skipped) {
-            for (const skippedFile of createdMedias.meta.skipped as Array<SkippedFile>) {
+            for (const skippedFile of createdMedias.meta.skipped as Array<ZipFileReport>) {
               media.skippedMedias.push(skippedFile);
+            }
+          }
+
+          if (createdMedias.meta?.errored) {
+            for (const erroredFile of createdMedias.meta.errored as Array<ZipFileReport>) {
+              media.errorMedias.push(erroredFile);
             }
           }
         }

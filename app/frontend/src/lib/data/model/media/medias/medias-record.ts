@@ -8,7 +8,7 @@ import { showErrorToast } from "@/utils/error/error.toasts";
 import type { CollectionResponse, JsonApiErrorResponse, JsonApiMeta, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
-export interface SkippedFile {
+export interface ZipFileReport {
   filename: string;
   message: string;
 }
@@ -17,8 +17,8 @@ export interface SkippedFile {
 // reports when extracting a zip archive.
 export type MediaUploadResponse = Omit<CollectionResponse<MediaRecord>, "meta"> & {
   meta?: JsonApiMeta & {
-    skipped?: SkippedFile[];
-    errored?: SkippedFile[];
+    skipped?: ZipFileReport[];
+    errored?: ZipFileReport[];
   };
 };
 

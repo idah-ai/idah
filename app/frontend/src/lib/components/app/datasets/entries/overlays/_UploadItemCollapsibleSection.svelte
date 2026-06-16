@@ -6,11 +6,11 @@
   import { cn } from "@/utils";
   import { truncateFilename } from "@/utils/string";
 
-  import type { SkippedFile } from "@/data/model/media/medias/medias-record";
+  import type { ZipFileReport } from "@/data/model/media/medias/medias-record";
 
   interface Props {
     label: string;
-    items: Array<SkippedFile>;
+    items: Array<ZipFileReport>;
     variant: "skipped" | "error";
   }
   let { label, items, variant }: Props = $props();
