@@ -48,7 +48,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
-          disabled: !isEditable() || viewport.isReviewWorkspace,
+          disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete annotation group",
