@@ -51,6 +51,7 @@
       attributes: {
         name: null,
         modality: null,
+        workflow_name: null,
       },
     });
   }
@@ -58,6 +59,7 @@
   function setValue(value: Hash): void {
     dataset.name = value.name;
     dataset.modality = value.modality;
+    dataset.workflow_name = value.workflow_name;
     selectedDatasetId = value.selectedDatasetId;
   }
 
@@ -87,6 +89,7 @@
         attributes: {
           name: dataset.name,
           modality: dataset.modality,
+          workflow_name: dataset.workflow_name,
           labeling_configuration: labelConfig,
           workflow_configuration: {},
         },
@@ -122,6 +125,7 @@
         attributes: {
           name: dataset.name,
           modality: dataset.modality,
+          workflow_name: dataset.workflow_name,
           labeling_configuration: labelConfig,
         },
       },
@@ -148,6 +152,7 @@
       const validated = validateData(schema, {
         name: dataset.name,
         modality: dataset.modality,
+        workflow_name: dataset.workflow_name,
       });
 
       if (!validated.success) {

@@ -125,7 +125,7 @@ When an entry is submitted, the dataset's workflow_name determines which workflo
 # In Dataset model (app/dataset/app/model/dataset.rb)
 def entry_workflow
   # Looks up workflow by the dataset's workflow_name field
-  Workflow::Registry.get_or_default(workflow_name)
+  Workflow::Registry.get(workflow_name)
 end
 ```
 

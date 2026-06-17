@@ -17,6 +17,7 @@ export class WorkflowRecord extends Record {
       icon?: string;
     }>;
   }>;
+  @field() public allowed_note_feed?: Array<string>;
 }
 
 export const workflowsBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/workflows`;
@@ -28,7 +29,6 @@ export const workflowsBackendDataSource = createBackendDataSource(WorkflowRecord
 
     // Add "default" as the first option
     const workflows: WorkflowRecord[] = [
-      { name: "default", label: "Default", description: "Default workflow", default: true } as WorkflowRecord,
       ...(data.data?.workflows || []),
     ];
 

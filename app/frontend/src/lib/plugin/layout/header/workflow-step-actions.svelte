@@ -6,27 +6,16 @@
   import type { IDropdownMenus } from "$lib/components/app/dropdown-menus/types";
   import type { IActivityContext } from "$idah/context/activity-context";
 
+  import type { WorkflowStepAction, WorkflowStepConfig } from "./workflow-step-types";
+
   // Props
+  let { context, loading, stepConfig, onSubmit }: Props = $props();
+
   interface Props {
     context: IActivityContext;
     loading: boolean;
     stepConfig?: WorkflowStepConfig;
     onSubmit: (opts: Record<string, boolean>) => Promise<void>;
-  }
-  let { context, loading, stepConfig, onSubmit }: Props = $props();
-
-  // Workflow step configuration from manifest
-  interface WorkflowStepAction {
-    key: string;
-    label: string;
-    icon?: string;
-  }
-
-  interface WorkflowStepConfig {
-    name: string;
-    label: string;
-    description?: string;
-    actions?: WorkflowStepAction[];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

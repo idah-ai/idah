@@ -46,7 +46,15 @@ module Workflow
     end
 
     def definitions
-      @workflows.map do |name, entries|
+      default_workflows = [
+        {
+          name: :default,
+          plugin: :core,
+          definition: Workflow::SimpleReviewAnnotationWorkflow.definition
+        }
+      ]
+
+      plugin_workflows = @workflows.map do |name, entries|
         entry = entries.first
         next unless entry
 
@@ -58,6 +66,8 @@ module Workflow
           definition: definition
         }
       end.compact
+
+      default_workflows + plugin_workflows
     end
   end
 end

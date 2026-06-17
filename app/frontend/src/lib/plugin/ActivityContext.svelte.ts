@@ -5,6 +5,7 @@ import { SvelteMap } from "svelte/reactivity";
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
+import { workflowsBackendDataSource } from "@/data/model/dataset/workflows/record";
 import type { RecordResponse } from "@/data/model/types";
 
 import CommandManager from "@/command/CommandManager";
@@ -71,11 +72,29 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     Record<string, { label: string; description: string; keyCombinations: string[] }>
   >({});
 
+  let allowedNoteFeedList = $state<string[]>(["annotate", "review"]);
+
+  // Fetch allowed note feed from workflow config
+  (async () => {
+    try {
+      const workflows = await workflowsBackendDataSource.getWorkflows();
+      const workflow = workflows.find((wf) => wf.name === entry.dataset.workflow_name);
+      if (workflow?.allowed_note_feed) {
+        allowedNoteFeedList = workflow.allowed_note_feed;
+      }
+    } catch (error) {
+      console.error("Failed to fetch workflow allowed note feed:", error);
+    }
+  })();
+
   const context: IActivityContext = {
     id: entry.id,
     type: entry.dataset.modality,
     workflowStep: entry.wf_step,
     workflowName: entry.dataset.workflow_name,
+    get allowedNoteFeed() {
+      return allowedNoteFeedList;
+    },
     status: entry.status,
     config: entry.dataset.labeling_configuration,
     mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),

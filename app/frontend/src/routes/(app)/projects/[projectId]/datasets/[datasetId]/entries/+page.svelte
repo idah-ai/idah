@@ -36,7 +36,8 @@
     PlusIcon,
   } from "@lucide/svelte";
 
-  import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
+  import { createEntryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
+  import { workflowsBackendDataSource } from "@/data/model/dataset/workflows/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
@@ -59,7 +60,7 @@
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
-  import type { Hash } from "@/utils/types";
+  import type { Hash, LabelValue } from "@/utils/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -161,6 +162,22 @@
   let isFiltering: boolean = $derived(
     Object.keys(listOptions.filters || {}).filter((key) => key !== "dataset_id").length > 0,
   );
+  let _workflowSteps: LabelValue<string>[] = $state([]);
+  onMount(async () => {
+    try {
+      const workflows = await workflowsBackendDataSource.getWorkflows();
+
+      const currentWorkflow =
+        workflows.find((wf) => wf.name === (dataset.workflow_name || "default")) || workflows[0];
+      _workflowSteps = (currentWorkflow?.steps || []).map((step) => ({
+        label: step.label,
+        value: step.name,
+      }));
+    } catch {
+      _workflowSteps = [];
+    }
+  });
+  let entryColumns = $derived(createEntryColumns([..._workflowSteps]));
   let isRowSelected: boolean = $derived(selectedRowsCount > 0);
 
   const bulkActions = $derived(

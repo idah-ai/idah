@@ -171,6 +171,9 @@ export interface IActivityContext {
   // Returns the workflow name of the dataset
   get workflowName(): string | null;
 
+  // Returns the list of workflow steps that allow creating new note feeds
+  get allowedNoteFeed(): string[];
+
   // Returns the current status of the entry
   get status(): "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
 

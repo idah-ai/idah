@@ -33,6 +33,7 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcut } from "@/components/ui/kbd/utils";
   import WorkflowStepActions from "@/plugin/layout/header/workflow-step-actions.svelte";
+  import type { WorkflowStepConfig } from "@/plugin/layout/header/workflow-step-types";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
@@ -50,20 +51,7 @@
   }
   let { context, pluginContainerElement }: Props = $props();
 
-  // Workflow step configuration interface
-  interface WorkflowStepAction {
-    name: string;
-    label: string;
-    icon?: string;
-  }
-
-  interface WorkflowStepConfig {
-    name: string;
-    label: string;
-    description?: string;
-    actions?: WorkflowStepAction[];
-  }
-
+  // Workflow configuration from API response
   interface WorkflowConfig {
     name: string;
     label: string;
@@ -159,8 +147,6 @@
   }
 
   function setFrameStep(inputValue: number) {
-    console.log("fsdklfjsdjfdsjfkl");
-
     const minStep: number = 1;
     let stepToSet: number = inputValue;
 
@@ -177,11 +163,6 @@
 
   // For custom workflow steps (not standard review/annotate/done)
   const isCustomStep = $derived(!isReviewStep && !isDoneStep && !isAnnotateStep && context.workflowStep !== "start");
-
-  // Log changes to isCustomStep reactively
-  $effect(() => {
-    console.log("isCustomStep", isCustomStep, context.workflowStep);
-  });
 
   // Get a human-readable label for the current step
   function getStepLabel(step: string): string {

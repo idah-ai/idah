@@ -44,7 +44,7 @@
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
   let selectedNoteCommentId: string | null = $state(null);
-  let isAllowToCreateNewNote = $derived(["annotate", "review"].includes(context.workflowStep));
+  let isAllowToCreateNewNote = $derived(context.allowedNoteFeed.includes(context.workflowStep));
   let isListView = $derived(!selectedNoteFeed);
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });

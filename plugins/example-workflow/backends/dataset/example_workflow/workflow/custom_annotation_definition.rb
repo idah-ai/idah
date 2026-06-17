@@ -17,6 +17,8 @@ module ExampleWorkflow
 
       def self.steps
         [
+          { name: "start", label: "Start", description: "Entry is ready for annotation" },
+          { name: "annotate", label: "Annotate", description: "Annotate the entry" },
           {
             name: "review",
             label: "Review",
@@ -34,8 +36,13 @@ module ExampleWorkflow
               { key: "final_approved", label: "Approve Final Check", icon: "SquareCheckIcon" },
               { key: "final_approved", label: "Request Changes in Final Check", icon: "SquareXIcon" }
             ]
-          }
+          },
+          { name: "done", label: "Done", description: "Annotation workflow completed" },
         ]
+      end
+
+      def self.allowed_note_feed
+        ["annotate", "review", "final_check"]
       end
     end
   end
