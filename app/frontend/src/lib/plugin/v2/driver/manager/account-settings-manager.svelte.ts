@@ -9,10 +9,7 @@
 // components reading it re-render automatically.
 // -----------------------------------------------------------------------
 import { SvelteMap } from "svelte/reactivity";
-import {
-  accountSettingBackendDataSource,
-  commandShortcutKey,
-} from "@/data/model/setting/account_setting/record";
+import { accountSettingBackendDataSource, commandShortcutKey } from "@/data/model/setting/account_setting/record";
 
 type SettingValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
