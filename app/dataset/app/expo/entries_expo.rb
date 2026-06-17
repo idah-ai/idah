@@ -22,7 +22,8 @@ class EntriesExpo < BaseExpo
                       :assigned_to_id__in,
                       :assigned,
                       :wf_step__in,
-                      :participated
+                      :participated,
+                      :name__match
     end
     create do
       authorized_relationships dataset: [:link]

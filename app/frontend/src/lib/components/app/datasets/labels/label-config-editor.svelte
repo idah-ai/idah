@@ -17,7 +17,7 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Props
@@ -380,4 +380,4 @@
   </Button>
 {/snippet}
 
-<DuplicateConfigModal action="create" {labelConfig} bind:open={openDuplicateConfigModal} />
+<DuplicateConfigModal action="create" {labelConfig} {modality} bind:open={openDuplicateConfigModal} />
