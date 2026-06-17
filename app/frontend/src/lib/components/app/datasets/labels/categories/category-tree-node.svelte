@@ -76,7 +76,6 @@
     {#if hasChildren}
       {#each children as child (child.id)}
         {@const childLevel = level + 1}
-        <!-- {@const level = child.id.split("/").length} -->
         {@render CategoryTreeNode({
           values,
           treeItem: child,
