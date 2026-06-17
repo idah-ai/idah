@@ -91,7 +91,10 @@
               <Text size="h2" weight="semibold">{project.name}</Text>
               <ProjectDropdownMenu {projectId} align="center" />
             </div>
-            <Text class="text-muted-foreground" size="sm">{project.description}</Text>
+
+            {#if project.description}
+              <Text class="text-muted-foreground" size="sm">{project.description}</Text>
+            {/if}
           {/snippet}
         </PageHeader>
 
