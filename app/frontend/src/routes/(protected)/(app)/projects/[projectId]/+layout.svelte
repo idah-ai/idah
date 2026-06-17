@@ -91,7 +91,7 @@
               <Text size="h2" weight="semibold">{project.name}</Text>
               <ProjectDropdownMenu {projectId} align="center" />
             </div>
-            <Text size="sm">{project.description}</Text>
+            <Text class="text-muted-foreground" size="sm">{project.description}</Text>
           {/snippet}
         </PageHeader>
 
