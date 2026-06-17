@@ -10,6 +10,7 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
+import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "annotation.delete_all",
@@ -33,6 +34,8 @@ export function register(driver: IIdahDriverV2): void {
 
       const snapshot: AnnotationItem[] = [...data.annotations.items];
       if (snapshot.length === 0) return noopAction(command);
+      // Block delete-all entirely when any annotation belongs to a locked group — partial deletion is not allowed.
+      if (snapshot.some((ann) => annotation.isLocked(ann))) return noopAction(command);
 
       return {
         command: { ...command },
