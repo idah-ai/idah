@@ -7,6 +7,7 @@ import { initDriver } from "./state/driver.svelte";
 import { initDataStores } from "./state/data.svelte";
 import { registerAllCommands } from "./commands";
 import { initToolbar } from "./toolbar";
+import { registerStats } from "./stats";
 
 interface IPluginDriver {
   name: string;
@@ -33,6 +34,7 @@ const idahVideoPlugin: IPluginDriver = {
     initDataStores();
     registerAllCommands(driver);
     initToolbar(driver);
+    registerStats(driver);
     console.debug("Plugin initialized", { this: this, driver });
   },
 

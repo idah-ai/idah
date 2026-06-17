@@ -10,6 +10,8 @@ import type {
   INotesDriverV2,
   ICommandDriverV2,
   IToolbarDriverV2,
+  IStatsDriverV2,
+  IStatProvider,
   IAnnotationRecord,
   INoteRecord,
   IFilter,
@@ -585,6 +587,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue>;
   readonly notes: INotesDriverV2;
+  readonly stats: IStatsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
 
@@ -619,6 +622,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
     this.annotations = new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
+
+    // Minimal stats driver — collects whatever providers register (no core stats in the mock)
+    const statProviders: IStatProvider[] = [];
+    this.stats = {
+      register: (provider: IStatProvider) => statProviders.push(provider),
+      collect: async () => (await Promise.all(statProviders.map((p) => p.collect()))).flat(),
+    };
 
     // ── Register default idah commands ────────────────────────────────
 

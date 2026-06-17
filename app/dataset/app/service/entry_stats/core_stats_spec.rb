@@ -8,8 +8,8 @@ RSpec.describe EntryStats::CoreStats do
     instance_double(Entry::Record, dataset: dataset, annotations: annotations)
   end
 
-  def make_annotation(category:, field: :category)
-    instance_double(Annotation::Record, annotation: { field => category })
+  def make_annotation(category:, field: :category, type: nil)
+    instance_double(Annotation::Record, annotation: { field => category }, dimensions: type && { type: type })
   end
 
   describe ".call" do
@@ -34,7 +34,7 @@ RSpec.describe EntryStats::CoreStats do
       it "skips annotations that have no category value" do
         annotations = [
           make_annotation(category: "cat"),
-          instance_double(Annotation::Record, annotation: {})
+          instance_double(Annotation::Record, annotation: {}, dimensions: nil)
         ]
         result = described_class.call(make_entry(annotations: annotations))
 
@@ -82,17 +82,54 @@ RSpec.describe EntryStats::CoreStats do
       let(:config) { { category_field: "label" } }
 
       it "reads the category from the specified field" do
-        annotation = instance_double(Annotation::Record, annotation: { label: "cat" })
+        annotation = instance_double(Annotation::Record, annotation: { label: "cat" }, dimensions: nil)
         result = described_class.call(make_entry(annotations: [annotation], config: config))
 
         expect(result["category.cat.count"]).to eq("1")
       end
 
       it "ignores annotations that use the default :category field instead" do
-        annotation = instance_double(Annotation::Record, annotation: { category: "cat" })
+        annotation = instance_double(Annotation::Record, annotation: { category: "cat" }, dimensions: nil)
         result = described_class.call(make_entry(annotations: [annotation], config: config))
 
         expect(result.keys.none? { |k| k.start_with?("category.") }).to be true
+      end
+    end
+
+    context "with shape dimensions" do
+      it "counts annotations by shape type, stripping the modality prefix" do
+        annotations = [
+          make_annotation(category: "cat", type: "idah-video:bounding-box"),
+          make_annotation(category: "dog", type: "idah-video:bounding-box"),
+          make_annotation(category: "cat", type: "idah-video:polygon")
+        ]
+        result = described_class.call(make_entry(annotations: annotations))
+
+        expect(result["shape.bounding-box.count"]).to eq("2")
+        expect(result["shape.polygon.count"]).to eq("1")
+      end
+
+      it "keeps the type as-is when there is no modality prefix" do
+        annotations = [make_annotation(category: "cat", type: "bounding-box")]
+        result = described_class.call(make_entry(annotations: annotations))
+
+        expect(result["shape.bounding-box.count"]).to eq("1")
+      end
+
+      it "emits no shape keys when annotations have no dimensions" do
+        annotations = [make_annotation(category: "cat")]
+        result = described_class.call(make_entry(annotations: annotations))
+
+        expect(result.keys.none? { |k| k.start_with?("shape.") }).to be true
+      end
+
+      it "zero-fills shape types from tool-type config keys" do
+        config = { "idah-video:bounding-box" => {}, "idah-video:polygon" => {}, category_field: "category" }
+        annotations = [make_annotation(category: "cat", type: "idah-video:bounding-box")]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        expect(result["shape.bounding-box.count"]).to eq("1")
+        expect(result["shape.polygon.count"]).to eq("0")
       end
     end
   end

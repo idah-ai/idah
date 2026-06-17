@@ -2,15 +2,12 @@
 
 module IdahVideo
   class StatsGenerator
-    # Prefix used in annotation dimensions[:type] values for this modality.
-    MODALITY_PREFIX = "idah-video:"
-
     # Called by EntryStats::Recompute for every entry whose dataset modality
     # is "idah-video". Emits modality-specific stats via the provided emit lambda.
+    # Generic stats (annotation/category/shape counts) are produced by
+    # EntryStats::CoreStats for every modality, so they are not emitted here.
     #
     # Stats produced:
-    #   "shape.<type>.count"      → count of annotations per shape type
-    #                               (e.g. "shape.bounding-box.count")
     #   "video.duration_seconds"  → video duration from media metadata
     #   "video.fps"               → frames per second from media metadata
     #   "video.frame_count"       → computed as (duration * fps).round
@@ -18,28 +15,7 @@ module IdahVideo
     # @param entry [Entry::Record] entry with dataset and project preloaded
     # @param emit  [Proc]          call with (key, value) to contribute a stat
     def self.generate(entry, emit)
-      emit_shape_stats(entry, emit)
       emit_video_stats(entry, emit)
-    end
-
-    # Count annotations by shape type, stripping the "idah-video:" modality
-    # prefix so the key reads as "shape.bounding-box.count" etc.
-    # Uses the already-preloaded entry.annotations to avoid a nil auth context query.
-    def self.emit_shape_stats(entry, emit)
-      annotations = entry.annotations || []
-
-      shape_counts = Hash.new(0)
-      annotations.each do |annotation|
-        type = annotation.dimensions&.dig(:type)
-        next unless type
-
-        shape_key = type.delete_prefix(MODALITY_PREFIX)
-        shape_counts[shape_key] += 1
-      end
-
-      shape_counts.each do |shape, count|
-        emit.call("shape.#{shape}.count", count)
-      end
     end
 
     # Fetch video metadata from the media service and emit duration / fps /
