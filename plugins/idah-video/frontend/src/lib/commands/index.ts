@@ -82,8 +82,6 @@ import { register as registerCategoryToggleVisibilitySolo } from "./category/tog
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModePolygon } from "./mode/polygon";
-import { register as registerModeNote } from "./mode/note";
-
 /**
  * Register all commands on the given V2 driver.
  * Safe to call multiple times (the V2 command manager throws on duplicate
@@ -142,8 +140,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerModeSelect(driver);
   registerModeBoundingBox(driver);
   registerModePolygon(driver);
-  registerModeNote(driver);
-
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
   registerTimelineGoToFirst(driver);
