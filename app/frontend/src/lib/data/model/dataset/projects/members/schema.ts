@@ -21,8 +21,5 @@ export const projectMemberSchema = z.object({
 export const createMultipleProjectMembersSchema = z.array(projectMemberSchema.pick({ email: true, role: true })).min(1);
 
 export const assignProjectMemberRoleSchema = z.object({
- email: z
-    .string(getRequiredErrorMessage("email"))
-    .email({ message: "Please enter a valid email." })
-    .trim()
+  email: z.string(getRequiredErrorMessage("email")).email({ message: "Please enter a valid email." }).trim(),
 });
