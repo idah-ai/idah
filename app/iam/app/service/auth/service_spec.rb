@@ -182,7 +182,6 @@ RSpec.describe Auth::Service, database: true do
       let!(:api_key_id) do
         api_keys_repo.create(
           account_id: service_account_id,
-          created_by_id: 3,
           name: "Test API Key",
           key_sha:,
           key_label: "#{raw_key[0..9]}...#{raw_key[-4..]}",

@@ -64,8 +64,6 @@ module ApiKey
 
         attr[:account_id] = service_account.id
 
-        attr[:created_by_id] = auth_context.metadata[:id]
-
         attr[:status] ||= "active"
 
         id = api_keys.create(attr)
