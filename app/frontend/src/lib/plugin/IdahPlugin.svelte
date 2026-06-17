@@ -7,6 +7,8 @@
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
   import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
 
+  import { authStatus } from "@/security/AuthContext";
+
   interface Props {
     driver: IdahDriverV2;
   }
@@ -40,6 +42,9 @@
       plugin.init(driver);
       initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
     });
+    // Load the user's saved shortcut overrides into the live map that
+    // CommandManagerV2 already references, so remaps apply immediately.
+    void driver.accountSettings.load($authStatus.authContext?.id ?? "");
     const unsub = driver.command.onPaletteChange((open: boolean) => {
       paletteOpen = open;
     });
@@ -66,6 +71,7 @@
       onOpenChange={(o) => driver.command.openPalette(o)}
       commandManager={driver.command}
       mode={currentMode}
+      accountSettings={driver.accountSettings}
     />
   {/if}
   <!-- Plugin Container -->

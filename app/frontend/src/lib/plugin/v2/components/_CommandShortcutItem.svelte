@@ -13,17 +13,21 @@
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import { buildKeyCombination } from "$lib/plugin/v2/utils/shortcut-utils";
 
-  import type { ICommandDescriptor, ICommandDriverV2 } from "$lib/plugin/v2/types";
+  import type { IAccountSettingsDriverV2, ICommandDescriptor, ICommandDriverV2 } from "$lib/plugin/v2/types";
 
   interface Props {
     cmd: ICommandDescriptor;
     commandManager: ICommandDriverV2;
+    accountSettings: IAccountSettingsDriverV2;
     searchValue: string;
     onCommandCalled: () => void;
   }
-  let { cmd, commandManager, searchValue, onCommandCalled }: Props = $props();
+  let { cmd, commandManager, accountSettings, searchValue, onCommandCalled }: Props = $props();
 
-  let localShortcut = $state<string | null>(cmd.shortcut);
+  // Displayed shortcut = user override (live, reactive) if set, else the shipped
+  // default. Deriving from the reactive override map means both per-item reset
+  // and "Reset all to default" refresh this row's key automatically.
+  let displayShortcut = $derived(accountSettings.getShortcutOverrides()[cmd.name] ?? cmd.shortcut);
   let listeningForShortcutPress = $state(false);
   let assignKeys = $state("");
   let isConflict = $derived(checkConflict(assignKeys));
@@ -36,10 +40,14 @@
 
   function checkConflict(shortcut: string): boolean {
     if (!shortcut) return false;
+    const overrides = accountSettings.getShortcutOverrides();
     const all = commandManager.getAllCommands();
     for (const descriptors of all.values()) {
       for (const d of descriptors) {
-        if (d.name !== cmd.name && d.shortcut === shortcut) return true;
+        if (d.name === cmd.name) continue;
+        if (!d.modes.some((m) => cmd.modes.includes(m))) continue; // same-mode only
+        const effective = overrides[d.name] ?? d.shortcut; // compare against effective binding
+        if (effective === shortcut) return true;
       }
     }
     return false;
@@ -62,7 +70,9 @@
 
       if (e.key === "Enter") {
         if (assignKeys) {
-          localShortcut = assignKeys;
+          // Persist the override. Conflicts are allowed (non-blocking) — the
+          // warning is informational and the binding still saves.
+          void accountSettings.setShortcut(cmd.name, assignKeys);
           listeningForShortcutPress = false;
           assignKeys = "";
         }
@@ -82,7 +92,7 @@
     const onPointerDown = (e: PointerEvent) => {
       if (containerRef && !containerRef.contains(e.target as Node)) {
         if (assignKeys) {
-          localShortcut = assignKeys;
+          void accountSettings.setShortcut(cmd.name, assignKeys);
         }
         listeningForShortcutPress = false;
         assignKeys = "";
@@ -126,7 +136,15 @@
   <div class="group ml-auto flex shrink-0 items-center gap-1" bind:this={containerRef}>
     <Tooltips align="center">
       {#snippet trigger()}
-        <Button variant="ghost" size="icon-sm" class="opacity-0 group-hover/item:opacity-100">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="opacity-0 group-hover/item:opacity-100"
+          onclick={(e) => {
+            e.stopPropagation();
+            void accountSettings.resetShortcut(cmd.name);
+          }}
+        >
           <RotateCcwIcon />
         </Button>
       {/snippet}
@@ -148,12 +166,12 @@
           Press keys...
         {/if}
       </Button>
-    {:else if localShortcut}
+    {:else if displayShortcut}
       <Tooltips align="center">
         {#snippet trigger()}
           <Button variant="ghost" size="sm" class="hover:bg-primary/10 justify-end" onclick={handleShortcutAssignment}>
             <Kbd.Group>
-              {#each getShortcutLabel(localShortcut!).split(" ") as shortcutKey, i (i)}
+              {#each getShortcutLabel(displayShortcut!).split(" ") as shortcutKey, i (i)}
                 <Kbd.Root>{shortcutKey}</Kbd.Root>
               {/each}
             </Kbd.Group>

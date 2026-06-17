@@ -13,7 +13,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import CommandShortcutItem from "./_CommandShortcutItem.svelte";
 
-  import type { ICommandDriverV2 } from "$lib/plugin/v2/types";
+  import type { IAccountSettingsDriverV2, ICommandDriverV2 } from "$lib/plugin/v2/types";
 
   interface Props {
     open: boolean;
@@ -21,9 +21,17 @@
     commandManager: ICommandDriverV2;
     mode: string;
     searchValue?: string;
+    accountSettings: IAccountSettingsDriverV2;
   }
 
-  let { open = $bindable(false), onOpenChange, commandManager, mode, searchValue = $bindable("") }: Props = $props();
+  let {
+    open = $bindable(false),
+    onOpenChange,
+    commandManager,
+    mode,
+    searchValue = $bindable(""),
+    accountSettings,
+  }: Props = $props();
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
@@ -45,7 +53,13 @@
             {#each cmds
               .filter((c) => c.shortDescription)
               .sort( (a, b) => (a.shortDescription ?? a.name).localeCompare(b.shortDescription ?? b.name), ) as cmd (cmd.name)}
-              <CommandShortcutItem {cmd} {commandManager} {searchValue} onCommandCalled={() => (open = false)} />
+              <CommandShortcutItem
+                {cmd}
+                {commandManager}
+                {accountSettings}
+                {searchValue}
+                onCommandCalled={() => (open = false)}
+              />
             {/each}
           </Command.Group>
         {/each}
@@ -53,7 +67,7 @@
     </Command.Root>
 
     <Dialog.Footer>
-      <Button variant="destructive-outline">
+      <Button variant="destructive-outline" onclick={() => accountSettings.resetAll()}>
         <RotateCcwIcon />
         Reset all to default
       </Button>
