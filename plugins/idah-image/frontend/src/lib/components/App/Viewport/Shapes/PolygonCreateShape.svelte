@@ -9,12 +9,14 @@
   // Used by ShapesContainer in polygon build mode.
   // ---------------------------------------------------------------------------
 
+  import { onMount } from "svelte";
+
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import type { Point } from "$lib/utils/math/point";
-  import { onMount } from "svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
+
+  import type { Point } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -43,7 +45,9 @@
    */
   export function handleMouseDown(cursor: Point): boolean {
     // ── Close polygon (click near first point with ≥3 points) ──────────
-    if (nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points)) {
+    if (
+      nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points, viewport.workspace.transform.scale)
+    ) {
       const pts = [...polygonDraft.points];
       polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)
