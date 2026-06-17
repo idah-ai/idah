@@ -13,7 +13,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "resource",
+      filterKey: "name",
       filterBy: "string",
       filterOperation: "match",
     },
@@ -80,5 +80,14 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     },
     visible: true,
     hidable: false,
+  },
+  created_at: {
+    label: "Created at",
+    dataType: "date",
+    clickable: false,
+    sortable: true,
+    filterable: false,
+    visible: false,
+    hidable: true,
   },
 };

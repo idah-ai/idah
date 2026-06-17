@@ -1,4 +1,4 @@
-import type { IConfigValue } from "@/plugin/interface/Activity";
+import type { IConfigValue } from "@/plugin/v2/types";
 import type { AnnotationContext } from "./AnnotationContext";
 
 /*
