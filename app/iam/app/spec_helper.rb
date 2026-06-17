@@ -65,7 +65,7 @@ RSpec.configure do |config|
   Verse::Spec.add_user(
     :org_owner,
     "org_owner",
-    user_data: { id: 2, email: "org_owner@example.com", name: "Org Owner",  },
+    user_data: { id: 2, email: "org_owner@example.com", name: "Org Owner" },
     scopes: { org: ["org-123"] }
   )
 
