@@ -57,7 +57,9 @@
     if (!newFiles || newFiles.length === 0) return;
 
     const dt = new DataTransfer();
-    Array.from(newFiles).filter(isFileAccepted).forEach((f) => dt.items.add(f));
+    Array.from(newFiles)
+      .filter(isFileAccepted)
+      .forEach((f) => dt.items.add(f));
     if (dt.files.length === 0) return;
 
     selectedFiles = dt.files;
