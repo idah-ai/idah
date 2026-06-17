@@ -14,3 +14,10 @@ export function validateData(schema: ZodSchema, data: any) {
 export function getFieldErrors(error: z.ZodError) {
   return z.flattenError(error).fieldErrors;
 }
+
+export function getRequiredErrorMessage(fieldName: string, inputType: "text" | "select" | "upload" = "text"): string {
+  const isVowel: boolean = /^[aeiou]/i.test(fieldName);
+  const perform: string = inputType === "text" ? "enter" : inputType;
+
+  return `Please ${perform} ${isVowel ? "an" : "a"} ${fieldName}.`;
+}
