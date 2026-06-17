@@ -8,6 +8,7 @@
 // so CommandManagerV2 can hold the same object and read live values, while
 // components reading it re-render automatically.
 // -----------------------------------------------------------------------
+import { SvelteMap } from "svelte/reactivity";
 import {
   accountSettingBackendDataSource,
   commandShortcutKey,
@@ -17,7 +18,7 @@ type SettingValue = Record<string, unknown> | unknown[] | string | number | bool
 
 export class AccountSettingsManager {
   // All loaded settings, keyed by setting key → { id (for updates), value }.
-  private settings = new Map<string, { id: string; value: SettingValue }>();
+  private settings = new SvelteMap<string, { id: string; value: SettingValue }>();
 
   // Live command-name → shortcut map. SAME reactive object handed to
   // CommandManagerV2. Mutated in place so the reference never changes.
