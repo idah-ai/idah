@@ -2,9 +2,17 @@
 
 mkdir -p /app/frontend/build/plugins
 
-# Merge plugins and plugins_dev into frontend build
-ln -s /app/plugins/* /app/frontend/build/plugins/
-ln -s /app/plugins_dev/plugins/* /app/frontend/build/plugins/
+# Remove old symlinks from previous runs
+find /app/frontend/build/plugins -maxdepth 1 -type l -delete
+
+# Create symlinks for all plugins
+for plugin_dir in /app/plugins/*; do
+  [ -d "$plugin_dir" ] && ln -s "$plugin_dir" /app/frontend/build/plugins/
+done
+
+for plugin_dir in /app/plugins_dev/plugins/*; do
+  [ -d "$plugin_dir" ] && ln -s "$plugin_dir" /app/frontend/build/plugins/
+done
 
 pnpm install
 pnpm svelte-kit sync

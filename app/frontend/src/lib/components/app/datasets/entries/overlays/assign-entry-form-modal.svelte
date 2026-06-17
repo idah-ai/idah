@@ -8,7 +8,6 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
-  import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
@@ -35,8 +34,7 @@
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMemberAccountId) return;
 
-    let projectMemberRecord: ProjectMemberRecord | undefined = undefined;
-
+    let projectMemberRecord: ProjectMemberRecord | undefined = $state(undefined);
     for (const entryId of entryIds) {
       await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMemberAccountId });
 
@@ -54,7 +52,6 @@
     }
 
     open = false;
-    $refetches.entries.list = new Date();
     selectedMemberAccountId = null;
     const description =
       entryIds.length > 1

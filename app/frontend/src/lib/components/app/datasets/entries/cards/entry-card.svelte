@@ -257,6 +257,10 @@
   }
 
   onDestroy(cleanup);
+
+  function updateEntry(thisEntry: EntryRecord): void {
+    entry = thisEntry;
+  }
 </script>
 
 <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
@@ -416,7 +420,7 @@
             <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry} />
+          <EntryDropdownMenu {entry} onUnAssigned={updateEntry} onAssigned={updateEntry} />
         </div>
       </div>
     </section>
