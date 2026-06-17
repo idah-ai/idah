@@ -7,13 +7,14 @@
 
   import { cn } from "@/utils";
 
-  import type { IConfigValue } from "@/plugin/interface/Activity";
+  import type { IConfigValue } from "@/plugin/v2/types";
 
   // Interfaces and Types
   interface ICategoryTreeNode extends IConfigValue {
     parent: string | null;
     children: Array<ICategoryTreeNode>;
     expanded: boolean;
+    order: number;
   }
 
   // Props
@@ -74,11 +75,11 @@
   {#if props.treeItem.expanded}
     {#if hasChildren}
       {#each children as child (child.id)}
-        {@const level = child.id.split("/").length}
+        {@const childLevel = level + 1}
         {@render CategoryTreeNode({
           values,
           treeItem: child,
-          level,
+          level: childLevel,
           onToggleExpand,
           onAddCategory,
           onEditCategoryId,

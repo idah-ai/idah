@@ -13,7 +13,7 @@
   import { labelColors } from "@/data/model/dataset/labels";
 
   import type { ICategoryTreeNode } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
-  import type { IConfigValue } from "@/plugin/interface/Activity";
+  import type { IConfigValue } from "@/plugin/v2/types";
 
   // Props
   interface Props {
