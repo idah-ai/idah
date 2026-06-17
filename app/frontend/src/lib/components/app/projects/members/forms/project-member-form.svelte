@@ -16,12 +16,14 @@
     projectMembersBackendDataSource,
     type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
+  import { assignProjectMemberRoleSchema } from "@/data/model/dataset/projects/members/schema";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { cn } from "@/utils";
+  import { getFieldErrors, validateData } from "@/utils/validate";
 
   // Props
   interface Props {
-    members: Array<{ email: string; role: ProjectMemberRole | null }>;
+    members: Array<{ email: string; role: ProjectMemberRole | null; errors?: string[] }>;
   }
   let { members = $bindable() }: Props = $props();
 
@@ -39,7 +41,7 @@
   });
 
   // Functions
-  async function fetchProjectMembers() {
+  async function fetchProjectMembers(): Promise<void> {
     const projectMembersRes = await projectMembersBackendDataSource.list({
       fields: {
         [ProjectMemberRecord.type]: ["email"],
@@ -59,13 +61,24 @@
   function removeMember(index: number): void {
     members = members.filter((_, i) => i !== index);
   }
+
+  function checkEmailValidate(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
+    const validationResult = validateData(assignProjectMemberRoleSchema, {
+      email: member.email,
+    });
+    if (!validationResult.success) {
+      member.errors = getFieldErrors(validationResult.error)?.email || [];
+    } else {
+      member.errors = [];
+    }
+  }
 </script>
 
 <FieldSet class="p-1">
   <FieldGroup>
     <!-- EACH MEMBERS -->
     {#each members as member, index (index)}
-      <div class="flex w-full items-end gap-2">
+      <div class="flex w-full items-start gap-2">
         <!-- EMAIL -->
         <ComboboxField
           name="{resource}/member"
@@ -78,18 +91,25 @@
             filters: {
               role_name__nin: ["system", "admin", "api_service"],
             },
+            noCache: true,
           }}
           label="Member"
           placeholder="Search account by email"
           required
           value={member.email}
+          errors={member.errors}
           onSelected={(selectedValue) => {
-            member.email = selectedValue as string;
+            member.email = (selectedValue ?? "") as string;
+            checkEmailValidate(member);
+          }}
+          onInput={() => {
+            checkEmailValidate(member);
           }}
         >
-          {#snippet slotChoice({ choice, select })}
+          {#snippet slotChoice({ choice })}
+            {@const isAlreadyAdded =
+              disabledMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
             {@const isSelected = choice.value === member.email}
-            {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
             <Combobox.Item
               class={cn(
                 "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
@@ -100,7 +120,6 @@
               value={String(choice.value)}
               label={choice.label}
               disabled={choice.disabled || isAlreadyAdded}
-              onclick={() => select(choice)}
             >
               {choice.label}
 

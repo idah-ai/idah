@@ -12,9 +12,9 @@ import {
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
+import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
-import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -128,9 +128,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }
 
-    if (body && body.data) {
-      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
-    }
+    if (body && body.data) return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
 
     throw "No data returned";
   },
