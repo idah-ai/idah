@@ -19,6 +19,7 @@
   // Variables
   let fileInput: HTMLInputElement;
   let uploading: boolean = $state(false);
+  let isDragging: boolean = $state(false);
   let acceptedFileTypesString: string | null = $derived(
     acceptedFileTypes ? acceptedFileTypes.join(", ") : null,
   );
@@ -31,21 +32,38 @@
     }
   }
 
+  function isFileAccepted(file: File): boolean {
+    if (!acceptedFileTypes || acceptedFileTypes.length === 0) return true;
+    return acceptedFileTypes.some((type) => {
+      if (type.startsWith(".")) return file.name.toLowerCase().endsWith(type.toLowerCase());
+      if (type.endsWith("/*")) return file.type.startsWith(type.slice(0, -1));
+      return file.type === type;
+    });
+  }
+
   function handleDragOver(event: DragEvent): void {
     event.preventDefault();
+    isDragging = true;
   }
 
   function handleDragLeave(event: DragEvent): void {
     event.preventDefault();
+    isDragging = false;
   }
 
   function handleDrop(event: DragEvent): void {
     event.preventDefault();
+    isDragging = false;
 
     const newFiles = event.dataTransfer?.files;
     if (!newFiles || newFiles.length === 0) return;
 
-    selectedFiles = newFiles;
+    const dt = new DataTransfer();
+    Array.from(newFiles).filter(isFileAccepted).forEach((f) => dt.items.add(f));
+    if (dt.files.length === 0) return;
+
+    selectedFiles = dt.files;
+    onFilesSelected(dt.files);
   }
 
   const handleChooseFile: ChangeEventHandler<HTMLInputElement> = (event) => {
@@ -63,6 +81,7 @@
   tabindex="0"
   class={cn(
     "bg-secondary group flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4",
+    isDragging && "border-primary bg-primary/5",
     className,
   )}
   ondragover={handleDragOver}
