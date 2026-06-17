@@ -12,8 +12,8 @@ interface VideoStreamHandlerOptions {
   // Slow-network budget: max ms to wait for one HQ fragment before falling back to LQ
   slowNetworkThresholdMs?: number;
   onLoadingChange?: (loading: boolean, qualityInfo?: QualityInfo) => void;
-  // Gate for arrow-key stepping: true while a paint-path fragment is downloading
-  // (LQ fallback or single-level stream). Background HQ work doesn't gate.
+  // Gate for arrow-key stepping: true while the fragment covering the current
+  // target is downloading. Forward-fill and background HQ work don't gate.
   onFragmentInFlightChange?: (inFlight: boolean) => void;
 }
 
@@ -28,6 +28,10 @@ interface PendingRender {
   settleTimer: ReturnType<typeof setTimeout> | null; // Delay before repainting
   timeoutTimer: ReturnType<typeof setTimeout> | null; // 15s watchdog against hangs
   loaderShown: boolean; // Whether to emit onLoadingChange(false) on cancel
+  // renderHQAt (true) vs renderLQFallbackAt (false). A superseded upgrade has its
+  // in-flight HQ download stopped to free the link; an LQ fallback is the paint
+  // path and is left running (it may retarget instead).
+  isUpgrade: boolean;
 }
 
 const SETTLE_MS = 50; // Delay before repainting after coverage is met
@@ -79,6 +83,9 @@ export class VideoStreamHandler {
   // DOM event references stored for clean removal on destroy.
   private boundPlayHandler: (() => void) | null = null;
   private boundPauseHandler: (() => void) | null = null;
+  // One-shot "seeked" listener deferring the pause-time HQ upgrade until an
+  // in-flight alignment seek (the pause snap in Video.svelte) settles.
+  private pendingPauseUpgrade: (() => void) | null = null;
 
   constructor(videoElement: HTMLVideoElement, sourceUrl: string, options: VideoStreamHandlerOptions = {}) {
     this.videoElement = videoElement;
@@ -158,6 +165,7 @@ export class VideoStreamHandler {
     this.boundPlayHandler = () => {
       this.isPaused = false;
       this.isInitialLoad = false;
+      this.clearPendingPauseUpgrade();
       this.cancelPendingRender();
       if (!this.hls) return;
       this.hls.startLoad(this.seekTime());
@@ -171,13 +179,28 @@ export class VideoStreamHandler {
     };
     this.videoElement.addEventListener("play", this.boundPlayHandler);
 
-    // On pause: re-pin to HQ, upgrade current frame immediately
+    // On pause: re-pin to HQ and upgrade the current frame. The pause snap
+    // (Video.svelte) may leave the element seeking; upgradeToHQ bails while
+    // seeking, so defer until it settles, then upgrade the aligned frame.
     this.boundPauseHandler = () => {
       this.cancelTimer("adaptiveTransitionTimer");
       this.isPaused = true;
       if (this.maxQualityLevel < 0 || !this.hls) return;
       this.hls.loadLevel = this.maxQualityLevel;
-      this.upgradeToHQ(this.seekTime());
+      this.clearPendingPauseUpgrade();
+      if (this.videoElement.seeking) {
+        // Persistent (not once): several seeks may settle around one pause, so a
+        // one-shot listener could fire on an early "seeked" while still seeking and
+        // bail. Re-attempt on every "seeked"; detach only once truly settled.
+        this.pendingPauseUpgrade = () => {
+          if (this.videoElement.seeking) return;
+          this.clearPendingPauseUpgrade();
+          this.upgradeToHQ(this.seekTime());
+        };
+        this.videoElement.addEventListener("seeked", this.pendingPauseUpgrade);
+      } else {
+        this.upgradeToHQ(this.seekTime());
+      }
     };
     this.videoElement.addEventListener("pause", this.boundPauseHandler);
 
@@ -196,7 +219,10 @@ export class VideoStreamHandler {
     return this.videoElement.ended ? this.endOfFrameTime : this.videoElement.currentTime;
   }
 
-  // Gate stepping on paint-path fragments (non-HQ or single-level only)
+  // Gate stepping only on the paint-path fragment: a non-HQ (or single-level)
+  // "main" fragment covering the current target. Forward-fill fragments ahead of
+  // the playhead are also non-HQ but must NOT gate, or on a slow link they'd block
+  // backward stepping until the fill finished (the 3G jump-back livelock).
   private setFragLoadInFlight(
     inFlight: boolean,
     frag?: { type: string; level: number; start: number; duration: number },
@@ -204,8 +230,14 @@ export class VideoStreamHandler {
     this.fragLoadInFlight = inFlight;
     this.inFlightFrag =
       inFlight && frag ? { start: frag.start, end: frag.start + frag.duration, level: frag.level } : null;
+    const t = this.seekTime();
+    const coversTarget =
+      !!frag && t >= frag.start - RANGE_TOLERANCE_S && t <= frag.start + frag.duration + RANGE_TOLERANCE_S;
     const gating =
-      inFlight && frag?.type === "main" && (frag.level !== this.maxQualityLevel || this.maxQualityLevel <= 0);
+      inFlight &&
+      frag?.type === "main" &&
+      coversTarget &&
+      (frag.level !== this.maxQualityLevel || this.maxQualityLevel <= 0);
     if (gating === this.gatingFragInFlight) return;
     this.gatingFragInFlight = gating;
     this.onFragmentInFlightChange(gating);
@@ -243,15 +275,32 @@ export class VideoStreamHandler {
     }
   }
 
+  // Detach the deferred pause-upgrade "seeked" listener. It's persistent, so it
+  // must be removed on success/replay/teardown or it leaks on the singleton
+  // videoElement that outlives this handler.
+  private clearPendingPauseUpgrade(): void {
+    if (this.pendingPauseUpgrade) {
+      this.videoElement.removeEventListener("seeked", this.pendingPauseUpgrade);
+      this.pendingPauseUpgrade = null;
+    }
+  }
+
   // Tear down the in-flight render: unregister its listener, clear its timers,
   // and hide the loader if it had been shown for this render.
   private clearPendingRender(): void {
     if (!this.pendingRender) return;
-    const { fragListener, settleTimer, timeoutTimer, loaderShown } = this.pendingRender;
+    const { fragListener, settleTimer, timeoutTimer, loaderShown, isUpgrade } = this.pendingRender;
     this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener);
     if (settleTimer !== null) clearTimeout(settleTimer);
     if (timeoutTimer !== null) clearTimeout(timeoutTimer);
     this.pendingRender = null;
+    // A superseded HQ upgrade may still be downloading a large fragment that hogs
+    // a slow link and starves the navigation's real target, so abort it. LQ
+    // fallbacks are the paint path and are left running (they retarget instead).
+    if (isUpgrade) {
+      this.hls?.stopLoad();
+      this.setFragLoadInFlight(false);
+    }
     if (loaderShown) this.onLoadingChange(false);
   }
 
@@ -382,6 +431,7 @@ export class VideoStreamHandler {
       settleTimer: null,
       timeoutTimer: armWatchdog(),
       loaderShown: true,
+      isUpgrade: true,
     };
     this.hls.on(Hls.Events.FRAG_BUFFERED, fragListener);
   }
@@ -430,6 +480,7 @@ export class VideoStreamHandler {
       settleTimer: null,
       timeoutTimer: null,
       loaderShown: false,
+      isUpgrade: false,
     };
     this.hls.on(Hls.Events.FRAG_BUFFERED, fragListener);
   }
@@ -493,6 +544,7 @@ export class VideoStreamHandler {
   public destroy(): void {
     this.cancelPendingRender();
     this.cancelTimer("adaptiveTransitionTimer");
+    this.clearPendingPauseUpgrade();
     // The viewport state outlives this handler (it's a singleton); a stale
     // true here would keep gating arrow keys on the next loaded video.
     this.setFragLoadInFlight(false);

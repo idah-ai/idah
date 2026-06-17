@@ -152,9 +152,15 @@ The HLS handler tracks several internal flags:
   while waiting for HQ).
 - **Fragment in flight** — whether a download is currently happening. This
   helps distinguish "network is slow but working" from "network stalled."
-  For low-quality downloads (the ones that block frame painting), this flag
-  is mirrored into `viewport.video.loading.fragmentInFlight` so the keyboard
-  stepping system can pause stepping while waiting for frames to arrive.
+  Only a low-quality download for the **frame the user is waiting on** (the
+  fragment that covers the current seek target) is mirrored into
+  `viewport.video.loading.fragmentInFlight` so the keyboard stepping system can
+  pause stepping while that frame arrives. Downloads that don't cover the target
+  — hls.js filling the buffer forward of the playhead, or a background HQ
+  upgrade — do **not** set the flag: they must never block navigation. (Without
+  this distinction, on a slow link the forward-fill after a jump would gate
+  backward stepping until it finished — the 3G jump-to-last-then-step-back
+  livelock.)
 
 ## Actions
 
@@ -197,12 +203,22 @@ When you press play:
 When you press pause:
 
 1. The animation loop stops. Playback halts.
-2. The system syncs `displayedFrame` to whatever frame the video actually shows.
+2. The system syncs `displayedFrame` to whatever frame the video actually shows
+   and re-seeks the element to that frame's exact time. The re-seek matters
+   because the painted frame lags the playback clock by a frame or three while
+   playing, so the pixels frozen at pause can be an earlier frame than the clock
+   position. Snapping the decoder back onto the reported frame keeps the pixels,
+   the pill, and the high-quality upgrade all in agreement — otherwise the image
+   would visibly jump when high quality later re-seeks to the clock position.
    (This includes a special case: at the very end of the video, we use the
    last-frame position from the database metadata instead of what the browser
-   reports, since the browser's duration can be slightly off.)
+   reports, since the browser's duration can be slightly off, and we skip the
+   re-seek there.)
 3. The loader switches back to pinning high-quality downloads only (no more
-   adaptive bitrate adjustments).
+   adaptive bitrate adjustments). Because the snap above leaves the element
+   briefly seeking, the high-quality upgrade waits for that seek to settle before
+   flushing (otherwise it would bail and skip the upgrade), then targets the same
+   frame the pixels were just snapped to.
 4. If the paused frame is in a low-quality region (according to our LQ map),
    we immediately upgrade it to high quality — no waiting, no debounce. You
    stop, you see quality.
@@ -350,8 +366,10 @@ When you press arrow keys to step through frames, the system is gated on the
 
 **The stuck-seek valve mechanics:**
 - The valve opens only while **no paint-path fragment is downloading**. We
-  distinguish paint-path downloads (LQ fallback, the frame we need to paint)
-  from background work (settle upgrades, forward buffer filling).
+  distinguish paint-path downloads (a low-quality fragment that **covers the
+  current seek target** — the frame we need to paint) from background work
+  (settle upgrades, and forward buffer filling ahead of the playhead). Only the
+  former sets the in-flight flag.
 - When an escape step happens, it re-runs the quality logic, potentially
   starting new downloads. So the valve only opens after a full timeout window
   with zero paint-path activity.

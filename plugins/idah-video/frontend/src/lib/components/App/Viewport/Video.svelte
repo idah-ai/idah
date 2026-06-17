@@ -22,16 +22,13 @@
 
   let isPlaying = $state(false);
   let animationFrameId: number | null = null;
-  // One-shot rVFC token for a paused seek. Cancelled if another seek fires before
-  // the frame is painted so only the latest seek updates displayedFrame.
+  // One-shot rVFC token for a paused seek; cancelled if a newer seek fires first.
   let pendingFrameCallbackId: number | null = null;
-  // Set to the target frame *before* writing currentTime so the seek $effect
-  // can detect and discard stale / redundant events.
+  // Last target frame; set before writing currentTime so the seek $effect can
+  // discard stale/redundant events.
   let lastSeekedFrame = -1;
-  // Whether requestVideoFrameCallback is supported. Set once at mount; used in
-  // startRAF, stopRAF, and the seek effect to avoid repeated `in` checks and
-  // TypeScript narrowing issues (the `in` guard narrows videoElement to never
-  // after a return, which breaks downstream .currentTime access).
+  // Whether requestVideoFrameCallback is supported. Cached at mount (an inline
+  // `in` guard would narrow videoElement to `never` and break .currentTime use).
   let hasRVFC = false;
 
   // ── Frame ↔ time helpers ─────────────────────────────────────────
@@ -45,13 +42,9 @@
   }
 
   // ── RAF loop (playback only) ──────────────────────────────────────
-  // Runs while the video is playing. Updates currentFrame and displayedFrame
-  // on every decoded frame so the timeline stays in sync with what is on screen.
-  // Uses requestVideoFrameCallback (rVFC) when available — it fires once per
-  // decoded frame, synchronized with the compositor, so there are no duplicate
-  // or missed frames at mismatched display/video frame rates.
-  // Falls back to requestAnimationFrame on unsupported browsers (slightly less
-  // accurate but functionally equivalent).
+  // While playing, syncs currentFrame/displayedFrame to the on-screen frame.
+  // Prefers rVFC (one callback per decoded frame, compositor-synced); falls back
+  // to requestAnimationFrame where unsupported.
   function startRAF() {
     if (hasRVFC) {
       const tick = (_now: number, metadata: VideoFrameCallbackMetadata) => {
@@ -88,35 +81,29 @@
   }
 
   // ── Paused frame sync ─────────────────────────────────────────────
-  // Called after every pause (manual, natural end, or programmatic).
-  // Writes lastSeekedFrame first so the seek $effect skips the writeback and
-  // does not cancel the in-flight HLS HQ render triggered by the pause event.
-  // When the video ended naturally, reads duration rather than currentTime
-  // because rVFC can lag 2–3 frames at high playback speeds.
+  // Runs after every pause. Sets lastSeekedFrame first so the seek $effect skips
+  // its writeback (and won't cancel the pause-triggered HQ render). Uses duration
+  // (not currentTime) when ended, since rVFC can lag a few frames at high speed.
   function syncPausedFrame() {
     const t = videoElement.ended ? videoElement.duration : videoElement.currentTime;
     const frame = timeToFrame(t);
     lastSeekedFrame = frame;
+    // Re-seek so the decoder repaints exactly `frame`: the pixels frozen at pause
+    // lag the clock (rVFC trails currentTime by 1–3 frames), and without this snap
+    // the stale frame lingers until the HQ upgrade re-seeks, causing a visible
+    // jump. The seek $effect is a no-op here (currentFrame === lastSeekedFrame).
+    // Skipped when ended to preserve the duration handling above.
+    if (!videoElement.ended) videoElement.currentTime = frameToTime(frame);
     viewport.video.currentFrame.value = frame;
     viewport.video.displayedFrame.value = frame;
     onFrameUpdate?.(frame);
   }
 
   // ── Play / pause effect ───────────────────────────────────────────
-  // Reacts to viewport.video.status changes (set by the toolbar or keyboard
-  // shortcuts). The actual DOM play()/pause() calls live here so that the
-  // single source of truth (status) drives both the UI and the video element.
-  //
-  // Play flow:  status → "play"
-  //   1. Cancel any pending HLS HQ reload (avoids a race where the 50 ms timer
-  //      fires between play() and the "play" DOM event and snaps currentTime).
-  //   2. Call videoElement.play() → browser fires "play" event.
-  //   3. Start the RAF/rVFC tick loop.
-  //
-  // Pause flow: status → "pause"
-  //   1. Call videoElement.pause() → browser fires "pause" event.
-  //   2. Stop the RAF/rVFC loop.
-  //   3. Sync the displayed frame to the exact paused position.
+  // Drives the DOM play()/pause() from viewport.video.status (single source of
+  // truth). Play: cancel any pending HQ reload (else its settle timer could snap
+  // currentTime mid-play), play, start the tick loop. Pause: pause, stop the loop,
+  // snap the displayed frame to the paused position.
   $effect(() => {
     if (!videoElement) return;
 
@@ -138,42 +125,25 @@
   });
 
   // ── Seek effect (paused only) ─────────────────────────────────────
-  // During playback the RAF loop owns frame position; this effect is a no-op
-  // while isPlaying is true.
-  //
-  // Seek flow (paused):
-  //   1. Detect a new target frame (currentFrame changed, differs from last seek).
-  //   2. Set lastSeekedFrame before writing currentTime so later stale events
-  //      can be discarded by this effect itself.
-  //   3. Update videoElement.currentTime to jump the decoder.
-  //   4. Register a one-shot rVFC callback to update displayedFrame the instant
-  //      the new frame is actually painted (complements the seeked fallback handler).
-  //   5. Call streamHandler.loadQuality() which is a no-op for buffered HQ
-  //      positions and schedules a debounced HQ replacement when the target
-  //      sits on low-quality data (managed inside VideoStreamHandler).
+  // No-op while playing (the RAF loop owns position). On a new target frame:
+  // record it, seek the decoder, confirm displayedFrame once the frame paints
+  // (rVFC), and let loadQuality decide any quality work for the new position.
   $effect(() => {
     if (!videoElement || isPlaying) return;
 
     const target = viewport.video.currentFrame.value;
     if (target === lastSeekedFrame) return;
 
-    // Capture whether this is the initialization seek (lastSeekedFrame starts at
-    // -1 and the first run positions the video without user input). On that first
-    // run we still seek the video element but skip loadQuality so we don't
-    // interfere with the startup HQ load triggered by the FRAG_LOADED handler.
+    // First run (lastSeekedFrame === -1) positions the element but skips
+    // loadQuality, leaving the startup HQ load (FRAG_LOADED handler) undisturbed.
     const isInitSeeked = lastSeekedFrame === -1;
     lastSeekedFrame = target;
     videoElement.currentTime = frameToTime(target);
 
-    // Update displayedFrame exactly when the compositor paints the decoded
-    // frame. Confirms the captured target rather than recomputing the index
-    // from metadata.mediaTime: mediaTime is the painted frame's PTS, which
-    // can sit off the ideal 1/fps grid (encoder timebase rounding, fps
-    // metadata drift), and rounding it back can map to a neighbouring index
-    // for specific frames — displayedFrame would then never equal
-    // currentFrame and framePending would latch, leaving the "Loading Frame"
-    // pill stuck on that frame. The callback is cancelled whenever a newer
-    // seek fires, so `target` is always the seek this paint belongs to.
+    // Confirm displayedFrame once the compositor paints. Uses the captured
+    // `target`, not timeToFrame(mediaTime): an off-grid PTS can round to a
+    // neighbouring index and latch framePending (stuck "Loading Frame" pill).
+    // A newer seek cancels this callback, so `target` always matches the paint.
     if (hasRVFC) {
       if (pendingFrameCallbackId !== null) {
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
@@ -221,32 +191,22 @@
     videoElement.muted = true;
     hasRVFC = "requestVideoFrameCallback" in videoElement;
 
-    // "play" fires for both programmatic (videoElement.play()) and browser-native play.
-    // Only update status — the $effect reacts and runs all side effects (startRAF, onTogglePlay, etc.)
+    // play/pause fire for both programmatic and native (incl. natural end) cases.
+    // Only set status; the $effect runs the side effects (startRAF, syncPausedFrame…).
     const handlePlay = () => {
       viewport.video.status = "play";
     };
-
-    // "pause" fires for both programmatic (videoElement.pause()) and browser-native pause
-    // (including natural end-of-video). Only update status so the $effect fires and handles
-    // stopRAF / syncPausedFrame for both the programmatic and natural-end cases.
     const handlePause = () => {
       viewport.video.status = "pause";
     };
 
-    // Confirm the seek whenever the browser finishes one — fallback for
-    // browsers without requestVideoFrameCallback. On rVFC-capable browsers
-    // (Chrome) we skip this handler entirely: seeked fires when the media
-    // pipeline accepts the new currentTime, before the frame is composited,
-    // so letting it write displayedFrame would briefly misalign annotations
-    // (showing frame N's overlays while pixels still show N−1). rVFC fires
-    // after the compositor paints and is the authoritative source there.
-    // Confirms lastSeekedFrame — the frame we *asked* for — rather than
-    // recomputing from currentTime: the browser clamps seeks past the real
-    // end of the stream, and rounding the clamped time back would yield a
-    // smaller index forever, latching framePending. The settle timer inside
-    // renderHQAt triggers seeked too (same-value re-seek for decoder flush);
-    // lastSeekedFrame is unchanged there so the result is idempotent.
+    // Seek confirmation for browsers without rVFC. Skipped where rVFC exists:
+    // `seeked` fires before the compositor paints, so it would briefly show
+    // frame N's overlays over frame N−1's pixels. Confirms lastSeekedFrame (the
+    // frame we asked for), not timeToFrame(currentTime) — the browser clamps
+    // past-end seeks, and the clamped time would round to a smaller index and
+    // latch framePending. renderHQAt's same-value re-seek also fires this, but
+    // lastSeekedFrame is unchanged so it's idempotent.
     const handleSeeked = () => {
       if (isPlaying) return;
       if (hasRVFC) return;
@@ -260,16 +220,11 @@
     videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("resize", handleResize);
 
-    // HLS streams get a VideoStreamHandler that buffers at the highest quality
-    // while paused (so buffered seeks always paint HQ) and manages adaptive
-    // quality during playback.
-    // endOfFrameTime is the exact timestamp of the last frame derived from the
-    // database metadata (frameToTime(totalFrames - 1)). It is passed explicitly
-    // because videoElement.duration reported by the browser can differ from the
-    // database frame count due to HLS segmentation rounding — using it when the
-    // video ends would cause HLS to start loading past the last fragment boundary
-    // (a no-op), so FRAG_LOADED would never fire and the HQ frame would be skipped.
-    // Plain video files are assigned directly to src.
+    // HLS streams get a VideoStreamHandler (HQ buffering while paused, adaptive
+    // during playback). endOfFrameTime is the DB-derived last-frame time; it's
+    // passed explicitly because browser duration can exceed it (HLS rounding),
+    // which would make the end-of-video HQ load seek past the last fragment and
+    // never fire FRAG_LOADED. Plain files are assigned straight to src.
     if (src?.toLowerCase().includes(".m3u8")) {
       streamHandler = new VideoStreamHandler(videoElement, src, {
         endOfFrameTime: frameToTime(media.totalFrames - 1),
@@ -288,9 +243,8 @@
 
     return () => {
       stopRAF();
-      // stopRAF only cancels the playback loop's token. The seek effect's
-      // one-shot rVFC is tracked separately and must be cancelled here so it
-      // can't fire after unmount and write to displayedFrame.
+      // The seek effect's one-shot rVFC is separate from the playback loop;
+      // cancel it too so it can't write displayedFrame after unmount.
       if (pendingFrameCallbackId !== null && hasRVFC) {
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
         pendingFrameCallbackId = null;
