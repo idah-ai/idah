@@ -98,12 +98,14 @@ export function getCategoryDeleteAction(
   const { items } = opts;
   if (items.length === 0) return null;
 
+  const isSomeLocked = items.some((item) => annotation.isLocked(item));
+
   return {
     id: "delete",
     label: "Delete category annotations",
     icon: Trash2Icon,
     destructive: true,
-    disabled: !isEditable(),
+    disabled: !isEditable() || isSomeLocked,
     onClick: async (e: MouseEvent) => {
       e.stopPropagation();
       onClickDelete();
