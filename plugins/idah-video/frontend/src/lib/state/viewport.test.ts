@@ -603,6 +603,45 @@ describe("stepBy", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Navigating while playing auto-pauses
+//
+// Any navigation request mid-playback must flip status to "pause" and land on
+// the requested frame, setting pauseForSeek so Video.svelte seeks to the target
+// instead of snapping back to the playback position.
+// ---------------------------------------------------------------------------
+
+describe("navigate while playing", () => {
+  beforeEach(() => {
+    viewport.video.status = "play";
+    viewport.video.currentFrame.value = 10;
+    viewport.video.displayedFrame.value = 10;
+    viewport.video.pauseForSeek = false;
+    mediaState.totalFrames = 100;
+  });
+
+  it("goToFrame pauses and lands on the requested frame", () => {
+    viewport.video.goToFrame(42);
+    expect(viewport.video.status).toBe("pause");
+    expect(viewport.video.pauseForSeek).toBe(true);
+    expect(viewport.video.currentFrame.value).toBe(42);
+  });
+
+  it("stepBy pauses and steps relative to the playing frame", () => {
+    viewport.video.stepBy(1);
+    expect(viewport.video.status).toBe("pause");
+    expect(viewport.video.pauseForSeek).toBe(true);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("does not set pauseForSeek when already paused", () => {
+    viewport.video.status = "pause";
+    viewport.video.goToFrame(42);
+    expect(viewport.video.pauseForSeek).toBe(false);
+    expect(viewport.video.currentFrame.value).toBe(42);
+  });
+});
+
 // ─── Individual transform method correctness ──────────────────────────────
 
 describe("screenToScene", () => {

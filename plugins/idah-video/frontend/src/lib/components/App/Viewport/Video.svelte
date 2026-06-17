@@ -123,7 +123,17 @@
       // A stall while playing may have left buffering latched; clear it so the
       // "Loading Frame" pill doesn't linger after we hand control back to seeks.
       viewport.video.loading.buffering = false;
-      if (videoElement) syncPausedFrame();
+      if (viewport.video.pauseForSeek) {
+        // Navigation-initiated pause: don't snap to the playback clock (that
+        // would clobber the requested target). Re-seed lastSeekedFrame to the
+        // frame the element is actually parked on (displayedFrame, kept current
+        // by the RAF loop) so the seek $effect re-fires and drives to the target
+        // — and correctly no-ops if the user navigated to the playing frame.
+        viewport.video.pauseForSeek = false;
+        lastSeekedFrame = viewport.video.displayedFrame.value;
+      } else if (videoElement) {
+        syncPausedFrame();
+      }
     }
   });
 

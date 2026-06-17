@@ -61,6 +61,12 @@ class Viewport {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
     },
     status: "pause" as "play" | "pause",
+    // Set when a navigation request (goToFrame/stepBy) pauses an actively
+    // playing video. Consumed by the play/pause $effect in Video.svelte: a
+    // navigation-initiated pause must skip the syncPausedFrame() clock snap
+    // (which would clobber the frame the user just asked for) and instead let
+    // the seek $effect drive the element to the requested target.
+    pauseForSeek: false,
     sound: { level: 0.0, muted: true },
     // When the pending seek last showed signs of life: set on every
     // position-changing navigation and re-armed by every paint-path fragment
@@ -87,6 +93,15 @@ class Viewport {
       this.status = "pause";
     },
     goToFrame(frame: number) {
+      // Navigating while the video plays auto-pauses it so the user can land
+      // on any frame freely (otherwise the RAF loop would immediately overwrite
+      // currentFrame). pauseForSeek tells Video.svelte this pause is
+      // navigation-driven, so it seeks to the requested target instead of
+      // snapping back to the playback position.
+      if (this.status === "play") {
+        this.pauseForSeek = true;
+        this.status = "pause";
+      }
       // Clamp to the valid range so `framePending` (derived from
       // currentFrame !== displayedFrame) can never latch on out-of-range
       // writes — displayedFrame is always clamped by timeToFrame, so an

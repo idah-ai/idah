@@ -120,6 +120,15 @@ The playback status drives almost everything else. When you toggle it:
 - Switching to `pause` stops the loop and hands control to the user's keyboard
   and clicks.
 
+**Navigating while playing auto-pauses.** Any navigation request (arrow keys,
+timeline click, frame input, keyframe/note/selection jump) while the video plays
+first flips the status to `pause`, then lands on the requested frame — so the
+user can navigate freely without fighting the playback loop. This pause is
+*navigation-aware*: it skips the normal pause-time clock snap (which would drag
+the position back to wherever playback was) and instead seeks straight to the
+frame the user asked for. A transient `pauseForSeek` flag carries that intent
+from the navigation method to the video element.
+
 The system also listens to the browser's native `play` and `pause` events on the
 video element itself — so if the video naturally ends or something programmatically
 pauses it, that feeds back into the same system.
