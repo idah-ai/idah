@@ -3,8 +3,12 @@
 
   let highQuality = $derived(viewport.video.loading.highQuality);
   let framePending = $derived(viewport.video.framePending);
+  // Buffering is the playback-stall counterpart of framePending (which only
+  // fires while paused). Either one shows the "Loading Frame" pill.
+  let buffering = $derived(viewport.video.loading.buffering);
+  let frameLoading = $derived(framePending || buffering);
 
-  let visible = $derived(highQuality || framePending);
+  let visible = $derived(highQuality || frameLoading);
   let label = $derived(highQuality ? `High Quality: ${viewport.video.loading.qualityLabel}` : "Loading Frame");
 
   // ── Debounced display state ───────────────────────────────────────
@@ -36,8 +40,8 @@
 
 {#if displayed}
   <div class="loading-indicator" class:loading-indicator--active={visible}>
-    {#if framePending}
-      <!-- Subtle pill for frame seek -->
+    {#if frameLoading}
+      <!-- Subtle pill for frame seek or playback buffering -->
       <div class="loading-pill" aria-live="polite" aria-label={label} role="status">
         <span class="loading-spinner" aria-hidden="true"></span>
         <span class="loading-text">Loading Frame</span>

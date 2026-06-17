@@ -136,6 +136,11 @@ pauses it, that feeds back into the same system.
   being downloaded (upgrading from low quality).
 - `loading.qualityLabel` — a human-readable label describing that quality level
   (e.g., "1080p" or "720p").
+- `loading.buffering` — playback has stalled waiting for the next fragment(s) to
+  download. This is the playback-time counterpart of `framePending` (which only
+  fires while paused): during playback the target and displayed frames advance
+  in lockstep, so it never differs. Driven by the video element's `waiting` /
+  `playing` events, it also shows the "Loading Frame" pill.
 - `framePending` (above) — a new frame was requested but hasn't rendered yet.
 
 ### Stream state (internal to the HLS layer)
@@ -404,8 +409,12 @@ The loading indicator shows the user what's happening in two situations:
 - A small badge appears in the corner.
 - Hover it to see the quality level (e.g., "1080p").
 
-**Seek in progress:**
+**Seek in progress (or playback buffering):**
 - A small pill appears with a spinner that says "Loading Frame".
+- While paused, this tracks `framePending` (target frame requested but not yet
+  painted). While playing, it tracks `loading.buffering` (playback stalled
+  waiting for the next fragment), so the user gets the same feedback when the
+  picture freezes mid-play.
 
 Both indicators wait 150 milliseconds before appearing. This is important: most
 frame seeks (jumping between buffered high-quality frames) happen instantly,

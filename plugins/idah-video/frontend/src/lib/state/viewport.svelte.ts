@@ -45,11 +45,17 @@ class Viewport {
     //     and cancel a slow fragment (the 3G livelock). Background HQ work
     //     (upgrades, buffer filling) never sets it — it must not block
     //     navigation, and cancelling it is always safe.
+    //   buffering — playback stalled waiting for the next fragment(s) to
+    //     download. Drives the "Loading Frame" pill while playing (the paused
+    //     case is covered by framePending instead, since the two never differ
+    //     during playback). Wired from the video element's waiting/playing
+    //     events in Video.svelte.
     //   framePending — true when currentFrame ≠ displayedFrame (seek in flight).
     loading: {
       highQuality: false,
       qualityLabel: "",
       fragmentInFlight: false,
+      buffering: false,
     },
     get framePending() {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;

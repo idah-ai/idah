@@ -120,6 +120,9 @@
       isPlaying = false;
       onTogglePlay(false);
       stopRAF();
+      // A stall while playing may have left buffering latched; clear it so the
+      // "Loading Frame" pill doesn't linger after we hand control back to seeks.
+      viewport.video.loading.buffering = false;
       if (videoElement) syncPausedFrame();
     }
   });
@@ -214,10 +217,24 @@
         lastSeekedFrame >= 0 ? lastSeekedFrame : timeToFrame(videoElement.currentTime);
     };
 
+    // Playback stall feedback. `waiting` fires when playback halts for lack of
+    // buffered data; light the buffering flag (which drives the "Loading Frame"
+    // pill) only while playing — a paused seek can also emit `waiting`, but that
+    // case is already covered by framePending and must not set this. `playing`
+    // fires when playback resumes after the stall, so clear it there.
+    const handleWaiting = () => {
+      if (isPlaying) viewport.video.loading.buffering = true;
+    };
+    const handlePlaying = () => {
+      viewport.video.loading.buffering = false;
+    };
+
     const handleResize = () => onResize();
     videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("play", handlePlay);
     videoElement.addEventListener("pause", handlePause);
+    videoElement.addEventListener("waiting", handleWaiting);
+    videoElement.addEventListener("playing", handlePlaying);
     videoElement.addEventListener("resize", handleResize);
 
     // HLS streams get a VideoStreamHandler (HQ buffering while paused, adaptive
@@ -249,9 +266,13 @@
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
         pendingFrameCallbackId = null;
       }
+      // Clear buffering so a stale true can't keep the pill up on the next video.
+      viewport.video.loading.buffering = false;
       videoElement.removeEventListener("seeked", handleSeeked);
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);
+      videoElement.removeEventListener("waiting", handleWaiting);
+      videoElement.removeEventListener("playing", handlePlaying);
       videoElement.removeEventListener("resize", handleResize);
       streamHandler?.destroy();
     };
