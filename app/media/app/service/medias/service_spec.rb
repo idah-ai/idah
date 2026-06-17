@@ -303,6 +303,105 @@ RSpec.describe Medias::Service, as: :system, database: true do
     ensure
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
+
+    it "rejects the whole archive when an entry's compression ratio is suspicious" do
+      require "zip"
+
+      zip_path = Tempfile.create(["bomb", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("bomb.bin")
+        zip.write("0" * 1_000_000) # ~1 MB of zeros deflates to ~1 KB → ratio far above 100:1
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "bomb.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      expect do
+        subject.upload(zip_file, resource: "res", project_id: "pid")
+      end.to raise_error(Verse::Error::ValidationFailed, /compression ratio/)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "skips a zip entry over the per-file size limit and keeps the rest" do
+      require "zip"
+      stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 10)
+
+      zip_path = Tempfile.create(["oversized", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("big.jpg")
+        zip.write("x" * 50) # 50 bytes > 10-byte cap (ratio stays well under 100:1)
+        zip.put_next_entry("small.jpg")
+        zip.write("ok") # 2 bytes
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "oversized.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      expect(result[:processed].map(&:filename)).to eq(["small.jpg"])
+      expect(result[:skipped].map { |s| s[:filename] }).to eq(["big.jpg"])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "rejects the whole archive when total uncompressed size exceeds the limit" do
+      require "zip"
+      stub_const("Medias::UploadConstants::MAX_TOTAL_UNCOMPRESSED_SIZE", 10)
+
+      zip_path = Tempfile.create(["toobig", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("a.jpg")
+        zip.write("x" * 8)
+        zip.put_next_entry("b.jpg")
+        zip.write("x" * 8) # cumulative 16 bytes > 10-byte total cap
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "toobig.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      expect do
+        subject.upload(zip_file, resource: "res", project_id: "pid")
+      end.to raise_error(Verse::Error::ValidationFailed, /total uncompressed size/)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "skips a direct upload over the per-file size limit" do
+      stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 1)
+
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "big.mp4",
+            type: "video/mp4",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "too_big_res",
+        key: "too_big_key",
+        project_id: "pid"
+      )
+
+      expect(result[:processed]).to be_empty
+      expect(result[:skipped].map { |s| s[:filename] }).to eq(["big.mp4"])
+    end
   end
 
   describe "#create" do
