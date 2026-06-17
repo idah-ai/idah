@@ -233,7 +233,8 @@
   });
 
   let showCrosshair = $derived(
-    screenDimensions[0] > 0 &&
+    !viewport.video.framePending &&
+      screenDimensions[0] > 0 &&
       screenDimensions[1] > 0 &&
       !isPlaying &&
       viewport.mode !== DEFAULT_MODE &&
