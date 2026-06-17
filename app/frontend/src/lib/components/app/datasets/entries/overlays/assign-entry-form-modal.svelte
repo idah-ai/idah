@@ -16,7 +16,7 @@
   interface Props extends FormModalBaseProps {
     entryRecord?: EntryRecord;
     entryIds: string[];
-    onAssigned?: (assignedEntries?: EntryRecord[]) => void;
+    onAssigned?: () => void;
   }
   let { action, open = $bindable(), title = "Assign to", entryRecord, entryIds, onAssigned }: Props = $props();
 
