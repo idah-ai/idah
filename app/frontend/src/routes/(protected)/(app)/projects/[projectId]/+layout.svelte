@@ -39,9 +39,7 @@
   // Records
   let project: ProjectRecord = $state(new ProjectRecord());
 
-  $effect(() => {
-    setContext("project", project);
-  });
+  setContext("project", project);
 
   // Lifecycle
   onMount(async () => {
@@ -60,13 +58,14 @@
   });
 
   // Functions
-  async function fetchProject() {
+  async function fetchProject(): Promise<ProjectRecord> {
     const projectRes = await projectsBackendDataSource.get(projectId, {
       fields: {
-        [ProjectRecord.type]: ["name"],
+        [ProjectRecord.type]: ["name", "description"],
       },
     });
-    project = projectRes.data;
+    Object.assign(project, projectRes.data);
+
     return project;
   }
 
@@ -92,6 +91,7 @@
               <Text size="h2" weight="semibold">{project.name}</Text>
               <ProjectDropdownMenu {projectId} align="center" />
             </div>
+            <Text size="sm">{project.description}</Text>
           {/snippet}
         </PageHeader>
 
