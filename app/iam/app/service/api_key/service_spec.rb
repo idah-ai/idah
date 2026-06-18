@@ -8,6 +8,7 @@ RSpec.describe ApiKey::Service, database: true do
   subject { described_class.new(auth_context) }
 
   let(:api_keys_repo) { ApiKey::Repository.new(auth_context) }
+  let(:api_key_system_repo) { ApiKey::Repository.new(Verse::Auth::Context[:system]) }
   let(:accounts_repo) { Account::Repository.new(auth_context) }
 
   before do
@@ -30,10 +31,11 @@ RSpec.describe ApiKey::Service, database: true do
     end
 
     describe "#index" do
-      it "returns a list of API keys" do
+      it "returns a list of API keys created by the current user" do
+        # Create a key owned by the current admin (id: 1)
         api_keys_repo.create(
           account_id: service_account_id,
-          name: "Test Key 1",
+          name: "My Key",
           key_label: "IDAH_1234...abcd",
           key_sha: Digest::SHA256.hexdigest("test_key_1"),
           permissions: %w[org_rw_all],
@@ -44,10 +46,24 @@ RSpec.describe ApiKey::Service, database: true do
           status: "active"
         )
 
+        # Create a key owned by another user (id: 2)
+        api_keys_repo.create(
+          account_id: service_account_id,
+          name: "Other User Key",
+          key_label: "IDAH_5678...efgh",
+          key_sha: Digest::SHA256.hexdigest("test_key_2"),
+          permissions: %w[org_rw_all],
+          scope_type: "org",
+          scope_value: ["org-456"],
+          expires_at: Time.now + 30 * 24 * 60 * 60,
+          revoked_at: nil,
+          status: "active"
+        )
+
         result = subject.index({})
 
-        expect(result.size).to eq(1)
-        expect(result[0].name).to eq("Test Key 1")
+        expect(result.size).to eq(2)
+        expect(result[0].name).to eq("My Key")
       end
     end
 
@@ -338,6 +354,61 @@ RSpec.describe ApiKey::Service, database: true do
 
         updated_key = api_keys_repo.find!(@expired_key.id)
         expect(updated_key.status).to eq("expired")
+      end
+    end
+  end
+
+  context "As Org Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+
+    let!(:service_account_id) do
+      accounts_repo.create(
+        name: "API Service Account",
+        email: "api_service@example.com",
+        role_name: "api_service",
+        enabled: true
+      )
+    end
+
+    describe "#index" do
+      before do
+        # Create a key that scope different organization
+        api_key_system_repo.create(
+          account_id: service_account_id,
+          name: "Other Org Key",
+          key_label: "IDAH_5678...efgh",
+          key_sha: Digest::SHA256.hexdigest("test_key_2"),
+          permissions: %w[org_rw_org],
+          scope_type: "org",
+          scope_value: ["org-456", "org-123"],
+          expires_at: Time.now + 30 * 24 * 60 * 60,
+          revoked_at: nil,
+          status: "active"
+        )
+      end
+
+      it "returns a list of API keys scoped to the current organization" do
+        allow(Api[:idah].dataset.projects).to receive(:index).and_return(
+          double(data: [double(id: "org-123", name: "Test Organization")])
+        )
+        # Create a key owned by the current org owner (id: 2)
+        api_keys_repo.create(
+          account_id: service_account_id,
+          name: "Org Owner Key",
+          key_label: "IDAH_1234...abcd",
+          key_sha: Digest::SHA256.hexdigest("test_key_1"),
+          permissions: %w[org_rw_all],
+          scope_type: "org",
+          scope_value: ["org-123"],
+          expires_at: Time.now + 30 * 24 * 60 * 60,
+          revoked_at: nil,
+          status: "active"
+        )
+
+        result = subject.index({})
+
+        expect(result.size).to eq(1)
+        expect(result[0].name).to eq("Org Owner Key")
       end
     end
   end

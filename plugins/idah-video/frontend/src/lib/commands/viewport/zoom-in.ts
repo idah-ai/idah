@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "viewport.zoom_in",
   group: "Viewport",
-  modes: ["default", "review"] as string[],
+  modes: ["editor", "review"] as string[],
   shortcut: "Equal",
   shortDescription: "Zoom in",
   longDescription: "Zoom into the viewport",

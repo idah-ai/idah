@@ -19,7 +19,7 @@
 
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { EDITOR_MODE, viewport } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
 
   import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
@@ -343,7 +343,7 @@
 
             <!-- Icon Actions -->
              <div class="ml-auto flex shrink-0 items-center">
-              {#if mode == DEFAULT_MODE}
+              {#if mode == EDITOR_MODE}
                 {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
                   <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                     <CategoryAction

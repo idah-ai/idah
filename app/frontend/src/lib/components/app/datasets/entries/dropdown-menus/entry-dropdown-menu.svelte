@@ -92,7 +92,7 @@
       openConfirmUnassignEntryModal = false;
       showToast.success({
         title: "Entry unassigned",
-        description: `The entry "${entry.name}" has been unassigned.`,
+        description: `The entry "${entry.name || entry.id}" has been unassigned.`,
       });
     } catch (error) {
       showToast.error({

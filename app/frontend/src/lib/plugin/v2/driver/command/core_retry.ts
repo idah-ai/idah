@@ -4,7 +4,7 @@ export function register(driver: IdahDriverV2) {
   driver.command.register({
     name: "core.retry",
     group: "General",
-    modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     shortcut: null,
     shortDescription: "Retry sync",
     longDescription:

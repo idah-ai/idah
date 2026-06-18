@@ -23,5 +23,4 @@ api/project_rw_org:
 
     # Sync Service - Read Write (Project level)
     - "sync:jobs.read.as_org_owner"
-    - "sync:exports.create.as_org_owner"
-    - "sync:exports.read.as_org_owner"
+    - "sync:exports.*.as_org_owner"
