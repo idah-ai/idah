@@ -11,7 +11,7 @@ class EntriesExpo < BaseExpo
   MD
 
   json_api Entry::Record do
-    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by"
+    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by", "entry_stats"
     show
     index do
       allowed_filters :resource__match,
