@@ -6,11 +6,12 @@
 import { viewport, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
 
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { DEFAULT_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
   name: "viewport.zoom_in",
   group: "Viewport",
-  modes: ["default", "review"] as string[],
+  modes: [DEFAULT_MODE, REVIEW_MODE] as string[],
   shortcut: "Equal",
   shortDescription: "Zoom in",
   longDescription: "Zoom into the viewport",

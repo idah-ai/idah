@@ -179,7 +179,7 @@ export interface IToolbarItem {
   icon: string;
   /** Label for tooltips. */
   label: string;
-  /** The mode this item belongs to (e.g. "default", "idah-image:bounding-box"). */
+  /** The mode this item belongs to (e.g. DEFAULT_MODE, "idah-image:bounding-box"). */
   mode: string;
   /** Optional group name (items in the same group are rendered together; `null` => always first). */
   group: string | null;

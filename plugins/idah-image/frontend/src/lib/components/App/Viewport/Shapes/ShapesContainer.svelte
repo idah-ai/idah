@@ -22,17 +22,17 @@
   import Crosshair from "./Crosshair.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
 
-  import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import type { IImageAnnotationRecord } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, type IImageAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
 
   // ── Types ──────────────────────────────────────────────────────────────
@@ -43,16 +43,14 @@
   }
 
   type Props = {
-    frame: number;
     annotations_promise: Promise<IImageAnnotationRecord[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
-    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
-    onChangeFrame?: (newFrame: number) => void;
   };
 
-  let { frame, children, onSelection, onAddNewNote }: Props = $props();
+  let { children, onSelection, onAddNewNote }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -109,9 +107,6 @@
       (acc, ann) => {
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
-        // Skip annotations outside the current frame range
-        const { start, end } = (ann.shape ?? {}) as { start?: number; end?: number };
-        if (start == null || end == null || frame < start || frame > end) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {
           acc.selected.push(ann);
@@ -142,12 +137,10 @@
   });
 
   // Derive tool selection from the currently selected annotation's component
-  let selAnnotation = $derived(
-    selection.isAnnotation() ? (selection.value as IAnnotationSelection).annotation : undefined,
-  );
+  let selAnnotation = $derived(selection.value);
 
   let toolSelection = $derived.by(() => {
-    const selId = selection.value?.type === "annotation" ? selection.value.annotation?.id : null;
+    const selId = selection.value?.id ?? null;
     if (!selId) return undefined;
     const idx = visibleAnnotations.findIndex((a) => a.id === selId);
     if (idx === -1) return undefined;
@@ -158,8 +151,8 @@
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
-  let isBoundingBoxMode = $derived(viewport.mode === BOUNDING_BOX_MODE);
-  let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
+  let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
+  let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
 
   // ── Panning state ────────────────────────────────────────────────────
@@ -310,8 +303,8 @@
       position: {
         x: normalizedMousePosition[0],
         y: normalizedMousePosition[1],
-        start: frame,
-        end: frame,
+        start: 0,
+        end: 0,
         target_size: screenDimensions,
         zoom_info: {
           scale: viewport.workspace.transform.scale,
@@ -323,7 +316,13 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
-    onSelection(viewport.mode, frame, points, angle, annId);
+    const ann = data.annotations?.items.find((a) => a.id === annId);
+    if (!ann || !data.annotations) return;
+    const updatedShape: IImageAnnotationShape = { type: ann.shape.type, points, angle };
+    data.annotations.update({
+      ...ann,
+      shape: updatedShape,
+    } as any);
   }
 
   function handleClick(ann: IAnnotationRecord) {
@@ -370,7 +369,6 @@
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
-          {frame}
           {onSelection}
         />
       {/if}
@@ -382,7 +380,6 @@
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
-          {frame}
           {onSelection}
         />
       {/if}

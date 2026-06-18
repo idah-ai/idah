@@ -47,6 +47,7 @@ vi.mock("./media.svelte", () => ({
 // Imports (after mocks are set up)
 // ---------------------------------------------------------------------------
 import { BOUNDING_BOX_MODE, DEFAULT_MODE, POLYGON_MODE, viewport } from "./viewport.svelte";
+import { REVIEW_MODE } from "$lib/types";
 
 // Helpers
 function setMediaDimensions(w: number, h: number) {
@@ -95,7 +96,7 @@ describe("isCreationMode", () => {
   });
 
   it("returns false for unknown mode strings", () => {
-    viewport.mode = "review";
+    viewport.mode = REVIEW_MODE;
     expect(viewport.isCreationMode).toBe(false);
     viewport.mode = "some-random-mode";
     expect(viewport.isCreationMode).toBe(false);

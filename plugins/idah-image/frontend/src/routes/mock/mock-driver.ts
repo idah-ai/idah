@@ -23,7 +23,7 @@ import type {
   ToolbarItemOptions,
   Unsubscribe,
 } from "$idah/v2/types";
-import type { IImageAnnotationShape, IImageAnnotationValue } from "$lib/types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationValue } from "$lib/types";
 
 import { modKey } from "$lib/utils/browser";
 import { uuidv7 } from "uuidv7";
@@ -41,42 +41,29 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
   {
     id: uuidv7(),
     shape: {
-      end: 0,
-      type: "idah-image:bounding-box",
-      start: 0,
-      frames: [
-        {
-          angle: 0,
-          frame: 0,
-          points: [
-            [0.030237486417802006, 0.2333274536145938],
-            [0.03965013702021159, 0.2333274536145938],
-            [0.03965013702021159, 0.24533327001214162],
-            [0.030237486417802006, 0.24533327001214162],
-          ],
-        },
+      type: IMAGE_BOUNDING_BOX,
+      points: [
+        [0.030237486417802006, 0.2333274536145938],
+        [0.03965013702021159, 0.2333274536145938],
+        [0.03965013702021159, 0.24533327001214162],
+        [0.030237486417802006, 0.24533327001214162],
       ],
+      angle: 0,
     } as IImageAnnotationShape,
     value: { category: "vehicles/car", label: "car" },
   },
   {
     id: uuidv7(),
     shape: {
-      end: 0,
       type: "idah-image:polygon",
-      start: 0,
-      frames: [
-        {
-          frame: 0,
-          points: [
-            [0.39446366782006914, 0.6193771626297577],
-            [0.3391003460207612, 0.6159169550173011],
-            [0.3241061130334486, 0.7197231833910035],
-            [0.38638985005767007, 0.7283737024221454],
-            [0.4025374855824682, 0.6972318339100346],
-          ],
-        },
+      points: [
+        [0.39446366782006914, 0.6193771626297577],
+        [0.3391003460207612, 0.6159169550173011],
+        [0.3241061130334486, 0.7197231833910035],
+        [0.38638985005767007, 0.7283737024221454],
+        [0.4025374855824682, 0.6972318339100346],
       ],
+      angle: 0,
     } as IImageAnnotationShape,
     value: { category: "pedestrian", label: "pedestrian" },
   },
@@ -269,7 +256,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   // ── Default project config ──────────────────────────────────────────
   private _config: IConfig = {
-    "idah-image:bounding-box": {
+    IMAGE_BOUNDING_BOX: {
       values: [
         { id: "vehicles/car", color: "#F6402B", label: "Car", text_color: "#FFFFFF", description: "A car" },
         { id: "vehicles/bus", color: "#EB1461", label: "Bus", text_color: "#FFFFFF", description: "A bus" },
@@ -356,7 +343,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     meta: { duration: 0, fps: 0, width: 1920, height: 1080 },
   };
   private _workflowStep = "annotate";
-  private _mode = "default";
+  private _mode = DEFAULT_MODE;
   private _ready = false;
 
   // ── Callback stores ───────────────────────────────────────────────────
@@ -385,7 +372,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     this.command.register({
       name: "core.undo",
       group: "General",
-      modes: ["default", "review", "idah-image:bounding-box", "idah-image:polygon", "note"],
+      modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Control+Z",
       shortDescription: "Undo",
       longDescription: "Undo the last action",
@@ -413,7 +400,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     this.command.register({
       name: "core.redo",
       group: "General",
-      modes: ["default", "review", "idah-image:bounding-box", "idah-image:polygon", "note"],
+      modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Control+Shift+Z",
       shortDescription: "Redo",
       longDescription: "Redo the last undone action",
@@ -441,7 +428,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     this.command.register({
       name: "core.exit_mode",
       group: "General",
-      modes: ["default", "review", "idah-image:bounding-box", "idah-image:polygon", "note"],
+      modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Escape",
       shortDescription: "Exit current mode",
       longDescription: "Return to the default selection mode",
@@ -455,7 +442,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
           longDescription: null,
         },
         do() {
-          driver.setMode("default");
+          driver.setMode(DEFAULT_MODE);
         },
         isCombinable() {
           return false;

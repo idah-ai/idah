@@ -2,6 +2,7 @@
 // V2 Command Manager — register, call, undo / redo
 // ---------------------------------------------------------------------------
 import type { ICommandAction, ICommandDescriptor, ICommandStackEntry, IShortcut } from "$idah/v2/types";
+import { DEFAULT_MODE } from "$lib/types";
 import { isMac } from "$lib/utils/browser";
 import { buildKeyCombination } from "./shortcut-utils";
 
@@ -26,7 +27,7 @@ export class CommandManagerV2 {
   private _chain: Promise<unknown> = Promise.resolve();
 
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
-  currentMode: string = "default";
+  currentMode: string = DEFAULT_MODE;
 
   /**
    * Normalize shortcut strings so that `Control` is replaced with `Meta` on

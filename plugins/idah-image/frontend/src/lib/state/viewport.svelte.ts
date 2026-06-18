@@ -1,11 +1,8 @@
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/types";
 import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
 
 // List of viewport modes
-export const DEFAULT_MODE = "default";
-export const NOTE_MODE = "note";
-export const BOUNDING_BOX_MODE = "idah-image:bounding-box";
-export const POLYGON_MODE = "idah-image:polygon";
 
 export const VIEWPORT_MIN_ZOOM = 0.05;
 export const VIEWPORT_MAX_ZOOM = 100;
@@ -18,7 +15,7 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return ["idah-image:polygon", "idah-image:bounding-box"].includes(this.#mode);
+    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX].includes(this.#mode);
   }
 
   set mode(val: string) {

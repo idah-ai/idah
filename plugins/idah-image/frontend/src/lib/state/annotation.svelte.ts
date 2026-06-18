@@ -20,15 +20,13 @@ export const annotation = {
   isLocked: (target: IAnnotationRecord | string) => {
     if(typeof target === "string") return lockedIds.includes(target)
 
-    return lockedIds.includes(target.id) ||
-      (target.metadata?.group_id != null && lockedIds.includes(target.metadata.group_id));
+    return lockedIds.includes(target.id);
   },
 
   isHidden: (target: IAnnotationRecord | string) => {
     if (typeof target === "string") return hiddenIds.includes(target)
 
-    return hiddenIds.includes(target.id) ||
-      (target.metadata?.group_id != null && hiddenIds.includes(target.metadata.group_id));
+    return hiddenIds.includes(target.id);
   },
 
   clearLocked: () => {
