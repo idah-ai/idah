@@ -47,9 +47,9 @@ module Medias
       if zip_file?(file)
         begin
           Zip::File.open_buffer(file.tempfile) do |zip|
-            zip.each do |zip_entry|
-              next if system_artifact?(zip_entry) # skip unrelated artifacts in compressed
-
+            # Pass 1 (scan_zip_entries) inspects headers only and rejects bombs
+            # before anything is extracted; pass 2 extracts only the survivors.
+            scan_zip_entries(zip, skipped).each do |zip_entry|
               ext = File.extname(zip_entry.name).downcase
 
               entry_io = StreamWithPath.new(
@@ -91,20 +91,24 @@ module Medias
                 "Resource #{resource} with key #{key} already exists"
         end
 
-        result = store_media(
-          io: file.tempfile,
-          filename: file.filename,
-          mime_type: file.type,
-          resource:,
-          key:,
-          project_id:,
-          modality:
-        )
-
-        if result.is_a?(Medias::Record)
-          results << result
+        if file.tempfile.size > UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE
+          skipped << { filename: file.filename, message: file_too_large_message }
         else
-          skipped << { filename: file.filename, message: result }
+          result = store_media(
+            io: file.tempfile,
+            filename: file.filename,
+            mime_type: file.type,
+            resource:,
+            key:,
+            project_id:,
+            modality:
+          )
+
+          if result.is_a?(Medias::Record)
+            results << result
+          else
+            skipped << { filename: file.filename, message: result }
+          end
         end
       end
 
@@ -119,30 +123,59 @@ module Medias
         File.extname(file.filename.to_s).downcase == ".zip"
     end
 
-    # OS-generated metadata entries that should be silently ignored when
-    # extracting a zip archive. No zip library handles this automatically —
-    # it is the application's responsibility.
+    # Pass 1: inspect entry headers only (no decompression) to reject zip bombs
+    # before extracting anything. The compression-ratio and total-uncompressed
+    # guards reject the whole archive (raise); a single oversized entry is added
+    # to +skipped+ and excluded. Returns the entries to extract in pass 2.
+    def scan_zip_entries(zip, skipped)
+      to_process = []
+      total_uncompressed = 0
 
-    # Exact filenames (matched against the entry's basename).
-    SYSTEM_ARTIFACT_FILES = [
-      ".DS_Store",   # macOS folder-view settings
-      "Thumbs.db",   # Windows thumbnail cache
-      "ehthumbs.db", # Windows (legacy) thumbnail cache
-      "desktop.ini"  # Windows folder configuration
-    ].freeze
+      zip.each do |entry|
+        next if system_artifact?(entry) # also filters directories
 
-    # Directory names that mark the entry as an artifact when present anywhere in its path.
-    SYSTEM_ARTIFACT_DIRS = [
-      "__MACOSX" # macOS AppleDouble container (._filename sidecars)
-    ].freeze
+        if entry.compressed_size.positive? &&
+           entry.size.to_f / entry.compressed_size > UploadConstants::MAX_COMPRESSION_RATIO
+          raise Verse::Error::ValidationFailed,
+                "Zip archive rejected: '#{entry.name}' has a suspicious compression ratio"
+        end
+
+        if entry.size > UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE
+          skipped << { filename: entry.name, message: file_too_large_message }
+          next # not extracted, so it must not count toward the total
+        end
+
+        total_uncompressed += entry.size
+        if total_uncompressed > UploadConstants::MAX_TOTAL_UNCOMPRESSED_SIZE
+          raise Verse::Error::ValidationFailed,
+                "Zip archive rejected: total uncompressed size exceeds the " \
+                "#{human_size(UploadConstants::MAX_TOTAL_UNCOMPRESSED_SIZE)} limit"
+        end
+
+        to_process << entry
+      end
+
+      to_process
+    end
+
+    def file_too_large_message
+      "File too large (max #{human_size(UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE)} per file)"
+    end
+
+    # Human-readable byte size for error messages, e.g. 1073741824 -> "1 GB".
+    def human_size(bytes)
+      units = [["GB", 1024 ** 3], ["MB", 1024 ** 2], ["KB", 1024]]
+      unit, divisor = units.find { |_, size| bytes >= size } || ["bytes", 1]
+      "#{bytes / divisor} #{unit}"
+    end
 
     def system_artifact?(entry)
       return true unless entry.file?
 
       basename = File.basename(entry.name)
 
-      return true if (entry.name.split("/") & SYSTEM_ARTIFACT_DIRS).any?
-      return true if SYSTEM_ARTIFACT_FILES.include?(basename)
+      return true if (entry.name.split("/") & UploadConstants::SYSTEM_ARTIFACT_DIRS).any?
+      return true if UploadConstants::SYSTEM_ARTIFACT_FILES.include?(basename)
 
       # macOS AppleDouble resource forks ("._filename") may also appear loose,
       # outside the __MACOSX container.

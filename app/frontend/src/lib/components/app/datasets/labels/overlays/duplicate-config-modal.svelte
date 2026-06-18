@@ -14,14 +14,15 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import type { IConfig } from "@/plugin/interface/Activity";
+  import type { IConfig } from "@/plugin/v2/types";
   import type { Resource } from "@/security/types";
 
   // Props
   interface Props extends FormModalBaseProps {
     labelConfig: IConfig;
+    modality: string;
   }
-  let { action, open = $bindable(), title, labelConfig }: Props = $props();
+  let { action, open = $bindable(), title, labelConfig, modality }: Props = $props();
 
   // Variables
   const resource: Resource = "dataset:datasets";
@@ -43,7 +44,7 @@
     submitting = false;
   }
 
-  async function submit() {
+  async function submit(): Promise<void> {
     submitting = true;
 
     try {
@@ -60,7 +61,7 @@
         selectedDatasets = allDatasetsRes.data.map((dataset) => dataset.id);
       }
 
-      selectedDatasets.forEach(async (datasetId) => {
+      for (const datasetId of selectedDatasets) {
         await datasetsBackendDataSource.update(
           datasetId,
           {
@@ -72,7 +73,7 @@
             showErrorToast: false,
           },
         );
-      });
+      }
 
       closeThisModal();
       showToast.success({
@@ -113,6 +114,7 @@
         listOptions={{
           filters: {
             project_id: projectId,
+            modality,
           },
           sort: ["name"],
         }}
