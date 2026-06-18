@@ -125,6 +125,107 @@ RSpec.describe ProjectMember, database: true do
             %w[project_owner@example.com annotator@example.com reviewer@example.com]
           )
         end
+
+        context "with project scopes only (no org scopes)" do
+          before do
+            # Override custom_scopes to use project scopes instead of org scopes
+            # This exercises the elsif project_ids branch
+            allow(current_auth_context).to receive(:custom_scopes).and_return(
+              { project: [project_org1] }
+            )
+          end
+
+          it "returns project members scoped to the specified project for :read action" do
+            result = subject.scoped(:read).all
+
+            expect(result.size).to eq(3)
+
+            expect(result.map { |r| r[:email] }).to match_array(
+              %w[project_owner@example.com annotator@example.com reviewer@example.com]
+            )
+          end
+
+          it "does not include members from other projects" do
+            result = subject.scoped(:read).all
+
+            expect(result.map { |r| r[:project_id] }).to all(eq(project_org1))
+          end
+        end
+
+        context "with neither org nor project scopes" do
+          before do
+            allow(current_auth_context).to receive(:custom_scopes).and_return({})
+          end
+
+          it "returns no results (Sequel.lit false)" do
+            result = subject.scoped(:read).all
+
+            expect(result.size).to eq(0)
+          end
+        end
+      end
+    end
+
+    describe "#custom_filter :organization_id__in" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(system_auth_context) }
+
+        it "filters by organization id" do
+          result = subject.index({ organization_id__in: ["1"] })
+
+          expect(result.size).to eq(3)
+          expect(result.map { |r| r[:email] }).to match_array(
+            %w[project_owner@example.com annotator@example.com reviewer@example.com]
+          )
+        end
+
+        it "filters by multiple organization ids" do
+          result = subject.index({ organization_id__in: %w[1 2] })
+
+          expect(result.size).to eq(4)
+        end
+
+        it "returns no results for non-existent organization" do
+          result = subject.index({ organization_id__in: ["999"] })
+
+          expect(result.size).to eq(0)
+        end
+      end
+    end
+
+    describe "#custom_filter :enabled" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(system_auth_context) }
+
+        let!(:disabled_member) do
+          member = project_member_repo.create(
+            project_id: project_org1,
+            account_id: 99,
+            name: "Disabled User",
+            email: "disabled@example.com",
+            role: "annotator",
+            invited_by_id: 1
+          )
+          project_member_repo.update!(member, { disabled_at: Time.now })
+          project_member_repo.find!(member)
+        end
+
+        it "returns only enabled members when filter is true" do
+          result = subject.index({ enabled: "true" })
+
+          expect(result.map { |r| r[:email] }).not_to include("disabled@example.com")
+          result.each do |member|
+            expect(member.disabled_at).to be_nil
+          end
+        end
+
+        it "returns only disabled members when filter is false" do
+          result = subject.index({ enabled: "false" })
+
+          expect(result.size).to eq(1)
+          expect(result[0].email).to eq("disabled@example.com")
+          expect(result[0].disabled_at).not_to be_nil
+        end
       end
     end
   end
