@@ -41,6 +41,14 @@ counter:
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
 
+idah:
+  plugins:
+    # Path to load plugins from, supports glob patterns.
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins/**") %>
+
+    # Auto reload modules when files change (only manual plugins)
+    watch: <%= !!ENV["IDAH_DEV_PLUGIN"] %>
+
 credentials:
   account: <%= ENV.fetch("IDAH_SERVICE_ACCOUNT") %>
   password: <%= ENV.fetch("IDAH_SERVICE_PASSWORD") %>

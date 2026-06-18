@@ -12,6 +12,7 @@ import type {
   INotesDriverV2,
   ICommandDriverV2,
   IToolbarDriverV2,
+  IStatsDriverV2,
   IModeEvent,
   ISyncEvent,
   ISyncErrorEvent,
@@ -47,6 +48,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2;
   readonly notes: INotesDriverV2;
+  readonly stats: IStatsDriverV2;
 
   // ── Activity context ──────────────────────────────────────────────────
 
@@ -106,6 +108,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     const notesAdapter = new NotesDriverAdapter(this._id);
     this.notes = notesAdapter.sealed();
     this.#notesAdapter = notesAdapter;
+
+    // Build stats driver — core stats from this driver + plugin-registered providers
+    this.stats = new StatsDriverAdapter(this);
 
     // ── Register default commands ─────────────────────────────────────
     registerCommands(this);
@@ -311,6 +316,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get notes() {
         return driver.notes;
       },
+      get stats() {
+        return driver.stats;
+      },
 
       setMode: driver.setMode.bind(driver),
       onModeChange: driver.onModeChange.bind(driver),
@@ -332,6 +340,7 @@ import { CommandDriverAdapter } from "./adapter/command";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
+import { StatsDriverAdapter } from "./adapter/stats";
 
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {

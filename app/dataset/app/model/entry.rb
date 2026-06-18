@@ -43,6 +43,7 @@ module Entry
                foreign_key: :reviewed_by_id
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
+    has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
@@ -276,6 +277,23 @@ module Entry
         transaction do
           # Use read scope when updating as anyone with read access can submit
           update!(id, attributes, scope: scoped(:read))
+        end
+      end
+    end
+
+    event(name: "errored")
+    def error(id, attributes)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id
+      )
+
+      no_event do
+        transaction do
+          update!(id, attributes)
         end
       end
     end

@@ -151,7 +151,7 @@ module Entry
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
 
         entry_workflow.error!
-        entries.update!(
+        entries.error(
           entry.id,
           {
             wf_step: entry_workflow.aasm.current_state.to_s,
