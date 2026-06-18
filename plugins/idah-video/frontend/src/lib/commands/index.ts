@@ -47,9 +47,6 @@ import { register as registerGroupToggleEditability } from "./group/toggle_edita
 import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
 import { register as registerGroupToggleVisibilitySolo } from "./group/toggle_visibility_solo";
 
-import { register as registerNoteAdd } from "./note/add";
-import { register as registerNoteGoto } from "./note/goto";
-
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
@@ -85,8 +82,6 @@ import { register as registerCategoryToggleVisibilitySolo } from "./category/tog
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModePolygon } from "./mode/polygon";
-import { register as registerModeNote } from "./mode/note";
-
 /**
  * Register all commands on the given V2 driver.
  * Safe to call multiple times (the V2 command manager throws on duplicate
@@ -119,10 +114,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerGroupToggleVisibilitySolo(driver);
   registerGroupToggleEditability(driver);
 
-  // ── Note ──────────────────────────────────────────────────────────────
-  registerNoteAdd(driver);
-  registerNoteGoto(driver);
-
   // ── Annotation ────────────────────────────────────────────────────────
   registerAnnotationAdd(driver);
   registerAnnotationDelete(driver);
@@ -149,8 +140,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerModeSelect(driver);
   registerModeBoundingBox(driver);
   registerModePolygon(driver);
-  registerModeNote(driver);
-
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
   registerTimelineGoToFirst(driver);

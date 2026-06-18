@@ -9,7 +9,6 @@
 // collection grows beyond a threshold.
 // ---------------------------------------------------------------------------
 import { uuidv7 } from "uuidv7";
-import { selection } from "$lib/state/selection.svelte";
 
 /** Minimum interface an item must expose. */
 export interface DataItem {
@@ -497,26 +496,147 @@ export function createDataStore<T extends DataItem>(
 //   data.annotations.preloadRange(-Infinity, Infinity);
 //   console.log(data.annotations.items);
 
+import type { INoteRecord } from "$idah/v2/types";
 import { getDriver } from "$lib/state/driver.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
+import { selection } from "$lib/state/selection.svelte";
 
 let _annotations: DataStore<AnnotationItem> | null = $state(null);
-let _notes: DataStore<NoteItem> | null = $state(null);
+
+let _noteList: INoteRecord[] = $state([]);
+let _unsubNotes: (() => void) | null = null;
+
+/** A pending (ghost) marker for a note being created.
+ *
+ * - `"entry"` type stores a fixed scene pixel position.
+ * - `"annotation"` type stores the annotation ID and an offset from its centroid
+ *   (in normalised 0-1 media space) so it tracks the annotation across frames.
+ */
+export interface PendingNoteEntry {
+  type: "entry";
+  /** Scene normalized position */
+  x: number;
+  y: number;
+  /** The frame the note was created at — marker hides when current frame differs */
+  frame: number;
+}
+
+export interface PendingNoteAnnotation {
+  type: "annotation";
+  /** Annotation ID the note is anchored to */
+  annotationId: string;
+  /** Normalised offset from the annotation centroid or position in media (0-1) */
+  x: number;
+  y: number;
+  /** The frame the note was created at */
+  frame: number;
+}
+
+export type PendingNoteScene = PendingNoteEntry | PendingNoteAnnotation | null;
+
+let _pendingNoteScene: PendingNoteScene = $state(null);
+
+export function setPendingNoteScene(pos: PendingNoteScene): void {
+  _pendingNoteScene = pos;
+}
+
+export const pendingNoteScene = {
+  get value(): PendingNoteScene { return _pendingNoteScene; },
+};
 
 /** Initialise the stores from the global driver. Call once after initDriver(). */
 export function initDataStores(): void {
   const d = getDriver();
   if (!d) throw new Error("Driver not initialized — call initDriver() first");
   _annotations = createAnnotationStore(d.annotations);
-  _notes = createNoteStore(d.notes);
   _annotations.preloadRange(-Infinity, Infinity);
-  _notes.preloadRange(-Infinity, Infinity);
+
+  _unsubNotes = d.notes.onNotesChange((notes: INoteRecord[]) => {
+    _noteList = notes;
+  });
+
+  // onFocusNote is registered in NoteMarkers.svelte onMount
 }
 
+/** Cleanup note subscriptions — call from plugin.close(). */
+export function destroyDataStores(): void {
+  _unsubNotes?.();
+  _unsubNotes = null;
+  _annotations = null;
+  _noteList = [];
+}
+
+/**
+ * Reactive note list — kept in sync via onNotesChange.
+ * Read-only accessor for the plugin's NoteMarkers component.
+ */
+export const notes = {
+  get list(): INoteRecord[] { return _noteList; },
+};
+
+let _activeNoteId: string | null = $state(null);
+
+/**
+ * The currently selected/focused note ID.
+ * Set by NoteMarkers when a marker is clicked, or by timeline when a note keyframe is clicked.
+ * NoteMarkers uses this to trigger the position-reporting rAF loop.
+ */
+export const activeNoteId = {
+  get value(): string | null { return _activeNoteId; },
+  set value(id: string | null) { _activeNoteId = id; },
+};
+
 /** Global stores — auto-initialised from the V2 driver. */
+/**
+ * Focus a note — seek to its anchor frame, center the annotation (or fit viewport),
+ * set it as the active note, and notify the core.
+ * The position-reporting $effect in NoteMarkers.svelte handles the follow-up
+ * `reportNotePosition` call automatically.
+ */
+export function focusNote(note: INoteRecord): void {
+  const driver = getDriver();
+
+  // Clear any pending (ghost) note marker — we're focusing a real note now.
+  // This prevents stale ghost markers from remaining in the timeline or
+  // causing NoteMarkers to report the wrong overlay position.
+  setPendingNoteScene(null);
+
+  // 1. Seek to frame
+  const pos = note.anchor.position as { frame?: number; x?: number; y?: number } | undefined;
+  if (pos?.frame !== undefined) {
+    viewport.video.currentFrame.value = pos.frame;
+  }
+
+  // 2. Select & center annotation if annotation-anchored
+  if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
+    const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+    if (ann) {
+      selection.selectAnnotation(ann);
+      driver.command.call("selection.center");
+    } else {
+      // Annotations not loaded yet — defer until they are
+      const stop = $effect.root(() => {
+        $effect(() => {
+          const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+          if (!found) return;
+          selection.selectAnnotation(found);
+          driver.command.call("selection.center");
+          stop();
+        });
+      });
+    }
+  } else {
+    viewport.workspace.fitToViewport();
+  }
+
+  // 3. Set active note and notify core
+  activeNoteId.value = note.id;
+  driver.notes.selectNote(note.id);
+  // reportNotePosition will follow automatically via NoteMarkers' $effect
+}
+
 export const data: {
   annotations: DataStore<AnnotationItem> | null;
-  notes: DataStore<NoteItem> | null;
 } = {
   get annotations() { return _annotations; },
-  get notes() { return _notes; },
 };

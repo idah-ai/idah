@@ -18,7 +18,7 @@ import type { IVideoAnnotationShape } from "$lib/types";
 export const command = {
   name: "timeline.focus",
   group: "Timeline",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "Control+F",
   shortDescription: "Focus timeline",
   longDescription: "Zoom the timeline to the selected group or annotation's frame range",
