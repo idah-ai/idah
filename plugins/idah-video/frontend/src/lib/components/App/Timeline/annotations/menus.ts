@@ -4,6 +4,7 @@ import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
 import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -47,7 +48,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Delete group",
           icon: Trash2Icon,
           destructive: true,
-          disabled: !isEditable(),
+          disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete annotation group",

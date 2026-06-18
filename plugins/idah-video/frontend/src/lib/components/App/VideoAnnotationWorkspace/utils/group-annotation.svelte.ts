@@ -113,14 +113,16 @@ export function transformAnnotationsToTracks(props: {
   const { annotations, labelConfig } = props;
   const groupedAnnotations = groupAnnotations(annotations);
 
-  const tracks = groupedAnnotations.map((group, groupIndex) => {
+  const tracks: TrackData[] = [];
+
+  groupedAnnotations.forEach((group) => {
     let [groupTitle, groupTitleWithCategory] = getGroupTitle({ annotationGroup: group, labelConfig: labelConfig });
 
-    return {
+    tracks.push({
       id: group.groupId,
       title: groupTitleWithCategory,
       subtitle: groupTitle,
-      top: groupIndex * TRACK_HEIGHT,
+      top: (tracks.length) * TRACK_HEIGHT,
       items: group.annotations.map((annotation) => ({
         trackId: (annotation.metadata?.id ?? annotation.id) as string,
         startRange: annotation.shape.start,
@@ -128,7 +130,8 @@ export function transformAnnotationsToTracks(props: {
         rawData: annotation,
         component: AnnotationTrackBlock,
       })),
-    };
+    });
   });
+
   return tracks;
 }

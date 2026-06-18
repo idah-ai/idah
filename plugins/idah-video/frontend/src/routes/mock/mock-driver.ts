@@ -10,8 +10,12 @@ import type {
   INotesDriverV2,
   ICommandDriverV2,
   IToolbarDriverV2,
+  IStatsDriverV2,
+  IStatProvider,
   IAnnotationRecord,
   INoteRecord,
+  INoteAnchor,
+  INoteScreenPosition,
   IFilter,
   ICommandAction,
   ICommandDescriptor,
@@ -287,11 +291,23 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
 const SAMPLE_NOTES: INoteRecord[] = [
   {
     id: "note-v2-001",
-    annotation_id: "ann-v2-001",
+    anchor: {
+      annotation_id: "ann-v2-001",
+      anchor_type: "annotation",
+      position: { x: 0.5, y: 0.3 },
+    },
     content_md: "Check this car — front bumper unclear",
     resolved: false,
   },
-  { id: "note-v2-002", annotation_id: "ann-v2-002", content_md: "Bus has a logo on the side", resolved: false },
+  {
+    id: "note-v2-002",
+    anchor: {
+      annotation_id: "ann-v2-002",
+      anchor_type: "annotation",
+    },
+    content_md: "Bus has a logo on the side",
+    resolved: false,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -428,29 +444,58 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
 }
 
 // ---------------------------------------------------------------------------
-// Adapter: notes
+// Adapter: notes — Observer-based (mock)
 // ---------------------------------------------------------------------------
 class NotesDriverAdapter implements INotesDriverV2 {
+  private notesChangeListeners: Set<(notes: INoteRecord[]) => void> = new Set();
+  private focusNoteListeners: Set<(note: INoteRecord | null) => void> = new Set();
+
   constructor(private store: InMemoryStore<INoteRecord>) {}
 
-  registerField(name: string, fn: (note: INoteRecord) => unknown): void {
-    this.store.registerField(name, fn);
+  // ── Core → Plugin observers ────────────────────────────────────────────
+
+  onNotesChange(cb: (notes: INoteRecord[]) => void): Unsubscribe {
+    this.notesChangeListeners.add(cb);
+    queueMicrotask(() => {
+      cb(this.store.all());
+    });
+    return () => this.notesChangeListeners.delete(cb);
   }
 
-  async fetch(filter?: IFilter): Promise<INoteRecord[]> {
-    return this.store.fetch(filter);
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe {
+    this.focusNoteListeners.add(cb);
+    return () => this.focusNoteListeners.delete(cb);
   }
 
-  async update(id: string, data: Partial<INoteRecord>): Promise<void> {
-    return this.store.update(id, data);
+  // ── Plugin → Core commands ─────────────────────────────────────────────
+
+  reportNotePosition(_position: INoteScreenPosition): void {
+    // Mock: no-op
   }
 
-  async delete(id: string): Promise<void> {
-    return this.store.delete(id);
+  selectNote(_noteId: string | null): void {
+    // Mock: no-op
   }
 
-  async create(data: INoteRecord): Promise<INoteRecord> {
-    return this.store.create(data);
+  requestCreateNote(_anchor: INoteAnchor): void {
+    // Mock: no-op
+  }
+
+  // ── Mock helpers ────────────────────────────────────────────────────────
+
+  /** Simulate a note being focused by the core. */
+  mockFocusNote(note: INoteRecord | null): void {
+    for (const cb of this.focusNoteListeners) {
+      cb(note);
+    }
+  }
+
+  /** Simulate notes changing externally. */
+  mockEmitNotesChange(): void {
+    const notes = this.store.all();
+    for (const cb of this.notesChangeListeners) {
+      cb(notes);
+    }
   }
 }
 
@@ -585,6 +630,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue>;
   readonly notes: INotesDriverV2;
+  readonly stats: IStatsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
 
@@ -619,6 +665,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
     this.annotations = new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
+
+    // Minimal stats driver — collects whatever providers register (no core stats in the mock)
+    const statProviders: IStatProvider[] = [];
+    this.stats = {
+      register: (provider: IStatProvider) => statProviders.push(provider),
+      collect: async () => (await Promise.all(statProviders.map((p) => p.collect()))).flat(),
+    };
 
     // ── Register default idah commands ────────────────────────────────
 
@@ -698,7 +751,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           longDescription: null,
         },
         do() {
-          driver.setMode("default");
+          driver.setMode("editor");
         },
         isCombinable() {
           return false;

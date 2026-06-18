@@ -203,24 +203,26 @@
     </div>
 
     <!-- ANNOTATION::SPLIT -->
-    <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
-      {#snippet trigger()}
-        <Button
-          variant="outline"
-          size="icon-sm"
-          disabled={disabledSplitButton}
-          onclick={() => {
-            const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
-            if (ann)
-              getDriver().command.call("annotation.split", {
-                annotationId: ann.metadata?.id ?? ann.id,
-                at: viewport.video.currentFrame.value,
-              });
-          }}
-        >
-          <SquareSplitHorizontalIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    {#if !viewport.isReviewWorkspace}
+      <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
+        {#snippet trigger()}
+          <Button
+            variant="outline"
+            size="icon-sm"
+            disabled={disabledSplitButton}
+            onclick={() => {
+              const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+              if (ann)
+                getDriver().command.call("annotation.split", {
+                  annotationId: ann.metadata?.id ?? ann.id,
+                  at: viewport.video.currentFrame.value,
+                });
+            }}
+          >
+            <SquareSplitHorizontalIcon />
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
   </div>
 </div>

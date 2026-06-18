@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "viewport.previous_frame",
   group: "Viewport",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "ArrowLeft",
   shortDescription: "Previous frame",
   longDescription: "Move backward one frame",

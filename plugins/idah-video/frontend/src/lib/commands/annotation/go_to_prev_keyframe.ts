@@ -16,7 +16,7 @@ import type { IVideoAnnotationShape } from "$lib/types";
 export const command = {
   name: "annotation.go_to_prev_keyframe",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Control+ArrowLeft",
   shortDescription: "Previous keyframe",
   longDescription: "Jump to the previous keyframe in the current group",

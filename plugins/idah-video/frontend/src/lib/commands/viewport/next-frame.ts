@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "viewport.next_frame",
   group: "Viewport",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "ArrowRight",
   shortDescription: "Next frame",
   longDescription: "Move forward one frame",

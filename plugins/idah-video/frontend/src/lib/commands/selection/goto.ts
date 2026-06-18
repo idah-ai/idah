@@ -13,7 +13,7 @@ function hasAnnotationSelection(): boolean {
 export const command = {
   name: "selection.goto",
   group: "Selection",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: null,
   shortDescription: "Go to selection",
   longDescription: "Jump to the first frame of the selected annotation",

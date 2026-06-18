@@ -57,14 +57,15 @@ vi.mock("./media.svelte", () => ({
 // ---------------------------------------------------------------------------
 import {
   viewport,
-  DEFAULT_MODE,
+  EDITOR_MODE,
   BOUNDING_BOX_MODE,
   POLYGON_MODE,
   FRAME_STEP_ESCAPE_MS,
 } from "./viewport.svelte";
 
+
 // See also: default constants
-//   DEFAULT_MODE     = "default"
+//   EDITOR_MODE     = "editor"
 //   BOUNDING_BOX_MODE = "idah-video:bounding-box"
 //   POLYGON_MODE      = "idah-video:polygon"
 
@@ -95,7 +96,7 @@ describe("isCreationMode", () => {
   beforeEach(() => resetViewport());
 
   it("returns false when mode is default", () => {
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = EDITOR_MODE;
     expect(viewport.isCreationMode).toBe(false);
   });
 
@@ -109,9 +110,9 @@ describe("isCreationMode", () => {
     expect(viewport.isCreationMode).toBe(true);
   });
 
-  it("returns false when mode is note", () => {
+  it("returns true when mode is note", () => {
     viewport.mode = "note";
-    expect(viewport.isCreationMode).toBe(false);
+    expect(viewport.isCreationMode).toBe(true);
   });
 
   it("returns false for unknown mode strings", () => {
@@ -135,10 +136,10 @@ describe("mode setter", () => {
   });
 
   it("does NOT call driver.setMode when mode is already set", () => {
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = EDITOR_MODE;
     const callsBefore = mockDriver.__setMode.mock.calls.length;
 
-    viewport.mode = DEFAULT_MODE; // same value again
+    viewport.mode = EDITOR_MODE; // same value again
 
     expect(mockDriver.__setMode).toHaveBeenCalledTimes(callsBefore);
   });
@@ -146,11 +147,11 @@ describe("mode setter", () => {
   it("calls driver.setMode on each distinct change", () => {
     viewport.mode = BOUNDING_BOX_MODE;
     viewport.mode = POLYGON_MODE;
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = EDITOR_MODE;
     expect(mockDriver.__setMode).toHaveBeenCalledTimes(3);
     expect(mockDriver.__setMode).toHaveBeenNthCalledWith(1, BOUNDING_BOX_MODE);
     expect(mockDriver.__setMode).toHaveBeenNthCalledWith(2, POLYGON_MODE);
-    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(3, DEFAULT_MODE);
+    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(3, EDITOR_MODE);
   });
 });
 
