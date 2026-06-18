@@ -39,11 +39,11 @@ export function register(driver: IIdahDriverV2): void {
             const record = sel.annotation as any;
             const startFrame = record.shape?.start ?? 1;
             _previousFrame = previousFrame;
-            viewport.video.currentFrame.value = startFrame;
+            viewport.video.goToFrame(startFrame);
           }
         },
         undo() {
-          viewport.video.currentFrame.value = _previousFrame;
+          viewport.video.goToFrame(_previousFrame);
         },
         isCombinable() { return false; },
         combine(p) { return p; },

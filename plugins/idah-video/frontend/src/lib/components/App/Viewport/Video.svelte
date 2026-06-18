@@ -3,7 +3,6 @@
   import { VideoStreamHandler } from "./video-stream-handler.ts";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-
   import { ui } from "$lib/state/ui.svelte";
 
   let {
@@ -18,128 +17,176 @@
     onVolumeChange = (_level: number, _muted: boolean) => {},
   } = $props();
 
-  // ── Element refs ──────────────────────────────────────────────────
   let videoElement: HTMLVideoElement;
   let streamHandler: VideoStreamHandler | undefined;
 
-  // ── UI state ───────────────────────────────────────────────────────
-  let isLoadingHighQuality = $state(false);
-  let qualityLabel = $state("");
   let isPlaying = $state(false);
-  let animationFrameId: number | null = $state(null);
+  let animationFrameId: number | null = null;
+  // One-shot rVFC token for a paused seek; cancelled if a newer seek fires first.
+  let pendingFrameCallbackId: number | null = null;
+  // Last target frame; set before writing currentTime so the seek $effect can
+  // discard stale/redundant events.
+  let lastSeekedFrame = -1;
+  // Whether requestVideoFrameCallback is supported. Cached at mount (an inline
+  // `in` guard would narrow videoElement to `never` and break .currentTime use).
+  let hasRVFC = false;
 
-  // ── Loop guard ─────────────────────────────────────────────────────
-  // Tracks the last frame that was actually seeked to on the <video> element.
-  // Prevents the seek effect from re-triggering when handleSeeked writes back
-  // the (slightly rounded) frame from videoElement.currentTime.
-  let lastSeekedFrame = $state(-1);
-  let hlsReloadTimer: ReturnType<typeof setTimeout> | undefined;
-
-  // ── Helpers ────────────────────────────────────────────────────────
-  // Video is 1-based (frame 1 = 1/fps sec), data/timeline is 0-based.
-  function timeToFrame(t: number) { return Math.round(t * fps) - 1; }
-  function frameToTime(f: number) { return (f + 1 + 0.001) / fps; }
-
-  // ── RAF loop (only runs while playing) ─────────────────────────────
-  function startRAF() {
-    const tick = () => {
-      if (!videoElement) return;
-      const frame = timeToFrame(videoElement.currentTime);
-      viewport.video.currentFrame.value = frame;
-      onFrameUpdate?.(frame);
-      animationFrameId = requestAnimationFrame(tick);
-    };
-    animationFrameId = requestAnimationFrame(tick);
+  // ── Frame ↔ time helpers ─────────────────────────────────────────
+  // The browser uses seconds; the rest of the app is 0-based frame indices.
+  // Video is 1-based internally so frame 0 maps to t = 1/fps, not t = 0.
+  function timeToFrame(t: number) {
+    return Math.max(0, Math.min(Math.round(t * fps), media.totalFrames) - 1);
+  }
+  function frameToTime(f: number) {
+    return (f + 1 + 0.001) / fps;
   }
 
-  function stopRAF() {
-    if (animationFrameId != null) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
+  // ── RAF loop (playback only) ──────────────────────────────────────
+  // While playing, syncs currentFrame/displayedFrame to the on-screen frame.
+  // Prefers rVFC (one callback per decoded frame, compositor-synced); falls back
+  // to requestAnimationFrame where unsupported.
+  function startRAF() {
+    if (hasRVFC) {
+      const tick = (_now: number, metadata: VideoFrameCallbackMetadata) => {
+        if (!videoElement) return;
+        const frame = timeToFrame(metadata.mediaTime);
+        viewport.video.currentFrame.value = frame;
+        viewport.video.displayedFrame.value = frame;
+        onFrameUpdate?.(frame);
+        animationFrameId = (videoElement as any).requestVideoFrameCallback(tick);
+      };
+      animationFrameId = (videoElement as any).requestVideoFrameCallback(tick);
+    } else {
+      const tick = () => {
+        if (!videoElement) return;
+        const frame = timeToFrame(videoElement.currentTime);
+        viewport.video.currentFrame.value = frame;
+        viewport.video.displayedFrame.value = frame;
+        onFrameUpdate?.(frame);
+        animationFrameId = requestAnimationFrame(tick);
+      };
+      animationFrameId = requestAnimationFrame(tick);
     }
   }
 
-  // ── Derived play/pause requests ───────────────────────────────────
-  const requestPlay  = $derived(!isPlaying && viewport.video.status === "play");
-  const requestPause = $derived( isPlaying && viewport.video.status === "pause");
+  // Stops the active RAF/rVFC loop started by startRAF().
+  function stopRAF() {
+    if (animationFrameId == null) return;
+    if (hasRVFC) {
+      (videoElement as any).cancelVideoFrameCallback(animationFrameId);
+    } else {
+      cancelAnimationFrame(animationFrameId);
+    }
+    animationFrameId = null;
+  }
 
-  // ── Effect: play/pause ────────────────────────────────────────────
+  // ── Paused frame sync ─────────────────────────────────────────────
+  // Runs after every pause. Sets lastSeekedFrame first so the seek $effect skips
+  // its writeback (and won't cancel the pause-triggered HQ render). Uses duration
+  // (not currentTime) when ended, since rVFC can lag a few frames at high speed.
+  function syncPausedFrame() {
+    const t = videoElement.ended ? videoElement.duration : videoElement.currentTime;
+    const frame = timeToFrame(t);
+    lastSeekedFrame = frame;
+    // Re-seek so the decoder repaints exactly `frame`: the pixels frozen at pause
+    // lag the clock (rVFC trails currentTime by 1–3 frames), and without this snap
+    // the stale frame lingers until the HQ upgrade re-seeks, causing a visible
+    // jump. The seek $effect is a no-op here (currentFrame === lastSeekedFrame).
+    // Skipped when ended to preserve the duration handling above.
+    if (!videoElement.ended) videoElement.currentTime = frameToTime(frame);
+    viewport.video.currentFrame.value = frame;
+    viewport.video.displayedFrame.value = frame;
+    onFrameUpdate?.(frame);
+  }
+
+  // ── Play / pause effect ───────────────────────────────────────────
+  // Drives the DOM play()/pause() from viewport.video.status (single source of
+  // truth). Play: cancel any pending HQ reload (else its settle timer could snap
+  // currentTime mid-play), play, start the tick loop. Pause: pause, stop the loop,
+  // snap the displayed frame to the paused position.
   $effect(() => {
     if (!videoElement) return;
 
-    if (requestPlay) {
+    if (!isPlaying && viewport.video.status === "play") {
+      streamHandler?.cancelPendingRender();
       videoElement.play();
       isPlaying = true;
       onTogglePlay(true);
       startRAF();
     }
 
-    if (requestPause) {
+    if (isPlaying && viewport.video.status === "pause") {
       videoElement.pause();
       isPlaying = false;
       onTogglePlay(false);
       stopRAF();
-      // Final frame read (exact post-pause position)
-      if (videoElement) {
-        const frame = timeToFrame(videoElement.currentTime);
-        viewport.video.currentFrame.value = frame;
-        onFrameUpdate?.(frame);
+      // A stall while playing may have left buffering latched; clear it so the
+      // "Loading Frame" pill doesn't linger after we hand control back to seeks.
+      viewport.video.loading.buffering = false;
+      if (viewport.video.pauseForSeek) {
+        // Navigation-initiated pause: don't snap to the playback clock (that
+        // would clobber the requested target). Re-seed lastSeekedFrame to the
+        // frame the element is actually parked on (displayedFrame, kept current
+        // by the RAF loop) so the seek $effect re-fires and drives to the target
+        // — and correctly no-ops if the user navigated to the playing frame.
+        viewport.video.pauseForSeek = false;
+        lastSeekedFrame = viewport.video.displayedFrame.value;
+      } else if (videoElement) {
+        syncPausedFrame();
       }
     }
   });
 
-  // ── Effect: seek ──────────────────────────────────────────────────
-  // When paused and the user changes viewport.video.currentFrame.value
-  // (timeline click, keyboard shortcut, etc.), seek the <video> element.
-  // Guarded by lastSeekedFrame to ignore writebacks from handleSeeked.
-  // During playback the RAF loop owns the frame position — bail out.
+  // ── Seek effect (paused only) ─────────────────────────────────────
+  // No-op while playing (the RAF loop owns position). On a new target frame:
+  // record it, seek the decoder, confirm displayedFrame once the frame paints
+  // (rVFC), and let loadQuality decide any quality work for the new position.
   $effect(() => {
     if (!videoElement || isPlaying) return;
 
-    let target = viewport.video.currentFrame.value;
+    const target = viewport.video.currentFrame.value;
     if (target === lastSeekedFrame) return;
 
-    const delta = Math.abs(target - lastSeekedFrame);
+    // First run (lastSeekedFrame === -1) positions the element but skips
+    // loadQuality, leaving the startup HQ load (FRAG_LOADED handler) undisturbed.
+    const isInitSeeked = lastSeekedFrame === -1;
     lastSeekedFrame = target;
-
     videoElement.currentTime = frameToTime(target);
 
-    if (streamHandler) {
-      clearTimeout(hlsReloadTimer);
-      // Single-step (keyboard arrow, nextFrame/prevFrame): reload quickly.
-      // Rapid scrub (slider drag, large jump): wait for activity to settle.
-      const debounceMs = delta <= 2 ? 10 : 150;
-      hlsReloadTimer = setTimeout(() => {
-        if (videoElement.paused) streamHandler!.reloadCurrentQuality();
-      }, debounceMs);
+    // Confirm displayedFrame once the compositor paints. Uses the captured
+    // `target`, not timeToFrame(mediaTime): an off-grid PTS can round to a
+    // neighbouring index and latch framePending (stuck "Loading Frame" pill).
+    // A newer seek cancels this callback, so `target` always matches the paint.
+    if (hasRVFC) {
+      if (pendingFrameCallbackId !== null) {
+        (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
+      }
+      pendingFrameCallbackId = (videoElement as any).requestVideoFrameCallback(
+        (_now: number, _metadata: VideoFrameCallbackMetadata) => {
+          pendingFrameCallbackId = null;
+          viewport.video.displayedFrame.value = target;
+        },
+      );
     }
+
+    if (!isInitSeeked) streamHandler?.loadQuality(frameToTime(target));
   });
 
-  // ── Exported API ─────────────────────────────────────────────────
+  // ── Public API ────────────────────────────────────────────────────
+  // All methods funnel through viewport.video.currentFrame so the seek $effect
+  // and the RAF loop share a single authoritative position.
+
+  // Jump directly to a frame index (0-based).
   export function seekToFrame(frame: number) {
-    viewport.video.currentFrame.value = frame;
+    viewport.video.goToFrame(frame);
   }
 
-  export function togglePlay() {
-    if (!videoElement) return;
-    if (videoElement.paused) viewport.video.play();
-    else                    viewport.video.pause();
-  }
-
-  export function nextFrame(step = 1) {
-    const current = viewport.video.currentFrame.value;
-    viewport.video.currentFrame.value = current + step;
-  }
-
-  export function previousFrame(step = 1) {
-    const current = viewport.video.currentFrame.value;
-    viewport.video.currentFrame.value = current - step;
-  }
-
+  // Set the playback speed multiplier (does not affect HLS quality switching).
   export function playbackRate(rate: number) {
     if (videoElement) videoElement.playbackRate = rate;
   }
 
+  // Set the volume from a 0–100 percentage; 0 mutes the element.
   export function setVolume(level: number) {
     if (!videoElement) return;
     videoElement.volume = level / 100;
@@ -147,9 +194,6 @@
     onVolumeChange(level, level === 0);
   }
 
-  export function getFrames() { return media.totalFrames; }
-
-  // Expose raw <video> element to parent
   $effect(() => {
     if (videoRef && videoElement) videoRef.value = videoElement;
   });
@@ -158,51 +202,66 @@
   onMount(() => {
     videoElement.volume = 0;
     videoElement.muted = true;
+    hasRVFC = "requestVideoFrameCallback" in videoElement;
 
+    // play/pause fire for both programmatic and native (incl. natural end) cases.
+    // Only set status; the $effect runs the side effects (startRAF, syncPausedFrame…).
     const handlePlay = () => {
-      // Browser initiated play (e.g. right-click → play). Sync upward.
-      isPlaying = true;
       viewport.video.status = "play";
-      onTogglePlay(true);
-      startRAF();
     };
-
     const handlePause = () => {
-      isPlaying = false;
       viewport.video.status = "pause";
-      onTogglePlay(false);
-      stopRAF();
-      // Final frame read
-      if (videoElement) {
-        const frame = timeToFrame(videoElement.currentTime);
-        viewport.video.currentFrame.value = frame;
-        onFrameUpdate?.(frame);
-      }
     };
 
+    // Seek confirmation for browsers without rVFC. Skipped where rVFC exists:
+    // `seeked` fires before the compositor paints, so it would briefly show
+    // frame N's overlays over frame N−1's pixels. Confirms lastSeekedFrame (the
+    // frame we asked for), not timeToFrame(currentTime) — the browser clamps
+    // past-end seeks, and the clamped time would round to a smaller index and
+    // latch framePending. renderHQAt's same-value re-seek also fires this, but
+    // lastSeekedFrame is unchanged so it's idempotent.
     const handleSeeked = () => {
-      // Only write back when paused — during play the RAF loop owns the frame.
-      if (!isPlaying && videoElement) {
-        const frame = timeToFrame(videoElement.currentTime);
-        viewport.video.currentFrame.value = frame;
-        lastSeekedFrame = frame; // keep guard in sync
-        onFrameUpdate?.(frame);
-      }
+      if (isPlaying) return;
+      if (hasRVFC) return;
+      viewport.video.displayedFrame.value =
+        lastSeekedFrame >= 0 ? lastSeekedFrame : timeToFrame(videoElement.currentTime);
     };
 
-    videoElement.addEventListener("play",   handlePlay);
-    videoElement.addEventListener("pause",  handlePause);
+    // Playback stall feedback. `waiting` fires when playback halts for lack of
+    // buffered data; light the buffering flag (which drives the "Loading Frame"
+    // pill) only while playing — a paused seek can also emit `waiting`, but that
+    // case is already covered by framePending and must not set this. `playing`
+    // fires when playback resumes after the stall, so clear it there.
+    const handleWaiting = () => {
+      if (isPlaying) viewport.video.loading.buffering = true;
+    };
+    const handlePlaying = () => {
+      viewport.video.loading.buffering = false;
+    };
+
+    const handleResize = () => onResize();
     videoElement.addEventListener("seeked", handleSeeked);
-    videoElement.addEventListener("resize", () => onResize());
+    videoElement.addEventListener("play", handlePlay);
+    videoElement.addEventListener("pause", handlePause);
+    videoElement.addEventListener("waiting", handleWaiting);
+    videoElement.addEventListener("playing", handlePlaying);
+    videoElement.addEventListener("resize", handleResize);
 
-    const isHLS = src?.toLowerCase().includes(".m3u8");
-
-    if (isHLS) {
+    // HLS streams get a VideoStreamHandler (HQ buffering while paused, adaptive
+    // during playback). endOfFrameTime is the DB-derived last-frame time; it's
+    // passed explicitly because browser duration can exceed it (HLS rounding),
+    // which would make the end-of-video HQ load seek past the last fragment and
+    // never fire FRAG_LOADED. Plain files are assigned straight to src.
+    if (src?.toLowerCase().includes(".m3u8")) {
       streamHandler = new VideoStreamHandler(videoElement, src, {
+        endOfFrameTime: frameToTime(media.totalFrames - 1),
         initialFragmentCount: initialFragments,
         onLoadingChange: (loading, info) => {
-          isLoadingHighQuality = loading;
-          if (info) qualityLabel = info.label;
+          viewport.video.loading.highQuality = loading;
+          if (info) viewport.video.loading.qualityLabel = info.label;
+        },
+        onFragmentInFlightChange: (inFlight) => {
+          viewport.video.setFragmentInFlight(inFlight);
         },
       });
     } else {
@@ -211,10 +270,20 @@
 
     return () => {
       stopRAF();
-      clearTimeout(hlsReloadTimer);
-      videoElement.removeEventListener("play",   handlePlay);
-      videoElement.removeEventListener("pause",  handlePause);
+      // The seek effect's one-shot rVFC is separate from the playback loop;
+      // cancel it too so it can't write displayedFrame after unmount.
+      if (pendingFrameCallbackId !== null && hasRVFC) {
+        (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
+        pendingFrameCallbackId = null;
+      }
+      // Clear buffering so a stale true can't keep the pill up on the next video.
+      viewport.video.loading.buffering = false;
       videoElement.removeEventListener("seeked", handleSeeked);
+      videoElement.removeEventListener("play", handlePlay);
+      videoElement.removeEventListener("pause", handlePause);
+      videoElement.removeEventListener("waiting", handleWaiting);
+      videoElement.removeEventListener("playing", handlePlaying);
+      videoElement.removeEventListener("resize", handleResize);
       streamHandler?.destroy();
     };
   });
@@ -230,14 +299,6 @@
     <track kind="captions" />
     Your browser does not support the video tag.
   </video>
-
-  {#if isLoadingHighQuality}
-    <div class="loader-overlay">
-      <div class="quality-badge">
-        <span class="quality-label">Loading: {qualityLabel}</span>
-      </div>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -281,54 +342,5 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-
-  .loader-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .quality-badge {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 8px 16px;
-    border-radius: 20px;
-    animation: slideIn 0.3s ease-out;
-  }
-
-  .quality-label {
-    color: white;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-
-  .quality-label::before {
-    content: "\25CF";
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 8px;
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes slideIn {
-    from { transform: translateY(-10px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.4; }
   }
 </style>
