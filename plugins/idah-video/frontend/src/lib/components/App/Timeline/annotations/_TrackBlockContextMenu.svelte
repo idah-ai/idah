@@ -30,7 +30,7 @@
   // Variables
   let { trackId, startRange, endRange, rawData } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
-  let isKeyframe = $derived(rawData.shape.frames.some((f) => f.frame === frame));
+  let isKeyframe = $derived(rawData.shape.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
   let annotationIsLocked = $derived(annotation.isLocked(rawData));
 
   let menus = $derived<Menus>({

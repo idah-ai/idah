@@ -58,7 +58,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _media: IMediaInfo;
   private _config: IConfig;
   private _workflowStep: string;
-  private _mode = "default";
+  private _mode = "editor";
   private _ready = false;
 
   // ── Callback stores ───────────────────────────────────────────────────
@@ -68,8 +68,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private syncChangeListeners: Set<(event: ISyncEvent) => void> = new Set();
   private syncErrorListeners: Set<(event: ISyncErrorEvent) => void> = new Set();
 
-  // ── Internal IDB driver reference (has clearCache) ────────────────────
+  // ── Internal references (have cache/clearCache) ──────────────────────
   private idbAnnotationsDriver: (IAnnotationsDriverV2 & { clearCache(): Promise<void> }) | null = null;
+  #notesAdapter: NotesDriverAdapter | null = null;
 
   constructor(opts: {
     id: string;
@@ -103,8 +104,10 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this.idbAnnotationsDriver = idbDriver;
     this.annotations = idbDriver?.sealed() ?? new AnnotationsDriverAdapter(this._id, this.rpc);
 
-    // Build notes driver (no IDB layer yet)
-    this.notes = new NotesDriverAdapter();
+    // Build notes driver with observer-based push interface
+    const notesAdapter = new NotesDriverAdapter(this._id);
+    this.notes = notesAdapter.sealed();
+    this.#notesAdapter = notesAdapter;
 
     // Build stats driver — core stats from this driver + plugin-registered providers
     this.stats = new StatsDriverAdapter(this);
@@ -113,7 +116,6 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     registerCommands(this);
 
     this.onSyncChange((syncChangeEvent) => {
-      console.log({ syncChangeEvent });
       this._ready = syncChangeEvent.queued == 0;
       if (this._ready) for (const cb of this.readyCallbacks) cb();
     });
@@ -133,6 +135,15 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
 
   // ── Internal — used by core commands only ──────────────────────────────
+
+  /**
+   * @internal Used by core-internal components like NoteOverlay.
+   * Returns the concrete NotesDriverAdapter (not the INotesDriverV2 interface)
+   * for access to core-internal methods (onNotePosition, onNoteSelection, etc.).
+   */
+  get notesAdapter(): NotesDriverAdapter | null {
+    return this.#notesAdapter;
+  }
 
   /**
    * @internal Used by core.reset command only.
@@ -331,7 +342,7 @@ import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
 
-export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
+export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2> {
   const checkEntryRes = await entriesBackendDataSource.get(entryId, {
     fields: { [EntryRecord.type]: ["wf_step"] },
     noCache: true,
@@ -398,5 +409,5 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     workflowStep: entry.wf_step,
   });
 
-  return driver.sealed();
+  return driver;
 }
