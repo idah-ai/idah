@@ -26,6 +26,8 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
+  import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
+
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -193,6 +195,18 @@
         </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <EntryStatsModal {driver} />
+
+    {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
+      <ToolTooltip {label} align="center" delayDuration={100}>
+        {#snippet trigger()}
+          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
+            <Icon />
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/each}
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">

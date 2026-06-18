@@ -569,6 +569,43 @@ export interface IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void;
 }
 
+// ─── V2 Driver — Stats submodule ──────────────────────────────────────────
+
+/**
+ * A single computed statistic for the entry-stats modal.
+ *
+ * Stats are grouped into sections (by `section`) for display. Core stats
+ * (annotation/category/shape counts) are produced by the driver itself;
+ * modality-specific stats (e.g. video duration/fps) are contributed by the
+ * active plugin via `register()` — so the modal stays free of plugin knowledge.
+ */
+export interface IStatEntry {
+  /** Dotted stat key, e.g. "category.cat.count" or "video.fps". */
+  key: string;
+  /** Display value (already stringified). */
+  value: string;
+  /** Grouping key for the section this stat belongs to, e.g. "category". */
+  section: string;
+  /** Optional display name for the section; falls back to a humanized `section`. */
+  sectionHeader?: string;
+  /** Optional right-column header for the section, e.g. "Count". */
+  unitHeader?: string;
+  /** Optional explicit row label; falls back to a humanized key remainder. */
+  label?: string;
+}
+
+/** Contributes a set of stats. Registered by plugins via `driver.stats.register`. */
+export interface IStatProvider {
+  collect(): IStatEntry[] | Promise<IStatEntry[]>;
+}
+
+export interface IStatsDriverV2 {
+  /** Register a stat provider (e.g. plugin-specific stats). */
+  register(provider: IStatProvider): void;
+  /** Collect all stats — built-in core stats plus every registered provider. */
+  collect(): Promise<IStatEntry[]>;
+}
+
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
 export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
@@ -600,6 +637,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
+  readonly stats: IStatsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 
