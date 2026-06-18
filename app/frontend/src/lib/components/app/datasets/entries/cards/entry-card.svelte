@@ -34,8 +34,9 @@
     entry: EntryRecord;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
+    onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect }: Props = $props();
+  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   // Variables
   const currentAccount = $authStatus.authContext;
@@ -238,6 +239,7 @@
 
   function updateEntry(thisEntry: EntryRecord): void {
     entry = thisEntry;
+    onEntryUpdated();
   }
 </script>
 
