@@ -32,6 +32,9 @@ class Viewport {
     currentFrame: { value: 0 },
   });
 
+  /** Reference to the SVG element for screen coordinate calculations */
+  svgElement: SVGSVGElement | null = $state(null);
+
   workspace = $state({
     transform: {
       translate: [0, 0] as [number, number],

@@ -463,6 +463,7 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
 //   data.annotations.preloadRange(-Infinity, Infinity);
 
 import { getDriver } from "$lib/state/driver.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 import type { INoteRecord } from "$idah/v2/types";
 
 let _annotations: DataStore<AnnotationItem> | null = $state(null);
@@ -513,6 +514,48 @@ export const activeNoteId = {
 };
 
 /** Global stores — auto-initialised from the V2 driver. */
+/**
+ * Focus a note — center the annotation (or fit viewport),
+ * set it as the active note, and notify the core.
+ * The position-reporting $effect in NoteMarkers.svelte handles the follow-up
+ * `reportNotePosition` call automatically.
+ */
+export function focusNote(note: INoteRecord): void {
+  const driver = getDriver();
+
+  // Clear any pending (ghost) note marker — we're focusing a real note now.
+  // This prevents stale ghost markers from remaining in the viewport or
+  // causing NoteMarkers to report the wrong overlay position.
+  setPendingNoteScene(null);
+
+  // 1. Select & center annotation if annotation-anchored
+  if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
+    const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+    if (ann) {
+      selection.selectAnnotation(ann);
+      driver.command.call("selection.center");
+    } else {
+      // Annotations not loaded yet — defer until they are
+      const stop = $effect.root(() => {
+        $effect(() => {
+          const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+          if (!found) return;
+          selection.selectAnnotation(found);
+          driver.command.call("selection.center");
+          stop();
+        });
+      });
+    }
+  } else {
+    viewport.workspace.fitToViewport();
+  }
+
+  // 2. Set active note and notify core
+  activeNoteId.value = note.id;
+  driver.notes.selectNote(note.id);
+  // reportNotePosition will follow automatically via NoteMarkers' $effect
+}
+
 export const data: {
   annotations: DataStore<AnnotationItem> | null;
 } = {

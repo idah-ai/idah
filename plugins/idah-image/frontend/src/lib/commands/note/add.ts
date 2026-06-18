@@ -4,11 +4,10 @@
 //
 // Usage:
 //   driver.command.call("note.add", {
-//     annotationId: "...", contentMd: "Look here"
+//     contentMd: "Look here", anchor: { anchor_type: "entry", position: {...} }
 //   });
 // ---------------------------------------------------------------------------
-import { data } from "$lib/state/data.svelte";
-import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { IIdahDriverV2, INoteAnchor } from "$idah/v2/types";
 import { noopAction } from "..";
 
 export const command = {
@@ -21,10 +20,9 @@ export const command = {
 };
 
 export interface NoteAddProps {
-  annotationId?: string | null;
   contentMd: string;
-  anchorType?: "entry" | "annotation";
-  position?: Record<string, unknown>;
+  anchor: INoteAnchor;
+  noteId?: string;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -36,28 +34,17 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as NoteAddProps | undefined;
-      if (!props || !data.notes) return noopAction(command);
+      if (!props) return noopAction(command);
 
       return {
         command: { ...command },
-        async do() {
-          const note = await data.notes!.create({
-            annotation_id: props.annotationId ?? null,
-            content_md: props.contentMd,
-            anchor_type: props.anchorType ?? "annotation",
-            position: props.position ?? {},
-            resolved: false,
-            status: "pending",
-            created_by_email: "",
-          });
-          // Store the created id for undo by mutating the closure
-          (this as any)._createdId = note.id;
+        do() {
+          // With the push-based driver, notes are created via requestCreateNote.
+          // This command is kept for backward compatibility but delegates to the core.
+          driver.notes.requestCreateNote(props.anchor);
         },
-        async undo() {
-          const id = (this as any)._createdId;
-          if (id && data.notes) {
-            await data.notes.delete(id);
-          }
+        undo() {
+          // Nothing to undo — creation is handled by the core
         },
         isCombinable() { return false; },
         combine(p) { return p; },

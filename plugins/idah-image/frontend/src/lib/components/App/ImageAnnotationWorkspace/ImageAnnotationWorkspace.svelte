@@ -363,16 +363,15 @@
   });
 
   function showNewNotePopup(params: OnAddNewNoteParams) {
-    const { anchorType, position, annotationId } = params;
-    getDriver().command.call("note.add", {
-      annotationId: annotationId ?? null,
-      contentMd: "",
-      anchorType,
-      position: {
-        ...position,
-        sidebar_width: annotationSidebarWidthRem * 16,
-      },
+    const { anchorType, position, annotationId, screenX, screenY } = params;
+    const driver = getDriver();
+    driver.notes.requestCreateNote({
+      anchor_type: anchorType,
+      annotation_id: annotationId ?? null,
+      position,
     });
+    // Report the screen position so the core overlay opens at the click point.
+    driver.notes.reportNotePosition({ noteId: null, x: screenX, y: screenY });
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
