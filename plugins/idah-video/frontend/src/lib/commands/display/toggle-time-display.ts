@@ -9,7 +9,7 @@ import { ui, type TimeDisplay } from "$lib/state/ui.svelte";
 export const command = {
   name: "ui.toggle_time_display",
   group: "Display",
-  modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+  modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,
   shortDescription: "Toggle timeline time display",
   longDescription: "Switch between showing frame numbers and time (m:ss.ff) on the timeline ruler",

@@ -1,6 +1,6 @@
-import { identity, type Hash, type Constructor } from "@/utils/types";
 import type { IncludeList } from "@/data/model/includes";
 import type { FieldOptions, JsonApiRecord, JsonApiReference, RelationshipOptions } from "@/data/model/types";
+import { identity, type Constructor, type Hash } from "@/utils/types";
 
 export function field(opts: FieldOptions = {}) {
   const transformerFunction = opts.transformer || { from: identity };

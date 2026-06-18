@@ -11,7 +11,7 @@ class EntriesExpo < BaseExpo
   MD
 
   json_api Entry::Record do
-    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by"
+    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by", "entry_stats"
     show
     index do
       allowed_filters :resource__match,
@@ -22,7 +22,8 @@ class EntriesExpo < BaseExpo
                       :assigned_to_id__in,
                       :assigned,
                       :wf_step__in,
-                      :participated
+                      :participated,
+                      :name__match
     end
     create do
       authorized_relationships dataset: [:link]

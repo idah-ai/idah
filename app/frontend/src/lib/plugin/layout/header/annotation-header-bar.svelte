@@ -14,13 +14,17 @@
   // Props
   interface Props {
     driver: IdahDriverV2;
-    pluginContainerElement: HTMLElement | null;
   }
-  let {
-    ref = $bindable(null),
-    driver,
-    pluginContainerElement,
-  }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
+  let { ref = $bindable(null), driver }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
+
+  // Derive note sidebar state from the driver's notesAdapter
+  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
+  function onNoteToggle() {
+    driver.notesAdapter!.toggleNoteSidebar();
+  }
+  driver.notesAdapter!.onNoteSidebarChange((open) => {
+    noteSidebarOpen = open;
+  });
 </script>
 
 <nav bind:this={ref} id="annotation-header-bar" class="bg-sidebar grid grid-cols-3 border-b p-1">
@@ -38,5 +42,5 @@
   <AnnotationHeaderBarTools {driver} />
 
   <!-- RIGHT::ACTIONS -->
-  <AnnotationHeaderBarActions {driver} {pluginContainerElement} />
+  <AnnotationHeaderBarActions {driver} {noteSidebarOpen} {onNoteToggle} />
 </nav>

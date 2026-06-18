@@ -55,7 +55,7 @@
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
-  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
+  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep) && !viewport.isReviewWorkspace);
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === "note");
 
@@ -494,19 +494,16 @@
     return Promise.resolve(viewportAnnotations);
   });
 
-  function showNewNotePopup(params: OnAddNewNoteParams) {
-    const { anchorType, position, annotationId } = params;
-    getDriver().notes.create({
-      id: "",
-      annotation_id: annotationId ?? null,
-      content_md: "",
+  function showNewNotePopup(params: { anchorType: "entry" | "annotation"; position?: Record<string, unknown>; annotationId?: string | null; screenX?: number; screenY?: number }) {
+    const { anchorType, position, annotationId, screenX, screenY } = params;
+    const driver = getDriver();
+    driver.notes.requestCreateNote({
       anchor_type: anchorType,
-      position: {
-        ...position,
-        sidebar_width: annotationSidebarWidthRem * 16,
-      },
-      resolved: false,
+      annotation_id: annotationId ?? null,
+      position,
     });
+    // Report the screen position so the core overlay opens at the click point.
+    driver.notes.reportNotePosition({ noteId: null, x: screenX, y: screenY });
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {

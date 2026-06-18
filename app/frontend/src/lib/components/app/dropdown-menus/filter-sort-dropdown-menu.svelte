@@ -402,9 +402,12 @@
               <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
             </div>
           {:else if filterOptions?.filterBy === "string"}
-            {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">
-              <Input placeholder="Search {label.toLowerCase()}" value={filters[filterKey]} oninput={filterByInput} />
+              <Input
+                placeholder="Search {label.toLowerCase()}"
+                value={filters[filterKeyWithOperation]}
+                oninput={filterByInput}
+              />
             </div>
           {:else if filterOptions?.filterBy === "boolean"}
             {#if filterOptions.choices}

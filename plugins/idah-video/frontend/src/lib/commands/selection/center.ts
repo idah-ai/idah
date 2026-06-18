@@ -21,7 +21,7 @@ function hasAnnotationAtCurrentFrame(): boolean {
 export const command = {
   name: "selection.center",
   group: "Selection",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "Control+Shift+C",
   shortDescription: "Center on selection",
   longDescription: "Pan and zoom to fit the selected annotation in the viewport",

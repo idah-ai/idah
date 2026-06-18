@@ -25,8 +25,10 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    onUnAssigned?: (entry: EntryRecord) => void;
+    onAssigned?: (entry: EntryRecord) => void;
   }
-  let { entry }: Props = $props();
+  let { entry, onUnAssigned, onAssigned }: Props = $props();
 
   // Records
   let projectId = page.params.projectId as string;
@@ -72,7 +74,7 @@
   });
 
   // Functions
-  async function openAssignEntryModal() {
+  async function openAssignEntryModal(): Promise<void> {
     const entryRes = await entriesBackendDataSource.get(entry.id, {
       noCache: true,
     });
@@ -81,19 +83,20 @@
     openAssignEntryFormModal = true;
   }
 
-  async function unAssignEntry() {
+  async function unAssignEntry(): Promise<void> {
     try {
-      await entriesBackendDataSource.update(entry.id, {
+      const entryRes = await entriesBackendDataSource.update(entry.id, {
         attributes: {
           assigned_to_id: null,
         },
       });
 
+      onUnAssigned?.(entryRes.data);
+
       openConfirmUnassignEntryModal = false;
-      $refetches.entries.list = new Date();
       showToast.success({
         title: "Entry unassigned",
-        description: `The entry "${entry.name}" has been unassigned.`,
+        description: `The entry "${entry.name || entry.id}" has been unassigned.`,
       });
     } catch (error) {
       showToast.error({
@@ -103,7 +106,7 @@
     }
   }
 
-  async function deleteEntry() {
+  async function deleteEntry(): Promise<void> {
     try {
       await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 
@@ -119,6 +122,18 @@
         description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
       });
     }
+  }
+
+  async function onEntryAssigned(): Promise<void> {
+    await entriesBackendDataSource
+      .get(entry.id, {
+        noCache: true,
+        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by"],
+      })
+      .then((res) => {
+        entry = res.data;
+        onAssigned?.(entry);
+      });
   }
 </script>
 
@@ -147,7 +162,13 @@
   </DropdownMenu>
 
   <!-- MODAL::ASSIGN ANNOTATOR  -->
-  <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
+  <AssignEntryFormModal
+    action="update"
+    {entryRecord}
+    onAssigned={onEntryAssigned}
+    entryIds={[entry.id]}
+    bind:open={openAssignEntryFormModal}
+  />
 
   <!-- MODAL::CONFIRM UNASSIGN -->
   <ConfirmModal
