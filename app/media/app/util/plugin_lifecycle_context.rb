@@ -7,12 +7,13 @@ class PluginLifecycleContext
     @plugin_name = plugin_name.to_sym
   end
 
-  def register_processor(name, class_name:, options_class_name: "Schema::Empty")
+  def register_processor(name, class_name:, options_class_name: "Schema::Empty", mime_types: nil)
     Processor::Registry.register(
       @plugin_name,
       name,
       class_name:,
-      options_class_name:
+      options_class_name:,
+      mime_types:
     )
   end
 

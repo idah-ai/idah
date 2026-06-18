@@ -37,10 +37,11 @@ RSpec.describe Medias::Service, as: :system, database: true do
         project_id: "mocked_project_id"
       )
 
-      expect(result).to be_truthy
-      expect(result.resource).to eq("test_resource")
-      expect(result.key).to eq("test_key")
-      expect(result.filename).to eq("test.mp4")
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.resource).to eq("test_resource")
+      expect(result[:processed].first.key).to eq("test_key")
+      expect(result[:processed].first.filename).to eq("test.mp4")
     ensure
       file&.close
     end
@@ -96,11 +97,310 @@ RSpec.describe Medias::Service, as: :system, database: true do
         project_id: "mocked_project_id"
       )
 
-      expect(result).to be_truthy
-      expect(result.resource).to eq("test_resource_no_key")
-      expect(result.key).to eq("")
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.resource).to eq("test_resource_no_key")
+      expect(result[:processed].first.key).to eq("")
     ensure
       file&.close
+    end
+
+    it "extracts zip and returns multiple records" do
+      require "zip"
+
+      zip_path = Tempfile.create(["sample", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("photo1.jpg")
+        zip.write("fake-jpg-content-1")
+        zip.put_next_entry("photo2.jpg")
+        zip.write("fake-jpg-content-2")
+        zip.put_next_entry("subfolder/")
+        # directory entry — should be skipped
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "batch.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "ignored_for_zip", project_id: "mocked_project_id")
+
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(2)
+      expect(result[:processed].map(&:filename)).to contain_exactly("photo1.jpg", "photo2.jpg")
+      expect(result[:processed].map(&:key).uniq).to eq([""])
+      expect(result[:processed].map(&:resource).uniq.length).to eq(2) # each image gets its own resource
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "skips system artifacts in zip files" do
+      require "zip"
+
+      zip_path = Tempfile.create(["system", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("photo1.jpg")
+        zip.write("fake-jpg-content-1")
+        zip.put_next_entry("__MACOSX/._photo1.jpg")
+        zip.write("apple-double")
+        zip.put_next_entry("._loose.jpg") # AppleDouble sidecar outside __MACOSX
+        zip.write("apple-double-loose")
+        zip.put_next_entry(".DS_Store")
+        zip.write("ds-store")
+        zip.put_next_entry("ehthumbs.db")
+        zip.write("win-thumbs")
+        # near-miss: artifact name as a substring must NOT be skipped
+        zip.put_next_entry("my.DS_Store.jpg")
+        zip.write("legit-image")
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "system.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      expect(result[:processed].map(&:filename)).to contain_exactly("photo1.jpg", "my.DS_Store.jpg")
+      expect(result[:skipped]).to be_empty
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "continues extracting when one zip entry fails to store" do
+      require "zip"
+
+      zip_path = Tempfile.create(["partial", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("bad.jpg")
+        zip.write("fake-jpg-bad")
+        zip.put_next_entry("good.jpg")
+        zip.write("fake-jpg-good")
+      end
+
+      allow(subject).to receive(:store_media).and_wrap_original do |original, **kwargs|
+        raise "storage exploded" if kwargs[:filename] == "bad.jpg"
+
+        original.call(**kwargs)
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "partial.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.filename).to eq("good.jpg")
+      expect(result[:skipped]).to be_empty
+      expect(result[:errored]).to eq([{ filename: "bad.jpg", message: "storage exploded" }])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "raises validation error for a corrupted zip file" do
+      corrupt_path = Tempfile.create(["corrupt", ".zip"]).path
+      File.write(corrupt_path, "this is not a zip archive")
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "corrupt.zip",
+          type: "application/zip",
+          tempfile: File.open(corrupt_path, "rb")
+        }
+      )
+
+      expect do
+        subject.upload(zip_file, resource: "res", project_id: "pid")
+      end.to raise_error(Verse::Error::ValidationFailed, /zip archive/)
+    ensure
+      FileUtils.rm_f(corrupt_path) if corrupt_path && File.exist?(corrupt_path)
+    end
+
+    it "detects zip file by extension even if mime type is generic" do
+      require "zip"
+
+      zip_path = Tempfile.create(["ext", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("test.txt")
+        zip.write("content")
+      end
+
+      # mime type is application/octet-stream but extension is .zip
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "archive.zip",
+          type: "application/octet-stream",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.filename).to eq("test.txt")
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "reports skipped files when modality doesn't allow mime type" do
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("test_modality").and_return(["image/.*"]).at_least(:once)
+
+      # Upload a video file (video/mp4) with a modality that only allows images
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "video.mp4",
+            type: "video/mp4",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "test_res",
+        project_id: "pid",
+        modality: "test_modality"
+      )
+
+      expect(result[:processed]).to be_empty
+      expect(result[:skipped]).to eq([{ filename: "video.mp4", message: "File type is not supported" }])
+    end
+
+    it "skips unsupported files within a zip and reports them" do
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("image_only").and_return(["image/.*"]).at_least(:once)
+
+      require "zip"
+      zip_path = Tempfile.create(["mixed", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("image.jpg")
+        zip.write("fake-jpg")
+        zip.put_next_entry("script.sh")
+        zip.write("echo hi")
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "mixed.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid", modality: "image_only")
+
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.filename).to eq("image.jpg")
+      expect(result[:skipped]).to eq([{ filename: "script.sh", message: "File type is not supported" }])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "rejects the whole archive when an entry's compression ratio is suspicious" do
+      require "zip"
+
+      zip_path = Tempfile.create(["bomb", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("bomb.bin")
+        zip.write("0" * 1_000_000) # ~1 MB of zeros deflates to ~1 KB → ratio far above 100:1
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "bomb.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      expect do
+        subject.upload(zip_file, resource: "res", project_id: "pid")
+      end.to raise_error(Verse::Error::ValidationFailed, /compression ratio/)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "skips a zip entry over the per-file size limit and keeps the rest" do
+      require "zip"
+      stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 10)
+
+      zip_path = Tempfile.create(["oversized", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("big.jpg")
+        zip.write("x" * 50) # 50 bytes > 10-byte cap (ratio stays well under 100:1)
+        zip.put_next_entry("small.jpg")
+        zip.write("ok") # 2 bytes
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "oversized.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      expect(result[:processed].map(&:filename)).to eq(["small.jpg"])
+      expect(result[:skipped].map { |s| s[:filename] }).to eq(["big.jpg"])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "rejects the whole archive when total uncompressed size exceeds the limit" do
+      require "zip"
+      stub_const("Medias::UploadConstants::MAX_TOTAL_UNCOMPRESSED_SIZE", 10)
+
+      zip_path = Tempfile.create(["toobig", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("a.jpg")
+        zip.write("x" * 8)
+        zip.put_next_entry("b.jpg")
+        zip.write("x" * 8) # cumulative 16 bytes > 10-byte total cap
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "toobig.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      expect do
+        subject.upload(zip_file, resource: "res", project_id: "pid")
+      end.to raise_error(Verse::Error::ValidationFailed, /total uncompressed size/)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "skips a direct upload over the per-file size limit" do
+      stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 1)
+
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "big.mp4",
+            type: "video/mp4",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "too_big_res",
+        key: "too_big_key",
+        project_id: "pid"
+      )
+
+      expect(result[:processed]).to be_empty
+      expect(result[:skipped].map { |s| s[:filename] }).to eq(["big.mp4"])
     end
   end
 
