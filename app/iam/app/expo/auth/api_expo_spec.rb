@@ -14,7 +14,7 @@ RSpec.describe Auth::ApiExpo, type: :exposition, as: :system do
         name: "API Service Account",
         picture_url: nil,
         role_name: "api:org:read,org:write",
-        role_scope: { "org" => ["org-123"] },
+        role_scope: { "org" => ["1"] },
         role_rights: %w[read write],
         auth_token: "jwt_token_here",
         refresh_token: nil,
