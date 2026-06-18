@@ -26,8 +26,6 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
-  import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
