@@ -1,6 +1,6 @@
 <script lang="ts">
   import type Viewport from "./Viewport.svelte";
-  import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { EDITOR_MODE, viewport } from "$lib/state/viewport.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
   interface Props {
@@ -18,13 +18,13 @@
 
   function onMouseDown(e: MouseEvent) {
     // Only pan in default mode (same logic as Viewport.mouseDown)
-    if (viewport.mode === DEFAULT_MODE) {
+    if (viewport.mode === EDITOR_MODE) {
       zoomableElement.mouseDown(e);
     }
   }
 
   function onMouseMove(e: MouseEvent) {
-    if (viewport.mode === DEFAULT_MODE) {
+    if (viewport.mode === EDITOR_MODE) {
       zoomableElement.mouseMove(e);
     }
   }
