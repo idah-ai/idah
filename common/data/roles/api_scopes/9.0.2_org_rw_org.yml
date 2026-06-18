@@ -7,4 +7,4 @@ api/org_rw_org:
   rights:
     # Organizations
     - "iam:organizations.*.as_org_owner"
-    - "iam:accounts.create.as_org_owner"
+    - "iam:accounts.*.as_org_owner"

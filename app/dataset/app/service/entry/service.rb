@@ -92,7 +92,7 @@ module Entry
 
     def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: })
+        entries.assign(id, { assigned_to_id: })
         entries.find!(id)
       end
     end
@@ -142,7 +142,7 @@ module Entry
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
 
         entry_workflow.error!
-        entries.update!(
+        entries.error(
           entry.id,
           {
             wf_step: entry_workflow.aasm.current_state.to_s,
