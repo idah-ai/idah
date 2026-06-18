@@ -18,7 +18,7 @@ import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state
 export const command = {
   name: "annotation.toggle_group_editability",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "L",
   shortDescription: "Toggle editability",
   longDescription: "Toggle annotation's editability (lock/unlock)",
