@@ -71,9 +71,7 @@ export class EntriesListController {
     pagination: { page: this.currentPage, itemsPerPage: this.itemsPerPage },
   });
 
-  isFiltering: boolean = $derived(
-    Object.keys(this.filters).filter((k) => k !== "dataset_id").length > 0,
-  );
+  isFiltering: boolean = $derived(Object.keys(this.filters).filter((k) => k !== "dataset_id").length > 0);
 
   isRowSelected: boolean = $derived(this.selectedEntryIds.length > 0);
 

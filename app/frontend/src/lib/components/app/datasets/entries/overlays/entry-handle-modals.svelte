@@ -3,10 +3,10 @@
   import CreateEntryFormModal from "@/components/app/datasets/entries/overlays/create-entry-form-modal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  
+
   import { deleteEntries, exportEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { pluralizeUnit } from "@/utils/unit";
-  
+
   import type { EntriesListController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
 
   let {
@@ -74,11 +74,7 @@
 />
 
 <!-- SET PRIORITY -->
-<UpdateEntryPriorityFormModal
-  action="update"
-  entryIds={controller.selectedEntryIds}
-  bind:open={openSetPriority}
-/>
+<UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedEntryIds} bind:open={openSetPriority} />
 
 <!-- CONFIRM UNASSIGN -->
 <ConfirmModal

@@ -12,20 +12,19 @@
   import Button from "@/components/ui/button/button.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Can from "@/security/can.svelte";
-  
+
   import EntriesModals from "@/components/app/datasets/entries/overlays/entry-handle-modals.svelte";
   import EntriesFilterToolbar from "@/components/app/datasets/entries/toolbar/entry-filter-toolbar.svelte";
-  
+
   import { Card, CardContent } from "@/components/ui/card";
 
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-  
+
   import { EntriesListController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
-
 
   import type { ProjectMemberScope } from "@/security/types";
 
@@ -114,9 +113,7 @@
           <ResponseBlock
             icon={LayoutListIcon}
             title={controller.isFiltering ? "No entries found" : "No entries yet"}
-            description={controller.isFiltering
-              ? "Try adjusting your filters."
-              : "Please add entries to get started."}
+            description={controller.isFiltering ? "Try adjusting your filters." : "Please add entries to get started."}
           >
             {#snippet actions()}
               {#if !controller.isFiltering}

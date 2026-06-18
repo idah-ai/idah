@@ -46,9 +46,7 @@ export async function deleteEntries(
 
     const count = entryIds.length;
     const description =
-      count > 1
-        ? `${count} entries have been deleted.`
-        : `The entry "${getEntryName(entryIds[0])}" has been deleted.`;
+      count > 1 ? `${count} entries have been deleted.` : `The entry "${getEntryName(entryIds[0])}" has been deleted.`;
 
     showToast.success({ title: "Entry deleted", description });
     return true;

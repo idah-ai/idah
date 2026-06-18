@@ -124,9 +124,7 @@
       </div>
     </div>
 
-    <div
-      class={cn("w-full gap-2 lg:w-auto", controller.isRowSelected ? "grid grid-cols-2" : "flex justify-end")}
-    >
+    <div class={cn("w-full gap-2 lg:w-auto", controller.isRowSelected ? "grid grid-cols-2" : "flex justify-end")}>
       <!-- BULK ACTIONS -->
       {#if controller.isRowSelected}
         <DropdownMenu>
