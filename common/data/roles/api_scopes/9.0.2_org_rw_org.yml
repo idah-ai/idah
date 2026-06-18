@@ -6,6 +6,5 @@ api/org_rw_org:
   assignable: false
   rights:
     # Organizations
-    - "iam:organizations.read.as_org_owner"
-    - "iam:organizations.update.as_org_owner"
+    - "iam:organizations.*.as_org_owner"
     - "iam:accounts.create.as_org_owner"

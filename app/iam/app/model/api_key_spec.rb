@@ -10,6 +10,7 @@ RSpec.describe ApiKey, database: true do
       {
         id: "test-key-id",
         account_id: 123,
+        created_by_id: 1,
         name: "Test API Key",
         key_label: "IDAH_1234...abcd",
         key_sha: Digest::SHA256.hexdigest("test_key"),
