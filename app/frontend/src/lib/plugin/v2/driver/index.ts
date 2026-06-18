@@ -8,13 +8,14 @@ import type {
   IDatasetInfo,
   IIdahDriverV2,
   IMediaInfo,
+  IToolbarDriverV2,
+  IStatsDriverV2,
   IModeEvent,
   INotesDriverV2,
   IProjectInfo,
   IShapeConfig,
   ISyncErrorEvent,
   ISyncEvent,
-  IToolbarDriverV2,
   Unsubscribe,
 } from "../types";
 
@@ -47,6 +48,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2;
   readonly notes: INotesDriverV2;
+  readonly stats: IStatsDriverV2;
 
   // ── Activity context ──────────────────────────────────────────────────
 
@@ -106,6 +108,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     const notesAdapter = new NotesDriverAdapter(this._id);
     this.notes = notesAdapter.sealed();
     this.#notesAdapter = notesAdapter;
+
+    // Build stats driver — core stats from this driver + plugin-registered providers
+    this.stats = new StatsDriverAdapter(this);
 
     // ── Register default commands ─────────────────────────────────────
     registerCommands(this);
@@ -311,6 +316,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get notes() {
         return driver.notes;
       },
+      get stats() {
+        return driver.stats;
+      },
 
       setMode: driver.setMode.bind(driver),
       onModeChange: driver.onModeChange.bind(driver),
@@ -326,23 +334,15 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 // ── Factory ──────────────────────────────────────────────────────────────
 
 import { JsonRpcDatasource } from "@/data/jsonrpc";
-import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
 import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
+import { StatsDriverAdapter } from "./adapter/stats";
 
-export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2> {
-  const checkEntryRes = await entriesBackendDataSource.get(entryId, {
-    fields: { [EntryRecord.type]: ["wf_step"] },
-    noCache: true,
-  });
-
-  if (checkEntryRes.data.wf_step === "start") {
-    await entriesBackendDataSource.submit(entryId);
-  }
-
+export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
     included: ["dataset", "dataset.project"],
     noCache: true,

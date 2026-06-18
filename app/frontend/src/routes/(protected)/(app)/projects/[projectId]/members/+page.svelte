@@ -54,7 +54,7 @@
     dataSource={projectMembersBackendDataSource}
     listOptions={{
       fields: {
-        [ProjectMemberRecord.type]: ["id", "account_id", "email", "role", "invited_by_id", "created_at"],
+        [ProjectMemberRecord.type]: ["id", "account_id", "project_id", "email", "role", "invited_by_id", "created_at"],
       },
       filters: {
         project_id: projectId,

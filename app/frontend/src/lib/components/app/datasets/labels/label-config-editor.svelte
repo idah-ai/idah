@@ -380,4 +380,4 @@
   </Button>
 {/snippet}
 
-<DuplicateConfigModal action="create" {labelConfig} bind:open={openDuplicateConfigModal} />
+<DuplicateConfigModal action="create" {labelConfig} {modality} bind:open={openDuplicateConfigModal} />

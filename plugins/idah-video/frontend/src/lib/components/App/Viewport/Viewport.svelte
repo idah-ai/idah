@@ -6,8 +6,8 @@
   import { modKey } from "$lib/utils/browser";
 
   import SyncIndicator from "./SyncIndicator.svelte";
-
   import { type Point } from "$lib/utils/math/point";
+  import LoadingIndicator from "./LoadingIndicator.svelte";
 
   // Props
   interface Props {
@@ -224,6 +224,7 @@
   bind:clientWidth={size[0]}
 >
   <SyncIndicator />
+  <LoadingIndicator />
   <div
     class="target"
     style:transform-origin="top left"
