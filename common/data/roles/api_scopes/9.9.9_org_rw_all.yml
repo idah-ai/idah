@@ -7,4 +7,4 @@ api/org_rw_all:
   rights:
     # Organizations
     - "iam:organizations.*.*"
-    - "iam:accounts.create.*"
+    - "iam:accounts.*.*"
