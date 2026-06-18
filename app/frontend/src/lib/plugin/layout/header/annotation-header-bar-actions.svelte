@@ -197,16 +197,6 @@
     </DropdownMenu>
 
     <EntryStatsModal {driver} />
-
-    {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <ToolTooltip {label} align="center" delayDuration={100}>
-        {#snippet trigger()}
-          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
-            <Icon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
-    {/each}
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
