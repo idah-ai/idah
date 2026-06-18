@@ -4,7 +4,6 @@
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
-  import { writable } from "svelte/store";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -45,6 +44,7 @@
   let { id: entryId, wf_step, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  let permissionsLoaded = $state(false);
   let canOpenEntry = $derived.by(() => {
     if (!currentAccount?.id) return false;
 
@@ -58,7 +58,7 @@
     if (wf_step === "done" && canUpdateEntry) return true;
 
     /** If entry is assigned to someone, it can open by the assigned user */
-    return assigned_to_id == Number(currentAccount.id);
+    return assigned_to_id === Number(currentAccount.id);
   });
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
@@ -74,6 +74,10 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    permissionsLoaded = true;
+
+    // Start the job status poller once when component mounts
+    await periodicCheckJobStatus();
   });
 
   // State for thumbnail
@@ -83,22 +87,16 @@
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
-  let animationInterval: number | null = $state(null);
-  let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
+  let animationInterval: ReturnType<typeof setInterval> | null = $state(null);
+  let progressInterval: ReturnType<typeof setInterval> | null = $state(null);
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
-  const ANIMATION_INTERVAL_MS = 350; // 1 second per position
+  const ANIMATION_INTERVAL_MS = 350;
 
   // Functions
-  $effect(() => {
-    periodicCheckJobStatus();
-
-    return () => stopPeriodicCheckJobStatus();
-  });
-
-  async function selectEntry() {
+  async function selectEntry(): Promise<void> {
     if (!currentAccount?.id) return;
 
     try {
@@ -122,6 +120,11 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      // Revoke the previous blob URL to avoid memory leaks
+      if (thumbnailUrl) {
+        URL.revokeObjectURL(thumbnailUrl);
+      }
+
       thumbnailUrl = await mediaBackendDataSource.getFiles({
         resource: entry.resource,
         key: "thumbnail.jpg",
@@ -130,6 +133,11 @@
       thumbnailImg.onload = () => {
         const width = thumbnailImg.width;
         containerWidth = width / TOTAL_POSITIONS;
+      };
+
+      thumbnailImg.onerror = () => {
+        thumbnailError = true;
+        thumbnailUrl = null;
       };
 
       thumbnailImg.src = thumbnailUrl;
@@ -141,13 +149,9 @@
     }
   }
 
-  /**
-   * Fetch jobs data every 10 seconds, to keep the status updated
-   * Note: Only fetch if the entry is in a processing state
-   */
-  async function periodicCheckJobStatus() {
+  async function periodicCheckJobStatus(): Promise<void> {
     if (processingStatuses.includes(entry.status)) {
-      $progressInterval = setInterval(async () => {
+      progressInterval = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
@@ -204,7 +208,7 @@
   }
 
   // Animation functions
-  function startAnimation() {
+  function startAnimation(): void {
     if (animationInterval) return;
 
     animationInterval = setInterval(() => {
@@ -212,7 +216,7 @@
     }, ANIMATION_INTERVAL_MS);
   }
 
-  function stopAnimation() {
+  function stopAnimation(): void {
     if (animationInterval) {
       clearInterval(animationInterval);
       animationInterval = null;
@@ -221,14 +225,20 @@
     currentImagePosition = 0; // Reset to first image
   }
 
-  // Clean up blob URL and animation when component is destroyed
-  function stopPeriodicCheckJobStatus() {
-    clearInterval($progressInterval);
+  function stopPeriodicCheckJobStatus(): void {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
   }
 
-  function cleanup() {
+  // Clean up timers, animation state, and blob URL when component is destroyed
+  function cleanup(): void {
     stopAnimation();
     stopPeriodicCheckJobStatus();
+
+    thumbnailImg.onload = null;
+    thumbnailImg.onerror = null;
 
     if (thumbnailUrl) {
       URL.revokeObjectURL(thumbnailUrl);
@@ -290,7 +300,12 @@
       <!-- INFO -->
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
-        {#if canOpenEntry}
+        <!-- Wait for permissions to load before deciding open vs locked state -->
+        {#if !permissionsLoaded}
+          <Text size="sm" weight="medium" class="text-muted-foreground animate-pulse">
+            {entry.name || entry.id}
+          </Text>
+        {:else if canOpenEntry}
           <Button
             variant="link"
             class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"

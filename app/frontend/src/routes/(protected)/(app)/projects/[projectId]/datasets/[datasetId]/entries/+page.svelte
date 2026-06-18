@@ -62,6 +62,8 @@
     { label: "Entries" },
   ]);
 
+  let unsubRefetch: (() => void) | undefined;
+
   onMount(async () => {
     const account = $authStatus.authContext;
     [canUpdateEntry, canDeleteEntry] = await Promise.all([
@@ -70,11 +72,12 @@
     ]);
 
     await controller.initFromUrl();
-    const unsubRefetch = controller.subscribeToRefetches();
-    onDestroy(() => {
-      unsubRefetch();
-      controller.destroy();
-    });
+    unsubRefetch = controller.subscribeToRefetches();
+  });
+
+  onDestroy(() => {
+    unsubRefetch?.();
+    controller.destroy();
   });
 </script>
 
