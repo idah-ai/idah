@@ -265,10 +265,10 @@
 
     if (valueMode == "entry:root" && !selAnnotation) {
       if (value.category && value.category != "" && requirementFullfilled)
-        addAnnotation({ type: valueMode }, $state.snapshot(value));
+        addAnnotation({ type: valueMode } as IImageAnnotationShape, $state.snapshot(value));
     } else if (selAnnotation) {
       selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
-      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
+      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord, $state.snapshot(value));
     } else if (valueMode !== "entry:root") {
       // Sidebar category click: store category and enter drawing mode
       pendingValue = value;
@@ -397,7 +397,7 @@
           if (!canConfirm) return;
           showPopOver = false;
           if (mode === "entry:root") {
-            addAnnotation({ type: "entry:root" }, $state.snapshot(pendingValue));
+            addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
           } else if (shapeSelectionArgs) {
             confirmCreateAnnotation(...shapeSelectionArgs);
           }
@@ -430,7 +430,6 @@
             {annotationValue}
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
-            onSelectAnnotationGroup={() => {}}
             onDeleteAnnotation={deleteAnnotation}
           />
         {/if}
@@ -456,7 +455,7 @@
             showPopOver = false;
             switch (mode) {
               case "entry:root":
-                addAnnotation({ type: "entry:root" }, $state.snapshot(pendingValue));
+                addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
                 break;
               default:
                 if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);

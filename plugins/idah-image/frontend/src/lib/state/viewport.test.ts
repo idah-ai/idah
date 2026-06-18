@@ -46,8 +46,8 @@ vi.mock("./media.svelte", () => ({
 // ---------------------------------------------------------------------------
 // Imports (after mocks are set up)
 // ---------------------------------------------------------------------------
-import { BOUNDING_BOX_MODE, DEFAULT_MODE, POLYGON_MODE, viewport } from "./viewport.svelte";
-import { REVIEW_MODE } from "$lib/types";
+import { viewport } from "./viewport.svelte";
+import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON, REVIEW_MODE } from "$lib/types";
 
 // Helpers
 function setMediaDimensions(w: number, h: number) {
@@ -76,17 +76,17 @@ describe("isCreationMode", () => {
   beforeEach(() => resetViewport());
 
   it("returns false when mode is default", () => {
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = "editor";
     expect(viewport.isCreationMode).toBe(false);
   });
 
   it("returns true when mode is bounding-box", () => {
-    viewport.mode = BOUNDING_BOX_MODE;
+    viewport.mode = IMAGE_BOUNDING_BOX;
     expect(viewport.isCreationMode).toBe(true);
   });
 
   it("returns true when mode is polygon", () => {
-    viewport.mode = POLYGON_MODE;
+    viewport.mode = IMAGE_POLYGON;
     expect(viewport.isCreationMode).toBe(true);
   });
 
@@ -111,27 +111,27 @@ describe("mode setter", () => {
   beforeEach(() => resetViewport());
 
   it("calls driver.setMode when mode changes", () => {
-    viewport.mode = BOUNDING_BOX_MODE;
-    expect(mockDriver.__setMode).toHaveBeenCalledWith(BOUNDING_BOX_MODE);
+    viewport.mode = IMAGE_BOUNDING_BOX;
+    expect(mockDriver.__setMode).toHaveBeenCalledWith(IMAGE_BOUNDING_BOX);
   });
 
   it("does NOT call driver.setMode when mode is already set", () => {
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = "editor";
     const callsBefore = mockDriver.__setMode.mock.calls.length;
 
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = "editor";
 
     expect(mockDriver.__setMode).toHaveBeenCalledTimes(callsBefore);
   });
 
   it("calls driver.setMode on each distinct change", () => {
-    viewport.mode = BOUNDING_BOX_MODE;
-    viewport.mode = POLYGON_MODE;
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = IMAGE_BOUNDING_BOX;
+    viewport.mode = IMAGE_POLYGON;
+    viewport.mode = "editor";
     expect(mockDriver.__setMode).toHaveBeenCalledTimes(3);
-    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(1, BOUNDING_BOX_MODE);
-    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(2, POLYGON_MODE);
-    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(3, DEFAULT_MODE);
+    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(1, IMAGE_BOUNDING_BOX);
+    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(2, IMAGE_POLYGON);
+    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(3, "editor");
   });
 });
 

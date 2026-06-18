@@ -13,8 +13,10 @@ import type {
   IIdahDriverV2,
   IMediaInfo,
   IModeEvent,
+  INoteAnchor,
   INoteRecord,
   INotesDriverV2,
+  INoteScreenPosition,
   IShapeConfig,
   IShortcut,
   ISyncErrorEvent,
@@ -72,11 +74,24 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
 const SAMPLE_NOTES: INoteRecord[] = [
   {
     id: "note-v2-001",
-    annotation_id: "ann-v2-001",
+    anchor: {
+      annotation_id: "ann-v2-001",
+      anchor_type: "annotation",
+      position: { x: 0.5, y: 0.5 },
+    },
     content_md: "Check this car — front bumper unclear",
-    resolved: false,
+    status: "pending",
   },
-  { id: "note-v2-002", annotation_id: "ann-v2-002", content_md: "Bus has a logo on the side", resolved: false },
+  {
+    id: "note-v2-002",
+    anchor: {
+      annotation_id: "ann-v2-002",
+      anchor_type: "annotation",
+      position: { x: 0.3, y: 0.7 },
+    },
+    content_md: "Bus has a logo on the side",
+    status: "pending",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -213,29 +228,35 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
 }
 
 // ---------------------------------------------------------------------------
-// Adapter: notes
+// Adapter: notes — push-based observer interface
 // ---------------------------------------------------------------------------
 class NotesDriverAdapter implements INotesDriverV2 {
+  private notesChangeListeners: Set<(notes: INoteRecord[]) => void> = new Set();
+  private focusNoteListeners: Set<(note: INoteRecord | null) => void> = new Set();
+
   constructor(private store: InMemoryStore<INoteRecord>) {}
 
-  registerField(name: string, fn: (note: INoteRecord) => unknown): void {
-    this.store.registerField(name, fn);
+  onNotesChange(cb: (notes: INoteRecord[]) => void): Unsubscribe {
+    this.notesChangeListeners.add(cb);
+    cb(this.store.all());
+    return () => this.notesChangeListeners.delete(cb);
   }
 
-  async fetch(filter?: IFilter): Promise<INoteRecord[]> {
-    return this.store.fetch(filter);
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe {
+    this.focusNoteListeners.add(cb);
+    return () => this.focusNoteListeners.delete(cb);
   }
 
-  async update(id: string, data: Partial<INoteRecord>): Promise<void> {
-    return this.store.update(id, data);
+  reportNotePosition(_position: INoteScreenPosition): void {
+    // Mock — no-op
   }
 
-  async delete(id: string): Promise<void> {
-    return this.store.delete(id);
+  selectNote(_noteId: string | null): void {
+    // Mock — no-op
   }
 
-  async create(data: INoteRecord): Promise<INoteRecord> {
-    return this.store.create(data);
+  requestCreateNote(_anchor: INoteAnchor): void {
+    // Mock — no-op
   }
 }
 

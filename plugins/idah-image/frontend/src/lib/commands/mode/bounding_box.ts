@@ -21,8 +21,8 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        if (driver.mode !== BOUNDING_BOX_MODE) {
-          driver.setMode(BOUNDING_BOX_MODE);
+        if (driver.mode !== IMAGE_BOUNDING_BOX) {
+          driver.setMode(IMAGE_BOUNDING_BOX);
         }
       },
       isCombinable() {
