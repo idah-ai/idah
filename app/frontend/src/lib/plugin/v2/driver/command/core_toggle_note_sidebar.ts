@@ -2,25 +2,23 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.reset",
+    name: "core.toggle_note_sidebar",
     group: "General",
-    // TODO modes ['*'] ?
-    modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
-    shortcut: null,
-    shortDescription: "Reset cache and reload",
-    longDescription: "Reset cache and reload",
+    modes: ["review", "note"],
+    shortcut: "Control+Shift+N",
+    shortDescription: "Toggle note sidebar",
+    longDescription: "Show/hide the note sidebar in review workspace",
     callback: () => ({
       command: {
-        name: "core.reset",
+        name: "core.toggle_note_sidebar",
         group: "General",
         modes: [],
         shortcut: null,
         shortDescription: null,
         longDescription: null,
       },
-      async do() {
-        await driver.resetCache();
-        window.location.reload();
+      do() {
+        driver.notesAdapter!.toggleNoteSidebar();
       },
       isCombinable() {
         return false;

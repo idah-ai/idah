@@ -5,7 +5,7 @@ export function register(driver: IdahDriverV2) {
     name: "core.palette",
     group: "General",
     // TODO modes ['*'] ?
-    modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
     shortcut: "Control+Space",
     shortDescription: null,
     longDescription: null,

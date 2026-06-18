@@ -2,7 +2,6 @@
   import {
     ChevronDownIcon,
     KeyboardIcon,
-    MessageCircleIcon,
     MoonIcon,
     Settings2Icon,
     SquareCheckIcon,
@@ -27,43 +26,30 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
-  import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
-
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { refetches } from "@/utils/refetch";
 
   // Props
   interface Props {
     driver: IIdahDriverV2;
-    pluginContainerElement: HTMLElement | null;
+    noteSidebarOpen?: boolean;
+    onNoteToggle?: () => void;
   }
-  let { driver, pluginContainerElement }: Props = $props();
+  let { driver, noteSidebarOpen = false, onNoteToggle }: Props = $props();
 
   // Variables
   let loading = $state(false);
-  let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
-  let menus: AnnotationHeaderBarBaseTool[] = $derived([
-    {
-      name: "notes",
-      label: "All Notes",
-      icon: MessageCircleIcon,
-      isActive: openNoteSidebar,
-      handleClick: () => {
-        if (!openNoteSidebar) {
-          openNoteSidebar = true;
-        } else {
-          closeNoteSidebar();
-        }
-      },
-    },
-  ]);
+
+  // Track mode changes reactively
+  let currentMode = $state(driver.mode);
+  driver.onModeChange((event) => {
+    currentMode = event.newValue;
+  });
 
   const reviewMenus: IDropdownMenus = {
     actions: {
@@ -83,13 +69,6 @@
   };
 
   // Functions
-  function closeNoteSidebar() {
-    openNoteSidebar = false;
-
-    // Reset selected note feed when closing sidebar
-    driver.notes.gotoFeed(null);
-  }
-
   async function submitAnnotation() {
     loading = true;
     await submit();
@@ -103,14 +82,22 @@
 
   async function submit(opts?: { approved: boolean }) {
     entriesBackendDataSource.submit(driver.id, opts).then(async () => {
+      $refetches.entries.list = new Date();
       try {
-        const datasetsRes = await datasetsBackendDataSource.list({
+        const entriesRes = await entriesBackendDataSource.list({
           fields: {
-            [DatasetRecord.type]: ["id"],
+            [EntryRecord.type]: ["id"],
+          },
+          filters: {
+            dataset_id: driver.dataset.id,
           },
           noCache: true,
+          pagination: {
+            page: 1,
+            itemsPerPage: 1,
+          },
         });
-        if (datasetsRes.data.length) {
+        if (entriesRes.data.length) {
           goto(resolve(`/projects/${driver.project.id}/datasets/${driver.dataset.id}/entries`));
         } else {
           goto(resolve(`/projects/${driver.project.id}/datasets`));
@@ -134,6 +121,29 @@
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
+    {#if currentMode === "review" || currentMode === "note"}
+      <ToolTooltip
+        label="All Notes"
+        shortcut={cmdShortcut("core.toggle_note_sidebar")}
+        align="center"
+        delayDuration={100}
+      >
+        {#snippet trigger()}
+          <Button variant={noteSidebarOpen ? "default" : "ghost"} size="icon-sm" onclick={onNoteToggle}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 17.5329 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
+
     <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
@@ -183,16 +193,23 @@
         </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
-
-    {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <ToolTooltip {label} align="center" delayDuration={100}>
-        {#snippet trigger()}
-          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
-            <Icon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
-    {/each}
+  </div>
+  <!-- Editor / Review segmented toggle -->
+  <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
+    <Button
+      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("editor")}
+    >
+      Editor
+    </Button>
+    <Button
+      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("review")}
+    >
+      Review
+    </Button>
   </div>
 
   {#if driver.workflowStep === "done"}
@@ -210,7 +227,3 @@
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
-
-<NoteSidebar {driver} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
-
-<NoteOverlay {driver} {pluginContainerElement} />
