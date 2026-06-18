@@ -154,6 +154,20 @@
 
   onDestroy(() => unsub());
 
+  // Track whether onMount has completed so the external refetch subscription
+  // doesn't fire fetchEntries before state is initialised.
+  let isMounted = false;
+  let lastEntriesListRefetch: Date | null = null;
+
+  const unsubRefetch = refetches.subscribe(($val) => {
+    if (isMounted && lastEntriesListRefetch !== null && $val.entries.list !== lastEntriesListRefetch) {
+      fetchEntries();
+    }
+    lastEntriesListRefetch = $val.entries.list;
+  });
+
+  onDestroy(() => unsubRefetch());
+
   // $state variables — separated for reactive Svelte binding
   let urlFilters: Hash = $state({});
   let filters: Hash = $state({ dataset_id: datasetId });
@@ -164,6 +178,7 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let selectedEntryIds: string[] = $state([]);
+  let isFetching: boolean = $state(false);
   let selectedRowsCount: number = $derived(selectedEntryIds.length);
   let assignableEntryIds: string[] = $derived(
     selectedEntryIds.filter((id) => response.data.find((e) => e.id === id)?.wf_step !== "done"),
@@ -192,6 +207,8 @@
   // Lifecycle
 
   onMount(async () => {
+    isMounted = true;
+
     const currentAccount = $authStatus.authContext;
     canUpdateEntry =
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
@@ -217,7 +234,7 @@
         writeFilterToUrl(newUrl.searchParams, key, value);
       }
       /* eslint-disable svelte/no-navigation-without-resolve */
-      goto(newUrl.href, { replaceState: true });
+      goto(newUrl.href, { replaceState: true, keepFocus: true, noScroll: true });
       /* eslint-enable svelte/no-navigation-without-resolve */
     } else {
       // Sync from the current URL
@@ -227,7 +244,7 @@
     }
 
     // Re-fetch with restored state so the list renders with correct filters/sort
-    $refetches.entries.list = new Date();
+    await fetchEntries();
   });
 
   pageBreadcrumbsStore.set([
@@ -298,7 +315,12 @@
   }
 
   async function fetchEntries(): Promise<void> {
-    response = await entriesBackendDataSource.list(listOptions);
+    isFetching = true;
+    try {
+      response = await entriesBackendDataSource.list(listOptions);
+    } finally {
+      isFetching = false;
+    }
   }
 
   function resetToFirstPage(): void {
@@ -321,7 +343,7 @@
     }
 
     /* eslint-disable svelte/no-navigation-without-resolve */
-    goto(newUrl.href, { replaceState: true });
+    goto(newUrl.href, { replaceState: true, keepFocus: true, noScroll: true });
     /* eslint-enable svelte/no-navigation-without-resolve */
 
     resetToFirstPage();
@@ -330,7 +352,7 @@
     filters = updatedFilters;
 
     persistFilters();
-    $refetches.entries.list = new Date();
+    await fetchEntries();
   }
 
   async function sortEntries(params: SortDataSourceParams): Promise<void> {
@@ -339,7 +361,7 @@
     const sortKey = `${sortPrefix}${columnKey}`;
 
     if (sortDirection === "none") {
-      _sort = _sort.filter((s) => !s.endsWith(sortKey));
+      _sort = _sort.filter((s) => !s.endsWith(columnKey));
     } else if (_sort.some((s) => s.endsWith(columnKey))) {
       _sort = _sort.map((s) => (s.endsWith(columnKey) ? sortKey : s));
     } else {
@@ -348,20 +370,20 @@
 
     resetToFirstPage();
     persistFilters();
-    $refetches.entries.list = new Date();
+    await fetchEntries();
   }
 
   async function changePage(changeToPage: number): Promise<void> {
     _currentPage = changeToPage;
     persistFilters();
-    $refetches.entries.list = new Date();
+    await fetchEntries();
   }
 
   async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
     resetToFirstPage();
     _itemsPerPage = selectedItemsPerPage;
     persistFilters();
-    $refetches.entries.list = new Date();
+    await fetchEntries();
   }
 
   function selectRow(selectedId: string): void {
@@ -374,11 +396,13 @@
 
   async function unAssignEntries(): Promise<void> {
     try {
-      for (const entryId of unAssignableEntryIds) {
-        const entryRes = await entriesBackendDataSource.update(entryId, {
-          attributes: { assigned_to_id: null },
-        });
-        response.data = response.data.map((entry) => (entry.id === entryId ? entryRes.data : entry));
+      const results = await Promise.all(
+        unAssignableEntryIds.map((entryId) =>
+          entriesBackendDataSource.update(entryId, { attributes: { assigned_to_id: null } }),
+        ),
+      );
+      for (const entryRes of results) {
+        response.data = response.data.map((entry) => (entry.id === entryRes.data.id ? entryRes.data : entry));
       }
 
       const selectedToUnassignedRows = response.data.filter((entry) => unAssignableEntryIds.includes(entry.id));
@@ -389,8 +413,8 @@
 
       showToast.success({ title: "Entry unassigned", description });
       selectedEntryIds = [];
-      $refetches.entries.list = new Date();
       openConfirmUnassignEntriesModal = false;
+      await fetchEntries();
     } catch (error) {
       showActionFailedToast(error);
     }
@@ -405,12 +429,12 @@
       const description =
         selectedRowsCount > 1
           ? `${selectedRowsCount} entries have been deleted.`
-          : `The entry "${response.data.find((entry) => entry.id === selectedEntryIds[0])?.resource}" has been deleted.`;
+          : `The entry "${response.data.find((entry) => entry.id === selectedEntryIds[0])?.name}" has been deleted.`;
 
       showToast.success({ title: "Entry deleted", description });
       selectedEntryIds = [];
-      $refetches.entries.list = new Date();
       openConfirmDeleteEntriesModal = false;
+      await fetchEntries();
     } catch (error) {
       showToast.error({
         title: "Unable to delete entry",
@@ -438,7 +462,7 @@
 
   function resetSelectedRows(): void {
     selectedEntryIds = [];
-    $refetches.entries.list = new Date();
+    fetchEntries();
   }
 </script>
 
@@ -459,7 +483,11 @@
           <!-- SELECT ALL -->
           {#if canUpdateEntry || canDeleteEntry}
             <div class="pl-6">
-              <Checkbox checked={selectedEntryIds.length > 0} onCheckedChange={toggleSelectAll} />
+              <Checkbox
+                checked={selectedEntryIds.length > 0 && selectedEntryIds.length === response.data.length}
+                indeterminate={selectedEntryIds.length > 0 && selectedEntryIds.length < response.data.length}
+                onCheckedChange={toggleSelectAll}
+              />
             </div>
           {/if}
 
@@ -540,42 +568,40 @@
 </PageHeader>
 
 <!-- LIST OF TASKS (ENTRY) -->
-{#key $refetches.entries.list}
-  {#await fetchEntries()}
-    <Spinner />
-  {:then _}
-    <div class="flex flex-col gap-4">
-      {#each response.data as entry (entry.id)}
-        <EntryCard {entry} {selectedEntryIds} onRowSelect={selectRow} />
-      {:else}
-        <Card>
-          <CardContent class="min-h-64 flex items-center justify-center">
-            <ResponseBlock
-              icon={LayoutListIcon}
-              title={isFiltering ? "No entries found" : "No entries yet"}
-              description={isFiltering ? "Try adjusting your filters." : "Please add entries to get started."}
-            >
-              {#snippet actions()}
-                {#if !isFiltering}
-                  {@render AddEntryButton()}
-                {/if}
-              {/snippet}
-            </ResponseBlock>
-          </CardContent>
-        </Card>
-      {/each}
-    </div>
+<div class="flex flex-col gap-4" class:opacity-60={isFetching}>
+  {#each response.data as entry (entry.id)}
+    <EntryCard {entry} {selectedEntryIds} onRowSelect={selectRow} onEntryUpdated={fetchEntries} />
+  {:else}
+    <Card>
+      <CardContent class="min-h-64 flex items-center justify-center">
+        {#if isFetching}
+          <Spinner />
+        {:else}
+          <ResponseBlock
+            icon={LayoutListIcon}
+            title={isFiltering ? "No entries found" : "No entries yet"}
+            description={isFiltering ? "Try adjusting your filters." : "Please add entries to get started."}
+          >
+            {#snippet actions()}
+              {#if !isFiltering}
+                {@render AddEntryButton()}
+              {/if}
+            {/snippet}
+          </ResponseBlock>
+        {/if}
+      </CardContent>
+    </Card>
+  {/each}
+</div>
 
-    <AppPaginator
-      page={listOptions.pagination?.page || _currentPage}
-      itemsPerPage={listOptions.pagination?.itemsPerPage || _itemsPerPage}
-      count={response.meta?.count ?? 0}
-      hasMore={response.meta?.more || false}
-      onPageChange={changePage}
-      onItemsPerPageSelect={setItemsPerPage}
-    />
-  {/await}
-{/key}
+<AppPaginator
+  page={listOptions.pagination?.page || _currentPage}
+  itemsPerPage={listOptions.pagination?.itemsPerPage || _itemsPerPage}
+  count={response.meta?.count ?? 0}
+  hasMore={response.meta?.more || false}
+  onPageChange={changePage}
+  onItemsPerPageSelect={setItemsPerPage}
+/>
 
 <!-- MODAL::ADD TASK -->
 <CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
@@ -611,8 +637,12 @@
 />
 
 <ConfirmModal
-  title="Export {selectedRowsCount} entries(s)"
-  description="Are you sure you want to export {selectedRowsCount} entries(s)?"
+  title="Export {selectedRowsCount} {pluralizeUnit(selectedRowsCount, 'entry', 'entries')}"
+  description="Are you sure you want to export {selectedRowsCount} {pluralizeUnit(
+    selectedRowsCount,
+    'entry',
+    'entries',
+  )}?"
   onConfirm={exportEntries}
   bind:open={openExportModal}
 />

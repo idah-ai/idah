@@ -34,8 +34,9 @@
     entry: EntryRecord;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
+    onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect }: Props = $props();
+  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   // Variables
   const currentAccount = $authStatus.authContext;
@@ -57,7 +58,7 @@
     if (wf_step === "done" && canUpdateEntry) return true;
 
     /** If entry is assigned to someone, it can open by the assigned user */
-    return assigned_to_id == Number(currentAccount.id);
+    return assigned_to_id === Number(currentAccount.id);
   });
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
@@ -238,6 +239,7 @@
 
   function updateEntry(thisEntry: EntryRecord): void {
     entry = thisEntry;
+    onEntryUpdated();
   }
 </script>
 
