@@ -15,7 +15,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
         key_sha: Digest::SHA256.hexdigest("test_key"),
         permissions: %w[org_rw_all org_ro_org],
         scope_type: "org",
-        scope_value: ["org-123"],
+        scope_value: ["1"],
         expires_at: now + 30 * 24 * 60 * 60,
         revoked_at: nil,
         status: "active",
@@ -35,7 +35,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
           name: "Test API Key",
           permissions: %w[org_rw_all org_ro_org],
           scope_type: "org",
-          scope_value: ["org-123"],
+          scope_value: ["1"],
           expires_at: (now + 30 * 24 * 60 * 60).iso8601
         }
       }

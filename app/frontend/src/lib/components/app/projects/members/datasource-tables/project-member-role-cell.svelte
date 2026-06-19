@@ -44,7 +44,7 @@
     },
     project_owner: {
       reviewer: "will lose full control of this project.",
-      annotator: "will no longer be able to review entries.",
+      annotator: "will lose full control of this project and no longer be able to review entries.",
       // TODO: use this once auto-unassigned is implemented
       // "will no longer be able to review entries and any review entries on these datasets currently assigned to this account will be unassigned.",
     },
