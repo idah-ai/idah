@@ -43,14 +43,6 @@ export interface DeleteCategoryProps {
   annotations?: AnnotationItem[];
 }
 
-function isCategoryMatch(annotationCategory: string | undefined, targetCategory: string): boolean {
-  if (!annotationCategory) {
-    return false;
-  }
-
-  return annotationCategory === targetCategory || annotationCategory.startsWith(`${targetCategory}/`);
-}
-
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,

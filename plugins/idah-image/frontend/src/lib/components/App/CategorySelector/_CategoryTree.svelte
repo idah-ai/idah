@@ -19,7 +19,11 @@
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
+    IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
+  } from "$lib/types";
 
   import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -53,16 +57,8 @@
 
     onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
   }
-  let {
-    view,
-    db,
-    items,
-    modalityShape,
-    categories,
-    onSelectCategory,
-    selectedCategory,
-    onDeleteAnnotation,
-  }: Props = $props();
+  let { view, db, items, modalityShape, categories, onSelectCategory, selectedCategory, onDeleteAnnotation }: Props =
+    $props();
 
   // Variables
   let openCategory = $state(true);
@@ -317,6 +313,7 @@
             <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
             {@const actions = getCategoryActions({
               categoryId: category.id,
+              shapeType: modalityShape,
               items: annotations,
               onClickDelete: () => {
                 categoryToDelete = category.id;
