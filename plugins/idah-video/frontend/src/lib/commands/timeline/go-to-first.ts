@@ -25,7 +25,7 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        viewport.video.currentFrame.value = 0;
+        viewport.video.goToFrame(0);
       },
       isCombinable() {
         return false;
