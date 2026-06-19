@@ -157,10 +157,10 @@
           let jobId = entry.job_id;
 
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { 
+            const entryRes = await entriesBackendDataSource.get(entryId, {
               included: ["dataset", "assigned_to", "reviewed_by"],
-              noCache: true
-             });
+              noCache: true,
+            });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -181,9 +181,9 @@
           jobProgress = jobRes.data.progress;
 
           if (jobProgress === 1) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { 
-               included: ["dataset", "assigned_to", "reviewed_by"],
-              noCache: true 
+            const entryRes = await entriesBackendDataSource.get(entryId, {
+              included: ["dataset", "assigned_to", "reviewed_by"],
+              noCache: true,
             });
             entry = entryRes.data;
             if (entry.wf_step !== "start") {
