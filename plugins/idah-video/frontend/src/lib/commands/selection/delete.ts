@@ -13,7 +13,7 @@ import { annotation } from "$lib/state/annotation.svelte";
 export const command = {
   name: "selection.delete",
   group: "Selection",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Backspace",
   shortDescription: "Delete selected",
   longDescription: null,

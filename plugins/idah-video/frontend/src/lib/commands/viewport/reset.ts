@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "viewport.reset",
   group: "Viewport",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "Digit0",
   shortDescription: "Reset view",
   longDescription: "Reset zoom and pan to fit the full video",

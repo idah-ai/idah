@@ -300,16 +300,62 @@ export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation =
 // ─── Note record ─────────────────────────────────────────────────────────
 
 /**
- * A raw note record as stored and returned by the driver.
- * Mirrors the V1 INoteFeed / INoteComment shapes.
+ * Note anchor — describes what the note is attached to and where.
+ * The `position` field is plugin-opaque; the core stores and forwards it as-is.
+ */
+export interface INoteAnchor {
+  /** Where the note is anchored: to the entry or to a specific annotation. */
+  anchor_type: "entry" | "annotation";
+
+  /** The annotation this note is attached to, or null for entry-level notes. */
+  annotation_id?: string | null;
+
+  /**
+   * Plugin-opaque position data. Core stores and forwards as-is.
+   * - annotation anchor: normalised offset from annotation centroid
+   * - entry anchor: plugin-defined (frame + normalised coords, etc.)
+   * Maps directly to the `position` JSONB column — no backend changes needed.
+   */
+  position?: unknown;
+}
+
+/**
+ * Screen position reported by the plugin for overlay placement.
+ * Uses plugin-container-relative pixels.
+ * `x`/`y` are undefined when the note is out of context — hide overlay without deselecting.
+ * `noteId` is null when reporting position for a pending creation.
+ */
+export interface INoteScreenPosition {
+  noteId: string | null;
+  x?: number;
+  y?: number;
+}
+
+/**
+ * A comment within a note's thread.
+ * Stored as a separate NoteComment record on the backend.
+ */
+export interface INoteComment {
+  id: string;
+  note_feed_id: string;
+  content_md: string;
+  created_by_email: string;
+  created_at: string;
+  updated_at: string;
+  edited_at: string | null;
+}
+
+/**
+ * A note record as transmitted between core and plugin.
+ * All spatial/temporal position info lives inside the opaque `anchor.position`.
  */
 export interface INoteRecord {
   id: string;
 
-  /** The annotation this note is attached to, or null for entry-level notes. */
-  annotation_id: string | null;
+  /** The anchor — what and where this note is attached to. */
+  anchor: INoteAnchor;
 
-  /** Markdown content of the note. */
+  /** Markdown content of the initial note (first message in the thread). */
   content_md?: string;
 
   /** Whether the note thread is resolved. */
@@ -317,12 +363,6 @@ export interface INoteRecord {
 
   /** Whether the note is pending or resolved. */
   status?: "pending" | "resolved";
-
-  /** Where the note is anchored. */
-  anchor_type?: "entry" | "annotation";
-
-  /** Viewport position of the note. */
-  position?: Record<string, unknown>;
 
   created_by_email?: string;
   created_at?: string;
@@ -357,12 +397,50 @@ export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotatio
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
 
+/**
+ * Push-based observer interface for notes.
+ * The core owns all note data; the plugin owns the viewport.
+ * The plugin receives notes, displays markers, and reports screen positions back.
+ * It never reads or writes note data directly.
+ */
 export interface INotesDriverV2 {
-  registerField(name: string, fn: (note: INoteRecord) => unknown): void;
-  fetch(filter?: IFilter): Promise<INoteRecord[]>;
-  update(id: string, data: Partial<INoteRecord>): Promise<void>;
-  delete(id: string): Promise<void>;
-  create(data: INoteRecord): Promise<INoteRecord>;
+  // ── Core → Plugin (observers) ──────────────────────────────────────────
+
+  /**
+   * Fires immediately on registration with the current note list,
+   * then again on any change (create / update / delete).
+   * The plugin uses this to seed and maintain its local store.
+   */
+  onNotesChange(cb: (notes: INoteRecord[]) => void): Unsubscribe;
+
+  /**
+   * Fires when the core wants the plugin to navigate to a note.
+   * The plugin should seek to the note's anchor position and then
+   * call `reportNotePosition` once the viewport has settled.
+   */
+  onFocusNote(cb: (note: INoteRecord | null) => void): Unsubscribe;
+
+  // ── Plugin → Core (commands) ───────────────────────────────────────────
+
+  /**
+   * Report the screen position of a marker for overlay placement.
+   * `noteId` is null when reporting position for a pending creation.
+   * `x`/`y` are undefined when the note is out of context — signals
+   * the core to hide the overlay without deselecting the note.
+   */
+  reportNotePosition(position: INoteScreenPosition): void;
+
+  /**
+   * Called when the user clicks a marker in the plugin viewport.
+   * Pass `null` to deselect.
+   */
+  selectNote(noteId: string | null): void;
+
+  /**
+   * Called when the user clicks in the viewport with the note tool active.
+   * The anchor describes what the new note should be attached to.
+   */
+  requestCreateNote(anchor: INoteAnchor): void;
 }
 
 // ─── V2 Driver — Command submodule ────────────────────────────────────────
@@ -520,6 +598,43 @@ export interface IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void;
 }
 
+// ─── V2 Driver — Stats submodule ──────────────────────────────────────────
+
+/**
+ * A single computed statistic for the entry-stats modal.
+ *
+ * Stats are grouped into sections (by `section`) for display. Core stats
+ * (annotation/category/shape counts) are produced by the driver itself;
+ * modality-specific stats (e.g. video duration/fps) are contributed by the
+ * active plugin via `register()` — so the modal stays free of plugin knowledge.
+ */
+export interface IStatEntry {
+  /** Dotted stat key, e.g. "category.cat.count" or "video.fps". */
+  key: string;
+  /** Display value (already stringified). */
+  value: string;
+  /** Grouping key for the section this stat belongs to, e.g. "category". */
+  section: string;
+  /** Optional display name for the section; falls back to a humanized `section`. */
+  sectionHeader?: string;
+  /** Optional right-column header for the section, e.g. "Count". */
+  unitHeader?: string;
+  /** Optional explicit row label; falls back to a humanized key remainder. */
+  label?: string;
+}
+
+/** Contributes a set of stats. Registered by plugins via `driver.stats.register`. */
+export interface IStatProvider {
+  collect(): IStatEntry[] | Promise<IStatEntry[]>;
+}
+
+export interface IStatsDriverV2 {
+  /** Register a stat provider (e.g. plugin-specific stats). */
+  register(provider: IStatProvider): void;
+  /** Collect all stats — built-in core stats plus every registered provider. */
+  collect(): Promise<IStatEntry[]>;
+}
+
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
 export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
@@ -553,6 +668,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
+  readonly stats: IStatsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 

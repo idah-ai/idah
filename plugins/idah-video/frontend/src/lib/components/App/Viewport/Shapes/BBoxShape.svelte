@@ -47,10 +47,12 @@
   let h = $derived(media.height);
 
   // ── Interpolated values ──────────────────────────────────────────────
+  // Use displayedFrame (not currentFrame) so shape positions stay in sync
+  // with the actual video pixels on screen during rapid frame navigation.
   let baseAngle = $derived.by((): number => {
     const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return 0;
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     return result?.angle ?? 0;
   });
 
@@ -71,7 +73,7 @@
   let basePoints = $derived.by((): Point[] => {
     const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     return result?.points ?? [];
   });
 
@@ -363,7 +365,13 @@
   //   "cursor-grabbing"  → actively dragging (pan, resize, or rotate in progress)
   //   "cursor-grab"      → editable & selected (ready to start a drag)
   //   "cursor-pointer"   → otherwise
-  let bodyCursor = $derived(isEditing ? "cursor-grabbing" : editable && selected ? "cursor-grab" : "cursor-pointer");
+  //   "cursor-note"       → hovering in note mode
+  let bodyCursor = $derived(
+    mode === "note" ? "cursor-note" :
+    isEditing ? "cursor-grabbing" :
+    editable && selected ? "cursor-grab" :
+    "cursor-pointer"
+  );
 
   // ── Hover state for body cursor ───────────────────────────────────────
   let over = $state(false);
@@ -392,6 +400,9 @@
       // Do not start selection if in creation mode,
       // to avoid interfering with the creation process
       if (viewport.isCreationMode) return;
+
+      // In review mode, let the event bubble for panning
+      if (viewport.mode === "review") return;
 
       if (editable && selected && cursor) {
         startSelection(cursor);

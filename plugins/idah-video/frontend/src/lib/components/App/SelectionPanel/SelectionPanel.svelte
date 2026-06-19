@@ -260,7 +260,7 @@
 
 <!-- ============ ANNOTATIONS ON CURRENT FRAME (default mode, no selection) ============ -->
 {#if !sel}
-  {#if viewport.mode === "default" && currentFrameAnnotations.length > 0}
+  {#if (viewport.mode === "editor" || viewport.isReviewWorkspace) && currentFrameAnnotations.length > 0}
     <section class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <Text weight="semibold">Annotations</Text>

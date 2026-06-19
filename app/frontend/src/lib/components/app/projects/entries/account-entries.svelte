@@ -10,13 +10,18 @@
   interface Props {
     accountId: number | string;
     projectId?: number | string;
+    labelText?: string;
   }
 
   // Variables
   let entries: EntryRecord[] = $state([]);
   let countEntriesByDataset: Record<string, number> = $state({});
   let nameDatasetMap: Record<string, string> = $state({});
-  let { accountId, projectId }: Props = $props();
+  let {
+    accountId,
+    projectId,
+    labelText = "Entries on these datasets are currently assigned to this account:",
+  }: Props = $props();
 
   // Functions
   async function fetchEntries(): Promise<void> {
@@ -64,7 +69,7 @@
 
 {#if entries.length > 0}
   <div class="text-muted-foreground text-sm">
-    <div>Entries on these datasets will be unassigned from this account.</div>
+    <div>{labelText}</div>
     <ul class="mt-2 ml-5 max-h-40 overflow-y-auto">
       {#each Object.entries(countEntriesByDataset) as [datasetId, count] (datasetId)}
         <li>

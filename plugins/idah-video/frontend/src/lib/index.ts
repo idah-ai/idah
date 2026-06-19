@@ -4,9 +4,10 @@ import { mount, unmount } from "svelte";
 import { type IIdahDriverV2 } from "$idah/v2/types";
 import Plugin from "$lib/components/Plugin.svelte";
 import { registerAllCommands } from "./commands";
-import { initDataStores } from "./state/data.svelte";
+import { initDataStores, destroyDataStores } from "./state/data.svelte";
 import { initDriver } from "./state/driver.svelte";
 import { initToolbar } from "./toolbar";
+import { registerStats } from "./stats";
 
 interface IPluginDriver {
   name: string;
@@ -33,6 +34,7 @@ const idahVideoPlugin: IPluginDriver = {
     initDataStores();
     registerAllCommands(driver);
     initToolbar(driver);
+    registerStats(driver);
     console.debug("Plugin initialized", { this: this, driver });
   },
 
@@ -50,6 +52,7 @@ const idahVideoPlugin: IPluginDriver = {
 
   close() {
     console.debug("Closing Plugin", { this: this, parent, mounted });
+    destroyDataStores();
     if (mounted) {
       unmount(mounted);
     }

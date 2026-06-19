@@ -5,17 +5,16 @@
 // ---------------------------------------------------------------------------
 import type { ICommandAction, IIdahDriverV2 } from "$idah/v2/types";
 import { viewport } from "$lib/state/viewport.svelte";
-import { media } from "$lib/state/media.svelte";
 import { ui } from "$lib/state/ui.svelte";
 
 function makeAction(): ICommandAction {
-  const current = viewport.video.currentFrame.value;
-  const max = media.totalFrames;
   const step = ui.frameStep;
   return {
     command: { name: "viewport.skip_forward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip forward", longDescription: "Jump forward by the configured number of frames" },
     do() {
-      viewport.video.currentFrame.value = Math.min(current + step, max - 1);
+      // stepBy gates on framePending (and clamps), so scrubbing can never
+      // run ahead of what is painted on screen.
+      viewport.video.stepBy(step);
     },
     isCombinable() { return false; },
     combine(prev: ICommandAction) { return prev; },
@@ -25,7 +24,7 @@ function makeAction(): ICommandAction {
 export const command = {
   name: "viewport.skip_forward",
   group: "Viewport",
-  modes: ["default", "review"] as string[],
+  modes: ["editor", "review"] as string[],
   shortcut: "Shift+ArrowRight",
   shortDescription: "Skip forward",
   longDescription: "Jump forward by the configured number of frames",

@@ -6,7 +6,6 @@
 
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
@@ -30,13 +29,8 @@
 
       onNoteResolved?.(resolvedNoteFeedRes.data);
       $refetches.noteFeeds.list = new Date();
-      showToast.success({
-        title: "Note resolved",
-        description: "The note has been resolved.",
-      });
     } catch (error) {
       console.error(error);
-      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 </script>

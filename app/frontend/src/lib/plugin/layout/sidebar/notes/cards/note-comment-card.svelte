@@ -1,8 +1,8 @@
 <script lang="ts">
   import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { noteCommentsBackendDataSource, type NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
+  import { AuthContext } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   // Props
@@ -14,6 +14,8 @@
 
   // Variables
   let { id, content_md, created_by_email, created_at, edited_at, note_feed_id } = $derived(noteCommentRecord);
+
+  let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
   // Functions
   async function updateNoteCommentMd(newContentMd: string) {
@@ -32,13 +34,8 @@
       noteCommentRecord = updatedNoteCommentRes.data;
 
       $refetches.noteComments.list = new Date();
-      showToast.success({
-        title: "Comment updated",
-        description: "The note comment has been updated.",
-      });
     } catch (error) {
       console.error(error);
-      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 
@@ -47,13 +44,8 @@
       await noteCommentsBackendDataSource.delete(id, { showErrorToast: false });
 
       $refetches.noteComments.list = new Date();
-      showToast.success({
-        title: "Comment deleted",
-        description: "The note comment has been deleted.",
-      });
     } catch (error) {
       console.log(error);
-      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 </script>
@@ -65,8 +57,8 @@
   {created_by_email}
   {created_at}
   {edited_at}
-  editable
-  deletable
+  editable={isOwner}
+  deletable={isOwner}
   {highlighted}
   onUpdateContentMd={updateNoteCommentMd}
   onDelete={deleteNoteComment}

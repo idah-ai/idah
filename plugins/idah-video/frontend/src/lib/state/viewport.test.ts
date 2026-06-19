@@ -33,7 +33,7 @@ vi.mock("./driver.svelte", () => ({
 // Mock media.svelte so that clampTranslate / fitToViewport / viewportSize
 // have controlled dimensions without needing a real driver instance.
 // The underlying values can be changed between tests via mediaState.
-const mediaState = vi.hoisted(() => ({ width: 1920, height: 1080 }));
+const mediaState = vi.hoisted(() => ({ width: 1920, height: 1080, totalFrames: 100 }));
 
 vi.mock("./media.svelte", () => ({
   media: {
@@ -46,6 +46,9 @@ vi.mock("./media.svelte", () => ({
     get height() {
       return mediaState.height;
     },
+    get totalFrames() {
+      return mediaState.totalFrames;
+    },
   },
 }));
 
@@ -54,13 +57,15 @@ vi.mock("./media.svelte", () => ({
 // ---------------------------------------------------------------------------
 import {
   viewport,
-  DEFAULT_MODE,
+  EDITOR_MODE,
   BOUNDING_BOX_MODE,
   POLYGON_MODE,
+  FRAME_STEP_ESCAPE_MS,
 } from "./viewport.svelte";
 
+
 // See also: default constants
-//   DEFAULT_MODE     = "default"
+//   EDITOR_MODE     = "editor"
 //   BOUNDING_BOX_MODE = "idah-video:bounding-box"
 //   POLYGON_MODE      = "idah-video:polygon"
 
@@ -91,7 +96,7 @@ describe("isCreationMode", () => {
   beforeEach(() => resetViewport());
 
   it("returns false when mode is default", () => {
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = EDITOR_MODE;
     expect(viewport.isCreationMode).toBe(false);
   });
 
@@ -105,9 +110,9 @@ describe("isCreationMode", () => {
     expect(viewport.isCreationMode).toBe(true);
   });
 
-  it("returns false when mode is note", () => {
+  it("returns true when mode is note", () => {
     viewport.mode = "note";
-    expect(viewport.isCreationMode).toBe(false);
+    expect(viewport.isCreationMode).toBe(true);
   });
 
   it("returns false for unknown mode strings", () => {
@@ -131,10 +136,10 @@ describe("mode setter", () => {
   });
 
   it("does NOT call driver.setMode when mode is already set", () => {
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = EDITOR_MODE;
     const callsBefore = mockDriver.__setMode.mock.calls.length;
 
-    viewport.mode = DEFAULT_MODE; // same value again
+    viewport.mode = EDITOR_MODE; // same value again
 
     expect(mockDriver.__setMode).toHaveBeenCalledTimes(callsBefore);
   });
@@ -142,11 +147,11 @@ describe("mode setter", () => {
   it("calls driver.setMode on each distinct change", () => {
     viewport.mode = BOUNDING_BOX_MODE;
     viewport.mode = POLYGON_MODE;
-    viewport.mode = DEFAULT_MODE;
+    viewport.mode = EDITOR_MODE;
     expect(mockDriver.__setMode).toHaveBeenCalledTimes(3);
     expect(mockDriver.__setMode).toHaveBeenNthCalledWith(1, BOUNDING_BOX_MODE);
     expect(mockDriver.__setMode).toHaveBeenNthCalledWith(2, POLYGON_MODE);
-    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(3, DEFAULT_MODE);
+    expect(mockDriver.__setMode).toHaveBeenNthCalledWith(3, EDITOR_MODE);
   });
 });
 
@@ -457,6 +462,184 @@ describe("transform round-trip", () => {
     const back = viewport.workspace.sceneToScreen(scene.x, scene.y);
     expect(back.x).toBeCloseTo(screenPt.x);
     expect(back.y).toBeCloseTo(screenPt.y);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stepBy — relative stepping gated on framePending
+//
+// stepBy must drop steps while the previous paused seek hasn't painted
+// (currentFrame ≠ displayedFrame), so scrubbing never runs ahead of the
+// pixels on screen — except when the pending seek is older than the escape
+// window (a seek that never paints must not lock navigation).
+// ---------------------------------------------------------------------------
+
+describe("stepBy", () => {
+  function resetVideo() {
+    viewport.video.status = "pause";
+    viewport.video.currentFrame.value = 10;
+    viewport.video.displayedFrame.value = 10;
+    viewport.video.lastSeekRequestAt = 0;
+    viewport.video.loading.fragmentInFlight = false;
+    mediaState.totalFrames = 100;
+  }
+
+  beforeEach(() => resetVideo());
+
+  it("steps when the previous frame has painted (no pending seek)", () => {
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
+    viewport.video.displayedFrame.value = 11; // paint confirmation
+    viewport.video.stepBy(-2);
+    expect(viewport.video.currentFrame.value).toBe(9);
+  });
+
+  it("records the seek request time on an accepted step", () => {
+    viewport.video.stepBy(1);
+    expect(viewport.video.lastSeekRequestAt).toBeGreaterThan(0);
+  });
+
+  it("drops steps while a recent seek is still pending", () => {
+    viewport.video.stepBy(1); // accepted → pending until displayedFrame catches up
+    viewport.video.stepBy(1);
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("resumes stepping once the pending frame paints", () => {
+    viewport.video.stepBy(1);
+    viewport.video.stepBy(1); // dropped
+    viewport.video.displayedFrame.value = 11; // paint confirmation
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
+  it("allows stepping again when the pending seek is older than the escape window", () => {
+    viewport.video.stepBy(1);
+    // Simulate a seek stuck for longer than the escape window.
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
+  it("keeps dropping steps past the escape window while a fragment is downloading", () => {
+    // Escaping mid-download would cancel and restart the same fragment, so a
+    // slow connection (every fragment > escape window) would never converge.
+    viewport.video.stepBy(1);
+    viewport.video.loading.fragmentInFlight = true;
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("re-opens the escape once the in-flight fragment ends without painting", () => {
+    viewport.video.stepBy(1);
+    viewport.video.loading.fragmentInFlight = true;
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.loading.fragmentInFlight = false; // load aborted / errored
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
+  it("keeps dropping steps in the gap between consecutive fragment downloads", () => {
+    // The in-flight flag drops at download-complete and rises again at the
+    // next fragment request. A key-repeat landing in that gap must not slip
+    // through: the transition re-arms the escape window.
+    viewport.video.stepBy(1);
+    viewport.video.setFragmentInFlight(true);
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1; // long download
+    viewport.video.setFragmentInFlight(false); // download done, paint imminent
+    viewport.video.stepBy(10);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("still escapes after fragment activity stops for the whole window", () => {
+    viewport.video.stepBy(1);
+    viewport.video.setFragmentInFlight(true);
+    viewport.video.setFragmentInFlight(false);
+    // No activity since: the seek is genuinely stuck.
+    viewport.video.lastSeekRequestAt = Date.now() - FRAME_STEP_ESCAPE_MS - 1;
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(12);
+  });
+
+  it("does not gate on an in-flight fragment when no seek is pending", () => {
+    viewport.video.loading.fragmentInFlight = true; // e.g. background buffering
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("does not gate during playback (framePending is pause-only)", () => {
+    viewport.video.status = "play";
+    viewport.video.displayedFrame.value = 5; // differs from currentFrame
+    viewport.video.stepBy(1);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("clamps at the last frame", () => {
+    viewport.video.currentFrame.value = 99;
+    viewport.video.displayedFrame.value = 99;
+    viewport.video.stepBy(5);
+    expect(viewport.video.currentFrame.value).toBe(99);
+  });
+
+  it("clamps at frame zero", () => {
+    viewport.video.currentFrame.value = 0;
+    viewport.video.displayedFrame.value = 0;
+    viewport.video.stepBy(-5);
+    expect(viewport.video.currentFrame.value).toBe(0);
+  });
+
+  it("does not refresh the escape window when a clamped step changes nothing", () => {
+    viewport.video.currentFrame.value = 99;
+    viewport.video.displayedFrame.value = 99;
+    viewport.video.stepBy(1); // clamped, no position change
+    expect(viewport.video.lastSeekRequestAt).toBe(0);
+  });
+
+  it("leaves absolute jumps (goToFrame) ungated while a seek is pending", () => {
+    viewport.video.stepBy(1); // pending
+    viewport.video.goToFrame(50);
+    expect(viewport.video.currentFrame.value).toBe(50);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Navigating while playing auto-pauses
+//
+// Any navigation request mid-playback must flip status to "pause" and land on
+// the requested frame, setting pauseForSeek so Video.svelte seeks to the target
+// instead of snapping back to the playback position.
+// ---------------------------------------------------------------------------
+
+describe("navigate while playing", () => {
+  beforeEach(() => {
+    viewport.video.status = "play";
+    viewport.video.currentFrame.value = 10;
+    viewport.video.displayedFrame.value = 10;
+    viewport.video.pauseForSeek = false;
+    mediaState.totalFrames = 100;
+  });
+
+  it("goToFrame pauses and lands on the requested frame", () => {
+    viewport.video.goToFrame(42);
+    expect(viewport.video.status).toBe("pause");
+    expect(viewport.video.pauseForSeek).toBe(true);
+    expect(viewport.video.currentFrame.value).toBe(42);
+  });
+
+  it("stepBy pauses and steps relative to the playing frame", () => {
+    viewport.video.stepBy(1);
+    expect(viewport.video.status).toBe("pause");
+    expect(viewport.video.pauseForSeek).toBe(true);
+    expect(viewport.video.currentFrame.value).toBe(11);
+  });
+
+  it("does not set pauseForSeek when already paused", () => {
+    viewport.video.status = "pause";
+    viewport.video.goToFrame(42);
+    expect(viewport.video.pauseForSeek).toBe(false);
+    expect(viewport.video.currentFrame.value).toBe(42);
   });
 });
 

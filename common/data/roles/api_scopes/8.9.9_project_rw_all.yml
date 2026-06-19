@@ -20,5 +20,4 @@ api/project_rw_all:
 
     # Sync Service - Read Write (Project level)
     - "sync:jobs.read.*"
-    - "sync:exports.create.*"
-    - "sync:exports.read.*"
+    - "sync:exports.*.*"
