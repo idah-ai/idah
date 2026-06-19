@@ -25,8 +25,7 @@
     IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
   } from "$lib/types";
 
-  import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
@@ -169,10 +168,6 @@
       };
     }
   }
-
-  function deleteCategoryAnnotations(categoryId: string) {
-    getDriver().command.call("annotation.delete_category", { category: categoryId });
-  }
 </script>
 
 <SidebarGroup>
@@ -214,7 +209,9 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
+      {@const annotations = items.filter(
+        (a) => a.value?.category?.startsWith(category.id) && a.shape.type === modalityShape,
+      )}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
@@ -322,23 +319,20 @@
             })}
 
             <!-- Icon Actions -->
-            <div class="ml-auto flex content-center items-center gap-0">
+            <div class="ml-auto flex shrink-0 items-center">
               {#if mode == DEFAULT_MODE}
-                {#each actions as { label, icon, onClick, alwaysShow, disabled }, index (index)}
-                  <CategoryAction
-                    {label}
-                    {icon}
-                    onclick={(e) => {
-                      if (disabled) return;
-                      e.stopPropagation();
-                      onClick(e);
-                    }}
-                    class={cn("opacity-0", {
-                      "opacity-100": alwaysShow,
-                      "group-hover:opacity-100": !alwaysShow && !disabled,
-                      "cursor-not-allowed group-hover:opacity-30": disabled,
-                    })}
-                  ></CategoryAction>
+                {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
+                  <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                    <CategoryAction
+                      {label}
+                      {icon}
+                      {disabled}
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        onClick(e);
+                      }}
+                    ></CategoryAction>
+                  </div>
                 {/each}
               {/if}
 
@@ -375,7 +369,7 @@
   title="Delete annotations in this category"
   description="Are you sure you want to delete all annotations in this category?"
   onConfirm={() => {
-    deleteCategoryAnnotations(categoryToDelete!);
+    deleteCategoryAnnotations({ categoryId: categoryToDelete!, shapeType: modalityShape });
     openConfirmCategoryDeleteDialog = false;
     categoryToDelete = null;
   }}
