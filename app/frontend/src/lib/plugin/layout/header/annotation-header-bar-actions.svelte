@@ -59,6 +59,17 @@
     autoSelectNextEntryStore.set(autoSelectNextEntry);
   });
 
+  // Fetch entry status to decide whether to show auto-select
+  let entryStatus = $state<string | null>(null);
+  $effect(() => {
+    entriesBackendDataSource
+      .get(driver.id, { fields: { [EntryRecord.type]: ["status"] }, noCache: false })
+      .then((res) => {
+        entryStatus = res.data.status;
+      });
+  });
+  let showAutoSelect = $derived(entryStatus && entryStatus !== "completed" && entryStatus !== "errored");
+
   // Track mode changes reactively
   let currentMode = $state(driver.mode);
   driver.onModeChange((event) => {
@@ -243,28 +254,30 @@
     </Button>
   </div>
 
-  <!-- Auto-select next entry checkbox -->
-  <div class="flex items-center gap-1.5">
-    <Checkbox bind:checked={autoSelectNextEntry} />
-    <ToolTooltip
-      label="Automatically opens the next available entry after you submit the current one."
-      align="center"
-      delayDuration={100}
-    >
-      {#snippet trigger()}
-        <label
-          for="auto-select-next"
-          class="text-muted-foreground cursor-pointer text-xs select-none"
-          role="button"
-          tabindex="0"
-          onkeydown={(e) => e.key === "Enter" && (autoSelectNextEntry = !autoSelectNextEntry)}
-          onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)}
-        >
-          Auto-select entry
-        </label>
-      {/snippet}
-    </ToolTooltip>
-  </div>
+  <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
+  {#if showAutoSelect}
+    <div class="flex items-center gap-1">
+      <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
+      <ToolTooltip
+        label="Automatically opens the next available entry after you submit the current one."
+        align="center"
+        delayDuration={100}
+      >
+        {#snippet trigger()}
+          <label
+            for="auto-select-next"
+            class="text-muted-foreground flex cursor-pointer items-center text-xs select-none"
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === "Enter" && (autoSelectNextEntry = !autoSelectNextEntry)}
+            onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)}
+          >
+            Auto-select entry
+          </label>
+        {/snippet}
+      </ToolTooltip>
+    </div>
+  {/if}
 
   {#if driver.workflowStep === "done"}
     <!-- TODO: What to show? -->
