@@ -109,7 +109,7 @@ module Medias
 
     def project_from_memberships_scoped
       account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index_all(filter: { account_id: })
+      memberships = Api[:idah].dataset.project_members.index_all(filter: { account_id:, enabled: true })
 
       table.where(project_id: memberships.map(&:project_id).uniq)
     end

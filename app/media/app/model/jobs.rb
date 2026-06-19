@@ -147,7 +147,7 @@ module Jobs
       account_id = auth_context.metadata[:id]
 
       project_ids = Api[:idah].dataset.project_members.index_all(
-        filter: { account_id: },
+        filter: { account_id:, enabled: true },
         fields: { "dataset:project_members": ["project_id"] }
       ).map(&:project_id).uniq
 
