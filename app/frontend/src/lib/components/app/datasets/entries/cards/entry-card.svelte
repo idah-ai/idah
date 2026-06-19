@@ -124,7 +124,7 @@
       if (thumbnailUrl) {
         URL.revokeObjectURL(thumbnailUrl);
       }
-      
+
       const { resource } = entry;
       let key: string;
       switch (dataset.modality) {
