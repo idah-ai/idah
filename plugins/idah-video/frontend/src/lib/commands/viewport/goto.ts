@@ -32,7 +32,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         do() {
-          if (props) viewport.video.currentFrame.value = props.frame;
+          if (props) viewport.video.goToFrame(props.frame);
         },
         isCombinable() { return false; },
         combine(prev) { return prev; },

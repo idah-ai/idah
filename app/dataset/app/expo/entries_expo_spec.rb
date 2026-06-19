@@ -183,13 +183,13 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   end
 
   describe "#on_job_completed" do
-    it "marks entries as ready when job is completed" do
+    it "advances entry workflow when job is completed" do
       job_id = "123"
 
       expect(
         service
       ).to(
-        receive(:mark_entries_status_as).with(job_id, "ready")
+        receive(:complete_entry_processing).with(job_id)
       )
 
       Verse.publish_resource_event(
@@ -210,7 +210,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       expect(
         service
       ).to(
-        receive(:mark_entries_status_as).with(job_id, "processing_error")
+        receive(:mark_entries_status_as).with(job_id, "errored")
       )
 
       Verse.publish_resource_event(

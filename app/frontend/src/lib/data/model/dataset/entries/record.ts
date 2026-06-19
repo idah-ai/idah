@@ -132,6 +132,33 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
+  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+    const res = await fetch(`${entriesBasePath}/${entryId}/unassign`, {
+      method: "PATCH",
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error unassigning entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+    }
+
+    throw "No data returned";
+  },
   submit: async (entryId: string, opts?: { approved: boolean }) => {
     const res = await fetch(`${entriesBasePath}/${entryId}/submit`, {
       method: "POST",

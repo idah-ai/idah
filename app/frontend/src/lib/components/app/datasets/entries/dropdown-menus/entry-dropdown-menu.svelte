@@ -85,11 +85,7 @@
 
   async function unAssignEntry(): Promise<void> {
     try {
-      const entryRes = await entriesBackendDataSource.update(entry.id, {
-        attributes: {
-          assigned_to_id: null,
-        },
-      });
+      await entriesBackendDataSource.unassign(entry.id);
 
       onUnAssigned?.(entryRes.data);
 
