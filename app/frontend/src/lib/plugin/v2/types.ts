@@ -48,8 +48,7 @@ export interface IMediaInfo {
   mime_type: string;
   filename: string;
   meta: Record<string, unknown>;
-  /** Optional explicit URL (overrides the auto-generated path from resource/key). */
-  url?: string;
+  url: string;
 }
 
 // ─── Sync event ───────────────────────────────────────────────────────────

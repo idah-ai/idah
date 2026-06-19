@@ -14,7 +14,6 @@ import type {
   INotesDriverV2,
   IProjectInfo,
   IShapeConfig,
-  IStatsDriverV2,
   ISyncErrorEvent,
   ISyncEvent,
   Unsubscribe,
@@ -364,39 +363,20 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
   };
 
   // Get media info
-  let mediaInfo: IMediaInfo;
-  try {
-    const mediaRes = (await mediaBackendDataSource.getInfo({
-      resource: entry.resource,
-    })) as RecordResponse<MediaRecord>;
+  const mediaRes = (await mediaBackendDataSource.getInfo({
+    resource: entry.resource,
+  })) as RecordResponse<MediaRecord>;
 
-    const m = mediaRes.data;
-    mediaInfo = {
-      id: entry.id,
-      resource: m.resource,
-      key: m.key,
-      mime_type: m.mime_type,
-      filename: m.filename,
-      meta: m.meta,
-      url:
-        entry.dataset.modality === "idah-video"
-          ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
-          : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
-    };
-  } catch {
-    mediaInfo = {
-      id: entry.id,
-      resource: entry.resource,
-      key: "",
-      mime_type: "",
-      filename: entry.name,
-      meta: {},
-      url:
-        entry.dataset.modality === "idah-video"
-          ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
-          : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
-    };
-  }
+  const m = mediaRes.data;
+  const mediaInfo = {
+    id: entry.id,
+    resource: m.resource,
+    key: m.key,
+    mime_type: m.mime_type,
+    filename: m.filename,
+    meta: m.meta,
+    url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}`,
+  };
 
   const driver = new IdahDriverV2({
     id: entry.id,

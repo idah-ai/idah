@@ -1,10 +1,10 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { parseSingleElementError, parseCollectionReturn } from "@/data/model/json_api";
+import { parseSingleElementError, parseCollectionReturn, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
-import type { CollectionResponse, JsonApiErrorResponse, JsonApiMeta } from "@/data/model/types";
+import type { CollectionResponse, JsonApiErrorResponse, JsonApiMeta, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
 // A file the backend did not turn into a media record: either intentionally
