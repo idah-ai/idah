@@ -60,7 +60,7 @@
     members = members.filter((_, i) => i !== index);
   }
 
-  function validateEmail(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
+  function selectEmail(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
     if (!member.email) {
       member.errors = [];
       return;
@@ -107,12 +107,12 @@
           onSelected={(selectedValue) => {
             member.email = (selectedValue ?? "") as string;
             if (selectedValue !== null) {
-              validateEmail(member);
+              selectEmail(member);
             } else {
               member.errors = [];
             }
           }}
-          onEnter={() => validateEmail(member)}
+          onEnter={() => selectEmail(member)}
         >
           {#snippet slotChoice({ choice })}
             {@const isAlreadyAdded =
@@ -162,7 +162,14 @@
         />
 
         <!-- REMOVE MEMBER BUTTON -->
-        <Button variant="ghost" size="icon" class={index === 0 ? "mt-6" : ""} onclick={() => removeMember(index)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          class={cn("", {
+            "mt-6": index === 0,
+          })}
+          onclick={() => removeMember(index)}
+        >
           <Trash2Icon />
         </Button>
       </div>
