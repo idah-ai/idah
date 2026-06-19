@@ -75,6 +75,14 @@
       member.errors = [];
     }
   }
+
+  function handleEmailSelect(
+    member: { email: string; role: ProjectMemberRole | null; errors?: string[] },
+    selectedValue: string | number | null,
+  ): void {
+    member.email = (selectedValue ?? "") as string;
+    selectEmail(member);
+  }
 </script>
 
 {#snippet noLabel()}{/snippet}
@@ -104,14 +112,7 @@
           required
           value={member.email}
           errors={member.errors}
-          onSelected={(selectedValue) => {
-            member.email = (selectedValue ?? "") as string;
-            if (selectedValue !== null) {
-              selectEmail(member);
-            } else {
-              member.errors = [];
-            }
-          }}
+          onSelected={(selectedValue) => handleEmailSelect(member, selectedValue)}
           onEnter={() => selectEmail(member)}
         >
           {#snippet slotChoice({ choice })}
