@@ -10,7 +10,7 @@ import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 export const command = {
   name: "annotation.go_to_prev_group",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Control+ArrowUp",
   shortDescription: "Previous group",
   longDescription: "Select the previous group in the timeline",

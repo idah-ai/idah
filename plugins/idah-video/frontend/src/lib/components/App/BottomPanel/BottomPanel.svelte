@@ -13,8 +13,11 @@
   import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
+  import { notes } from "$lib/state/data.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
+  import type { INoteRecord } from "$idah/v2/types";
+  import EntryTrackBlock from "../Timeline/review/_EntryTrackBlock.svelte";
 
   // Props
   interface Props {
@@ -81,6 +84,36 @@
     const rounded = roundToSeries(Math.max(1, target));
     return rounded === effectiveRulerMajorStep ? 0 : rounded;
   });
+
+  let entryNotes: INoteRecord[] = $derived(viewport.isReviewWorkspace ? notes.list : []);
+  let pinnedNotes = $derived(entryNotes.filter((n) => {
+    const pos = n.anchor.position as { frame?: number } | undefined;
+    return pos?.frame !== undefined && n.anchor.anchor_type === "entry";
+  }))
+  let sortedPinnedNotes = $derived(pinnedNotes.sort((a, b) => {
+    const fa = (a.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
+    const fb = (b.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
+    return fa - fb;
+  }))
+
+  let items = $derived.by(() => {
+    return transformAnnotationsToTracks({
+      annotations: viewportAnnotations,
+      labelConfig: getDriver().config
+    })
+  })
+
+  // Entry notes row — rendered as a sticky row between ruler and tracks
+  let noteItems = $derived.by(() => {
+    if (!viewport.isReviewWorkspace || sortedPinnedNotes.length === 0) return [];
+    return [{
+      trackId: "__entry_notes__",
+      startRange: (sortedPinnedNotes.at(0)?.anchor.position as {frame: number}).frame,
+      endRange: (sortedPinnedNotes.at(-1)?.anchor.position as {frame: number}).frame,
+      rawData: sortedPinnedNotes,
+      component: EntryTrackBlock,
+    }]
+  })
 </script>
 
 <TimelinePanel bind:panelHeight>
@@ -92,15 +125,14 @@
   <Timeline
     onZoom={(fn) => (zoomFn = fn)}
     bind:viewport={viewport.timeline.range}
-    items={transformAnnotationsToTracks({
-      annotations: viewportAnnotations,
-      labelConfig: getDriver().config,
-    })}
+    {items}
     {length}
+    {noteItems}
     remainingHeight={panelHeight - toolbarHeight}
     rulerSmallStep={effectiveRulerMinorStep}
     rulerBigStep={effectiveRulerMajorStep}
-    bind:currentFrame={viewport.video.currentFrame.value}
+    currentFrame={viewport.video.currentFrame.value}
+    onselectionchange={(frame) => viewport.video.goToFrame(frame)}
     onDimensionsChange={(w, h) => {
       viewport.timeline.dimensions = [w, h];
     }}
@@ -111,6 +143,16 @@
 
     {#snippet TrackInfoSlot({ track })}
       <AnnotationTrackInfo {track} />
+    {/snippet}
+
+    {#snippet NoteTrackInfoSlot()}
+      <div
+        role="button"
+        tabindex="-1"
+        class="flex h-full cursor-pointer items-center px-2 select-none"
+      >
+        <p class="text-xs font-medium">Notes</p>
+      </div>
     {/snippet}
   </Timeline>
 </TimelinePanel>

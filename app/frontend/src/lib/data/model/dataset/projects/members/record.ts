@@ -4,6 +4,8 @@ import { Transformers } from "@/data/model/transformers";
 
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
+import type { LabelValue } from "@/utils/types";
+
 @type("dataset:project_members")
 export class ProjectMemberRecord extends Record {
   @field() public project_id!: string; // UUID
@@ -33,5 +35,6 @@ export const projectMemberRoles = [
   { label: "Project Owner", value: "project_owner" },
   { label: "Reviewer", value: "reviewer" },
   { label: "Annotator", value: "annotator" },
-] as const;
+] as LabelValue<string | number>[];
+
 export type ProjectMemberRole = (typeof projectMemberRoles)[number]["value"];

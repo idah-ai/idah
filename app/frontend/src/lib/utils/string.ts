@@ -97,6 +97,24 @@ export function truncate(str: string, length: number = 20): string {
   return str.length > length ? str.slice(0, length) + "..." : str;
 }
 
+export function truncateFront(str: string, length: number = 20): string {
+  return str.length > length ? "..." + str.slice(-length) : str;
+}
+
+export function truncateFilename(
+  filename: string,
+  maxFrontChars: number = 20,
+  maxBackChars: number = 20,
+): { text: string; truncated: boolean } {
+  const extIndex = filename.lastIndexOf(".");
+  const ext = extIndex >= 0 ? filename.slice(extIndex) : "";
+  const base = extIndex >= 0 ? filename.slice(0, extIndex) : filename;
+  if (base.length <= maxFrontChars + maxBackChars) return { text: filename, truncated: false };
+  const front = base.slice(0, maxFrontChars);
+  const back = base.slice(-maxBackChars);
+  return { text: `${front}...${back}${ext}`, truncated: true };
+}
+
 export function truncateEmail(email: string): string {
   /** Return truncate name and whole domain */
   const [name, domain] = email.split("@");

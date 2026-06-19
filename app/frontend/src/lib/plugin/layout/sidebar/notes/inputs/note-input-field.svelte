@@ -7,6 +7,7 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { InputGroupButton } from "@/components/ui/input-group";
   import { Kbd, KbdGroup } from "@/components/ui/kbd";
+  import { modKeyLabel } from "@/plugin/v2/utils/browser";
 
   // Props
   interface Props {
@@ -17,6 +18,8 @@
     onSubmit: () => Promise<void>;
   }
   let { disabled, placeholder = "Write your note", value = "", onInput, onSubmit }: Props = $props();
+
+  let modKey = $derived(modKeyLabel());
 
   // Functions
   function handleKeyDown(event: KeyboardEvent) {
@@ -55,7 +58,7 @@
       {#snippet content()}
         <div class="flex items-center gap-2">
           <KbdGroup>
-            <Kbd>⌘</Kbd>
+            <Kbd>{modKey}</Kbd>
             <Kbd>Enter</Kbd>
           </KbdGroup>
 

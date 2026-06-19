@@ -166,6 +166,7 @@ RSpec.describe Auth::Service, database: true do
 
     describe "#login_api" do
       let(:api_keys_repo) { ApiKey::Repository.new(current_auth_context) }
+      let(:system_api_keys_repo) { ApiKey::Repository.new(Verse::Auth::Context[:system]) }
       let(:raw_key) { "IDAH_#{SecureRandom.hex(32)}" }
       let(:key_sha) { Digest::SHA256.hexdigest(raw_key) }
 
@@ -186,7 +187,7 @@ RSpec.describe Auth::Service, database: true do
           key_label: "#{raw_key[0..9]}...#{raw_key[-4..]}",
           permissions: %w[org:read org:write],
           scope_type: "org",
-          scope_value: ["org-123"],
+          scope_value: ["1"],
           status: "active",
           expires_at: Time.now + 30 * 24 * 60 * 60
         )
@@ -207,7 +208,7 @@ RSpec.describe Auth::Service, database: true do
         it "updates the last_used_at timestamp" do
           subject.login_api(raw_key)
 
-          updated_key = api_keys_repo.find!(api_key_id)
+          updated_key = system_api_keys_repo.find!(api_key_id)
           expect(updated_key.last_used_at).not_to be_nil
         end
 
@@ -245,7 +246,7 @@ RSpec.describe Auth::Service, database: true do
 
       context "with revoked API key" do
         before do
-          api_keys_repo.update!(api_key_id, { revoked_at: Time.now, status: "revoked" })
+          system_api_keys_repo.update!(api_key_id, { revoked_at: Time.now, status: "revoked" })
         end
 
         it "raises authorization error" do
@@ -257,7 +258,7 @@ RSpec.describe Auth::Service, database: true do
 
       context "with expired API key" do
         before do
-          api_keys_repo.update!(api_key_id, { expires_at: Time.now - 3600 })
+          system_api_keys_repo.update!(api_key_id, { expires_at: Time.now - 3600 })
         end
 
         it "raises authorization error" do
@@ -269,7 +270,7 @@ RSpec.describe Auth::Service, database: true do
 
       context "with inactive API key" do
         before do
-          api_keys_repo.update!(api_key_id, { status: "inactive" })
+          system_api_keys_repo.update!(api_key_id, { status: "inactive" })
         end
 
         it "raises authorization error" do
@@ -281,7 +282,7 @@ RSpec.describe Auth::Service, database: true do
 
       context "with different scope types" do
         it "handles 'all' scope type" do
-          api_keys_repo.update!(api_key_id, { scope_type: "all", scope_value: [] })
+          system_api_keys_repo.update!(api_key_id, { scope_type: "all", scope_value: [] })
 
           result = subject.login_api(raw_key)
 
@@ -290,7 +291,7 @@ RSpec.describe Auth::Service, database: true do
         end
 
         it "handles 'project' scope type" do
-          api_keys_repo.update!(api_key_id, { scope_type: "project", scope_value: ["proj-1", "proj-2"] })
+          system_api_keys_repo.update!(api_key_id, { scope_type: "project", scope_value: ["proj-1", "proj-2"] })
 
           result = subject.login_api(raw_key)
 

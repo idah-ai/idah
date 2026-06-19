@@ -165,6 +165,7 @@ GEM
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
+    rubyzip (3.2.2)
     sequel (5.94.0)
       bigdecimal
     shrine (3.6.0)
@@ -221,6 +222,7 @@ DEPENDENCIES
   rmagick (~> 6.0.1)
   rspec (~> 3.0)
   rubocop
+  rubyzip (~> 3.2)
   simplecov
   sinatra-contrib
   verse-core!

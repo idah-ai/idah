@@ -9,7 +9,7 @@ import { ui } from "$lib/state/ui.svelte";
 export const command = {
   name: "debug.toggle_console",
   group: "Display",
-  modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+  modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: "Control+Shift+Backquote",
   shortDescription: "Toggle debug console",
   longDescription: "Show/hide the debug information overlay",

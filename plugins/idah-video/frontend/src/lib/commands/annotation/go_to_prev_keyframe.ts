@@ -16,7 +16,7 @@ import type { IVideoAnnotationShape } from "$lib/types";
 export const command = {
   name: "annotation.go_to_prev_keyframe",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Control+ArrowLeft",
   shortDescription: "Previous keyframe",
   longDescription: "Jump to the previous keyframe in the current group",
@@ -56,7 +56,7 @@ export function register(driver: IIdahDriverV2): void {
       if (!groupId) {
         return {
           command: command as any,
-          do() { viewport.video.currentFrame.value = Math.max(currentFrame - 1, 0); },
+          do() { viewport.video.goToFrame(Math.max(currentFrame - 1, 0)); },
           isCombinable() { return false; },
           combine(p: any) { return p; },
         };
@@ -93,7 +93,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
-          viewport.video.currentFrame.value = target;
+          viewport.video.goToFrame(target);
           if (targetAnnotation) selection.selectAnnotation(targetAnnotation);
         },
         isCombinable() { return false; },

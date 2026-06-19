@@ -23,7 +23,7 @@
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
+  import { AuthContext } from "@/security/AuthContext";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
@@ -51,6 +51,8 @@
   let isFilteringResolved = $derived(noteFeedFilters.status__in.includes("resolved"));
   let contentMd = $state<string>("");
 
+  let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
+
   const filterMenus: IDropdownMenus = $derived({
     filters: {
       items: [
@@ -61,6 +63,14 @@
             noteFeedFilters.status__in = noteFeedFilters.status__in.includes("resolved")
               ? ["pending"]
               : ["pending", "resolved"];
+
+            // Sync with plugin adapter so NoteMarkers/timeline reflect the same filter
+            const adapter = driver.notesAdapter;
+            if (adapter) {
+              const includeResolved = noteFeedFilters.status__in.includes("resolved");
+              adapter.setIncludeResolved(includeResolved);
+              adapter.fetchForEntry();
+            }
 
             $refetches.noteFeeds.list = new Date();
           },
@@ -75,17 +85,49 @@
       const [_noteFeed, noteFeedIdFromURL, _noteComment, noteCommentIdFromURL] = page.url.hash.split("/");
       if (noteFeedIdFromURL) {
         const noteFeedRes = await noteFeedsBackendDataSource.get(noteFeedIdFromURL);
+        const feed = noteFeedRes.data;
 
         /**
-         * Only go to detail view if note feed is general note
+         * General notes (no spatial anchor) open in the sidebar detail view.
+         * Anchor notes (video_frame / annotation) are handed to the plugin
+         * via focusNote() so it seeks to the anchor position and shows the overlay.
          */
-        if (
-          noteFeedRes.data.anchor_type === "entry" &&
-          noteFeedRes.data.annotation_id === null &&
-          !Object.keys(noteFeedRes.data.position || {}).includes("x")
-        ) {
-          selectedNoteFeed = noteFeedRes.data;
+        const isGeneral =
+          feed.anchor_type === "entry" &&
+          feed.annotation_id === null &&
+          !Object.keys(feed.position || {}).includes("x");
+
+        if (isGeneral) {
+          selectedNoteFeed = feed;
           open = true;
+        } else {
+          // Hand off to the plugin — same flow as selectNoteFeed() for non-general notes
+          const adapter = driver.notesAdapter;
+          if (adapter) {
+            // Ensure the plugin is in review mode so overlays/markers are visible
+            if (driver.mode !== "review") {
+              driver.setMode("review");
+            }
+            // Wait for the adapter cache to be populated
+            if (!adapter.getNote(feed.id)) {
+              await adapter.fetchForEntry();
+            }
+            adapter.focusNote({
+              id: feed.id,
+              anchor: {
+                annotation_id: feed.annotation_id,
+                anchor_type: feed.anchor_type,
+                position: feed.position,
+              },
+              content_md: feed.content_md,
+              status: feed.status,
+              resolved: feed.status === "resolved",
+              created_by_email: feed.created_by_email,
+              created_at: feed.created_at?.toString(),
+              updated_at: feed.updated_at?.toString(),
+              edited_at: feed.edited_at?.toString() ?? null,
+            });
+          }
         }
       }
 
@@ -104,7 +146,25 @@
       }
 
       default: {
-        // driver.notes.gotoFeed(noteFeed.id);
+        // Not a general note — hand off to the plugin so it can seek to the anchor
+        const adapter = driver.notesAdapter;
+        if (adapter) {
+          adapter.focusNote({
+            id: noteFeed.id,
+            anchor: {
+              annotation_id: noteFeed.annotation_id,
+              anchor_type: noteFeed.anchor_type,
+              position: noteFeed.position,
+            },
+            content_md: noteFeed.content_md,
+            status: noteFeed.status,
+            resolved: noteFeed.status === "resolved",
+            created_by_email: noteFeed.created_by_email,
+            created_at: noteFeed.created_at?.toString(),
+            updated_at: noteFeed.updated_at?.toString(),
+            edited_at: noteFeed.edited_at?.toString() ?? null,
+          });
+        }
         break;
       }
     }
@@ -133,6 +193,9 @@
       },
       sort: ["-created_at"],
     });
+    // Sync the adapter cache so NoteMarkers re-renders
+    const adapter = driver.notesAdapter;
+    await adapter?.fetchForEntry();
     return noteFeedsRes.data;
   }
 
@@ -164,10 +227,6 @@
           content_md: contentMd,
         },
       });
-      showToast.success({
-        title: "Note added",
-        description: "The note has been added.",
-      });
       $refetches.noteFeeds.list = new Date();
     }
 
@@ -187,10 +246,6 @@
           },
         },
       });
-      showToast.success({
-        title: "Comment added",
-        description: "The note comment has been added.",
-      });
       $refetches.noteComments.list = new Date();
     }
 
@@ -201,6 +256,11 @@
     if (!selectedNoteFeed) return;
 
     await deleteNoteFeed(selectedNoteFeed.id);
+
+    // Re-sync the notes adapter cache so NoteMarkers re-renders
+    const adapter = driver.notesAdapter;
+    await adapter?.fetchForEntry();
+
     backToNoteFeedList();
   }
 </script>
@@ -208,7 +268,7 @@
 {#if open}
   <div
     transition:slide={{ axis: "x" }}
-    class="bg-background absolute top-11 right-0 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
+    class="bg-background absolute top-11 right-0 z-30 ml-auto flex h-[calc(100vh-3rem)] w-80 flex-col rounded-bl-md border shadow-lg"
   >
     <!-- HEADER -->
     <section class="flex items-center gap-1 border-b p-2">
@@ -244,9 +304,13 @@
         {#if isDetailView && selectedNoteFeed}
           <ResolveNoteFeedButton
             noteFeed={selectedNoteFeed}
-            onNoteResolved={(resolvedNoteFeed) => (selectedNoteFeed = resolvedNoteFeed)}
+            onNoteResolved={(resolvedNoteFeed) => {
+              selectedNoteFeed = resolvedNoteFeed;
+              // Sync adapter cache so plugin markers reflect the status change
+              driver.notesAdapter?.fetchForEntry();
+            }}
           />
-          <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable onDelete={deleteNote} />
+          <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable={isSelectedFeedOwner} onDelete={deleteNote} />
         {/if}
 
         <Button variant="ghost" size="icon-sm" onclick={onSidebarClose}>
@@ -267,8 +331,6 @@
                 noteFeedRecord={noteFeed}
                 showReplyCount
                 resolvable
-                editable
-                deletable
                 onSelectNoteFeed={() => selectNoteFeed(noteFeed)}
               />
             {:else}
@@ -288,7 +350,13 @@
         {#if isDetailView && selectedNoteFeed}
           {#await loadNoteComments() then { noteFeed, noteComments }}
             {#if noteFeed}
-              <NoteFeedCard noteFeedRecord={noteFeed} editable />
+              <NoteFeedCard
+                noteFeedRecord={noteFeed}
+                onNoteFeedUpdated={(updatedFeed) => {
+                  selectedNoteFeed = updatedFeed;
+                }}
+                onNoteFeedDeleted={backToNoteFeedList}
+              />
             {/if}
 
             {#each noteComments as noteComment (noteComment.id)}

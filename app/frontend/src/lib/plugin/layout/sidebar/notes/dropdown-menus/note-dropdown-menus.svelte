@@ -58,7 +58,7 @@
         {
           label: "Edit",
           icon: PenSquareIcon,
-          hidden: !editable,
+          disabled: !editable,
           action: async () => {
             onSwitchToEditMode?.();
           },
@@ -66,7 +66,8 @@
         {
           label: noteCommentId ? "Delete comment" : "Delete feed",
           icon: Trash2Icon,
-          hidden: !deletable,
+          destructive: true,
+          disabled: !deletable,
           action: () => {
             openConfirmDeleteModal = true;
           },
@@ -77,7 +78,11 @@
 
   // Functions
   async function deleteNote() {
-    await onDelete?.();
+    try {
+      await onDelete?.();
+    } finally {
+      openConfirmDeleteModal = false;
+    }
   }
 </script>
 

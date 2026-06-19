@@ -1,12 +1,13 @@
 // place files you want to import through the `$lib` alias in this folder.
 import { mount, unmount } from "svelte";
 
+import { type IIdahDriverV2 } from "$idah/v2/types";
 import Plugin from "$lib/components/Plugin.svelte";
-import { type IIdahDriverV2 } from "$idah/v2/types"
 import { initDriver } from "./state/driver.svelte";
-import { initDataStores } from "./state/data.svelte";
+import { initDataStores, destroyDataStores } from "./state/data.svelte";
 import { registerAllCommands } from "./commands";
 import { initToolbar } from "./toolbar";
+import { registerStats } from "./stats";
 
 interface IPluginDriver {
   name: string;
@@ -14,7 +15,7 @@ interface IPluginDriver {
   description: string;
   version: string;
   type: string;
-  init(driver:  IIdahDriverV2): void;
+  init(driver: IIdahDriverV2): void;
   render(parent: HTMLElement): void;
   close(): void;
 }
@@ -33,6 +34,7 @@ const idahVideoPlugin: IPluginDriver = {
     initDataStores();
     registerAllCommands(driver);
     initToolbar(driver);
+    registerStats(driver);
     console.debug("Plugin initialized", { this: this, driver });
   },
 
@@ -50,6 +52,7 @@ const idahVideoPlugin: IPluginDriver = {
 
   close() {
     console.debug("Closing Plugin", { this: this, parent, mounted });
+    destroyDataStores();
     if (mounted) {
       unmount(mounted);
     }

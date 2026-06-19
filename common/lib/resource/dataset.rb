@@ -10,6 +10,7 @@ module Resource
     Annotations = "dataset:annotations"
     NoteFeeds = "dataset:note_feeds"
     NoteComments = "dataset:note_comments"
+    EntryStats = "dataset:entry_stats"
     # rubocop:enable Naming/ConstantName
   end
 end

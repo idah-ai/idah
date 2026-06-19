@@ -11,7 +11,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "timeline.zoom_out",
   group: "Timeline",
-  modes: ["default", "review"] as string[],
+  modes: ["editor", "review"] as string[],
   shortcut: "Control+Minus",
   shortDescription: "Zoom timeline out",
   longDescription: "Zoom out of the timeline view",

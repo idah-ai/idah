@@ -1,6 +1,6 @@
 import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
-import { VideoIcon, type Icon as IconType } from "@lucide/svelte";
+import { ImageIcon, VideoIcon, type Icon as IconType } from "@lucide/svelte";
 
 import type { BadgeVariant } from "@/components/ui/badge";
 import type { LabelValue } from "@/utils/types";
@@ -11,8 +11,9 @@ export interface DatasetModalityBadgeProps extends LabelValue<string, DatasetRec
 }
 
 export const datasetsModalities: DatasetModalityBadgeProps[] = [
-  // { label: "Image", value: "image", icon: ImageIcon, variant: "secondary" },
+  { label: "Image", value: "idah-image", icon: ImageIcon, variant: "default" },
   { label: "Video", value: "idah-video", icon: VideoIcon, variant: "default" },
+  { label: "Image", value: "idah-image", icon: ImageIcon, variant: "info" },
 ];
 
 export interface DatasetStatusBadgeProps extends LabelValue<string, DatasetRecord> {
