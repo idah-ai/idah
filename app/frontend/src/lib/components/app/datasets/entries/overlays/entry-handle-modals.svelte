@@ -32,10 +32,10 @@
     openExport: boolean;
   } = $props();
 
-    // Contexts
-    const dataset: DatasetRecord = getContext("dataset");
+  // Contexts
+  const dataset: DatasetRecord = getContext("dataset");
 
-    // Functions
+  // Functions
   async function handleUnassign(): Promise<void> {
     const updated = await unAssignEntries(controller.unAssignableEntryIds, (id) => controller.getEntryName(id));
     if (updated) {
