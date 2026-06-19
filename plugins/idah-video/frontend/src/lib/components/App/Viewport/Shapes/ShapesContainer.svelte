@@ -95,7 +95,7 @@
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
-  let zoomableElement: Viewport;
+  let zoomableElement = $state<Viewport | undefined>(undefined);
 
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
