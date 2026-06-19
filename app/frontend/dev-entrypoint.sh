@@ -14,7 +14,7 @@ for plugin_dir in /app/plugins_dev/plugins/*; do
   [ -d "$plugin_dir" ] && ln -s "$plugin_dir" /app/frontend/build/plugins/
 done
 
-pnpm install
+pnpm install --force
 pnpm svelte-kit sync
 pnpm run build:parser
 

@@ -8,45 +8,24 @@
 
 import type { IAnnotationMetadata, IAnnotationRecord, IAnnotationValue } from "$idah/v2/types";
 
-// ─── Frame range ─────────────────────────────────────────────────────────
-
-/**
- * Frame range for an annotation (used by filter system for image/timeline).
- */
-export interface IAnnotationFrame {
-  start: number;
-  end: number;
-}
-
-// ─── Keyframe selection ──────────────────────────────────────────────────
-
-/**
- * A single keyframe selection within an annotation's shape.
- */
-export interface IImageFrameSelection {
-  frame: number;
-  /** Rotation angle in radians (optional). */
-  angle: number;
-  /** Polygon points for the frame selection. */
-  points: [number, number][];
-}
-
 // ─── Shape constants ─────────────────────────────────────────────────────
 
+export const DEFAULT_MODE = "editor";
+export const REVIEW_MODE = "review";
+export const NOTE_MODE = "note";
 export const IMAGE_BOUNDING_BOX = "idah-image:bounding-box";
 export const IMAGE_POLYGON = "idah-image:polygon";
 
 // ─── Image annotation shape ──────────────────────────────────────────────
 
 /**
- * Image-specific annotation shape — always has a frame range and keyframes.
+ * Image-specific annotation shape — simple geometry without frame/keyframe
+ * wrapping (frames are only relevant to video).
  */
 export interface IImageAnnotationShape {
   type: string;
-  start: number;
-  end: number;
-  /** Keyframe selections. */
-  frames: IImageFrameSelection[];
+  points: [number, number][];
+  angle: number;
   /** Allow extensibility. */
   [key: string]: unknown;
 }
@@ -72,17 +51,4 @@ export interface IImageAnnotationValue extends IAnnotationValue {
  */
 export interface IImageAnnotationRecord extends IAnnotationRecord<IImageAnnotationShape, IImageAnnotationValue> {
   synced?: boolean;
-}
-
-// ─── Image annotation metadata helper ────────────────────────────────────
-
-/**
- * Extract the group identifier from an annotation record's metadata.
- *
- * The group is stored at `metadata.group_id`.
- * When absent, falls back to the annotation's own id (making each annotation
- * its own group).
- */
-export function getAnnotationGroupId(ann: { id?: string; metadata?: IAnnotationMetadata }): string {
-  return ann.metadata?.group_id ?? ann.id ?? "";
 }

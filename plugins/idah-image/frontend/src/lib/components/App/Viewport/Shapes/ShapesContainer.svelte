@@ -21,38 +21,42 @@
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
+  import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
-  import { BOUNDING_BOX_MODE, DEFAULT_MODE, NOTE_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
-  import { data } from "$lib/state/data.svelte";
+  import { data, setPendingNoteScene } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import type { IImageAnnotationRecord } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
+  import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
     anchorType: "entry" | "annotation";
     position: Record<string, unknown>;
     annotationId: string | null;
+    /** Screen (viewport-fixed) pixel coords for popup placement. */
+    screenX?: number;
+    screenY?: number;
   }
 
   type Props = {
-    frame: number;
     annotations_promise: Promise<IImageAnnotationRecord[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
-    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
-    onChangeFrame?: (newFrame: number) => void;
   };
 
-  let { frame, children, onSelection, onAddNewNote }: Props = $props();
+  let { children, onSelection, onAddNewNote }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -85,7 +89,7 @@
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
-  let zoomableElement: Viewport;
+  let zoomableElement = $state<Viewport | undefined>(undefined);
 
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
@@ -109,9 +113,6 @@
       (acc, ann) => {
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
-        // Skip annotations outside the current frame range
-        const { start, end } = (ann.shape ?? {}) as { start?: number; end?: number };
-        if (start == null || end == null || frame < start || frame > end) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {
           acc.selected.push(ann);
@@ -142,12 +143,10 @@
   });
 
   // Derive tool selection from the currently selected annotation's component
-  let selAnnotation = $derived(
-    selection.isAnnotation() ? (selection.value as IAnnotationSelection).annotation : undefined,
-  );
+  let selAnnotation = $derived(selection.value);
 
   let toolSelection = $derived.by(() => {
-    const selId = selection.value?.type === "annotation" ? selection.value.annotation?.id : null;
+    const selId = selection.value?.id ?? null;
     if (!selId) return undefined;
     const idx = visibleAnnotations.findIndex((a) => a.id === selId);
     if (idx === -1) return undefined;
@@ -158,8 +157,8 @@
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
-  let isBoundingBoxMode = $derived(viewport.mode === BOUNDING_BOX_MODE);
-  let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
+  let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
+  let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
 
   // ── Panning state ────────────────────────────────────────────────────
@@ -167,10 +166,13 @@
   let isDragging = $state(false);
 
   onMount(() => {
+    viewport.svgElement = svgEl ?? null;
+
     // Add a tiny stylesheet for cursor classes
     const style = document.createElement("style");
+    const cursorSvg = encodeURIComponent(noteIconSvg.replace('fill="none"', 'fill="white"'));
     style.textContent = `
-      .cursor-note { cursor: crosshair; }
+      .cursor-note { cursor: url('data:image/svg+xml;charset=utf-8,${cursorSvg}') 0 24, auto; }
       .cursor-crosshair { cursor: crosshair; }
       .cursor-grab { cursor: grab; }
       .cursor-grabbing { cursor: grabbing; }
@@ -180,16 +182,17 @@
     document.head.appendChild(style);
 
     return () => {
+      viewport.svgElement = null;
       document.head.removeChild(style);
     };
   });
 
   // ── Exported zoom helpers ────────────────────────────────────────────
   export function zoomIn() {
-    zoomableElement.zoomIn();
+    zoomableElement!.zoomIn();
   }
   export function zoomOut() {
-    zoomableElement.zoomOut();
+    zoomableElement!.zoomOut();
   }
 
   // ── Check if cursor is hovering the first polygon draft point ────────
@@ -231,13 +234,13 @@
     mousePosition = [e.offsetX, e.offsetY];
     // Only pan in default mode
     if (viewport.mode === DEFAULT_MODE) {
-      zoomableElement.mouseMove(e);
+      zoomableElement!.mouseMove(e);
     }
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    zoomableElement.onWheel(e);
+    zoomableElement!.onWheel(e);
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -274,14 +277,14 @@
 
     // Nothing hit — deselect and start panning
     selection.deselect();
-    zoomableElement.mouseDown(e);
+    zoomableElement!.mouseDown(e);
   }
 
   function onMouseLeave(_e: MouseEvent) {
     // Cancel any active tool edit (bounding box drag, resize, rotate)
     toolSelection?.endSelection(sceneNormalizedCursor);
     // Stop viewport panning
-    zoomableElement.mouseUp(new MouseEvent("mouseup"));
+    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
 
   function onMouseUp(e: MouseEvent) {
@@ -291,9 +294,8 @@
       return;
     }
 
-    // Note mode — show new note popup anchored to cursor position
+    // Note mode is handled in onSvgClick — defer to click event
     if (isNoteMode) {
-      showNewNoteFeedPopup();
       return;
     }
 
@@ -301,32 +303,96 @@
     toolSelection?.endSelection(sceneNormalizedCursor);
 
     // Only pan on mouseup if we were panning
-    zoomableElement.mouseUp(e);
+    zoomableElement!.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: IImageAnnotationRecord) {
-    onAddNewNote({
-      anchorType: annotation ? "annotation" : "entry",
-      position: {
-        x: normalizedMousePosition[0],
-        y: normalizedMousePosition[1],
-        start: frame,
-        end: frame,
-        target_size: screenDimensions,
-        zoom_info: {
-          scale: viewport.workspace.transform.scale,
-          offset: viewport.workspace.transform.translate,
+  function showNewNoteFeedPopup(annotation?: IAnnotationRecord) {
+    const rect = viewport.svgElement!.getBoundingClientRect();
+    const screenX = rect.left + mousePosition[0];
+    const screenY = rect.top + mousePosition[1];
+
+    if (!annotation) {
+      // Entry note: position is normalized scene coordinates (fixed point in image)
+      setPendingNoteScene({
+        type: "entry",
+        x: sceneNormalizedCursor[0],
+        y: sceneNormalizedCursor[1],
+      });
+      onAddNewNote({
+        anchorType: "entry",
+        position: {
+          x: sceneNormalizedCursor[0],
+          y: sceneNormalizedCursor[1],
         },
-      },
-      annotationId: (annotation?.metadata?.id as string | undefined) || null,
-    });
+        annotationId: null,
+        screenX,
+        screenY,
+      });
+    } else {
+      // Annotation note: position is normalized offset from annotation centroid,
+      // so the note tracks the annotation when it moves.
+      const shape = annotation.shape as IImageAnnotationShape | undefined;
+      let centroidN: [number, number] = [0.5, 0.5];
+      if (shape?.points?.length) {
+        const pts = shape.points;
+        centroidN = [
+          pts.reduce((s, p) => s + p[0], 0) / pts.length,
+          pts.reduce((s, p) => s + p[1], 0) / pts.length,
+        ];
+      }
+      const offsetX = sceneNormalizedCursor[0] - centroidN[0];
+      const offsetY = sceneNormalizedCursor[1] - centroidN[1];
+      setPendingNoteScene({
+        type: "annotation",
+        annotationId: annotation.id,
+        x: offsetX,
+        y: offsetY,
+      });
+      onAddNewNote({
+        anchorType: "annotation",
+        position: {
+          x: offsetX,
+          y: offsetY,
+        },
+        annotationId: annotation.id,
+        screenX,
+        screenY,
+      });
+    }
+    // Exit note tool mode — return to review workspace
+    getDriver().setMode("review");
+  }
+
+  function onSvgClick(e: MouseEvent) {
+    // Note mode: if the click wasn't already handled by an annotation's onclick,
+    // create an entry-level note at the click position.
+    if (isNoteMode && !_noteHandledByClick) {
+      mousePosition = [e.offsetX, e.offsetY];
+      showNewNoteFeedPopup();
+    }
+    _noteHandledByClick = false;
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
-    onSelection(viewport.mode, frame, points, angle, annId);
+    const ann = data.annotations?.items.find((a) => a.id === annId);
+    if (!ann || !data.annotations) return;
+    const updatedShape: IImageAnnotationShape = { type: ann.shape.type, points, angle };
+    data.annotations.update({
+      ...ann,
+      shape: updatedShape,
+    } as any);
   }
 
+  let _noteHandledByClick = $state(false);
+
   function handleClick(ann: IAnnotationRecord) {
+    // Note mode: create an annotation-anchored note
+    if (isNoteMode) {
+      _noteHandledByClick = true;
+      showNewNoteFeedPopup(ann as IImageAnnotationRecord);
+      return;
+    }
+
     // Don't select annotations in creation mode
     if (viewport.isCreationMode) return;
 
@@ -358,6 +424,7 @@
     onmousemove={onMouseMove}
     onmouseleave={onMouseLeave}
     onwheel={onWheel}
+    onclick={onSvgClick}
   >
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
@@ -370,7 +437,6 @@
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
-          {frame}
           {onSelection}
         />
       {/if}
@@ -382,7 +448,6 @@
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
-          {frame}
           {onSelection}
         />
       {/if}
@@ -402,6 +467,11 @@
           onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
         />
       {/each}
+
+      <!-- Note markers (shown in review workspace) -->
+      {#if viewport.mode === REVIEW_MODE || viewport.mode === NOTE_MODE}
+        <NoteMarkers />
+      {/if}
     </g>
   </svg>
 </div>

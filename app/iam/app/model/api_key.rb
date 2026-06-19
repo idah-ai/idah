@@ -123,9 +123,12 @@ module ApiKey
 
       projects = Api[:idah].dataset.projects.index(filter: { organization_id: }).data
 
+      # Use <@ (contained by) operator to ensure ALL scope_values are within the
+      # user's own org projects/orgs — excludes API keys referencing projects or orgs
+      # outside the user's organization, preventing cross-org visibility.
       table.where(
         Sequel.lit(
-          "(scope_type = 'project' AND scope_value && ?) OR (scope_type = 'org' AND scope_value @> ?)",
+          "(scope_type = 'project' AND scope_value <@ ?) OR (scope_type = 'org' AND scope_value <@ ?)",
           Sequel.pg_array(projects.map(&:id)),
           Sequel.pg_array([organization_id])
         )

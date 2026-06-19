@@ -14,8 +14,6 @@ function readMeta(): Record<string, unknown> {
   return readMedia()?.meta ?? {};
 }
 
-const MEDIA_BASE = "/medias/files";
-
 export const media = {
   get dimensions(): number[] {
     return [this.width, this.height];
@@ -36,12 +34,7 @@ export const media = {
   get format(): string {
     return readMedia()?.mime_type ?? "";
   },
-  /** Construct the download URL from the media's resource and key, or use an explicit url. */
   get url(): string {
-    const m = readMedia();
-    if (!m) return "";
-    if (m.url) return m.url;
-    const path = m.key ? `${m.resource}/${m.key}` : m.resource;
-    return `${MEDIA_BASE}/${path}`;
+    return readMedia()?.url ?? "";
   },
 };

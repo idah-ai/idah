@@ -55,7 +55,7 @@
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
-  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
+  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep) && !viewport.isReviewWorkspace);
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === "note");
 
@@ -155,7 +155,7 @@
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
-    viewport.video.currentFrame.value = 0;
+    viewport.video.goToFrame(0);
 
     // annotations are now derived from the global data store
     // The store is already preloaded in initDataStores()
@@ -429,18 +429,6 @@
     }
   }
 
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, selectedFrame?: number) {
-    selection.selectGroup(annotationGroup.groupId);
-
-    if (isNoteMode) return;
-
-    const firstAnnotation = annotationGroup.annotations[0];
-    if (selectedFrame && firstAnnotation?.shape.type && editable) {
-      viewport.mode = firstAnnotation.shape.type;
-      selectClosestAnnotation(annotationGroup, selectedFrame);
-    }
-  }
-
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, frame: number) {
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup,
@@ -494,19 +482,22 @@
     return Promise.resolve(viewportAnnotations);
   });
 
-  function showNewNotePopup(params: OnAddNewNoteParams) {
-    const { anchorType, position, annotationId } = params;
-    getDriver().notes.create({
-      id: "",
-      annotation_id: annotationId ?? null,
-      content_md: "",
+  function showNewNotePopup(params: {
+    anchorType: "entry" | "annotation";
+    position?: Record<string, unknown>;
+    annotationId?: string | null;
+    screenX?: number;
+    screenY?: number;
+  }) {
+    const { anchorType, position, annotationId, screenX, screenY } = params;
+    const driver = getDriver();
+    driver.notes.requestCreateNote({
       anchor_type: anchorType,
-      position: {
-        ...position,
-        sidebar_width: annotationSidebarWidthRem * 16,
-      },
-      resolved: false,
+      annotation_id: annotationId ?? null,
+      position,
     });
+    // Report the screen position so the core overlay opens at the click point.
+    driver.notes.reportNotePosition({ noteId: null, x: screenX, y: screenY });
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {

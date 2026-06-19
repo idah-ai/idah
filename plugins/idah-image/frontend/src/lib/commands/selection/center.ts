@@ -6,22 +6,19 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { media } from "$lib/state/media.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import type { IImageAnnotationShape } from "$lib/types";
-import { getInterpolatedFrame } from "$lib/utils/interpolation";
+import { DEFAULT_MODE, REVIEW_MODE, type IImageAnnotationShape } from "$lib/types";
 
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;
-  if (sel?.type !== "annotation") return false;
-  const shape = (sel.annotation as any).shape as { start?: number; end?: number; frames?: unknown[] } | undefined;
-  if (!shape?.frames || shape.frames.length === 0) return false;
-  const frame = viewport.image.currentFrame.value;
-  return frame >= (shape.start ?? 0) && frame <= (shape.end ?? 0);
+  if (!sel) return false;
+  const shape = (sel as any).shape as { points?: [number, number][] } | undefined;
+  return !!shape?.points?.length;
 }
 
 export const command = {
   name: "selection.center",
   group: "Selection",
-  modes: ["default", "review"],
+  modes: [DEFAULT_MODE, REVIEW_MODE],
   shortcut: "Control+Shift+C",
   shortDescription: "Center on selection",
   longDescription: "Pan and zoom to fit the selected annotation in the viewport",
@@ -44,18 +41,15 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         do() {
-          if (sel?.type !== "annotation") return;
-          const record = sel.annotation as any;
+          if (!sel) return;
+          const record = sel as any;
           const shape = record.shape as IImageAnnotationShape;
-          if (!shape.frames || shape.frames.length === 0) return;
-          const currentFrame = viewport.image.currentFrame.value;
-          const interpolated = getInterpolatedFrame(shape, currentFrame);
-          if (!interpolated || !interpolated.points || interpolated.points.length === 0) return;
+          if (!shape.points || shape.points.length === 0) return;
 
           // For rotated shapes (bounding box with angle), rotate points around
           // their centroid so the AABB reflects the visual bounds.
-          let points = interpolated.points;
-          const angle = interpolated.angle ?? 0;
+          let points = shape.points;
+          const angle = shape.angle ?? 0;
           if (angle !== 0 && points.length >= 3) {
             // Compute centroid
             let cx = 0,

@@ -19,7 +19,7 @@ import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state
 export const command = {
   name: "annotation.toggle_group_visibility_solo",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Shift+H",
   shortDescription: "Solo toggle group visibility",
   longDescription: "If the group is the only visible group, show all groups; otherwise hide all groups except this one",

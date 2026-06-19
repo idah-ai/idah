@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import BBoxShape from "./BBoxShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
@@ -19,7 +19,7 @@
     selected = false,
     editable = false,
     cursor,
-    mode = "default",
+    mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
   }: Props = $props();

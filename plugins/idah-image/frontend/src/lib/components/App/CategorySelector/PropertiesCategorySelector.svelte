@@ -6,11 +6,11 @@
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
-  import { selection, type IAnnotationGroupSelection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
-  import type { IImageAnnotationValue } from "$lib/types";
+  import { DEFAULT_MODE, type IImageAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -36,16 +36,12 @@
     ),
   );
   let mode = $derived(viewport.mode);
-  let selAnnotation = $derived(
-    selection.isAnnotation() ? (selection.value as IAnnotationSelection).annotation : undefined,
-  );
-  let selGroupId = $derived(selection.isGroup() ? (selection.value as IAnnotationGroupSelection).groupId : undefined);
-  let defaultMode = $derived(mode == "default" || !tools.has(mode));
+  let selAnnotation = $derived(selection.value);
+  let defaultMode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
 
   // Derived disabled state using the annotation module
   let disabled = $derived(
     (selAnnotation && annotation.isLocked(selAnnotation)) ||
-      (selGroupId && annotation.isLocked(selGroupId)) ||
       (defaultMode || mode == "entry:root" ? !!entryRoot?.value?.locked : false) ||
       !["annotate", "review"].includes(getDriver().workflowStep),
   );

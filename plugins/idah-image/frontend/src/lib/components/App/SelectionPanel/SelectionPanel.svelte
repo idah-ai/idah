@@ -26,9 +26,9 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { IMAGE_POLYGON } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_POLYGON } from "$lib/types";
   import { cn } from "$lib/utils";
-  import { categoryValueToLabel, compareGroups } from "$lib/utils/annotation";
+  import { categoryValueToLabel } from "$lib/utils/annotation";
 
   import type { IConfigProperty } from "$idah/v2/types";
   import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -59,15 +59,9 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
-  // The active shape type: from annotation, from group (via first annotation), or from drawing mode
+  // The active shape type: from annotation or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
-    if (sel?.type === "annotation") return sel.annotation.shape.type as string;
-    if (sel?.type === "group" && data.annotations) {
-      // Find the first annotation belonging to this group to get its shape type
-      const items = data.annotations.items as unknown as IImageAnnotationRecord[];
-      const groupAnn = items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-      if (groupAnn) return groupAnn.shape.type as string;
-    }
+    if (sel) return sel.shape.type as string;
     return viewport.mode;
   });
 
@@ -78,29 +72,7 @@
   );
   let configValues = $derived(config?.values ?? []);
 
-  // Annotation from the selected group (for group edit mode display)
-  // NOTE: Must be declared BEFORE effectiveSelectedCategory since it depends on it
-  let groupAnnotation = $derived.by<IImageAnnotationRecord | undefined>(() => {
-    if (sel?.type !== "group" || !data.annotations) return undefined;
-    const items = data.annotations.items as unknown as IImageAnnotationRecord[];
-    return items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-  });
-
-  let groupAnnDisplayName = $derived.by<string>(() => {
-    if (!groupAnnotation || !sel || sel.type !== "group") return "";
-    const gAnn = groupAnnotation;
-    const gShapeType = gAnn.shape.type as string;
-    const gConfig = getDriver().config[gShapeType];
-    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.value?.category);
-    const lastPart = sel.groupId.split("-").pop() ?? "";
-    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.value?.category ?? "Uncategorized");
-  });
-
-  // When a group is selected, always use the annotation's current category from the data store,
-  // so it stays in sync even when the parent doesn't update the selectedCategory prop.
-  let effectiveSelectedCategory = $derived(
-    sel?.type === "group" ? groupAnnotation?.value?.category || "" : selectedCategory,
-  );
+  let effectiveSelectedCategory = $derived(selectedCategory);
 
   let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
   let properties = $derived(config?.properties ?? []);
@@ -116,52 +88,12 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   });
 
-  // Group display info
-  let groupIdForDisplay = $derived.by<string | undefined>(() => {
-    if (sel?.type === "group") {
-      const parts = sel.groupId.split("-");
-      return parts[parts.length - 1];
-    }
-    return undefined;
-  });
-
   // -----------------------------------------------------------------------
-  // Annotations on current frame (for default mode, no selection)
-  // Sorted in the same group-by-group order as the timeline
+  // All annotations (for default mode, no selection)
   // -----------------------------------------------------------------------
-  let currentFrame = $derived(viewport.image.currentFrame.value);
   let currentFrameAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
-    const items = data.annotations.items as unknown as IImageAnnotationRecord[];
-    const frame = currentFrame;
-
-    // Filter to current frame
-    const onFrame = items.filter((ann) => ann.shape.start <= frame && ann.shape.end >= frame);
-
-    // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
-    const map = new Map<string, IImageAnnotationRecord[]>();
-    for (const ann of onFrame) {
-      const gid = ann.metadata?.group_id ?? ann.id;
-      if (!map.has(gid)) map.set(gid, []);
-      map.get(gid)!.push(ann);
-    }
-
-    // Build groups with `annotations` key to match compareGroups signature, then flatten
-    const sorted: IImageAnnotationRecord[] = [];
-    const groups = Array.from(map.entries()).map(([groupId, anns]) => ({
-      groupId,
-      annotations: anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end),
-    }));
-    groups.sort(compareGroups);
-
-    // Flatten preserving group order
-    for (const group of groups) {
-      for (const ann of group.annotations) {
-        sorted.push(ann);
-      }
-    }
-
-    return sorted;
+    return data.annotations.items as unknown as IImageAnnotationRecord[];
   });
 
   const isAllHidden = $derived(
@@ -277,7 +209,7 @@
 
 <!-- ============ ANNOTATIONS ON CURRENT FRAME (default mode, no selection) ============ -->
 {#if !sel}
-  {#if viewport.mode === "default" && currentFrameAnnotations.length > 0}
+  {#if (viewport.mode === DEFAULT_MODE || viewport.mode === "review") && currentFrameAnnotations.length > 0}
     <section class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <Text weight="semibold">Annotations</Text>
@@ -296,11 +228,7 @@
           {@const annConfig = getDriver().config[annShapeType]}
           {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
           {@const annColor = annCategory?.color ?? null}
-          {@const annGroupId = ann.metadata?.group_id ?? ann.id}
-          {@const annGroupIdLastPart = annGroupId.split("-").pop()}
-          {@const annDisplayName = annCategory
-            ? `${annCategory.label}-${annGroupIdLastPart}`
-            : (ann.value?.category ?? "Uncategorized")}
+          {@const annDisplayName = annCategory?.label ?? (ann.value?.category ?? "Uncategorized")}
           {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
           <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
             <button
@@ -321,7 +249,7 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions( { items: [ann], groupId: annGroupId }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
+              {#each getAnnotationActions( { items: [ann], annotationId: ann.id }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
                 <CategoryAction
                   {label}
                   icon={Icon}
@@ -403,65 +331,9 @@
     </section>
   {/if}
 
-  <!-- ============ GROUP SELECTION ============ -->
-{:else if sel.type === "group"}
-  <section class="flex flex-col gap-3">
-    <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-2">
-        <Text weight="semibold">{modeTitle}</Text>
-        <Badge variant="info">EDIT</Badge>
-      </div>
-      <Text size="sm" class="text-muted-foreground">
-        {groupAnnDisplayName}
-      </Text>
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <Text size="sm" weight="semibold">Category</Text>
-      <Select type="single" onValueChange={reselectCategory} {disabled}>
-        <SelectTrigger
-          class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
-        >
-          {#if category?.label}
-            {@const parentLabel = categoryValueToLabel(category.id)}
-            <div class="flex flex-col gap-1 text-left">
-              {#if parentLabel.length > 0}
-                <div class="whitespace-break-spaces">{parentLabel}</div>
-              {/if}
-              <div class="flex items-center justify-start gap-1">
-                {@render shapeIcon(category.color)}
-                <b>{category.label}</b>
-              </div>
-            </div>
-          {:else}
-            Select category
-          {/if}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {#each configValues as { id: value, label, color }, index (`${value}-${index}`)}
-              {@const valueLabel = categoryValueToLabel(value, label)}
-              <SelectItem
-                class={"text-xs " + (effectiveSelectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
-                label={valueLabel}
-                {value}
-                disabled={effectiveSelectedCategory == value}
-              >
-                {@render shapeIcon(color)}
-                {valueLabel}
-              </SelectItem>
-            {/each}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
-  </section>
-
   <!-- ============ ANNOTATION SELECTION ============ -->
-{:else if sel.type === "annotation"}
-  {@const selAnnGroupId = sel.annotation.metadata?.group_id ?? sel.annotation.id}
-  {@const selAnnGroupIdLastPart = selAnnGroupId.split("-").pop()}
-  {@const selAnnDisplayName = category ? `${category.label}-${selAnnGroupIdLastPart}` : undefined}
+{:else if sel}
+  {@const selAnnDisplayName = category?.label ?? undefined}
   <section class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">

@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "viewport.previous_frame",
   group: "Viewport",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "ArrowLeft",
   shortDescription: "Previous frame",
   longDescription: "Move backward one frame",
@@ -25,8 +25,9 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        const current = viewport.video.currentFrame.value;
-        viewport.video.currentFrame.value = Math.max(current - 1, 0);
+        // stepBy gates on framePending (and clamps), so scrubbing can never
+        // run ahead of what is painted on screen.
+        viewport.video.stepBy(-1);
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

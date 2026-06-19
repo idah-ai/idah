@@ -6,7 +6,7 @@ export function register(driver: IdahDriverV2) {
     group: "General",
     // TODO modes ['*'] ?
     modes: [
-      "default",
+      "editor",
       "review",
       "idah-video:bounding-box",
       "idah-video:polygon",
@@ -27,7 +27,12 @@ export function register(driver: IdahDriverV2) {
         longDescription: null,
       },
       do() {
-        driver.setMode("default");
+        // Escape from tool modes returns to the parent resting mode
+        if (driver.mode === "note") {
+          driver.setMode("review");
+        } else {
+          driver.setMode("editor");
+        }
       },
       isCombinable() {
         return false;
