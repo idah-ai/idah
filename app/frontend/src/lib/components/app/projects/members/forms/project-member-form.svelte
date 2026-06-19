@@ -21,9 +21,11 @@
   import { cn } from "@/utils";
   import { getFieldErrors, validateData } from "@/utils/validate";
 
+  import type { AssignProjectMemberType } from "@/data/model/dataset/projects/members/type";
+
   // Props
   interface Props {
-    members: Array<{ email: string; role: ProjectMemberRole | null; errors?: string[] }>;
+    members: Array<AssignProjectMemberType>;
   }
   let { members = $bindable() }: Props = $props();
 
@@ -60,7 +62,7 @@
     members = members.filter((_, i) => i !== index);
   }
 
-  function selectEmail(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
+  function selectEmail(member: AssignProjectMemberType): void {
     if (!member.email) {
       member.errors = [];
       return;
@@ -76,10 +78,7 @@
     }
   }
 
-  function handleEmailSelect(
-    member: { email: string; role: ProjectMemberRole | null; errors?: string[] },
-    selectedValue: string | number | null,
-  ): void {
+  function handleEmailSelect(member: AssignProjectMemberType, selectedValue: string | number | null): void {
     member.email = (selectedValue ?? "") as string;
     selectEmail(member);
   }
