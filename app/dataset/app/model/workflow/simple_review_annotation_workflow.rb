@@ -11,7 +11,7 @@ module Workflow
       state :done
       state :error
 
-      # Transition from start to annotation phase
+      # Transitions
       event :submit, after: :on_submit do
         transitions from: :start, to: :annotate
 
@@ -59,8 +59,6 @@ module Workflow
 
       assigned_to_id =
         case from_state
-        when :start
-          account_id
         when :annotate
           # If moving to review step, assign to reviewer (nil for unassigned)
           @entry.reviewed_by_id
@@ -75,11 +73,18 @@ module Workflow
       # Set reviewed_by_id coming from review step
       reviewed_by_id = from_state == :review ? account_id : @entry.reviewed_by_id
 
+      status =
+        if current_state == :done
+          "completed"
+        else
+          assigned_to_id ? "in_progress" : "pending"
+        end
+
       entries.submit(
         entry.id,
         {
           wf_step: current_state.to_s,
-          status: current_state == :done ? "completed" : "in_progress",
+          status:,
           assigned_to_id:,
           submitted_by_id:,
           reviewed_by_id:,

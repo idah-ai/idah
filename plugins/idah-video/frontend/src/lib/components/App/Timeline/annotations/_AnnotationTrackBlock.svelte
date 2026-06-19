@@ -31,14 +31,11 @@
       // In review workspace, show note anchor frames as keyframes
       const result = new Set(
         notes.list
-          .filter(n =>
-            n.anchor.anchor_type === "annotation" &&
-            n.anchor.annotation_id === annotation.id
-          )
-          .map(n => {
+          .filter((n) => n.anchor.anchor_type === "annotation" && n.anchor.annotation_id === annotation.id)
+          .map((n) => {
             const pos = n.anchor.position as { frame?: number } | undefined;
             return pos?.frame ?? annotation.shape.start;
-          })
+          }),
       );
       // Add pending annotation-anchored note frame as a ghost keyframe
       const p = pendingNoteScene.value;
@@ -90,7 +87,7 @@
     e.preventDefault();
     if (viewport.isReviewWorkspace) {
       // In review mode — show note selection menu
-      const notesAtFrame = notes.list.filter(n => {
+      const notesAtFrame = notes.list.filter((n) => {
         if (n.anchor.anchor_type !== "annotation" || n.anchor.annotation_id !== annotation.id) return false;
         const pos = n.anchor.position as { frame?: number } | undefined;
         return pos?.frame === keyframe;
@@ -123,7 +120,7 @@
 
     // In review workspace, clicking a keyframe selects the corresponding note
     if (viewport.isReviewWorkspace) {
-      const notesAtFrame = notes.list.filter(n => {
+      const notesAtFrame = notes.list.filter((n) => {
         if (n.anchor.anchor_type !== "annotation" || n.anchor.annotation_id !== annotation.id) return false;
         const pos = n.anchor.position as { frame?: number } | undefined;
         return pos?.frame === keyframe;
@@ -132,7 +129,7 @@
       let note: INoteRecord | undefined;
       if (notesAtFrame.length >= 1) {
         // Multiple notes — cycle to the next one
-        const currentIndex = notesAtFrame.findIndex(n => n.id === activeNoteId.value);
+        const currentIndex = notesAtFrame.findIndex((n) => n.id === activeNoteId.value);
         const nextIndex = (currentIndex + 1) % notesAtFrame.length;
         note = notesAtFrame[nextIndex];
       } else {
@@ -144,7 +141,7 @@
       }
     }
 
-    viewport.video.currentFrame.value = keyframe;
+    viewport.video.goToFrame(keyframe);
   }
 </script>
 
@@ -156,7 +153,10 @@
   style:border-color={color}
   style:--tw-ring-color={isSelected ? color : "transparent"}
   onclick={handleAnnotationClick}
-  oncontextmenu={(e) => { e.preventDefault(); viewport.isReviewWorkspace ? null : handleOnContextMenu(e); }}
+  oncontextmenu={(e) => {
+    e.preventDefault();
+    viewport.isReviewWorkspace ? null : handleOnContextMenu(e);
+  }}
 >
   <!-- KEYFRAMES -->
   {#each keyframes as keyframe, idx (`${keyframe}-${idx}`)}
@@ -172,7 +172,7 @@
       style:height="calc(100% - {6 * 2}px)"
       style:left="{position}%"
       style:width="{width}%"
-      style:background-color={isPendingFrame(keyframe) ? 'var(--muted-foreground)' : color}
+      style:background-color={isPendingFrame(keyframe) ? "var(--muted-foreground)" : color}
       onclick={(e) => handleKeyframeClick(e, keyframe)}
       oncontextmenu={(e) => handleKeyframeContextMenu(e, keyframe)}
       onkeypress={() => {}}

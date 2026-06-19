@@ -4,7 +4,6 @@
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
-  import { writable } from "svelte/store";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -26,7 +25,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { humanize } from "@/utils/string";
 
-  import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Props
@@ -41,11 +39,14 @@
   const currentAccount = $authStatus.authContext;
 
   let projectId = page.params.projectId as string;
-  let { id: entryId, wf_step, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
+  let { id: entryId, wf_step, status, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let canOpenEntry = $derived.by(() => {
     if (!currentAccount?.id) return false;
+
+    /** Block entry open while media is still being processed */
+    if (status === "processing") return false;
 
     /** If entry is not assigned to anyone, it can open by anyone */
     if (assigned_to_id === null) return true;
@@ -81,16 +82,15 @@
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
+  let currentImagePosition = $state(0);
+  let animationInterval: number | null = $state(null);
   let jobProgress: number = $state(1);
 
-  const processingStatuses: EntryStatusType[] = ["processing", "pending"];
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
 
   // Functions
-  $effect(() => {
+  onMount(() => {
     periodicCheckJobStatus();
-
-    return () => stopPeriodicCheckJobStatus();
   });
 
   async function selectEntry() {
@@ -141,31 +141,19 @@
    * Note: Only fetch if the entry is in a processing state
    */
   async function periodicCheckJobStatus() {
-    if (processingStatuses.includes(entry.status)) {
-      $progressInterval = setInterval(async () => {
+    if (entry.wf_step === "start") {
+      progressIntervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
-          /**
-           * If job_id is null (should happen when the entry was created and job is not yet assigned),
-           * fetch the entry again to get the job_id
-           */
           if (!jobId) {
-            /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
             const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
           if (!jobId) return;
 
-          /** If entry is ready, stop the interval */
-          if (entry.status === "ready") {
-            stopPeriodicCheckJobStatus();
-            return;
-          }
-
-          /** If the entry is no longer processing, stop the interval */
-          if (!processingStatuses.includes(entry.status)) {
+          if (entry.wf_step !== "start" || entry.status === "errored") {
             stopPeriodicCheckJobStatus();
             return;
           }
@@ -178,11 +166,13 @@
           });
           jobProgress = jobRes.data.progress;
 
-          /** If progress = 100%, update entry status to 'ready' */
           if (jobProgress === 1) {
-            entry.status = "ready";
-            await loadThumbnail();
-            stopPeriodicCheckJobStatus();
+            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            entry = entryRes.data;
+            if (entry.wf_step !== "start") {
+              await loadThumbnail();
+              stopPeriodicCheckJobStatus();
+            }
             return;
           }
         } catch (error) {
@@ -191,15 +181,15 @@
         }
       }, 2_000);
     } else {
-      /**
-       * Then load the thumbnail once the job is complete
-       */
       await loadThumbnail();
     }
   }
 
   function stopPeriodicCheckJobStatus() {
-    clearInterval($progressInterval);
+    if (progressIntervalId !== undefined) {
+      clearInterval(progressIntervalId);
+      progressIntervalId = undefined;
+    }
   }
 
   function cleanup() {

@@ -33,9 +33,9 @@ module Jobs
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { scope_with_media_resources(action) }
+        scope.as_org_owner? { scope_with_org_projects_medias }
 
-        scope.as_user? { scope_with_media_resources(action) }
+        scope.as_user? { scope_with_member_projects_medias }
       end
     end
 
@@ -123,14 +123,44 @@ module Jobs
 
     private
 
-    def scope_with_media_resources(action)
-      case action
-      when :read
-        media_repo = Medias::Repository.new(auth_context)
-        resources = media_repo.index({}).map(&:resource).uniq
+    def scope_with_org_projects_medias
+      org_ids = auth_context.custom_scopes[:org]
 
-        table.where(Sequel.lit("arguments->>'resource' IN ?", resources))
-      end
+      project_ids = Api[:idah].dataset.projects.index_all(
+        filter: { organization_id: org_ids },
+        fields: { "dataset:projects": ["id"] }
+      ).map(&:id)
+
+      frag = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM medias
+          WHERE medias.resource = (arguments->>'resource')
+            AND medias.project_id IN :project_ids
+        )
+      SQL
+
+      table.where(Sequel.lit(frag, project_ids:))
+    end
+
+    def scope_with_member_projects_medias
+      account_id = auth_context.metadata[:id]
+
+      project_ids = Api[:idah].dataset.project_members.index_all(
+        filter: { account_id: },
+        fields: { "dataset:project_members": ["project_id"] }
+      ).map(&:project_id).uniq
+
+      frag = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM medias
+          WHERE medias.resource = (arguments->>'resource')
+            AND medias.project_id IN :project_ids
+        )
+      SQL
+
+      table.where(Sequel.lit(frag, project_ids:))
     end
   end
 end

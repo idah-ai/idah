@@ -26,7 +26,7 @@ module Processor
       if processor_entries.nil? || processor_entries.empty?
         Api[:idah].dataset.entries.update(
           id: entry.id,
-          status: "ready"
+          status: "pending"
         )
         return
       end
