@@ -189,10 +189,10 @@
 
   // ── Exported zoom helpers ────────────────────────────────────────────
   export function zoomIn() {
-    zoomableElement.zoomIn();
+    zoomableElement!.zoomIn();
   }
   export function zoomOut() {
-    zoomableElement.zoomOut();
+    zoomableElement!.zoomOut();
   }
 
   // ── Check if cursor is hovering the first polygon draft point ────────
@@ -234,13 +234,13 @@
     mousePosition = [e.offsetX, e.offsetY];
     // Only pan in default mode
     if (viewport.mode === DEFAULT_MODE) {
-      zoomableElement.mouseMove(e);
+      zoomableElement!.mouseMove(e);
     }
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    zoomableElement.onWheel(e);
+    zoomableElement!.onWheel(e);
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -277,14 +277,14 @@
 
     // Nothing hit — deselect and start panning
     selection.deselect();
-    zoomableElement.mouseDown(e);
+    zoomableElement!.mouseDown(e);
   }
 
   function onMouseLeave(_e: MouseEvent) {
     // Cancel any active tool edit (bounding box drag, resize, rotate)
     toolSelection?.endSelection(sceneNormalizedCursor);
     // Stop viewport panning
-    zoomableElement.mouseUp(new MouseEvent("mouseup"));
+    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
 
   function onMouseUp(e: MouseEvent) {
@@ -303,7 +303,7 @@
     toolSelection?.endSelection(sceneNormalizedCursor);
 
     // Only pan on mouseup if we were panning
-    zoomableElement.mouseUp(e);
+    zoomableElement!.mouseUp(e);
   }
 
   function showNewNoteFeedPopup(annotation?: IAnnotationRecord) {
