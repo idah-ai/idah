@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { getContext } from "svelte";
+
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
-  import CreateEntryFormModal from "@/components/app/datasets/entries/overlays/create-entry-form-modal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
+  import UploadEntryFormModal from "@/components/app/datasets/entries/overlays/UploadEntryFormModal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
   import { deleteEntries, exportEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
+  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { pluralizeUnit } from "@/utils/unit";
 
   import type { EntriesListController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
@@ -29,6 +32,10 @@
     openExport: boolean;
   } = $props();
 
+    // Contexts
+    const dataset: DatasetRecord = getContext("dataset");
+
+    // Functions
   async function handleUnassign(): Promise<void> {
     const updated = await unAssignEntries(controller.unAssignableEntryIds, (id) => controller.getEntryName(id));
     if (updated) {
@@ -57,7 +64,7 @@
 </script>
 
 <!-- ADD ENTRY -->
-<CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntry} />
+<UploadEntryFormModal title="Entry" action="create" modality={dataset.modality} bind:open={openNewEntry} />
 
 <!-- ASSIGN ANNOTATOR -->
 <AssignEntryFormModal

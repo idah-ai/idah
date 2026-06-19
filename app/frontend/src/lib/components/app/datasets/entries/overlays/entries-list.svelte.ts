@@ -111,21 +111,24 @@ export class EntriesListController {
    * Call this once from onMount.
    */
   async initFromUrl(): Promise<void> {
-    const savedPrefs = get(this.preferences);
+    const urlFilters = parseUrlFilters(page.url);
 
-    if (savedPrefs.filters && Object.keys(savedPrefs.filters).length > 0) {
-      // Restore URL to match saved filters
-      const newUrl = new SvelteURL(page.url);
-      for (const [key, value] of Object.entries(savedPrefs.filters)) {
-        writeFilterToUrl(newUrl.searchParams, key, value);
-      }
-      /* eslint-disable svelte/no-navigation-without-resolve */
-      goto(newUrl.href, { replaceState: true, keepFocus: true, noScroll: true });
-      /* eslint-enable svelte/no-navigation-without-resolve */
-    } else {
-      const urlFilters = parseUrlFilters(page.url);
+    if (Object.keys(urlFilters).length > 0) {
+      // URL carries explicit filters — they win over any stale session state
       this.filters = { dataset_id: this.datasetId, ...urlFilters };
       this._persist();
+    } else {
+      // No URL filters — restore saved session prefs and sync them into the URL
+      const savedPrefs = get(this.preferences);
+      if (savedPrefs.filters && Object.keys(savedPrefs.filters).length > 0) {
+        const newUrl = new SvelteURL(page.url);
+        for (const [key, value] of Object.entries(savedPrefs.filters)) {
+          writeFilterToUrl(newUrl.searchParams, key, value);
+        }
+        /* eslint-disable svelte/no-navigation-without-resolve */
+        goto(newUrl.href, { replaceState: true, keepFocus: true, noScroll: true });
+        /* eslint-enable svelte/no-navigation-without-resolve */
+      }
     }
 
     await this.fetch();
@@ -190,10 +193,12 @@ export class EntriesListController {
     const sortPrefix = sortDirection === "desc" ? "-" : "";
     const sortKey = `${sortPrefix}${columnKey}`;
 
+    const matchesColumn = (s: string) => s.replace(/^-/, "") === columnKey;
+
     if (sortDirection === "none") {
-      this.sort = this.sort.filter((s) => !s.endsWith(columnKey));
-    } else if (this.sort.some((s) => s.endsWith(columnKey))) {
-      this.sort = this.sort.map((s) => (s.endsWith(columnKey) ? sortKey : s));
+      this.sort = this.sort.filter((s) => !matchesColumn(s));
+    } else if (this.sort.some(matchesColumn)) {
+      this.sort = this.sort.map((s) => (matchesColumn(s) ? sortKey : s));
     } else {
       this.sort = [...this.sort, sortKey];
     }
