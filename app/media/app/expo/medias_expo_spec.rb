@@ -116,8 +116,10 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         original_filename: "sample.mp4"
       )
     end
+
     it "without key" do
-      expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:, project_id:|
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
         expect(file.filename).to eq("sample.mp4")
         expect(file.type).to eq("video/mp4")
         expect(file.name).to eq("file")
@@ -125,7 +127,7 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         expect(key).to eq("")
         expect(project_id).to eq("mocked_project_id")
 
-        media
+        { processed: [media], skipped: [], errored: [] }
       end
 
       post "/medias/files/some-resource", { file: file, project_id: "mocked_project_id" }
@@ -134,7 +136,8 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
     end
 
     it "with key" do
-      expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:, project_id:|
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
         expect(file.filename).to eq("sample.mp4")
         expect(file.type).to eq("video/mp4")
         expect(file.name).to eq("file")
@@ -142,12 +145,48 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         expect(key).to eq("some-key")
         expect(project_id).to eq("mocked_project_id")
 
-        media
-      end.and_return(media)
+        { processed: [media], skipped: [], errored: [] }
+      end
 
       post "/medias/files/some-resource/some-key", { file: file, project_id: "mocked_project_id" }
 
       expect(last_response.status).to eq 200
+    end
+
+    it "renders multiple records with skipped and errored files meta" do
+      other_media = Medias::Record.new(
+        {
+          id: 2,
+          resource: "other-resource",
+          key: "",
+          file_data: "{}",
+          filename: "other.mp4",
+          size: 2,
+          mime_type: "video/mp4",
+          created_role: "system",
+          created_by: nil,
+          created_at: now,
+          updated_at: now
+        }
+      )
+
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, _file, **_opts|
+        {
+          processed: [media, other_media],
+          skipped: [{ filename: "notes.txt", message: "File type is not supported" }],
+          errored: [{ filename: "broken.jpg", message: "storage exploded" }]
+        }
+      end
+
+      post "/medias/files/some-resource", { file: file, project_id: "mocked_project_id" }
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data].length).to eq(2)
+      expect(body[:data].map { |d| d[:attributes][:filename] }).to contain_exactly("sample.mp4", "other.mp4")
+      expect(body[:meta][:skipped]).to eq([{ filename: "notes.txt", message: "File type is not supported" }])
+      expect(body[:meta][:errored]).to eq([{ filename: "broken.jpg", message: "storage exploded" }])
     end
   end
 end

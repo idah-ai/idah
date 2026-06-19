@@ -95,7 +95,7 @@
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
-  let zoomableElement: Viewport;
+  let zoomableElement = $state<Viewport | undefined>(undefined);
 
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
@@ -218,10 +218,10 @@
 
   // ── Exported zoom helpers ────────────────────────────────────────────
   export function zoomIn() {
-    zoomableElement.zoomIn();
+    zoomableElement!.zoomIn();
   }
   export function zoomOut() {
-    zoomableElement.zoomOut();
+    zoomableElement!.zoomOut();
   }
 
   // ── Check if cursor is hovering the first polygon draft point ────────
@@ -269,13 +269,13 @@
     mousePosition = [e.offsetX, e.offsetY];
     // Only pan in editor mode
     if (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE) {
-      zoomableElement.mouseMove(e);
+      zoomableElement!.mouseMove(e);
     }
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    zoomableElement.onWheel(e);
+    zoomableElement!.onWheel(e);
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -304,7 +304,7 @@
     // ── Review mode: deselect and start panning (no shape editing) ─
     if (viewport.mode === REVIEW_MODE) {
       selection.deselect();
-      zoomableElement.mouseDown(e);
+      zoomableElement!.mouseDown(e);
       return;
     }
 
@@ -319,14 +319,14 @@
 
     // Nothing hit — deselect and start panning
     selection.deselect();
-    zoomableElement.mouseDown(e);
+    zoomableElement!.mouseDown(e);
   }
 
   function onMouseLeave(_e: MouseEvent) {
     // Cancel any active tool edit (bounding box drag, resize, rotate)
     toolSelection?.endSelection(sceneNormalizedCursor);
     // Stop viewport panning
-    zoomableElement.mouseUp(new MouseEvent("mouseup"));
+    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
 
   function onMouseUp(e: MouseEvent) {
@@ -347,7 +347,7 @@
     toolSelection?.endSelection(sceneNormalizedCursor);
 
     // Only pan on mouseup if we were panning
-    zoomableElement.mouseUp(e);
+    zoomableElement!.mouseUp(e);
   }
 
   function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {

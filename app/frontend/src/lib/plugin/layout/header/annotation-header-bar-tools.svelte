@@ -1,5 +1,6 @@
 <script lang="ts">
   import { RedoIcon, UndoIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -7,10 +8,9 @@
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem } from "@/plugin/v2/types";
-  import { onMount } from "svelte";
+  import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
 
   // Props
   interface Props {

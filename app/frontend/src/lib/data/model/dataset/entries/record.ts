@@ -197,4 +197,22 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
+  /**
+   * Finds the next entry to redirect to after submission.
+   * Returns the entry ID if found, or null to fall back to default behavior.
+   */
+  findNextEntry: async (datasetId: string, submittedEntryWfStep: EntryWorkflowStep) => {
+    try {
+      const res = await entriesBackendDataSource.list({
+        fields: { [EntryRecord.type]: ["id"] },
+        filters: { dataset_id: datasetId, wf_step: submittedEntryWfStep },
+        noCache: true,
+        pagination: { page: 1, itemsPerPage: 1 },
+        sort: ["assigned_to_id"],
+      });
+      return res.data.length > 0 ? res.data[0].id : null;
+    } catch {
+      return null;
+    }
+  },
 });

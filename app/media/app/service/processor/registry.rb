@@ -6,18 +6,20 @@ module Processor
 
     @processors = {}
 
-    Entry = Data.define(:plugin, :class_name, :options_class_name)
+    Entry = Data.define(:plugin, :class_name, :options_class_name, :mime_types)
 
     def register(plugin_name, modality,
                  class_name:,
-                 options_class_name: "Schema::Empty")
+                 options_class_name: "Schema::Empty",
+                 mime_types: nil)
       modality = modality.to_sym
       @processors[modality] ||= []
       @processors[modality] <<
         Entry.new(
           plugin: plugin_name.to_sym,
           class_name:,
-          options_class_name:
+          options_class_name:,
+          mime_types:
         )
     end
 
@@ -36,6 +38,16 @@ module Processor
       return nil if entries.nil?
 
       entries
+    end
+
+    def allowed_mime_types(modality)
+      entries = get(modality)
+      return nil if entries.nil?
+
+      # If any processor doesn't specify mime types, everything is allowed
+      return nil if entries.any? { |e| e.mime_types.nil? }
+
+      entries.flat_map(&:mime_types).compact.uniq
     end
   end
 end
