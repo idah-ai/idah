@@ -10,7 +10,7 @@ import { ui } from "$lib/state/ui.svelte";
 function makeAction(): ICommandAction {
   const step = ui.frameStep;
   return {
-    command: { name: "viewport.skip_backward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip backward", longDescription: "Jump backward by the configured number of frames" },
+    command: { name: "viewport.skip_backward", group: "Viewport", modes: ["editor", "review"], shortcut: null, shortDescription: "Skip backward", longDescription: "Jump backward by the configured number of frames" },
     do() {
       // stepBy gates on framePending (and clamps), so scrubbing can never
       // run ahead of what is painted on screen.

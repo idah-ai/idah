@@ -66,7 +66,7 @@ RSpec.configure do |config|
     :org_owner,
     "org_owner",
     user_data: { id: 2, email: "org_owner@example.com", name: "Org Owner" },
-    scopes: { org: ["org-123"] }
+    scopes: { org: ["1"] }
   )
 
   config.example_status_persistence_file_path = ".rspec_status"

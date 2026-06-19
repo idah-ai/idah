@@ -10,7 +10,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "timeline.go_to_last",
   group: "Timeline",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "Control+Shift+ArrowRight",
   shortDescription: "Go to last frame",
   longDescription: "Jump to the last frame",
