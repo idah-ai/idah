@@ -43,7 +43,6 @@
   let { id: entryId, wf_step, status, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
-  let permissionsLoaded = $state(false);
   let canOpenEntry = $derived.by(() => {
     if (!currentAccount?.id) return false;
 
@@ -60,7 +59,7 @@
     if (wf_step === "done" && canUpdateEntry) return true;
 
     /** If entry is assigned to someone, it can open by the assigned user */
-    return assigned_to_id === Number(currentAccount.id);
+    return assigned_to_id == Number(currentAccount.id);
   });
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
@@ -76,10 +75,7 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
-    permissionsLoaded = true;
-
-    // Start the job status poller once when component mounts
-    await periodicCheckJobStatus();
+    periodicCheckJobStatus();
   });
 
   // State for thumbnail
@@ -90,8 +86,8 @@
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
   let animationInterval: ReturnType<typeof setInterval> | null = $state(null);
-  let progressInterval: ReturnType<typeof setInterval> | null = $state(null);
-  let jobProgress: number = $state(1);
+  let progressIntervalId: ReturnType<typeof setInterval> | null = $state(null);
+  let jobProgress: number = $state(entry.wf_step === "start" ? 0 : 1);
 
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350;
@@ -150,14 +146,21 @@
     }
   }
 
-  async function periodicCheckJobStatus(): Promise<void> {
-    if (processingStatuses.includes(entry.status)) {
-      progressInterval = setInterval(async () => {
+  /**
+   * Fetch jobs data every 10 seconds, to keep the status updated
+   * Note: Only fetch if the entry is in a processing state
+   */
+  async function periodicCheckJobStatus() {
+    if (entry.wf_step === "start") {
+      progressIntervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await entriesBackendDataSource.get(entryId, { 
+              included: ["dataset", "assigned_to", "reviewed_by"],
+              noCache: true
+             });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -165,6 +168,7 @@
 
           if (entry.wf_step !== "start" || entry.status === "errored") {
             stopPeriodicCheckJobStatus();
+            jobProgress = 1;
             return;
           }
 
@@ -177,7 +181,10 @@
           jobProgress = jobRes.data.progress;
 
           if (jobProgress === 1) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await entriesBackendDataSource.get(entryId, { 
+               included: ["dataset", "assigned_to", "reviewed_by"],
+              noCache: true 
+            });
             entry = entryRes.data;
             if (entry.wf_step !== "start") {
               await loadThumbnail();
@@ -213,10 +220,11 @@
     currentImagePosition = 0; // Reset to first image
   }
 
+  // Clean up blob URL and animation when component is destroyed
   function stopPeriodicCheckJobStatus(): void {
-    if (progressInterval) {
-      clearInterval(progressInterval);
-      progressInterval = null;
+    if (progressIntervalId !== null) {
+      clearInterval(progressIntervalId);
+      progressIntervalId = null;
     }
   }
 
@@ -267,7 +275,7 @@
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
                 class="absolute top-0 left-0 cursor-pointer object-cover"
-                style:height="{imgContainer?.clientHeight}px"
+                style:height="{imgContainer?.clientHeight ?? 0}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"
                 style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
@@ -288,12 +296,7 @@
       <!-- INFO -->
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
-        <!-- Wait for permissions to load before deciding open vs locked state -->
-        {#if !permissionsLoaded}
-          <Text size="sm" weight="medium" class="text-muted-foreground animate-pulse">
-            {entry.name || entry.id}
-          </Text>
-        {:else if canOpenEntry}
+        {#if canOpenEntry}
           <Button
             variant="link"
             class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"

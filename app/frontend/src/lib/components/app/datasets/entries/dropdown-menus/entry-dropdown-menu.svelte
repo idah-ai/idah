@@ -7,11 +7,11 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
@@ -85,7 +85,7 @@
 
   async function unAssignEntry(): Promise<void> {
     try {
-      await entriesBackendDataSource.unassign(entry.id);
+      const entryRes = await entriesBackendDataSource.unassign(entry.id);
 
       onUnAssigned?.(entryRes.data);
 

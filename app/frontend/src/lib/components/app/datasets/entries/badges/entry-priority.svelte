@@ -74,7 +74,7 @@
       {@render EntryPriorityBadge({ isDropdown: true })}
     </PopoverTrigger>
 
-    <PopoverContent align="center" class="max-w-40 p-0">
+    <PopoverContent align="center" class="max-w-40 p-0" preventScroll>
       <Command>
         <CommandGroup heading="Entry Priority">
           {#each entryPriorities as { label, value, iconColor } (value)}
