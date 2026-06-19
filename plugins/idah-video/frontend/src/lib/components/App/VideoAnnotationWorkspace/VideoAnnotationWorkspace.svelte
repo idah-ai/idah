@@ -429,18 +429,6 @@
     }
   }
 
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, selectedFrame?: number) {
-    selection.selectGroup(annotationGroup.groupId);
-
-    if (isNoteMode) return;
-
-    const firstAnnotation = annotationGroup.annotations[0];
-    if (selectedFrame && firstAnnotation?.shape.type && editable) {
-      viewport.mode = firstAnnotation.shape.type;
-      selectClosestAnnotation(annotationGroup, selectedFrame);
-    }
-  }
-
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, frame: number) {
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup,
@@ -494,7 +482,13 @@
     return Promise.resolve(viewportAnnotations);
   });
 
-  function showNewNotePopup(params: { anchorType: "entry" | "annotation"; position?: Record<string, unknown>; annotationId?: string | null; screenX?: number; screenY?: number }) {
+  function showNewNotePopup(params: {
+    anchorType: "entry" | "annotation";
+    position?: Record<string, unknown>;
+    annotationId?: string | null;
+    screenX?: number;
+    screenY?: number;
+  }) {
     const { anchorType, position, annotationId, screenX, screenY } = params;
     const driver = getDriver();
     driver.notes.requestCreateNote({

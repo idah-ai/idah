@@ -3,7 +3,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -26,6 +26,7 @@
   import { humanize } from "@/utils/string";
 
   import type { ProjectMemberScope } from "@/security/types";
+  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
   // Props
   interface Props {
@@ -34,6 +35,8 @@
     onRowSelect: (selectedId: string) => void;
   }
   let { entry, selectedEntryIds, onRowSelect }: Props = $props();
+
+  const dataset: DatasetRecord = getContext("dataset");
 
   // Variables
   const currentAccount = $authStatus.authContext;
@@ -119,14 +122,33 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      const { resource } = entry;
+      let key: string;
+      switch (dataset.modality) {
+        case "idah-video":
+          key = "thumbnail.jpg"; // TODO: recheck if we should also change idah-video's thumbnail to webp as well
+          break;
+        case "idah-image":
+          key = "thumbnail.webp";
+          break;
+        default:
+          key = "processed.webp"; // default fallback image for thumbnail
+      }
+
       thumbnailUrl = await mediaBackendDataSource.getFiles({
-        resource: entry.resource,
-        key: "thumbnail.jpg",
+        resource,
+        key,
       });
 
       thumbnailImg.onload = () => {
         const width = thumbnailImg.width;
-        containerWidth = width / TOTAL_POSITIONS;
+
+        // For idah-image, use a fixed width. For idah-video, divide by TOTAL_POSITIONS
+        if (dataset.modality === "idah-image") {
+          containerWidth = 240; // Fixed size for idah-image
+        } else {
+          containerWidth = width / TOTAL_POSITIONS;
+        }
       };
 
       thumbnailImg.src = thumbnailUrl;
@@ -181,7 +203,7 @@
           console.error("Error fetching updated entry:", error);
           stopPeriodicCheckJobStatus();
         }
-      }, 2_000);
+      }, 2_000) as unknown as number;
     } else {
       await loadThumbnail();
     }
@@ -189,11 +211,11 @@
 
   // Animation functions
   function startAnimation() {
-    if (animationInterval) return;
+    if (animationInterval || dataset.modality !== "idah-video") return;
 
     animationInterval = setInterval(() => {
       currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;
-    }, ANIMATION_INTERVAL_MS);
+    }, ANIMATION_INTERVAL_MS) as unknown as number;
   }
 
   function stopAnimation() {
@@ -244,23 +266,31 @@
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
         <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
           {#if thumbnailUrl}
-            <div
-              bind:this={imgContainer}
-              role="img"
-              class="relative h-full w-full overflow-hidden rounded-lg"
-              onmouseenter={startAnimation}
-              onmouseleave={stopAnimation}
-            >
-              <img
-                src={thumbnailUrl}
-                alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
-                style:height="{imgContainer?.clientHeight}px"
-                style:width="{containerWidth * TOTAL_POSITIONS}px"
-                style:max-width="none"
-                style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
-              />
-            </div>
+            {#if dataset.modality === "idah-image"}
+              <!-- Display static image for idah-image -->
+              <div bind:this={imgContainer} role="img" class="relative h-full w-full overflow-hidden rounded-lg">
+                <img src={thumbnailUrl} alt="Entry thumbnail" class="h-full w-full rounded-lg object-cover" />
+              </div>
+            {:else}
+              <!-- Display animated sprite sheet for idah-video -->
+              <div
+                bind:this={imgContainer}
+                role="img"
+                class="relative h-full w-full overflow-hidden rounded-lg"
+                onmouseenter={startAnimation}
+                onmouseleave={stopAnimation}
+              >
+                <img
+                  src={thumbnailUrl}
+                  alt="Entry thumbnail"
+                  class="absolute top-0 left-0 cursor-pointer object-cover"
+                  style:height="{imgContainer?.clientHeight}px"
+                  style:width="{containerWidth * TOTAL_POSITIONS}px"
+                  style:max-width="none"
+                  style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
+                />
+              </div>
+            {/if}
           {:else if thumbnailError}
             <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
               Unable to load thumbnail
