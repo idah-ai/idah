@@ -32,8 +32,6 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
-  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
-  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
 
   // Lifecycle
   onMount(() => {
@@ -103,15 +101,17 @@
           errors={member.errors}
           onSelected={(selectedValue) => {
             member.email = (selectedValue ?? "") as string;
-            checkEmailValidate(member);
+            if (selectedValue !== null) {
+              checkEmailValidate(member);
+            } else {
+              member.errors = [];
+            }
           }}
-          onInput={() => {
-            checkEmailValidate(member);
-          }}
+          onEnter={() => checkEmailValidate(member)}
         >
           {#snippet slotChoice({ choice })}
             {@const isAlreadyAdded =
-              disabledMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
+              projectMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
             {@const isSelected = choice.value === member.email}
             <Combobox.Item
               class={cn(

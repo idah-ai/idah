@@ -40,6 +40,7 @@
   function closeThisModal(): void {
     open = false;
     submitting = false;
+    resetForm();
   }
 
   function resetForm(): void {
@@ -146,6 +147,18 @@
 
       if (!validated.success) {
         submitting = false;
+        return;
+      }
+
+      const emails = members.map((m) => m.email.toLowerCase());
+      const hasDuplicates = emails.some((email, i) => emails.indexOf(email) !== i);
+
+      if (hasDuplicates) {
+        submitting = false;
+        showToast.error({
+          title: "Duplicate emails",
+          description: "Each member must have a unique email address.",
+        });
         return;
       }
 

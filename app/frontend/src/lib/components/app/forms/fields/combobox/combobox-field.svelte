@@ -17,6 +17,7 @@
   interface Props extends SingleSelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
     onInput?: () => void;
+    onEnter?: () => void;
   }
   let {
     dataSource,
@@ -38,6 +39,7 @@
     class: className,
     onSelected,
     onInput,
+    onEnter,
     slotLabel,
     slotChoice,
     slotInfo,
@@ -188,6 +190,9 @@
         )}
         oninput={onComboboxInput}
         onblur={onBlur}
+        onkeydown={(e) => {
+          if (e.key === "Enter") onEnter?.();
+        }}
         autofocus={false}
         {disabled}
         {placeholder}
