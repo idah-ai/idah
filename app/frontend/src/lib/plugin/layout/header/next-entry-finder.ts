@@ -1,10 +1,7 @@
 import { get } from "svelte/store";
 import { authStatus } from "@/security/AuthContext";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-import {
-  projectMembersBackendDataSource,
-  ProjectMemberRecord,
-} from "@/data/model/dataset/projects/members/record";
+import { projectMembersBackendDataSource, ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
 import type { ProjectMemberRole } from "@/data/model/dataset/projects/members/record";
 import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
@@ -14,9 +11,7 @@ import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
  * 1. Global role (admin, org_owner) — treated as "owner-like"
  * 2. Project member role (project_owner, reviewer, annotator)
  */
-export async function getCurrentUserProjectRole(
-  projectId: string,
-): Promise<"annotator" | "reviewer" | "owner_like"> {
+export async function getCurrentUserProjectRole(projectId: string): Promise<"annotator" | "reviewer" | "owner_like"> {
   const authCtx = get(authStatus).authContext;
   if (!authCtx) return "annotator";
 
