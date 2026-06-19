@@ -20,6 +20,7 @@
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -31,7 +32,7 @@
 
   // Variables
   let { id, title, subtitle, items } = $derived(track);
-  let shapeType = $derived(items[0]?.rawData.shape.type ?? "");
+  let shapeType = $derived(items[0]?.rawData.shape?.type ?? "");
   let color = $derived.by(() => {
     const ann = items[0]?.rawData;
     return ann ? resolveAnnotationColor(ann) : "gray";
@@ -52,6 +53,8 @@
 
   function handleOnContextMenu(e: MouseEvent) {
     e.preventDefault();
+
+    if (viewport.isReviewWorkspace) return;
 
     selectAnnotationGroup();
 
@@ -124,18 +127,20 @@
       {/if}
     </div>
 
-    <div class="ml-auto flex shrink-0 items-center">
-      {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, disabled, alwaysShow, onClick }] (key)}
-        <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-          <ToolTooltip {label}>
-            {#snippet trigger()}
-              <Button variant="ghost" size="icon-sm" class="focus:outline-none" {disabled} onclick={onClick}>
-                <Icon />
-              </Button>
-            {/snippet}
-          </ToolTooltip>
-        </div>
-      {/each}
-    </div>
+    {#if id !== "__entry_notes__"}
+      <div class="ml-auto flex shrink-0 items-center">
+        {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, disabled, alwaysShow, onClick }] (key)}
+          <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+            <ToolTooltip {label}>
+              {#snippet trigger()}
+                <Button variant="ghost" size="icon-sm" class="focus:outline-none" {disabled} onclick={onClick}>
+                  <Icon />
+                </Button>
+              {/snippet}
+            </ToolTooltip>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </div>
 </button>

@@ -6,6 +6,7 @@
   import { modKey } from "$lib/utils/browser";
   import { viewport, VIEWPORT_MIN_ZOOM, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
   import SyncIndicator from "./SyncIndicator.svelte";
+  import LoadingIndicator from "./LoadingIndicator.svelte";
   import { media } from "$lib/state/media.svelte";
 
   // Props
@@ -115,7 +116,6 @@
    * integer values (e.g. 3), which would be imperceptible without this conversion.
    */
   function normalizeWheelDelta(delta: number, deltaMode: number): number {
-
     if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
     if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * size[1];
     return delta; // DOM_DELTA_PIXEL — already in pixels
@@ -181,7 +181,7 @@
   export function mouseDown(e: MouseEvent) {
     switch (viewport.mode) {
       case "note": {
-        break; // Do not pan in note mode
+        break; // Do not pan — handled by ShapesContainer
       }
       default:
         if (!panOrigin) {
@@ -224,6 +224,7 @@
   bind:clientWidth={size[0]}
 >
   <SyncIndicator />
+  <LoadingIndicator />
   <div
     class="target"
     style:transform-origin="top left"

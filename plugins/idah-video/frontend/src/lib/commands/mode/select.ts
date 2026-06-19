@@ -2,9 +2,9 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "mode.default",
+  name: "mode.selection",
   group: "Tools",
-  modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+  modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: "D",
   shortDescription: "Selection",
   longDescription: "Selection Tool",
@@ -20,7 +20,12 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        driver.setMode("default");
+        // Return to the parent resting mode of the current workspace
+        if (driver.mode === "review" || driver.mode === "note") {
+          driver.setMode("review");
+        } else {
+          driver.setMode("editor");
+        }
       },
       isCombinable() { return false; },
       combine(p) { return p; },

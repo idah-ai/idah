@@ -4,13 +4,12 @@
 // Not undoable.
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
-import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
   name: "viewport.next_frame",
   group: "Viewport",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "ArrowRight",
   shortDescription: "Next frame",
   longDescription: "Move forward one frame",
@@ -26,8 +25,9 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        const current = viewport.video.currentFrame.value;
-        viewport.video.currentFrame.value = Math.min(current + 1, media.totalFrames - 1);
+        // stepBy gates on framePending (and clamps), so scrubbing can never
+        // run ahead of what is painted on screen.
+        viewport.video.stepBy(1);
       },
       isCombinable() { return false; },
       combine(prev) { return prev; },

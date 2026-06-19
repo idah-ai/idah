@@ -21,7 +21,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 export const command = {
   name: "annotation.extend_prev",
   group: "Annotation",
-  modes: ["default"],
+  modes: ["editor"],
   shortcut: "BracketRight",
   shortDescription: "Extend previous annotation",
   longDescription: "Extend the previous annotation to the current frame",

@@ -15,8 +15,8 @@ RSpec.describe Processor::Service, type: :service, database: true do
         type: "entries",
         attributes: {
           priority: 1,
-          wf_step: "processing",
-          status: "ready",
+          wf_step: "start",
+          status: "pending",
           job_id: UUIDv7.generate,
           resource: "some-resource-identifier",
           assigned_to_id: nil,

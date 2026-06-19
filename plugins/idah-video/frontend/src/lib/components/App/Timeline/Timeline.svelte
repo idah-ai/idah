@@ -6,15 +6,22 @@
   import Selection from "$lib/components/App/Timeline/_Selection.svelte";
   import Track from "$lib/components/App/Timeline/_Track.svelte";
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
+  import TrackItem from "$lib/components/App/Timeline/_TrackItem.svelte";
 
   import { modKey } from "$lib/utils/browser";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { viewport as vp } from "$lib/state/viewport.svelte";
+  import { NOTES_ROW_HEIGHT, TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { getAnnotationGroupId } from "$lib/types";
 
-  import type { TimelineProps, Viewport } from "$lib/components/App/Timeline/types";
+  import type {
+    TimelineItem,
+    TimelineProps,
+    TrackData,
+    Viewport,
+  } from "$lib/components/App/Timeline/types";
   import type { IAnnotationRecord } from "$idah/v2/types";
 
   interface Props extends TimelineProps {
@@ -45,6 +52,8 @@
 
     TrackInfoHeaderSlot,
     TrackInfoSlot,
+    noteItems,
+    NoteTrackInfoSlot,
   }: Props = $props();
 
   // Selection state (selectionLength is always 1 — single frame)
@@ -198,16 +207,17 @@
   let rulerViewportEl = $state<HTMLDivElement | null>(null);
   let tracksViewportEl = $state<HTMLDivElement | null>(null);
   let hScrollbarEl = $state<HTMLDivElement | null>(null);
+  let notesContentEl = $state<HTMLDivElement | null>(null);
 
   // Track in-flight programmatic scrolls per element to prevent feedback loops.
   // Using a Set so ruler, tracks and hscrollbar can all be pending simultaneously.
-  const pendingProgrammatic = new Set<"ruler" | "tracks" | "hscrollbar">();
+  const pendingProgrammatic = new Set<"ruler" | "tracks" | "hscrollbar" | "notes">();
 
   // Set scrollLeft on all viewport elements (except the one that triggered the event).
   // Both syncScrollLeft and setScrollLeft are called synchronously at mutation sites
   // instead of relying on a reactive $effect (which would fire on every zoom event
   // and thrash layout by setting 3× scrollLeft per wheel tick).
-  function setScrollLeft(targetScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar" | null = null) {
+  function setScrollLeft(targetScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar" | "notes" | null = null) {
     if (skip !== "ruler" && rulerViewportEl && Math.abs(rulerViewportEl.scrollLeft - targetScrollLeft) > 0.5) {
       pendingProgrammatic.add("ruler");
       rulerViewportEl.scrollLeft = targetScrollLeft;
@@ -222,7 +232,7 @@
     }
   }
 
-  function syncScrollLeft(newScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar") {
+  function syncScrollLeft(newScrollLeft: number, skip: "ruler" | "tracks" | "hscrollbar" | "notes") {
     const rangeWidth = viewport.endRange - viewport.startRange;
     // Clamp startRange so the viewport stays within [0, length] without changing rangeWidth
     const clampedStartRange = Math.max(0, Math.min(newScrollLeft / scale, length - rangeWidth));
@@ -379,6 +389,34 @@
 
   function handleMouseLeave() {
     showCaret = false;
+  }
+
+  function handleNotesMouseMove(e: MouseEvent) {
+    if (scale <= 0) return;
+    const notesWrapper = e.currentTarget as HTMLElement;
+    const rect = notesWrapper.getBoundingClientRect();
+    hoveredFrame = Math.floor((e.clientX - rect.left + viewport.startRange * scale) / scale);
+    showCaret = true;
+  }
+
+  function handleNotesClick(e: MouseEvent) {
+    if (scale <= 0) return;
+    const notesWrapper = e.currentTarget as HTMLElement;
+    const rect = notesWrapper.getBoundingClientRect();
+    applyClickSelect(e.clientX - rect.left + viewport.startRange * scale);
+  }
+
+  function handleNotesWheel(e: WheelEvent) {
+    e.preventDefault();
+    if (modKey(e)) {
+      handleZoom(e);
+      return;
+    }
+    if (scale <= 0) return;
+    const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    const currentScrollLeft = viewport.startRange * scale;
+    const newScrollLeft = Math.max(0, currentScrollLeft + delta);
+    syncScrollLeft(newScrollLeft, "notes");
   }
 
   // Common click-to-select logic
@@ -555,12 +593,68 @@
     </div>
   </div>
 
+  {#if noteItems && noteItems.length > 0}
+    <div class="timeline-notes-wrapper" style="height: {NOTES_ROW_HEIGHT}px;">
+      <div class="timeline-notes-spacer bg-secondary border-r">
+        {#if NoteTrackInfoSlot}
+          {@render NoteTrackInfoSlot()}
+        {/if}
+      </div>
+      <div class="timeline-notes-content-wrapper bg-secondary" role="presentation" onmousemove={handleNotesMouseMove} onmouseleave={handleMouseLeave} onclick={handleNotesClick} onwheel={handleNotesWheel}>
+        <div
+          class="timeline-notes-content"
+          style="width: {contentWidth}px; transform: translateX({-viewport.startRange * scale}px);"
+        >
+          {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
+            <Selection
+              offset={selectionOffset}
+              length={selectionLength}
+              {scale}
+              height={NOTES_ROW_HEIGHT}
+              trackLength={length}
+            />
+            <Caret
+              x={selectionOffset * scale}
+              value={selectionOffset}
+              {labelFormatter}
+              height={NOTES_ROW_HEIGHT}
+              color="#4a90d9"
+              showLabel={false}
+            />
+          {/if}
+          {#each noteItems as item (item.rawData.id)}
+            <TrackItem {item} {scale} />
+          {/each}
+          {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
+            <Selection
+              offset={caretFrame}
+              length={1}
+              {scale}
+              height={NOTES_ROW_HEIGHT}
+              trackLength={length}
+              color="orangered"
+            />
+            <Caret
+              x={caretPixelX}
+              value={caretFrame}
+              {labelFormatter}
+              height={NOTES_ROW_HEIGHT}
+              color="orangered"
+              showLabel={false}
+            />
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Vertical scroll container: scrolls both trackinfos and tracks together -->
   <div
     class="timeline-body-scroll"
     bind:this={bodyScrollEl}
     bind:clientHeight={bodyScrollClientHeight}
     onscroll={handleBodyScroll}
+    oncontextmenu={(e) => { if (vp.isReviewWorkspace) e.preventDefault(); }}
   >
     <div class="timeline-main">
       <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">
@@ -654,6 +748,8 @@
     flex-direction: column;
     user-select: none;
     -webkit-user-select: none;
+    position: relative;
+    z-index: 0;
   }
 
   .timeline-toolbar {
@@ -664,6 +760,31 @@
     position: relative;
     display: flex;
     flex-shrink: 0;
+  }
+
+  .timeline-notes-wrapper {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid hsl(var(--border));
+    overflow: hidden;
+    z-index: 0;
+    position: relative;
+  }
+
+  .timeline-notes-spacer {
+    width: 300px;
+    flex-shrink: 0;
+  }
+
+  .timeline-notes-content-wrapper {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .timeline-notes-content {
+    position: relative;
+    height: 100%;
   }
 
   .timeline-ruler-spacer {

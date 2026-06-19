@@ -6,6 +6,8 @@
 
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
   import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
+  import NoteOverlay from "@/plugin/layout/notes/NoteOverlay.svelte";
+  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
 
   import { authStatus } from "@/security/AuthContext";
 
@@ -19,6 +21,7 @@
   let headerBarElement = $state<HTMLElement | null>(null);
   let headerBarHeight = $derived(headerBarElement?.clientHeight ?? 50);
   let plugin: IPluginDriver | undefined = $state();
+  let notesReady = $state(false);
 
   let p: Promise<IPluginDriver> = new Promise<IPluginDriver>((ok, ko) => {
     if (!window.idah_plugin) {
@@ -32,14 +35,34 @@
   let paletteOpen = $state(driver.command.isPaletteOpen());
   let initialized = $state(false);
 
+  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
+
   driver.onModeChange((event) => {
     currentMode = event.newValue;
   });
 
+  driver.notesAdapter!.onNoteSidebarChange((open) => {
+    noteSidebarOpen = open;
+  });
+
   onMount(() => {
+    // Initialise notes cache from backend
+    const na = driver.notesAdapter;
+    if (na) {
+      na.fetchForEntry()
+        .then(() => {
+          notesReady = true;
+        })
+        .catch(() => {
+          notesReady = true;
+        });
+    } else {
+      notesReady = true;
+    }
+
     p.then((_plugin) => {
       plugin = _plugin;
-      plugin.init(driver);
+      plugin.init(driver.sealed());
       initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
     });
     // Load the user's saved shortcut overrides into the live map that
@@ -64,7 +87,11 @@
 
 <div class="relative">
   {#if initialized}
-    <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {driver} />
+    {#if notesReady && (currentMode === "review" || currentMode === "note")}
+      <NoteOverlay notesAdapter={driver.notesAdapter} />
+    {/if}
+
+    <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />
 
     <IdahCommandPalette
       open={paletteOpen}
@@ -84,4 +111,14 @@
       Could not find plugin
     {/await}
   </div>
+
+  <!-- Note Sidebar (overlay) -->
+  <NoteSidebar
+    {driver}
+    open={initialized && (currentMode === "review" || currentMode === "note") && noteSidebarOpen}
+    onSidebarClose={() => {
+      noteSidebarOpen = false;
+      driver.notesAdapter!.closeNoteSidebar();
+    }}
+  />
 </div>

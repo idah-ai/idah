@@ -37,10 +37,12 @@
   let w = $derived(media.width);
   let h = $derived(media.height);
 
+  // Use displayedFrame (not currentFrame) so vertex positions stay in sync
+  // with the actual video pixels on screen during rapid frame navigation.
   let baseVertices = $derived.by((): Point[] => {
     const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     return result?.points ?? [];
   });
 
@@ -234,7 +236,13 @@
   //   "cursor-grabbing"  → actively dragging (vertex drag, pan, or multi-drag in progress)
   //   "cursor-grab"      → editable & selected (ready to start a drag)
   //   "cursor-pointer"   → otherwise
-  let bodyCursor = $derived(isEditing ? "cursor-grabbing" : editable && selected ? "cursor-grab" : "cursor-pointer");
+  //   "cursor-note"       → hovering in note mode
+  let bodyCursor = $derived(
+    mode === "note" ? "cursor-note" :
+    isEditing ? "cursor-grabbing" :
+    editable && selected ? "cursor-grab" :
+    "cursor-pointer"
+  );
 
   let over = $state(false);
 </script>
@@ -270,6 +278,9 @@
       // Do not start selection if in creation mode,
       // to avoid interfering with the creation process
       if (viewport.isCreationMode) return;
+
+      // In review mode, let the event bubble for panning
+      if (viewport.mode === "review") return;
 
       if (editable && selected) {
         // Convert client coords to SVG viewBox coords, then to normalized (0-1) media coords.

@@ -188,33 +188,55 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "#complete_entry_processing" do
+    let(:job_id) { UUIDv7.generate }
+
+    before do
+      repo.create({ project_id:, dataset_id:, job_id:, status: "processing", wf_step: "start" })
+    end
+
+    it "advances wf_step from start to annotate via workflow submit" do
+      subject.complete_entry_processing(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:wf_step)).to all(eq("annotate"))
+    end
+
+    it "sets status to pending when no one is assigned" do
+      subject.complete_entry_processing(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("pending"))
+    end
+  end
+
   describe "#mark_entries_status_as" do
     let(:job_id) { UUIDv7.generate }
     let(:other_job_id) { UUIDv7.generate }
 
     before do
       repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
-      repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "pending" })
+      repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "done" })
     end
 
-    it "marks entries with the given job_id as ready" do
-      subject.mark_entries_status_as(job_id, "ready")
+    it "marks entries with the given job_id as pending" do
+      subject.mark_entries_status_as(job_id, "pending")
 
       entries = repo.index({ job_id: job_id })
-      expect(entries.map(&:status)).to all(eq("ready"))
+      expect(entries.map(&:status)).to all(eq("pending"))
 
       other_entry = repo.index({ job_id: other_job_id }).first
-      expect(other_entry.status).to eq("pending")
+      expect(other_entry.status).to eq("done")
     end
 
-    it "marks entries with the given job_id as processing_error" do
-      subject.mark_entries_status_as(job_id, "processing_error")
+    it "marks entries with the given job_id as errored" do
+      subject.mark_entries_status_as(job_id, "errored")
 
       entries = repo.index({ job_id: job_id })
-      expect(entries.map(&:status)).to all(eq("processing_error"))
+      expect(entries.map(&:status)).to all(eq("errored"))
 
       other_entry = repo.index({ job_id: other_job_id }).first
-      expect(other_entry.status).to eq("pending")
+      expect(other_entry.status).to eq("done")
     end
   end
 
@@ -288,23 +310,26 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#assign_member" do
-    it "assigns a member to an entry" do
-      record = deserialize(
-        {
-          data: {
-            type: "entries",
-            id: entry.id,
-            attributes: {
-              assigned_to_id: 2,
-            }
-          }
-        }
-      )
+    it "assigns a member to an entry and sets status to in_progress" do
+      subject.assign_member(entry.id, 2)
 
-      subject.assign_member(record.id, 2)
-
-      updated_entry = repo.find!(record.id)
+      updated_entry = repo.find!(entry.id)
       expect(updated_entry.assigned_to_id).to eq(2)
+      expect(updated_entry.status).to eq("in_progress")
+    end
+  end
+
+  describe "#unassign_member" do
+    before do
+      repo.update!(entry.id, { assigned_to_id: 2, status: "in_progress" })
+    end
+
+    it "clears the assigned member and sets status to pending" do
+      subject.unassign_member(entry.id)
+
+      updated_entry = repo.find!(entry.id)
+      expect(updated_entry.assigned_to_id).to be_nil
+      expect(updated_entry.status).to eq("pending")
     end
   end
 
@@ -364,27 +389,10 @@ RSpec.describe Entry::Service, database: true do
           project_id:,
           dataset_id:,
           resource: "test-video.mp4",
-          status: "ready",
+          status: "pending",
           wf_step: "start"
         }
       )
-    end
-
-    context "when transitioning from start to annotate" do
-      it "updates the entry workflow step and status" do
-        result = subject.submit(test_entry)
-
-        expect(result.wf_step).to eq("annotate")
-        expect(result.status).to eq("in_progress")
-        expect(result.id).to eq(test_entry)
-      end
-
-      it "includes dataset and annotations in the result" do
-        result = subject.submit(test_entry)
-
-        expect(result.dataset).not_to be_nil
-        expect(result.dataset.id).to eq(dataset_id)
-      end
     end
 
     context "when transitioning from annotate to review" do
@@ -401,7 +409,7 @@ RSpec.describe Entry::Service, database: true do
         result = subject.submit(test_entry)
 
         expect(result.wf_step).to eq("review")
-        expect(result.status).to eq("in_progress")
+        expect(result.status).to eq("pending")
       end
     end
 
@@ -438,7 +446,7 @@ RSpec.describe Entry::Service, database: true do
 
     context "when transitioning from review to annotate" do
       before do
-        repo.update!(test_entry, { wf_step: "review" })
+        repo.update!(test_entry, { wf_step: "review", submitted_by_id: 123 })
       end
 
       it "transitions back to annotate when approved is false" do
@@ -547,7 +555,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id:,
         resource: "http://example.com/video1.mp4",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: account_id
       )
@@ -566,7 +574,7 @@ RSpec.describe Entry::Service, database: true do
         project_id: @another_project_id,
         dataset_id: @another_dataset_id,
         resource: "http://example.com/image1.jpg",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: account_id
       )
@@ -576,7 +584,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id:,
         resource: "http://example.com/video3.mp4",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: another_account_id
       )
@@ -586,7 +594,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id:,
         resource: "http://example.com/video4.mp4",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: nil
       )
@@ -633,7 +641,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id: another_dataset_in_same_project,
         resource: "http://example.com/image2.jpg",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: account_id
       )
