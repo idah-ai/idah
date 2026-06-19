@@ -27,12 +27,7 @@
   let wfStep = $derived(entryRecord?.wf_step || undefined);
 
   // Variables::Reactive
-  let assignedToAccountId = $derived(selectedMemberAccountId);
-
-  // Functions
-  $effect(() => {
-    onValueChange({ assigned_to_id: assignedToAccountId });
-  });
+  let assignedToAccountId = $state(selectedMemberAccountId);
 </script>
 
 <FieldSet class="p-1">
@@ -56,6 +51,7 @@
       value={assignedToAccountId}
       onSelected={(value: string | number | null) => {
         assignedToAccountId = value as number;
+        onValueChange({ assigned_to_id: assignedToAccountId });
       }}
     >
       {#snippet slotTriggerValue({ selectedChoice })}
