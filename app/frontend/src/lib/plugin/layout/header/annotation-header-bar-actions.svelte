@@ -15,6 +15,7 @@
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Checkbox } from "@/components/ui/checkbox";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,12 +29,16 @@
 
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
+  import { findNextEntry } from "@/plugin/layout/header/next-entry-finder";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { refetches } from "@/utils/refetch";
+
+  import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
 
   // Props
   interface Props {
@@ -46,6 +51,16 @@
   // Variables
   let loading = $state(false);
   let openSettingsPopover = $state(false);
+
+  // Persist auto-select preference in localStorage
+  let autoSelectNextEntry = $state(
+    typeof localStorage !== "undefined" && localStorage.getItem("autoSelectNextEntry") === "true",
+  );
+  $effect(() => {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("autoSelectNextEntry", String(autoSelectNextEntry));
+    }
+  });
 
   // Track mode changes reactively
   let currentMode = $state(driver.mode);
@@ -85,6 +100,22 @@
   async function submit(opts?: { approved: boolean }) {
     entriesBackendDataSource.submit(driver.id, opts).then(async () => {
       $refetches.entries.list = new Date();
+
+      // ── Auto-select next entry ──────────────────────────────────────────
+      if (autoSelectNextEntry) {
+        const nextEntryId = await findNextEntry({
+          datasetId: driver.dataset.id,
+          projectId: driver.project.id,
+          submittedEntryWfStep: driver.workflowStep as EntryWorkflowStep,
+        });
+        if (nextEntryId) {
+          const pluginId = page.params.pluginId as string;
+          window.location.href = resolve(`/entries/${nextEntryId}/plugin/${pluginId}`);
+          return;
+        }
+      }
+
+      // ── Fallback: existing behavior ─────────────────────────────────────
       try {
         const entriesRes = await entriesBackendDataSource.list({
           fields: {
@@ -134,7 +165,7 @@
           <Button variant={noteSidebarOpen ? "default" : "ghost"} size="icon-sm" onclick={onNoteToggle}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
-                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 17.5329 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
+                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 18.1581 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
@@ -214,6 +245,29 @@
     >
       Review
     </Button>
+  </div>
+
+  <!-- Auto-select next entry checkbox -->
+  <div class="flex items-center gap-1.5">
+    <Checkbox bind:checked={autoSelectNextEntry} />
+    <ToolTooltip
+      label="Automatically opens the next available entry after you submit the current one."
+      align="center"
+      delayDuration={100}
+    >
+      {#snippet trigger()}
+        <label
+          for="auto-select-next"
+          class="text-muted-foreground cursor-pointer text-xs select-none"
+          role="button"
+          tabindex="0"
+          onkeydown={(e) => e.key === "Enter" && (autoSelectNextEntry = !autoSelectNextEntry)}
+          onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)}
+        >
+          Auto-select entry
+        </label>
+      {/snippet}
+    </ToolTooltip>
   </div>
 
   {#if driver.workflowStep === "done"}
