@@ -7,337 +7,570 @@ interface QualityInfo {
 }
 
 interface VideoStreamHandlerOptions {
+  endOfFrameTime?: number;
   initialFragmentCount?: number;
+  // Slow-network budget: max ms to wait for one HQ fragment before falling back to LQ
+  slowNetworkThresholdMs?: number;
   onLoadingChange?: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  // Gate for arrow-key stepping: true while the fragment covering the current
+  // target is downloading. Forward-fill and background HQ work don't gate.
+  onFragmentInFlightChange?: (inFlight: boolean) => void;
 }
 
+interface TimeRange {
+  start: number;
+  end: number;
+}
+
+// In-flight HQ upgrade or LQ-fallback handoff operation
+interface PendingRender {
+  fragListener: (event: string, data: any) => void; // Awaits coverage via FRAG_BUFFERED
+  settleTimer: ReturnType<typeof setTimeout> | null; // Delay before repainting
+  timeoutTimer: ReturnType<typeof setTimeout> | null; // 15s watchdog against hangs
+  loaderShown: boolean; // Whether to emit onLoadingChange(false) on cancel
+  // renderHQAt (true) vs renderLQFallbackAt (false). A superseded upgrade has its
+  // in-flight HQ download stopped to free the link; an LQ fallback is the paint
+  // path and is left running (it may retarget instead).
+  isUpgrade: boolean;
+}
+
+const SETTLE_MS = 50; // Delay before repainting after coverage is met
+const RENDER_COVERAGE_S = 0.5; // Forward buffer ahead of frame needed for smooth decode
+const UPGRADE_DEBOUNCE_MS = 300; // Delay before upgrading LQ to HQ after navigation stops
+const PLAYBACK_ABR_DELAY_MS = 3000; // Handoff to ABR after playback stabilizes
+const RENDER_TIMEOUT_MS = 15000; // Watchdog: abandon stuck upgrade with no downloads
+const RANGE_TOLERANCE_S = 0.1; // Slack when comparing time against buffered ranges
+const SLOW_NETWORK_THRESHOLD_MS = 1000; // Budget for HQ fragment on slow networks
+
+/**
+ * HLS stream manager for frame-accurate annotation playback.
+ *
+ * Strategy: Start low-quality, switch to high-quality permanently. On slow
+ * networks, use predict-then-verify to decide HQ vs. LQ upfront. Surgical
+ * buffer flushes replace only LQ regions with HQ when user settles.
+ *
+ * Uses `hls.loadLevel` (non-destructive) not `currentLevel` (flushes buffer).
+ * Stream controller auto-follows seeking; unbuffered seeks load at HQ (or LQ
+ * if slow) without manual intervention.
+ */
 export class VideoStreamHandler {
   private videoElement: HTMLVideoElement;
   private sourceUrl: string;
-  private hls: Hls | null;
-  private fragmentsLoaded: number;
-  private isInitialLoad: boolean;
-  private isPaused: boolean;
-  private initialFragmentCount: number;
-  private maxQualityLevel: number;
-  private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  private hls: Hls | null = null;
 
-  constructor(
-    videoElement: HTMLVideoElement,
-    sourceUrl: string,
-    options: VideoStreamHandlerOptions = {}
-  ) {
+  private maxQualityLevel = -1;
+  private fragmentsLoaded = 0;
+  private isInitialLoad = true;
+  private isPaused = true;
+
+  private fragLoadInFlight = false; // Fragment download in progress
+  private gatingFragInFlight = false; // Non-HQ paint-path fragment in progress (gates stepping)
+  private inFlightFrag: TimeRange & { level: number } | null = null; // Current download window
+  private hqDeadlineMissed = false; // HQ missed deadline; skip it next time until recovery
+
+  private endOfFrameTime: number;
+  private initialFragmentCount: number;
+  private slowNetworkThresholdMs: number;
+  private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  private onFragmentInFlightChange: (inFlight: boolean) => void;
+
+  private lqRanges: TimeRange[] = []; // Tracks which buffer regions hold LQ data
+  private pendingRender: PendingRender | null = null; // Single in-flight upgrade/fallback
+  private upgradeTimer: ReturnType<typeof setTimeout> | null = null; // Debounce before upgrading LQ
+  private hqDeadlineTimer: ReturnType<typeof setTimeout> | null = null; // Fallback to LQ if HQ takes too long
+  private adaptiveTransitionTimer: ReturnType<typeof setTimeout> | null = null; // Switch to ABR during playback
+
+  // DOM event references stored for clean removal on destroy.
+  private boundPlayHandler: (() => void) | null = null;
+  private boundPauseHandler: (() => void) | null = null;
+  // One-shot "seeked" listener deferring the pause-time HQ upgrade until an
+  // in-flight alignment seek (the pause snap in Video.svelte) settles.
+  private pendingPauseUpgrade: (() => void) | null = null;
+
+  constructor(videoElement: HTMLVideoElement, sourceUrl: string, options: VideoStreamHandlerOptions = {}) {
     this.videoElement = videoElement;
     this.sourceUrl = sourceUrl;
-    this.hls = null;
-    this.fragmentsLoaded = 0;
-    this.isInitialLoad = true;
-    this.isPaused = true;
-
-    // Configuration
-    this.initialFragmentCount = options.initialFragmentCount || 1;
-    this.maxQualityLevel = -1; // Will be set after manifest is parsed
-    this.onLoadingChange = options.onLoadingChange || (() => {}); // Callback for loading state
-
+    this.endOfFrameTime = options.endOfFrameTime ?? 0.1;
+    this.initialFragmentCount = options.initialFragmentCount ?? 1;
+    this.slowNetworkThresholdMs = options.slowNetworkThresholdMs ?? SLOW_NETWORK_THRESHOLD_MS;
+    this.onLoadingChange = options.onLoadingChange ?? (() => {});
+    this.onFragmentInFlightChange = options.onFragmentInFlightChange ?? (() => {});
     this.init();
   }
 
+  // ── Init ──────────────────────────────────────────────────────────
+
   private init(): void {
     if (!Hls.isSupported()) {
-      // For Safari with native HLS support
       if (this.videoElement.canPlayType("application/vnd.apple.mpegurl")) {
         this.videoElement.src = this.sourceUrl;
       }
       return;
     }
 
+    // A generous buffer window keeps HQ fragments around the playhead so
+    // most navigation seeks land in already-buffered territory.
     this.hls = new Hls({
-      maxBufferLength: 10,
-      maxMaxBufferLength: 10,
-      autoStartLoad: false, // Manual control
+      maxBufferLength: 30,
+      maxMaxBufferLength: 30,
+      autoStartLoad: false,
       debug: false,
     });
-
     this.hls.loadSource(this.sourceUrl);
     this.hls.attachMedia(this.videoElement);
-
     this.setupEventListeners();
-
-    // Manually start load for controlled initial loading
     this.hls.startLoad(0);
   }
+
+  // ── Event listeners ───────────────────────────────────────────────
 
   private setupEventListeners(): void {
     if (!this.hls) return;
 
-    // Manifest parsed - get available quality levels
-    this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-      console.log("HLS manifest loaded");
-      console.log("Available quality levels:", data.levels.length);
+    // Start initial burst at LQ; use loadLevel (no buffer flush)
+    this.hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
       this.maxQualityLevel = data.levels.length - 1;
-
-      // Start with highest quality
-      if (this.hls) {
-        this.hls.currentLevel = this.maxQualityLevel; // Highest quality
-        console.log(`Initial quality set to: ${this.maxQualityLevel}`);
-      }
+      if (this.hls) this.hls.loadLevel = 0;
     });
 
-    // Track level switching
-    this.hls.on(Hls.Events.LEVEL_SWITCHING, (event, data) => {
-      const newLevel = data.level;
-      console.log(`Level switching to: ${newLevel}`);
+    // Track fragment downloads for watchdog
+    this.hls.on(Hls.Events.FRAG_LOADING, (_event, data) => {
+      this.setFragLoadInFlight(true, data.frag);
     });
 
-    // Track fragment loading
-    this.hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+    // Maintain LQ range map on append
+    this.hls.on(Hls.Events.FRAG_BUFFERED, (_event, data) => {
+      const frag = data.frag;
+      if (frag.type !== "main") return;
+      const start = frag.start;
+      const end = frag.start + frag.duration;
+      if (frag.level === this.maxQualityLevel) this.subtractLQRange(start, end);
+      else this.addLQRange(start, end);
+    });
+
+    // After initial burst: pin to HQ and replace burst region
+    this.hls.on(Hls.Events.FRAG_LOADED, (_event, data) => {
+      this.setFragLoadInFlight(false);
+      if (data.frag.level === this.maxQualityLevel) this.hqDeadlineMissed = false;
       this.fragmentsLoaded++;
-      const fragmentLevel = data.frag.level;
-
-      console.log(
-        `Fragment ${this.fragmentsLoaded} loaded (segment #${data.frag.sn}, level: ${fragmentLevel})`
-      );
-
-      // Stop after initial fragments during initial load
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
-        console.log(
-          `Loaded ${this.initialFragmentCount} initial fragments, stopping load until play`
-        );
-        if (this.hls) {
-          this.hls.stopLoad();
-        }
         this.isInitialLoad = false;
+        if (this.hls && this.maxQualityLevel > 0) {
+          this.hls.loadLevel = this.maxQualityLevel;
+          this.renderHQAt(this.seekTime());
+        }
       }
     });
 
-    // Video play event
-    this.videoElement.addEventListener("play", () => {
-      console.log("Video play - resuming segment loading");
+    this.boundPlayHandler = () => {
       this.isPaused = false;
       this.isInitialLoad = false;
-
-      // Hide loader if it's showing
-      this.onLoadingChange(false);
-
-      // Switch to adaptive quality for smooth playback based on connection
-      if (this.hls) {
-        this.hls.currentLevel = -1;
-
-        if (this.hls.media && this.hls.media.readyState > 0) {
-          this.hls.startLoad();
+      this.clearPendingPauseUpgrade();
+      this.cancelPendingRender();
+      if (!this.hls) return;
+      this.hls.startLoad(this.seekTime());
+      // Hand to ABR after playback stabilizes (no flush, non-HQ will upgrade on next pause)
+      this.adaptiveTransitionTimer = setTimeout(() => {
+        this.adaptiveTransitionTimer = null;
+        if (this.hls && !this.videoElement.paused) {
+          this.hls.loadLevel = -1;
         }
-      }
-    });
+      }, PLAYBACK_ABR_DELAY_MS);
+    };
+    this.videoElement.addEventListener("play", this.boundPlayHandler);
 
-    // Video pause event
-    this.videoElement.addEventListener("pause", () => {
-      console.log("Video paused - loading highest quality");
+    // On pause: re-pin to HQ and upgrade the current frame. The pause snap
+    // (Video.svelte) may leave the element seeking; upgradeToHQ bails while
+    // seeking, so defer until it settles, then upgrade the aligned frame.
+    this.boundPauseHandler = () => {
+      this.cancelTimer("adaptiveTransitionTimer");
       this.isPaused = true;
-
-      // Switch to highest quality level
-      if (this.maxQualityLevel >= 0 && this.hls) {
-        const currentLevel = this.hls.currentLevel;
-
-        // Check if we're already at the best quality
-        if (currentLevel === this.maxQualityLevel) {
-          console.log(`Already at max quality level (${this.maxQualityLevel}), skipping reload`);
-          return;
-        }
-
-        console.log(`Switching to max quality level: ${this.maxQualityLevel}`);
-        this.hls.currentLevel = this.maxQualityLevel;
-
-        // Load and render high quality frame immediately
-        this.renderHighQualityFrame();
+      if (this.maxQualityLevel < 0 || !this.hls) return;
+      this.hls.loadLevel = this.maxQualityLevel;
+      this.clearPendingPauseUpgrade();
+      if (this.videoElement.seeking) {
+        // Persistent (not once): several seeks may settle around one pause, so a
+        // one-shot listener could fire on an early "seeked" while still seeking and
+        // bail. Re-attempt on every "seeked"; detach only once truly settled.
+        this.pendingPauseUpgrade = () => {
+          if (this.videoElement.seeking) return;
+          this.clearPendingPauseUpgrade();
+          this.upgradeToHQ(this.seekTime());
+        };
+        this.videoElement.addEventListener("seeked", this.pendingPauseUpgrade);
+      } else {
+        this.upgradeToHQ(this.seekTime());
       }
-    });
+    };
+    this.videoElement.addEventListener("pause", this.boundPauseHandler);
 
-    // Error handling
-    this.hls.on(Hls.Events.ERROR, (event, data) => {
-      if (data.fatal) {
-        console.error("Fatal HLS error:", data);
-
-        switch (data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            console.log("Network error, attempting to recover...");
-            if (this.hls) {
-              this.hls.startLoad();
-            }
-            break;
-          case Hls.ErrorTypes.MEDIA_ERROR:
-            console.log("Media error, attempting to recover...");
-            if (this.hls) {
-              this.hls.recoverMediaError();
-            }
-            break;
-          default:
-            console.error("Unrecoverable error");
-            this.destroy();
-            break;
-        }
-      }
+    this.hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (data.frag) this.setFragLoadInFlight(false);
+      if (!data.fatal) return;
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) this.hls?.startLoad();
+      else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) this.hls?.recoverMediaError();
+      else this.destroy();
     });
   }
 
-  private hasBufferedCurrentPosition(): boolean {
-    // Check if current position has buffered data
-    const currentTime = this.videoElement.currentTime;
-    const buffered = this.videoElement.buffered;
+  // ── Helpers ───────────────────────────────────────────────────────
 
-    for (let i = 0; i < buffered.length; i++) {
-      if (currentTime >= buffered.start(i) && currentTime <= buffered.end(i)) {
-        return true;
-      }
+  private seekTime(): number {
+    return this.videoElement.ended ? this.endOfFrameTime : this.videoElement.currentTime;
+  }
+
+  // Gate stepping only on the paint-path fragment: a non-HQ (or single-level)
+  // "main" fragment covering the current target. Forward-fill fragments ahead of
+  // the playhead are also non-HQ but must NOT gate, or on a slow link they'd block
+  // backward stepping until the fill finished (the 3G jump-back livelock).
+  private setFragLoadInFlight(
+    inFlight: boolean,
+    frag?: { type: string; level: number; start: number; duration: number },
+  ): void {
+    this.fragLoadInFlight = inFlight;
+    this.inFlightFrag =
+      inFlight && frag ? { start: frag.start, end: frag.start + frag.duration, level: frag.level } : null;
+    const t = this.seekTime();
+    const coversTarget =
+      !!frag && t >= frag.start - RANGE_TOLERANCE_S && t <= frag.start + frag.duration + RANGE_TOLERANCE_S;
+    const gating =
+      inFlight &&
+      frag?.type === "main" &&
+      coversTarget &&
+      (frag.level !== this.maxQualityLevel || this.maxQualityLevel <= 0);
+    if (gating === this.gatingFragInFlight) return;
+    this.gatingFragInFlight = gating;
+    this.onFragmentInFlightChange(gating);
+  }
+
+  private isBufferedAt(t: number): boolean {
+    const b = this.videoElement.buffered;
+    for (let i = 0; i < b.length; i++) {
+      if (b.start(i) <= t + RANGE_TOLERANCE_S && t <= b.end(i) + RANGE_TOLERANCE_S) return true;
     }
-
     return false;
   }
 
-  private getQualityInfo(levelIndex?: number): QualityInfo | undefined {
-    if (!this.hls || this.maxQualityLevel < 0) {
-      return undefined;
-    }
-
-    // Use provided level index or default to max quality
-    const targetLevel = levelIndex !== undefined ? levelIndex : this.maxQualityLevel;
-
-    // Handle adaptive quality (-1)
-    if (targetLevel === -1) {
-      return {
-        height: 0,
-        width: 0,
-        label: "Auto",
-      };
-    }
-
-    if (targetLevel < 0 || targetLevel >= this.hls.levels.length) {
-      return undefined;
-    }
-
-    const level = this.hls.levels[targetLevel];
-    return {
-      height: level.height,
-      width: level.width,
-      label: `${level.height}p`,
-    };
-  }
-
-
-  private renderQualityFrame(level: number): void {
-    if (!this.hls) return;
-
-    // Save current time
-    const currentTime = this.videoElement.currentTime;
-    const currentLevel = this.hls.currentLevel;
-    console.log(`Rendering quality frame at time: ${currentTime}s (level: ${level}, current: ${currentLevel})`);
-
-    // Get the quality level info
-    const qualityInfo = this.getQualityInfo(level);
-
-    // Check if we're already at the target quality level
-    const shouldShowLoader = currentLevel !== level;
-
-    // Only notify loading if quality is actually changing
-    if (shouldShowLoader) {
-      this.onLoadingChange(true, qualityInfo);
-    }
-
-    // Force HLS to reload from current position with specified quality
-    this.hls.startLoad(currentTime);
-
-    // Track fragment loads
-    let fragmentLoadCount = 0;
-
-    // Listen for fragment loaded events
-    const onFragLoaded = (event: string, data: any) => {
-      console.log(`Quality level ${level} fragment loaded (count: ${fragmentLoadCount}, level: ${data.frag.level})`);
-
-      // Only count fragments for the target quality level
-      if (data.frag.level === level) {
-        fragmentLoadCount++;
-
-        // Only process on the second fragment load
-        if (fragmentLoadCount === 2) {
-          // Remove listener
-          if (this.hls) {
-            this.hls.off(Hls.Events.FRAG_LOADED, onFragLoaded);
-          }
-
-          // Small delay to ensure decoder has processed the data
-          setTimeout(() => {
-            // Force a tiny seek to refresh the frame
-            const oldTime = this.videoElement.currentTime;
-            this.videoElement.currentTime = oldTime + 0.001;
-
-            console.log(`Quality level ${level} frame rendered after 2 fragments`);
-
-            // Hide loader only if we showed it
-            if (shouldShowLoader) {
-              this.onLoadingChange(false);
-            }
-          }, 50);
-        }
+  private bufferedRangeContaining(t: number): TimeRange | null {
+    const b = this.videoElement.buffered;
+    for (let i = 0; i < b.length; i++) {
+      if (b.start(i) <= t + RANGE_TOLERANCE_S && t <= b.end(i) + RANGE_TOLERANCE_S) {
+        return { start: b.start(i), end: b.end(i) };
       }
-    };
-
-    this.hls.on(Hls.Events.FRAG_LOADED, onFragLoaded);
+    }
+    return null;
   }
 
-  private renderHighQualityFrame(): void {
-    this.renderQualityFrame(this.maxQualityLevel);
+  private getQualityInfo(level: number): QualityInfo | undefined {
+    if (level === -1) return { height: 0, width: 0, label: "Auto" };
+    if (!this.hls || level < 0 || level >= this.hls.levels.length) return undefined;
+    const { height, width } = this.hls.levels[level];
+    return { height, width, label: `${height}p` };
+  }
+
+  private cancelTimer(key: "upgradeTimer" | "hqDeadlineTimer" | "adaptiveTransitionTimer"): void {
+    if (this[key] !== null) {
+      clearTimeout(this[key]!);
+      this[key] = null;
+    }
+  }
+
+  // Detach the deferred pause-upgrade "seeked" listener. It's persistent, so it
+  // must be removed on success/replay/teardown or it leaks on the singleton
+  // videoElement that outlives this handler.
+  private clearPendingPauseUpgrade(): void {
+    if (this.pendingPauseUpgrade) {
+      this.videoElement.removeEventListener("seeked", this.pendingPauseUpgrade);
+      this.pendingPauseUpgrade = null;
+    }
+  }
+
+  // Tear down the in-flight render: unregister its listener, clear its timers,
+  // and hide the loader if it had been shown for this render.
+  private clearPendingRender(): void {
+    if (!this.pendingRender) return;
+    const { fragListener, settleTimer, timeoutTimer, loaderShown, isUpgrade } = this.pendingRender;
+    this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener);
+    if (settleTimer !== null) clearTimeout(settleTimer);
+    if (timeoutTimer !== null) clearTimeout(timeoutTimer);
+    this.pendingRender = null;
+    // A superseded HQ upgrade may still be downloading a large fragment that hogs
+    // a slow link and starves the navigation's real target, so abort it. LQ
+    // fallbacks are the paint path and are left running (they retarget instead).
+    if (isUpgrade) {
+      this.hls?.stopLoad();
+      this.setFragLoadInFlight(false);
+    }
+    if (loaderShown) this.onLoadingChange(false);
+  }
+
+  // ── LQ range map ──────────────────────────────────────────────────
+
+  private addLQRange(start: number, end: number): void {
+    const merged: TimeRange[] = [];
+    let s = start;
+    let e = end;
+    for (const r of this.lqRanges) {
+      if (r.end < s - RANGE_TOLERANCE_S || r.start > e + RANGE_TOLERANCE_S) {
+        merged.push(r);
+      } else {
+        s = Math.min(s, r.start);
+        e = Math.max(e, r.end);
+      }
+    }
+    merged.push({ start: s, end: e });
+    merged.sort((a, b) => a.start - b.start);
+    this.lqRanges = merged;
+  }
+
+  private subtractLQRange(start: number, end: number): void {
+    const next: TimeRange[] = [];
+    for (const r of this.lqRanges) {
+      if (r.end <= start || r.start >= end) {
+        next.push(r);
+        continue;
+      }
+      if (r.start < start) next.push({ start: r.start, end: start });
+      if (r.end > end) next.push({ start: end, end: r.end });
+    }
+    this.lqRanges = next;
+  }
+
+  // Remove ranges evicted from buffer (lazy cleanup before lookups)
+  private pruneLQRanges(): void {
+    const b = this.videoElement.buffered;
+    this.lqRanges = this.lqRanges.filter((r) => {
+      for (let i = 0; i < b.length; i++) {
+        if (b.start(i) < r.end && r.start < b.end(i)) return true;
+      }
+      return false;
+    });
+  }
+
+  private lqRangeAt(time: number): TimeRange | null {
+    this.pruneLQRanges();
+    return this.lqRanges.find((r) => time >= r.start - RANGE_TOLERANCE_S && time <= r.end + RANGE_TOLERANCE_S) ?? null;
+  }
+
+  // Estimated seconds to download one HQ fragment at measured bandwidth
+  private estimateHQFragmentSeconds(): number | null {
+    if (!this.hls || this.maxQualityLevel <= 0) return null;
+    const level = this.hls.levels[this.maxQualityLevel];
+    if (!level || !level.bitrate) return null;
+    const details = level.details ?? this.hls.levels.find((l) => l.details)?.details;
+    const fragDuration = details?.averagetargetduration ?? details?.targetduration;
+    const bandwidth = this.hls.bandwidthEstimate;
+    if (!fragDuration || !bandwidth || !Number.isFinite(bandwidth)) return null;
+    return (level.bitrate * fragDuration) / bandwidth;
+  }
+
+  // ── Core primitive ────────────────────────────────────────────────
+
+  // Replace LQ data at `time` with HQ, flush decoder to repaint
+  private renderHQAt(time: number): void {
+    if (!this.hls) return;
+    this.clearPendingRender();
+
+    const level = this.maxQualityLevel;
+    this.onLoadingChange(true, this.getQualityInfo(level));
+
+    // Stop loader before flush; manual in-flight reset (FRAG_LOADED won't fire)
+    this.hls.stopLoad();
+    this.setFragLoadInFlight(false);
+
+    const range = this.bufferedRangeContaining(time);
+    let toFlush = range ? this.lqRanges.filter((r) => r.start < range.end && range.start < r.end) : [];
+    // Map can lag reality; if data buffered but untracked, flush whole range
+    if (range && !toFlush.some((r) => time >= r.start - RANGE_TOLERANCE_S && time <= r.end + RANGE_TOLERANCE_S)) {
+      toFlush = [range];
+    }
+    for (const r of toFlush) {
+      this.hls.trigger(Hls.Events.BUFFER_FLUSHING, { startOffset: r.start, endOffset: r.end, type: null });
+      this.subtractLQRange(r.start, r.end);
+    }
+
+    // Re-pin to HQ; slow-network fallback may have left loader on LQ
+    this.hls.loadLevel = level;
+    this.hls.startLoad(time);
+
+    // Wait for coverage (not load count) — append may lag download
+    const fragListener = (_event: string, data: any) => {
+      if (data.frag.level !== level || data.frag.type !== "main") return;
+      const range = this.bufferedRangeContaining(time);
+      if (!range) return; // the fragment covering `time` hasn't appended yet
+      const frags = this.hls?.levels[level]?.details?.fragments ?? [];
+      const lastFrag = frags[frags.length - 1];
+      const streamEnd = lastFrag ? lastFrag.start + lastFrag.duration : time;
+      if (range.end + RANGE_TOLERANCE_S < Math.min(time + RENDER_COVERAGE_S, streamEnd)) return;
+      this.hls?.off(Hls.Events.FRAG_BUFFERED, fragListener);
+
+      const settleTimer = setTimeout(() => {
+        if (this.pendingRender?.timeoutTimer) clearTimeout(this.pendingRender.timeoutTimer);
+        this.pendingRender = null;
+        if (this.videoElement.paused && this.isBufferedAt(time)) {
+          this.videoElement.currentTime = time;
+        }
+        this.onLoadingChange(false);
+      }, SETTLE_MS);
+
+      if (this.pendingRender) this.pendingRender.settleTimer = settleTimer;
+    };
+
+    // Re-arming watchdog: abandon only if nothing downloading for 15s
+    const armWatchdog = (): ReturnType<typeof setTimeout> =>
+      setTimeout(() => {
+        if (this.fragLoadInFlight) {
+          if (this.pendingRender) this.pendingRender.timeoutTimer = armWatchdog();
+          return;
+        }
+        this.clearPendingRender();
+      }, RENDER_TIMEOUT_MS);
+
+    this.pendingRender = {
+      fragListener,
+      settleTimer: null,
+      timeoutTimer: armWatchdog(),
+      loaderShown: true,
+      isUpgrade: true,
+    };
+    this.hls.on(Hls.Events.FRAG_BUFFERED, fragListener);
+  }
+
+  // ── Slow-network fallback ─────────────────────────────────────────
+
+  // Paint LQ first on slow networks, then schedule HQ upgrade
+  private renderLQFallbackAt(time: number): void {
+    if (!this.hls) return;
+    this.clearPendingRender();
+
+    this.hls.loadLevel = 0;
+    // Keep in-flight LQ fragment if it covers time (retarget, don't restart)
+    const f = this.inFlightFrag;
+    const coversTarget =
+      this.fragLoadInFlight &&
+      f !== null &&
+      f.level === 0 &&
+      time >= f.start - RANGE_TOLERANCE_S &&
+      time <= f.end + RANGE_TOLERANCE_S;
+    if (!coversTarget) {
+      this.hls.stopLoad();
+      this.setFragLoadInFlight(false);
+      this.hls.startLoad(time);
+    }
+
+    // Wait for coverage (append landed), then schedule HQ upgrade
+    const fragListener = (_event: string, data: any) => {
+      if (data.frag.level !== 0 || data.frag.type !== "main") return;
+      const range = this.bufferedRangeContaining(time);
+      if (!range) return; // a different fragment — keep listening
+      const frags = this.hls?.levels[0]?.details?.fragments ?? [];
+      const lastFrag = frags[frags.length - 1];
+      const streamEnd = lastFrag ? lastFrag.start + lastFrag.duration : time;
+      if (range.end + RANGE_TOLERANCE_S < Math.min(time + RENDER_COVERAGE_S, streamEnd)) return;
+      this.clearPendingRender();
+      if (!this.isPaused) return;
+      this.upgradeTimer = setTimeout(() => {
+        this.upgradeTimer = null;
+        this.upgradeToHQ(time);
+      }, UPGRADE_DEBOUNCE_MS);
+    };
+
+    this.pendingRender = {
+      fragListener,
+      settleTimer: null,
+      timeoutTimer: null,
+      loaderShown: false,
+      isUpgrade: false,
+    };
+    this.hls.on(Hls.Events.FRAG_BUFFERED, fragListener);
+  }
+
+  // ── Quality upgrade ───────────────────────────────────────────────
+
+  // Upgrade frame to HQ if it's on tracked LQ data
+  private upgradeToHQ(time: number): void {
+    this.cancelTimer("upgradeTimer");
+    if (!this.hls || !this.isPaused || this.maxQualityLevel <= 0) return;
+    if (this.videoElement.seeking) return; // Don't flush while seek pending
+    if (!this.lqRangeAt(time)) return;
+    this.renderHQAt(time);
+  }
+
+  // ── Public API ────────────────────────────────────────────────────
+
+  // Main entry point for all paused seeks
+  public loadQuality(time: number): void {
+    if (!this.hls || this.maxQualityLevel < 0) return;
+    this.cancelPendingRender();
+
+    // Unbuffered: predict HQ feasibility
+    if (!this.isBufferedAt(time)) {
+      const estimate = this.estimateHQFragmentSeconds();
+      const predictedSlow = estimate !== null && estimate * 1000 > this.slowNetworkThresholdMs;
+      if (predictedSlow || this.hqDeadlineMissed) {
+        this.renderLQFallbackAt(time);
+        return;
+      }
+      if (this.hls.loadLevel !== this.maxQualityLevel) {
+        this.hls.loadLevel = this.maxQualityLevel;
+      }
+      // Verify prediction with deadline; fallback to LQ if HQ takes too long
+      this.hqDeadlineTimer = setTimeout(() => {
+        this.hqDeadlineTimer = null;
+        if (!this.isPaused || !this.hls) return;
+        if (this.isBufferedAt(time)) return;
+        this.hqDeadlineMissed = true;
+        this.renderLQFallbackAt(time);
+      }, this.slowNetworkThresholdMs);
+      return;
+    }
+
+    // Buffered and clean: already HQ
+    if (!this.lqRangeAt(time)) return;
+
+    // Buffered but LQ: upgrade after navigation rests (debounced)
+    this.upgradeTimer = setTimeout(() => {
+      this.upgradeTimer = null;
+      this.upgradeToHQ(time);
+    }, UPGRADE_DEBOUNCE_MS);
+  }
+
+  public cancelPendingRender(): void {
+    this.cancelTimer("upgradeTimer");
+    this.cancelTimer("hqDeadlineTimer");
+    this.clearPendingRender();
   }
 
   public destroy(): void {
-    if (this.hls) {
-      this.hls.destroy();
-      this.hls = null;
+    this.cancelPendingRender();
+    this.cancelTimer("adaptiveTransitionTimer");
+    this.clearPendingPauseUpgrade();
+    // The viewport state outlives this handler (it's a singleton); a stale
+    // true here would keep gating arrow keys on the next loaded video.
+    this.setFragLoadInFlight(false);
+    if (this.boundPlayHandler) {
+      this.videoElement.removeEventListener("play", this.boundPlayHandler);
+      this.boundPlayHandler = null;
     }
+    if (this.boundPauseHandler) {
+      this.videoElement.removeEventListener("pause", this.boundPauseHandler);
+      this.boundPauseHandler = null;
+    }
+    this.hls?.destroy();
+    this.hls = null;
   }
 
-  // Public methods to control loading behavior
   public setInitialFragmentCount(count: number): void {
     this.initialFragmentCount = count;
   }
 
   public getCurrentQualityLevel(): number {
-    return this.hls ? this.hls.currentLevel : -1;
+    return this.hls?.currentLevel ?? -1;
   }
 
+  // Manual override: only affects future loads; buffered data unaffected
   public setQualityLevel(level: number): void {
-    if (!this.hls) return;
-
-    const currentLevel = this.hls.currentLevel;
-
-    // Check if we're actually changing quality
-    if (currentLevel === level) {
-      console.log(`Already at quality level ${level}, no change needed`);
-      return;
-    }
-
-    console.log(`Changing quality level from ${currentLevel} to ${level}`);
-
-    // Set the new quality level - LEVEL_SWITCHING event will handle loading state
-    this.hls.currentLevel = level;
-
-    // If video is paused and switching to a specific quality (not auto), render the frame
-    if (this.isPaused && level !== -1) {
-      this.renderQualityFrame(level);
-    }
-  }
-
-  public reloadCurrentQuality(): void {
-    if (!this.hls || !this.isPaused || this.maxQualityLevel < 0) return;
-
-    const currentLevel = this.hls.currentLevel;
-
-    // If on auto quality (-1), switch to max quality
-    if (currentLevel === -1) {
-      console.log(`Currently on auto quality, switching to max quality: ${this.maxQualityLevel}`);
-      this.hls.currentLevel = this.maxQualityLevel;
-      this.renderQualityFrame(this.maxQualityLevel);
-    } else {
-      // Reload the current specific quality level
-      this.renderQualityFrame(currentLevel);
-    }
+    if (!this.hls || this.hls.loadLevel === level) return;
+    this.hls.loadLevel = level;
   }
 }
