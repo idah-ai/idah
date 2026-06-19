@@ -7,11 +7,7 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
-  import {
-    ProjectMemberRecord,
-    projectMembersBackendDataSource,
-    type ProjectMemberRole,
-  } from "@/data/model/dataset/projects/members/record";
+  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
@@ -19,6 +15,7 @@
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { AssignProjectMemberType } from "@/data/model/dataset/projects/members/type";
 
   // Props
   let { action, open = $bindable() }: FormModalBaseProps = $props();
@@ -28,9 +25,7 @@
 
   let projectId: string | undefined = $derived(page.params.projectId);
   let submitting: boolean = $state(false);
-  let members: Array<{ email: string; role: ProjectMemberRole | null; errors?: string[] }> = $state([
-    { email: "", role: null, errors: [] },
-  ]);
+  let members: Array<AssignProjectMemberType> = $state([{ email: "", role: null, errors: [] }]);
   let disabledSubmitButton: boolean = $derived.by(() => {
     const validated = createMultipleProjectMembersSchema.safeParse(members);
     return !validated.success;
@@ -40,6 +35,7 @@
   function closeThisModal(): void {
     open = false;
     submitting = false;
+    resetForm();
   }
 
   function resetForm(): void {
@@ -146,6 +142,18 @@
 
       if (!validated.success) {
         submitting = false;
+        return;
+      }
+
+      const emails = members.map((m) => m.email.toLowerCase());
+      const hasDuplicates = emails.some((email, i) => emails.indexOf(email) !== i);
+
+      if (hasDuplicates) {
+        submitting = false;
+        showToast.error({
+          title: "Duplicate emails",
+          description: "Each member must have a unique email address.",
+        });
         return;
       }
 
