@@ -29,7 +29,6 @@
 
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
-  import { findNextEntry } from "@/plugin/layout/header/next-entry-finder";
   import writableWithLocal from "@/utils/writableWithLocal";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
@@ -101,10 +100,10 @@
 
       // ── Auto-select next entry ──────────────────────────────────────────
       if (autoSelectNextEntry) {
-        const nextEntryId = await findNextEntry({
-          datasetId: driver.dataset.id,
-          submittedEntryWfStep: driver.workflowStep as EntryWorkflowStep,
-        });
+        const nextEntryId = await entriesBackendDataSource.findNextEntry(
+          driver.dataset.id,
+          driver.workflowStep as EntryWorkflowStep,
+        );
         if (nextEntryId) {
           const pluginId = page.params.pluginId as string;
           window.location.href = resolve(`/entries/${nextEntryId}/plugin/${pluginId}`);
