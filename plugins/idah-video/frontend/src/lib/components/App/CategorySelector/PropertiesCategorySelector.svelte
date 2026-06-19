@@ -40,7 +40,7 @@
     selection.isAnnotation() ? (selection.value as IAnnotationSelection).annotation : undefined,
   );
   let selGroupId = $derived(selection.isGroup() ? (selection.value as IAnnotationGroupSelection).groupId : undefined);
-  let defaultMode = $derived(mode == "default" || !tools.has(mode));
+  let defaultMode = $derived(mode == "editor" || !tools.has(mode));
 
   // Derived disabled state using the annotation module
   let disabled = $derived(

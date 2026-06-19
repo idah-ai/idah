@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "timeline.go_to_first",
   group: "Timeline",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "Control+Shift+ArrowLeft",
   shortDescription: "Go to first frame",
   longDescription: "Jump to the first frame",

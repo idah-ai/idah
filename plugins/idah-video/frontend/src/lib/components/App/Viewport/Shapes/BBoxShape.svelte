@@ -32,7 +32,7 @@
     selected = false,
     editable = false,
     cursor,
-    mode = "default",
+    mode = "editor",
     onClick,
     onEditComplete,
   }: Props = $props();
