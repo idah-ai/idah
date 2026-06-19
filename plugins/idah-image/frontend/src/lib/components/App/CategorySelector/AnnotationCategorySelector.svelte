@@ -27,7 +27,6 @@
     annotationValue,
     onEditValue,
     onSelectAnnotation,
-    onSelectAnnotationGroup,
     onDeleteAnnotation,
     db,
     items,
@@ -38,7 +37,6 @@
     annotationValue: IImageAnnotationValue;
     onEditValue: (annotationValue: IImageAnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
-    onSelectAnnotationGroup: (annotationGroup: { groupId: string; annotations: IImageAnnotationRecord[] }) => void;
     onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
     db?: DataStore<AnnotationItem> | null;
     items: IImageAnnotationRecord[];
@@ -47,9 +45,7 @@
 
   // Variables
   let mode = $derived(viewport.mode);
-  let selAnnotation = $derived(
-    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
-  );
+  let selAnnotation = $derived(selection.value);
 
   let tools = $derived(
     new Map<string, IConfigValue[]>(
@@ -142,7 +138,6 @@
             ? entryRoot.value?.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
-          {onSelectAnnotationGroup}
           {onDeleteAnnotation}
         />
       {/if}

@@ -110,7 +110,7 @@ export interface DataStore<T extends DataItem> {
 
 export type AnnotationItem = {
   id: string;
-  shape: { type: string; start?: number; end?: number } & Record<string, unknown>;
+  shape: { type: string } & Record<string, unknown>;
   value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
   metadata?: {
     id: string;
@@ -141,7 +141,7 @@ export interface AnnotationDriver {
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
-  if (selection.value?.type === "annotation" && selection.value.annotation?.id === updatedId) {
+  if (selection.value?.id === updatedId) {
     const store = data.annotations;
     if (!store) return;
     const fresh = store.items.find((i) => i.id === updatedId);
@@ -150,27 +150,18 @@ function syncSelectionOnUpdate(updatedId: string): void {
 }
 
 function syncSelectionOnDelete(deletedId: string): void {
-  if (selection.value?.type === "annotation" && selection.value.annotation?.id === deletedId) {
+  if (selection.value?.id === deletedId) {
     selection.deselect();
   }
 }
 
 export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
-  const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
-    const items = await driver.fetch({
-      "shape.start": { lte: rangeEnd },
-      "shape.end": { gte: rangeStart },
-    });
+  const store = createDataStore<AnnotationItem>(async () => {
+    const items = await driver.fetch();
     return items as AnnotationItem[];
   });
 
-  store.getItemRange = (item) => {
-    const frame = item.shape as { start?: number; end?: number } | undefined;
-    if (frame && typeof frame.start === "number" && typeof frame.end === "number") {
-      return [frame.start, frame.end];
-    }
-    return null;
-  };
+  store.getItemRange = () => null;
 
   const originalUpsert = store.upsert.bind(store);
 
@@ -257,122 +248,40 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
   };
 }
 
-// ─── Note store factory ─────────────────────────────────────────────────
+// ─── Note store (push-based) ─────────────────────────────────────────────
 
 export type NoteItem = {
   id: string;
   [key: string]: unknown;
 };
 
-/**
- * Create a DataStore pre-configured for notes.
- *
- * Notes do not carry frame ranges, so `getItemRange` always returns `null`
- * (they are never cleaned up by range). The fetch fetches all notes within
- * a frame range by delegating to the driver.
- *
- * @param driver  An object with a `fetch(filter?)` method compatible with
- *                `INotesDriverV2`.
- * @returns       A DataStore wired up for notes.
- */
-export interface NoteDriver {
-  fetch(filter?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
-  create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
-  update(id: string, data: Record<string, unknown>): Promise<void>;
-  delete(id: string): Promise<void>;
+export interface PendingNoteEntry {
+  type: "entry";
+  /** Scene normalized position (0-1) */
+  x: number;
+  y: number;
 }
 
-export function createNoteStore(driver: NoteDriver): DataStore<NoteItem> {
-  const store = createDataStore<NoteItem>(async (rangeStart, rangeEnd) => {
-    const items = await driver.fetch({
-      "shape.start": { lte: rangeEnd },
-      "shape.end": { gte: rangeStart },
-    });
-    return items as NoteItem[];
-  });
-
-  // Notes have no frame range — always keep them during cleanup
-  store.getItemRange = () => null;
-
-  const originalUpsert = store.upsert.bind(store);
-
-  return {
-    // ── Delegate getters/setters directly ───────────────────────────
-    get items() {
-      return store.items;
-    },
-    get loadedRange() {
-      return store.loadedRange;
-    },
-    get pending() {
-      return store.pending;
-    },
-    get maxItems() {
-      return store.maxItems;
-    },
-    set maxItems(v) {
-      store.maxItems = v;
-    },
-    get onCleanup() {
-      return store.onCleanup;
-    },
-    set onCleanup(v) {
-      store.onCleanup = v;
-    },
-    get getItemRange() {
-      return store.getItemRange;
-    },
-    set getItemRange(v) {
-      store.getItemRange = v;
-    },
-    preloadRange: (s: number, e: number) => store.preloadRange(s, e),
-    remove: (id: string) => store.remove(id),
-    upsert: (item: NoteItem) => {
-      originalUpsert(item);
-    },
-    reset: (items: NoteItem[], range: [number, number]) => store.reset(items, range),
-    clear: () => store.clear(),
-
-    async create(data: Partial<NoteItem> & { id?: string }): Promise<NoteItem> {
-      const id = data.id ?? uuidv7();
-      const item = { ...data, id } as NoteItem;
-      originalUpsert(item);
-      try {
-        const created = (await driver.create($state.snapshot(item))) as NoteItem;
-        if (created.id !== id) {
-          store.remove(id);
-        }
-        originalUpsert(created);
-        return created;
-      } catch {
-        store.remove(id);
-        throw new Error("Failed to create note");
-      }
-    },
-
-    async delete(id: string): Promise<void> {
-      const item = store.items.find((i) => i.id === id);
-      store.remove(id);
-      try {
-        await driver.delete(id);
-      } catch {
-        if (item) originalUpsert(item);
-        throw new Error("Failed to delete note");
-      }
-    },
-
-    async update(item: NoteItem): Promise<void> {
-      const old = store.items.find((i) => i.id === item.id);
-      originalUpsert(item);
-      try {
-        await driver.update(item.id, item);
-      } catch {
-        if (old) originalUpsert(old);
-        throw new Error("Failed to update note");
-      }
-    },
-  };
+export interface PendingNoteAnnotation {
+  type: "annotation";
+  /** Annotation ID the note is anchored to */
+  annotationId: string;
+  /** Normalised offset from the annotation centroid (0-1) */
+  x: number;
+  y: number;
 }
+
+export type PendingNoteScene = PendingNoteEntry | PendingNoteAnnotation | null;
+
+let _pendingNoteScene: PendingNoteScene = $state(null);
+
+export function setPendingNoteScene(pos: PendingNoteScene): void {
+  _pendingNoteScene = pos;
+}
+
+export const pendingNoteScene = {
+  get value(): PendingNoteScene { return _pendingNoteScene; },
+};
 
 export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): DataStore<T> {
   // ── Internal state ──────────────────────────────────────────────────
@@ -554,29 +463,103 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
 //   data.annotations.preloadRange(-Infinity, Infinity);
 
 import { getDriver } from "$lib/state/driver.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
+import type { INoteRecord } from "$idah/v2/types";
 
 let _annotations: DataStore<AnnotationItem> | null = $state(null);
-let _notes: DataStore<NoteItem> | null = $state(null);
+
+let _noteList: INoteRecord[] = $state([]);
+let _unsubNotes: (() => void) | null = null;
 
 /** Initialise the stores from the global driver. Call once after initDriver(). */
 export function initDataStores(): void {
   const d = getDriver();
   if (!d) throw new Error("Driver not initialized — call initDriver() first");
   _annotations = createAnnotationStore(d.annotations);
-  _notes = createNoteStore(d.notes);
   _annotations.preloadRange(-Infinity, Infinity);
-  _notes.preloadRange(-Infinity, Infinity);
+
+  _unsubNotes = d.notes.onNotesChange((notes: INoteRecord[]) => {
+    _noteList = notes;
+  });
+
+  // onFocusNote is registered in NoteMarkers.svelte onMount
 }
 
+/** Cleanup note subscriptions — call from plugin.close(). */
+export function destroyDataStores(): void {
+  _unsubNotes?.();
+  _unsubNotes = null;
+  _annotations = null;
+  _noteList = [];
+}
+
+/**
+ * Reactive note list — kept in sync via onNotesChange.
+ * Read-only accessor for the plugin's NoteMarkers component.
+ */
+export const notes = {
+  get list(): INoteRecord[] { return _noteList; },
+};
+
+let _activeNoteId: string | null = $state(null);
+
+/**
+ * The currently selected/focused note ID.
+ * Set by NoteMarkers when a marker is clicked.
+ * NoteMarkers uses this to trigger the position-reporting rAF loop.
+ */
+export const activeNoteId = {
+  get value(): string | null { return _activeNoteId; },
+  set value(id: string | null) { _activeNoteId = id; },
+};
+
 /** Global stores — auto-initialised from the V2 driver. */
+/**
+ * Focus a note — center the annotation (or fit viewport),
+ * set it as the active note, and notify the core.
+ * The position-reporting $effect in NoteMarkers.svelte handles the follow-up
+ * `reportNotePosition` call automatically.
+ */
+export function focusNote(note: INoteRecord): void {
+  const driver = getDriver();
+
+  // Clear any pending (ghost) note marker — we're focusing a real note now.
+  // This prevents stale ghost markers from remaining in the viewport or
+  // causing NoteMarkers to report the wrong overlay position.
+  setPendingNoteScene(null);
+
+  // 1. Select & center annotation if annotation-anchored
+  if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
+    const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+    if (ann) {
+      selection.selectAnnotation(ann);
+      driver.command.call("selection.center");
+    } else {
+      // Annotations not loaded yet — defer until they are
+      const stop = $effect.root(() => {
+        $effect(() => {
+          const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+          if (!found) return;
+          selection.selectAnnotation(found);
+          driver.command.call("selection.center");
+          stop();
+        });
+      });
+    }
+  } else {
+    viewport.workspace.fitToViewport();
+  }
+
+  // 2. Set active note and notify core
+  activeNoteId.value = note.id;
+  driver.notes.selectNote(note.id);
+  // reportNotePosition will follow automatically via NoteMarkers' $effect
+}
+
 export const data: {
   annotations: DataStore<AnnotationItem> | null;
-  notes: DataStore<NoteItem> | null;
 } = {
   get annotations() {
     return _annotations;
-  },
-  get notes() {
-    return _notes;
   },
 };

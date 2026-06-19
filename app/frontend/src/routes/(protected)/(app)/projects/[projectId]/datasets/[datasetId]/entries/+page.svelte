@@ -242,11 +242,8 @@
 
   let listOptions: ListOptions = $derived({
     filters: filters,
-    included: ["assigned_to", "submitted_by", "reviewed_by", "dataset"],
-    fields: {
-      [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
-      [DatasetRecord.type]: ["modality"],
-    },
+    included: ["assigned_to", "submitted_by", "reviewed_by"],
+    fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
     sort: _sort,
     count: true,
     pagination: {

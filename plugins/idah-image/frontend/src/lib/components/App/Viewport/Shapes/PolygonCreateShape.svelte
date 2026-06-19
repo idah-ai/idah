@@ -23,11 +23,10 @@
     cursor: Point;
     mediaWidth: number;
     mediaHeight: number;
-    frame: number;
-    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
   };
 
-  let { cursor, mediaWidth, mediaHeight, frame, onSelection }: Props = $props();
+  let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
 
   // Keep points at fixed screen size regardless of zoom
   let invScale = $derived(1 / viewport.workspace.transform.scale);
@@ -51,7 +50,7 @@
       const pts = [...polygonDraft.points];
       polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)
-      onSelection("idah-image:polygon", frame, pts, 0, undefined);
+      onSelection("idah-image:polygon", pts, 0, undefined);
       return true;
     }
 

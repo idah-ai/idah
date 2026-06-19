@@ -12,8 +12,7 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
-  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -24,22 +23,16 @@
   import Image from "$lib/components/App/Viewport/Image.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
 
-  import type { IImageAnnotationRecord, IImageAnnotationShape, IImageFrameSelection } from "$lib/types";
+  import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
+  import { viewport } from "$lib/state/viewport.svelte";
 
-  // Local type aliases for V1-compatible annotation shapes/values
-  type AnnotationShape = Record<string, unknown> & { type: string; start?: number; end?: number };
+  // Local type aliases for V1-compatible annotation values
   type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
-  interface AnnotationGroup<T> {
-    groupId: string;
-    annotations: T[];
-  }
 
   // Local derived aliases for V2 state
   let mode = $derived(viewport.mode);
-  let selAnnotation = $derived(
-    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
-  );
+  let selAnnotation = $derived(selection.value);
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -51,7 +44,7 @@
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
-  let isNoteMode = $derived(mode === "note");
+  let isNoteMode = $derived(mode === NOTE_MODE);
 
   // let image: Image | undefined = $state();
   // let image_container: HTMLDivElement | undefined = $state();
@@ -131,7 +124,7 @@
 
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
-    if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE) {
+    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_POLYGON) {
       pendingValue = {};
     }
 
@@ -184,9 +177,9 @@
       {
         name: "tools.note",
         label: "Add Note",
-        type: "note",
+        type: NOTE_MODE,
         iconName: "message-circle",
-        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
+        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and REVIEW_MODE
         command: "tools.note",
       },
     ];
@@ -213,18 +206,10 @@
     // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
-  async function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+  async function addAnnotation(shape: IImageAnnotationShape, value: AnnotationValue = {}) {
     if (!editable) return;
 
-    const { type, start, end, frames } = shape;
-    const imageShape: IImageAnnotationShape = {
-      type,
-      start: start!,
-      end: end!,
-      frames: frames as IImageFrameSelection[],
-    };
-
-    getDriver().command.call("annotation.add", { shape: imageShape, value });
+    getDriver().command.call("annotation.add", { shape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -246,30 +231,13 @@
     getDriver().command.call("annotation.delete", { annotationId });
   }
 
-  async function addSelection(id: string, selection: IImageFrameSelection) {
+  function deleteAnnotation(annotation: IImageAnnotationRecord) {
     if (!editable) return;
-
-    getDriver().command.call("annotation.keyframe_add", { annotationId: id, selection });
-  }
-
-  async function deleteSelection(annotationId: string, frame: number) {
-    if (!editable) return;
-
-    getDriver().command.call("annotation.keyframe_delete", { annotationId, frame });
-  }
-
-  function deleteAnnotation(annotation: IImageAnnotationRecord, frame?: number) {
-    if (!editable) return;
-
-    if (frame != undefined) {
-      deleteSelection(annotation.metadata!.id as string, frame);
-    } else {
-      removeAnnotation(annotation.metadata!.id as string);
-    }
+    removeAnnotation(annotation.metadata!.id as string);
   }
 
   let shapeSelectionArgs:
-    | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
+    | [type: string, _points: Point[], angle: number]
     | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
@@ -297,10 +265,10 @@
 
     if (valueMode == "entry:root" && !selAnnotation) {
       if (value.category && value.category != "" && requirementFullfilled)
-        addAnnotation({ type: valueMode }, $state.snapshot(value));
+        addAnnotation({ type: valueMode } as IImageAnnotationShape, $state.snapshot(value));
     } else if (selAnnotation) {
       selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
-      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
+      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord, $state.snapshot(value));
     } else if (valueMode !== "entry:root") {
       // Sidebar category click: store category and enter drawing mode
       pendingValue = value;
@@ -315,23 +283,15 @@
    *  Creates the annotation with the value the user picked (category + any properties). */
   function confirmCreateAnnotation(
     type: string,
-    frame: number,
     _points: Point[] = [],
     angle: number = 0,
-    _selectedId?: string,
   ) {
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
     let value = $state.snapshot(pendingValue) as AnnotationValue;
 
-    let shape: AnnotationShape = { type };
-    shape = {
-      ...shape,
-      start: frame,
-      end: frame,
-      frames: [{ frame, angle, points }] as IImageFrameSelection[],
-    };
+    const shape: IImageAnnotationShape = { type, points, angle };
 
     shapeSelectionArgs = undefined;
     pendingValue = {};
@@ -340,59 +300,30 @@
 
   function onShapeSelection(
     type: string,
-    frame: number,
     _points: Point[] = [],
     angle: number = 0,
-    selectedId?: string,
   ) {
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
-    if (!selectedId) {
-      let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
+    let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
 
-      // todo proper validation
-      let shape: AnnotationShape = { type };
-      switch (type) {
-        case "default":
-          break;
-        case IDAH_IMAGE_BOUNDING_BOX:
-          shape = {
-            ...shape,
-            start: frame,
-            end: frame,
-            frames: [{ frame, angle, points }],
-          };
-          break;
-        case IDAH_IMAGE_POLYGON:
-          shape = {
-            ...shape,
-            start: frame,
-            end: frame,
-            frames: [{ frame, points }],
-          };
-          break;
-        default:
-          throw `unhandled type ${type}`;
-      }
+    const shape: IImageAnnotationShape = { type, points, angle };
 
-      if (
-        getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
-        requiredFullfilled(
-          annotation_value_from,
-          getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
-        )
-      ) {
-        shapeSelectionArgs = undefined;
-        pendingValue = {};
-        addAnnotation(shape, annotation_value_from);
-      } else {
-        shapeSelectionArgs = [type, frame, _points, angle, selectedId];
-        // Keep pendingValue so the popover shows the selected category
-        showPopOver = true;
-      }
+    if (
+      getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
+      requiredFullfilled(
+        annotation_value_from,
+        getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
+      )
+    ) {
+      shapeSelectionArgs = undefined;
+      pendingValue = {};
+      addAnnotation(shape, annotation_value_from);
     } else {
-      addSelection(selectedId, { frame, angle, points });
+      shapeSelectionArgs = [type, _points, angle];
+      // Keep pendingValue so the popover shows the selected category
+      showPopOver = true;
     }
   }
 
@@ -432,16 +363,15 @@
   });
 
   function showNewNotePopup(params: OnAddNewNoteParams) {
-    const { anchorType, position, annotationId } = params;
-    getDriver().command.call("note.add", {
-      annotationId: annotationId ?? null,
-      contentMd: "",
-      anchorType,
-      position: {
-        ...position,
-        sidebar_width: annotationSidebarWidthRem * 16,
-      },
+    const { anchorType, position, annotationId, screenX, screenY } = params;
+    const driver = getDriver();
+    driver.notes.requestCreateNote({
+      anchor_type: anchorType,
+      annotation_id: annotationId ?? null,
+      position,
     });
+    // Report the screen position so the core overlay opens at the click point.
+    driver.notes.reportNotePosition({ noteId: null, x: screenX, y: screenY });
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
@@ -467,7 +397,7 @@
           if (!canConfirm) return;
           showPopOver = false;
           if (mode === "entry:root") {
-            addAnnotation({ type: "entry:root" }, $state.snapshot(pendingValue));
+            addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
           } else if (shapeSelectionArgs) {
             confirmCreateAnnotation(...shapeSelectionArgs);
           }
@@ -500,7 +430,6 @@
             {annotationValue}
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
-            onSelectAnnotationGroup={() => {}}
             onDeleteAnnotation={deleteAnnotation}
           />
         {/if}
@@ -526,7 +455,7 @@
             showPopOver = false;
             switch (mode) {
               case "entry:root":
-                addAnnotation({ type: "entry:root" }, $state.snapshot(pendingValue));
+                addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
                 break;
               default:
                 if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
@@ -553,7 +482,6 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={() => {}}
               onDeleteAnnotation={deleteAnnotation}
             />
           </ResizablePane>
@@ -570,7 +498,6 @@
                 <ShapesContainer
                   bind:this={overlay}
                   {annotations_promise}
-                  frame={viewport.image.currentFrame.value}
                   onSelectAnnotation={selectAnnotation}
                   onSelection={onShapeSelection}
                   onAddNewNote={showNewNotePopup}

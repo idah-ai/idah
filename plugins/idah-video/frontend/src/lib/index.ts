@@ -3,9 +3,9 @@ import { mount, unmount } from "svelte";
 
 import { type IIdahDriverV2 } from "$idah/v2/types";
 import Plugin from "$lib/components/Plugin.svelte";
-import { registerAllCommands } from "./commands";
-import { initDataStores, destroyDataStores } from "./state/data.svelte";
 import { initDriver } from "./state/driver.svelte";
+import { initDataStores, destroyDataStores } from "./state/data.svelte";
+import { registerAllCommands } from "./commands";
 import { initToolbar } from "./toolbar";
 import { registerStats } from "./stats";
 

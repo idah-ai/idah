@@ -17,10 +17,9 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
-  import { groupAnnotations } from "$lib/components/App/ImageAnnotationWorkspace/utils/group-annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { DEFAULT_MODE, viewport } from "$lib/state/viewport.svelte";
-  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
 
   import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -29,7 +28,6 @@
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IImageAnnotationRecord } from "$lib/types";
 
-  type AnnotationGroup<T> = { groupId: string; annotations: T[] };
   type CategoryDefinition = IConfigValue & {
     id: string;
     name: string;
@@ -53,7 +51,6 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
 
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<IImageAnnotationRecord>) => void;
     onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
   }
   let {
@@ -64,16 +61,13 @@
     categories,
     onSelectCategory,
     selectedCategory,
-    onSelectAnnotationGroup,
     onDeleteAnnotation,
   }: Props = $props();
 
   // Variables
   let openCategory = $state(true);
   let mode = $derived(viewport.mode);
-  let selAnnotation = $derived(
-    selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined,
-  );
+  let selAnnotation = $derived(selection.value);
   let currentModeIsSameAsShape = $derived(mode == modalityShape && !selAnnotation);
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
@@ -180,18 +174,6 @@
     }
   }
 
-  function groupFilteredAnnotations(annotations: Array<IImageAnnotationRecord>): {
-    groups: Array<AnnotationGroup<IImageAnnotationRecord>>;
-    count: number;
-  } {
-    const filteredGroupedAnnotations = groupAnnotations(annotations);
-
-    return {
-      groups: filteredGroupedAnnotations,
-      count: filteredGroupedAnnotations.length,
-    };
-  }
-
   function deleteCategoryAnnotations(categoryId: string) {
     getDriver().command.call("annotation.delete_category", { category: categoryId });
   }
@@ -237,7 +219,6 @@
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
       {@const annotations = items.filter((a) => a.value?.category?.startsWith(category.id))}
-      {@const { count } = groupFilteredAnnotations(annotations)}
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
@@ -366,9 +347,9 @@
 
               <AnnotationCountBadge
                 class={cn("mr-2 ml-1 opacity-0", {
-                  "opacity-100": view === "sidebar" && count > 0,
+                  "opacity-100": view === "sidebar" && annotations.length > 0,
                 })}
-                {count}
+                count={annotations.length}
               />
             </div>
           </SidebarMenuItem>

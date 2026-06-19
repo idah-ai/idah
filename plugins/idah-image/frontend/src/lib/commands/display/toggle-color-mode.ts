@@ -5,11 +5,12 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type ColorMode } from "$lib/state/ui.svelte";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
   name: "ui.toggle_color_mode",
   group: "Display",
-  modes: ["default", "review", "idah-image:bounding-box", "idah-image:polygon", "note"],
+  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE],
   shortcut: null,
   shortDescription: "Toggle annotation color mode",
   longDescription: "Switch between category-based colors and random colors for annotations",

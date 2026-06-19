@@ -31,20 +31,12 @@ import { register as registerViewportZoomOut } from "./viewport/zoom-out";
 
 import { register as registerSelectionCenter } from "./selection/center";
 import { register as registerSelectionDelete } from "./selection/delete";
-import { register as registerSelectionGoto } from "./selection/goto";
-
-import { register as registerGroupDelete } from "./group/delete";
-import { register as registerGroupToggleEditability } from "./group/toggle_editability";
-import { register as registerGroupToggleVisibility } from "./group/toggle_visibility";
 
 import { register as registerNoteAdd } from "./note/add";
-import { register as registerNoteGoto } from "./note/goto";
 
 import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
-import { register as registerAnnotationKeyframeAdd } from "./annotation/keyframe_add";
-import { register as registerAnnotationKeyframeDelete } from "./annotation/keyframe_delete";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
@@ -59,7 +51,6 @@ import { register as registerCategoryToggleEditability } from "./category/toggle
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
 
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
-import { register as registerModeNote } from "./mode/note";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
 
@@ -76,17 +67,10 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── Selection ─────────────────────────────────────────────────────────
   registerSelectionDelete(driver);
-  registerSelectionGoto(driver);
   registerSelectionCenter(driver);
-
-  // ── Group ─────────────────────────────────────────────────────────────
-  registerGroupDelete(driver);
-  registerGroupToggleVisibility(driver);
-  registerGroupToggleEditability(driver);
 
   // ── Note ──────────────────────────────────────────────────────────────
   registerNoteAdd(driver);
-  registerNoteGoto(driver);
 
   // ── Annotation ────────────────────────────────────────────────────────
   registerAnnotationAdd(driver);
@@ -96,8 +80,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
-  registerAnnotationKeyframeAdd(driver);
-  registerAnnotationKeyframeDelete(driver);
 
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
@@ -107,7 +89,6 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerModeSelect(driver);
   registerModeBoundingBox(driver);
   registerModePolygon(driver);
-  registerModeNote(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

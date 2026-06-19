@@ -8,7 +8,7 @@
 //   });
 // ---------------------------------------------------------------------------
 import { data, type AnnotationItem } from "$lib/state/data.svelte";
-import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 
@@ -42,8 +42,8 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          const sel = selection.value as IAnnotationSelection;
-          if (selection.isAnnotation() && sel.annotation.id === props.annotationId) {
+          const sel = selection.value;
+          if (sel && sel.id === props.annotationId) {
             selection.deselect();
           }
 

@@ -18,11 +18,10 @@
     cursor: Point;
     mediaWidth: number;
     mediaHeight: number;
-    frame: number;
-    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
   };
 
-  let { cursor, mediaWidth, mediaHeight, frame, onSelection }: Props = $props();
+  let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
 
   // ── Build state ────────────────────────────────────────────────────────
   let buildStart: Point | undefined = $state();
@@ -61,7 +60,7 @@
       [x2, y2],
       [x1, y2],
     ];
-    onSelection(IDAH_IMAGE_BOUNDING_BOX, frame, points, 0, undefined);
+    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, 0, undefined);
     return true;
   }
 

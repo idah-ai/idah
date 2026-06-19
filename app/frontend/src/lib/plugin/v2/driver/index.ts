@@ -8,6 +8,8 @@ import type {
   IDatasetInfo,
   IIdahDriverV2,
   IMediaInfo,
+  IToolbarDriverV2,
+  IStatsDriverV2,
   IModeEvent,
   INotesDriverV2,
   IProjectInfo,
@@ -15,7 +17,6 @@ import type {
   IStatsDriverV2,
   ISyncErrorEvent,
   ISyncEvent,
-  IToolbarDriverV2,
   Unsubscribe,
 } from "../types";
 

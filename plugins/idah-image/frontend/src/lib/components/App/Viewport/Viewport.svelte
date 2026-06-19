@@ -2,7 +2,7 @@
   import { type Snippet } from "svelte";
 
   import { viewport, VIEWPORT_MAX_ZOOM, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
-  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE } from "$lib/types";
   import { modKey } from "$lib/utils/browser";
 
   import SyncIndicator from "./SyncIndicator.svelte";
@@ -110,7 +110,7 @@
   }
 
   export function onWheel(e: WheelEvent) {
-    if (viewport.mode === "note") return;
+    if (viewport.mode === NOTE_MODE) return;
     e.preventDefault();
 
     // Touchpad pinch-to-zoom sets ctrlKey on most platforms, or metaKey on Mac.
@@ -180,9 +180,9 @@
         break; // Do not pan in note mode
       }
 
-      case "default":
+      case DEFAULT_MODE:
       case IDAH_IMAGE_BOUNDING_BOX:
-      case "bounding-polygon":
+      case IMAGE_POLYGON:
       default: {
         panTo(e.offsetX, e.offsetY);
       }

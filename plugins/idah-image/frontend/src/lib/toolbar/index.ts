@@ -1,10 +1,10 @@
 // toolbar/index.ts — Register toolbar items with the V2 driver
 import type { IIdahDriverV2 } from "$idah/v2/types";
-
 import cursorIcon from "$lib/assets/icons/cursor.svg?raw";
 import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
 export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
@@ -12,40 +12,47 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: cursorIcon,
     label: "Select",
-    modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
+    modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE],
     group: "selection",
-    onClick: () => driver.setMode("default"),
-    whenToggled: () => driver.mode === "default",
+    onClick: () => {
+      // Return to the parent resting mode of the current workspace
+      if (driver.mode === REVIEW_MODE || driver.mode === NOTE_MODE) {
+        driver.setMode(REVIEW_MODE);
+      } else {
+        driver.setMode(DEFAULT_MODE);
+      }
+    },
+    whenToggled: () => driver.mode === DEFAULT_MODE || driver.mode === REVIEW_MODE,
   });
   t.add({
     icon: rectIcon,
     label: "Bounding Box",
-    modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
+    modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON],
     group: "selection",
     onClick: () =>
-      driver.mode === "idah-image:bounding-box" ? driver.setMode("default") : driver.setMode("idah-image:bounding-box"),
-    whenToggled: () => driver.mode === "idah-image:bounding-box",
+      driver.mode === IMAGE_BOUNDING_BOX ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_BOUNDING_BOX),
+      whenToggled: () => driver.mode === IMAGE_BOUNDING_BOX,
   });
   t.add({
     icon: polyIcon,
     label: "Polygon",
-    modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
+    modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON],
     group: "selection",
     onClick: () =>
-      driver.mode === "idah-image:polygon" ? driver.setMode("default") : driver.setMode("idah-image:polygon"),
-    whenToggled: () => driver.mode === "idah-image:polygon",
+      driver.mode === IMAGE_POLYGON ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_POLYGON),
+      whenToggled: () => driver.mode === IMAGE_POLYGON,
   });
   t.add({
     icon: noteIcon,
     label: "Note",
-    modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
+    modes: [REVIEW_MODE, NOTE_MODE],
     group: "selection",
-    onClick: () => driver.setMode("note"),
-    whenToggled: () => driver.mode === "note",
+    onClick: () => driver.setMode(NOTE_MODE),
+    whenToggled: () => driver.mode === NOTE_MODE,
   });
 
-  t.orderGroups("default", ["selection"]);
-  t.orderGroups("idah-image:bounding-box", ["selection"]);
-  t.orderGroups("idah-image:polygon", ["selection"]);
-  t.orderGroups("note", ["selection"]);
+  t.orderGroups(DEFAULT_MODE, ["selection"]);
+  t.orderGroups(IMAGE_BOUNDING_BOX, ["selection"]);
+  t.orderGroups(IMAGE_POLYGON, ["selection"]);
+  t.orderGroups(NOTE_MODE, ["selection"]);
 }

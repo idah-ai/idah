@@ -23,12 +23,7 @@ mode       {viewport.mode}
 
 
 <span class="section">── SELECTION ──</span>
-{selection.value ? selection.value.type : "none"}
-{#if selection.value?.type === "annotation"}
-        {selection.value.annotation.id ?? "—"}
-      {:else if selection.value?.type === "group"}
-        {selection.value.groupId}
-      {/if}
+{selection.value?.id ?? "—"}
 </pre>
   </div>
 {/if}

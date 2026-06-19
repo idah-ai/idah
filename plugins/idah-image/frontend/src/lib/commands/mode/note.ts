@@ -4,7 +4,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "mode.note",
   group: "Tools",
-  modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
+  modes: ["preview", "note"],
   shortcut: "N",
   shortDescription: "Note",
   longDescription: "Note Tool",

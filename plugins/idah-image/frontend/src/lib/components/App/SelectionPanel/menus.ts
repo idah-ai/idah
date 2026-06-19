@@ -18,15 +18,7 @@ export interface AnnotationAction {
   onClick: (e: MouseEvent) => void;
 }
 
-export function toggleVisibility(groupId: string) {
-  getDriver().command.call("annotation.toggle_group_visibility", { groupId });
-}
-
-export function toggleEditability(groupId: string) {
-  getDriver().command.call("annotation.toggle_group_editability", { groupId });
-}
-
-export function getVisibilityAction(groupId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
+export function getVisibilityAction(annotationId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   const isSomeHidden = items.some((item) => annotation.isHidden(item));
@@ -38,12 +30,17 @@ export function getVisibilityAction(groupId: string, items: IImageAnnotationReco
     alwaysShow: isSomeHidden,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleVisibility(groupId);
+      const newHidden = !isSomeHidden;
+      for (const item of items) {
+        if (annotation.isHidden(item) !== newHidden) {
+          annotation.toggleHidden(item.id, newHidden);
+        }
+      }
     },
   };
 }
 
-export function getEditabilityAction(groupId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
+export function getEditabilityAction(annotationId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   const isSomeLocked = items.some((item) => annotation.isLocked(item));
@@ -55,12 +52,17 @@ export function getEditabilityAction(groupId: string, items: IImageAnnotationRec
     alwaysShow: isSomeLocked,
     onClick: (e: MouseEvent) => {
       e.stopPropagation();
-      toggleEditability(groupId);
+      const newLocked = !isSomeLocked;
+      for (const item of items) {
+        if (annotation.isLocked(item) !== newLocked) {
+          annotation.toggleLocked(item.id, newLocked);
+        }
+      }
     },
   };
 }
 
-export function getDeleteAction(groupId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
+export function getDeleteAction(annotationId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   return {
@@ -74,24 +76,20 @@ export function getDeleteAction(groupId: string, items: IImageAnnotationRecord[]
         title: "Delete annotation",
         description: "Are you sure you want to delete this annotation?",
         onConfirm: () => {
-          selection.selectGroup(groupId);
-          getDriver().command.call("selection.delete", {
-            groupId,
-            annotations: items,
-          });
+          getDriver().command.call("annotation.delete", { annotationId });
         },
       });
     },
   };
 }
 
-export function getAnnotationActions(props: { items: IImageAnnotationRecord[]; groupId: string }): AnnotationAction[] {
-  const { items, groupId } = props;
+export function getAnnotationActions(props: { items: IImageAnnotationRecord[]; annotationId: string }): AnnotationAction[] {
+  const { items, annotationId } = props;
 
   const actions = [
-    getVisibilityAction(groupId, items),
-    getEditabilityAction(groupId, items),
-    getDeleteAction(groupId, items),
+    getVisibilityAction(annotationId, items),
+    getEditabilityAction(annotationId, items),
+    getDeleteAction(annotationId, items),
   ];
 
   return actions.filter(Boolean) as AnnotationAction[];

@@ -47,6 +47,7 @@ let currentDriver: ReturnType<typeof createMockDriver>;
 import { getDriver, initDriver } from "./driver.svelte";
 
 import type { ISyncErrorEvent, ISyncEvent } from "$idah/v2/types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/types";
 
 describe("driver singleton", () => {
   // We need a fresh module state for each test. Since ES modules are cached,
@@ -101,20 +102,20 @@ describe("driver singleton", () => {
     it("updates viewport.mode on mode change events", () => {
       const driver = currentDriver;
       initDriver(driver as any);
-      driver._triggerModeChange("default", "idah-image:bounding-box");
-      expect(viewportModeSetter).toHaveBeenCalledWith("idah-image:bounding-box");
+      driver._triggerModeChange(DEFAULT_MODE, IMAGE_BOUNDING_BOX);
+      expect(viewportModeSetter).toHaveBeenCalledWith(IMAGE_BOUNDING_BOX);
     });
 
     it("updates viewport.mode on each mode change event", () => {
       const driver = currentDriver;
       initDriver(driver as any);
-      driver._triggerModeChange("default", "idah-image:bounding-box");
-      driver._triggerModeChange("idah-image:bounding-box", "idah-image:polygon");
-      driver._triggerModeChange("idah-image:polygon", "default");
+      driver._triggerModeChange(DEFAULT_MODE, IMAGE_BOUNDING_BOX);
+      driver._triggerModeChange(IMAGE_BOUNDING_BOX, IMAGE_POLYGON);
+      driver._triggerModeChange(IMAGE_POLYGON, DEFAULT_MODE);
       expect(viewportModeSetter).toHaveBeenCalledTimes(3);
-      expect(viewportModeSetter).toHaveBeenNthCalledWith(1, "idah-image:bounding-box");
-      expect(viewportModeSetter).toHaveBeenNthCalledWith(2, "idah-image:polygon");
-      expect(viewportModeSetter).toHaveBeenNthCalledWith(3, "default");
+      expect(viewportModeSetter).toHaveBeenNthCalledWith(1, IMAGE_BOUNDING_BOX);
+      expect(viewportModeSetter).toHaveBeenNthCalledWith(2, IMAGE_POLYGON);
+      expect(viewportModeSetter).toHaveBeenNthCalledWith(3, DEFAULT_MODE);
     });
   });
 });

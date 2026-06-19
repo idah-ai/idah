@@ -1,10 +1,11 @@
 // plugins/idah-image/frontend/src/lib/commands/mode/polygon.ts
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/types";
 
 export const command = {
   name: "mode.polygon",
   group: "Tools",
-  modes: ["default", "idah-image:bounding-box", "idah-image:polygon", "note"],
+  modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON],
   shortcut: "P",
   shortDescription: "Polygon",
   longDescription: "Polygon Tool",
@@ -20,8 +21,8 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        if (driver.mode !== "idah-image:polygon") {
-          driver.setMode("idah-image:polygon");
+        if (driver.mode !== IMAGE_POLYGON) {
+          driver.setMode(IMAGE_POLYGON);
         }
       },
       isCombinable() {

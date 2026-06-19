@@ -11,7 +11,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
-import type { IImageAnnotationShape } from "$lib/types";
+import { DEFAULT_MODE, type IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {
@@ -50,7 +50,7 @@ export function register(driver: IIdahDriverV2): void {
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Exit drawing mode after successful creation
-          driver.setMode("default");
+          driver.setMode(DEFAULT_MODE);
         },
         async undo() {
           const id = (this as any)._createdId;
