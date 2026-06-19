@@ -47,8 +47,14 @@ describe("media state", () => {
     expect(media.format).toBe("image/jpeg");
   });
 
-  it("returns url from the driver media", () => {
+  it("returns url from the driver media when url is set", () => {
     expect(media.url).toBe("/medias/master.jpg");
+  });
+
+  it("returns empty string for url when driver returns null", () => {
+    // getDriver is already a vi.fn() via the vi.mock factory
+    (getDriver as ReturnType<typeof vi.fn>).mockReturnValueOnce(null);
+    expect(media.url).toBe("");
   });
 });
 
