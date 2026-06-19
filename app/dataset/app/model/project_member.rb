@@ -64,7 +64,7 @@ module ProjectMember
                 .where(id: Sequel[:project_members][:project_id])
                 .select(1).exists
             )
-          elsif project_id
+          elsif project_ids
             table.where(project_id: project_ids)
           else
             table.where(Sequel.lit("false"))
