@@ -32,13 +32,13 @@
   let hasRVFC = false;
 
   // ── Frame ↔ time helpers ─────────────────────────────────────────
-  // The browser uses seconds; the rest of the app is 0-based frame indices.
-  // Video is 1-based internally so frame 0 maps to t = 1/fps, not t = 0.
+  // Frames are 0-based; the browser uses seconds. Index f maps to t = f/fps
+  // (first frame at t=0), plus a tiny epsilon to avoid frame/fragment boundaries.
   function timeToFrame(t: number) {
-    return Math.max(0, Math.min(Math.round(t * fps), media.totalFrames) - 1);
+    return Math.max(0, Math.min(Math.round(t * fps), media.totalFrames - 1));
   }
   function frameToTime(f: number) {
-    return (f + 1 + 0.001) / fps;
+    return (f + 0.001) / fps;
   }
 
   // ── RAF loop (playback only) ──────────────────────────────────────
