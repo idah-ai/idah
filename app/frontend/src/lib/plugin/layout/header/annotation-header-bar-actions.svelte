@@ -30,6 +30,7 @@
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
   import { findNextEntry } from "@/plugin/layout/header/next-entry-finder";
+  import writableWithLocal from "@/utils/writableWithLocal";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -53,13 +54,10 @@
   let openSettingsPopover = $state(false);
 
   // Persist auto-select preference in localStorage
-  let autoSelectNextEntry = $state(
-    typeof localStorage !== "undefined" && localStorage.getItem("autoSelectNextEntry") === "true",
-  );
+  let autoSelectNextEntryStore = writableWithLocal("autoSelectNextEntry", false);
+  let autoSelectNextEntry = $state($autoSelectNextEntryStore);
   $effect(() => {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem("autoSelectNextEntry", String(autoSelectNextEntry));
-    }
+    autoSelectNextEntryStore.set(autoSelectNextEntry);
   });
 
   // Track mode changes reactively
@@ -105,7 +103,6 @@
       if (autoSelectNextEntry) {
         const nextEntryId = await findNextEntry({
           datasetId: driver.dataset.id,
-          projectId: driver.project.id,
           submittedEntryWfStep: driver.workflowStep as EntryWorkflowStep,
         });
         if (nextEntryId) {
