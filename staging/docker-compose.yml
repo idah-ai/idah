@@ -85,8 +85,8 @@ services:
     environment:
       - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
-    cpus: 0.5
-    mem_limit: 2g
+    cpus: 1
+    mem_limit: 4g
     ports:
       - "3000"
     volumes:
@@ -94,7 +94,8 @@ services:
       - ../app/media/common:/app/common
       - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
       - ../plugins:/app/plugins
-      - frontend_build:/app/plugins/idah-video/frontend/build
+      - ./storage/media_storage:/app/tmp/storage
+      - frontend_plugins:/app/plugins
       - media_bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -222,6 +223,7 @@ services:
       - ../app/sync/common:/app/common
       - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
       - ../plugins:/app/plugins
+      - ./storage/sync_storage:/app/tmp/storage
       - sync_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -255,7 +257,7 @@ services:
       - ../app/setting/common:/app/common
       - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
       - ../plugins:/app/plugins
-      - frontend_build:/app/plugins/idah-video/frontend/build
+      - frontend_plugins:/app/plugins
       - setting_bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -279,6 +281,7 @@ services:
       - "3000"
     volumes:
       - frontend_build:/app/frontend/build
+      - frontend_plugins:/app/frontend/plugins
     networks:
       - app-network
     stdin_open: true
@@ -286,6 +289,7 @@ services:
 
 volumes:
   frontend_build:
+  frontend_plugins:
   iam_bundler_cache:
   media_bundler_cache:
   dataset_bundler_cache:
