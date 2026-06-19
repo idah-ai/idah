@@ -3,7 +3,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -26,6 +26,7 @@
   import { humanize } from "@/utils/string";
 
   import type { ProjectMemberScope } from "@/security/types";
+  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
   // Props
   interface Props {
@@ -34,6 +35,8 @@
     onRowSelect: (selectedId: string) => void;
   }
   let { entry, selectedEntryIds, onRowSelect }: Props = $props();
+
+  const dataset: DatasetRecord = getContext("dataset");
 
   // Variables
   const currentAccount = $authStatus.authContext;
@@ -119,7 +122,7 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
-      const { resource, dataset } = entry;
+      const { resource } = entry;
       let key: string;
       switch (dataset.modality) {
         case "idah-video":
@@ -208,7 +211,7 @@
 
   // Animation functions
   function startAnimation() {
-    if (animationInterval || entry.dataset.modality !== "idah-video") return;
+    if (animationInterval || dataset.modality !== "idah-video") return;
 
     animationInterval = setInterval(() => {
       currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;
@@ -263,7 +266,7 @@
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
         <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
           {#if thumbnailUrl}
-            {#if entry.dataset.modality === "idah-image"}
+            {#if dataset.modality === "idah-image"}
               <!-- Display static image for idah-image -->
               <div bind:this={imgContainer} role="img" class="relative h-full w-full overflow-hidden rounded-lg">
                 <img src={thumbnailUrl} alt="Entry thumbnail" class="h-full w-full rounded-lg object-cover" />
