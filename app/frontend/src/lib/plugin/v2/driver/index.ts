@@ -14,6 +14,7 @@ import type {
   INotesDriverV2,
   IProjectInfo,
   IShapeConfig,
+  IStatsDriverV2,
   ISyncErrorEvent,
   ISyncEvent,
   Unsubscribe,

@@ -13,6 +13,7 @@ export interface DatasetModalityBadgeProps extends LabelValue<string, DatasetRec
 export const datasetsModalities: DatasetModalityBadgeProps[] = [
   { label: "Image", value: "idah-image", icon: ImageIcon, variant: "default" },
   { label: "Video", value: "idah-video", icon: VideoIcon, variant: "default" },
+  { label: "Image", value: "idah-image", icon: ImageIcon, variant: "info" },
 ];
 
 export interface DatasetStatusBadgeProps extends LabelValue<string, DatasetRecord> {
