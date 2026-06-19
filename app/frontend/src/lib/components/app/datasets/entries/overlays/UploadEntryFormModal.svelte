@@ -312,7 +312,7 @@
     </FileUpload>
 
     {#if media.any()}
-      <section class="mt-4 flex h-80 flex-col gap-4 overflow-y-auto pr-1">
+      <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">
         {#each media.selected as file, index (index)}
           <PreviewUploadMediaItem name={file.name} onDelete={() => removeMedia(index)} />
         {/each}
@@ -321,7 +321,7 @@
   {/if}
 
   {#if view.isUpload()}
-    <section class="flex h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+    <section class="flex h-auto max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
       {#each upload.items as uploadItem, uploadItemIndex (uploadItemIndex)}
         <UploadMediaItem {uploadItem} maxRetries={MAX_RETRIES} />
       {/each}
