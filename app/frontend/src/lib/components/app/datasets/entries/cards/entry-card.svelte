@@ -81,9 +81,7 @@
   let thumbnailImg: HTMLImageElement = $state(new Image());
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
-  let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
-  let currentImagePosition = $state(0);
-  let animationInterval: number | null = $state(null);
+  let progressIntervalId: ReturnType<typeof setInterval> | undefined;
   let jobProgress: number = $state(1);
 
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
