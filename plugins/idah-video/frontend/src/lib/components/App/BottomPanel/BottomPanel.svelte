@@ -131,7 +131,8 @@
     remainingHeight={panelHeight - toolbarHeight}
     rulerSmallStep={effectiveRulerMinorStep}
     rulerBigStep={effectiveRulerMajorStep}
-    bind:currentFrame={viewport.video.currentFrame.value}
+    currentFrame={viewport.video.currentFrame.value}
+    onselectionchange={(frame) => viewport.video.goToFrame(frame)}
     onDimensionsChange={(w, h) => {
       viewport.timeline.dimensions = [w, h];
     }}
