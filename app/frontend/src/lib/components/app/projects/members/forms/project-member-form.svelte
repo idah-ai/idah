@@ -11,10 +11,10 @@
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import {
-    ProjectMemberRecord,
-    projectMemberRoles,
-    projectMembersBackendDataSource,
-    type ProjectMemberRole,
+      ProjectMemberRecord,
+      projectMemberRoles,
+      projectMembersBackendDataSource,
+      type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
   import { assignProjectMemberRoleSchema } from "@/data/model/dataset/projects/members/schema";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -60,7 +60,12 @@
     members = members.filter((_, i) => i !== index);
   }
 
-  function checkEmailValidate(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
+  function validateEmail(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
+    if (!member.email) {
+      member.errors = [];
+      return;
+    }
+
     const validationResult = validateData(assignProjectMemberRoleSchema, {
       email: member.email,
     });
@@ -102,12 +107,12 @@
           onSelected={(selectedValue) => {
             member.email = (selectedValue ?? "") as string;
             if (selectedValue !== null) {
-              checkEmailValidate(member);
+              validateEmail(member);
             } else {
               member.errors = [];
             }
           }}
-          onEnter={() => checkEmailValidate(member)}
+          onEnter={() => validateEmail(member)}
         >
           {#snippet slotChoice({ choice })}
             {@const isAlreadyAdded =
@@ -157,7 +162,7 @@
         />
 
         <!-- REMOVE MEMBER BUTTON -->
-        <Button variant="ghost" size="icon" onclick={() => removeMember(index)}>
+        <Button variant="ghost" size="icon" class={index === 0 ? "mt-6" : ""} onclick={() => removeMember(index)}>
           <Trash2Icon />
         </Button>
       </div>
