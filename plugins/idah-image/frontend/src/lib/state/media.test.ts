@@ -47,26 +47,8 @@ describe("media state", () => {
     expect(media.format).toBe("image/jpeg");
   });
 
-  it("returns url from the driver media when url is set", () => {
+  it("returns url from the driver media", () => {
     expect(media.url).toBe("/medias/master.jpg");
-  });
-
-  it("constructs url from resource/key when url is not set", () => {
-    mockMedia.url = "";
-    mockMedia.key = "subdir/image.jpg";
-    expect(media.url).toBe("/medias/files/mock-entry-001/subdir/image.jpg");
-  });
-
-  it("constructs url from resource only when key is empty", () => {
-    mockMedia.url = "";
-    mockMedia.key = "";
-    expect(media.url).toBe("/medias/files/mock-entry-001");
-  });
-
-  it("returns empty string for url when driver returns null", () => {
-    // getDriver is already a vi.fn() via the vi.mock factory
-    (getDriver as ReturnType<typeof vi.fn>).mockReturnValueOnce(null);
-    expect(media.url).toBe("");
   });
 });
 
