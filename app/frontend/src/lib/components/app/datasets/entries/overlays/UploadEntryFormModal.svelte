@@ -294,10 +294,6 @@
   {#snippet modalDescription()}
     {#if view.isSelect()}
       <DialogDescription>Import media from your computer</DialogDescription>
-    {:else}
-      <DialogDescription>
-        {uploadProgressText}
-      </DialogDescription>
     {/if}
   {/snippet}
 
@@ -332,11 +328,16 @@
     <section class="flex w-full items-center">
       <Text>
         {#if view.isSelect() && media.any()}
-          {media.count()} {pluralizeUnit(media.count(), "item")} to upload
+          <DialogDescription>
+            {media.count()}
+            {pluralizeUnit(media.count(), "item")} to upload
+          </DialogDescription>
         {/if}
 
         {#if view.isUpload()}
-          {uploadProgressText}
+          <DialogDescription>
+            {uploadProgressText}
+          </DialogDescription>
         {/if}
       </Text>
 
