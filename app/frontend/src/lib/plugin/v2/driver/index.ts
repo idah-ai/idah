@@ -375,7 +375,12 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     mime_type: m.mime_type,
     filename: m.filename,
     meta: m.meta,
-    url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}`,
+    url:
+      // TODO: this is a hack to get the correct media URL for video vs image.
+      // We should have a better way to determine the media type and URL.
+      entry.dataset.modality === "idah-video"
+        ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+        : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
   };
 
   const driver = new IdahDriverV2({
