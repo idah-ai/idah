@@ -1,15 +1,14 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { parseSingleElementError, parseCollectionReturn, parseSingleElementReturn } from "@/data/model/json_api";
+import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
+import { Transformers } from "@/data/model/transformers";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
 import type { CollectionResponse, JsonApiErrorResponse, JsonApiMeta, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
-// A file the backend did not turn into a media record: either intentionally
-// skipped (e.g. unsupported type) or failed to store. Same shape for both.
-export interface UploadIssueFile {
+export interface ZipFileReport {
   filename: string;
   message: string;
 }
@@ -18,8 +17,8 @@ export interface UploadIssueFile {
 // reports when extracting a zip archive.
 export type MediaUploadResponse = Omit<CollectionResponse<MediaRecord>, "meta"> & {
   meta?: JsonApiMeta & {
-    skipped?: UploadIssueFile[];
-    errored?: UploadIssueFile[];
+    skipped?: ZipFileReport[];
+    errored?: ZipFileReport[];
   };
 };
 
@@ -28,15 +27,22 @@ export class MediaRecord extends Record {
   @field() public resource!: string;
   @field() public key!: string;
 
+  @field() public filename!: string;
+
   @field() public size!: number;
   @field() public mime_type!: string;
 
-  @field() public filename!: string;
-  @field() public meta!: { [key: string]: unknown };
-
   @field() public created_by!: number;
-  @field() public created_at!: Date;
-  @field() public updated_at!: Date;
+  @field() public created_role!: string;
+
+  @field() public public!: boolean;
+
+  @field() public meta!: Hash;
+
+  @field({ transformer: Transformers.Time }) public created_at!: Date;
+  @field({ transformer: Transformers.Time }) public updated_at!: Date;
+
+  @field() public readonly project_id!: string;
 }
 
 RecordFactory.registerTypes(MediaRecord);
@@ -106,16 +112,17 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
 
   // Upload always returns a collection — a single-element array for regular files,
   // or a multi-element array when the uploaded file is a zip archive.
-  upload: async (
-    file: File,
-    resource: string,
-    project_id: string,
-    key: string = "",
-    modality?: string,
-  ): Promise<MediaUploadResponse | JsonApiErrorResponse> => {
+  upload: async (props: {
+    file: File;
+    resource: string;
+    projectId: string;
+    key?: string;
+    modality?: string;
+  }): Promise<MediaUploadResponse | JsonApiErrorResponse> => {
+    const { file, resource, projectId, key = "", modality } = props;
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("project_id", project_id);
+    formData.append("project_id", projectId);
     if (modality) formData.append("modality", modality);
 
     const uploadPath = key ? `${mediaBasePath}/files/${resource}/${key}` : `${mediaBasePath}/files/${resource}`;

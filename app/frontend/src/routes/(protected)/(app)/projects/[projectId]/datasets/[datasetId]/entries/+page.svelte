@@ -9,8 +9,8 @@
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
-  import CreateEntryFormModal from "@/components/app/datasets/entries/overlays/create-entry-form-modal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
+  import UploadEntryFormModal from "@/components/app/datasets/entries/overlays/UploadEntryFormModal.svelte";
   import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
@@ -578,7 +578,7 @@
 {/key}
 
 <!-- MODAL::ADD TASK -->
-<CreateEntryFormModal action="create" modality={dataset.modality} title="Entry" bind:open={openNewEntryModal} />
+<UploadEntryFormModal title="Entry" action="create" modality={dataset.modality} bind:open={openNewEntryModal} />
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal
