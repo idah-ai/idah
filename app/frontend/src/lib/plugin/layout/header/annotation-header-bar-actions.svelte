@@ -39,6 +39,7 @@
   import { refetches } from "@/utils/refetch";
 
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
+  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   interface Props {
@@ -53,7 +54,7 @@
   let openSettingsPopover = $state(false);
 
   // Persist auto-select preference in localStorage
-  let autoSelectNextEntryStore = writableWithLocal("autoSelectNextEntry", false);
+  let autoSelectNextEntryStore = writableWithLocal("auto-select-next-entry", false);
   let autoSelectNextEntry = $state($autoSelectNextEntryStore);
   $effect(() => {
     autoSelectNextEntryStore.set(autoSelectNextEntry);
@@ -257,23 +258,16 @@
   <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
   {#if showAutoSelect}
     <div class="flex items-center gap-1">
-      <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
       <ToolTooltip
         label="Automatically opens the next available entry after you submit the current one."
         align="center"
         delayDuration={100}
       >
         {#snippet trigger()}
-          <label
-            for="auto-select-next"
-            class="text-muted-foreground flex cursor-pointer items-center text-xs select-none"
-            role="button"
-            tabindex="0"
-            onkeydown={(e) => e.key === "Enter" && (autoSelectNextEntry = !autoSelectNextEntry)}
-            onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)}
-          >
-            Auto-select entry
-          </label>
+          <Button variant="ghost" onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)} class="p-1.5">
+            <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
+            <Text size="xs" weight="light">Auto-select next entry</Text>
+          </Button>
         {/snippet}
       </ToolTooltip>
     </div>
