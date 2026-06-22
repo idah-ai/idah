@@ -12,6 +12,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: cursorIcon,
     label: "Select",
+    name: "mode.select",
     modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE],
     group: "selection",
     onClick: () => {
@@ -27,6 +28,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: rectIcon,
     label: "Bounding Box",
+    name: "mode.bounding_box",
     modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON],
     group: "selection",
     onClick: () =>
@@ -36,6 +38,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: polyIcon,
     label: "Polygon",
+    name: "mode.polygon",
     modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON],
     group: "selection",
     onClick: () =>
@@ -45,6 +48,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: noteIcon,
     label: "Note",
+    name: "mode.note",
     modes: [REVIEW_MODE, NOTE_MODE],
     group: "selection",
     onClick: () => driver.setMode(NOTE_MODE),

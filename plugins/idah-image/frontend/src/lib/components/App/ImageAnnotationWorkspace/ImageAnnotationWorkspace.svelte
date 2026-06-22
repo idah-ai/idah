@@ -302,10 +302,28 @@
     type: string,
     _points: Point[] = [],
     angle: number = 0,
+    selectedId?: string,
   ) {
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
+
+    // If selectedId is provided, this is a shape edit on an existing annotation.
+    // Derive the shape type from the annotation itself rather than the first
+    // argument (viewport.mode), keeping the call signature aligned with video.
+    if (selectedId) {
+      const ann = data.annotations?.items.find((a) => a.id === selectedId);
+      if (!ann || annotation.isLocked(ann)) return;
+
+      const shapeType = (ann.shape as IImageAnnotationShape)?.type ?? type;
+      const updatedShape: IImageAnnotationShape = { type: shapeType, points, angle };
+      getDriver().command.call("annotation.update", {
+        annotation: ann,
+        shape: updatedShape,
+      });
+      return;
+    }
+
     let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
 
     const shape: IImageAnnotationShape = { type, points, angle };

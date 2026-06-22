@@ -219,7 +219,7 @@
   });
 
   let showCrosshair = $derived(
-    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.mode !== DEFAULT_MODE && viewport.mode !== NOTE_MODE,
+    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode,
   );
 
   const viewBox = $derived.by(() => {
@@ -374,13 +374,7 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
-    const ann = data.annotations?.items.find((a) => a.id === annId);
-    if (!ann || !data.annotations) return;
-    const updatedShape: IImageAnnotationShape = { type: ann.shape.type, points, angle };
-    data.annotations.update({
-      ...ann,
-      shape: updatedShape,
-    } as any);
+    onSelection(viewport.mode, points, angle, annId);
   }
 
   let _noteHandledByClick = $state(false);
