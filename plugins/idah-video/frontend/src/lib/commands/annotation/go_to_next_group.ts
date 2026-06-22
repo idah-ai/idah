@@ -10,7 +10,7 @@ import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 export const command = {
   name: "annotation.go_to_next_group",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "Control+ArrowDown",
   shortDescription: "Next group",
   longDescription: "Select the next group in the timeline",

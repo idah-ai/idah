@@ -11,6 +11,7 @@
   import { isInViewport } from "$lib/components/App/Timeline/utils";
   import { cn } from "$lib/utils";
   import { selection } from "$lib/state/selection.svelte";
+  import { viewport as vp } from "$lib/state/viewport.svelte";
 
   import type { TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
 
@@ -37,6 +38,8 @@
     // Only handle clicks directly on the track div (not on children — TrackItem blocks handle their own)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
     e.preventDefault();
+
+    if (vp.isReviewWorkspace) return;
 
     // Compute the frame under the cursor.
     // The track element sits inside the content (position: absolute, left: 0).

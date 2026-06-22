@@ -10,7 +10,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "timeline.go_to_last",
   group: "Timeline",
-  modes: ["default", "review"],
+  modes: ["editor", "review"],
   shortcut: "Control+Shift+ArrowRight",
   shortDescription: "Go to last frame",
   longDescription: "Jump to the last frame",
@@ -26,7 +26,7 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        viewport.video.currentFrame.value = media.totalFrames - 1;
+        viewport.video.goToFrame(media.totalFrames - 1);
       },
       isCombinable() {
         return false;

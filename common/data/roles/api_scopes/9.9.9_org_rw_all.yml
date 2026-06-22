@@ -6,6 +6,5 @@ api/org_rw_all:
   assignable: false
   rights:
     # Organizations
-    - "iam:organizations.read.*"
-    - "iam:organizations.update.*"
-    - "iam:accounts.create.*"
+    - "iam:organizations.*.*"
+    - "iam:accounts.*.*"

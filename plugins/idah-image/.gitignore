@@ -1,0 +1,9 @@
+backends/tmp
+backends/.rspec_status
+backends/coverage
+
+# Video media files (download manually from pexels)
+frontend/static/**/*.jpg
+frontend/static/**/*.jpeg
+frontend/static/**/*.png
+frontend/static/**/*.ts

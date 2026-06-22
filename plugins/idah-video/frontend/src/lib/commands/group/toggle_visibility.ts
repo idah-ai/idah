@@ -18,7 +18,7 @@ import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state
 export const command = {
   name: "annotation.toggle_group_visibility",
   group: "Annotation",
-  modes: ["default", "review"],
+  modes: ["editor"],
   shortcut: "H",
   shortDescription: "Toggle visibility",
   longDescription: "Toggle annotation's visibility (hide/show)",

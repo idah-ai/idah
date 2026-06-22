@@ -12,9 +12,9 @@ import {
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
+import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
-import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -129,6 +129,31 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }
 
+    if (body && body.data) return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+
+    throw "No data returned";
+  },
+  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+    const res = await fetch(`${entriesBasePath}/${entryId}/unassign`, {
+      method: "PATCH",
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error unassigning entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
     if (body && body.data) {
       return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
     }
@@ -172,5 +197,23 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     }
 
     throw "No data returned";
+  },
+  /**
+   * Finds the next entry to redirect to after submission.
+   * Returns the entry ID if found, or null to fall back to default behavior.
+   */
+  findNextEntry: async (datasetId: string, submittedEntryWfStep: EntryWorkflowStep) => {
+    try {
+      const res = await entriesBackendDataSource.list({
+        fields: { [EntryRecord.type]: ["id"] },
+        filters: { dataset_id: datasetId, wf_step: submittedEntryWfStep },
+        noCache: true,
+        pagination: { page: 1, itemsPerPage: 1 },
+        sort: ["assigned_to_id"],
+      });
+      return res.data.length > 0 ? res.data[0].id : null;
+    } catch {
+      return null;
+    }
   },
 });

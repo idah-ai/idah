@@ -3,8 +3,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
-  import { onDestroy, onMount } from "svelte";
-  import { writable } from "svelte/store";
+  import { getContext, onDestroy, onMount } from "svelte";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -27,8 +26,8 @@
   import { authStatus } from "@/security/AuthContext";
   import { humanize } from "@/utils/string";
 
-  import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
   import type { ProjectMemberScope } from "@/security/types";
+  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
   // Props
   interface Props {
@@ -38,15 +37,20 @@
   }
   let { entry, selectedEntryIds, onRowSelect }: Props = $props();
 
+  const dataset: DatasetRecord = getContext("dataset");
+
   // Variables
   const currentAccount = $authStatus.authContext;
 
   let projectId = page.params.projectId as string;
-  let { id: entryId, wf_step, assigned_to_id, assigned_to_email, submitted_by_id, reviewed_by_id } = $derived(entry);
+  let { id: entryId, wf_step, status, assigned_to_id, assigned_to_email, submitted_by_id, reviewed_by_id } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let canOpenEntry = $derived.by(() => {
     if (!currentAccount?.id) return false;
+
+    /** Block entry open while media is still being processed */
+    if (status === "processing") return false;
 
     /** If entry is not assigned to anyone, it can open by anyone */
     if (assigned_to_id === null) return true;
@@ -84,18 +88,15 @@
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
   let animationInterval: number | null = $state(null);
-  let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
+  let progressIntervalId: ReturnType<typeof setInterval> | undefined;
   let jobProgress: number = $state(1);
 
-  const processingStatuses: EntryStatusType[] = ["processing", "pending"];
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
-  $effect(() => {
+  onMount(() => {
     periodicCheckJobStatus();
-
-    return () => stopPeriodicCheckJobStatus();
   });
 
   async function selectEntry() {
@@ -122,14 +123,33 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      const { resource } = entry;
+      let key: string;
+      switch (dataset.modality) {
+        case "idah-video":
+          key = "thumbnail.jpg"; // TODO: recheck if we should also change idah-video's thumbnail to webp as well
+          break;
+        case "idah-image":
+          key = "thumbnail.webp";
+          break;
+        default:
+          key = "processed.webp"; // default fallback image for thumbnail
+      }
+
       thumbnailUrl = await mediaBackendDataSource.getFiles({
-        resource: entry.resource,
-        key: "thumbnail.jpg",
+        resource,
+        key,
       });
 
       thumbnailImg.onload = () => {
         const width = thumbnailImg.width;
-        containerWidth = width / TOTAL_POSITIONS;
+
+        // For idah-image, use a fixed width. For idah-video, divide by TOTAL_POSITIONS
+        if (dataset.modality === "idah-image") {
+          containerWidth = 240; // Fixed size for idah-image
+        } else {
+          containerWidth = width / TOTAL_POSITIONS;
+        }
       };
 
       thumbnailImg.src = thumbnailUrl;
@@ -146,31 +166,19 @@
    * Note: Only fetch if the entry is in a processing state
    */
   async function periodicCheckJobStatus() {
-    if (processingStatuses.includes(entry.status)) {
-      $progressInterval = setInterval(async () => {
+    if (entry.wf_step === "start") {
+      progressIntervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
-          /**
-           * If job_id is null (should happen when the entry was created and job is not yet assigned),
-           * fetch the entry again to get the job_id
-           */
           if (!jobId) {
-            /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
             const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
           if (!jobId) return;
 
-          /** If entry is ready, stop the interval */
-          if (entry.status === "ready") {
-            stopPeriodicCheckJobStatus();
-            return;
-          }
-
-          /** If the entry is no longer processing, stop the interval */
-          if (!processingStatuses.includes(entry.status)) {
+          if (entry.wf_step !== "start" || entry.status === "errored") {
             stopPeriodicCheckJobStatus();
             return;
           }
@@ -183,33 +191,32 @@
           });
           jobProgress = jobRes.data.progress;
 
-          /** If progress = 100%, update entry status to 'ready' */
           if (jobProgress === 1) {
-            entry.status = "ready";
-            await loadThumbnail();
-            stopPeriodicCheckJobStatus();
+            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            entry = entryRes.data;
+            if (entry.wf_step !== "start") {
+              await loadThumbnail();
+              stopPeriodicCheckJobStatus();
+            }
             return;
           }
         } catch (error) {
           console.error("Error fetching updated entry:", error);
           stopPeriodicCheckJobStatus();
         }
-      }, 2_000);
+      }, 2_000) as unknown as number;
     } else {
-      /**
-       * Then load the thumbnail once the job is complete
-       */
       await loadThumbnail();
     }
   }
 
   // Animation functions
   function startAnimation() {
-    if (animationInterval) return;
+    if (animationInterval || dataset.modality !== "idah-video") return;
 
     animationInterval = setInterval(() => {
       currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;
-    }, ANIMATION_INTERVAL_MS);
+    }, ANIMATION_INTERVAL_MS) as unknown as number;
   }
 
   function stopAnimation() {
@@ -223,7 +230,10 @@
 
   // Clean up blob URL and animation when component is destroyed
   function stopPeriodicCheckJobStatus() {
-    clearInterval($progressInterval);
+    if (progressIntervalId !== undefined) {
+      clearInterval(progressIntervalId);
+      progressIntervalId = undefined;
+    }
   }
 
   function cleanup() {
@@ -236,6 +246,10 @@
   }
 
   onDestroy(cleanup);
+
+  function updateEntry(thisEntry: EntryRecord): void {
+    entry = thisEntry;
+  }
 </script>
 
 <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
@@ -253,23 +267,31 @@
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
         <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
           {#if thumbnailUrl}
-            <div
-              bind:this={imgContainer}
-              role="img"
-              class="relative h-full w-full overflow-hidden rounded-lg"
-              onmouseenter={startAnimation}
-              onmouseleave={stopAnimation}
-            >
-              <img
-                src={thumbnailUrl}
-                alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
-                style:height="{imgContainer?.clientHeight}px"
-                style:width="{containerWidth * TOTAL_POSITIONS}px"
-                style:max-width="none"
-                style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
-              />
-            </div>
+            {#if dataset.modality === "idah-image"}
+              <!-- Display static image for idah-image -->
+              <div bind:this={imgContainer} role="img" class="relative h-full w-full overflow-hidden rounded-lg">
+                <img src={thumbnailUrl} alt="Entry thumbnail" class="h-full w-full rounded-lg object-cover" />
+              </div>
+            {:else}
+              <!-- Display animated sprite sheet for idah-video -->
+              <div
+                bind:this={imgContainer}
+                role="img"
+                class="relative h-full w-full overflow-hidden rounded-lg"
+                onmouseenter={startAnimation}
+                onmouseleave={stopAnimation}
+              >
+                <img
+                  src={thumbnailUrl}
+                  alt="Entry thumbnail"
+                  class="absolute top-0 left-0 cursor-pointer object-cover"
+                  style:height="{imgContainer?.clientHeight}px"
+                  style:width="{containerWidth * TOTAL_POSITIONS}px"
+                  style:max-width="none"
+                  style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
+                />
+              </div>
+            {/if}
           {:else if thumbnailError}
             <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
               Unable to load thumbnail
@@ -393,7 +415,7 @@
             <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry} />
+          <EntryDropdownMenu {entry} onUnAssigned={updateEntry} onAssigned={updateEntry} />
         </div>
       </div>
     </section>

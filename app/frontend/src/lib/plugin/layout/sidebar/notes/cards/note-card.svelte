@@ -7,6 +7,8 @@
   import { Textarea } from "@/components/ui/textarea";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
 
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
   import { cn } from "@/utils";
   import { truncate, truncateEmail } from "@/utils/string";
 
@@ -55,6 +57,25 @@
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
 
+  function formatEditedTooltip(dateStr?: Date | string | null): string {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      return (
+        "Edited " +
+        d.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      return "";
+    }
+  }
+
   // Functions
   function switchToViewMode() {
     mode = "view";
@@ -86,16 +107,28 @@
       {@render headerIcon?.()}
 
       <!-- HEADER::CREATED BY & CREATED AT -->
-      <div class="flex flex-col -space-y-1 text-left text-xs">
+      <div class="flex flex-col text-left text-xs">
         <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
-        <DateText
-          class="text-muted-foreground"
-          datetime={new Date(created_at)}
-          datetimeFormat="MMM dd, yyyy HH:mm:ss"
-          size="xs"
-          weight="normal"
-          showDistance
-        ></DateText>
+        <div>
+          <DateText
+            class="text-muted-foreground"
+            datetime={new Date(created_at)}
+            datetimeFormat="MMM dd, yyyy HH:mm:ss"
+            size="xs"
+            weight="normal"
+            showDistance
+          ></DateText>
+          {#if edited_at}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger class="inline-block">
+                  <span class="text-muted-foreground text-xs">• Edited</span>
+                </TooltipTrigger>
+                <TooltipContent>{formatEditedTooltip(edited_at)}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          {/if}
+        </div>
       </div>
 
       <!-- HEADER::ACTIONS -->
@@ -118,10 +151,6 @@
   <div class="flex flex-1 flex-col items-start gap-1 text-xs">
     {#if isViewMode}
       <MarkdownPreview value={truncate(content_md, 140)} />
-
-      {#if edited_at}
-        <span class="text-muted-foreground text-xs">(Edited)</span>
-      {/if}
 
       {@render contentActions?.()}
     {/if}

@@ -4,7 +4,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 export const command = {
   name: "mode.idah-video:polygon",
   group: "Tools",
-  modes: ["default", "idah-video:bounding-box", "idah-video:polygon", "note"],
+  modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
   shortcut: "P",
   shortDescription: "Polygon",
   longDescription: "Polygon Tool",

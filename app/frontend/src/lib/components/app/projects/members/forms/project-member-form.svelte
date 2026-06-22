@@ -16,12 +16,16 @@
     projectMembersBackendDataSource,
     type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
+  import { assignProjectMemberRoleSchema } from "@/data/model/dataset/projects/members/schema";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { cn } from "@/utils";
+  import { getFieldErrors, validateData } from "@/utils/validate";
+
+  import type { AssignProjectMemberType } from "@/data/model/dataset/projects/members/type";
 
   // Props
   interface Props {
-    members: Array<{ email: string; role: ProjectMemberRole | null }>;
+    members: Array<AssignProjectMemberType>;
   }
   let { members = $bindable() }: Props = $props();
 
@@ -30,8 +34,6 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
-  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
-  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
 
   // Lifecycle
   onMount(() => {
@@ -39,7 +41,7 @@
   });
 
   // Functions
-  async function fetchProjectMembers() {
+  async function fetchProjectMembers(): Promise<void> {
     const projectMembersRes = await projectMembersBackendDataSource.list({
       fields: {
         [ProjectMemberRecord.type]: ["email"],
@@ -59,13 +61,36 @@
   function removeMember(index: number): void {
     members = members.filter((_, i) => i !== index);
   }
+
+  function selectEmail(member: AssignProjectMemberType): void {
+    if (!member.email) {
+      member.errors = [];
+      return;
+    }
+
+    const validationResult = validateData(assignProjectMemberRoleSchema, {
+      email: member.email,
+    });
+    if (!validationResult.success) {
+      member.errors = getFieldErrors(validationResult.error)?.email || [];
+    } else {
+      member.errors = [];
+    }
+  }
+
+  function handleEmailSelect(member: AssignProjectMemberType, selectedValue: string | number | null): void {
+    member.email = (selectedValue ?? "") as string;
+    selectEmail(member);
+  }
 </script>
+
+{#snippet noLabel()}{/snippet}
 
 <FieldSet class="p-1">
   <FieldGroup>
     <!-- EACH MEMBERS -->
     {#each members as member, index (index)}
-      <div class="flex w-full items-end gap-2">
+      <div class="flex w-full items-start gap-2">
         <!-- EMAIL -->
         <ComboboxField
           name="{resource}/member"
@@ -76,20 +101,23 @@
           valueKey="email"
           listOptions={{
             filters: {
-              role_name__nin: ["system", "admin"],
+              role_name__nin: ["system", "admin", "api_service"],
             },
+            noCache: true,
           }}
           label="Member"
+          slotLabel={index === 0 ? undefined : noLabel}
           placeholder="Search account by email"
           required
           value={member.email}
-          onSelected={(selectedValue) => {
-            member.email = selectedValue as string;
-          }}
+          errors={member.errors}
+          onSelected={(selectedValue) => handleEmailSelect(member, selectedValue)}
+          onEnter={() => selectEmail(member)}
         >
-          {#snippet slotChoice({ choice, select })}
+          {#snippet slotChoice({ choice })}
+            {@const isAlreadyAdded =
+              projectMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
             {@const isSelected = choice.value === member.email}
-            {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
             <Combobox.Item
               class={cn(
                 "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
@@ -100,7 +128,6 @@
               value={String(choice.value)}
               label={choice.label}
               disabled={choice.disabled || isAlreadyAdded}
-              onclick={() => select(choice)}
             >
               {choice.label}
 
@@ -122,6 +149,7 @@
           name="{resource}/role"
           class="flex-1"
           label="Role"
+          slotLabel={index === 0 ? undefined : noLabel}
           placeholder="Select a role"
           choices={projectMemberRoles}
           required
@@ -134,7 +162,14 @@
         />
 
         <!-- REMOVE MEMBER BUTTON -->
-        <Button variant="ghost" size="icon" onclick={() => removeMember(index)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          class={cn("", {
+            "mt-6": index === 0,
+          })}
+          onclick={() => removeMember(index)}
+        >
           <Trash2Icon />
         </Button>
       </div>

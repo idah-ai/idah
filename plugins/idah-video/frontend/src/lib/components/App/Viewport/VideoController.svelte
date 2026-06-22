@@ -77,7 +77,7 @@
     // Clamp to valid range [1, media.totalFrames]
     value = Math.max(1, Math.min(media.totalFrames, value));
     frameInputValue = value;
-    viewport.video.currentFrame.value = value - 1;
+    viewport.video.goToFrame(value - 1);
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {
@@ -203,24 +203,26 @@
     </div>
 
     <!-- ANNOTATION::SPLIT -->
-    <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
-      {#snippet trigger()}
-        <Button
-          variant="outline"
-          size="icon-sm"
-          disabled={disabledSplitButton}
-          onclick={() => {
-            const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
-            if (ann)
-              getDriver().command.call("annotation.split", {
-                annotationId: ann.metadata?.id ?? ann.id,
-                at: viewport.video.currentFrame.value,
-              });
-          }}
-        >
-          <SquareSplitHorizontalIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    {#if !viewport.isReviewWorkspace}
+      <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
+        {#snippet trigger()}
+          <Button
+            variant="outline"
+            size="icon-sm"
+            disabled={disabledSplitButton}
+            onclick={() => {
+              const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+              if (ann)
+                getDriver().command.call("annotation.split", {
+                  annotationId: ann.metadata?.id ?? ann.id,
+                  at: viewport.video.currentFrame.value,
+                });
+            }}
+          >
+            <SquareSplitHorizontalIcon />
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
   </div>
 </div>
