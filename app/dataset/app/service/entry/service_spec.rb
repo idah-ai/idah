@@ -308,6 +308,48 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "assigned_to relation (project-scoped composite key)" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
+    it "resolves assigned_to to the membership in the entry's own project" do
+      project_member_repo.create(
+        project_id:,
+        account_id: 42,
+        email: "member@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+
+      subject.assign_member(entry.id, 42)
+
+      result = repo.find!(entry.id, included: [:assigned_to])
+      expect(result.assigned_to).not_to be_nil
+      expect(result.assigned_to.email).to eq("member@example.com")
+    end
+
+    it "does not resolve assigned_to to a membership in a different project" do
+      other_project_id = project_repo.create(
+        name: "Other Project",
+        description: "Another project",
+        created_by_email: "other@example.com",
+        organization_id: 1
+      )
+      # Account 99 is a member of ANOTHER project only, not the entry's project.
+      project_member_repo.create(
+        project_id: other_project_id,
+        account_id: 99,
+        email: "stray@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+
+      subject.assign_member(entry.id, 99)
+
+      result = repo.find!(entry.id, included: [:assigned_to])
+      expect(result.assigned_to).to be_nil
+    end
+  end
+
   describe "#delete" do
     it "deletes an entry" do
       subject.delete(entry.id)

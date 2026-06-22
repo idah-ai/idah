@@ -2,7 +2,10 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
+    use entries: Entry::Repository,
+        datasets: Dataset::Repository,
+        projects: Project::Repository,
+        project_members: ProjectMember::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -92,14 +95,16 @@ module Entry
 
     def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: })
+        entry = entries.find!(id)
+        member = project_members.find_by({ account_id: assigned_to_id, project_id: entry.project_id })
+        entries.update!(id, { assigned_to_id:, assigned_to_email: member&.email })
         entries.find!(id)
       end
     end
 
     def unassign_member(id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: nil })
+        entries.update!(id, { assigned_to_id: nil, assigned_to_email: nil })
         entries.find!(id)
       end
     end
@@ -160,7 +165,7 @@ module Entry
 
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
-        system_entries_repo.update!(entry.id, { assigned_to_id: nil })
+        system_entries_repo.update!(entry.id, { assigned_to_id: nil, assigned_to_email: nil })
       end
     end
   end
