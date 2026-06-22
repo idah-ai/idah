@@ -245,7 +245,7 @@
     const pts = _localPoints ?? points;
     const ang = _localAngle ?? angle;
     if (pts.length < 4) return;
-    onEditComplete?.(pts as Point[], ang);
+    onEditComplete?.(pts as Point[], { angle: ang });
   }
 
   // ── Selection API ─────────────────────────────────────────────────────

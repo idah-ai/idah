@@ -38,6 +38,7 @@ import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
+import { register as registerAnnotationLineAddPoint } from "./annotation/line.add_point.svelte";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
@@ -51,6 +52,8 @@ import { register as registerCategoryToggleEditability } from "./category/toggle
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
 
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
+import { register as registerModeCircle } from "./mode/circle";
+import { register as registerModeLine } from "./mode/line";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
 
@@ -79,6 +82,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleVisibilityAll(driver);
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
+  registerAnnotationLineAddPoint(driver);
   registerAnnotationUpdate(driver);
 
   registerCategoryToggleEditability(driver);
@@ -88,6 +92,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Mode ──────────────────────────────────────────────────────
   registerModeSelect(driver);
   registerModeBoundingBox(driver);
+  registerModeCircle(driver);
+  registerModeLine(driver);
   registerModePolygon(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────

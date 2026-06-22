@@ -1,14 +1,14 @@
-// plugins/idah-image/frontend/src/lib/commands/mode/select.ts
+// plugins/idah-image/frontend/src/lib/commands/mode/line.ts
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 
 export const command = {
-  name: "mode.select",
+  name: "mode.line",
   group: "Tools",
-  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE],
-  shortcut: "D",
-  shortDescription: "Select",
-  longDescription: "Selection Tool",
+  modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_LINE, IMAGE_POLYGON, IMAGE_CIRCLE],
+  shortcut: "L",
+  shortDescription: "Line",
+  longDescription: "Line Tool",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -21,7 +21,9 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        driver.setMode(DEFAULT_MODE);
+        if (driver.mode !== IMAGE_LINE) {
+          driver.setMode(IMAGE_LINE);
+        }
       },
       isCombinable() {
         return false;

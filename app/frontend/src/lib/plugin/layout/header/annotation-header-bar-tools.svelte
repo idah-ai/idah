@@ -60,9 +60,9 @@
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
   {#each toolbarItems as { icon, label, name, onClick, visibleWhen, whenToggled }, toolIndex (toolIndex)}
-    <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
-      {#snippet trigger()}
-        {#if (visibleWhen || (() => true))()}
+    {#if (visibleWhen || (() => true))()}
+      <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
+        {#snippet trigger()}
           <Button
             variant={whenToggled?.() || false ? "default" : "ghost"}
             size="icon-sm"
@@ -72,9 +72,9 @@
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>
-        {/if}
-      {/snippet}
-    </ToolTooltip>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
   {/each}
 
   <Separator orientation="vertical"></Separator>

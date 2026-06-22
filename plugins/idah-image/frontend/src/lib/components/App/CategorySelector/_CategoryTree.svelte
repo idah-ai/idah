@@ -16,10 +16,12 @@
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import circleIconSvg from "$lib/assets/icons/circle.svg?raw";
+  import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
 
   import { getCategoryActions } from "$lib/components/App/CategorySelector/menus";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -305,6 +307,22 @@
             {:else if modalityShape === IDAH_IMAGE_POLYGON}
               <Icon
                 src={polygonIconSvg}
+                color={category.data?.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
+              />
+            {:else if modalityShape === IDAH_IMAGE_CIRCLE}
+              <Icon
+                src={circleIconSvg}
+                color={category.data?.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
+              />
+            {:else if modalityShape === IDAH_IMAGE_LINE}
+              <Icon
+                src={lineIconSvg}
                 color={category.data?.color}
                 class={cn({
                   hidden: category.requiredNested,
