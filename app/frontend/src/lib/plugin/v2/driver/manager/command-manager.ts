@@ -23,7 +23,7 @@ export class CommandManagerV2 {
   private combineWindow = 5000;
 
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
-  currentMode: string = "default";
+  currentMode: string = "editor";
 
   /**
    * Normalize shortcut strings so that `Control` is replaced with `Meta` on

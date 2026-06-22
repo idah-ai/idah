@@ -4,7 +4,7 @@ import { Transformers } from "@/data/model/transformers";
 
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
-import type { LabelValue } from "@/components/app/types";
+import type { LabelValue } from "@/utils/types";
 
 @type("dataset:project_members")
 export class ProjectMemberRecord extends Record {

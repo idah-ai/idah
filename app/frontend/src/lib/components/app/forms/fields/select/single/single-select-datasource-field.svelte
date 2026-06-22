@@ -224,7 +224,7 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
+    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0" preventScroll>
       <Command>
         {#if searchable}
           <InputField

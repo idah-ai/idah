@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { onMount, setContext, type Snippet } from "svelte";
 
+  import DatasetModality from "@/components/app/datasets/badges/dataset-modality.svelte";
   import ProjectDatasetDropdownMenu from "@/components/app/datasets/dropdowns/project-dataset-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
@@ -60,7 +61,7 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name"],
+        [DatasetRecord.type]: ["name", "modality"],
       },
     });
     dataset = datasetRes.data;
@@ -81,6 +82,7 @@
         {#snippet slotTitle()}
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
+            <DatasetModality dataset={datasetRecord}></DatasetModality>
             <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}

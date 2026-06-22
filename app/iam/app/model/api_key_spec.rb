@@ -16,7 +16,7 @@ RSpec.describe ApiKey, database: true do
         key_sha: Digest::SHA256.hexdigest("test_key"),
         permissions: %w[org_rw_all],
         scope_type: "org",
-        scope_value: ["org-123"],
+        scope_value: ["1"],
         expires_at: Time.now + 30 * 24 * 60 * 60,
         revoked_at: nil,
         status: "active",

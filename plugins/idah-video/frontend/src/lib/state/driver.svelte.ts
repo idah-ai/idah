@@ -53,3 +53,23 @@ export function retrySync() {
 export function resetSync() {
   getDriver().command.call("core.reset");
 }
+
+// ---------------------------------------------------------------------------
+// claimDriverShortcut — let app shortcuts win over a focused widget.
+//
+// Some focusable widgets (e.g. a bits-ui slider thumb) handle arrow keys
+// natively and swallow them before the window-level shortcut handler runs.
+// Attach this with `onkeydowncapture` on a container wrapping such a widget:
+// it offers each keypress to the driver first, and only when the driver
+// claims it as a registered shortcut does it stop the widget from also acting.
+// Key/command-agnostic, so it covers current and future shortcuts. Text inputs
+// are skipped so typing is never hijacked.
+// ---------------------------------------------------------------------------
+export function claimDriverShortcut(event: KeyboardEvent): void {
+  const el = document.activeElement as HTMLElement | null;
+  if (el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable) return;
+  if (getDriver().handleKeydown(event)) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}

@@ -187,7 +187,7 @@ RSpec.describe Auth::Service, database: true do
           key_label: "#{raw_key[0..9]}...#{raw_key[-4..]}",
           permissions: %w[org:read org:write],
           scope_type: "org",
-          scope_value: ["org-123"],
+          scope_value: ["1"],
           status: "active",
           expires_at: Time.now + 30 * 24 * 60 * 60
         )

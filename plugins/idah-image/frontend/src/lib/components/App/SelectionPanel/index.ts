@@ -1,0 +1,118 @@
+import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "$idah/v2/types";
+
+/**
+ * Check that all required properties have values.
+ * Properties are expected to already be filtered by visibility via the driver.
+ */
+export function requiredFullfilled(value: { attributes?: Record<string, unknown>; [key: string]: unknown }, properties: IConfigProperty[] = []): boolean {
+  return properties
+    .filter((p) => p.required)
+    .every((p) => (value.attributes?.[p.id] as string | number | boolean | string[] | undefined) != undefined && conformToformat(value.attributes?.[p.id] as string | number | boolean | string[] | undefined, p));
+}
+
+export function propertyFullfilled(value: string | number | string[] | boolean | undefined, property: IConfigProperty) {
+  return property.required
+    ? value != undefined && conformToformat(value, property)
+    : value == undefined || conformToformat(value, property);
+}
+
+const formatValidators = new Map([
+  [
+    "text",
+    {
+      minimum: (v: string, format: IConfigPropertyFormat) => (v?.length || 0) >= (format.minimum || 0),
+      maximum: (v: string, format: IConfigPropertyFormat) => (v?.length || 0) <= (format.maximum || v?.length || 0),
+      step: (_v: string, _format: IConfigPropertyFormat) => true,
+      options: (_v: string, _format: IConfigPropertyFormat) => true,
+      info: (_v: string) => true,
+    },
+  ],
+  [
+    "integer",
+    {
+      minimum: (v: number, format: IConfigPropertyFormat) => (v || 0) >= (format.minimum || 0),
+      maximum: (v: number, format: IConfigPropertyFormat) => (v || 0) <= (format.maximum || v),
+      step: (v: number, format: IConfigPropertyFormat) =>
+        !((v - (format.minimum || 0)) % (format.step || 1)) || v == format.maximum,
+      options: (_v: number, _format: IConfigPropertyFormat) => true,
+      info: (_v: number) => true,
+    },
+  ],
+  [
+    "boolean",
+    {
+      minimum: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      maximum: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      step: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      options: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      info: (_v: boolean) => true,
+    },
+  ],
+  [
+    "single-select",
+    {
+      minimum: (_v: string, _format: IConfigPropertyFormat) => true,
+      maximum: (_v: string, _format: IConfigPropertyFormat) => true,
+      step: (_v: string, _format: IConfigPropertyFormat) => true,
+      options: (v: string, format: IConfigPropertyFormat) => !!format.options?.map((o) => o.id).includes(v),
+      info: (_v: string) => true,
+    },
+  ],
+  [
+    "multi-select",
+    {
+      minimum: (v: string[], format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
+      maximum: (v: string[], format: IConfigPropertyFormat) =>
+        (v?.length || 0) <= (format.maximum || format.options?.length || 0),
+      step: (_v: string[], _format: IConfigPropertyFormat) => true,
+      options: (v: string[], format: IConfigPropertyFormat) => {
+        const optionIds = format.options?.map((o) => o.id);
+        return v?.every((s) => optionIds?.includes(s));
+      },
+      info: (_v: string[]) => true,
+    },
+  ],
+]);
+
+function conformToformat(
+  value: string | number | string[] | boolean | undefined,
+  propertyField: IConfigProperty,
+): boolean {
+  const validator = formatValidators.get(propertyField.type);
+
+  if (!validator) return false;
+
+  return Object.entries(propertyField.format).every(
+    ([k, _v]: [k: string, _v: string | number | Array<IConfigPropertyOption>]) => {
+      const fn = (validator as Record<string, any>)[k];
+      if (!fn) return true;
+      return (fn as (v: any, fmt: IConfigPropertyFormat) => boolean)(value, propertyField.format);
+    },
+  );
+}
+
+export function formatConformity(
+  value: string | number | string[] | boolean | undefined,
+  propertyField: IConfigProperty,
+): [string, unknown][] {
+  const validator = formatValidators.get(propertyField.type);
+
+  const result: [string, unknown][] = [];
+
+  if (propertyField.required && value == undefined) {
+    result.push(["required", propertyField.required]);
+  }
+
+  for (const [k] of Object.entries(propertyField.format)) {
+    const fn = validator?.[k as keyof typeof validator];
+    if (!fn || !(fn as (v: any, fmt: IConfigPropertyFormat) => boolean)(value, propertyField.format)) {
+      if (k === "options") {
+        result.push([k, propertyField.format[k as "options"]?.map((o) => o.label)]);
+      } else {
+        result.push([k, propertyField.format[k as keyof IConfigPropertyFormat]]);
+      }
+    }
+  }
+
+  return result;
+}

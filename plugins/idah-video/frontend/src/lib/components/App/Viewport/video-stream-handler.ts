@@ -133,6 +133,14 @@ export class VideoStreamHandler {
       if (this.hls) this.hls.loadLevel = 0;
     });
 
+    // Cap the initial LQ burst at the playlist length. A stream with fewer
+    // fragments than initialFragmentCount would never reach the threshold in
+    // FRAG_LOADED, so isInitialLoad would stay true and the HQ switch never fire.
+    this.hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
+      const count = data.details?.fragments?.length;
+      if (count && count < this.initialFragmentCount) this.initialFragmentCount = count;
+    });
+
     // Track fragment downloads for watchdog
     this.hls.on(Hls.Events.FRAG_LOADING, (_event, data) => {
       this.setFragLoadInFlight(true, data.frag);

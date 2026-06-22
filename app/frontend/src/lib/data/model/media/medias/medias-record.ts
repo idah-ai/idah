@@ -1,26 +1,48 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
+import { Transformers } from "@/data/model/transformers";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
-import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { CollectionResponse, JsonApiErrorResponse, JsonApiMeta, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+
+export interface ZipFileReport {
+  filename: string;
+  message: string;
+}
+
+// Upload response, narrowing `meta` to the skipped/errored lists the backend
+// reports when extracting a zip archive.
+export type MediaUploadResponse = Omit<CollectionResponse<MediaRecord>, "meta"> & {
+  meta?: JsonApiMeta & {
+    skipped?: ZipFileReport[];
+    errored?: ZipFileReport[];
+  };
+};
 
 @type("media:medias")
 export class MediaRecord extends Record {
   @field() public resource!: string;
   @field() public key!: string;
 
+  @field() public filename!: string;
+
   @field() public size!: number;
   @field() public mime_type!: string;
 
-  @field() public filename!: string;
-  @field() public meta!: { [key: string]: unknown };
-
   @field() public created_by!: number;
-  @field() public created_at!: Date;
-  @field() public updated_at!: Date;
+  @field() public created_role!: string;
+
+  @field() public public!: boolean;
+
+  @field() public meta!: Hash;
+
+  @field({ transformer: Transformers.Time }) public created_at!: Date;
+  @field({ transformer: Transformers.Time }) public updated_at!: Date;
+
+  @field() public readonly project_id!: string;
 }
 
 RecordFactory.registerTypes(MediaRecord);
@@ -87,15 +109,21 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
     const blobUrl = URL.createObjectURL(blob);
     return blobUrl;
   },
-  upload: async (
-    file: File,
-    resource: string,
-    project_id: string,
-    key: string = "",
-  ): Promise<RecordResponse<MediaRecord> | JsonApiErrorResponse> => {
+
+  // Upload always returns a collection — a single-element array for regular files,
+  // or a multi-element array when the uploaded file is a zip archive.
+  upload: async (props: {
+    file: File;
+    resource: string;
+    projectId: string;
+    key?: string;
+    modality?: string;
+  }): Promise<MediaUploadResponse | JsonApiErrorResponse> => {
+    const { file, resource, projectId, key = "", modality } = props;
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("project_id", project_id);
+    formData.append("project_id", projectId);
+    if (modality) formData.append("modality", modality);
 
     const uploadPath = key ? `${mediaBasePath}/files/${resource}/${key}` : `${mediaBasePath}/files/${resource}`;
 
@@ -120,7 +148,9 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
       return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
     }
 
-    if (body && body.data) return Promise.resolve(parseSingleElementReturn<MediaRecord>(body));
+    // `meta` is narrowed to the upload-specific shape at this single boundary;
+    // the generic parser types it as the open-ended JsonApiMeta.
+    if (body && body.data) return Promise.resolve(parseCollectionReturn<MediaRecord>(body) as MediaUploadResponse);
 
     throw "No data returned";
   },
