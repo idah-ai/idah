@@ -43,7 +43,7 @@ export function register(driver: IIdahDriverV2): void {
         async undo() {
           if (!data.annotations) return;
           for (const ann of snapshot) {
-            await data.annotations.create({ ...ann });
+            await data.annotations.create({ ...ann, id: ann.id });
           }
         },
         isCombinable() {
