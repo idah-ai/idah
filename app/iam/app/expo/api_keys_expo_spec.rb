@@ -146,8 +146,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
 
       allow(Time).to receive(:now).and_return(freeze_time)
 
-      # Allow the service to receive expire_api_keys (used while waiting for the cron to fire)
-      allow(service).to receive(:expire_api_keys)
+      expect(service).to receive(:expire_api_keys)
 
       # Register the exposition to create the CronTask
       described_class.register
@@ -155,20 +154,8 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
       # Advance time past the cron trigger so the manager fires the task
       allow(Time).to receive(:now).and_return(freeze_time_after)
 
-      # Wait for the manager to process the task (poll with retries for CI stability)
-      max_retries = 25
-      received = false
-      max_retries.times do
-        begin
-          expect(service).to have_received(:expire_api_keys).at_least(:once)
-          received = true
-          break
-        rescue RSpec::Expectations::ExpectationNotMetError
-          sleep 0.2
-        end
-      end
-
-      expect(received).to be(true)
+      # Wait for the manager to process the task
+      sleep 0.5
     end
   end
 end
