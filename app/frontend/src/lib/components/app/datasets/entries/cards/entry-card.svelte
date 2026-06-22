@@ -172,17 +172,14 @@
    * Fetch jobs data every 10 seconds, to keep the status updated
    * Note: Only fetch if the entry is in a processing state
    */
-  async function periodicCheckJobStatus() {
+  async function periodicCheckJobStatus(): Promise<void> {
     if (entry.wf_step === "start") {
       progressIntervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entryId, {
-              included: ["dataset", "assigned_to", "reviewed_by"],
-              noCache: true,
-            });
+            const entryRes = await getEntry(entryId);
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -203,10 +200,8 @@
           jobProgress = jobRes.data.progress;
 
           if (jobProgress === 1) {
-            const entryRes = await entriesBackendDataSource.get(entryId, {
-              included: ["dataset", "assigned_to", "reviewed_by"],
-              noCache: true,
-            });
+            const entryRes = await getEntry(entryId);
+
             entry = entryRes.data;
             if (entry.wf_step !== "start") {
               await loadThumbnail();
@@ -268,6 +263,13 @@
   function updateEntry(thisEntry: EntryRecord): void {
     entry = thisEntry;
     onEntryUpdated();
+  }
+
+  function getEntry(entryId: string) {
+    return entriesBackendDataSource.get(entryId, {
+      included: ["dataset", "assigned_to", "reviewed_by"],
+      noCache: true,
+    });
   }
 </script>
 
