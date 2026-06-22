@@ -146,10 +146,11 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
 
       allow(Time).to receive(:now).and_return(freeze_time)
 
-      expect(service).to receive(:expire_api_keys)
-
       # Register the exposition to create the CronTask
       described_class.register
+
+      # Set expectation on the mocked service instance
+      expect(service).to receive(:expire_api_keys)
 
       # Advance time past the cron trigger so the manager fires the task
       allow(Time).to receive(:now).and_return(freeze_time_after)
