@@ -211,7 +211,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
         filters: { dataset_id: datasetId, wf_step: submittedEntryWfStep },
         noCache: true,
         pagination: { page: 1, itemsPerPage: 1 },
-        sort: ["assigned_to_id"],
+        sort: ["assigned_to_id", "id"],
       });
       return res.data.length > 0 ? res.data[0].id : null;
     } catch {

@@ -85,7 +85,7 @@
 
   async function unAssignEntry(): Promise<void> {
     try {
-      await entriesBackendDataSource.unassign(entry.id);
+      const entryRes = await entriesBackendDataSource.unassign(entry.id);
 
       onUnAssigned?.(entryRes.data);
 
