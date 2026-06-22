@@ -11,7 +11,6 @@
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import EntryThumbnailPreview from "@/components/app/datasets/entries/cards/entry-thumbnail-preview.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
