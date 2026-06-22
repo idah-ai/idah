@@ -42,13 +42,8 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
 
-  // Modal visibility
-  let openNewEntry = $state(false);
-  let openAssignEntry = $state(false);
-  let openSetPriority = $state(false);
-  let openConfirmUnassign = $state(false);
-  let openConfirmDelete = $state(false);
-  let openExport = $state(false);
+  // Modal component reference
+  let entriesModals = $state<InstanceType<typeof EntriesModals>>();
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: { projectId, projectMemberRoles: ["project_owner"] },
@@ -89,11 +84,11 @@
       {canDeleteEntry}
       {projectId}
       {as_project_owner}
-      onOpenNewEntry={() => (openNewEntry = true)}
-      onOpenAssign={() => (openAssignEntry = true)}
-      onOpenUnassign={() => (openConfirmUnassign = true)}
-      onOpenSetPriority={() => (openSetPriority = true)}
-      onOpenDelete={() => (openConfirmDelete = true)}
+      onOpenNewEntry={() => entriesModals?.openNewEntryModal()}
+      onOpenAssign={() => entriesModals?.openAssignEntryModal()}
+      onOpenUnassign={() => entriesModals?.openConfirmUnassignModal()}
+      onOpenSetPriority={() => entriesModals?.openSetPriorityModal()}
+      onOpenDelete={() => entriesModals?.openConfirmDeleteModal()}
     />
   {/snippet}
 </PageHeader>
@@ -121,7 +116,7 @@
             {#snippet actions()}
               {#if !controller.isFiltering}
                 <Can action="create" resource="dataset:entries" scopes={["as_org_owner", as_project_owner]}>
-                  <Button onclick={() => (openNewEntry = true)}>Add Entry</Button>
+                  <Button onclick={() => entriesModals?.openNewEntryModal()}>Add Entry</Button>
                 </Can>
               {/if}
             {/snippet}
@@ -141,13 +136,4 @@
   onItemsPerPageSelect={controller.setItemsPerPage.bind(controller)}
 />
 
-<EntriesModals
-  {controller}
-  {datasetId}
-  bind:openNewEntry
-  bind:openAssignEntry
-  bind:openSetPriority
-  bind:openConfirmUnassign
-  bind:openConfirmDelete
-  bind:openExport
-/>
+<EntriesModals bind:this={entriesModals} {controller} {datasetId} />

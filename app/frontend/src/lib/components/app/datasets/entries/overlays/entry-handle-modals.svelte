@@ -15,25 +15,46 @@
   let {
     controller,
     datasetId,
-    openNewEntry = $bindable(false),
-    openAssignEntry = $bindable(false),
-    openSetPriority = $bindable(false),
-    openConfirmUnassign = $bindable(false),
-    openConfirmDelete = $bindable(false),
-    openExport = $bindable(false),
   }: {
     controller: EntriesListController;
     datasetId: string;
-    openNewEntry: boolean;
-    openAssignEntry: boolean;
-    openSetPriority: boolean;
-    openConfirmUnassign: boolean;
-    openConfirmDelete: boolean;
-    openExport: boolean;
   } = $props();
+
+  // Modal visibility state - owned by this component
+  let openNewEntry = $state(false);
+  let openAssignEntry = $state(false);
+  let openSetPriority = $state(false);
+  let openConfirmUnassign = $state(false);
+  let openConfirmDelete = $state(false);
+  let openExport = $state(false);
 
   // Contexts
   const dataset: DatasetRecord = getContext("dataset");
+
+  // Public API for opening modals
+  export function openNewEntryModal(): void {
+    openNewEntry = true;
+  }
+
+  export function openAssignEntryModal(): void {
+    openAssignEntry = true;
+  }
+
+  export function openSetPriorityModal(): void {
+    openSetPriority = true;
+  }
+
+  export function openConfirmUnassignModal(): void {
+    openConfirmUnassign = true;
+  }
+
+  export function openConfirmDeleteModal(): void {
+    openConfirmDelete = true;
+  }
+
+  export function openExportModal(): void {
+    openExport = true;
+  }
 
   // Functions
   async function handleUnassign(): Promise<void> {
