@@ -13,6 +13,7 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { DEFAULT_MODE, type IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
+import { uuidv7 } from "uuidv7";
 
 export const command = {
   name: "annotation.add",
@@ -39,23 +40,27 @@ export function register(driver: IIdahDriverV2): void {
       const props = opts as unknown as AnnotationAddProps | undefined;
       if (!props || !data.annotations) return noopAction(command);
 
+      // Generate the ID once per command action so redo recreates the same
+      // annotation instead of generating a new ID. Follow-up actions in the
+      // undo/redo stack can then keep targeting this annotation safely.
+      const createdId = uuidv7();
+
       return {
         command: { ...command },
         async do() {
           const created = await data.annotations!.create({
+            id: createdId,
             shape: props.shape,
             value: props.value,
           });
-          (this as any)._createdId = created.id;
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Exit drawing mode after successful creation
           driver.setMode(DEFAULT_MODE);
         },
         async undo() {
-          const id = (this as any)._createdId;
-          if (id && data.annotations) {
-            await data.annotations.delete(id);
+          if (data.annotations) {
+            await data.annotations.delete(createdId);
           }
         },
         isCombinable() {

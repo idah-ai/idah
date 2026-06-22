@@ -8,6 +8,7 @@
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import type { IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {
@@ -21,7 +22,10 @@ export const command = {
 
 export interface AnnotationUpdateProps {
   annotation: AnnotationItem;
-  value: Record<string, unknown>;
+  /** New value (optional — omit for shape-only edits like resize/rotate). */
+  value?: Record<string, unknown>;
+  /** New shape (optional — omit for value-only edits like category change). */
+  shape?: IImageAnnotationShape;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -38,15 +42,21 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === props.annotation.id);
       if (!record) return noopAction(command);
 
-      const snapshot: AnnotationItem = { ...record, value: { ...record.value } };
+      const snapshot: AnnotationItem = { ...record, value: { ...record.value }, shape: { ...(record.shape as IImageAnnotationShape) } };
 
       return {
         command: { ...command },
         async do() {
-          await data.annotations!.update({
-            ...snapshot,
-            value: { ...(snapshot.value ?? {}), ...props.value },
-          });
+          // Start from the snapshot (full record including original shape and value),
+          // then apply only the fields that the caller explicitly provided.
+          const update: AnnotationItem = { ...snapshot };
+          if (props.shape) {
+            update.shape = props.shape as IImageAnnotationShape;
+          }
+          if (props.value) {
+            update.value = { ...(snapshot.value ?? {}), ...props.value };
+          }
+          await data.annotations!.update(update);
         },
         async undo() {
           if (!data.annotations) return;
