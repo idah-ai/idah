@@ -14,9 +14,7 @@ export async function unAssignEntries(
   getEntryName: (id: string) => string | undefined,
 ): Promise<EntryRecord[] | null> {
   try {
-    const results = await Promise.all(
-      entryIds.map((id) => entriesBackendDataSource.update(id, { attributes: { assigned_to_id: null } })),
-    );
+    const results = await Promise.all(entryIds.map((id) => entriesBackendDataSource.unassign(id)));
 
     const updatedEntries = results.map((r) => r.data);
     const count = updatedEntries.length;
