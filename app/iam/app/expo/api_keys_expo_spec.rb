@@ -139,9 +139,23 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
   end
 
-  describe "scheduled task" do
-    it "responds to expire_api_keys method" do
-      expect(described_class.instance_methods).to include(:expire_api_keys)
+  describe "on_schedule daily expire_api_keys" do
+    it "calls the service to expire API keys via the cron task" do
+      freeze_time = Time.new(2025, 6, 15, 0, 14, 59.9)
+      freeze_time_after = freeze_time + 1
+
+      allow(Time).to receive(:now).and_return(freeze_time)
+
+      expect(service).to receive(:expire_api_keys)
+
+      # Register the exposition to create the CronTask
+      described_class.register
+
+      # Advance time past the cron trigger so the manager fires the task
+      allow(Time).to receive(:now).and_return(freeze_time_after)
+
+      # Wait for the manager to process the task
+      sleep 0.5
     end
   end
 end
