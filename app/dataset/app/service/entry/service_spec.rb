@@ -499,6 +499,45 @@ RSpec.describe Entry::Service, database: true do
       end
     end
 
+    context "email snapshots stay paired with their ids" do
+      # Use a context carrying a known actor so we can assert the email snapshot
+      let(:auth_context) do
+        Verse::Auth::Context.new(["*.*.*"], metadata: { id: 999, email: "actor@example.com", role: "admin" })
+      end
+
+      it "records submitted_by_email alongside submitted_by_id when annotating" do
+        repo.update!(test_entry, { wf_step: "annotate" })
+        # No sampling -> annotate transitions straight to done
+        dataset_repo.update!(dataset_id, { workflow_configuration: { "sample_rate" => 0 } })
+
+        result = subject.submit(test_entry)
+
+        expect(result.submitted_by_id).to eq(999)
+        expect(result.submitted_by_email).to eq("actor@example.com")
+      end
+
+      it "carries submitted_by_email into assigned_to_email when a review sends it back to annotate" do
+        repo.update!(
+          test_entry,
+          {
+            wf_step: "review",
+            submitted_by_id: 42,
+            submitted_by_email: "annotator@example.com"
+          }
+        )
+
+        result = subject.submit(test_entry, approved: false)
+
+        expect(result.wf_step).to eq("annotate")
+        # Reviewer (acting account) recorded with its email
+        expect(result.reviewed_by_id).to eq(999)
+        expect(result.reviewed_by_email).to eq("actor@example.com")
+        # Re-assigned to the original annotator, email snapshot preserved
+        expect(result.assigned_to_id).to eq(42)
+        expect(result.assigned_to_email).to eq("annotator@example.com")
+      end
+    end
+
     context "when entry does not exist" do
       it "raises a not found error" do
         expect { subject.submit(UUIDv7.generate) }

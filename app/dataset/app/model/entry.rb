@@ -22,7 +22,9 @@ module Entry
     field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
     field :assigned_to_email, type: [String, NilClass] # Set alongside assigned_to_id
     field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
+    field :submitted_by_email, type: [String, NilClass] # Set alongside submitted_by_id
     field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
+    field :reviewed_by_email, type: [String, NilClass] # Set alongside reviewed_by_id
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -251,7 +253,7 @@ module Entry
     end
 
     event(name: "assigned")
-    def assign(id, assigned_to_id)
+    def assign(id, assigned_to_id, assigned_to_email)
       entry = find!(id)
 
       add_event_metadata(
@@ -262,7 +264,7 @@ module Entry
 
       no_event do
         transaction do
-          update!(id, { assigned_to_id:, status: "in_progress" })
+          update!(id, { assigned_to_id:, assigned_to_email:, status: "in_progress" })
         end
       end
     end
@@ -279,7 +281,7 @@ module Entry
 
       no_event do
         transaction do
-          update!(id, { assigned_to_id: nil, status: "pending" })
+          update!(id, { assigned_to_id: nil, assigned_to_email: nil, status: "pending" })
         end
       end
     end
