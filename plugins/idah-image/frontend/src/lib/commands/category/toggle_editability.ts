@@ -19,11 +19,13 @@
 // Undoable: restores previous locked states.
 // ---------------------------------------------------------------------------
 
-import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { AnnotationItem } from "$lib/state/data.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
+import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
+
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { AnnotationItem } from "$lib/state/data.svelte";
 
 export const command = {
   name: "annotation.toggle_category_editability",
@@ -36,15 +38,8 @@ export const command = {
 
 export interface ToggleCategoryEditabilityProps {
   category: string;
+  shapeType: string;
   annotations?: AnnotationItem[];
-}
-
-function isCategoryMatch(annotationCategory: string | undefined, targetCategory: string): boolean {
-  if (!annotationCategory) {
-    return false;
-  }
-
-  return annotationCategory === targetCategory || annotationCategory.startsWith(`${targetCategory}/`);
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -67,11 +62,18 @@ export function register(driver: IIdahDriverV2): void {
       // Use provided annotations if available
       if (props.annotations && props.annotations.length > 0) {
         categoryAnnotations = props.annotations;
-      } else if (props.category) {
-        // Resolve from category tree
-        categoryAnnotations = data.annotations.items.filter((ann) =>
-          isCategoryMatch(ann.value?.category, props.category),
-        );
+      } else if (props.category || props.shapeType) {
+        categoryAnnotations = data.annotations.items;
+
+        if (props.category) {
+          categoryAnnotations = categoryAnnotations.filter((ann) =>
+            isCategoryMatch(ann.value?.category, props.category),
+          );
+        }
+
+        if (props.shapeType) {
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+        }
       } else {
         return noopAction(command);
       }
