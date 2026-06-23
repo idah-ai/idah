@@ -47,10 +47,11 @@
     lastDragCursor = cursor;
     scaleBarCurrentX = cursor[0];
 
-    // Compute factor from horizontal delta: moving right = scale up, left = scale down
-    // Sensitivity: 1 pixel of movement = 0.5% scale change
+    // Compute factor from horizontal delta using log2 mapping:
+    // bar left edge = 0.5×, center = 1×, right edge = 2×
     const dx = (cursor[0] - scaleBarStartX) * w;
-    const factor = Math.max(0.1, Math.min(10, 1 + dx * 0.005));
+    const logFactor = dx / (barLength / 2);
+    const factor = Math.max(0.5, Math.min(2, 2 ** logFactor));
     scaleBarFactor = factor;
     const newRadius = Math.max(0.005, baseRadius * factor);
     _scaledRadius = newRadius;
@@ -64,7 +65,7 @@
   let barY = $derived(centroidPx[1]);
   let barX1 = $derived(centroidPx[0] - barLength / 2);
   let barX2 = $derived(centroidPx[0] + barLength / 2);
-  let thumbX = $derived(centroidPx[0] + (scaleBarFactor - 1) * (barLength / 2) * 0.5);
+  let thumbX = $derived(centroidPx[0] + Math.log2(scaleBarFactor) * (barLength / 2));
   let thumbXClamped = $derived(Math.max(barX1, Math.min(barX2, thumbX)));
 
   /** Start the scale bar interaction at the given normalized X coordinate. */
