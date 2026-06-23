@@ -30,7 +30,11 @@
   let displayShortcut = $derived(accountSettings.getShortcutOverrides()[cmd.name] ?? cmd.shortcut);
   let listeningForShortcutPress = $state(false);
   let assignKeys = $state("");
-  let isConflict = $derived(checkConflict(assignKeys));
+  // Conflict is checked against the *active* shortcut: the in-progress combo
+  // while recording, otherwise the saved/displayed binding — so the warning
+  // surfaces both during recording and at rest.
+  let activeShortcut = $derived(listeningForShortcutPress ? assignKeys : (displayShortcut ?? ""));
+  let isConflict = $derived(checkConflict(activeShortcut));
   let containerRef = $state<HTMLElement | null>(null);
 
   function handleShortcutAssignment(e: MouseEvent) {
@@ -105,9 +109,7 @@
 </script>
 
 <Command.Item
-  class={cn("group/item aria-selected:bg-primary/5", {
-    "bg-warning": isConflict,
-  })}
+  class="group/item aria-selected:bg-primary/5"
   value={cmd.shortDescription ?? cmd.name}
   title={cmd.longDescription ?? cmd.shortDescription ?? ""}
   onSelect={() => {
@@ -153,6 +155,10 @@
         Reset default
       {/snippet}
     </Tooltips>
+
+    {#if isConflict}
+      <img src="/assets/icons/WarningIcon.svg" alt="Conflict" class="size-4 shrink-0" />
+    {/if}
 
     {#if listeningForShortcutPress}
       <Button variant={isConflict ? "destructive-outline" : "outline"} size="sm" onclick={(e) => e.stopPropagation()}>
