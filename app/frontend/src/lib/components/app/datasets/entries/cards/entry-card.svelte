@@ -25,16 +25,17 @@
   import { authStatus } from "@/security/AuthContext";
   import { humanize } from "@/utils/string";
 
-  import type { ProjectMemberScope } from "@/security/types";
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
     entry: EntryRecord;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
+    onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect }: Props = $props();
+  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -77,6 +78,7 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    periodicCheckJobStatus();
   });
 
   // State for thumbnail
@@ -86,19 +88,15 @@
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
-  let animationInterval: number | null = $state(null);
-  let progressIntervalId: ReturnType<typeof setInterval> | undefined;
-  let jobProgress: number = $state(1);
+  let animationInterval: ReturnType<typeof setInterval> | null = $state(null);
+  let progressIntervalId: ReturnType<typeof setInterval> | null = $state(null);
+  let jobProgress: number = $state(entry.wf_step === "start" ? 0 : 1);
 
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
-  const ANIMATION_INTERVAL_MS = 350; // 1 second per position
+  const ANIMATION_INTERVAL_MS = 350;
 
   // Functions
-  onMount(() => {
-    periodicCheckJobStatus();
-  });
-
-  async function selectEntry() {
+  async function selectEntry(): Promise<void> {
     if (!currentAccount?.id) return;
 
     try {
@@ -122,6 +120,11 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      // Revoke the previous blob URL to avoid memory leaks
+      if (thumbnailUrl) {
+        URL.revokeObjectURL(thumbnailUrl);
+      }
+
       const { resource } = entry;
       let key: string;
       switch (dataset.modality) {
@@ -151,6 +154,11 @@
         }
       };
 
+      thumbnailImg.onerror = () => {
+        thumbnailError = true;
+        thumbnailUrl = null;
+      };
+
       thumbnailImg.src = thumbnailUrl;
       thumbnailError = false;
     } catch (error) {
@@ -164,14 +172,14 @@
    * Fetch jobs data every 10 seconds, to keep the status updated
    * Note: Only fetch if the entry is in a processing state
    */
-  async function periodicCheckJobStatus() {
+  async function periodicCheckJobStatus(): Promise<void> {
     if (entry.wf_step === "start") {
       progressIntervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await getEntry(entryId);
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -179,6 +187,7 @@
 
           if (entry.wf_step !== "start" || entry.status === "errored") {
             stopPeriodicCheckJobStatus();
+            jobProgress = 1;
             return;
           }
 
@@ -191,7 +200,8 @@
           jobProgress = jobRes.data.progress;
 
           if (jobProgress === 1) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await getEntry(entryId);
+
             entry = entryRes.data;
             if (entry.wf_step !== "start") {
               await loadThumbnail();
@@ -210,7 +220,7 @@
   }
 
   // Animation functions
-  function startAnimation() {
+  function startAnimation(): void {
     if (animationInterval || dataset.modality !== "idah-video") return;
 
     animationInterval = setInterval(() => {
@@ -218,7 +228,7 @@
     }, ANIMATION_INTERVAL_MS) as unknown as number;
   }
 
-  function stopAnimation() {
+  function stopAnimation(): void {
     if (animationInterval) {
       clearInterval(animationInterval);
       animationInterval = null;
@@ -228,16 +238,20 @@
   }
 
   // Clean up blob URL and animation when component is destroyed
-  function stopPeriodicCheckJobStatus() {
-    if (progressIntervalId !== undefined) {
+  function stopPeriodicCheckJobStatus(): void {
+    if (progressIntervalId !== null) {
       clearInterval(progressIntervalId);
-      progressIntervalId = undefined;
+      progressIntervalId = null;
     }
   }
 
-  function cleanup() {
+  // Clean up timers, animation state, and blob URL when component is destroyed
+  function cleanup(): void {
     stopAnimation();
     stopPeriodicCheckJobStatus();
+
+    thumbnailImg.onload = null;
+    thumbnailImg.onerror = null;
 
     if (thumbnailUrl) {
       URL.revokeObjectURL(thumbnailUrl);
@@ -248,6 +262,14 @@
 
   function updateEntry(thisEntry: EntryRecord): void {
     entry = thisEntry;
+    onEntryUpdated();
+  }
+
+  function getEntry(entryId: string) {
+    return entriesBackendDataSource.get(entryId, {
+      included: ["dataset", "assigned_to", "reviewed_by"],
+      noCache: true,
+    });
   }
 </script>
 
