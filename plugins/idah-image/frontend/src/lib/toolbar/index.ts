@@ -42,6 +42,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
         driver.mode === IMAGE_BOUNDING_BOX ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_BOUNDING_BOX),
         whenToggled: () => driver.mode === IMAGE_BOUNDING_BOX,
     });
+    t.orderGroups(IMAGE_BOUNDING_BOX, ["selection"]);
   }
   if (hasConfig(IMAGE_POLYGON)) {
     t.add({
@@ -53,6 +54,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
         driver.mode === IMAGE_POLYGON ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_POLYGON),
         whenToggled: () => driver.mode === IMAGE_POLYGON,
     });
+    t.orderGroups(IMAGE_POLYGON, ["selection"]);
   }
   if (hasConfig(IMAGE_CIRCLE)) {
     t.add({
@@ -65,6 +67,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
         driver.mode === IMAGE_CIRCLE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_CIRCLE),
         whenToggled: () => driver.mode === IMAGE_CIRCLE,
     });
+    t.orderGroups(IMAGE_CIRCLE, ["selection"]);
   }
   if (hasConfig(IMAGE_LINE)) {
     t.add({
@@ -77,6 +80,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
         driver.mode === IMAGE_LINE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_LINE),
         whenToggled: () => driver.mode === IMAGE_LINE,
     });
+    t.orderGroups(IMAGE_LINE, ["selection"]);
   }
   t.add({
     icon: noteIcon,
@@ -89,9 +93,5 @@ export function initToolbar(driver: IIdahDriverV2): void {
   });
 
   t.orderGroups(DEFAULT_MODE, ["selection"]);
-  t.orderGroups(IMAGE_BOUNDING_BOX, ["selection"]);
-  t.orderGroups(IMAGE_CIRCLE, ["selection"]);
-  t.orderGroups(IMAGE_LINE, ["selection"]);
-  t.orderGroups(IMAGE_POLYGON, ["selection"]);
   t.orderGroups(NOTE_MODE, ["selection"]);
 }
