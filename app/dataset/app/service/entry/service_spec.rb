@@ -333,6 +333,48 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "assigned_to relation (project-scoped composite key)" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
+    it "resolves assigned_to to the membership in the entry's own project" do
+      project_member_repo.create(
+        project_id:,
+        account_id: 42,
+        email: "member@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+
+      subject.assign_member(entry.id, 42)
+
+      result = repo.find!(entry.id, included: [:assigned_to])
+      expect(result.assigned_to).not_to be_nil
+      expect(result.assigned_to.email).to eq("member@example.com")
+    end
+
+    it "does not resolve assigned_to to a membership in a different project" do
+      other_project_id = project_repo.create(
+        name: "Other Project",
+        description: "Another project",
+        created_by_email: "other@example.com",
+        organization_id: 1
+      )
+      # Account 99 is a member of ANOTHER project only, not the entry's project.
+      project_member_repo.create(
+        project_id: other_project_id,
+        account_id: 99,
+        email: "stray@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+
+      subject.assign_member(entry.id, 99)
+
+      result = repo.find!(entry.id, included: [:assigned_to])
+      expect(result.assigned_to).to be_nil
+    end
+  end
+
   describe "#delete" do
     it "deletes an entry" do
       subject.delete(entry.id)
@@ -454,6 +496,45 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("annotate")
         expect(result.status).to eq("in_progress")
+      end
+    end
+
+    context "email snapshots stay paired with their ids" do
+      # Use a context carrying a known actor so we can assert the email snapshot
+      let(:auth_context) do
+        Verse::Auth::Context.new(["*.*.*"], metadata: { id: 999, email: "actor@example.com", role: "admin" })
+      end
+
+      it "records submitted_by_email alongside submitted_by_id when annotating" do
+        repo.update!(test_entry, { wf_step: "annotate" })
+        # No sampling -> annotate transitions straight to done
+        dataset_repo.update!(dataset_id, { workflow_configuration: { "sample_rate" => 0 } })
+
+        result = subject.submit(test_entry)
+
+        expect(result.submitted_by_id).to eq(999)
+        expect(result.submitted_by_email).to eq("actor@example.com")
+      end
+
+      it "carries submitted_by_email into assigned_to_email when a review sends it back to annotate" do
+        repo.update!(
+          test_entry,
+          {
+            wf_step: "review",
+            submitted_by_id: 42,
+            submitted_by_email: "annotator@example.com"
+          }
+        )
+
+        result = subject.submit(test_entry, approved: false)
+
+        expect(result.wf_step).to eq("annotate")
+        # Reviewer (acting account) recorded with its email
+        expect(result.reviewed_by_id).to eq(999)
+        expect(result.reviewed_by_email).to eq("actor@example.com")
+        # Re-assigned to the original annotator, email snapshot preserved
+        expect(result.assigned_to_id).to eq(42)
+        expect(result.assigned_to_email).to eq("annotator@example.com")
       end
     end
 

@@ -8,6 +8,7 @@
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
@@ -25,16 +26,17 @@
   import { authStatus } from "@/security/AuthContext";
   import { humanize } from "@/utils/string";
 
-  import type { ProjectMemberScope } from "@/security/types";
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
     entry: EntryRecord;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
+    onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect }: Props = $props();
+  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -42,7 +44,17 @@
   const currentAccount = $authStatus.authContext;
 
   let projectId = page.params.projectId as string;
-  let { id: entryId, wf_step, status, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
+  let {
+    id: entryId,
+    wf_step,
+    status,
+    assigned_to_id,
+    assigned_to_email,
+    submitted_by_id,
+    submitted_by_email,
+    reviewed_by_id,
+    reviewed_by_email,
+  } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let canOpenEntry = $derived.by(() => {
@@ -77,6 +89,7 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    periodicCheckJobStatus();
   });
 
   // State for thumbnail
@@ -86,19 +99,15 @@
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
-  let animationInterval: number | null = $state(null);
-  let progressIntervalId: ReturnType<typeof setInterval> | undefined;
-  let jobProgress: number = $state(1);
+  let animationInterval: ReturnType<typeof setInterval> | null = $state(null);
+  let progressIntervalId: ReturnType<typeof setInterval> | null = $state(null);
+  let jobProgress: number = $state(entry.wf_step === "start" ? 0 : 1);
 
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
-  const ANIMATION_INTERVAL_MS = 350; // 1 second per position
+  const ANIMATION_INTERVAL_MS = 350;
 
   // Functions
-  onMount(() => {
-    periodicCheckJobStatus();
-  });
-
-  async function selectEntry() {
+  async function selectEntry(): Promise<void> {
     if (!currentAccount?.id) return;
 
     try {
@@ -122,6 +131,11 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      // Revoke the previous blob URL to avoid memory leaks
+      if (thumbnailUrl) {
+        URL.revokeObjectURL(thumbnailUrl);
+      }
+
       const { resource } = entry;
       let key: string;
       switch (dataset.modality) {
@@ -151,6 +165,11 @@
         }
       };
 
+      thumbnailImg.onerror = () => {
+        thumbnailError = true;
+        thumbnailUrl = null;
+      };
+
       thumbnailImg.src = thumbnailUrl;
       thumbnailError = false;
     } catch (error) {
@@ -164,14 +183,14 @@
    * Fetch jobs data every 10 seconds, to keep the status updated
    * Note: Only fetch if the entry is in a processing state
    */
-  async function periodicCheckJobStatus() {
+  async function periodicCheckJobStatus(): Promise<void> {
     if (entry.wf_step === "start") {
       progressIntervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await getEntry(entryId);
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -179,6 +198,7 @@
 
           if (entry.wf_step !== "start" || entry.status === "errored") {
             stopPeriodicCheckJobStatus();
+            jobProgress = 1;
             return;
           }
 
@@ -191,7 +211,8 @@
           jobProgress = jobRes.data.progress;
 
           if (jobProgress === 1) {
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await getEntry(entryId);
+
             entry = entryRes.data;
             if (entry.wf_step !== "start") {
               await loadThumbnail();
@@ -210,7 +231,7 @@
   }
 
   // Animation functions
-  function startAnimation() {
+  function startAnimation(): void {
     if (animationInterval || dataset.modality !== "idah-video") return;
 
     animationInterval = setInterval(() => {
@@ -218,7 +239,7 @@
     }, ANIMATION_INTERVAL_MS) as unknown as number;
   }
 
-  function stopAnimation() {
+  function stopAnimation(): void {
     if (animationInterval) {
       clearInterval(animationInterval);
       animationInterval = null;
@@ -228,16 +249,20 @@
   }
 
   // Clean up blob URL and animation when component is destroyed
-  function stopPeriodicCheckJobStatus() {
-    if (progressIntervalId !== undefined) {
+  function stopPeriodicCheckJobStatus(): void {
+    if (progressIntervalId !== null) {
       clearInterval(progressIntervalId);
-      progressIntervalId = undefined;
+      progressIntervalId = null;
     }
   }
 
-  function cleanup() {
+  // Clean up timers, animation state, and blob URL when component is destroyed
+  function cleanup(): void {
     stopAnimation();
     stopPeriodicCheckJobStatus();
+
+    thumbnailImg.onload = null;
+    thumbnailImg.onerror = null;
 
     if (thumbnailUrl) {
       URL.revokeObjectURL(thumbnailUrl);
@@ -248,6 +273,14 @@
 
   function updateEntry(thisEntry: EntryRecord): void {
     entry = thisEntry;
+    onEntryUpdated();
+  }
+
+  function getEntry(entryId: string) {
+    return entriesBackendDataSource.get(entryId, {
+      included: ["dataset", "assigned_to", "reviewed_by"],
+      noCache: true,
+    });
   }
 </script>
 
@@ -365,7 +398,13 @@
             {#if wf_step !== "done"}
               <DataDisplay label="Assigned to">
                 {#snippet slotValue()}
-                  <ProjectMemberAvatar member={entry.assigned_to} />
+                  {#if entry.assigned_to}
+                    <ProjectMemberAvatar member={entry.assigned_to} />
+                  {:else if assigned_to_id && assigned_to_email}
+                    <AccountAvatar size="sm" email={assigned_to_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
                 {/snippet}
               </DataDisplay>
             {/if}
@@ -373,7 +412,13 @@
             {#if submitted_by_id}
               <DataDisplay label="Submitted by">
                 {#snippet slotValue()}
-                  <ProjectMemberAvatar member={entry.submitted_by} />
+                  {#if entry.submitted_by}
+                    <ProjectMemberAvatar member={entry.submitted_by} />
+                  {:else if submitted_by_email}
+                    <AccountAvatar size="sm" email={submitted_by_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
                 {/snippet}
               </DataDisplay>
             {/if}
@@ -381,7 +426,13 @@
             {#if reviewed_by_id}
               <DataDisplay label="Reviewed by">
                 {#snippet slotValue()}
-                  <ProjectMemberAvatar member={entry.reviewed_by} />
+                  {#if entry.reviewed_by}
+                    <ProjectMemberAvatar member={entry.reviewed_by} />
+                  {:else if reviewed_by_email}
+                    <AccountAvatar size="sm" email={reviewed_by_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
                 {/snippet}
               </DataDisplay>
             {/if}

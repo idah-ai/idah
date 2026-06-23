@@ -81,6 +81,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: noteIcon,
     label: "Note",
+    name: "mode.note",
     modes: [REVIEW_MODE, NOTE_MODE],
     group: "selection",
     onClick: () => driver.setMode(NOTE_MODE),

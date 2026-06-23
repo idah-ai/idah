@@ -8,6 +8,7 @@
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
+import type { IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {

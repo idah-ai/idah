@@ -225,7 +225,7 @@
   });
 
   let showCrosshair = $derived(
-    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.mode !== DEFAULT_MODE && viewport.mode !== NOTE_MODE,
+    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode,
   );
 
   const viewBox = $derived.by(() => {

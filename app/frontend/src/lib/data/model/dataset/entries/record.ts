@@ -33,8 +33,11 @@ export class EntryRecord extends Record {
   @field() public name!: string;
 
   @field() public assigned_to_id!: number | null;
+  @field() public assigned_to_email!: string | null;
   @field() public submitted_by_id!: number | null;
+  @field() public submitted_by_email!: string | null;
   @field() public reviewed_by_id!: number | null;
+  @field() public reviewed_by_email!: string | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
@@ -208,7 +211,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
         filters: { dataset_id: datasetId, wf_step: submittedEntryWfStep },
         noCache: true,
         pagination: { page: 1, itemsPerPage: 1 },
-        sort: ["assigned_to_id"],
+        sort: ["assigned_to_id", "id"],
       });
       return res.data.length > 0 ? res.data[0].id : null;
     } catch {

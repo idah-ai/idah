@@ -21,7 +21,12 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        driver.setMode(DEFAULT_MODE);
+        // Return to the parent resting mode of the current workspace
+        if (driver.mode === REVIEW_MODE || driver.mode === NOTE_MODE) {
+          driver.setMode(REVIEW_MODE);
+        } else {
+          driver.setMode(DEFAULT_MODE);
+        }
       },
       isCombinable() {
         return false;

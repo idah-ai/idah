@@ -23,7 +23,7 @@
     cursor: Point;
     mediaWidth: number;
     mediaHeight: number;
-    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
   };
 
   let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
