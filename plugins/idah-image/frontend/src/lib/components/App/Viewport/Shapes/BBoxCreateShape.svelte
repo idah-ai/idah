@@ -60,7 +60,7 @@
       [x2, y2],
       [x1, y2],
     ];
-    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, 0, undefined);
+    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, {angle: 0}, undefined);
     return true;
   }
 

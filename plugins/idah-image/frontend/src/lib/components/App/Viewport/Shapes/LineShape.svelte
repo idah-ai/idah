@@ -28,7 +28,7 @@
     cursor?: Point;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
-    onEditComplete?: (points: Point[], angle: number) => void;
+    onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
   };
 
   let {

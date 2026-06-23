@@ -13,7 +13,7 @@
     cursor?: Point;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
-    onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
+    onEditComplete?: (points: Point[], extraProps?: Record<string, unknown>) => void;
   };
 
   let {

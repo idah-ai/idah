@@ -50,7 +50,7 @@
       const pts = [...polygonDraft.points];
       polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)
-      onSelection("idah-image:polygon", pts, 0, undefined);
+      onSelection("idah-image:polygon", pts);
       return true;
     }
 

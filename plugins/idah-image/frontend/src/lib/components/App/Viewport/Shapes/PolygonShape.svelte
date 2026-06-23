@@ -27,7 +27,7 @@
     cursor?: Point;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
-    onEditComplete?: (points: Point[], angle: number) => void;
+    onEditComplete?: (points: Point[], extraProps?: Record<string, unknown>) => void;
   } = $props();
 
   let color = $derived.by(() => resolveAnnotationColor(annotation));
@@ -125,7 +125,7 @@
   function emitComplete() {
     const pts = _localVertices ?? baseVertices;
     if (pts.length < 3) return;
-    onEditComplete?.(pts, 0);
+    onEditComplete?.(pts);
   }
 
   export function startSelection(start: Point, shiftKey = false): boolean {

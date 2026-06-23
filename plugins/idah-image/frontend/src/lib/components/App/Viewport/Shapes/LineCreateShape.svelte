@@ -36,7 +36,7 @@
     if (lineDraft.points.length === 1) {
       const pts = [lineDraft.points[0], cursor];
       lineDraft.reset();
-      onSelection(IDAH_IMAGE_LINE, pts, 0, undefined);
+      onSelection(IDAH_IMAGE_LINE, pts);
       return true;
     }
 
