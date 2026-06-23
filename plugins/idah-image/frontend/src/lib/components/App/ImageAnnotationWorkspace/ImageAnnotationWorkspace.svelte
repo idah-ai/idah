@@ -12,7 +12,7 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -124,7 +124,7 @@
 
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
-    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_POLYGON) {
+    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_CIRCLE && viewportMode !== IMAGE_LINE && viewportMode !== IMAGE_POLYGON) {
       pendingValue = {};
     }
 
@@ -175,6 +175,22 @@
         command: "tools.polygon",
       },
       {
+        name: "tools.circle",
+        label: "Circle",
+        type: IDAH_IMAGE_CIRCLE,
+        iconName: "circle",
+        disabled: !editable,
+        command: "tools.circle",
+      },
+      {
+        name: "tools.line",
+        label: "Line",
+        type: IDAH_IMAGE_LINE,
+        iconName: "minimize-2",
+        disabled: !editable,
+        command: "tools.line",
+      },
+      {
         name: "tools.note",
         label: "Add Note",
         type: NOTE_MODE,
@@ -185,8 +201,9 @@
     ];
 
     const toolConfig = toolListConfig.filter((tool) => {
-      if ([IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_POLYGON].includes(tool.type)) {
-        return !!getDriver().config[tool.type];
+      if ([IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON].includes(tool.type)) {
+        const cfg = getDriver().config[tool.type];
+        return cfg && cfg.values && cfg.values.length > 0;
       }
       return true;
     });
@@ -237,7 +254,7 @@
   }
 
   let shapeSelectionArgs:
-    | [type: string, _points: Point[], angle: number]
+    | [type: string, _points: Point[], extraProps: Record<string, unknown>|undefined]
     | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
@@ -284,14 +301,14 @@
   function confirmCreateAnnotation(
     type: string,
     _points: Point[] = [],
-    angle: number = 0,
+    _extraProps: Record<string, unknown> = {},
   ) {
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
     let value = $state.snapshot(pendingValue) as AnnotationValue;
 
-    const shape: IImageAnnotationShape = { type, points, angle };
+    const shape: IImageAnnotationShape = { type, points, ..._extraProps };
 
     shapeSelectionArgs = undefined;
     pendingValue = {};
@@ -301,7 +318,7 @@
   function onShapeSelection(
     type: string,
     _points: Point[] = [],
-    angle: number = 0,
+    extraProps?: Record<string, unknown>,
     selectedId?: string,
   ) {
     if (!editable || isNoteMode) return;
@@ -309,14 +326,13 @@
     let points = $state.snapshot(_points) as Point[];
 
     // If selectedId is provided, this is a shape edit on an existing annotation.
-    // Derive the shape type from the annotation itself rather than the first
-    // argument (viewport.mode), keeping the call signature aligned with video.
     if (selectedId) {
       const ann = data.annotations?.items.find((a) => a.id === selectedId);
       if (!ann || annotation.isLocked(ann)) return;
 
-      const shapeType = (ann.shape as IImageAnnotationShape)?.type ?? type;
-      const updatedShape: IImageAnnotationShape = { type: shapeType, points, angle };
+      const shapeData = ann.shape as IImageAnnotationShape;
+      const shapeType = shapeData?.type ?? type;
+      const updatedShape: IImageAnnotationShape = { type: shapeType, points, ...extraProps };
       getDriver().command.call("annotation.update", {
         annotation: ann,
         shape: updatedShape,
@@ -326,7 +342,7 @@
 
     let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
 
-    const shape: IImageAnnotationShape = { type, points, angle };
+    const shape: IImageAnnotationShape = { type, points, ...extraProps };
 
     if (
       getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
@@ -339,7 +355,7 @@
       pendingValue = {};
       addAnnotation(shape, annotation_value_from);
     } else {
-      shapeSelectionArgs = [type, _points, angle];
+      shapeSelectionArgs = [type, _points, extraProps];
       // Keep pendingValue so the popover shows the selected category
       showPopOver = true;
     }

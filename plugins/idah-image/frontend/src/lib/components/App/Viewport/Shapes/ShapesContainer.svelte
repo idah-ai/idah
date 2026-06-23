@@ -19,7 +19,9 @@
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
+  import CircleCreateShape from "./CircleCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
+  import LineCreateShape from "./LineCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
@@ -34,7 +36,7 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
@@ -52,7 +54,7 @@
     annotations_promise: Promise<IImageAnnotationRecord[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
-    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
   };
 
@@ -155,9 +157,13 @@
 
   // ── Create shape component refs ───────────────────────────────────────
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
+  let circleCreateComp: CircleCreateShape | undefined = $state(undefined);
+  let lineCreateComp: LineCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
   let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
+  let isCircleMode = $derived(viewport.mode === IMAGE_CIRCLE);
+  let isLineMode = $derived(viewport.mode === IMAGE_LINE);
   let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
 
@@ -261,6 +267,18 @@
       return;
     }
 
+    // ── Circle creation mode — delegate to CircleCreateShape ─────
+    if (isCircleMode) {
+      circleCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      return;
+    }
+
+    // ── Line creation mode — delegate to LineCreateShape ─────────
+    if (isLineMode) {
+      lineCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      return;
+    }
+
     // ── Note mode — defer to mouseup ───────────────────────────────
     if (isNoteMode) {
       return;
@@ -291,6 +309,12 @@
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      return;
+    }
+
+    // ── Circle creation mode — finalize on CircleCreateShape ────
+    if (isCircleMode) {
+      circleCreateComp?.handleMouseUp(sceneNormalizedCursor);
       return;
     }
 
@@ -373,8 +397,8 @@
     _noteHandledByClick = false;
   }
 
-  function handleEditComplete(annId: string, points: Point[], angle: number) {
-    onSelection(viewport.mode, points, angle, annId);
+  function handleEditComplete(annId: string, points: Point[], extraProps: Record<string, unknown> = {}) {
+    onSelection(viewport.mode, points, extraProps, annId);
   }
 
   let _noteHandledByClick = $state(false);
@@ -435,6 +459,28 @@
         />
       {/if}
 
+      <!-- Build mode: circle creation preview -->
+      {#if isCircleMode}
+        <CircleCreateShape
+          bind:this={circleCreateComp}
+          cursor={sceneNormalizedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {onSelection}
+        />
+      {/if}
+
+      <!-- Build mode: line creation preview -->
+      {#if isLineMode}
+        <LineCreateShape
+          bind:this={lineCreateComp}
+          cursor={sceneNormalizedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {onSelection}
+        />
+      {/if}
+
       <!-- Build mode: polygon creation preview -->
       {#if isPolygonMode}
         <PolygonCreateShape
@@ -458,7 +504,7 @@
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
+          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
         />
       {/each}
 
