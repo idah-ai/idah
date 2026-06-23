@@ -36,6 +36,12 @@ module Annotation
               "entry not found to create an annotation"
       end
 
+      # Prevent modifications on completed entries
+      if entry.status == "completed"
+        raise Verse::Error::ValidationFailed,
+              "Cannot create annotation on a completed entry"
+      end
+
       # With "as_user" ensure account can "create" annotation to the project
       if auth_context.can?(:create, annotations.class.resource) == :as_user &&
          !ScopedQuery::Service.with_project_access?(
@@ -63,6 +69,10 @@ module Annotation
 
     def update(record)
       annotations.transaction do
+        annotation = annotations.find!(record.id)
+
+        check_entry_not_completed!(annotation.entry_id)
+
         annotations.update!(record.id, record.attributes)
         annotations.find!(record.id)
       end
@@ -70,13 +80,34 @@ module Annotation
 
     def update_attr(id, attributes)
       annotations.transaction do
+        annotation = annotations.find!(id)
+
+        check_entry_not_completed!(annotation.entry_id)
+
         annotations.update!(id, attributes)
         annotations.find!(id)
       end
     end
 
     def delete(id)
-      annotations.delete!(id)
+      annotations.transaction do
+        annotation = annotations.find!(id)
+
+        check_entry_not_completed!(annotation.entry_id)
+
+        annotations.delete!(id)
+      end
+    end
+
+    private
+
+    def check_entry_not_completed!(entry_id)
+      entry = entries.find(entry_id)
+
+      return unless entry&.status == "completed"
+
+      raise Verse::Error::ValidationFailed,
+            "Cannot modify annotations on a completed entry"
     end
   end
 end
