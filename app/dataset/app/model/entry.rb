@@ -20,8 +20,11 @@ module Entry
     field :name, type: String
 
     field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
+    field :assigned_to_email, type: [String, NilClass] # Set alongside assigned_to_id
     field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
+    field :submitted_by_email, type: [String, NilClass] # Set alongside submitted_by_id
     field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
+    field :reviewed_by_email, type: [String, NilClass] # Set alongside reviewed_by_id
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -29,18 +32,31 @@ module Entry
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
 
-    belongs_to :assigned_to,
-               repository: "ProjectMember::Repository",
-               primary_key: :account_id,
-               foreign_key: :assigned_to_id
-    belongs_to :submitted_by,
-               repository: "ProjectMember::Repository",
-               primary_key: :account_id,
-               foreign_key: :submitted_by_id
-    belongs_to :reviewed_by,
-               repository: "ProjectMember::Repository",
-               primary_key: :account_id,
-               foreign_key: :reviewed_by_id
+    # Resolve the project member by BOTH project_id and account_id, so an entry
+    # only matches a membership in its OWN project. A plain account_id join (the
+    # previous belongs_to) could pick up the same account's membership in an
+    # unrelated project, leaking that row and showing a stray/stale assignee.
+    def self.belongs_to_project_member(relation_name, foreign_key)
+      relation relation_name, array: false do |collection, auth_context, sub_included|
+        members = ProjectMember::Repository.new(auth_context).index(
+          {
+            account_id__in: collection.map { |entry| entry[foreign_key] }.compact.uniq,
+            project_id__in: collection.map { |entry| entry[:project_id] }.uniq
+          },
+          included: sub_included
+        )
+
+        [
+          members,
+          ->(member) { "#{member[:project_id]}:#{member[:account_id]}" }, # index members by (project, account)
+          ->(entry) { "#{entry[:project_id]}:#{entry[foreign_key]}" }     # look up by the entry's own project
+        ]
+      end
+    end
+
+    belongs_to_project_member :assigned_to, :assigned_to_id
+    belongs_to_project_member :submitted_by, :submitted_by_id
+    belongs_to_project_member :reviewed_by, :reviewed_by_id
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
     has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
@@ -220,16 +236,24 @@ module Entry
       no_event do
         transaction do
           entry = find!(id)
-          # Use read scope when updating as anyone with read access can select
+
           if entry.status == "pending"
-            update!(id, { assigned_to_id: auth_context.metadata[:id], status: "in_progress" }, scope: scoped(:read))
+            update!(
+              id,
+              {
+                assigned_to_id: auth_context.metadata[:id],
+                assigned_to_email: auth_context.metadata[:email],
+                status: "in_progress"
+              },
+              scope: scoped(:read)
+            )
           end
         end
       end
     end
 
     event(name: "assigned")
-    def assign(id, assigned_to_id)
+    def assign(id, assigned_to_id, assigned_to_email)
       entry = find!(id)
 
       add_event_metadata(
@@ -240,7 +264,7 @@ module Entry
 
       no_event do
         transaction do
-          update!(id, { assigned_to_id:, status: "in_progress" })
+          update!(id, { assigned_to_id:, assigned_to_email:, status: "in_progress" })
         end
       end
     end
@@ -257,7 +281,7 @@ module Entry
 
       no_event do
         transaction do
-          update!(id, { assigned_to_id: nil, status: "pending" })
+          update!(id, { assigned_to_id: nil, assigned_to_email: nil, status: "pending" })
         end
       end
     end
