@@ -11,6 +11,7 @@
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
+  import { SvelteMap } from "svelte/reactivity";
 
   // Props
   interface Props {
@@ -23,7 +24,7 @@
   let currentMode = $state(driver.mode);
   let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
   let toggledMap = $derived.by(() => {
-    const map = new Map<string, boolean>();
+    const map = new SvelteMap<string, boolean>();
     for (const item of toolbarItems) {
       map.set(item.name ?? item.label, item.whenToggled?.() ?? false);
     }
