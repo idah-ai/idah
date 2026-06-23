@@ -79,3 +79,26 @@ export function pointOnCircle(center: Point, radius: number, angle: number): Poi
     center[1] + radius * Math.sin(angle),
   ];
 }
+
+/**
+ * Compute a scale factor from centroid to cursor distance ratio.
+ * Used for centroid-drag radius scaling.
+ */
+export function computeScaleFactor(
+  centroid: Point,
+  dragStart: Point,
+  currentCursor: Point,
+): number {
+  const initialDist = distance(centroid, dragStart);
+  if (initialDist < 0.001) return 1;
+  const currentDist = distance(centroid, currentCursor);
+  return currentDist / initialDist;
+}
+
+/**
+ * Scale a circle by a factor relative to its center (radius * factor).
+ * Returns the new radius.
+ */
+export function scaleCircle(baseRadius: number, factor: number): number {
+  return Math.max(0.005, baseRadius * Math.max(0.1, Math.min(10, factor)));
+}

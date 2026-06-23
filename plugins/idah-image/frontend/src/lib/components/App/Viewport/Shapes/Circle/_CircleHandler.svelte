@@ -2,81 +2,43 @@
   // ---------------------------------------------------------------------------
   // _CircleHandler.svelte — Interactive handles for the Circle shape
   //
-  // Renders a center point handle for panning and an invisible wide stroke
-  // along the circle edge for hover detection. The whole edge highlights on
-  // hover to show interactivity.
+  // Renders a center point handle that triggers a scale bar for resizing the
+  // circle radius (same pattern as Polygon's centroid scale).
   // ---------------------------------------------------------------------------
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { scaleCursorSVG } from "../Polygon/utils";
 
   import type { Point } from "$lib/utils/math/point";
 
   type Props = {
     center: Point;
-    displayRadius: number;
     color: string;
     isEditing: boolean;
-    onStartResize: () => void;
-    onStartPan: () => void;
+    onStartScale: () => void;
   };
 
   let {
     center,
-    displayRadius,
     color,
     isEditing,
-    onStartResize,
-    onStartPan,
+    onStartScale,
   }: Props = $props();
 
   let w = $derived(media.width);
   let h = $derived(media.height);
   let invScale = $derived(1 / viewport.workspace.transform.scale);
 
-  let hoveredEdge: boolean = $state(false);
   let hoveredCenter: boolean = $state(false);
 
-  let R_center = $derived(5 * invScale);
-  let R_center_hovered = $derived(7 * invScale);
+  let R_center = $derived(6 * invScale);
+  let R_center_hovered = $derived(8 * invScale);
   let R_center_hit = $derived(8 * invScale);
   let R_dot = $derived(2.5 * invScale);
   let S_line = $derived(2 * invScale);
 </script>
 
-<!-- Invisible wide edge for hover + resize drag initiation -->
-<circle
-  cx={center[0] * w}
-  cy={center[1] * h}
-  r={displayRadius * Math.min(w, h)}
-  fill="none"
-  stroke="transparent"
-  stroke-width={24}
-  style:outline="none"
-  vector-effect="non-scaling-stroke"
-  style:cursor={isEditing ? "grabbing" : hoveredEdge ? "grab" : "default"}
-  onmouseenter={() => (hoveredEdge = true)}
-  onmouseleave={() => (hoveredEdge = false)}
-  onmousedown={(e) => {
-    e.stopPropagation();
-    onStartResize();
-  }}
-/>
-
-<!-- Visible edge highlight ring on hover (shows the whole edge is interactive) -->
-{#if hoveredEdge}
-  <circle
-    cx={center[0] * w}
-    cy={center[1] * h}
-    r={displayRadius * Math.min(w, h)}
-    fill="none"
-    stroke={color}
-    stroke-width={4 * invScale}
-    stroke-opacity={0.5}
-    pointer-events="none"
-  />
-{/if}
-
-<!-- Center handle (for panning) -->
+<!-- Center handle (initiates scale bar on drag) -->
 <circle
   cx={center[0] * w}
   cy={center[1] * h}
@@ -103,11 +65,11 @@
   r={R_center_hit}
   fill="transparent"
   style:outline="none"
-  style:cursor={isEditing ? "grabbing" : "grab"}
+  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 12 12, nesw-resize`}
   onmouseenter={() => (hoveredCenter = true)}
   onmouseleave={() => (hoveredCenter = false)}
   onmousedown={(e) => {
     e.stopPropagation();
-    onStartPan();
+    onStartScale();
   }}
 />
