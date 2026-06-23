@@ -127,7 +127,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          disabled: isSomeLocked,
+          disabled: isSomeLocked || viewport.mode !== DEFAULT_MODE,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
@@ -228,7 +228,7 @@
           {@const annConfig = getDriver().config[annShapeType]}
           {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
           {@const annColor = annCategory?.color ?? null}
-          {@const annDisplayName = annCategory?.label ?? (ann.value?.category ?? "Uncategorized")}
+          {@const annDisplayName = annCategory?.label ?? ann.value?.category ?? "Uncategorized"}
           {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
           <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
             <button
@@ -249,7 +249,7 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions( { items: [ann], annotationId: ann.id }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
+              {#each getAnnotationActions( { items: [ann], annotationId: ann.id, isDeleteDisabled: viewport.mode !== DEFAULT_MODE }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
                 <CategoryAction
                   {label}
                   icon={Icon}

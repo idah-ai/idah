@@ -62,7 +62,11 @@ export function getEditabilityAction(annotationId: string, items: IImageAnnotati
   };
 }
 
-export function getDeleteAction(annotationId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
+export function getDeleteAction(
+  annotationId: string,
+  items: IImageAnnotationRecord[],
+  isDeleteDisabled?: boolean,
+): AnnotationAction | null {
   if (items.length === 0) return null;
 
   return {
@@ -70,7 +74,7 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
     label: "Delete annotation",
     icon: Trash2Icon,
     destructive: true,
-    disabled: items.some((item) => annotation.isLocked(item)),
+    disabled: isDeleteDisabled || items.some((item) => annotation.isLocked(item)),
     onClick: () => {
       showConfirmDialog({
         title: "Delete annotation",
@@ -83,13 +87,17 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
   };
 }
 
-export function getAnnotationActions(props: { items: IImageAnnotationRecord[]; annotationId: string }): AnnotationAction[] {
-  const { items, annotationId } = props;
+export function getAnnotationActions(props: {
+  items: IImageAnnotationRecord[];
+  annotationId: string;
+  isDeleteDisabled?: boolean;
+}): AnnotationAction[] {
+  const { items, annotationId, isDeleteDisabled } = props;
 
   const actions = [
     getVisibilityAction(annotationId, items),
     getEditabilityAction(annotationId, items),
-    getDeleteAction(annotationId, items),
+    getDeleteAction(annotationId, items, isDeleteDisabled),
   ];
 
   return actions.filter(Boolean) as AnnotationAction[];

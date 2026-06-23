@@ -239,15 +239,17 @@
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
+    {#if entryStatus !== "completed"}
+      <Button
+        variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+        size="sm"
+        onclick={() => driver.setMode("editor")}
+      >
+        Editor
+      </Button>
+    {/if}
     <Button
-      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
-      size="sm"
-      onclick={() => driver.setMode("editor")}
-    >
-      Editor
-    </Button>
-    <Button
-      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+      variant={entryStatus === "completed" || currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
       size="sm"
       onclick={() => driver.setMode("review")}
     >
