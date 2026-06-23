@@ -1,13 +1,13 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
+  import { viewport, VIEWPORT_MAX_ZOOM, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
   import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX } from "$lib/types";
-  import { type Point } from "$lib/utils/math/point";
   import { modKey } from "$lib/utils/browser";
-  import { viewport, VIEWPORT_MIN_ZOOM, VIEWPORT_MAX_ZOOM } from "$lib/state/viewport.svelte";
+
   import SyncIndicator from "./SyncIndicator.svelte";
+  import { type Point } from "$lib/utils/math/point";
   import LoadingIndicator from "./LoadingIndicator.svelte";
-  import { media } from "$lib/state/media.svelte";
 
   // Props
   interface Props {

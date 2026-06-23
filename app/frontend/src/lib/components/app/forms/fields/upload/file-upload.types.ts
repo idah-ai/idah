@@ -6,6 +6,6 @@ export interface FileUploadBaseProps {
 
   onFilesSelected: (selectedFiles: FileList) => Promise<void> | void;
 
-  slotSelectedFiles?: Snippet<[{ selectedFiles: FileList | null }]>;
-  slotInfo?: Snippet;
+  SelectedFilesSlot?: Snippet<[{ selectedFiles: FileList | null }]>;
+  InfoSlot?: Snippet;
 }

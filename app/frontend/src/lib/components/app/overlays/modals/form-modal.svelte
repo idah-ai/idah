@@ -21,6 +21,7 @@
     title,
     description,
     loading,
+    closeOnOutsideClick = true,
     onCancel,
     onConfirm,
     modalTitle,
@@ -88,13 +89,7 @@
 </script>
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
-  <DialogContent
-    onInteractOutside={(e) => {
-      if (!canClickOutside) {
-        e.preventDefault();
-      }
-    }}
-  >
+  <DialogContent interactOutsideBehavior={closeOnOutsideClick && canClickOutside ? "close" : "ignore"}>
     {#if modalTitle}
       {@render modalTitle()}
     {:else}

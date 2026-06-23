@@ -23,7 +23,7 @@ export class CommandManagerV2 {
   private combineWindow = 5000;
 
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
-  currentMode: string = "default";
+  currentMode: string = "editor";
 
   /**
    * Live command-name → shortcut override map, owned by AccountSettingsManager.

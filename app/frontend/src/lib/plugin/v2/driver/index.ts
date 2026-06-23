@@ -2,31 +2,31 @@
 // IdahDriverV2 — Core app adapter
 // ---------------------------------------------------------------------------
 import type {
-  IIdahDriverV2,
-  IProjectInfo,
-  IDatasetInfo,
-  IMediaInfo,
-  IConfig,
-  IShapeConfig,
   IAnnotationsDriverV2,
-  INotesDriverV2,
   ICommandDriverV2,
+  IConfig,
+  IDatasetInfo,
+  IIdahDriverV2,
+  IMediaInfo,
   IToolbarDriverV2,
   IStatsDriverV2,
   IModeEvent,
-  ISyncEvent,
+  INotesDriverV2,
+  IProjectInfo,
+  IShapeConfig,
   ISyncErrorEvent,
+  ISyncEvent,
   IAccountSettingsDriverV2,
   Unsubscribe,
 } from "../types";
 
-import { CommandManagerV2 } from "./manager/command-manager";
-import { ToolbarManagerV2 } from "./manager/toolbar-manager";
-import { AccountSettingsManager } from "./manager/account-settings-manager.svelte";
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
 import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
 import registerCommands from "./command";
+import { CommandManagerV2 } from "./manager/command-manager";
+import { ToolbarManagerV2 } from "./manager/toolbar-manager";
+import { AccountSettingsManager } from "./manager/account-settings-manager.svelte";
 
 import type { RecordResponse } from "@/data/model/types";
 
@@ -348,11 +348,11 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────
 
+import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
-import { JsonRpcDatasource } from "@/data/jsonrpc";
-import { CommandDriverAdapter } from "./adapter/command";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
+import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
@@ -378,33 +378,25 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
   };
 
   // Get media info
-  let mediaInfo: IMediaInfo;
-  try {
-    const mediaRes = (await mediaBackendDataSource.getInfo({
-      resource: entry.resource,
-    })) as RecordResponse<MediaRecord>;
+  const mediaRes = (await mediaBackendDataSource.getInfo({
+    resource: entry.resource,
+  })) as RecordResponse<MediaRecord>;
 
-    const m = mediaRes.data;
-    mediaInfo = {
-      id: entry.id,
-      resource: m.resource,
-      key: m.key,
-      mime_type: m.mime_type,
-      filename: m.filename,
-      meta: m.meta,
-      url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
-    };
-  } catch {
-    mediaInfo = {
-      id: entry.id,
-      resource: entry.resource,
-      key: "",
-      mime_type: "",
-      filename: entry.name,
-      meta: {},
-      url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
-    };
-  }
+  const m = mediaRes.data;
+  const mediaInfo = {
+    id: entry.id,
+    resource: m.resource,
+    key: m.key,
+    mime_type: m.mime_type,
+    filename: m.filename,
+    meta: m.meta,
+    url:
+      // TODO: this is a hack to get the correct media URL for video vs image.
+      // We should have a better way to determine the media type and URL.
+      entry.dataset.modality === "idah-video"
+        ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+        : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+  };
 
   const driver = new IdahDriverV2({
     id: entry.id,

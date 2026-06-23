@@ -21,9 +21,11 @@
   import { cn } from "@/utils";
   import { getFieldErrors, validateData } from "@/utils/validate";
 
+  import type { AssignProjectMemberType } from "@/data/model/dataset/projects/members/type";
+
   // Props
   interface Props {
-    members: Array<{ email: string; role: ProjectMemberRole | null; errors?: string[] }>;
+    members: Array<AssignProjectMemberType>;
   }
   let { members = $bindable() }: Props = $props();
 
@@ -32,8 +34,6 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
-  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
-  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
 
   // Lifecycle
   onMount(() => {
@@ -62,7 +62,12 @@
     members = members.filter((_, i) => i !== index);
   }
 
-  function checkEmailValidate(member: { email: string; role: ProjectMemberRole | null; errors?: string[] }): void {
+  function selectEmail(member: AssignProjectMemberType): void {
+    if (!member.email) {
+      member.errors = [];
+      return;
+    }
+
     const validationResult = validateData(assignProjectMemberRoleSchema, {
       email: member.email,
     });
@@ -71,6 +76,11 @@
     } else {
       member.errors = [];
     }
+  }
+
+  function handleEmailSelect(member: AssignProjectMemberType, selectedValue: string | number | null): void {
+    member.email = (selectedValue ?? "") as string;
+    selectEmail(member);
   }
 </script>
 
@@ -101,17 +111,12 @@
           required
           value={member.email}
           errors={member.errors}
-          onSelected={(selectedValue) => {
-            member.email = (selectedValue ?? "") as string;
-            checkEmailValidate(member);
-          }}
-          onInput={() => {
-            checkEmailValidate(member);
-          }}
+          onSelected={(selectedValue) => handleEmailSelect(member, selectedValue)}
+          onEnter={() => selectEmail(member)}
         >
           {#snippet slotChoice({ choice })}
             {@const isAlreadyAdded =
-              disabledMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
+              projectMemberEmails.includes(String(choice.value)) && choice.value !== member.email}
             {@const isSelected = choice.value === member.email}
             <Combobox.Item
               class={cn(
@@ -157,7 +162,14 @@
         />
 
         <!-- REMOVE MEMBER BUTTON -->
-        <Button variant="ghost" size="icon" onclick={() => removeMember(index)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          class={cn("", {
+            "mt-6": index === 0,
+          })}
+          onclick={() => removeMember(index)}
+        >
           <Trash2Icon />
         </Button>
       </div>
