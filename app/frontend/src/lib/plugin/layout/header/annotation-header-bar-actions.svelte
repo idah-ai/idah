@@ -69,6 +69,14 @@
         entryStatus = res.data.status;
       });
   });
+
+  // Automatically switch to review mode when entry is completed
+  $effect(() => {
+    if (entryStatus === "completed") {
+      driver.setMode("review");
+    }
+  });
+
   let showAutoSelect = $derived(entryStatus && entryStatus !== "completed" && entryStatus !== "errored");
 
   // Track mode changes reactively
@@ -249,7 +257,7 @@
       </Button>
     {/if}
     <Button
-      variant={entryStatus === "completed" || currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
       size="sm"
       onclick={() => driver.setMode("review")}
     >
@@ -266,10 +274,10 @@
         delayDuration={100}
       >
         {#snippet trigger()}
-          <Button variant="ghost" onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)} class="p-1.5">
+          <label class="flex cursor-pointer items-center gap-1.5 p-1.5" for="auto-select-next">
             <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
             <Text size="xs" weight="light">Auto-select next entry</Text>
-          </Button>
+          </label>
         {/snippet}
       </ToolTooltip>
     </div>
