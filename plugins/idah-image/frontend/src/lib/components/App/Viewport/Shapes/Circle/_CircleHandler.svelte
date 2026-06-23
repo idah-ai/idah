@@ -53,7 +53,7 @@
   stroke-width={24}
   style:outline="none"
   vector-effect="non-scaling-stroke"
-  style:cursor={isEditing ? "none" : hoveredEdge ? "pointer" : "default"}
+  style:cursor={isEditing ? "grabbing" : hoveredEdge ? "grab" : "default"}
   onmouseenter={() => (hoveredEdge = true)}
   onmouseleave={() => (hoveredEdge = false)}
   onmousedown={(e) => {
@@ -103,7 +103,7 @@
   r={R_center_hit}
   fill="transparent"
   style:outline="none"
-  style:cursor={isEditing ? "none" : "grab"}
+  style:cursor={isEditing ? "grabbing" : "grab"}
   onmouseenter={() => (hoveredCenter = true)}
   onmouseleave={() => (hoveredCenter = false)}
   onmousedown={(e) => {

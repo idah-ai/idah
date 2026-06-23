@@ -22,6 +22,13 @@
   const disabledToolsIfWorkflowSteps = ["done"];
   let currentMode = $state(driver.mode);
   let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
+  let toggledMap = $derived.by(() => {
+    const map = new Map<string, boolean>();
+    for (const item of toolbarItems) {
+      map.set(item.name ?? item.label, item.whenToggled?.() ?? false);
+    }
+    return map;
+  });
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
@@ -59,12 +66,13 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each toolbarItems as { icon, label, name, onClick, visibleWhen, whenToggled }, toolIndex (toolIndex)}
+  {#each toolbarItems as { icon, label, name, onClick, visibleWhen }, toolIndex (toolIndex)}
     {#if (visibleWhen || (() => true))()}
+      {@const isToggled = toggledMap.get(name ?? label) ?? false}
       <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
         {#snippet trigger()}
           <Button
-            variant={whenToggled?.() || false ? "default" : "ghost"}
+            variant={isToggled ? "default" : "ghost"}
             size="icon-sm"
             onclick={onClick}
             disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
