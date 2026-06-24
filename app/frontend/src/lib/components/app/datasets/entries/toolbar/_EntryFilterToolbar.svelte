@@ -18,7 +18,7 @@
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import { deleteEntries, exportEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
+  import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { pluralizeUnit } from "@/utils/unit";
 
   import { ArrowDownAZIcon, ArrowDownZAIcon, ArrowUpDownIcon, ChevronsUpDownIcon, FunnelIcon } from "@lucide/svelte";
@@ -34,14 +34,12 @@
     canUpdateEntry,
     canDeleteEntry,
     projectId,
-    datasetId,
   }: {
     controller: ListViewController<EntryRecord>;
     sel: EntrySelection;
     canUpdateEntry: boolean;
     canDeleteEntry: boolean;
     projectId: string;
-    datasetId: string;
   } = $props();
 
   // Modal visibility - owned here
@@ -49,7 +47,6 @@
   let openSetPriority = $state(false);
   let openConfirmUnassign = $state(false);
   let openConfirmDelete = $state(false);
-  let openExport = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
@@ -89,12 +86,6 @@
       openConfirmDelete = false;
       await controller.fetch();
     }
-  }
-
-  async function handleExport(): Promise<void> {
-    await exportEntries(datasetId, controller.selectedIds);
-    controller.clearSelection();
-    openExport = false;
   }
 </script>
 
@@ -215,16 +206,4 @@
   description={`Are you sure you want to delete ${controller.selectedRowsCount} ${pluralizeUnit(controller.selectedRowsCount, "entry", "entries")}? This action cannot be undone.`}
   onConfirm={handleDelete}
   bind:open={openConfirmDelete}
-/>
-
-<!-- Export: handler/modal preserved but currently untriggered (no bulk-action wires it), same as today -->
-<ConfirmModal
-  title="Export {controller.selectedRowsCount} {pluralizeUnit(controller.selectedRowsCount, 'entry', 'entries')}"
-  description="Are you sure you want to export {controller.selectedRowsCount} {pluralizeUnit(
-    controller.selectedRowsCount,
-    'entry',
-    'entries',
-  )}?"
-  onConfirm={handleExport}
-  bind:open={openExport}
 />
