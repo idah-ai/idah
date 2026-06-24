@@ -40,7 +40,7 @@ export const media = {
     throw new Error("height not set in metadata — is the driver initialized?");
   },
   get totalFrames(): number {
-    return Math.round(this.duration * this.fps);
+    return Math.floor(this.duration * this.fps);
   },
   get id(): string {
     return readMedia()?.id ?? "";
