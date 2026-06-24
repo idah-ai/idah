@@ -317,11 +317,17 @@ RSpec.describe Entry::Service, database: true do
       expect(updated_entry.assigned_to_id).to eq(2)
       expect(updated_entry.status).to eq("in_progress")
     end
+
+    it "moves the dataset to in_progress" do
+      subject.assign_member(entry.id, 2)
+
+      expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+    end
   end
 
   describe "#unassign_member" do
     before do
-      repo.update!(entry.id, { assigned_to_id: 2, status: "in_progress" })
+      subject.assign_member(entry.id, 2)
     end
 
     it "clears the assigned member and sets status to pending" do
@@ -330,6 +336,14 @@ RSpec.describe Entry::Service, database: true do
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.assigned_to_id).to be_nil
       expect(updated_entry.status).to eq("pending")
+    end
+
+    it "moves the dataset back to pending when the last assignment is removed" do
+      expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+
+      subject.unassign_member(entry.id)
+
+      expect(dataset_repo.find!(dataset_id).status).to eq("pending")
     end
   end
 

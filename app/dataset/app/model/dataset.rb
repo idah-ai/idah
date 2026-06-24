@@ -167,13 +167,24 @@ module Dataset
       return if total_entries.zero?
 
       completed_entries = dataset[:entries_completed_count]
+      in_progress_entries = dataset[:entries_in_progress_count]
+
+      # Entries awaiting next-stage assignment (e.g. submitted, waiting for a
+      # reviewer) are back to "pending" status but have already been worked on.
+      # submitted_by_id distinguishes them from fresh, untouched entries.
+      submitted_entries = table.db[:entries]
+                               .where(dataset_id:)
+                               .exclude(submitted_by_id: nil)
+                               .count
 
       progress = completed_entries.to_f / total_entries
 
       if completed_entries >= total_entries
         completed!(dataset_id, progress)
-      else
+      elsif in_progress_entries.positive? || completed_entries.positive? || submitted_entries.positive?
         in_progress!(dataset_id, progress)
+      else
+        pending!(dataset_id, progress)
       end
     end
 
@@ -224,6 +235,13 @@ module Dataset
     def in_progress!(dataset_id, progress)
       no_event do
         update!(dataset_id, { progress: progress, status: "in_progress" })
+      end
+    end
+
+    event(name: "pending")
+    def pending!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "pending" })
       end
     end
 
