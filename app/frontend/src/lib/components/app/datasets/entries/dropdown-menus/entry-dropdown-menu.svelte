@@ -3,7 +3,7 @@
   import { EllipsisVerticalIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
+  import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
