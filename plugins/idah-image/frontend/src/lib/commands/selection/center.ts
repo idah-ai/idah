@@ -49,8 +49,22 @@ export function register(driver: IIdahDriverV2): void {
           // For rotated shapes (bounding box with angle), rotate points around
           // their centroid so the AABB reflects the visual bounds.
           let points = shape.points;
-          const angle = shape.angle ?? 0;
-          if (angle !== 0 && points.length >= 3) {
+          const angle = shape.angle as number ?? 0;
+          const radius = shape.radius as number | undefined;
+
+          // For circles, generate the bounding box from center + radius
+          if (radius && points.length === 1) {
+            const [cx, cy] = points[0];
+            // Compute pixel extent in both directions
+            const rx = radius;
+            const ry = radius;
+            points = [
+              [cx - rx, cy - ry],
+              [cx + rx, cy - ry],
+              [cx + rx, cy + ry],
+              [cx - rx, cy + ry],
+            ];
+          } else if (angle !== 0 && points.length >= 3) {
             // Compute centroid
             let cx = 0,
               cy = 0;
