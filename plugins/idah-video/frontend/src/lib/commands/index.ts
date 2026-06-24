@@ -82,8 +82,8 @@ import { register as registerCategoryToggleVisibilitySolo } from "./category/tog
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModePolygon } from "./mode/polygon";
-import { BOUNDING_BOX_MODE } from "$lib/state/viewport.svelte";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
+import { hasConfig } from "$idah/v2/utils";
 /**
  * Register all commands on the given V2 driver.
  * Safe to call multiple times (the V2 command manager throws on duplicate
@@ -139,14 +139,9 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCategoryDelete(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
-  function hasConfig(type: string): boolean {
-    const cfg = driver.config[type];
-    return !!(cfg && cfg.values && cfg.values.length > 0);
-  }
-
   registerModeSelect(driver);
-  if (hasConfig(VIDEO_BOUNDING_BOX)) registerModeBoundingBox(driver);
-  if (hasConfig(VIDEO_POLYGON)) registerModePolygon(driver);
+  if (hasConfig(driver, VIDEO_BOUNDING_BOX)) registerModeBoundingBox(driver);
+  if (hasConfig(driver, VIDEO_POLYGON)) registerModePolygon(driver);
   // ── UI / Display ─────────────────────────────────────────────────────
   registerTimelineFocus(driver);
   registerTimelineGoToFirst(driver);

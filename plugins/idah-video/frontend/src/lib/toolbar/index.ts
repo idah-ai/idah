@@ -7,13 +7,9 @@ import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
 import { BOUNDING_BOX_MODE, POLYGON_MODE } from "$lib/state/viewport.svelte";
+import { hasConfig } from "$idah/v2/utils";
 
 export function initToolbar(driver: IIdahDriverV2): void {
-  function hasConfig(type: string): boolean {
-    const cfg = driver.config[type];
-    return !!(cfg && cfg.values && cfg.values.length > 0);
-  }
-
   const t = driver.toolbar;
 
   t.add({
@@ -34,7 +30,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     whenToggled: () => driver.mode === "editor" || driver.mode === "review",
   });
 
-  if (hasConfig(BOUNDING_BOX_MODE)) {
+  if (hasConfig(driver, BOUNDING_BOX_MODE)) {
     t.add({
       icon: rectIcon,
       label: "Bounding Box",
@@ -51,7 +47,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     });
     t.orderGroups("idah-video:bounding-box", ["selection"]);
   }
-  if (hasConfig(POLYGON_MODE)) {
+  if (hasConfig(driver, POLYGON_MODE)) {
     t.add({
       icon: polyIcon,
       label: "Polygon",
