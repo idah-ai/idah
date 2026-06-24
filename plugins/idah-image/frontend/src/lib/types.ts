@@ -15,6 +15,8 @@ export const REVIEW_MODE = "review";
 export const NOTE_MODE = "note";
 export const IMAGE_BOUNDING_BOX = "idah-image:bounding-box";
 export const IMAGE_POLYGON = "idah-image:polygon";
+export const IMAGE_LINE = "idah-image:line";
+export const IMAGE_CIRCLE = "idah-image:circle";
 
 // ─── Image annotation shape ──────────────────────────────────────────────
 
@@ -25,7 +27,6 @@ export const IMAGE_POLYGON = "idah-image:polygon";
 export interface IImageAnnotationShape {
   type: string;
   points: [number, number][];
-  angle: number;
   /** Allow extensibility. */
   [key: string]: unknown;
 }

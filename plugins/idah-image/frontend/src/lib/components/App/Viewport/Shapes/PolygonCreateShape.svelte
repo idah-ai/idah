@@ -23,7 +23,7 @@
     cursor: Point;
     mediaWidth: number;
     mediaHeight: number;
-    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
+    onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
   };
 
   let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
@@ -50,7 +50,7 @@
       const pts = [...polygonDraft.points];
       polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)
-      onSelection("idah-image:polygon", pts, 0, undefined);
+      onSelection("idah-image:polygon", pts);
       return true;
     }
 

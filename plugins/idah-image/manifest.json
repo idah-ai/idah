@@ -20,6 +20,14 @@
         "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-image/assets/polygon-icon.svg"
+        },
+        "circle": {
+          "label": "Circle",
+          "icon": "api/v1/plugins/idah-image/assets/circle-icon.svg"
+        },
+        "line": {
+          "label": "Line",
+          "icon": "api/v1/plugins/idah-image/assets/line-icon.svg"
         }
       }
     }
