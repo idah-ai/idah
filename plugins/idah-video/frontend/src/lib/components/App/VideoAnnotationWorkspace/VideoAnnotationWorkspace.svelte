@@ -201,7 +201,8 @@
 
     const toolConfig = toolListConfig.filter((tool) => {
       if (["idah-video:bounding-box", "idah-video:polygon"].includes(tool.type)) {
-        return !!getDriver().config[tool.type];
+        const cfg = getDriver().config[tool.type];
+        return cfg && cfg.values && cfg.values.length > 0;
       }
       return true;
     });

@@ -4,7 +4,7 @@ export function register(driver: IdahDriverV2) {
   driver.command.register({
     name: "core.toggle_editor_review",
     group: "General",
-    modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
+    modes: ["*"],
     shortcut: "Alt+Tab",
     shortDescription: "Toggle Editor/Review",
     longDescription: "Switch between Editor and Review workspaces",

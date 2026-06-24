@@ -40,8 +40,8 @@ export class ToolbarManagerV2 {
    * Items with group = null are always first.
    */
   getItemsForMode(mode: string): IToolbarItem[] {
-    // Filter by mode and whenActive
-    const visible = this.items.filter((it) => it.mode === mode && (it.visibleWhen?.() ?? true));
+    // Filter by mode and whenActive ('*' is a wildcard matching any mode)
+    const visible = this.items.filter((it) => (it.mode === mode || it.mode === "*") && (it.visibleWhen?.() ?? true));
 
     // Group ordering
     const order = this.groupOrders.get(mode);
