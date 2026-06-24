@@ -10,6 +10,8 @@
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import circleIconSvg from "$lib/assets/icons/circle.svg?raw";
+  import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
 
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
 
@@ -26,7 +28,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_POLYGON } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
   import { cn } from "$lib/utils";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
@@ -161,6 +163,10 @@
 {#snippet shapeIcon(color: string | null | undefined)}
   {#if shapeType === IMAGE_POLYGON}
     <Icon src={polygonIconSvg} {color} />
+  {:else if shapeType === IDAH_IMAGE_CIRCLE}
+    <Icon src={circleIconSvg} {color} />
+  {:else if shapeType === IDAH_IMAGE_LINE}
+    <Icon src={lineIconSvg} {color} />
   {:else}
     <Icon src={vectorSquareIconSvg} {color} />
   {/if}
@@ -237,6 +243,10 @@
             >
               {#if annShapeType === IMAGE_POLYGON}
                 <Icon src={polygonIconSvg} color={annColor} />
+              {:else if annShapeType === IDAH_IMAGE_CIRCLE}
+                <Icon src={circleIconSvg} color={annColor} />
+              {:else if annShapeType === IDAH_IMAGE_LINE}
+                <Icon src={lineIconSvg} color={annColor} />
               {:else}
                 <Icon src={vectorSquareIconSvg} color={annColor} />
               {/if}
