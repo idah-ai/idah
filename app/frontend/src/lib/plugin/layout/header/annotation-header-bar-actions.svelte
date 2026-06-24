@@ -60,7 +60,9 @@
     autoSelectNextEntryStore.set(autoSelectNextEntry);
   });
 
-  let showAutoSelect = $derived(driver.entryStatus && driver.entryStatus !== "completed" && driver.entryStatus !== "errored");
+  let showAutoSelect = $derived(
+    driver.entryStatus && driver.entryStatus !== "completed" && driver.entryStatus !== "errored",
+  );
 
   // Switch to review mode when entry is completed (only evaluated at mount since entryStatus is static)
   if (driver.entryStatus === "completed") {
