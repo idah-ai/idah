@@ -321,7 +321,6 @@
 
             <!-- Icon Actions -->
             <div class="ml-auto flex shrink-0 items-center">
-              <!-- {#if mode == DEFAULT_MODE} -->
               {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
                 <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                   <CategoryAction
@@ -335,7 +334,6 @@
                   ></CategoryAction>
                 </div>
               {/each}
-              <!-- {/if} -->
 
               <AnnotationCountBadge
                 class={cn("mr-2 ml-1 opacity-0", {

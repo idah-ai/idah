@@ -60,24 +60,12 @@
     autoSelectNextEntryStore.set(autoSelectNextEntry);
   });
 
-  // Fetch entry status to decide whether to show auto-select
-  let entryStatus = $state<string | null>(null);
-  $effect(() => {
-    entriesBackendDataSource
-      .get(driver.id, { fields: { [EntryRecord.type]: ["status"] }, noCache: false })
-      .then((res) => {
-        entryStatus = res.data.status;
-      });
-  });
+  let showAutoSelect = $derived(driver.entryStatus && driver.entryStatus !== "completed" && driver.entryStatus !== "errored");
 
-  // Automatically switch to review mode when entry is completed
-  $effect(() => {
-    if (entryStatus === "completed") {
-      driver.setMode("review");
-    }
-  });
-
-  let showAutoSelect = $derived(entryStatus && entryStatus !== "completed" && entryStatus !== "errored");
+  // Switch to review mode when entry is completed (only evaluated at mount since entryStatus is static)
+  if (driver.entryStatus === "completed") {
+    driver.setMode("review");
+  }
 
   // Track mode changes reactively
   let currentMode = $state(driver.mode);
@@ -247,7 +235,7 @@
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
-    {#if entryStatus !== "completed"}
+    {#if driver.entryStatus !== "completed"}
       <Button
         variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
         size="sm"

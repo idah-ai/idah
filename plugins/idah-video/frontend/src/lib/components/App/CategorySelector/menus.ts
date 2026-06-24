@@ -3,6 +3,7 @@ import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as I
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 
 import type { IVideoAnnotationRecord } from "$lib/types";
 
@@ -105,7 +106,7 @@ export function getCategoryDeleteAction(
     label: "Delete category annotations",
     icon: Trash2Icon,
     destructive: true,
-    disabled: !isEditable() || isSomeLocked,
+    disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
     onClick: async (e: MouseEvent) => {
       e.stopPropagation();
       onClickDelete();
