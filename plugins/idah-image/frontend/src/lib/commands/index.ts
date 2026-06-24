@@ -57,6 +57,7 @@ import { register as registerModeLine } from "./mode/line";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
+import { hasConfig } from "$idah/v2/utils";
 
 /**
  * Register all commands on the given V2 driver.
@@ -91,16 +92,12 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCategoryDelete(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
-  function hasConfig(type: string): boolean {
-    const cfg = driver.config[type];
-    return !!(cfg && cfg.values && cfg.values.length > 0);
-  }
 
   registerModeSelect(driver);
-  if (hasConfig(IMAGE_BOUNDING_BOX)) registerModeBoundingBox(driver);
-  if (hasConfig(IMAGE_POLYGON)) registerModePolygon(driver);
-  if (hasConfig(IMAGE_CIRCLE)) registerModeCircle(driver);
-  if (hasConfig(IMAGE_LINE)) registerModeLine(driver);
+  if (hasConfig(driver, IMAGE_BOUNDING_BOX)) registerModeBoundingBox(driver);
+  if (hasConfig(driver, IMAGE_POLYGON)) registerModePolygon(driver);
+  if (hasConfig(driver, IMAGE_CIRCLE)) registerModeCircle(driver);
+  if (hasConfig(driver, IMAGE_LINE)) registerModeLine(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

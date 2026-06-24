@@ -7,13 +7,9 @@ import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+import { hasConfig } from "$idah/v2/utils";
 
 export function initToolbar(driver: IIdahDriverV2): void {
-  function hasConfig(type: string): boolean {
-    const cfg = driver.config[type];
-    return !!(cfg && cfg.values && cfg.values.length > 0);
-  }
-
   const t = driver.toolbar;
 
   t.add({
@@ -32,7 +28,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     },
     whenToggled: () => driver.mode === DEFAULT_MODE || driver.mode === REVIEW_MODE,
   });
-  if (hasConfig(IMAGE_BOUNDING_BOX)) {
+  if (hasConfig(driver, IMAGE_BOUNDING_BOX)) {
     t.add({
       icon: rectIcon,
       label: "Bounding Box",
@@ -44,7 +40,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     });
     t.orderGroups(IMAGE_BOUNDING_BOX, ["selection"]);
   }
-  if (hasConfig(IMAGE_POLYGON)) {
+  if (hasConfig(driver, IMAGE_POLYGON)) {
     t.add({
       icon: polyIcon,
       label: "Polygon",
@@ -56,7 +52,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     });
     t.orderGroups(IMAGE_POLYGON, ["selection"]);
   }
-  if (hasConfig(IMAGE_CIRCLE)) {
+  if (hasConfig(driver, IMAGE_CIRCLE)) {
     t.add({
       icon: circleIcon,
       label: "Circle",
@@ -69,7 +65,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     });
     t.orderGroups(IMAGE_CIRCLE, ["selection"]);
   }
-  if (hasConfig(IMAGE_LINE)) {
+  if (hasConfig(driver, IMAGE_LINE)) {
     t.add({
       icon: lineIcon,
       label: "Line",
