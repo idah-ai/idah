@@ -1,19 +1,29 @@
 <script lang="ts">
-  import type { Point } from "$lib/utils/math/point";
+  // ---------------------------------------------------------------------------
+  // _CircleScaleHandler.svelte — Scale bar for circle radius
+  //
+  // Displays a horizontal scale bar at the circle's center (centroid) that
+  // lets the user resize the circle radius by dragging horizontally.
+  //
+  // Mimics the pattern from _PolygonScaleHandler.svelte.
+  // ---------------------------------------------------------------------------
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { scalePolygon, polygonCentroid } from "./utils";
+
+  import type { Point } from "$lib/utils/math/point";
 
   let {
-    baseVertices,
+    baseRadius,
     color,
     cursor,
     onScaleUpdate,
+    center: centroid,
   }: {
-    baseVertices: Point[];
+    baseRadius: number;
     color: string;
     cursor?: Point;
-    onScaleUpdate?: (scaled: Point[]) => void;
+    onScaleUpdate?: (newRadius: number) => void;
+    center: Point;
   } = $props();
 
   let w = $derived(media.width);
@@ -25,10 +35,10 @@
   let scaleBarStartX: number = $state(0);
   let scaleBarCurrentX: number = $state(0);
   let scaleBarFactor: number = $state(1);
-  let _scaledVertices: Point[] | undefined = $state();
+  let _scaledRadius: number | undefined = $state();
   let lastDragCursor: Point = $state([-1, -1]);
 
-  let displayVertices = $derived(_scaledVertices ?? baseVertices);
+  let displayRadius = $derived(_scaledRadius ?? baseRadius);
 
   // Scale bar drag: horizontal movement controls scale factor
   $effect(() => {
@@ -43,13 +53,14 @@
     const logFactor = dx / (barLength / 2);
     const factor = Math.max(0.5, Math.min(2, 2 ** logFactor));
     scaleBarFactor = factor;
-    _scaledVertices = scalePolygon(baseVertices, factor);
-    onScaleUpdate?.(_scaledVertices);
+    const newRadius = Math.max(0.005, baseRadius * factor);
+    _scaledRadius = newRadius;
+    onScaleUpdate?.(newRadius);
   });
 
   // ── Scale bar layout ──────────────────────────────────────────────────
-  let centroidN = $derived(polygonCentroid(displayVertices));
-  let centroidPx: Point = $derived([centroidN[0] * w, centroidN[1] * h]);
+  // The bar is positioned centered at the circle's center (centroid).
+  let centroidPx: Point = $derived([centroid[0] * w, centroid[1] * h]);
   let barLength = $derived(120 * invScale);
   let barY = $derived(centroidPx[1]);
   let barX1 = $derived(centroidPx[0] - barLength / 2);
@@ -63,16 +74,16 @@
     scaleBarStartX = normX;
     scaleBarCurrentX = normX;
     scaleBarFactor = 1;
-    _scaledVertices = [...baseVertices];
-    onScaleUpdate?.(_scaledVertices);
+    _scaledRadius = baseRadius;
+    onScaleUpdate?.(baseRadius);
   }
 
-  /** End the scale bar interaction and return the scaled vertices (if any). */
-  export function endScale(): Point[] | undefined {
-    const result = _scaledVertices;
+  /** End the scale bar interaction and return the new radius (if any). */
+  export function endScale(): number | undefined {
+    const result = _scaledRadius;
     scaleBarActive = false;
     scaleBarFactor = 1;
-    _scaledVertices = undefined;
+    _scaledRadius = undefined;
     return result;
   }
 
@@ -161,7 +172,7 @@
     style:cursor="ew-resize"
     pointer-events="none"
   />
-  <!-- Invisible wide hit zone for the thumb -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <line
     x1={barX1}
     y1={barY}

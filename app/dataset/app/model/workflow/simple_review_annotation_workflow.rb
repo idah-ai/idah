@@ -53,25 +53,29 @@ module Workflow
 
     def on_submit
       account_id = entries.auth_context.metadata[:id]
+      account_email = entries.auth_context.metadata[:email]
       current_state = aasm.current_state
       from_state = aasm.from_state
       to_state = aasm.to_state
 
-      assigned_to_id =
+      # Set submitted_by (id + email kept paired) coming from annotation step
+      submitted_by_id, submitted_by_email =
+        from_state == :annotate ? [account_id, account_email] : [@entry.submitted_by_id, @entry.submitted_by_email]
+
+      # Set reviewed_by (id + email kept paired) coming from review step
+      reviewed_by_id, reviewed_by_email =
+        from_state == :review ? [account_id, account_email] : [@entry.reviewed_by_id, @entry.reviewed_by_email]
+
+      # Resolve the next assignee (id + email snapshot kept paired)
+      assigned_to_id, assigned_to_email =
         case from_state
         when :annotate
-          # If moving to review step, assign to reviewer (nil for unassigned)
-          @entry.reviewed_by_id
+          # Moving to review step → assign to the reviewer (nil pair if unassigned)
+          [reviewed_by_id, reviewed_by_email]
         when :review
-          # If moving back to annotation step, re-assign to original annotator
-          to_state == :annotate ? @entry.submitted_by_id : nil
+          # Moving back to annotation → re-assign to the original annotator
+          to_state == :annotate ? [submitted_by_id, submitted_by_email] : [nil, nil]
         end
-
-      # Set submitted_by_id coming from annotation step
-      submitted_by_id = from_state == :annotate ? account_id : @entry.submitted_by_id
-
-      # Set reviewed_by_id coming from review step
-      reviewed_by_id = from_state == :review ? account_id : @entry.reviewed_by_id
 
       status =
         if current_state == :done
@@ -86,8 +90,11 @@ module Workflow
           wf_step: current_state.to_s,
           status:,
           assigned_to_id:,
+          assigned_to_email:,
           submitted_by_id:,
+          submitted_by_email:,
           reviewed_by_id:,
+          reviewed_by_email:,
         }
       )
     end

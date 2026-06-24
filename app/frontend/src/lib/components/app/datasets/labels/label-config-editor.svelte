@@ -56,8 +56,10 @@
   let projectId: string = page.params.projectId as string;
   let duplicating = $state(false);
   let openDuplicateConfigModal = $state(false);
-  let selectedConfigKey: string = $derived(Object.keys(labelConfig)[0]);
-  let selectedLabelConfig = $derived(labelConfig[selectedConfigKey]);
+  let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
+  let selectedLabelConfig = $derived(
+    labelConfig[selectedConfigKey] ?? labelConfig[Object.keys(labelConfig)[0]] ?? null,
+  );
   let labelConfigIsEmpty: boolean = $derived(Object.keys(labelConfig).length === 0);
   let hasAtLeastOneCategory: boolean = $derived(selectedLabelConfig ? selectedLabelConfig.values.length > 0 : false);
   let hasAtLeastOneProperty: boolean = $derived(
@@ -73,6 +75,7 @@
           disabled: Object.keys(labelConfig).includes(`${modality}:${shapeKey}`),
           action: () => {
             onAddLabelConfig(`${modality}:${shapeKey}`);
+            selectedConfigKey = `${modality}:${shapeKey}`;
           },
         };
       }),
@@ -85,6 +88,7 @@
           disabled: Object.keys(labelConfig).includes("entry:root"),
           action: () => {
             onAddLabelConfig("entry:root");
+            selectedConfigKey = "entry:root";
           },
         },
       ],

@@ -165,11 +165,19 @@ export class CommandManagerV2 {
     };
   }
 
+  /**
+   * Check whether a command's mode list includes the currentMode,
+   * supporting a '\'*\' wildcard that matches any mode.
+   */
+  private modeMatches(modes: string[], currentMode: string): boolean {
+    if (modes.includes("*")) return true;
+    return modes.includes(currentMode);
+  }
   /** Return commands that are available in the currentMode, with group info. */
   getActiveCommands(): ICommandDescriptor[] {
     const result: ICommandDescriptor[] = [];
     for (const entry of this.registry.values()) {
-      if (!entry.modes.includes(this.currentMode)) continue;
+      if (!this.modeMatches(entry.modes, this.currentMode)) continue;
       if (entry.activeWhen && !entry.activeWhen()) continue;
       result.push(this._toDescriptor(entry));
     }
@@ -202,7 +210,7 @@ export class CommandManagerV2 {
     for (const entry of this.registry.values()) {
       // If currentMode is provided, filter by mode match + activeWhen
       if (currentMode !== undefined) {
-        if (!entry.modes.includes(currentMode)) continue;
+        if (!this.modeMatches(entry.modes, currentMode)) continue;
         if (entry.activeWhen && !entry.activeWhen()) continue;
       }
       const desc = this._toDescriptor(entry);
@@ -256,7 +264,7 @@ export class CommandManagerV2 {
     // activeWhen predicate passes.
     const candidates: { name: string; isOverride: boolean; hasActiveWhen: boolean }[] = [];
     for (const entry of this.registry.values()) {
-      if (!entry.modes.includes(mode)) continue;
+      if (!this.modeMatches(entry.modes, mode)) continue;
       const effective = this.effectiveShortcut(entry.name, entry.shortcut);
       if (!effective || effective !== combo) continue;
       if (entry.activeWhen && !entry.activeWhen()) continue;
@@ -288,7 +296,7 @@ export class CommandManagerV2 {
   getKeyMapForMode(mode: string): Record<string, string> {
     const map: Record<string, string> = {};
     for (const entry of this.registry.values()) {
-      if (!entry.modes.includes(mode)) continue;
+      if (!this.modeMatches(entry.modes, mode)) continue;
       const effective = this.effectiveShortcut(entry.name, entry.shortcut);
       if (!effective) continue;
       if (entry.activeWhen) continue; // resolved dynamically

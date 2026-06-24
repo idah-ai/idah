@@ -5,15 +5,7 @@ export function register(driver: IdahDriverV2) {
     name: "core.exit_mode",
     group: "General",
     // TODO modes ['*'] ?
-    modes: [
-      "editor",
-      "review",
-      "idah-video:bounding-box",
-      "idah-video:polygon",
-      "idah-image:bounding-box",
-      "idah-image:polygon",
-      "note",
-    ],
+    modes: ["*"],
     shortcut: "Escape",
     shortDescription: "Exit current mode",
     longDescription: "Return to the default selection mode",
