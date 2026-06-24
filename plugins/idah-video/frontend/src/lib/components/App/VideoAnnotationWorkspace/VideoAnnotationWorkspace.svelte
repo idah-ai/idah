@@ -151,7 +151,7 @@
     const meta = driver.media.meta;
     mediaInfo = { meta };
 
-    const totalFrames = Math.round((meta.duration as number) * (meta.fps as number));
+    const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number));
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
