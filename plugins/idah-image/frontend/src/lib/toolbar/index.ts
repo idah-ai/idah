@@ -6,21 +6,25 @@ import lineIcon from "$lib/assets/icons/minimize-2.svg?raw";
 import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+import {
+  DEFAULT_MODE,
+  IMAGE_BOUNDING_BOX,
+  IMAGE_CIRCLE,
+  IMAGE_LINE,
+  IMAGE_POLYGON,
+  NOTE_MODE,
+  REVIEW_MODE,
+} from "$lib/types";
+import { hasConfig } from "$idah/v2/utils";
 
 export function initToolbar(driver: IIdahDriverV2): void {
-  function hasConfig(type: string): boolean {
-    const cfg = driver.config[type];
-    return !!(cfg && cfg.values && cfg.values.length > 0);
-  }
-
   const t = driver.toolbar;
 
   t.add({
-    name: "mode.select",
     icon: cursorIcon,
-    label: "Select",
-    modes: ['*'],
+    label: "Selection",
+    name: "mode.selection",
+    modes: ["*"],
     group: "selection",
     onClick: () => {
       // Return to the parent resting mode of the current workspace
@@ -32,53 +36,52 @@ export function initToolbar(driver: IIdahDriverV2): void {
     },
     whenToggled: () => driver.mode === DEFAULT_MODE || driver.mode === REVIEW_MODE,
   });
-  if (hasConfig(IMAGE_BOUNDING_BOX)) {
+  if (hasConfig(driver, IMAGE_BOUNDING_BOX)) {
     t.add({
       icon: rectIcon,
       label: "Bounding Box",
+      name: "mode.bounding_box",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, IMAGE_LINE, IMAGE_CIRCLE],
       group: "selection",
       onClick: () =>
         driver.mode === IMAGE_BOUNDING_BOX ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_BOUNDING_BOX),
-        whenToggled: () => driver.mode === IMAGE_BOUNDING_BOX,
+      whenToggled: () => driver.mode === IMAGE_BOUNDING_BOX,
     });
     t.orderGroups(IMAGE_BOUNDING_BOX, ["selection"]);
   }
-  if (hasConfig(IMAGE_POLYGON)) {
+  if (hasConfig(driver, IMAGE_POLYGON)) {
     t.add({
       icon: polyIcon,
       label: "Polygon",
+      name: "mode.polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, IMAGE_LINE, IMAGE_CIRCLE],
       group: "selection",
-      onClick: () =>
-        driver.mode === IMAGE_POLYGON ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_POLYGON),
-        whenToggled: () => driver.mode === IMAGE_POLYGON,
+      onClick: () => (driver.mode === IMAGE_POLYGON ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_POLYGON)),
+      whenToggled: () => driver.mode === IMAGE_POLYGON,
     });
     t.orderGroups(IMAGE_POLYGON, ["selection"]);
   }
-  if (hasConfig(IMAGE_CIRCLE)) {
+  if (hasConfig(driver, IMAGE_CIRCLE)) {
     t.add({
       icon: circleIcon,
       label: "Circle",
       name: "mode.circle",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_POLYGON, IMAGE_LINE],
       group: "selection",
-      onClick: () =>
-        driver.mode === IMAGE_CIRCLE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_CIRCLE),
-        whenToggled: () => driver.mode === IMAGE_CIRCLE,
+      onClick: () => (driver.mode === IMAGE_CIRCLE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_CIRCLE)),
+      whenToggled: () => driver.mode === IMAGE_CIRCLE,
     });
     t.orderGroups(IMAGE_CIRCLE, ["selection"]);
   }
-  if (hasConfig(IMAGE_LINE)) {
+  if (hasConfig(driver, IMAGE_LINE)) {
     t.add({
       icon: lineIcon,
       label: "Line",
       name: "mode.line",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_POLYGON, IMAGE_LINE],
       group: "selection",
-      onClick: () =>
-        driver.mode === IMAGE_LINE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_LINE),
-        whenToggled: () => driver.mode === IMAGE_LINE,
+      onClick: () => (driver.mode === IMAGE_LINE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_LINE)),
+      whenToggled: () => driver.mode === IMAGE_LINE,
     });
     t.orderGroups(IMAGE_LINE, ["selection"]);
   }
