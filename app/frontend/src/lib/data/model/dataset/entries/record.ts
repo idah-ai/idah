@@ -33,8 +33,11 @@ export class EntryRecord extends Record {
   @field() public name!: string;
 
   @field() public assigned_to_id!: number | null;
+  @field() public assigned_to_email!: string | null;
   @field() public submitted_by_id!: number | null;
+  @field() public submitted_by_email!: string | null;
   @field() public reviewed_by_id!: number | null;
+  @field() public reviewed_by_email!: string | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;

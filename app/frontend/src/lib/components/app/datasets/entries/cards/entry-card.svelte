@@ -8,6 +8,7 @@
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
@@ -43,7 +44,17 @@
   const currentAccount = $authStatus.authContext;
 
   let projectId = page.params.projectId as string;
-  let { id: entryId, wf_step, status, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
+  let {
+    id: entryId,
+    wf_step,
+    status,
+    assigned_to_id,
+    assigned_to_email,
+    submitted_by_id,
+    submitted_by_email,
+    reviewed_by_id,
+    reviewed_by_email,
+  } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let canOpenEntry = $derived.by(() => {
@@ -387,7 +398,13 @@
             {#if wf_step !== "done"}
               <DataDisplay label="Assigned to">
                 {#snippet slotValue()}
-                  <ProjectMemberAvatar member={entry.assigned_to} />
+                  {#if entry.assigned_to}
+                    <ProjectMemberAvatar member={entry.assigned_to} />
+                  {:else if assigned_to_id && assigned_to_email}
+                    <AccountAvatar size="sm" email={assigned_to_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
                 {/snippet}
               </DataDisplay>
             {/if}
@@ -395,7 +412,13 @@
             {#if submitted_by_id}
               <DataDisplay label="Submitted by">
                 {#snippet slotValue()}
-                  <ProjectMemberAvatar member={entry.submitted_by} />
+                  {#if entry.submitted_by}
+                    <ProjectMemberAvatar member={entry.submitted_by} />
+                  {:else if submitted_by_email}
+                    <AccountAvatar size="sm" email={submitted_by_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
                 {/snippet}
               </DataDisplay>
             {/if}
@@ -403,7 +426,13 @@
             {#if reviewed_by_id}
               <DataDisplay label="Reviewed by">
                 {#snippet slotValue()}
-                  <ProjectMemberAvatar member={entry.reviewed_by} />
+                  {#if entry.reviewed_by}
+                    <ProjectMemberAvatar member={entry.reviewed_by} />
+                  {:else if reviewed_by_email}
+                    <AccountAvatar size="sm" email={reviewed_by_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
                 {/snippet}
               </DataDisplay>
             {/if}

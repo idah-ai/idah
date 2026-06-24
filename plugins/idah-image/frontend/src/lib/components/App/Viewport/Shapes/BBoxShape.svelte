@@ -24,7 +24,7 @@
     cursor?: Point;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
-    onEditComplete?: (points: Point[], angle: number) => void;
+    onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
   };
 
   let {
@@ -49,7 +49,7 @@
   // ── Interpolated values ──────────────────────────────────────────────
   let baseAngle = $derived.by((): number => {
     const shape = annotation?.shape as IImageAnnotationShape | undefined;
-    return shape?.angle ?? 0;
+    return shape?.angle as number ?? 0;
   });
 
   // ── Editing state ───────────────────────────────────────────────────────
@@ -245,7 +245,7 @@
     const pts = _localPoints ?? points;
     const ang = _localAngle ?? angle;
     if (pts.length < 4) return;
-    onEditComplete?.(pts as Point[], ang);
+    onEditComplete?.(pts as Point[], { angle: ang });
   }
 
   // ── Selection API ─────────────────────────────────────────────────────
