@@ -135,7 +135,7 @@
     {/if}
   </div>
 
-  <div class="group ml-auto flex shrink-0 items-center gap-1" bind:this={containerRef}>
+  <div class="group ml-auto flex shrink-0 items-center gap-1" title="" bind:this={containerRef}>
     <Tooltips align="center">
       {#snippet trigger()}
         <Button
@@ -157,7 +157,15 @@
     </Tooltips>
 
     {#if isConflict}
-      <img src="/assets/icons/WarningIcon.svg" alt="Conflict" class="size-4 shrink-0" />
+      <Tooltips align="center">
+        {#snippet trigger()}
+          <img src="/assets/icons/WarningIcon.svg" alt="Conflict" class="size-4 shrink-0" />
+        {/snippet}
+
+        {#snippet content()}
+          This shortcut is assigned to multiple commands and may not behave as expected.
+        {/snippet}
+      </Tooltips>
     {/if}
 
     {#if listeningForShortcutPress}
