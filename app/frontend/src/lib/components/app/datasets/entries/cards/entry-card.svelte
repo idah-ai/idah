@@ -12,6 +12,7 @@
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
+  import { AspectRatio } from "@/components/ui/aspect-ratio";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
@@ -93,6 +94,7 @@
 
   // State for thumbnail
   let containerWidth: number = $state(240);
+  let imgContainer: HTMLDivElement | undefined = $state(undefined);
   let thumbnailImg: HTMLImageElement = $state(new Image());
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
