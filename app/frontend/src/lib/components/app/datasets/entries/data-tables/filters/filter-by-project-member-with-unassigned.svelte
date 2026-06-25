@@ -45,12 +45,13 @@
   function handleFilter(value: string | number | null): void {
     switch (value) {
       case "null":
-        delete filters[filterKeyWithOperation];
-        filters = { ...filters, assigned: false };
+        // Unassigned: send `assigned: false`, clear the member id.
+        // Emit `undefined` (not `delete`) so the table's filter handler removes it from prefs + URL.
+        filters = { ...filters, [filterKeyWithOperation]: undefined, assigned: false };
         break;
       default:
-        delete filters["assigned"];
-        filters = { ...filters, [filterKeyWithOperation]: value };
+        // Member: send the member id, clear `assigned: false`.
+        filters = { ...filters, assigned: undefined, [filterKeyWithOperation]: value };
     }
 
     filtersValue = value;
