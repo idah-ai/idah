@@ -64,7 +64,7 @@ export function register(driver: IIdahDriverV2): void {
               [cx + rx, cy + ry],
               [cx - rx, cy + ry],
             ];
-          } else if (radius && points.length === 2) {
+          } else if (points.length === 2) {
             // Ellipse: points = [[cx, cy], [rx, ry]]
             const [cx, cy] = points[0];
             const [rx, ry] = points[1];
@@ -74,8 +74,10 @@ export function register(driver: IIdahDriverV2): void {
               [cx + rx, cy + ry],
               [cx - rx, cy + ry],
             ];
-          } else if (angle !== 0 && points.length >= 3) {
-            // Compute centroid
+          }
+
+          // For rotated shapes, rotate the AABB corners around their centroid
+          if (angle !== 0 && points.length >= 3) {
             let cx = 0,
               cy = 0;
             for (const [px, py] of points) {
