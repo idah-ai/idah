@@ -14,10 +14,10 @@ export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
 
   t.add({
-    name: "mode.select",
+    name: "mode.selection",
     icon: cursorIcon,
-    label: "Select",
-    modes: ['*'],
+    label: "Selection",
+    modes: ["*"],
     group: "selection",
     onClick: () => {
       // Return to the parent resting mode of the current workspace
@@ -33,6 +33,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: rectIcon,
       label: "Bounding Box",
+      name: "mode.bounding_box",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
       group: "selection",
       onClick: () =>
@@ -45,6 +46,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: polyIcon,
       label: "Polygon",
+      name: "mode.polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
       group: "selection",
       onClick: () =>
