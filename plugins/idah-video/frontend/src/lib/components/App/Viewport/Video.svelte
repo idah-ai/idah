@@ -35,7 +35,7 @@
   // Frames are 0-based; the browser uses seconds. Index f maps to t = f/fps
   // (first frame at t=0), plus a tiny epsilon to avoid frame/fragment boundaries.
   function timeToFrame(t: number) {
-    return Math.max(0, Math.min(Math.round(t * fps), media.totalFrames - 1));
+    return Math.max(0, Math.min(Math.floor(t * fps), media.totalFrames - 1));
   }
   function frameToTime(f: number) {
     return (f + 0.001) / fps;
