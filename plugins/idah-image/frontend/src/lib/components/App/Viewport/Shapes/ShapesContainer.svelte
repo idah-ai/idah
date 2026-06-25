@@ -21,6 +21,7 @@
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import CircleCreateShape from "./CircleCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
+  import EllipseCreateShape from "./EllipseCreateShape.svelte";
   import LineCreateShape from "./LineCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
@@ -36,7 +37,7 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
@@ -158,11 +159,13 @@
   // ── Create shape component refs ───────────────────────────────────────
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
   let circleCreateComp: CircleCreateShape | undefined = $state(undefined);
+  let ellipseCreateComp: EllipseCreateShape | undefined = $state(undefined);
   let lineCreateComp: LineCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
   let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
   let isCircleMode = $derived(viewport.mode === IMAGE_CIRCLE);
+  let isEllipseMode = $derived(viewport.mode === IMAGE_ELLIPSE);
   let isLineMode = $derived(viewport.mode === IMAGE_LINE);
   let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
@@ -273,6 +276,12 @@
       return;
     }
 
+    // ── Ellipse creation mode — delegate to EllipseCreateShape ───
+    if (isEllipseMode) {
+      ellipseCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      return;
+    }
+
     // ── Line creation mode — delegate to LineCreateShape ─────────
     if (isLineMode) {
       lineCreateComp?.handleMouseDown(sceneNormalizedCursor);
@@ -315,6 +324,12 @@
     // ── Circle creation mode — finalize on CircleCreateShape ────
     if (isCircleMode) {
       circleCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      return;
+    }
+
+    // ── Ellipse creation mode — finalize on EllipseCreateShape ──
+    if (isEllipseMode) {
+      ellipseCreateComp?.handleMouseUp(sceneNormalizedCursor);
       return;
     }
 
@@ -463,6 +478,17 @@
       {#if isCircleMode}
         <CircleCreateShape
           bind:this={circleCreateComp}
+          cursor={sceneNormalizedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {onSelection}
+        />
+      {/if}
+
+      <!-- Build mode: ellipse creation preview -->
+      {#if isEllipseMode}
+        <EllipseCreateShape
+          bind:this={ellipseCreateComp}
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}

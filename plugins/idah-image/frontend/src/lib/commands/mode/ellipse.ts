@@ -1,14 +1,14 @@
-// plugins/idah-image/frontend/src/lib/commands/mode/polygon.ts
+// plugins/idah-image/frontend/src/lib/commands/mode/ellipse.ts
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_ELLIPSE, IMAGE_POLYGON } from "$lib/types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 
 export const command = {
-  name: "mode.polygon",
+  name: "mode.ellipse",
   group: "Tools",
-  modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_ELLIPSE, IMAGE_POLYGON],
-  shortcut: "P",
-  shortDescription: "Polygon",
-  longDescription: "Polygon Tool",
+  modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
+  shortcut: "E",
+  shortDescription: "Ellipse",
+  longDescription: "Ellipse Tool",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -21,8 +21,8 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        if (driver.mode !== IMAGE_POLYGON) {
-          driver.setMode(IMAGE_POLYGON);
+        if (driver.mode !== IMAGE_ELLIPSE) {
+          driver.setMode(IMAGE_ELLIPSE);
         }
       },
       isCombinable() {

@@ -64,6 +64,16 @@ export function register(driver: IIdahDriverV2): void {
               [cx + rx, cy + ry],
               [cx - rx, cy + ry],
             ];
+          } else if (radius && points.length === 2) {
+            // Ellipse: points = [[cx, cy], [rx, ry]]
+            const [cx, cy] = points[0];
+            const [rx, ry] = points[1];
+            points = [
+              [cx - rx, cy - ry],
+              [cx + rx, cy - ry],
+              [cx + rx, cy + ry],
+              [cx - rx, cy + ry],
+            ];
           } else if (angle !== 0 && points.length >= 3) {
             // Compute centroid
             let cx = 0,
