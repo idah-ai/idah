@@ -169,13 +169,11 @@ module Dataset
       completed_entries = dataset[:entries_completed_count]
       in_progress_entries = dataset[:entries_in_progress_count]
 
-      # Entries awaiting next-stage assignment (e.g. submitted, waiting for a
-      # reviewer) are back to "pending" status but have already been worked on.
-      # submitted_by_id distinguishes them from fresh, untouched entries.
-      submitted_entries = table.db[:entries]
-                               .where(dataset_id:)
-                               .exclude(submitted_by_id: nil)
-                               .count
+      # Entries that have been submitted at least once have already been worked
+      # on, even if they are back to "pending" status awaiting a next stage
+      # (e.g. submitted, waiting for a reviewer). The counter is maintained by
+      # the dataset entry-counters trigger.
+      submitted_entries = dataset[:entries_submitted_count]
 
       progress = completed_entries.to_f / total_entries
 
