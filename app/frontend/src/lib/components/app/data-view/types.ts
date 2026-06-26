@@ -31,7 +31,7 @@ export interface DataViewProps<T extends Record> {
   /** Per-record renderer (the card). */
   DataSlot: Snippet<[{ record: T }]>;
   /** Rendered when there are no records. Receives whether a user filter is active. */
-  EmptyState?: Snippet<[{ isFiltering: boolean }]>;
+  EmptyState: Snippet<[{ isFiltering: boolean }]>;
   /** Rendered while the first/active fetch is in flight and there are no records yet. */
   LoadingState?: Snippet;
   /** Hide the paginator entirely. */

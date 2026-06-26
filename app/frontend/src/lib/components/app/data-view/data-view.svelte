@@ -47,7 +47,7 @@
           {:else}
             <Spinner />
           {/if}
-        {:else if EmptyState}
+        {:else}
           {@render EmptyState({ isFiltering: controller.isFiltering })}
         {/if}
       </CardContent>
