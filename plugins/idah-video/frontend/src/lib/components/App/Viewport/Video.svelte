@@ -32,13 +32,24 @@
   let hasRVFC = false;
 
   // ── Frame ↔ time helpers ─────────────────────────────────────────
-  // Frames are 0-based; the browser uses seconds. Index f maps to t = f/fps
-  // (first frame at t=0), plus a tiny epsilon to avoid frame/fragment boundaries.
+  // Frames are 0-based; the browser works in seconds. Crucially, the media
+  // timeline does NOT necessarily start at t=0: for HLS (MPEG-TS) hls.js rebases
+  // the stream and leaves a sub-second residual, so frame 0 actually sits at
+  // buffered.start(0) (≈0.021s here), not at zero. `startOffset` captures that
+  // (see onMount) and anchors all frame↔time math to it; plain files start at 0,
+  // so it stays 0. Without this anchor every paused seek lands one frame early —
+  // frame 1 paints frame 0's pixels — because f/fps falls inside frame (f−1)'s
+  // presentation interval [offset+(f−1)/fps, offset+f/fps).
+  let startOffset = 0;
+  // Index f maps to t = startOffset + f/fps (first frame at startOffset), plus a
+  // tiny epsilon to land just inside the frame, clear of its boundary. Rounding
+  // (not floor) maps a frame-aligned time straight back to its index, tolerating
+  // the float error introduced by subtracting the offset.
   function timeToFrame(t: number) {
-    return Math.max(0, Math.min(Math.floor(t * fps), media.totalFrames - 1));
+    return Math.max(0, Math.min(Math.round((t - startOffset) * fps), media.totalFrames - 1));
   }
   function frameToTime(f: number) {
-    return (f + 0.001) / fps;
+    return startOffset + (f + 0.001) / fps;
   }
 
   // ── RAF loop (playback only) ──────────────────────────────────────
@@ -239,12 +250,22 @@
       viewport.video.loading.buffering = false;
     };
 
+    // Anchor the frame↔time helpers to the real media start (see startOffset).
+    // `loadeddata` guarantees the first frame's data is appended, so buffered
+    // holds the true frame-0 time; detach once captured (it never changes).
+    const handleLoadedData = () => {
+      if (videoElement.buffered.length === 0) return;
+      startOffset = videoElement.buffered.start(0);
+      videoElement.removeEventListener("loadeddata", handleLoadedData);
+    };
+
     const handleResize = () => onResize();
     videoElement.addEventListener("seeked", handleSeeked);
     videoElement.addEventListener("play", handlePlay);
     videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("waiting", handleWaiting);
     videoElement.addEventListener("playing", handlePlaying);
+    videoElement.addEventListener("loadeddata", handleLoadedData);
     videoElement.addEventListener("resize", handleResize);
 
     // HLS streams get a VideoStreamHandler (HQ buffering while paused, adaptive
@@ -283,6 +304,7 @@
       videoElement.removeEventListener("pause", handlePause);
       videoElement.removeEventListener("waiting", handleWaiting);
       videoElement.removeEventListener("playing", handlePlaying);
+      videoElement.removeEventListener("loadeddata", handleLoadedData);
       videoElement.removeEventListener("resize", handleResize);
       streamHandler?.destroy();
     };
