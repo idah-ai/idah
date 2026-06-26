@@ -768,48 +768,56 @@ RSpec.describe Entry::Service, database: true do
       )
     end
 
-    let!(:entry_ready) do
+    # A source whose media is already processed (advanced into the annotation
+    # workflow). This is the case that was being wrongly reprocessed.
+    let!(:entry_processed) do
       repo.create(
         project_id: project_id,
         dataset_id: dataset_id,
-        resource: "http://example.com/ready.mp4",
-        status: "ready",
-        wf_step: "start"
+        resource: "http://example.com/processed.mp4",
+        status: "pending",
+        wf_step: "annotate"
       )
     end
 
-    let!(:entry_pending) do
+    let!(:entry_fresh) do
       repo.create(
         project_id: project_id,
         dataset_id: dataset_id,
-        resource: "http://example.com/pending.mp4",
+        resource: "http://example.com/fresh.mp4",
         status: "pending",
         wf_step: "start"
       )
     end
 
-    it "duplicates ready entries without emitting events" do
+    # The media service decides whether a resource needs processing (see
+    # Processor::Job's already-processed guard), so duplication no longer
+    # special-cases media readiness: every duplicate is reset to pending/start
+    # and emits its created event normally.
+    it "resets a processed source to pending/start and emits the created event" do
       allow(subject.send(:entries)).to receive(:no_event).and_call_original
 
-      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_ready])
-
-      expect(subject.send(:entries)).to have_received(:no_event)
-      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
-      expect(duplicated_entries.count).to eq(1)
-      expect(duplicated_entries.first.status).to eq("ready")
-      expect(duplicated_entries.first.resource).to eq("http://example.com/ready.mp4")
-    end
-
-    it "duplicates pending entries by emitting events" do
-      allow(subject.send(:entries)).to receive(:no_event).and_call_original
-
-      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_pending])
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_processed])
 
       expect(subject.send(:entries)).not_to have_received(:no_event)
       duplicated_entries = repo.index({ dataset_id: new_dataset_id })
       expect(duplicated_entries.count).to eq(1)
       expect(duplicated_entries.first.status).to eq("pending")
-      expect(duplicated_entries.first.resource).to eq("http://example.com/pending.mp4")
+      expect(duplicated_entries.first.wf_step).to eq("start")
+      expect(duplicated_entries.first.resource).to eq("http://example.com/processed.mp4")
+    end
+
+    it "resets a fresh source to pending/start and emits the created event" do
+      allow(subject.send(:entries)).to receive(:no_event).and_call_original
+
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_fresh])
+
+      expect(subject.send(:entries)).not_to have_received(:no_event)
+      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+      expect(duplicated_entries.count).to eq(1)
+      expect(duplicated_entries.first.status).to eq("pending")
+      expect(duplicated_entries.first.wf_step).to eq("start")
+      expect(duplicated_entries.first.resource).to eq("http://example.com/fresh.mp4")
     end
 
     it "duplicates all entries when entry_ids is nil" do
@@ -828,7 +836,7 @@ RSpec.describe Entry::Service, database: true do
         annotation_repo.create(
           project_id: project_id,
           dataset_id: dataset_id,
-          entry_id: entry_ready,
+          entry_id: entry_processed,
           dimensions: { x: 10, y: 20, width: 30, height: 40 },
           annotation: { label: "cat" },
           created_by_email: "user@example.com"
@@ -839,7 +847,7 @@ RSpec.describe Entry::Service, database: true do
         subject.duplicate_entries(
           new_dataset_id,
           duping_dataset_id: dataset_id,
-          entry_ids: [entry_ready],
+          entry_ids: [entry_processed],
           with_annotations: true
         )
 
@@ -855,7 +863,7 @@ RSpec.describe Entry::Service, database: true do
         subject.duplicate_entries(
           new_dataset_id,
           duping_dataset_id: dataset_id,
-          entry_ids: [entry_ready],
+          entry_ids: [entry_processed],
           with_annotations: false
         )
 

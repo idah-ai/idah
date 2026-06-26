@@ -188,9 +188,6 @@ module Entry
                        end
 
       duping_entries.each do |duping_entry|
-        # check if media is already successfully processed
-        is_media_ready = %w[ready in_progress completed].include?(duping_entry.status)
-
         now = Time.now
 
         entry_id = UUIDv7.generate
@@ -202,7 +199,7 @@ module Entry
           dataset_id: dataset_id,
           job_id: nil,
           wf_step: "start",
-          status: is_media_ready ? "ready" : "pending",
+          status: "pending",
           assigned_to_id: nil,
           submitted_by_id: nil,
           reviewed_by_id: nil,
@@ -210,16 +207,11 @@ module Entry
           updated_at: now,
         }
 
-        if is_media_ready
-          # INFO: media is already good -> skip processing job
-          entries.no_event do
-            entries.create(attributes)
-          end
-        else
-          # media needs processing (was in processing or errored) -> trigger new job
-          # the event listener will pick up the 'pending' status and start a new job
-          entries.create(attributes)
-        end
+        # Always emit the created event. The media service decides whether the
+        # resource needs processing or is already processed (duplicated media
+        # shares the original's resource) and skips re-running the processor,
+        # so we no longer special-case media readiness here.
+        entries.create(attributes)
 
         next unless with_annotations
 
