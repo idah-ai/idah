@@ -21,6 +21,7 @@
     title,
     description,
     loading,
+    disabled,
     closeOnOutsideClick = true,
     onCancel,
     onConfirm,

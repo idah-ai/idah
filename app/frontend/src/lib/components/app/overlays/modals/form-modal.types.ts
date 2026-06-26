@@ -9,6 +9,7 @@ export interface FormModalBaseProps extends ModalBaseProps {
   title?: string;
   description?: string;
   loading?: boolean;
+  disabled?: boolean;
   closeOnOutsideClick?: boolean;
   actions?: Snippet;
   confirm?: Snippet;
