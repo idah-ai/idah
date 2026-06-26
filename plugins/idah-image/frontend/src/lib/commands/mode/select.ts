@@ -4,6 +4,7 @@ import {
   DEFAULT_MODE,
   IMAGE_BOUNDING_BOX,
   IMAGE_CIRCLE,
+  IMAGE_ELLIPSE,
   IMAGE_LINE,
   IMAGE_POLYGON,
   NOTE_MODE,
@@ -13,7 +14,7 @@ import {
 export const command = {
   name: "mode.selection",
   group: "Tools",
-  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE],
+  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE],
   shortcut: "D",
   shortDescription: "Select",
   longDescription: "Selection Tool",
