@@ -33,6 +33,7 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -70,6 +71,32 @@
       });
   });
   let showAutoSelect = $derived(entryStatus && entryStatus !== "completed" && entryStatus !== "errored");
+
+  // Unresolved note feed count
+  let unresolvedFeedCount = $state(0);
+
+  $effect(() => {
+    // React to refetches so count updates whenever feeds are fetched/resolved/created
+    const _ = $refetches.noteFeeds.list;
+
+    noteFeedsBackendDataSource
+      .list({
+        filters: {
+          entry_id: driver.id,
+          status__in: ["pending"],
+        },
+        fields: { [NoteFeedRecord.type]: ["id"] },
+        pagination: { page: 1, itemsPerPage: 1 },
+        count: true,
+        noCache: true,
+      })
+      .then((res) => {
+        unresolvedFeedCount = res.meta?.count ?? 0;
+      })
+      .catch(() => {
+        unresolvedFeedCount = 0;
+      });
+  });
 
   // Track mode changes reactively
   let currentMode = $state(driver.mode);
@@ -246,13 +273,22 @@
     >
       Editor
     </Button>
-    <Button
-      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
-      size="sm"
-      onclick={() => driver.setMode("review")}
-    >
-      Review
-    </Button>
+    <div class="relative">
+      <Button
+        variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+        size="sm"
+        onclick={() => driver.setMode("review")}
+      >
+        Review
+      </Button>
+      {#if unresolvedFeedCount > 0}
+        <span
+          class="bg-destructive absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-white"
+        >
+          {unresolvedFeedCount > 99 ? "99+" : unresolvedFeedCount}
+        </span>
+      {/if}
+    </div>
   </div>
 
   <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
