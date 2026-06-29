@@ -197,7 +197,7 @@
             {
               label: "Delete Annotation",
               icon: Trash2Icon,
-              disabled: annotation.isLocked(ann),
+              disabled: annotation.isLocked(ann) || viewport.isReviewWorkspace,
               onclick: (e: MouseEvent) => {
                 e.stopPropagation();
                 getDriver().command.call("annotation.delete", { annotationId: ann.id });

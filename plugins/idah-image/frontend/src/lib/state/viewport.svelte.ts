@@ -1,4 +1,13 @@
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
+import {
+  DEFAULT_MODE,
+  IMAGE_BOUNDING_BOX,
+  IMAGE_CIRCLE,
+  IMAGE_ELLIPSE,
+  IMAGE_LINE,
+  IMAGE_POLYGON,
+  NOTE_MODE,
+  REVIEW_MODE,
+} from "$lib/types";
 import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
 
@@ -16,6 +25,12 @@ class Viewport {
   }
   get isCreationMode() {
     return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE].includes(this.#mode);
+  }
+  get isEditorWorkspace() {
+    return this.#mode === DEFAULT_MODE;
+  }
+  get isReviewWorkspace() {
+    return this.#mode === REVIEW_MODE || this.#mode === NOTE_MODE;
   }
 
   set mode(val: string) {
