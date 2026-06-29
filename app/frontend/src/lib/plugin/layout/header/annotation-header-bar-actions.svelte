@@ -293,20 +293,20 @@
 
   <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
   {#if showAutoSelect}
-    <div class="flex items-center gap-1">
-      <ToolTooltip
-        label="Automatically opens the next available entry after you submit the current one."
-        align="center"
-        delayDuration={100}
-      >
-        {#snippet trigger()}
-          <label class="flex cursor-pointer items-center gap-1.5 p-1.5" for="auto-select-next">
+    <ToolTooltip
+      label="Automatically opens the next available entry after you submit the current one."
+      align="center"
+      delayDuration={100}
+    >
+      {#snippet trigger()}
+        <label class="flex cursor-pointer whitespace-nowrap" for="auto-select-next">
+          <div class="flex items-center gap-1.5 p-1.5">
             <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
             <Text size="xs" weight="light">Auto-select next entry</Text>
-          </label>
-        {/snippet}
-      </ToolTooltip>
-    </div>
+          </div>
+        </label>
+      {/snippet}
+    </ToolTooltip>
   {/if}
 
   {#if driver.workflowStep === "done"}
