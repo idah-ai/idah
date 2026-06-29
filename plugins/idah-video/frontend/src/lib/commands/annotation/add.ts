@@ -11,9 +11,10 @@
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import type { IVideoAnnotationShape } from "$lib/types";
+import { VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { draft as polygonDraft } from "./polygon.add_point.svelte";
 
 export const command = {
   name: "annotation.add",
@@ -59,6 +60,11 @@ export function register(driver: IIdahDriverV2): void {
           const id = (this as any)._createdId;
           if (id && data.annotations) {
             await data.annotations.delete(id);
+          }
+          // Restore draft and mode for multi-step shapes
+          if (props.shape.type === VIDEO_POLYGON) {
+            driver.setMode(VIDEO_POLYGON);
+            polygonDraft.points = props.shape.points;
           }
         },
         isCombinable() {

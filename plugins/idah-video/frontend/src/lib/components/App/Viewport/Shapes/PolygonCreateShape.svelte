@@ -47,7 +47,6 @@
       nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points, viewport.workspace.transform.scale)
     ) {
       const pts = [...polygonDraft.points];
-      polygonDraft.reset();
       // Route through onSelection so the workspace can apply pendingValue (selected category)
       onSelection("idah-video:polygon", frame, pts, 0, undefined);
       return true;
@@ -61,7 +60,7 @@
   // ── Cleanup on unmount ─────────────────────────────────────────────────
   onMount(() => {
     return () => {
-      polygonDraft.reset();
+      polygonDraft.points = [];
     };
   });
 </script>
@@ -116,4 +115,5 @@
     stroke-dasharray="2,2"
     vector-effect="non-scaling-stroke"
   />
+{/if}
 {/if}

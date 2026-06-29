@@ -482,6 +482,9 @@ export interface ICommandDriverV2 {
   /** Return the current undo / redo stacks (each up to `n` entries). */
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
 
+  /** Subscribe to undo/redo stack changes. Returns unsubscribe function. */
+  onStackChange(cb: () => void): () => void;
+
   /** Return commands whose mode list includes the current mode. */
   getActiveCommands(): ICommandDescriptor[];
 

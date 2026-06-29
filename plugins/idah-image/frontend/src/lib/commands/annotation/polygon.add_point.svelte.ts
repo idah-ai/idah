@@ -27,7 +27,7 @@ let _draftPoints: [number, number][] = $state([]);
 
 export const draft = {
   get points() { return _draftPoints; },
-  reset() { _draftPoints = []; },
+  set points(val: [number, number][]) { _draftPoints = val; },
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -42,20 +42,23 @@ export function register(driver: IIdahDriverV2): void {
       if (!props) return noopAction(command);
 
       const point = props.point;
+      // Snapshot the exact before-state at action creation time,
+      // so do/undo are idempotent and independent of _draftPoints at call time.
+      const snapshotBefore = [..._draftPoints];
 
       return {
         command: { ...command },
         do() {
-          _draftPoints = [..._draftPoints, point];
+          _draftPoints = [...snapshotBefore, point];
         },
         undo() {
-          _draftPoints = _draftPoints.slice(0, -1);
+          _draftPoints = snapshotBefore;
         },
-        isCombinable(previous) {
-          return previous.command.name === command.name;
+        isCombinable() {
+          return false;
         },
-        combine(previous) {
-          return this;
+        combine(p) {
+          return p;
         },
       };
     },

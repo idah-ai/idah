@@ -11,6 +11,7 @@
   import { onMount } from "svelte";
 
   import { IMAGE_LINE as IDAH_IMAGE_LINE } from "$lib/types";
+  import { hexToRgba } from "$lib/utils/color";
   import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
@@ -23,9 +24,11 @@
     mediaWidth: number;
     mediaHeight: number;
     onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
+    /** Category color for the preview shape. */
+    color?: string;
   };
 
-  let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
+  let { cursor, mediaWidth, mediaHeight, onSelection, color = undefined }: Props = $props();
 
   let invScale = $derived(1 / viewport.workspace.transform.scale);
   let R_vertex = $derived(5 * invScale);
@@ -35,7 +38,6 @@
     // If we already have one point, place the second and complete
     if (lineDraft.points.length === 1) {
       const pts = [lineDraft.points[0], cursor];
-      lineDraft.reset();
       onSelection(IDAH_IMAGE_LINE, pts);
       return true;
     }
@@ -48,7 +50,7 @@
   // ── Cleanup on unmount ─────────────────────────────────────────────────
   onMount(() => {
     return () => {
-      lineDraft.reset();
+      lineDraft.points = [];
     };
   });
 </script>
@@ -63,7 +65,7 @@
     y1={p1[1] * mediaHeight}
     x2={cursorPos[0] * mediaWidth}
     y2={cursorPos[1] * mediaHeight}
-    stroke="rgba(246, 64, 43, 0.8)"
+    stroke={hexToRgba(color, 0.8)}
     stroke-width="2"
     stroke-dasharray="6,3"
     stroke-linecap="round"
@@ -75,7 +77,7 @@
     cx={p1[0] * mediaWidth}
     cy={p1[1] * mediaHeight}
     r={R_vertex}
-    fill="rgba(246, 64, 43, 0.9)"
+    fill={hexToRgba(color, 0.9)}
     stroke="white"
     stroke-width="1.5"
     vector-effect="non-scaling-stroke"

@@ -60,9 +60,13 @@
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     isPlaying: boolean;
+    /** A pending annotation (could be missing category) waiting for popover confirmation. */
+    pendingAnnotation?: IVideoAnnotationRecord;
+    /** Category color from the workspace's pendingValue — used for creation previews when category is selected. */
+    categoryColor?: string;
   };
 
-  let { frame, children, onSelection, onAddNewNote, isPlaying }: Props = $props();
+  let { frame, children, onSelection, onAddNewNote, isPlaying, pendingAnnotation = undefined, categoryColor = undefined }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -176,6 +180,9 @@
   let isBoundingBoxMode = $derived(viewport.mode === BOUNDING_BOX_MODE);
   let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
+
+  /** Preview color for create-shape overlays. */
+  let previewColor = $derived(categoryColor);
 
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
@@ -484,6 +491,7 @@
           mediaHeight={media.height}
           {frame}
           {onSelection}
+          color={previewColor}
         />
       {/if}
 
@@ -496,6 +504,7 @@
           mediaHeight={media.height}
           {frame}
           {onSelection}
+          color={previewColor}
         />
       {/if}
 
@@ -514,6 +523,17 @@
           onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
         />
       {/each}
+
+      <!-- Pending annotation (waiting for category in popover) -->
+      {#if pendingAnnotation}
+        <AnnotationGeometry
+          annotation={pendingAnnotation}
+          selected={false}
+          editable={false}
+          cursor={sceneNormalizedCursor}
+          mode={viewport.mode}
+        />
+      {/if}
 
       <!-- Note markers (SVG g — viewBox handles pan/zoom tracking automatically) -->
       {#if viewport.isReviewWorkspace}
