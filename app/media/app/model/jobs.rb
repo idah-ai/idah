@@ -121,20 +121,6 @@ module Jobs
       ).first[:min]
     end
 
-    # True when a *completed* job has already produced the outputs for this
-    # resource. Used to skip re-processing when an entry points at media that is
-    # already processed (e.g. a duplicated entry sharing the original's resource).
-    #
-    # Only "completed" jobs count, so a crashed or in-flight job never matches —
-    # retries of a partially-processed resource still process normally.
-    # +except_job_id+ excludes a job from matching itself.
-    def processed_resource?(resource, except_job_id: nil)
-      ds = table.where(status: "completed")
-                .where(Sequel.lit("arguments->>'resource' = ?", resource))
-      ds = ds.exclude(id: except_job_id) if except_job_id
-      !ds.empty?
-    end
-
     private
 
     def scope_with_org_projects_medias

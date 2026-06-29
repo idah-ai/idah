@@ -120,41 +120,5 @@ RSpec.describe Jobs, database: true do
         expect(subject.next_scheduled_time.to_i).to eq((time + 200).to_i)
       end
     end
-
-    context "#processed_resource?" do
-      let!(:resource_job_creator) do
-        lambda do |resource:, status: "completed"|
-          id = subject.create(
-            job_class: "Processor::Job",
-            arguments: { resource: resource },
-            status: status,
-            priority: 0,
-            scheduled_at: Time.now,
-            retry_count: 0
-          )
-          subject.find!(id)
-        end
-      end
-
-      it "is true when a completed job exists for the resource" do
-        resource_job_creator.call(resource: "res-a", status: "completed")
-        expect(subject.processed_resource?("res-a")).to be true
-      end
-
-      it "is false when only a non-completed job exists for the resource" do
-        resource_job_creator.call(resource: "res-a", status: "running")
-        expect(subject.processed_resource?("res-a")).to be false
-      end
-
-      it "ignores completed jobs for other resources" do
-        resource_job_creator.call(resource: "res-b", status: "completed")
-        expect(subject.processed_resource?("res-a")).to be false
-      end
-
-      it "excludes the given job id so a job never matches itself" do
-        job = resource_job_creator.call(resource: "res-a", status: "completed")
-        expect(subject.processed_resource?("res-a", except_job_id: job.id)).to be false
-      end
-    end
   end
 end

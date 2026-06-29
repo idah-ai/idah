@@ -208,6 +208,25 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("pending"))
     end
+
+    it "advances every entry sharing the job_id, even across datasets" do
+      # An in-progress duplicate shares the source's job_id (possibly in another
+      # dataset); completing the job must advance all of them.
+      other_dataset_id = dataset_repo.create(
+        modality: "video",
+        labels: ["cat"],
+        labeling_configuration: { "width" => 100, "height" => 100 },
+        workflow_configuration: {},
+        project_id: project_id
+      )
+      repo.create({ project_id:, dataset_id: other_dataset_id, job_id:, status: "processing", wf_step: "start" })
+
+      subject.complete_entry_processing(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.count).to eq(2)
+      expect(entries.map(&:wf_step)).to all(eq("annotate"))
+    end
   end
 
   describe "#mark_entries_status_as" do
@@ -215,24 +234,29 @@ RSpec.describe Entry::Service, database: true do
     let(:other_job_id) { UUIDv7.generate }
 
     before do
+      # Two entries share job_id (a source plus a duplicate riding the same job);
+      # a third on a different job must stay untouched.
+      repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
       repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
       repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "done" })
     end
 
-    it "marks entries with the given job_id as pending" do
+    it "marks all entries with the given job_id as pending" do
       subject.mark_entries_status_as(job_id, "pending")
 
       entries = repo.index({ job_id: job_id })
+      expect(entries.count).to eq(2)
       expect(entries.map(&:status)).to all(eq("pending"))
 
       other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("done")
     end
 
-    it "marks entries with the given job_id as errored" do
+    it "marks all entries with the given job_id as errored" do
       subject.mark_entries_status_as(job_id, "errored")
 
       entries = repo.index({ job_id: job_id })
+      expect(entries.count).to eq(2)
       expect(entries.map(&:status)).to all(eq("errored"))
 
       other_entry = repo.index({ job_id: other_job_id }).first
@@ -783,7 +807,7 @@ RSpec.describe Entry::Service, database: true do
     end
 
     # A source whose media is already processed (advanced into the annotation
-    # workflow). This is the case that was being wrongly reprocessed.
+    # workflow). Its duplicate must not be reprocessed.
     let!(:entry_processed) do
       repo.create(
         project_id: project_id,
@@ -794,44 +818,48 @@ RSpec.describe Entry::Service, database: true do
       )
     end
 
-    let!(:entry_fresh) do
+    # A source still being processed: its media job is in flight (status
+    # "processing", job_id set, still at "start").
+    let(:in_flight_job_id) { UUIDv7.generate }
+    let!(:entry_in_progress) do
       repo.create(
         project_id: project_id,
         dataset_id: dataset_id,
-        resource: "http://example.com/fresh.mp4",
-        status: "pending",
-        wf_step: "start"
+        resource: "http://example.com/in-progress.mp4",
+        status: "processing",
+        wf_step: "start",
+        job_id: in_flight_job_id
       )
     end
 
-    # The media service decides whether a resource needs processing (see
-    # Processor::Job's already-processed guard), so duplication no longer
-    # special-cases media readiness: every duplicate is reset to pending/start
-    # and emits its created event normally.
-    it "resets a processed source to pending/start and emits the created event" do
+    # Duplicated media shares the source's resource, so a duplicate never runs
+    # its own processing job (created via no_event). A processed source is
+    # advanced off "start" immediately; an in-progress source rides the source's
+    # in-flight job by copying its job_id.
+    it "advances a processed source's duplicate off start without reprocessing" do
       allow(subject.send(:entries)).to receive(:no_event).and_call_original
 
       subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_processed])
 
-      expect(subject.send(:entries)).not_to have_received(:no_event)
-      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
-      expect(duplicated_entries.count).to eq(1)
-      expect(duplicated_entries.first.status).to eq("pending")
-      expect(duplicated_entries.first.wf_step).to eq("start")
-      expect(duplicated_entries.first.resource).to eq("http://example.com/processed.mp4")
+      expect(subject.send(:entries)).to have_received(:no_event)
+      duplicated = repo.index({ dataset_id: new_dataset_id }).first
+      expect(duplicated.wf_step).to eq("annotate")
+      expect(duplicated.status).to eq("pending")
+      expect(duplicated.job_id).to be_nil
+      expect(duplicated.resource).to eq("http://example.com/processed.mp4")
     end
 
-    it "resets a fresh source to pending/start and emits the created event" do
+    it "duplicates an in-progress source sharing its job_id so it rides the same job" do
       allow(subject.send(:entries)).to receive(:no_event).and_call_original
 
-      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_fresh])
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_in_progress])
 
-      expect(subject.send(:entries)).not_to have_received(:no_event)
-      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
-      expect(duplicated_entries.count).to eq(1)
-      expect(duplicated_entries.first.status).to eq("pending")
-      expect(duplicated_entries.first.wf_step).to eq("start")
-      expect(duplicated_entries.first.resource).to eq("http://example.com/fresh.mp4")
+      expect(subject.send(:entries)).to have_received(:no_event)
+      duplicated = repo.index({ dataset_id: new_dataset_id }).first
+      expect(duplicated.wf_step).to eq("start")
+      expect(duplicated.status).to eq("processing")
+      expect(duplicated.job_id).to eq(in_flight_job_id)
+      expect(duplicated.resource).to eq("http://example.com/in-progress.mp4")
     end
 
     it "duplicates all entries when entry_ids is nil" do
