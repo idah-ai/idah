@@ -17,17 +17,27 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
   import circleIconSvg from "$lib/assets/icons/circle.svg?raw";
+  import ellipseIconSvg from "$lib/assets/icons/ellipse.svg?raw";
   import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
 
   import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
 
   import type { IConfigValue } from "$idah/v2/types";
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
   import type { IImageAnnotationRecord } from "$lib/types";
+
+  /** Map shape types to their icon SVGs — single source of truth. */
+  const shapeIconSrc: Record<string, string> = {
+    [IDAH_IMAGE_BOUNDING_BOX]: vectorSquareIconSvg,
+    [IDAH_IMAGE_POLYGON]: polygonIconSvg,
+    [IDAH_IMAGE_CIRCLE]: circleIconSvg,
+    [IDAH_IMAGE_ELLIPSE]: ellipseIconSvg,
+    [IDAH_IMAGE_LINE]: lineIconSvg,
+  };
 
   type CategoryDefinition = IConfigValue & {
     id: string;
@@ -284,39 +294,13 @@
               {/if}
             </Button>
 
-            {#if modalityShape === IDAH_IMAGE_BOUNDING_BOX}
-              <Icon
-                src={vectorSquareIconSvg}
-                color={category.data?.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
-            {:else if modalityShape === IDAH_IMAGE_POLYGON}
-              <Icon
-                src={polygonIconSvg}
-                color={category.data?.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
-            {:else if modalityShape === IDAH_IMAGE_CIRCLE}
-              <Icon
-                src={circleIconSvg}
-                color={category.data?.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
-            {:else if modalityShape === IDAH_IMAGE_LINE}
-              <Icon
-                src={lineIconSvg}
-                color={category.data?.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
-            {/if}
+            <Icon
+              src={shapeIconSrc[modalityShape] ?? vectorSquareIconSvg}
+              color={category.data?.color}
+              class={cn({
+                hidden: category.requiredNested,
+              })}
+            />
 
             <CategoryName name={category.name} />
 

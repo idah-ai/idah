@@ -53,10 +53,11 @@ import { register as registerCategoryToggleVisibility } from "./category/toggle_
 
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModeCircle } from "./mode/circle";
+import { register as registerModeEllipse } from "./mode/ellipse";
 import { register as registerModeLine } from "./mode/line";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
-import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
+import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 
 /**
@@ -97,6 +98,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   if (hasConfig(driver, IMAGE_BOUNDING_BOX)) registerModeBoundingBox(driver);
   if (hasConfig(driver, IMAGE_POLYGON)) registerModePolygon(driver);
   if (hasConfig(driver, IMAGE_CIRCLE)) registerModeCircle(driver);
+  if (hasConfig(driver, IMAGE_ELLIPSE)) registerModeEllipse(driver);
   if (hasConfig(driver, IMAGE_LINE)) registerModeLine(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
