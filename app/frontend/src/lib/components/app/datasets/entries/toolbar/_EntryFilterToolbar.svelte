@@ -11,58 +11,82 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import Can from "@/security/can.svelte";
   import { cn } from "@/utils";
 
-  import {
-    ArrowDownAZIcon,
-    ArrowDownZAIcon,
-    ArrowUpDownIcon,
-    ChevronsUpDownIcon,
-    FunnelIcon,
-    PlusIcon,
-  } from "@lucide/svelte";
+  // Inlined entry modals + actions (mirrors entry-dropdown-menu.svelte)
+  import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
+  import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
+  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
+  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
+  import { pluralizeUnit } from "@/utils/unit";
 
-  import type { EntriesListController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
+  import { ArrowDownAZIcon, ArrowDownZAIcon, ArrowUpDownIcon, ChevronsUpDownIcon, FunnelIcon } from "@lucide/svelte";
+
+  import type { ListViewController } from "@/components/app/data-view/list-view-controller.svelte";
   import type { ColumnSettings } from "@/components/app/datasource-table/types";
+  import type { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
-  import type { ProjectMemberScope } from "@/security/types";
 
   let {
     controller,
+    sel,
     canUpdateEntry,
     canDeleteEntry,
     projectId,
-    as_project_owner,
-    onOpenNewEntry,
-    onOpenAssign,
-    onOpenUnassign,
-    onOpenSetPriority,
-    onOpenDelete,
   }: {
-    controller: EntriesListController;
+    controller: ListViewController<EntryRecord>;
+    sel: EntrySelection;
     canUpdateEntry: boolean;
     canDeleteEntry: boolean;
     projectId: string;
-    as_project_owner: { as_user: ProjectMemberScope };
-    onOpenNewEntry: () => void;
-    onOpenAssign: () => void;
-    onOpenUnassign: () => void;
-    onOpenSetPriority: () => void;
-    onOpenDelete: () => void;
   } = $props();
+
+  // Modal visibility - owned here
+  let openAssignEntry = $state(false);
+  let openSetPriority = $state(false);
+  let openConfirmUnassign = $state(false);
+  let openConfirmDelete = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
-      onAssign: onOpenAssign,
-      onUnassign: onOpenUnassign,
-      onSetPriority: onOpenSetPriority,
-      onDelete: onOpenDelete,
-      isAssigned: controller.checkAnyAssigned(controller.selectedEntryIds),
-      isAssignDisabled: controller.assignableEntryIds.length === 0,
-      isUnassignDisabled: controller.unAssignableEntryIds.length === 0,
+      onAssign: () => {
+        openAssignEntry = true;
+      },
+      onUnassign: () => {
+        openConfirmUnassign = true;
+      },
+      onSetPriority: () => {
+        openSetPriority = true;
+      },
+      onDelete: () => {
+        openConfirmDelete = true;
+      },
+      isAssigned: sel.checkAnyAssigned(controller.selectedIds),
+      isAssignDisabled: sel.assignableEntryIds.length === 0,
+      isUnassignDisabled: sel.unAssignableEntryIds.length === 0,
     }),
   );
+
+  async function handleUnassign(): Promise<void> {
+    const updated = await unAssignEntries(sel.unAssignableEntryIds, (id) => sel.getEntryName(id));
+    if (updated) {
+      controller.patchRecords(updated);
+      controller.clearSelection();
+      openConfirmUnassign = false;
+      // Refetch so server-authoritative state is reflected (e.g. wf_step changes)
+      await controller.fetch();
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    const ok = await deleteEntries(controller.selectedIds, (id) => sel.getEntryName(id));
+    if (ok) {
+      controller.clearSelection();
+      openConfirmDelete = false;
+      await controller.fetch();
+    }
+  }
 </script>
 
 <div class="flex w-full gap-4">
@@ -72,10 +96,10 @@
       {#if canUpdateEntry || canDeleteEntry}
         <div class="pl-6">
           <Checkbox
-            checked={controller.selectedEntryIds.length > 0 &&
-              controller.selectedEntryIds.length === controller.response.data.length}
-            indeterminate={controller.selectedEntryIds.length > 0 &&
-              controller.selectedEntryIds.length < controller.response.data.length}
+            checked={controller.selectedIds.length > 0 &&
+              controller.selectedIds.length === controller.response.data.length}
+            indeterminate={controller.selectedIds.length > 0 &&
+              controller.selectedIds.length < controller.response.data.length}
             onCheckedChange={controller.toggleSelectAll.bind(controller)}
           />
         </div>
@@ -90,8 +114,8 @@
             columnSetting={columnSetting as ColumnSettings<EntryRecord>}
             filters={controller.listOptions.filters || {}}
             sort={controller.listOptions.sort || []}
-            onFilter={controller.filterEntries.bind(controller)}
-            onSort={controller.sortEntries.bind(controller)}
+            onFilter={controller.applyFilter.bind(controller)}
+            onSort={controller.applySort.bind(controller)}
             onHide={() => {}}
           >
             {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}
@@ -150,13 +174,36 @@
         </DropdownMenu>
       {/if}
 
-      <!-- ADD ENTRY -->
-      <Can action="create" resource="dataset:entries" scopes={["as_org_owner", as_project_owner]}>
-        <Button onclick={onOpenNewEntry} class="w-full lg:w-auto">
-          <PlusIcon />
-          Add Entry
-        </Button>
-      </Can>
+      <!-- ADD ENTRY (self-guards permission + owns its modal) -->
+      <UploadEntryButton class="w-full lg:w-auto" />
     </div>
   </div>
 </div>
+
+<!-- BULK-ACTION MODALS (triggered from the dropdown above) -->
+<AssignEntryFormModal
+  action="update"
+  entryIds={sel.assignableEntryIds}
+  onAssigned={async () => {
+    controller.clearSelection();
+    await controller.fetch();
+  }}
+  entryRecord={sel.assignableEntryIds.length === 1 ? sel.entryMap.get(sel.assignableEntryIds[0]) : undefined}
+  bind:open={openAssignEntry}
+/>
+
+<UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedIds} bind:open={openSetPriority} />
+
+<ConfirmModal
+  title="Unassign entry"
+  description={`Are you sure you want to unassign ${sel.unAssignableEntryIds.length} ${pluralizeUnit(sel.unAssignableEntryIds.length, "entry", "entries")}?`}
+  onConfirm={handleUnassign}
+  bind:open={openConfirmUnassign}
+/>
+
+<ConfirmModal
+  title="Delete entry"
+  description={`Are you sure you want to delete ${controller.selectedRowsCount} ${pluralizeUnit(controller.selectedRowsCount, "entry", "entries")}? This action cannot be undone.`}
+  onConfirm={handleDelete}
+  bind:open={openConfirmDelete}
+/>
