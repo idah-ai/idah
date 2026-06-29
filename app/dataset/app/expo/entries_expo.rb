@@ -21,6 +21,8 @@ class EntriesExpo < BaseExpo
                       :assigned_to_id__eq,
                       :assigned_to_id__in,
                       :assigned,
+                      :assigned_to_email,
+                      :assigned_to_email__match,
                       :wf_step__in,
                       :participated,
                       :name__match
