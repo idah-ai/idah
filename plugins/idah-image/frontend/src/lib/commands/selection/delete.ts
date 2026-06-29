@@ -7,12 +7,12 @@ import { selection } from "$lib/state/selection.svelte";
 import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
-import { DEFAULT_MODE, REVIEW_MODE } from "$lib/types";
+import { DEFAULT_MODE } from "$lib/types";
 
 export const command = {
   name: "selection.delete",
   group: "Selection",
-  modes: [DEFAULT_MODE, REVIEW_MODE],
+  modes: [DEFAULT_MODE],
   shortcut: "Backspace",
   shortDescription: "Delete selected",
   longDescription: null,
