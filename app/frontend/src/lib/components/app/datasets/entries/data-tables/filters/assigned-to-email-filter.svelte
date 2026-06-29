@@ -44,12 +44,9 @@
 
   // Display flags
   let unassignedActive = $derived(String(filters["assigned"]) === "false");
-  // Show "Unassigned" when the box is empty, when the text matches its label, or when `draft` is an
-  // actual member's email (i.e. a picked member). Hide it for free-text searches like "admin" that
-  // don't correspond to a member — even after Enter applies them.
-  let showUnassigned = $derived(
-    !draft || "unassigned".includes(draft.toLowerCase()) || members.some((member) => member.email === draft),
-  );
+  // Show "Unassigned" only when the input box is empty or the text matches its label. Any other text —
+  // a picked member's email or non-matching free text like "admin" — hides it.
+  let showUnassigned = $derived(!draft || "unassigned".includes(draft.toLowerCase()));
 
   // Lifecycle
   onMount(async () => {
