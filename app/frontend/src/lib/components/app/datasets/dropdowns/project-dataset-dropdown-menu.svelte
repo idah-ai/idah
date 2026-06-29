@@ -150,7 +150,7 @@
     return await entriesBackendDataSource.list({
       filters: { dataset_id: datasetId },
       fields: {
-        [EntryRecord.type]: ["id", "resource", "status", "priority", "created_at", "updated_at", "wf_step"],
+        [EntryRecord.type]: ["id", "name", "resource", "status", "priority", "created_at", "updated_at", "wf_step"],
       },
     });
   }
@@ -163,6 +163,7 @@
     {projectId}
     {datasetId}
     {datasetName}
+    modality={datasetRecord.modality}
     {datasetEntryRecords}
     duplicatingEntriesTotalCount={datasetRecord.entries_total_count}
     bind:open={openDuplicateDatasetFormModal}

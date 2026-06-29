@@ -21,6 +21,7 @@
   interface Props extends FormModalBaseProps {
     datasetId: string;
     datasetName: string | undefined;
+    modality: string;
     projectId: string;
     datasetEntryRecords: EntryRecord[];
     duplicatingEntriesTotalCount: number;
@@ -32,6 +33,7 @@
     title,
     datasetId,
     datasetName,
+    modality,
     projectId,
     datasetEntryRecords,
     duplicatingEntriesTotalCount,
@@ -154,7 +156,7 @@
   onCancel={resetForm}
   onConfirm={submit}
   bind:open
-  class="sm:max-w-4xl"
+  class="sm:max-w-6xl"
 >
   {#snippet modalTitle()}
     <DialogTitle>Duplicate Dataset</DialogTitle>
@@ -227,10 +229,11 @@
       </Tooltips>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 overflow-y-auto pr-2 md:grid-cols-4">
+    <div class="grid grid-cols-1 gap-2 overflow-y-auto pr-2 sm:grid-cols-2 md:grid-cols-4">
       {#each datasetEntryRecords as entry (entry.id)}
         <EntrySelectionCard
           {entry}
+          {modality}
           selected={selectAll || (selectedEntryIds?.includes(entry.id) ?? false)}
           onToggle={handleEntryToggle}
         />

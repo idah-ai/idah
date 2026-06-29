@@ -13,11 +13,12 @@
 
   interface Props {
     entry: EntryRecord;
+    modality: string;
     selected: boolean;
     onToggle: (id: string, checked: boolean) => void;
   }
 
-  let { entry, selected, onToggle }: Props = $props();
+  let { entry, modality, selected, onToggle }: Props = $props();
 
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
@@ -28,9 +29,21 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      let key: string;
+      switch (modality) {
+        case "idah-video":
+          key = "thumbnail.jpg";
+          break;
+        case "idah-image":
+          key = "thumbnail.webp";
+          break;
+        default:
+          key = "processed.webp"; // default fallback image for thumbnail
+      }
+
       thumbnailUrl = await mediaBackendDataSource.getFiles({
         resource: entry.resource,
-        key: "thumbnail.jpg",
+        key,
       });
       thumbnailError = false;
     } catch (error) {
@@ -64,13 +77,17 @@
       <Checkbox id={"select-" + entry.id} checked={selected} onCheckedChange={handleCheck} />
 
       <div class="flex-1 overflow-hidden">
-        <EntryThumbnailPreview {thumbnailUrl} {thumbnailError} />
+        <EntryThumbnailPreview {thumbnailUrl} {thumbnailError} {modality} />
       </div>
     </div>
 
     <div class="flex min-w-0 flex-col gap-1">
-      <Label for={"select-" + entry.id} class="cursor-pointer truncate text-sm font-medium" title={entry.resource}>
-        {entry.resource}
+      <Label
+        for={"select-" + entry.id}
+        class="cursor-pointer truncate text-sm font-medium"
+        title={entry.name || entry.id}
+      >
+        {entry.name || entry.id}
       </Label>
       <div class="text-muted-foreground flex items-center gap-1 text-xs">
         <DataDisplay label="Created at">

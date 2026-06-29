@@ -6,9 +6,10 @@
   interface Props {
     thumbnailUrl: string | null;
     thumbnailError: boolean;
+    modality: string;
   }
 
-  let { thumbnailUrl, thumbnailError }: Props = $props();
+  let { thumbnailUrl, thumbnailError, modality }: Props = $props();
 
   const TOTAL_POSITIONS = 10;
   const ANIMATION_INTERVAL_MS = 350;
@@ -35,22 +36,35 @@
 </script>
 
 <AspectRatio ratio={16 / 9} class="bg-muted rounded-lg">
+  <!--
+    TODO: We branch on modality inline here. As more modalities arrive (text, audio, etc.),
+    move this into a more structured way of deciding how to render an entry preview
+    (e.g. a per-modality preview registry/component) instead of growing this if/else.
+  -->
   {#if thumbnailUrl}
-    <div
-      role="img"
-      class="relative h-full w-full overflow-hidden rounded-lg"
-      onmouseenter={startAnimation}
-      onmouseleave={stopAnimation}
-    >
-      <img
-        src={thumbnailUrl}
-        alt="Entry thumbnail"
-        class="absolute top-0 left-0 h-full cursor-pointer object-cover"
-        style:width="{TOTAL_POSITIONS * 100}%"
-        style:max-width="none"
-        style:transform="translateX(-{currentImagePosition * (100 / TOTAL_POSITIONS)}%)"
-      />
-    </div>
+    {#if modality === "idah-image"}
+      <!-- Static image for idah-image -->
+      <div role="img" class="relative h-full w-full overflow-hidden rounded-lg">
+        <img src={thumbnailUrl} alt="Entry thumbnail" class="h-full w-full rounded-lg object-cover" />
+      </div>
+    {:else}
+      <!-- Animated sprite sheet for idah-video -->
+      <div
+        role="img"
+        class="relative h-full w-full overflow-hidden rounded-lg"
+        onmouseenter={startAnimation}
+        onmouseleave={stopAnimation}
+      >
+        <img
+          src={thumbnailUrl}
+          alt="Entry thumbnail"
+          class="absolute top-0 left-0 h-full cursor-pointer object-cover"
+          style:width="{TOTAL_POSITIONS * 100}%"
+          style:max-width="none"
+          style:transform="translateX(-{currentImagePosition * (100 / TOTAL_POSITIONS)}%)"
+        />
+      </div>
+    {/if}
   {:else if thumbnailError}
     <div class="text-muted-foreground flex h-full items-center justify-center text-sm">Unable to load thumbnail</div>
   {:else}
