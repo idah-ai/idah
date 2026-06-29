@@ -64,13 +64,15 @@ export function register(driver: IIdahDriverV2): void {
           if (data.annotations) {
             await data.annotations.delete(createdId);
           }
-          // Restore draft and mode for multi-step shapes
+          // Restore drawing mode for multi-step shapes so the user can
+          // continue editing or individually undo add_point commands.
+          // For line, restore the first point so the preview is visible.
           if (props.shape.type === IMAGE_POLYGON) {
             driver.setMode(IMAGE_POLYGON);
-            polygonDraft.points = props.shape.points;
+            polygonDraft.points = props.shape.points
           } else if (props.shape.type === IMAGE_LINE) {
             driver.setMode(IMAGE_LINE);
-            lineDraft.points = props.shape.points;
+            lineDraft.points = props.shape.points.slice(0, 1);
           }
         },
         isCombinable() {

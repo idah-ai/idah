@@ -64,7 +64,7 @@ export function register(driver: IIdahDriverV2): void {
           // Restore draft and mode for multi-step shapes
           if (props.shape.type === VIDEO_POLYGON) {
             driver.setMode(VIDEO_POLYGON);
-            polygonDraft.points = props.shape.points;
+            polygonDraft.points = props.shape.points as [number, number][];
           }
         },
         isCombinable() {

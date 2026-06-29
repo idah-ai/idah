@@ -38,6 +38,7 @@
     // If we already have one point, place the second and complete
     if (lineDraft.points.length === 1) {
       const pts = [lineDraft.points[0], cursor];
+      lineDraft.points = [];
       onSelection(IDAH_IMAGE_LINE, pts);
       return true;
     }

@@ -47,6 +47,7 @@
       nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points, viewport.workspace.transform.scale)
     ) {
       const pts = [...polygonDraft.points];
+      polygonDraft.points = [];
       // Route through onSelection so the workspace can apply pendingValue (selected category)
       onSelection("idah-video:polygon", frame, pts, 0, undefined);
       return true;
