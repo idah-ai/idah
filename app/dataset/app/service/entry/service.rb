@@ -82,21 +82,10 @@ module Entry
 
     def complete_entry_processing(job_id)
       system_entries_repo.transaction do
-        # A single job can back several entries: a duplicated entry that was still
-        # processing shares the original's job_id (see #duplicate_entries), so the
-        # completion advances the original and every duplicate riding the same job.
-        # Materialise first, then advance — we mutate the very rows we query.
-        processing_entries = []
-        system_entries_repo.chunked_index(
-          { job_id:, status: "processing" }, included: [:dataset]
-        ).each { |entry| processing_entries << entry }
-
-        dataset_ids = processing_entries.map do |entry|
-          entry.dataset.entry_workflow.new(system_entries_repo, entry).submit!
-          entry.dataset.id
-        end
-
-        dataset_ids.uniq.each { |id| system_datasets_repo.update_progress!(id) }
+        entry = system_entries_repo.find_by!({ job_id:, status: "processing" }, included: [:dataset])
+        entry_workflow = entry.dataset.entry_workflow.new(system_entries_repo, entry)
+        entry_workflow.submit!
+        system_datasets_repo.update_progress!(entry.dataset.id)
       end
     end
 
@@ -221,25 +210,12 @@ module Entry
                        end
 
       duping_entries.each do |duping_entry|
-        # An entry only leaves "start" once its media job completes, so a source
-        # still at "start" is not processed yet. Duplicated media shares the
-        # original's resource, so we never re-run the processor (no created event):
-        #   - processed source  -> advance the duplicate off "start" right away.
-        #   - unprocessed source -> copy the in-flight job_id (+ "processing"
-        #     status) so the duplicate is advanced together with the original when
-        #     that job completes (see #complete_entry_processing).
-        #
-        # TODO: two known low-probability gaps left unhandled for now (not worth
-        # the complexity yet):
-        #   1. Race window: if the source's job completes *between* reading it here
-        #      and committing this duplicate, the completion fan-out can miss the
-        #      uncommitted duplicate, leaving it stuck at "start"/"processing". A
-        #      post-loop re-check (re-read the source; if it advanced and the dupe
-        #      is still "processing", advance the dupe) would close it.
-        #   2. Truly-fresh source ("start" with job_id nil): nothing in flight to
-        #      ride, so the duplicate would never advance. Such a source's dupe
-        #      should instead emit its own created event to get its own job.
-        source_processed = duping_entry.wf_step != "start"
+        # Skip sources whose media is still processing — duplicating them would
+        # mean riding the original's in-flight job, which we deliberately avoid.
+        # Only already-processed entries (media job done, advanced off "start")
+        # are duplicated; their media is reused via the shared resource so no new
+        # processing job runs (no created event).
+        next if duping_entry.status == "processing"
 
         now = Time.now
         entry_id = UUIDv7.generate
@@ -250,7 +226,7 @@ module Entry
           dataset_id: dataset_id,
           job_id: duping_entry.job_id,
           wf_step: "start",
-          status: source_processed ? "pending" : "processing",
+          status: "pending",
           assigned_to_id: nil,
           submitted_by_id: nil,
           reviewed_by_id: nil,
@@ -263,11 +239,11 @@ module Entry
             # No event: a duplicate must never trigger its own processing job.
             entries.no_event { entry_id = entries.create(attributes) }
 
-            if source_processed
-              entry = system_entries_repo.find!(entry_id, included: [:dataset])
-              entry.dataset.entry_workflow.new(system_entries_repo, entry).submit!
-              system_datasets_repo.update_progress!(entry.dataset_id)
-            end
+            # Advance the duplicate off "start" right away — its media is already
+            # processed, so we drive the workflow instead of waiting on a job.
+            entry = system_entries_repo.find!(entry_id, included: [:dataset])
+            entry.dataset.entry_workflow.new(system_entries_repo, entry).submit!
+            system_datasets_repo.update_progress!(entry.dataset_id)
 
             if with_annotations
               annotations.chunked_index({ entry_id: duping_entry.id }).each do |annotation|

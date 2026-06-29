@@ -323,14 +323,10 @@ module Entry
     end
 
     def mark_entries_status_as(job_id, status)
-      # A job can back several entries (a still-processing source plus duplicates
-      # that share its job_id), so update every entry tied to the job. Materialise
-      # first, then update — we mutate the very rows we query.
-      processing_entries = []
-      chunked_index({ job_id: job_id, status: "processing" }).each { |entry| processing_entries << entry }
+      entry = find_by!({ job_id: job_id, status: "processing" })
 
       transaction do
-        processing_entries.each { |entry| update!(entry.id, { status: }) }
+        update!(entry.id, { status: })
       end
     end
 

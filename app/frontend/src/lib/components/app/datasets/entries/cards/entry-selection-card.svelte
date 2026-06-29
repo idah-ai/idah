@@ -23,7 +23,11 @@
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
 
+  // Entries whose media is still being processed can't be duplicated yet.
+  let isProcessing = $derived(entry.status === "processing");
+
   function handleCheck(checked: boolean) {
+    if (isProcessing) return;
     onToggle(entry.id, checked === true);
   }
 
@@ -69,12 +73,21 @@
 <div
   class={cn(
     "flex flex-col gap-2 rounded-md border p-3 transition-colors",
-    selected ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50 border-transparent",
+    isProcessing
+      ? "cursor-not-allowed border-transparent opacity-50"
+      : selected
+        ? "bg-primary/5 border-primary/20"
+        : "hover:bg-muted/50 border-transparent",
   )}
 >
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-3">
-      <Checkbox id={"select-" + entry.id} checked={selected} onCheckedChange={handleCheck} />
+      <Checkbox
+        id={"select-" + entry.id}
+        checked={selected && !isProcessing}
+        disabled={isProcessing}
+        onCheckedChange={handleCheck}
+      />
 
       <div class="flex-1 overflow-hidden">
         <EntryThumbnailPreview {thumbnailUrl} {thumbnailError} {modality} />
@@ -90,11 +103,15 @@
         {entry.name || entry.id}
       </Label>
       <div class="text-muted-foreground flex items-center gap-1 text-xs">
-        <DataDisplay label="Created at">
-          {#snippet slotValue()}
-            <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="xs" weight="light" />
-          {/snippet}
-        </DataDisplay>
+        {#if isProcessing}
+          <span>Still processing — can't be duplicated yet</span>
+        {:else}
+          <DataDisplay label="Created at">
+            {#snippet slotValue()}
+              <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="xs" weight="light" />
+            {/snippet}
+          </DataDisplay>
+        {/if}
       </div>
     </div>
   </div>
