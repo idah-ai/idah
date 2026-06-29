@@ -477,6 +477,7 @@
     <PopoverContent
       class="min-w-80 p-0"
       onkeydown={(e) => {
+        e.stopPropagation();
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           if (!canConfirm) return;

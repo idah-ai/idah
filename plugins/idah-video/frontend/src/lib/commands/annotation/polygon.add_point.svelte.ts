@@ -10,6 +10,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { isEditable } from "$lib/state/editor.svelte";
 import { VIDEO_POLYGON } from "$lib/types";
 import { noopAction } from "..";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
   name: "annotation.polygon.add_point",
@@ -50,16 +51,19 @@ export function register(driver: IIdahDriverV2): void {
       // Snapshot the exact before-state at action creation time,
       // so do/undo are idempotent and independent of _draftPoints at call time.
       const snapshotBefore = [..._draftPoints];
+      const snapshotFrame = viewport.video.currentFrame.value;
 
       return {
         command: { ...command },
         do() {
-          driver.setMode(VIDEO_POLYGON)
           _draftPoints = [...snapshotBefore, point];
+          viewport.video.currentFrame.value = snapshotFrame;
+          driver.setMode(VIDEO_POLYGON);
         },
         undo() {
-          driver.setMode(VIDEO_POLYGON)
           _draftPoints = snapshotBefore;
+          viewport.video.currentFrame.value = snapshotFrame;
+          driver.setMode(VIDEO_POLYGON);
         },
         isCombinable() {
           return false;

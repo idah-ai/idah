@@ -169,16 +169,6 @@
   let lineCreateComp: LineCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
-  /** Resolve the active create-shape component by current mode. */
-  let activeCreateComp = $derived.by<{ handleMouseDown: (p: Point) => boolean; handleMouseUp?: (p: Point) => boolean } | undefined>(() => {
-    if (isPolygonMode) return polygonCreateComp;
-    if (isBoundingBoxMode) return bboxCreateComp;
-    if (isCircleMode) return circleCreateComp;
-    if (isEllipseMode) return ellipseCreateComp;
-    if (isLineMode) return lineCreateComp;
-    return undefined;
-  });
-
   let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
   let isCircleMode = $derived(viewport.mode === IMAGE_CIRCLE);
   let isEllipseMode = $derived(viewport.mode === IMAGE_ELLIPSE);
