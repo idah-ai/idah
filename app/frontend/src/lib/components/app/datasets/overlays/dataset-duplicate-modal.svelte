@@ -48,7 +48,18 @@
   let isDatasetEmpty = $derived(datasetEntryRecords.length === 0);
   let isSubmitDisabled = $derived(isDatasetEmpty || selectedEntryIds?.length === 0);
 
-  let newDatasetName = $derived(open ? `${datasetName} - duplicated` : "");
+  let newDatasetName = $state("");
+
+  // reset form fields each time the modal opens (covers all close paths, incl. successful
+  // submit which closes without calling resetForm). name kept as state so user edits stick;
+  // only re-runs on open/datasetName change, not on other state updates.
+  $effect(() => {
+    if (open) {
+      newDatasetName = `${datasetName} - duplicated`;
+      withLabels = false;
+      withAnnotations = false;
+    }
+  });
 
   // set entries selected by default
   $effect(() => {
@@ -67,6 +78,8 @@
     newDatasetName = "";
     selectAll = !isDatasetEmpty;
     selectedEntryIds = isDatasetEmpty ? [] : undefined;
+    withLabels = false;
+    withAnnotations = false;
   }
 
   function handleSelectAllChange(checked: boolean) {
@@ -106,13 +119,15 @@
         const newDatasetUrl = resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`);
 
         // auto-refetch configuration
-        const AUTO_REFETCH_INTERVAL_MS = 1000; // refetch every 2 seconds
+        const AUTO_REFETCH_INTERVAL_MS = 1000; // poll every 1 seconds
         const expectedCount = selectAll ? duplicatingEntriesTotalCount : (selectedEntryIds?.length ?? 0);
         const defaultItemsPerPage = 10; // TODO: get from const some where else ?
-        const MAX_REFETCH_ATTEMPTS = 30; // max 30 seconds wait
+        const MAX_REFETCH_ATTEMPTS = 30; // max ~30 seconds wait
         let attempts = 0;
         let isDuplicating = true;
 
+        // ensure we land on the newly-duplicated dataset with duplicated entries, not just an empty page
+        // stop check loop on either done duplicating or enough entries duplicated to fill the default landing page
         // also stop loop if modal is closed/canceled
         while (isDuplicating && attempts < MAX_REFETCH_ATTEMPTS && open) {
           const res = await datasetsBackendDataSource.get(createdDatasetRes.data.id, { noCache: true });
