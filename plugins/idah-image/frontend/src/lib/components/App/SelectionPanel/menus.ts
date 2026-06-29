@@ -3,9 +3,9 @@ import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as I
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
-import { selection } from "$lib/state/selection.svelte";
 
 import type { IImageAnnotationRecord } from "$lib/types";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export interface AnnotationAction {
   id: string;
@@ -62,11 +62,7 @@ export function getEditabilityAction(annotationId: string, items: IImageAnnotati
   };
 }
 
-export function getDeleteAction(
-  annotationId: string,
-  items: IImageAnnotationRecord[],
-  isDeleteDisabled?: boolean,
-): AnnotationAction | null {
+export function getDeleteAction(annotationId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
   return {
@@ -74,7 +70,7 @@ export function getDeleteAction(
     label: "Delete annotation",
     icon: Trash2Icon,
     destructive: true,
-    disabled: isDeleteDisabled || items.some((item) => annotation.isLocked(item)),
+    disabled: viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
     onClick: () => {
       showConfirmDialog({
         title: "Delete annotation",
@@ -90,14 +86,13 @@ export function getDeleteAction(
 export function getAnnotationActions(props: {
   items: IImageAnnotationRecord[];
   annotationId: string;
-  isDeleteDisabled?: boolean;
 }): AnnotationAction[] {
-  const { items, annotationId, isDeleteDisabled } = props;
+  const { items, annotationId } = props;
 
   const actions = [
     getVisibilityAction(annotationId, items),
     getEditabilityAction(annotationId, items),
-    getDeleteAction(annotationId, items, isDeleteDisabled),
+    getDeleteAction(annotationId, items),
   ];
 
   return actions.filter(Boolean) as AnnotationAction[];

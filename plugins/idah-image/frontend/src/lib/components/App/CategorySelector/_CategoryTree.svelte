@@ -22,7 +22,14 @@
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
+    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
+    IMAGE_LINE as IDAH_IMAGE_LINE,
+    IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
+  } from "$lib/types";
 
   import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
 
@@ -64,7 +71,8 @@
 
     onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
   }
-  let { view, db, items, modalityShape, categories, onSelectCategory, selectedCategory, onDeleteAnnotation }: Props = $props();
+  let { view, db, items, modalityShape, categories, onSelectCategory, selectedCategory, onDeleteAnnotation }: Props =
+    $props();
 
   // Variables
   let openCategory = $state(true);
@@ -313,7 +321,6 @@
                 categoryToDelete = category.id;
                 openConfirmCategoryDeleteDialog = true;
               },
-              isDeleteDisabled: mode !== DEFAULT_MODE,
             })}
 
             <!-- Icon Actions -->

@@ -4,6 +4,7 @@ import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 
 import type { IImageAnnotationRecord } from "$lib/types";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export interface CategoryAction {
   id: string;
@@ -87,7 +88,6 @@ export function getCategoryEditabilityAction(opts: {
 export function getCategoryDeleteAction(
   items: IImageAnnotationRecord[],
   onClickDelete: () => void,
-  isDeleteDisabled?: boolean,
 ): CategoryAction | null {
   if (items.length === 0) return null;
 
@@ -96,7 +96,7 @@ export function getCategoryDeleteAction(
     label: "Delete category annotations",
     icon: Trash2Icon,
     destructive: true,
-    disabled: isDeleteDisabled || items.some((item) => annotation.isLocked(item)),
+    disabled: viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
     onClick: async (e: MouseEvent) => {
       e.stopPropagation();
       onClickDelete();
@@ -109,14 +109,13 @@ export function getCategoryActions(props: {
   shapeType: string;
   items: IImageAnnotationRecord[];
   onClickDelete: () => void;
-  isDeleteDisabled?: boolean;
 }): CategoryAction[] {
-  const { categoryId, items, shapeType, onClickDelete, isDeleteDisabled } = props;
+  const { categoryId, items, shapeType, onClickDelete } = props;
 
   const actions = [
     getCategoryVisibilityAction({ categoryId, items, shapeType }),
     getCategoryEditabilityAction({ categoryId, items, shapeType }),
-    getCategoryDeleteAction(items, onClickDelete, isDeleteDisabled),
+    getCategoryDeleteAction(items, onClickDelete),
   ];
 
   return actions.filter(Boolean) as CategoryAction[];

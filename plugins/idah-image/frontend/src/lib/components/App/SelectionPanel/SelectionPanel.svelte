@@ -29,7 +29,14 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
+    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
+    IMAGE_LINE as IDAH_IMAGE_LINE,
+    IMAGE_POLYGON,
+  } from "$lib/types";
   import { cn } from "$lib/utils";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
@@ -130,7 +137,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          disabled: isSomeLocked || viewport.mode !== DEFAULT_MODE,
+          disabled: isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
@@ -264,7 +271,7 @@
             </button>
 
             <div class="ml-auto flex shrink-0 items-center gap-0">
-              {#each getAnnotationActions( { items: [ann], annotationId: ann.id, isDeleteDisabled: viewport.mode !== DEFAULT_MODE }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
+              {#each getAnnotationActions( { items: [ann], annotationId: ann.id }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
                 <CategoryAction
                   {label}
                   icon={Icon}
