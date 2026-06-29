@@ -116,4 +116,3 @@
     vector-effect="non-scaling-stroke"
   />
 {/if}
-{/if}
