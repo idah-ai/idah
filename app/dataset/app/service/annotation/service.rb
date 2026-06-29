@@ -37,10 +37,7 @@ module Annotation
       end
 
       # Prevent modifications on completed entries
-      if entry.status == "completed"
-        raise Verse::Error::ValidationFailed,
-              "Cannot create annotation on a completed entry"
-      end
+      check_entry_not_completed!(entry, :create)
 
       # With "as_user" ensure account can "create" annotation to the project
       if auth_context.can?(:create, annotations.class.resource) == :as_user &&
@@ -69,9 +66,9 @@ module Annotation
 
     def update(record)
       annotations.transaction do
-        annotation = annotations.find!(record.id)
+        annotation = annotations.find!(record.id, included: [:entry])
 
-        check_entry_not_completed!(annotation.entry_id)
+        check_entry_not_completed!(annotation.entry, :update)
 
         annotations.update!(record.id, record.attributes)
         annotations.find!(record.id)
@@ -80,9 +77,9 @@ module Annotation
 
     def update_attr(id, attributes)
       annotations.transaction do
-        annotation = annotations.find!(id)
+        annotation = annotations.find!(id, included: [:entry])
 
-        check_entry_not_completed!(annotation.entry_id)
+        check_entry_not_completed!(annotation.entry, :update)
 
         annotations.update!(id, attributes)
         annotations.find!(id)
@@ -91,9 +88,9 @@ module Annotation
 
     def delete(id)
       annotations.transaction do
-        annotation = annotations.find!(id)
+        annotation = annotations.find!(id, included: [:entry])
 
-        check_entry_not_completed!(annotation.entry_id)
+        check_entry_not_completed!(annotation.entry, :delete)
 
         annotations.delete!(id)
       end
@@ -101,13 +98,11 @@ module Annotation
 
     private
 
-    def check_entry_not_completed!(entry_id)
-      entry = entries.find(entry_id)
-
+    def check_entry_not_completed!(entry, operation)
       return unless entry&.status == "completed"
 
       raise Verse::Error::ValidationFailed,
-            "Cannot modify annotations on a completed entry"
+            "Cannot #{operation} annotations on a completed entry"
     end
   end
 end

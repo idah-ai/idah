@@ -112,7 +112,7 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.create(record)
-        }.to raise_error(Verse::Error::ValidationFailed, /Cannot create annotation on a completed entry/)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot create annotations on a completed entry/)
       end
     end
 
@@ -171,7 +171,7 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.update(record)
-        }.to raise_error(Verse::Error::ValidationFailed, /Cannot modify annotations on a completed entry/)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
       end
     end
 
@@ -190,7 +190,7 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.update_attr(annotation_id, { annotation: { label: "dog" } })
-        }.to raise_error(Verse::Error::ValidationFailed, /Cannot modify annotations on a completed entry/)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
       end
     end
 
@@ -215,7 +215,7 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.delete(annotation_id)
-        }.to raise_error(Verse::Error::ValidationFailed, /Cannot modify annotations on a completed entry/)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot delete annotations on a completed entry/)
       end
     end
   end
