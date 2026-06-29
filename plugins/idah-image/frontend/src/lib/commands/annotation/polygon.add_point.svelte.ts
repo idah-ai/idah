@@ -7,6 +7,7 @@
 //   driver.command.call("annotation.polygon.add_point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { IMAGE_POLYGON } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {
@@ -49,9 +50,11 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         do() {
+          driver.setMode(IMAGE_POLYGON);
           _draftPoints = [...snapshotBefore, point];
         },
         undo() {
+          driver.setMode(IMAGE_POLYGON);
           _draftPoints = snapshotBefore;
         },
         isCombinable() {
