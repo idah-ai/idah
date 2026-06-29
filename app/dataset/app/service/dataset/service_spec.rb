@@ -261,10 +261,10 @@ RSpec.describe Dataset::Service, database: true do
       expect(duplicated.entries_in_progress_count).to eq(0)
     end
 
-    it "calls duplicated on repository when dataset has entries" do
+    it "calls duplicate on repository when dataset has entries" do
       repo.update!(original_dataset_id, { entries_total_count: 5 })
 
-      allow(subject.send(:datasets)).to receive(:duplicated)
+      allow(subject.send(:datasets)).to receive(:duplicate)
 
       duplicated = subject.duplicate(
         original_dataset_id,
@@ -272,7 +272,7 @@ RSpec.describe Dataset::Service, database: true do
         with_annotations: true
       )
 
-      expect(subject.send(:datasets)).to have_received(:duplicated).with(
+      expect(subject.send(:datasets)).to have_received(:duplicate).with(
         duplicated.id,
         duping_dataset_id: original_dataset_id,
         entry_ids: [1, 2, 3],

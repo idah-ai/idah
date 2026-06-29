@@ -204,11 +204,11 @@ module Entry
 
       # With "as_user" access ensure account can "create" entry to the project
       if auth_context.can?(:create, entries.class.resource) == :as_user &&
-          ScopedQuery::Service.without_project_access?(
-            auth_context.metadata[:id],
-            dataset.project_id,
-            ["project_owner"]
-          )
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           dataset.project_id,
+           ["project_owner"]
+         )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create entry on this project"
       end
@@ -285,7 +285,7 @@ module Entry
               end
             end
           end
-        rescue => e
+        rescue StandardError => e
           # Best-effort duplication: skip the failed entry and continue the batch.
           Verse.logger&.error do
             "duplicate_entries: skipped source entry #{duping_entry.id}: #{e.message}"
