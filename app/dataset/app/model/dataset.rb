@@ -235,7 +235,7 @@ module Dataset
         update!(dataset_id, { progress: progress, status: "in_progress" })
       end
     end
-    
+
     event(name: "pending")
     def pending!(dataset_id, progress)
       no_event do
