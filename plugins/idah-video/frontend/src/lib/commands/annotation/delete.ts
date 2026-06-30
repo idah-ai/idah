@@ -13,6 +13,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
   name: "annotation.delete",
@@ -53,10 +54,16 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           await data.annotations!.delete(props.annotationId);
+          // Seek to the annotation's start frame
+          const deletedFrame = (record.shape as any)?.start;
+          if (deletedFrame !== undefined) viewport.video.currentFrame.value = deletedFrame;
         },
         async undo() {
           if (!data.annotations) return;
           await data.annotations!.create({ ...record, id: record.id });
+          // Seek to the annotation's start frame
+          const restoredFrame = (record.shape as any)?.start;
+          if (restoredFrame !== undefined) viewport.video.currentFrame.value = restoredFrame;
         },
         isCombinable() {
           return false;
