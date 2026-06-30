@@ -21,12 +21,15 @@
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import CircleCreateShape from "./CircleCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
+  import EllipseCreateShape from "./EllipseCreateShape.svelte";
   import LineCreateShape from "./LineCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
   import { viewport } from "$lib/state/viewport.svelte";
 
+  import { ui } from "$lib/state/ui.svelte";
+  import { resolveAnnotationColor } from "$lib/utils/color";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data, setPendingNoteScene } from "$lib/state/data.svelte";
@@ -36,7 +39,7 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
@@ -56,9 +59,13 @@
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
     onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
+    /** A pending annotation (could be missing category) waiting for popover confirmation. */
+    pendingAnnotation?: IImageAnnotationRecord;
+    /** Category color from the workspace's pendingValue — used for creation previews when category is selected. */
+    categoryColor?: string;
   };
 
-  let { children, onSelection, onAddNewNote }: Props = $props();
+  let { children, onSelection, onAddNewNote, pendingAnnotation = undefined, categoryColor = undefined }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -158,14 +165,23 @@
   // ── Create shape component refs ───────────────────────────────────────
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
   let circleCreateComp: CircleCreateShape | undefined = $state(undefined);
+  let ellipseCreateComp: EllipseCreateShape | undefined = $state(undefined);
   let lineCreateComp: LineCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
 
   let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
   let isCircleMode = $derived(viewport.mode === IMAGE_CIRCLE);
+  let isEllipseMode = $derived(viewport.mode === IMAGE_ELLIPSE);
   let isLineMode = $derived(viewport.mode === IMAGE_LINE);
   let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
+
+  /** Preview color for create-shape overlays — uses categoryColor (from toolbar or pendingValue) or falls back to pendingAnnotation's category. */
+  let previewColor = $derived.by<string | undefined>(() => {
+    if (categoryColor) return categoryColor;
+    if (!pendingAnnotation) return undefined;
+    return resolveAnnotationColor(pendingAnnotation);
+  });
 
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
@@ -273,6 +289,12 @@
       return;
     }
 
+    // ── Ellipse creation mode — delegate to EllipseCreateShape ───
+    if (isEllipseMode) {
+      ellipseCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      return;
+    }
+
     // ── Line creation mode — delegate to LineCreateShape ─────────
     if (isLineMode) {
       lineCreateComp?.handleMouseDown(sceneNormalizedCursor);
@@ -315,6 +337,12 @@
     // ── Circle creation mode — finalize on CircleCreateShape ────
     if (isCircleMode) {
       circleCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      return;
+    }
+
+    // ── Ellipse creation mode — finalize on EllipseCreateShape ──
+    if (isEllipseMode) {
+      ellipseCreateComp?.handleMouseUp(sceneNormalizedCursor);
       return;
     }
 
@@ -449,46 +477,62 @@
 
     <g>
       <!-- Build mode: bounding box creation preview -->
-      {#if isBoundingBoxMode}
+      {#if isBoundingBoxMode && !pendingAnnotation}
         <BBoxCreateShape
           bind:this={bboxCreateComp}
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
+          color={previewColor}
         />
       {/if}
 
       <!-- Build mode: circle creation preview -->
-      {#if isCircleMode}
+      {#if isCircleMode && !pendingAnnotation}
         <CircleCreateShape
           bind:this={circleCreateComp}
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
+          color={previewColor}
+        />
+      {/if}
+
+      <!-- Build mode: ellipse creation preview -->
+      {#if isEllipseMode && !pendingAnnotation}
+        <EllipseCreateShape
+          bind:this={ellipseCreateComp}
+          cursor={sceneNormalizedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {onSelection}
+          color={previewColor}
         />
       {/if}
 
       <!-- Build mode: line creation preview -->
-      {#if isLineMode}
+      {#if isLineMode && !pendingAnnotation}
         <LineCreateShape
           bind:this={lineCreateComp}
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
+          color={previewColor}
         />
       {/if}
 
       <!-- Build mode: polygon creation preview -->
-      {#if isPolygonMode}
+      {#if isPolygonMode && !pendingAnnotation}
         <PolygonCreateShape
           bind:this={polygonCreateComp}
           cursor={sceneNormalizedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
+          color={previewColor}
         />
       {/if}
 
@@ -507,6 +551,17 @@
           onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
         />
       {/each}
+
+      <!-- Pending annotation (waiting for category in popover) -->
+      {#if pendingAnnotation}
+        <AnnotationGeometry
+          annotation={pendingAnnotation}
+          selected={false}
+          editable={false}
+          cursor={sceneNormalizedCursor}
+          mode={viewport.mode}
+        />
+      {/if}
 
       <!-- Note markers (shown in review workspace) -->
       {#if viewport.mode === REVIEW_MODE || viewport.mode === NOTE_MODE}

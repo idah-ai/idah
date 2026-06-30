@@ -1,5 +1,5 @@
 import type { CommandManagerV2 } from "../manager/command-manager";
-import type { ICommandAction, ICommandDescriptor, ICommandDriverV2, ICommandStackEntry, IShortcut } from "../types";
+import type { ICommandAction, ICommandDescriptor, ICommandDriverV2, ICommandStackEntry, IShortcut } from "../../types";
 
 // ---------------------------------------------------------------------------
 // Adapter: command driver → ICommandDriverV2
@@ -59,6 +59,10 @@ export class CommandDriverAdapter implements ICommandDriverV2 {
 
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] } {
     return this.mgr.history(n);
+  }
+
+  onStackChange(cb: () => void): () => void {
+    return this.mgr.onStackChange(cb);
   }
 
   getActiveCommands(): ICommandDescriptor[] {

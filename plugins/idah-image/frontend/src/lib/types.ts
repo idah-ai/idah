@@ -17,6 +17,7 @@ export const IMAGE_BOUNDING_BOX = "idah-image:bounding-box";
 export const IMAGE_POLYGON = "idah-image:polygon";
 export const IMAGE_LINE = "idah-image:line";
 export const IMAGE_CIRCLE = "idah-image:circle";
+export const IMAGE_ELLIPSE = "idah-image:ellipse";
 
 // ─── Image annotation shape ──────────────────────────────────────────────
 

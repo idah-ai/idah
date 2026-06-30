@@ -4,8 +4,7 @@ export function register(driver: IdahDriverV2) {
   driver.command.register({
     name: "core.redo",
     group: "General",
-    // TODO modes ['*'] ?
-    modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
+    modes: ["*"],
     shortcut: "Control+Shift+Z",
     shortDescription: "Redo",
     longDescription: "Redo the last undone action",

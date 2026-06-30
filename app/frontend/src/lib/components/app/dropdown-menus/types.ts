@@ -1,5 +1,7 @@
 import { type Icon as IconType } from "@lucide/svelte";
 
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
+
 export type DropdownMenuContentAlignment = "start" | "center" | "end";
 export type DropdownMenuContentSide = "top" | "right" | "bottom" | "left";
 
@@ -9,6 +11,7 @@ export interface IDropdownMenuItem {
   icon?: typeof IconType;
   disabled?: boolean;
   hidden?: boolean;
+  visibleIfRoles?: Array<Role>;
   destructive?: boolean;
   action?: () => Promise<void> | void;
   items?: {

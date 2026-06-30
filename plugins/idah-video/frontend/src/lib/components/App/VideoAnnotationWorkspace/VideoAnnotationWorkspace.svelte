@@ -28,6 +28,7 @@
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+  import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
 
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
@@ -106,6 +107,39 @@
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
+
+  /** Pending annotation (shape + value) waiting for category confirmation. */
+  let pendingAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
+    if (!shapeSelectionArgs) return undefined;
+    const [type, frame, points, angle, selectedId] = shapeSelectionArgs;
+    let shape: AnnotationShape = { type };
+    switch (type) {
+      case IDAH_VIDEO_BOUNDING_BOX:
+        shape = { ...shape, start: frame, end: frame, frames: [{ frame, angle, points }] };
+        break;
+      case IDAH_VIDEO_POLYGON:
+        shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
+        break;
+      default:
+        return undefined;
+    }
+    return {
+      id: "pending",
+      shape: shape as IVideoAnnotationShape,
+      value: { ...pendingValue },
+      metadata: {},
+      synced: true,
+    } as unknown as IVideoAnnotationRecord;
+  });
+
+  /** Category color for the create-shape previews. */
+  let categoryColor = $derived.by<string | undefined>(() => {
+    if (!pendingValue.category) return undefined;
+    const shapeType = shapeSelectionArgs?.[0] ?? viewport.mode;
+    const config = getDriver().config[shapeType];
+    const cat = config?.values?.find((v) => v.id === pendingValue.category);
+    return cat?.color ?? undefined;
+  });
   $effect(() => {
     if (typeof window === "undefined") return;
 
@@ -151,7 +185,7 @@
     const meta = driver.media.meta;
     mediaInfo = { meta };
 
-    const totalFrames = Math.round((meta.duration as number) * (meta.fps as number));
+    const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number));
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
@@ -511,6 +545,21 @@
   <Popover
     open={showPopOver}
     onOpenChange={(open: boolean) => {
+      if (!open && showPopOver) {
+        // Popover closed via Escape/click-outside — restore drawing state
+        annotationValue = {};
+        pendingValue = {};
+        const args = shapeSelectionArgs;
+        shapeSelectionArgs = undefined;
+        if (args) {
+          const [type, frame, points, angle] = args;
+          if (type === IDAH_VIDEO_POLYGON) {
+            polygonDraft.points = points;
+            viewport.mode = POLYGON_MODE;
+          }
+        }
+        selectAnnotation();
+      }
       showPopOver = open;
     }}
   >
@@ -519,6 +568,7 @@
     <PopoverContent
       class="min-w-80 p-0"
       onkeydown={(e) => {
+        e.stopPropagation();
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           if (!canConfirm) return;
@@ -571,7 +621,15 @@
             showPopOver = false;
             annotationValue = {};
             pendingValue = {};
+            const args = shapeSelectionArgs;
             shapeSelectionArgs = undefined;
+            if (args) {
+              const [type, frame, points, angle] = args;
+              if (type === IDAH_VIDEO_POLYGON) {
+                polygonDraft.points = points;
+                viewport.mode = POLYGON_MODE;
+              }
+            }
             selectAnnotation();
           }}
         >
@@ -629,6 +687,8 @@
                   bind:this={overlay}
                   {annotations_promise}
                   frame={viewport.video.currentFrame.value}
+                  {pendingAnnotation}
+                  {categoryColor}
                   onSelectAnnotation={selectAnnotation}
                   onSelection={onShapeSelection}
                   onAddNewNote={showNewNotePopup}

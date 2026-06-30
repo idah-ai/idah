@@ -96,14 +96,18 @@ data (debounced so rapid key presses don't trigger a dozen upgrades).
 
 ### Frame numbering
 
-The browser's video element thinks in time (seconds), but the annotation app
-thinks in frames (frame 0, 1, 2, etc.). A small conversion layer translates
-between them.
+The browser thinks in seconds, the app thinks in frames. Frame `f` maps to
+`startOffset + f/fps` seconds, and back the other way by rounding. A tiny epsilon
+is added so a seek lands just *inside* the target frame instead of on its
+boundary (which can make the decoder paint the neighbouring frame).
 
-Internally, the video is one-based (starting at frame 1), so frame 0 in the app
-maps to 1/fps seconds in the browser (e.g., if the video is 30 fps, frame 0 is
-at 0.033 seconds). We also add a tiny extra offset to avoid landing exactly on
-fragment boundaries, which can cause timing issues.
+`startOffset` matters because the media timeline doesn't always start at zero:
+hls.js leaves a small sub-second residual when it rebases an MPEG-TS stream, so
+frame 0 can sit a fraction of a second in (≈0.021s) rather than at `t=0`. Assume
+zero and every seek lands one frame early — frame 1 paints frame 0's pixels. So
+we measure it: once the first frame is buffered (`loadeddata`), we read
+`buffered.start(0)` and anchor all conversions to it. Captured once; it's the
+same across quality levels and is simply 0 for plain (non-HLS) files.
 
 ## States
 
