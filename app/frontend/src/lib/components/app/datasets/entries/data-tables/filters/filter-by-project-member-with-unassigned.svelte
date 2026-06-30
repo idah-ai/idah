@@ -30,8 +30,10 @@
   const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
   const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
 
+  // `assigned` may arrive as boolean `false` (live) or the string `"false"` (restored from the
+  // URL, which stringifies every value), so compare loosely on the stringified form.
   let filtersValue: string | number | null = $derived(
-    filters[filterKeyWithOperation] || (filters["assigned"] === false ? "null" : null),
+    filters[filterKeyWithOperation] || (String(filters["assigned"]) === "false" ? "null" : null),
   );
 
   let additionalChoices: LabelValue<string | number>[] = [
@@ -45,12 +47,13 @@
   function handleFilter(value: string | number | null): void {
     switch (value) {
       case "null":
-        delete filters[filterKeyWithOperation];
-        filters = { ...filters, assigned: false };
+        // Unassigned: send `assigned: false`, clear the member id.
+        // Emit `undefined` (not `delete`) so the table's filter handler removes it from prefs + URL.
+        filters = { ...filters, [filterKeyWithOperation]: undefined, assigned: false };
         break;
       default:
-        delete filters["assigned"];
-        filters = { ...filters, [filterKeyWithOperation]: value };
+        // Member: send the member id, clear `assigned: false`.
+        filters = { ...filters, assigned: undefined, [filterKeyWithOperation]: value };
     }
 
     filtersValue = value;
@@ -87,7 +90,9 @@
   {/snippet}
 
   {#snippet slotChoice({ choice, select })}
-    {@const isSelected = filtersValue === choice.value}
+    <!-- Compare stringified: a member id restored from the URL is a string ("123") but the
+         choice value is a number (123); `!= null` keeps "nothing selected" unhighlighted. -->
+    {@const isSelected = filtersValue != null && String(filtersValue) === String(choice.value)}
     <CommandItem
       class={cn("group cursor-pointer", {
         "bg-primary/10": isSelected,

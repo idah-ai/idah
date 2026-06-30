@@ -82,6 +82,38 @@ RSpec.describe Annotation::Service, database: true do
         expect(annotation.dataset_id).to eq(dataset_id)
         expect(annotation.project_id).to eq(project_id)
       end
+
+      it "raises error when entry is completed" do
+        completed_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "done",
+          status: "completed",
+          assigned_to_id: 1,
+          project_id:,
+          dataset_id:
+        )
+
+        record = deserialize(
+          {
+            data: {
+              type: "dataset:annotations",
+              attributes:,
+              relationships: {
+                entry: {
+                  data: {
+                    type: "dataset:entries",
+                    id: completed_entry_id
+                  }
+                }
+              }
+            }
+          }
+        )
+
+        expect {
+          subject.create(record)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot create annotations on a completed entry/)
+      end
     end
 
     describe "#show" do
@@ -112,6 +144,54 @@ RSpec.describe Annotation::Service, database: true do
         updated_annotation = repo.find!(annotation_id)
         expect(updated_annotation.annotation).to eq({ label: "dog" })
       end
+
+      it "raises error when annotation belongs to a completed entry" do
+        completed_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "done",
+          status: "completed",
+          assigned_to_id: 1,
+          project_id:,
+          dataset_id:
+        )
+
+        annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
+
+        record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                annotation: { label: "dog" },
+              }
+            }
+          }
+        )
+
+        expect {
+          subject.update(record)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
+      end
+    end
+
+    describe "#update_attr" do
+      it "raises error when annotation belongs to a completed entry" do
+        completed_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "done",
+          status: "completed",
+          assigned_to_id: 1,
+          project_id:,
+          dataset_id:
+        )
+
+        annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
+
+        expect {
+          subject.update_attr(annotation_id, { annotation: { label: "dog" } })
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
+      end
     end
 
     describe "#delete" do
@@ -119,6 +199,23 @@ RSpec.describe Annotation::Service, database: true do
         annotation_id = repo.create(attributes)
         subject.delete(annotation_id)
         expect { repo.find!(annotation_id) }.to raise_error(Verse::Error::NotFound)
+      end
+
+      it "raises error when annotation belongs to a completed entry" do
+        completed_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "done",
+          status: "completed",
+          assigned_to_id: 1,
+          project_id:,
+          dataset_id:
+        )
+
+        annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
+
+        expect {
+          subject.delete(annotation_id)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot delete annotations on a completed entry/)
       end
     end
   end

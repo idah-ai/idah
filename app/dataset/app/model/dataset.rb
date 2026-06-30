@@ -167,13 +167,22 @@ module Dataset
       return if total_entries.zero?
 
       completed_entries = dataset[:entries_completed_count]
+      in_progress_entries = dataset[:entries_in_progress_count]
+
+      # Entries that have been submitted at least once have already been worked
+      # on, even if they are back to "pending" status awaiting a next stage
+      # (e.g. submitted, waiting for a reviewer). The counter is maintained by
+      # the dataset entry-counters trigger.
+      submitted_entries = dataset[:entries_submitted_count]
 
       progress = completed_entries.to_f / total_entries
 
       if completed_entries >= total_entries
         completed!(dataset_id, progress)
-      else
+      elsif in_progress_entries.positive? || completed_entries.positive? || submitted_entries.positive?
         in_progress!(dataset_id, progress)
+      else
+        pending!(dataset_id, progress)
       end
     end
 
@@ -225,6 +234,18 @@ module Dataset
       no_event do
         update!(dataset_id, { progress: progress, status: "in_progress" })
       end
+    end
+
+    event(name: "pending")
+    def pending!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "pending" })
+      end
+    end
+
+    event(name: "duplicated")
+    def duplicate(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
+      # NOTE: just publish the event
     end
 
     private

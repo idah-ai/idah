@@ -9,6 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
   name: "selection.delete",
@@ -28,7 +29,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: () => {
       const sel = selection.value;
-      if (!isEditable()) return noopAction(command);
+      if (!isEditable() || viewport.isReviewWorkspace) return noopAction(command);
       if (!sel || !data.annotations) return noopAction(command);
 
       if (sel.type === "annotation") {
