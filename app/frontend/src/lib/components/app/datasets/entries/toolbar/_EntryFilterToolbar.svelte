@@ -26,7 +26,6 @@
   import type { ColumnSettings } from "@/components/app/datasource-table/types";
   import type { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
-  import type { ProjectMemberScope } from "@/security/types";
   import type { LabelValue } from "@/utils/types";
 
   import { onMount } from "svelte";
