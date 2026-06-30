@@ -488,7 +488,7 @@
 
     <g>
       <!-- Build mode: bounding box creation preview -->
-      {#if isBoundingBoxMode}
+      {#if isBoundingBoxMode && !pendingAnnotation}
         <BBoxCreateShape
           bind:this={bboxCreateComp}
           cursor={sceneNormalizedCursor}
@@ -501,7 +501,7 @@
       {/if}
 
       <!-- Build mode: polygon creation preview -->
-      {#if isPolygonMode}
+      {#if isPolygonMode && !pendingAnnotation}
         <PolygonCreateShape
           bind:this={polygonCreateComp}
           cursor={sceneNormalizedCursor}
