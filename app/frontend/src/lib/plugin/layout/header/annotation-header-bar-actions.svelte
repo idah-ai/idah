@@ -1,10 +1,7 @@
 <script lang="ts">
   import {
     ChevronDownIcon,
-    ChevronsLeft,
-    ChevronsRight,
     KeyboardIcon,
-    MessageCircleIcon,
     MoonIcon,
     Settings2Icon,
     SquareCheckIcon,
@@ -14,42 +11,45 @@
     TabletSmartphoneIcon,
   } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
-  import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Checkbox } from "@/components/ui/checkbox";
   import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { getShortcut } from "@/components/ui/kbd/utils";
+  import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import WorkflowStepActions from "@/plugin/layout/header/workflow-step-actions.svelte";
   import type { WorkflowStepConfig } from "@/plugin/layout/header/workflow-step-types";
 
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
-  import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
+  import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
-  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "@/plugin/layout/header/annotation-header-bar.constants";
-
+  import writableWithLocal from "@/utils/writableWithLocal";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
+  import type { IIdahDriverV2 } from "@/plugin/v2/types";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { refetches } from "@/utils/refetch";
+
+  import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
+  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   interface Props {
-    context: IActivityContext;
-    pluginContainerElement: HTMLElement | null;
+    driver: IIdahDriverV2;
+    noteSidebarOpen?: boolean;
+    onNoteToggle?: () => void;
   }
-  let { context, pluginContainerElement }: Props = $props();
+  let { driver, noteSidebarOpen = false, onNoteToggle }: Props = $props();
 
   // Workflow configuration from API response
   interface WorkflowConfig {
@@ -61,26 +61,33 @@
   }
 
   // Variables
-  let frameStep: number = $state(Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10);
   let loading = $state(false);
-  let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
   let currentStepConfig: WorkflowStepConfig | undefined = $state(undefined);
-  let menus: AnnotationHeaderBarBaseTool[] = $derived([
-    {
-      name: "notes",
-      label: "All Notes",
-      icon: MessageCircleIcon,
-      isActive: openNoteSidebar,
-      handleClick: () => {
-        if (!openNoteSidebar) {
-          openNoteSidebar = true;
-        } else {
-          closeNoteSidebar();
-        }
-      },
-    },
-  ]);
+
+  // Persist auto-select preference in localStorage
+  let autoSelectNextEntryStore = writableWithLocal("auto-select-next-entry", false);
+  let autoSelectNextEntry = $state($autoSelectNextEntryStore);
+  $effect(() => {
+    autoSelectNextEntryStore.set(autoSelectNextEntry);
+  });
+
+  // Fetch entry status to decide whether to show auto-select
+  let entryStatus = $state<string | null>(null);
+  $effect(() => {
+    entriesBackendDataSource
+      .get(driver.id, { fields: { [EntryRecord.type]: ["status"] }, noCache: false })
+      .then((res) => {
+        entryStatus = res.data.status;
+      });
+  });
+  let showAutoSelect = $derived(entryStatus && entryStatus !== "completed" && entryStatus !== "errored");
+
+  // Track mode changes reactively
+  let currentMode = $state(driver.mode);
+  driver.onModeChange((event) => {
+    currentMode = event.newValue;
+  });
 
   const reviewMenus: IDropdownMenus = {
     actions: {
@@ -99,27 +106,29 @@
     },
   };
 
+  import { onMount } from "svelte";
+  import { workflowsBasePath } from "@/data/model/dataset/workflows/record";
+
   // Lifecycle
   onMount(async () => {
     /** If frame step is not set in localStorage, set it to 10 as default */
-    if (!localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) {
-      localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, "10");
+    if (!localStorage.getItem("idah-video-frame-step")) {
+      localStorage.setItem("idah-video-frame-step", "10");
     }
 
-    frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP));
     // Fetch workflow configuration from backend
     try {
-      const workflowsList = await fetch(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/workflows`);
+      const workflowsList = await fetch(workflowsBasePath);
       const jsonData = await workflowsList.json();
 
       const workflows: WorkflowConfig[] = jsonData.data.workflows;
 
       // Find the workflow configuration for the current dataset
-      if (workflows && context.workflowName) {
-        const workflow = workflows.find((w: WorkflowConfig) => w.name === context.workflowName);
+      if (workflows && driver.workflowName) {
+        const workflow = workflows.find((w: WorkflowConfig) => w.name === driver.workflowName);
         if (workflow) {
-          // Find current step config by matching context.workflowStep
-          currentStepConfig = workflow.steps?.find((s: WorkflowStepConfig) => s.name === context.workflowStep);
+          // Find current step config by matching driver.workflowStep
+          currentStepConfig = workflow.steps?.find((s: WorkflowStepConfig) => s.name === driver.workflowStep);
         }
       }
     } catch (error) {
@@ -128,41 +137,68 @@
   });
 
   // Functions
-  function closeNoteSidebar() {
-    openNoteSidebar = false;
-
-    // Reset selected note feed when closing sidebar
-    context.notes.gotoFeed(null);
-  }
-
   async function submitAnnotation() {
     loading = true;
-    await context.submit();
+    await submit();
   }
 
   async function reviewAnnotation(props: { approved: boolean }) {
     const { approved } = props;
     loading = true;
-    await context.submit({ approved });
+    await submit({ approved });
   }
 
-  function setFrameStep(inputValue: number) {
-    const minStep: number = 1;
-    let stepToSet: number = inputValue;
+  async function submit(opts?: Record<string, boolean>) {
+    entriesBackendDataSource.submit(driver.id, opts).then(async () => {
+      $refetches.entries.list = new Date();
 
-    if (isNaN(inputValue)) stepToSet = minStep;
-    if (stepToSet < minStep) stepToSet = minStep;
-    frameStep = stepToSet;
-    localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, stepToSet.toString());
+      // ── Auto-select next entry ──────────────────────────────────────────
+      if (autoSelectNextEntry) {
+        const nextEntryId = await entriesBackendDataSource.findNextEntry(
+          driver.dataset.id,
+          driver.workflowStep as EntryWorkflowStep,
+        );
+        if (nextEntryId) {
+          const pluginId = page.params.pluginId as string;
+          window.location.href = resolve(`/entries/${nextEntryId}/plugin/${pluginId}`);
+          return;
+        }
+      }
+
+      // ── Fallback: existing behavior ─────────────────────────────────────
+      try {
+        const entriesRes = await entriesBackendDataSource.list({
+          fields: {
+            [EntryRecord.type]: ["id"],
+          },
+          filters: {
+            dataset_id: driver.dataset.id,
+          },
+          noCache: true,
+          pagination: {
+            page: 1,
+            itemsPerPage: 1,
+          },
+        });
+        if (entriesRes.data.length) {
+          goto(resolve(`/projects/${driver.project.id}/datasets/${driver.dataset.id}/entries`));
+        } else {
+          goto(resolve(`/projects/${driver.project.id}/datasets`));
+        }
+      } catch (error) {
+        console.error(error);
+        goto(resolve(`/projects/${driver.project.id}/datasets`));
+      }
+    });
   }
 
   // Determine the current workflow step type
-  const isReviewStep = $derived(context.workflowStep === "review");
-  const isDoneStep = $derived(context.workflowStep === "done");
-  const isAnnotateStep = $derived(context.workflowStep === "annotate");
+  const isReviewStep = $derived(driver.workflowStep === "review");
+  const isDoneStep = $derived(driver.workflowStep === "done");
+  const isAnnotateStep = $derived(driver.workflowStep === "annotate");
 
   // For custom workflow steps (not standard review/annotate/done)
-  const isCustomStep = $derived(!isReviewStep && !isDoneStep && !isAnnotateStep && context.workflowStep !== "start");
+  const isCustomStep = $derived(!isReviewStep && !isDoneStep && !isAnnotateStep && driver.workflowStep !== "start");
 
   // Get a human-readable label for the current step
   function getStepLabel(step: string): string {
@@ -173,18 +209,42 @@
   }
 
   function toggleCommand() {
-    context.commands.run("command_dialog");
+    driver.command.openPalette();
   }
+
+  function cmdShortcut(name: string): string | undefined {
+    const s = driver.command.getShortcut(name);
+    return s ? getShortcutLabel(s) : undefined;
+  }
+
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
-    <ToolTooltip
-      label="Shortcuts"
-      shortcut={getShortcut(context.shortcutReferences?.["command_dialog"].keyCombinations)}
-      align="center"
-      delayDuration={100}
-    >
+    {#if currentMode === "review" || currentMode === "note"}
+      <ToolTooltip
+        label="All Notes"
+        shortcut={cmdShortcut("core.toggle_note_sidebar")}
+        align="center"
+        delayDuration={100}
+      >
+        {#snippet trigger()}
+          <Button variant={noteSidebarOpen ? "default" : "ghost"} size="icon-sm" onclick={onNoteToggle}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 18.1581 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </Button>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
+
+    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
           <KeyboardIcon />
@@ -231,66 +291,59 @@
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuLabel>Frame step</DropdownMenuLabel>
-        <section class="flex flex-col gap-2 px-2 pb-2">
-          <div class="text-muted-foreground text-sm">
-            Set the number of frames to move <br />
-            when clicking the
-            <div class="inline-flex items-center gap-1">
-              <Button variant="outline" size="icon-sm" disabled>
-                <ChevronsLeft class="size-3" />
-              </Button>
-
-              <span>or</span>
-
-              <Button variant="outline" size="icon-sm" disabled>
-                <ChevronsRight class="size-3" />
-              </Button>
-            </div>
-            buttons<br />
-
-            in the video player.
-          </div>
-
-          <NumberField
-            name="settings/frame-step"
-            class="w-1/2"
-            placeholder="Frame step"
-            min={1}
-            value={frameStep}
-            oninput={(e) => setFrameStep(e.currentTarget.valueAsNumber)}
-            onblur={(e) => setFrameStep(e.currentTarget.valueAsNumber)}
-          />
-        </section>
       </DropdownMenuContent>
     </DropdownMenu>
 
-    {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <ToolTooltip {label} align="center" delayDuration={100}>
+    <EntryStatsModal {driver} />
+  </div>
+  <!-- Editor / Review segmented toggle -->
+  <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
+    <Button
+      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("editor")}
+    >
+      Editor
+    </Button>
+    <Button
+      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("review")}
+    >
+      Review
+    </Button>
+  </div>
+
+  <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
+  {#if showAutoSelect}
+    <div class="flex items-center gap-1">
+      <ToolTooltip
+        label="Automatically opens the next available entry after you submit the current one."
+        align="center"
+        delayDuration={100}
+      >
         {#snippet trigger()}
-          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
-            <Icon />
+          <Button variant="ghost" onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)} class="p-1.5">
+            <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
+            <Text size="xs" weight="light">Auto-select next entry</Text>
           </Button>
         {/snippet}
       </ToolTooltip>
-    {/each}
-  </div>
+    </div>
+  {/if}
 
-  {#if isDoneStep}
+  {#if driver.workflowStep === "done"}
     <!-- TODO: What to show? -->
-  {:else if isReviewStep}
+  {:else if driver.workflowStep === "review"}
     {#if currentStepConfig}
       <!-- Use dynamic workflow step component for review with config -->
       <WorkflowStepActions
-        {context}
+        workflowStep={driver.workflowStep}
         {loading}
         stepConfig={currentStepConfig}
         onSubmit={async (opts) => {
           loading = true;
-          await context.submit(opts);
+          await submit(opts);
         }}
       />
     {:else}
@@ -308,23 +361,23 @@
     <!-- Custom workflow step - use dynamic component if config available -->
     {#if currentStepConfig}
       <WorkflowStepActions
-        {context}
+        workflowStep={driver.workflowStep}
         {loading}
         stepConfig={currentStepConfig}
         onSubmit={async (opts) => {
           loading = true;
-          await context.submit(opts);
+          await submit(opts);
         }}
       />
     {:else}
       <!-- Fallback: simple submit button with step name -->
       <Button
         {loading}
-        loadingLabel="Submitting {getStepLabel(context.workflowStep)}"
+        loadingLabel="Submitting {getStepLabel(driver.workflowStep)}"
         size="sm"
         onclick={submitAnnotation}
       >
-        Submit {getStepLabel(context.workflowStep)}
+        Submit {getStepLabel(driver.workflowStep)}
       </Button>
     {/if}
   {:else}
@@ -332,7 +385,3 @@
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
-
-<NoteSidebar {context} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
-
-<NoteOverlay {context} {pluginContainerElement} />

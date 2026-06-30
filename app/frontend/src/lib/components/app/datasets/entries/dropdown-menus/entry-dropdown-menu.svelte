@@ -25,8 +25,10 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    onUnAssigned?: (entry: EntryRecord) => void;
+    onAssigned?: (entry: EntryRecord) => void;
   }
-  let { entry }: Props = $props();
+  let { entry, onUnAssigned, onAssigned }: Props = $props();
 
   // Records
   let projectId = page.params.projectId as string;
@@ -44,6 +46,8 @@
         openConfirmDeleteEntryModal = true;
       },
       isAssigned: !!entry.assigned_to_id,
+      isAssignDisabled: entry.wf_step === "done",
+      isUnassignDisabled: entry.wf_step === "done",
     }).filter((m) => m.label !== "Set Priority"),
   );
 
@@ -70,7 +74,7 @@
   });
 
   // Functions
-  async function openAssignEntryModal() {
+  async function openAssignEntryModal(): Promise<void> {
     const entryRes = await entriesBackendDataSource.get(entry.id, {
       noCache: true,
     });
@@ -79,19 +83,16 @@
     openAssignEntryFormModal = true;
   }
 
-  async function unAssignEntry() {
+  async function unAssignEntry(): Promise<void> {
     try {
-      await entriesBackendDataSource.update(entry.id, {
-        attributes: {
-          assigned_to_id: null,
-        },
-      });
+      const entryRes = await entriesBackendDataSource.unassign(entry.id);
+
+      onUnAssigned?.(entryRes.data);
 
       openConfirmUnassignEntryModal = false;
-      $refetches.entries.list = new Date();
       showToast.success({
         title: "Entry unassigned",
-        description: `The entry "${entry.name}" has been unassigned.`,
+        description: `The entry "${entry.name || entry.id}" has been unassigned.`,
       });
     } catch (error) {
       showToast.error({
@@ -101,7 +102,7 @@
     }
   }
 
-  async function deleteEntry() {
+  async function deleteEntry(): Promise<void> {
     try {
       await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 
@@ -118,6 +119,18 @@
       });
     }
   }
+
+  async function onEntryAssigned(): Promise<void> {
+    await entriesBackendDataSource
+      .get(entry.id, {
+        noCache: true,
+        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by"],
+      })
+      .then((res) => {
+        entry = res.data;
+        onAssigned?.(entry);
+      });
+  }
 </script>
 
 {#if canUpdateEntry || canDeleteEntry}
@@ -132,9 +145,9 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
-        {#each menus as { label, icon: Icon, action, hidden }, index (index)}
+        {#each menus as { label, icon: Icon, action, hidden, destructive, disabled }, index (index)}
           {#if !hidden}
-            <DropdownMenuItem onclick={action}>
+            <DropdownMenuItem variant={destructive ? "destructive" : "default"} {disabled} onclick={action}>
               <Icon class="size-4" />
               {label}
             </DropdownMenuItem>
@@ -145,7 +158,13 @@
   </DropdownMenu>
 
   <!-- MODAL::ASSIGN ANNOTATOR  -->
-  <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
+  <AssignEntryFormModal
+    action="update"
+    {entryRecord}
+    onAssigned={onEntryAssigned}
+    entryIds={[entry.id]}
+    bind:open={openAssignEntryFormModal}
+  />
 
   <!-- MODAL::CONFIRM UNASSIGN -->
   <ConfirmModal

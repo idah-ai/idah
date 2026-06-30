@@ -1,0 +1,244 @@
+// ---------------------------------------------------------------------------
+// annotation.test.ts — Unit tests for annotation visibility & lock state
+// ---------------------------------------------------------------------------
+import { describe, it, expect, beforeEach } from "vitest";
+import { annotation } from "./annotation.svelte";
+import type { IAnnotationRecord } from "$idah/v2/types";
+
+/** Create a minimal annotation record for testing purposes. */
+function mockRecord(id: string, group_id?: string): IAnnotationRecord {
+  return {
+    id,
+    shape: {},
+    metadata: group_id != null ? { group_id } : undefined,
+  };
+}
+
+const ann1 = mockRecord("ann-001");
+const ann2 = mockRecord("ann-002");
+
+describe("annotation state", () => {
+  beforeEach(() => {
+    annotation.clearLocked();
+    annotation.clearHidden();
+  });
+
+  describe("initial state", () => {
+    it("reports no ids as locked", () => {
+      expect(annotation.isLocked(ann1)).toBe(false);
+    });
+
+    it("reports no ids as hidden", () => {
+      expect(annotation.isHidden(ann1)).toBe(false);
+    });
+  });
+
+  describe("isLocked (string overload)", () => {
+    it("returns true when the string id is locked", () => {
+      annotation.toggleLocked("string-1", true);
+      expect(annotation.isLocked("string-1")).toBe(true);
+    });
+
+    it("returns false when the string id is not locked", () => {
+      expect(annotation.isLocked("string-1")).toBe(false);
+    });
+
+    it("returns false when a different string id is locked", () => {
+      annotation.toggleLocked("string-1", true);
+      expect(annotation.isLocked("string-2")).toBe(false);
+    });
+  });
+
+  describe("isHidden (string overload)", () => {
+    it("returns true when the string id is hidden", () => {
+      annotation.toggleHidden("string-1", true);
+      expect(annotation.isHidden("string-1")).toBe(true);
+    });
+
+    it("returns false when the string id is not hidden", () => {
+      expect(annotation.isHidden("string-1")).toBe(false);
+    });
+
+    it("returns false when a different string id is hidden", () => {
+      annotation.toggleHidden("string-1", true);
+      expect(annotation.isHidden("string-2")).toBe(false);
+    });
+  });
+
+  describe("toggleLocked", () => {
+    it("locks an annotation", () => {
+      annotation.toggleLocked(ann1.id, true);
+      expect(annotation.isLocked(ann1)).toBe(true);
+    });
+
+    it("unlocks a previously locked annotation", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleLocked(ann1.id, false);
+      expect(annotation.isLocked(ann1)).toBe(false);
+    });
+
+    it("does not affect other annotations when locking", () => {
+      annotation.toggleLocked(ann1.id, true);
+      expect(annotation.isLocked(ann2)).toBe(false);
+    });
+
+    it("does not affect other annotations when unlocking", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleLocked(ann2.id, true);
+      annotation.toggleLocked(ann1.id, false);
+      expect(annotation.isLocked(ann2)).toBe(true);
+      expect(annotation.isLocked(ann1)).toBe(false);
+    });
+
+    it("is idempotent when locking an already-locked id", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleLocked(ann1.id, true);
+      expect(annotation.isLocked(ann1)).toBe(true);
+    });
+
+    it("is idempotent when unlocking an already-unlocked id", () => {
+      annotation.toggleLocked(ann1.id, false);
+      expect(annotation.isLocked(ann1)).toBe(false);
+    });
+  });
+
+  describe("toggleHidden", () => {
+    it("hides an annotation", () => {
+      annotation.toggleHidden(ann1.id, true);
+      expect(annotation.isHidden(ann1)).toBe(true);
+    });
+
+    it("unhides a previously hidden annotation", () => {
+      annotation.toggleHidden(ann1.id, true);
+      annotation.toggleHidden(ann1.id, false);
+      expect(annotation.isHidden(ann1)).toBe(false);
+    });
+
+    it("does not affect other annotations when hiding", () => {
+      annotation.toggleHidden(ann1.id, true);
+      expect(annotation.isHidden(ann2)).toBe(false);
+    });
+
+    it("does not affect other annotations when unhiding", () => {
+      annotation.toggleHidden(ann1.id, true);
+      annotation.toggleHidden(ann2.id, true);
+      annotation.toggleHidden(ann1.id, false);
+      expect(annotation.isHidden(ann2)).toBe(true);
+      expect(annotation.isHidden(ann1)).toBe(false);
+    });
+
+    it("is idempotent when hiding an already-hidden id", () => {
+      annotation.toggleHidden(ann1.id, true);
+      annotation.toggleHidden(ann1.id, true);
+      expect(annotation.isHidden(ann1)).toBe(true);
+    });
+
+    it("is idempotent when unhiding an already-visible id", () => {
+      annotation.toggleHidden(ann1.id, false);
+      expect(annotation.isHidden(ann1)).toBe(false);
+    });
+  });
+
+  describe("clearLocked", () => {
+    it("unlocks all locked annotations", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleLocked(ann2.id, true);
+      annotation.clearLocked();
+      expect(annotation.isLocked(ann1)).toBe(false);
+      expect(annotation.isLocked(ann2)).toBe(false);
+    });
+
+    it("is safe to call when nothing is locked", () => {
+      expect(() => annotation.clearLocked()).not.toThrow();
+    });
+  });
+
+  describe("clearHidden", () => {
+    it("unhides all hidden annotations", () => {
+      annotation.toggleHidden(ann1.id, true);
+      annotation.toggleHidden(ann2.id, true);
+      annotation.clearHidden();
+      expect(annotation.isHidden(ann1)).toBe(false);
+      expect(annotation.isHidden(ann2)).toBe(false);
+    });
+
+    it("is safe to call when nothing is hidden", () => {
+      expect(() => annotation.clearHidden()).not.toThrow();
+    });
+  });
+
+  describe("independent lock and hidden state", () => {
+    it("tracks lock and hidden independently", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleHidden(ann1.id, true);
+      expect(annotation.isLocked(ann1)).toBe(true);
+      expect(annotation.isHidden(ann1)).toBe(true);
+    });
+
+    it("clearing lock does not affect hidden state", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleHidden(ann1.id, true);
+      annotation.clearLocked();
+      expect(annotation.isLocked(ann1)).toBe(false);
+      expect(annotation.isHidden(ann1)).toBe(true);
+    });
+
+    it("clearing hidden does not affect lock state", () => {
+      annotation.toggleLocked(ann1.id, true);
+      annotation.toggleHidden(ann1.id, true);
+      annotation.clearHidden();
+      expect(annotation.isHidden(ann1)).toBe(false);
+      expect(annotation.isLocked(ann1)).toBe(true);
+    });
+  });
+
+  describe("group_id integration", () => {
+    it("isLocked returns true when group_id is locked", () => {
+      const groupAnn = mockRecord("ann-group-child", "group-1");
+      annotation.toggleLocked("group-1", true);
+      expect(annotation.isLocked(groupAnn)).toBe(true);
+    });
+
+    it("isHidden returns true when group_id is hidden", () => {
+      const groupAnn = mockRecord("ann-group-child", "group-1");
+      annotation.toggleHidden("group-1", true);
+      expect(annotation.isHidden(groupAnn)).toBe(true);
+    });
+
+    it("isLocked returns true when own id is locked on a grouped annotation", () => {
+      const groupAnn = mockRecord("ann-group-child", "group-1");
+      annotation.toggleLocked("ann-group-child", true);
+      expect(annotation.isLocked(groupAnn)).toBe(true);
+    });
+
+    it("isHidden returns true when own id is hidden on a grouped annotation", () => {
+      const groupAnn = mockRecord("ann-group-child", "group-1");
+      annotation.toggleHidden("ann-group-child", true);
+      expect(annotation.isHidden(groupAnn)).toBe(true);
+    });
+
+    it("isLocked returns true when both own id and group_id are locked", () => {
+      const groupAnn = mockRecord("ann-group-child", "group-1");
+      annotation.toggleLocked("ann-group-child", true);
+      annotation.toggleLocked("group-1", true);
+      expect(annotation.isLocked(groupAnn)).toBe(true);
+    });
+
+    it("isHidden returns true when both own id and group_id are hidden", () => {
+      const groupAnn = mockRecord("ann-group-child", "group-1");
+      annotation.toggleHidden("ann-group-child", true);
+      annotation.toggleHidden("group-1", true);
+      expect(annotation.isHidden(groupAnn)).toBe(true);
+    });
+
+    it("isLocked returns false when no group_id and id is not locked", () => {
+      const standalone = mockRecord("standalone-001");
+      expect(annotation.isLocked(standalone)).toBe(false);
+    });
+
+    it("isHidden returns false when no group_id and id is not hidden", () => {
+      const standalone = mockRecord("standalone-001");
+      expect(annotation.isHidden(standalone)).toBe(false);
+    });
+  });
+});

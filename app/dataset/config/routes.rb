@@ -11,5 +11,6 @@ Verse.on_boot do
     NoteFeedsExpo,
     NoteCommentsExpo,
     WorkflowsExpo,
+    EntryStatsExpo
   ].each(&:register)
 end

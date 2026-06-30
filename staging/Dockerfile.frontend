@@ -7,6 +7,7 @@ ENV NODE_ENV_ALIAS production
 
 ENV APP_PATH /app/frontend
 ENV LOCAL_APP_PATH ./app/frontend
+ENV LOCAL_PLUGINS_PATH ./plugins
 
 RUN mkdir -p $APP_PATH
 
@@ -27,7 +28,17 @@ RUN pnpm run build:parser
 # Accept VITE_IDAH_HOST as a build argument with a default value
 ARG VITE_IDAH_HOST=http://localhost:8080
 RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} pnpm run build --mode $NODE_ENV_ALIAS
-RUN pnpm run build:idah-video
+
+COPY $LOCAL_PLUGINS_PATH $APP_PATH/plugins
+WORKDIR $APP_PATH/plugins/idah-video/frontend
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build
+
+WORKDIR $APP_PATH/plugins/idah-image/frontend
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build
+
+WORKDIR $APP_PATH
 
 # Delete source code files that were used to build the app that are no longer needed
 RUN rm -rf static/ emailTemplates/ docker-compose.yml

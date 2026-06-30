@@ -1,46 +1,100 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
+  import type { IdahDriverV2 } from "./v2/driver";
+  import type { IPluginDriver } from "./v2/types";
+
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
+  import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
+  import NoteOverlay from "@/plugin/layout/notes/NoteOverlay.svelte";
+  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
 
-  import type { IActivityContext, IActivityView } from "./interface/Activity";
-
-  // Props
   interface Props {
-    context: IActivityContext;
+    driver: IdahDriverV2;
   }
-  let { context }: Props = $props();
+  let { driver }: Props = $props();
 
   // Variables
   let pluginContainerElement = $state<HTMLElement | null>(null);
   let headerBarElement = $state<HTMLElement | null>(null);
   let headerBarHeight = $derived(headerBarElement?.clientHeight ?? 50);
-  let plugin: IActivityView | undefined = $state();
+  let plugin: IPluginDriver | undefined = $state();
+  let notesReady = $state(false);
 
-  let p: Promise<IActivityView> = new Promise<IActivityView>((ok, ko) => {
+  let p: Promise<IPluginDriver> = new Promise<IPluginDriver>((ok, ko) => {
     if (!window.idah_plugin) {
       ko();
     } else {
-      ok(window.idah_plugin as IActivityView);
+      ok(window.idah_plugin as IPluginDriver);
     }
+  });
+  // ── Listen to mode changes to refresh toolbar ────────────────────────
+  let currentMode = $state(driver.mode);
+  let paletteOpen = $state(driver.command.isPaletteOpen());
+  let initialized = $state(false);
+
+  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
+
+  driver.onModeChange((event) => {
+    currentMode = event.newValue;
+  });
+
+  driver.notesAdapter!.onNoteSidebarChange((open) => {
+    noteSidebarOpen = open;
   });
 
   onMount(() => {
+    // Initialise notes cache from backend
+    const na = driver.notesAdapter;
+    if (na) {
+      na.fetchForEntry()
+        .then(() => {
+          notesReady = true;
+        })
+        .catch(() => {
+          notesReady = true;
+        });
+    } else {
+      notesReady = true;
+    }
+
     p.then((_plugin) => {
       plugin = _plugin;
-      // console.debug({ plugin: $state.snapshot(plugin), pluginContainerElement, context });
-      plugin.render?.(pluginContainerElement, context);
+      plugin.init(driver.sealed());
+      initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
     });
+    const unsub = driver.command.onPaletteChange((open: boolean) => {
+      paletteOpen = open;
+    });
+    return unsub;
+  });
+
+  $effect(() => {
+    if (!plugin) return;
+    if (!pluginContainerElement) return;
+    if (initialized) plugin.render(pluginContainerElement);
   });
 
   onDestroy(() => {
-    plugin?.close?.();
+    plugin?.close();
   });
 </script>
 
 <div class="relative">
-  <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {context} />
+  {#if initialized}
+    {#if notesReady && (currentMode === "review" || currentMode === "note")}
+      <NoteOverlay notesAdapter={driver.notesAdapter} />
+    {/if}
 
+    <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />
+
+    <IdahCommandPalette
+      open={paletteOpen}
+      onOpenChange={(o) => driver.command.openPalette(o)}
+      commandManager={driver.command}
+      mode={currentMode}
+    />
+  {/if}
   <!-- Plugin Container -->
   <div style:height={`calc(100vh - ${headerBarHeight + 1}px)`} bind:this={pluginContainerElement}>
     {#await p}
@@ -51,4 +105,14 @@
       Could not find plugin
     {/await}
   </div>
+
+  <!-- Note Sidebar (overlay) -->
+  <NoteSidebar
+    {driver}
+    open={initialized && (currentMode === "review" || currentMode === "note") && noteSidebarOpen}
+    onSidebarClose={() => {
+      noteSidebarOpen = false;
+      driver.notesAdapter!.closeNoteSidebar();
+    }}
+  />
 </div>

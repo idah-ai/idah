@@ -1,0 +1,30 @@
+import type { MediaRecord, ZipFileReport } from "@/data/model/media/medias/medias-record";
+
+export interface UploadItem {
+  uuid: string;
+  media: File;
+  name: string;
+  uploadedMedias: Array<MediaRecord>; // set once media upload succeeds — skip on retry
+  skippedMedias: Array<ZipFileReport>;
+  errorMedias: Array<ZipFileReport>; // per-file errors reported by the backend when processing a zip archive
+  isZip: boolean;
+  status: "uploading" | "retrying" | "completed";
+  retryCount: number; // auto-retry attempts consumed
+  createdEntryCount: number; // entries already persisted — used to resume partial entry creation on retry
+  errorMessage?: string; // last error for display
+}
+
+export function createUploadItem(file: File): UploadItem {
+  return {
+    uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
+    name: file.name,
+    media: file,
+    isZip: file.name.toLowerCase().endsWith(".zip"),
+    status: "uploading",
+    retryCount: 0,
+    createdEntryCount: 0,
+    uploadedMedias: [],
+    skippedMedias: [],
+    errorMedias: [],
+  };
+}
