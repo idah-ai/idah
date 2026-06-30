@@ -3,9 +3,9 @@ import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as I
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
-import { selection } from "$lib/state/selection.svelte";
 
 import type { IImageAnnotationRecord } from "$lib/types";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export interface AnnotationAction {
   id: string;
@@ -70,7 +70,7 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
     label: "Delete annotation",
     icon: Trash2Icon,
     destructive: true,
-    disabled: items.some((item) => annotation.isLocked(item)),
+    disabled: viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
     onClick: () => {
       showConfirmDialog({
         title: "Delete annotation",
@@ -83,7 +83,10 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
   };
 }
 
-export function getAnnotationActions(props: { items: IImageAnnotationRecord[]; annotationId: string }): AnnotationAction[] {
+export function getAnnotationActions(props: {
+  items: IImageAnnotationRecord[];
+  annotationId: string;
+}): AnnotationAction[] {
   const { items, annotationId } = props;
 
   const actions = [

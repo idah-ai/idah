@@ -61,16 +61,14 @@
     autoSelectNextEntryStore.set(autoSelectNextEntry);
   });
 
-  // Fetch entry status to decide whether to show auto-select
-  let entryStatus = $state<string | null>(null);
-  $effect(() => {
-    entriesBackendDataSource
-      .get(driver.id, { fields: { [EntryRecord.type]: ["status"] }, noCache: false })
-      .then((res) => {
-        entryStatus = res.data.status;
-      });
-  });
-  let showAutoSelect = $derived(entryStatus && entryStatus !== "completed" && entryStatus !== "errored");
+  let showAutoSelect = $derived(
+    driver.entryStatus && driver.entryStatus !== "completed" && driver.entryStatus !== "errored",
+  );
+
+  // Switch to review mode when entry is completed (only evaluated at mount since entryStatus is static)
+  if (driver.entryStatus === "completed") {
+    driver.setMode("review");
+  }
 
   // Unresolved note feed count
   let unresolvedFeedCount = $state(0);
@@ -266,13 +264,15 @@
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
-    <Button
-      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
-      size="sm"
-      onclick={() => driver.setMode("editor")}
-    >
-      Editor
-    </Button>
+    {#if driver.entryStatus !== "completed"}
+      <Button
+        variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+        size="sm"
+        onclick={() => driver.setMode("editor")}
+      >
+        Editor
+      </Button>
+    {/if}
     <div class="relative">
       <Button
         variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
@@ -293,20 +293,20 @@
 
   <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
   {#if showAutoSelect}
-    <div class="flex items-center gap-1">
-      <ToolTooltip
-        label="Automatically opens the next available entry after you submit the current one."
-        align="center"
-        delayDuration={100}
-      >
-        {#snippet trigger()}
-          <Button variant="ghost" onclick={() => (autoSelectNextEntry = !autoSelectNextEntry)} class="p-1.5">
+    <ToolTooltip
+      label="Automatically opens the next available entry after you submit the current one."
+      align="center"
+      delayDuration={100}
+    >
+      {#snippet trigger()}
+        <label class="flex cursor-pointer whitespace-nowrap" for="auto-select-next">
+          <div class="flex items-center gap-1.5 p-1.5">
             <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
             <Text size="xs" weight="light">Auto-select next entry</Text>
-          </Button>
-        {/snippet}
-      </ToolTooltip>
-    </div>
+          </div>
+        </label>
+      {/snippet}
+    </ToolTooltip>
   {/if}
 
   {#if driver.workflowStep === "done"}

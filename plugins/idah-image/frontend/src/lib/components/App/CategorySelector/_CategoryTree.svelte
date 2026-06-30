@@ -22,7 +22,14 @@
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
+    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
+    IMAGE_LINE as IDAH_IMAGE_LINE,
+    IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
+  } from "$lib/types";
 
   import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
 
@@ -64,7 +71,8 @@
 
     onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
   }
-  let { view, db, items, modalityShape, categories, onSelectCategory, selectedCategory, onDeleteAnnotation }: Props = $props();
+  let { view, db, items, modalityShape, categories, onSelectCategory, selectedCategory, onDeleteAnnotation }: Props =
+    $props();
 
   // Variables
   let openCategory = $state(true);
@@ -317,21 +325,19 @@
 
             <!-- Icon Actions -->
             <div class="ml-auto flex shrink-0 items-center">
-              {#if mode == DEFAULT_MODE}
-                {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
-                  <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-                    <CategoryAction
-                      {label}
-                      {icon}
-                      {disabled}
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        onClick(e);
-                      }}
-                    ></CategoryAction>
-                  </div>
-                {/each}
-              {/if}
+              {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
+                <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                  <CategoryAction
+                    {label}
+                    {icon}
+                    {disabled}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      onClick(e);
+                    }}
+                  ></CategoryAction>
+                </div>
+              {/each}
 
               <AnnotationCountBadge
                 class={cn("mr-2 ml-1 opacity-0", {

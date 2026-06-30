@@ -342,22 +342,20 @@
             })}
 
             <!-- Icon Actions -->
-             <div class="ml-auto flex shrink-0 items-center">
-              {#if mode == EDITOR_MODE}
-                {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
-                  <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-                    <CategoryAction
-                      {label}
-                      {icon}
-                      {disabled}
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        onClick(e);
-                      }}
-                    ></CategoryAction>
-                  </div>
-                {/each}
-              {/if}
+            <div class="ml-auto flex shrink-0 items-center">
+              {#each actions as { label, icon, alwaysShow, disabled, onClick }, index (index)}
+                <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                  <CategoryAction
+                    {label}
+                    {icon}
+                    {disabled}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      onClick(e);
+                    }}
+                  ></CategoryAction>
+                </div>
+              {/each}
 
               <AnnotationCountBadge
                 class={cn("mr-2 ml-1 opacity-0", {
