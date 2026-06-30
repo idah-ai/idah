@@ -40,6 +40,7 @@
   import type { Point } from "$lib/utils/math/point";
   import { centroid as centroidUtil } from "$lib/utils/math/point";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { resolveAnnotationColor } from "$lib/utils/color";
 
   // ── Types ──────────────────────────────────────────────────────────────
   export interface OnAddNewNoteParams {
@@ -181,8 +182,12 @@
   let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
 
-  /** Preview color for create-shape overlays. */
-  let previewColor = $derived(categoryColor);
+  /** Preview color for create-shape overlays — uses categoryColor or falls back to pendingAnnotation's category. */
+  let previewColor = $derived.by<string | undefined>(() => {
+    if (categoryColor) return categoryColor;
+    if (!pendingAnnotation) return undefined;
+    return resolveAnnotationColor(pendingAnnotation);
+  });
 
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
