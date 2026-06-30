@@ -5,7 +5,8 @@ module Entry
     use entries: Entry::Repository,
         datasets: Dataset::Repository,
         projects: Project::Repository,
-        project_members: ProjectMember::Repository
+        project_members: ProjectMember::Repository,
+        annotations: Annotation::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -179,6 +180,94 @@ module Entry
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
         system_entries_repo.unassign(entry.id)
+      end
+    end
+
+    def duplicate_entries(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
+      dataset = datasets.find(dataset_id)
+
+      unless dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset not found to duplicate entries"
+      end
+
+      # With "as_user" access ensure account can "create" entry to the project
+      if auth_context.can?(:create, entries.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           dataset.project_id,
+           ["project_owner"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create entry on this project"
+      end
+
+      duping_entries = if entry_ids
+                         # INFO: also filter with duping_dataset_id to ensure the entries are in the duping dataset
+                         system_entries_repo.chunked_index({ id: entry_ids, dataset_id: duping_dataset_id })
+                       else
+                         system_entries_repo.chunked_index({ dataset_id: duping_dataset_id })
+                       end
+
+      duping_entries.each do |duping_entry|
+        # Skip sources whose media is still processing — duplicating them would
+        # mean riding the original's in-flight job, which we deliberately avoid.
+        # Only already-processed entries (media job done, advanced off "start")
+        # are duplicated; their media is reused via the shared resource so no new
+        # processing job runs (no created event).
+        next if duping_entry.status == "processing"
+
+        now = Time.now
+        entry_id = UUIDv7.generate
+        attributes = {
+          **duping_entry.fields,
+          id: entry_id,
+          project_id: duping_entry.project_id,
+          dataset_id: dataset_id,
+          job_id: duping_entry.job_id,
+          wf_step: "start",
+          status: "pending",
+          assigned_to_id: nil,
+          submitted_by_id: nil,
+          reviewed_by_id: nil,
+          created_at: now,
+          updated_at: now,
+        }
+
+        begin
+          entries.transaction do
+            # No event: a duplicate must never trigger its own processing job.
+            entries.no_event { entry_id = entries.create(attributes) }
+
+            # Advance the duplicate off "start" right away — its media is already
+            # processed, so we drive the workflow instead of waiting on a job.
+            entry = system_entries_repo.find!(entry_id, included: [:dataset])
+            entry.dataset.entry_workflow.new(system_entries_repo, entry).submit!
+            system_datasets_repo.update_progress!(entry.dataset_id)
+
+            if with_annotations
+              annotations.chunked_index({ entry_id: duping_entry.id }).each do |annotation|
+                annotations.create(
+                  {
+                    **annotation.fields,
+                    id: UUIDv7.generate,
+                    project_id: duping_entry.project_id,
+                    dataset_id: dataset_id,
+                    entry_id: entry_id,
+                    created_at: now,
+                    updated_at: now,
+                  }
+                )
+              end
+            end
+          end
+        rescue StandardError => e
+          # Best-effort duplication: skip the failed entry and continue the batch.
+          Verse.logger&.error do
+            "duplicate_entries: skipped source entry #{duping_entry.id}: #{e.message}"
+          end
+          next
+        end
       end
     end
   end

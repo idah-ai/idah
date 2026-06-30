@@ -243,6 +243,11 @@ module Dataset
       end
     end
 
+    event(name: "duplicated")
+    def duplicate(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
+      # NOTE: just publish the event
+    end
+
     private
 
     def add_event_metadata(**opts)
