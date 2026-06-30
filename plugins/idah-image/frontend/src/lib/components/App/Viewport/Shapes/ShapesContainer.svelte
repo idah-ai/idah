@@ -477,7 +477,7 @@
 
     <g>
       <!-- Build mode: bounding box creation preview -->
-      {#if isBoundingBoxMode && !pendingAnnotation}
+      {#if isBoundingBoxMode}
         <BBoxCreateShape
           bind:this={bboxCreateComp}
           cursor={sceneNormalizedCursor}
@@ -489,7 +489,7 @@
       {/if}
 
       <!-- Build mode: circle creation preview -->
-      {#if isCircleMode && !pendingAnnotation}
+      {#if isCircleMode}
         <CircleCreateShape
           bind:this={circleCreateComp}
           cursor={sceneNormalizedCursor}
@@ -501,7 +501,7 @@
       {/if}
 
       <!-- Build mode: ellipse creation preview -->
-      {#if isEllipseMode && !pendingAnnotation}
+      {#if isEllipseMode}
         <EllipseCreateShape
           bind:this={ellipseCreateComp}
           cursor={sceneNormalizedCursor}
@@ -513,7 +513,7 @@
       {/if}
 
       <!-- Build mode: line creation preview -->
-      {#if isLineMode && !pendingAnnotation}
+      {#if isLineMode}
         <LineCreateShape
           bind:this={lineCreateComp}
           cursor={sceneNormalizedCursor}
@@ -525,7 +525,7 @@
       {/if}
 
       <!-- Build mode: polygon creation preview -->
-      {#if isPolygonMode && !pendingAnnotation}
+      {#if isPolygonMode}
         <PolygonCreateShape
           bind:this={polygonCreateComp}
           cursor={sceneNormalizedCursor}
