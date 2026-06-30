@@ -60,6 +60,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _workflowStep: string;
   private _workflowName: string;
   private _allowedNoteFeed: string[] = [];
+  private _entryStatus: string;
   private _mode = "editor";
   private _ready = false;
 
@@ -83,6 +84,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     workflowStep: string;
     workflowName: string;
     allowedNoteFeed?: string[];
+    entryStatus: string;
   }) {
     this._id = opts.id;
     this._dataset = opts.dataset;
@@ -92,6 +94,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._workflowStep = opts.workflowStep;
     this._workflowName = opts.workflowName;
     this._allowedNoteFeed = opts.allowedNoteFeed ?? [];
+    this._entryStatus = opts.entryStatus;
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
     });
@@ -208,6 +211,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   get allowedNoteFeed(): string[] {
     return this._allowedNoteFeed;
   }
+  get entryStatus(): string {
+    return this._entryStatus;
+  }
   get mode(): string {
     return this._mode;
   }
@@ -316,6 +322,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get allowedNoteFeed() {
         return driver.allowedNoteFeed;
       },
+      get entryStatus() {
+        return driver.entryStatus;
+      },
       get mode() {
         return driver.mode;
       },
@@ -404,7 +413,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
   };
 
   // Fetch workflow configuration to get workflowName and allowedNoteFeed
-  const workflowName = dataset.workflow_name ?? "";
+  const workflowName = dataset.workflow_name ?? "default";
   let allowedNoteFeed: string[] = [];
 
   try {
@@ -431,6 +440,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     workflowStep: entry.wf_step,
     workflowName,
     allowedNoteFeed,
+    entryStatus: entry.status,
   });
 
   return driver;

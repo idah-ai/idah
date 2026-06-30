@@ -86,6 +86,15 @@ module IdahVideo
 
         args += ["-threads", encoding_threads] if encoding_threads
 
+        # Start the output timeline at PTS 0. The MPEG-TS muxer otherwise applies
+        # a default ~1.4s mux preload/delay, so the first frame lands at 1.4s
+        # instead of 0. Players (hls.js) only partially rebase that, leaving a
+        # residual offset that throws off frame-accurate seeking. Zeroing both
+        # makes new streams start clean. (Legacy streams and any source-side
+        # residual are still handled by the frontend's startOffset anchor.)
+        args += ["-muxdelay", "0"]
+        args += ["-muxpreload", "0"]
+
         # HLS output format and settings
         args += ["-f", "hls"] # Output format: HLS
         args += ["-hls_time", streaming_time_per_segment.to_s]  # Target segment duration

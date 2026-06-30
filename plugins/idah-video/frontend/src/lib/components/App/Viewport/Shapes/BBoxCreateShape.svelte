@@ -9,6 +9,7 @@
   // ---------------------------------------------------------------------------
 
   import { onMount } from "svelte";
+  import { hexToRgba } from "$lib/utils/color";
   import type { Point } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -18,9 +19,11 @@
     mediaHeight: number;
     frame: number;
     onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
+    /** Category color for the preview shape. */
+    color?: string;
   };
 
-  let { cursor, mediaWidth, mediaHeight, frame, onSelection }: Props = $props();
+  let { cursor, mediaWidth, mediaHeight, frame, onSelection, color = undefined }: Props = $props();
 
   // ── Build state ────────────────────────────────────────────────────────
   let buildStart: Point | undefined = $state();
@@ -81,8 +84,8 @@
     y={Math.min(sy, cy)}
     width={Math.abs(cx - sx)}
     height={Math.abs(cy - sy)}
-    fill="rgba(246, 64, 43, 0.15)"
-    stroke="rgba(246, 64, 43, 0.8)"
+    fill={hexToRgba(color, 0.15)}
+    stroke={hexToRgba(color, 0.8)}
     stroke-width="2"
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"

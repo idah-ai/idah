@@ -84,6 +84,7 @@
         {
           label: "API Keys",
           icon: KeyIcon,
+          visibleIfRoles: ["admin", "org_owner"],
           action: () => {
             goto(resolve("/api-keys"));
           },

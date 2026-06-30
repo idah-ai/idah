@@ -246,8 +246,10 @@
     const currentValues: (string | boolean)[] = filters[filterKeyWithOperation] || [];
     let updatedValues: (string | boolean)[];
 
-    if (currentValues.includes(value)) {
-      updatedValues = currentValues.filter((currentValue) => currentValue !== value);
+    // Compare stringified: values restored from the URL are strings ("0") but numeric choice
+    // values (e.g. priority) are numbers (0), so strict includes/!== would miss them and duplicate.
+    if (currentValues.some((currentValue) => String(currentValue) === String(value))) {
+      updatedValues = currentValues.filter((currentValue) => String(currentValue) !== String(value));
     } else {
       updatedValues = [...currentValues, value];
     }
@@ -452,7 +454,9 @@
           {:else if filterOptions?.filterBy === "multiple-select"}
             {#if filterOptions.choices}
               {#each filterOptions.choices as choice (choice.value)}
-                {@const isSelected = filters[filterKeyWithOperation]?.includes(choice.value)}
+                {@const isSelected = filters[filterKeyWithOperation]?.some(
+                  (v: string | number | boolean) => String(v) === String(choice.value),
+                )}
 
                 <CommandItem
                   class={cn("", { "bg-primary/10": isSelected })}

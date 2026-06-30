@@ -1,6 +1,5 @@
 import { showToast } from "@/components/ui/toast/index.svelte";
 import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 import { showActionFailedToast } from "@/utils/error/error.toasts";
 
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -56,12 +55,4 @@ export async function deleteEntries(
     });
     return false;
   }
-}
-
-export async function exportEntries(datasetId: string, entryIds: string[]): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (ExportsBackendDataSource as any).export({
-    datasets: { id: datasetId },
-    entries: { id__in: entryIds },
-  });
 }

@@ -119,7 +119,10 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     // Cache Management
     const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    // Note: Clear dataset cache as well so the Datasets list reflects the updated status on return.
+    const cacheDatasetIndexKey = resourcePath(datasetBasePath, null, undefined);
     clearCache(cacheIndexKey);
+    clearCache(cacheDatasetIndexKey);
 
     if (body && body.errors) {
       if (body.errors.length > 0) {
@@ -144,7 +147,10 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     // Cache Management
     const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    // Note: Clear dataset cache as well so the Datasets list reflects the updated status on return.
+    const cacheDatasetIndexKey = resourcePath(datasetBasePath, null, undefined);
     clearCache(cacheIndexKey);
+    clearCache(cacheDatasetIndexKey);
 
     if (body && body.errors) {
       if (body.errors.length > 0) {

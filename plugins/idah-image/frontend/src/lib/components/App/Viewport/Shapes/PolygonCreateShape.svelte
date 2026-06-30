@@ -11,8 +11,10 @@
 
   import { onMount } from "svelte";
 
+  import { hexToRgba } from "$lib/utils/color";
+
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+    import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
@@ -24,9 +26,11 @@
     mediaWidth: number;
     mediaHeight: number;
     onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
+    /** Category color for the preview shape. */
+    color?: string;
   };
 
-  let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
+  let { cursor, mediaWidth, mediaHeight, onSelection, color = undefined }: Props = $props();
 
   // Keep points at fixed screen size regardless of zoom
   let invScale = $derived(1 / viewport.workspace.transform.scale);
@@ -48,7 +52,7 @@
       nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, polygonDraft.points, viewport.workspace.transform.scale)
     ) {
       const pts = [...polygonDraft.points];
-      polygonDraft.reset();
+      polygonDraft.points = [];
       // Route through onSelection so the workspace can apply pendingValue (selected category)
       onSelection("idah-image:polygon", pts);
       return true;
@@ -62,7 +66,7 @@
   // ── Cleanup on unmount ─────────────────────────────────────────────────
   onMount(() => {
     return () => {
-      polygonDraft.reset();
+      polygonDraft.points = [];
     };
   });
 </script>
@@ -75,7 +79,7 @@
   <polyline
     points={pts.map((p) => `${p[0] * mediaWidth},${p[1] * mediaHeight}`).join(" ")}
     fill="none"
-    stroke="rgba(246, 64, 43, 0.8)"
+    stroke={hexToRgba(color, 0.8)}
     stroke-width="2"
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
@@ -87,7 +91,7 @@
     y1={pts[pts.length - 1][1] * mediaHeight}
     x2={cursorPos[0] * mediaWidth}
     y2={cursorPos[1] * mediaHeight}
-    stroke="rgba(246, 64, 43, 0.4)"
+    stroke={hexToRgba(color, 0.4)}
     stroke-width="2"
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
@@ -99,7 +103,7 @@
       cx={p[0] * mediaWidth}
       cy={p[1] * mediaHeight}
       r={R_vertex}
-      fill="rgba(246, 64, 43, 0.9)"
+      fill={hexToRgba(color, 0.9)}
       stroke="white"
       stroke-width="1.5"
       vector-effect="non-scaling-stroke"
@@ -112,7 +116,7 @@
     cy={pts[0][1] * mediaHeight}
     r={R_ring}
     fill="none"
-    stroke="rgba(246, 64, 43, 0.9)"
+    stroke={hexToRgba(color, 0.9)}
     stroke-width="2"
     stroke-dasharray="2,2"
     vector-effect="non-scaling-stroke"

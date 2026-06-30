@@ -482,6 +482,9 @@ export interface ICommandDriverV2 {
   /** Return the current undo / redo stacks (each up to `n` entries). */
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
 
+  /** Subscribe to undo/redo stack changes. Returns unsubscribe function. */
+  onStackChange(cb: () => void): () => void;
+
   /** Return commands whose mode list includes the current mode. */
   getActiveCommands(): ICommandDescriptor[];
 
@@ -642,6 +645,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly project: IProjectInfo;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
+  readonly entryStatus: string;
   readonly mode: string;
 
   /**

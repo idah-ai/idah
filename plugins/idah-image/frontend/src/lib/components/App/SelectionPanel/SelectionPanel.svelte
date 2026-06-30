@@ -11,6 +11,7 @@
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
   import circleIconSvg from "$lib/assets/icons/circle.svg?raw";
+  import ellipseIconSvg from "$lib/assets/icons/ellipse.svg?raw";
   import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
 
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
@@ -28,7 +29,14 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
+    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
+    IMAGE_LINE as IDAH_IMAGE_LINE,
+    IMAGE_POLYGON,
+  } from "$lib/types";
   import { cn } from "$lib/utils";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
@@ -129,7 +137,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          disabled: isSomeLocked,
+          disabled: isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
@@ -165,6 +173,8 @@
     <Icon src={polygonIconSvg} {color} />
   {:else if shapeType === IDAH_IMAGE_CIRCLE}
     <Icon src={circleIconSvg} {color} />
+  {:else if shapeType === IDAH_IMAGE_ELLIPSE}
+    <Icon src={ellipseIconSvg} {color} />
   {:else if shapeType === IDAH_IMAGE_LINE}
     <Icon src={lineIconSvg} {color} />
   {:else}
@@ -234,7 +244,7 @@
           {@const annConfig = getDriver().config[annShapeType]}
           {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
           {@const annColor = annCategory?.color ?? null}
-          {@const annDisplayName = annCategory?.label ?? (ann.value?.category ?? "Uncategorized")}
+          {@const annDisplayName = annCategory?.label ?? ann.value?.category ?? "Uncategorized"}
           {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
           <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
             <button
@@ -245,6 +255,8 @@
                 <Icon src={polygonIconSvg} color={annColor} />
               {:else if annShapeType === IDAH_IMAGE_CIRCLE}
                 <Icon src={circleIconSvg} color={annColor} />
+              {:else if annShapeType === IDAH_IMAGE_ELLIPSE}
+                <Icon src={ellipseIconSvg} color={annColor} />
               {:else if annShapeType === IDAH_IMAGE_LINE}
                 <Icon src={lineIconSvg} color={annColor} />
               {:else}
