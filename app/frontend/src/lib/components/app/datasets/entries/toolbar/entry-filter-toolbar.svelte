@@ -63,7 +63,7 @@
   let entryColumns = $derived(createEntryColumns(workflowSteps));
 
   onMount(async () => {
-    if (!workflowName) return;
+    const targetWorkflowName = workflowName || "default";
 
     try {
       const res = await fetch(workflowsBasePath);
@@ -71,7 +71,7 @@
       const workflows: Array<{ name: string; steps?: Array<{ name: string; label: string }> }> =
         jsonData.data?.workflows ?? [];
 
-      const workflow = workflows.find((w) => w.name === workflowName);
+      const workflow = workflows.find((w) => w.name === targetWorkflowName);
       if (workflow?.steps) {
         workflowSteps = workflow.steps.map((s) => ({
           value: s.name,

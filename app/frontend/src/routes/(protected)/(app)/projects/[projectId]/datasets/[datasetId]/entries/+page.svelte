@@ -36,7 +36,7 @@
   const datasetId = page.params.datasetId as string;
 
   // Workflow name from the dataset for filtering by workflow stage
-  const workflowName: string | null = dataset.workflow_name;
+  const workflowName = dataset.workflow_name ?? "default";
 
   // Controller owns all list state, fetching, URL sync, and persistence
   const controller = new EntriesListController(datasetId);
