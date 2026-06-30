@@ -25,6 +25,20 @@ export class CommandManagerV2 {
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
   currentMode: string = "editor";
 
+  /** Listeners notified each time the undo/redo stacks change. */
+  private stackChangeListeners: Set<() => void> = new Set();
+
+  /** Subscribe to stack changes (undo/redo/call). Returns unsubscribe function. */
+  onStackChange(cb: () => void): () => void {
+    this.stackChangeListeners.add(cb);
+    return () => this.stackChangeListeners.delete(cb);
+  }
+
+  /** Notify all stack-change listeners. */
+  private notifyStackChanged(): void {
+    for (const cb of this.stackChangeListeners) cb();
+  }
+
   /**
    * Normalize shortcut strings so that `Control` is replaced with `Meta` on
    * Apple platforms (macOS / iOS). This ensures command files can always use
@@ -91,6 +105,7 @@ export class CommandManagerV2 {
             timestamp: Date.now(),
           };
           combined.do();
+          this.notifyStackChanged();
           return;
         }
       }
@@ -103,6 +118,7 @@ export class CommandManagerV2 {
     }
 
     action.do();
+    this.notifyStackChanged();
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -124,6 +140,7 @@ export class CommandManagerV2 {
       this.redoStack.push(entry);
       did = true;
     }
+    if (did) this.notifyStackChanged();
     return did;
   }
 
@@ -136,6 +153,7 @@ export class CommandManagerV2 {
       this.undoStack.push(entry);
       did = true;
     }
+    if (did) this.notifyStackChanged();
     return did;
   }
 
