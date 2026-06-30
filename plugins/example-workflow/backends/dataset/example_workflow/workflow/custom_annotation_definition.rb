@@ -24,8 +24,13 @@ module ExampleWorkflow
             label: "Review",
             description: "Review the annotation",
             actions: [
-              { key: "approved", label: "Approve", icon: "SquareCheckIcon" },
-              { key: "approved", label: "Request Changes", icon: "SquareXIcon" }
+              {
+                name: "approved",
+                choices: [
+                  { label: "Approve", icon: "SquareCheckIcon", value: true },
+                  { label: "Request Changes", icon: "SquareXIcon", value: false }
+                ]
+              }
             ]
           },
           {
@@ -33,8 +38,13 @@ module ExampleWorkflow
             label: "Final Check",
             description: "Final check before completion",
             actions: [
-              { key: "final_approved", label: "Approve Final Check", icon: "SquareCheckIcon" },
-              { key: "final_approved", label: "Request Changes in Final Check", icon: "SquareXIcon" }
+              {
+                name: "final_approved",
+                choices: [
+                  { label: "Approve Final Check", icon: "SquareCheckIcon", value: true },
+                  { label: "Request Changes in Final Check", icon: "SquareXIcon", value: false }
+                ]
+              }
             ]
           },
           { name: "done", label: "Done", description: "Annotation workflow completed" },

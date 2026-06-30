@@ -35,6 +35,9 @@
   const projectId = page.params.projectId as string;
   const datasetId = page.params.datasetId as string;
 
+  // Workflow name from the dataset for filtering by workflow stage
+  const workflowName: string | null = dataset.workflow_name;
+
   // Controller owns all list state, fetching, URL sync, and persistence
   const controller = new EntriesListController(datasetId);
 
@@ -84,6 +87,7 @@
       {canDeleteEntry}
       {projectId}
       {as_project_owner}
+      {workflowName}
       onOpenNewEntry={() => entriesModals?.openNewEntryModal()}
       onOpenAssign={() => entriesModals?.openAssignEntryModal()}
       onOpenUnassign={() => entriesModals?.openConfirmUnassignModal()}

@@ -549,7 +549,6 @@ export interface ICommandDriverV2 {
   /**
    * Return a consolidated reference list of all registered shortcuts
    * across all modes, for use in the command palette.
-   * Same shape as `IActivityContext.shortcutReferences`.
    */
   getShortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }>;
 }
@@ -644,6 +643,17 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly media: IMediaInfo;
   readonly workflowStep: string;
   readonly mode: string;
+
+  /**
+   * Workflow name (workflow_name from the dataset).
+   */
+  readonly workflowName: string;
+
+  /**
+   * List of workflow step names where note feed creation is allowed.
+   * Populated from the workflow definition's `allowed_note_feed` config.
+   */
+  readonly allowedNoteFeed: string[];
 
   setMode(mode: string): void;
   onModeChange(cb: (event: IModeEvent) => void): Unsubscribe;

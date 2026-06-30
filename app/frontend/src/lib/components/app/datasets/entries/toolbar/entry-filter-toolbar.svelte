@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -27,6 +26,11 @@
   import type { ColumnSettings } from "@/components/app/datasource-table/types";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
   import type { ProjectMemberScope } from "@/security/types";
+  import type { LabelValue } from "@/utils/types";
+
+  import { onMount } from "svelte";
+  import { workflowsBasePath } from "@/data/model/dataset/workflows/record";
+  import { createEntryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
 
   let {
     controller,
@@ -39,6 +43,7 @@
     onOpenUnassign,
     onOpenSetPriority,
     onOpenDelete,
+    workflowName,
   }: {
     controller: EntriesListController;
     canUpdateEntry: boolean;
@@ -50,7 +55,33 @@
     onOpenUnassign: () => void;
     onOpenSetPriority: () => void;
     onOpenDelete: () => void;
+    workflowName?: string | null;
   } = $props();
+
+  // Fetch workflow steps from the API to populate the Stage filter
+  let workflowSteps: LabelValue<string>[] = $state([]);
+  let entryColumns = $derived(createEntryColumns(workflowSteps));
+
+  onMount(async () => {
+    if (!workflowName) return;
+
+    try {
+      const res = await fetch(workflowsBasePath);
+      const jsonData = await res.json();
+      const workflows: Array<{ name: string; steps?: Array<{ name: string; label: string }> }> =
+        jsonData.data?.workflows ?? [];
+
+      const workflow = workflows.find((w) => w.name === workflowName);
+      if (workflow?.steps) {
+        workflowSteps = workflow.steps.map((s) => ({
+          value: s.name,
+          label: s.label,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch workflow steps:", error);
+    }
+  });
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({

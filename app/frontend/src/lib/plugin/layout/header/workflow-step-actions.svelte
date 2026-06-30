@@ -4,15 +4,14 @@
   import Button from "$lib/components/ui/button/button.svelte";
 
   import type { IDropdownMenus } from "$lib/components/app/dropdown-menus/types";
-  import type { IActivityContext } from "$idah/context/activity-context";
 
-  import type { WorkflowStepAction, WorkflowStepConfig } from "./workflow-step-types";
+  import type { WorkflowStepActionChoice, WorkflowStepConfig } from "./workflow-step-types";
 
   // Props
-  let { context, loading, stepConfig, onSubmit }: Props = $props();
+  let { workflowStep, loading, stepConfig, onSubmit }: Props = $props();
 
   interface Props {
-    context: IActivityContext;
+    workflowStep: string;
     loading: boolean;
     stepConfig?: WorkflowStepConfig;
     onSubmit: (opts: Record<string, boolean>) => Promise<void>;
@@ -36,9 +35,9 @@
   }
 
   // Handle submit with action data
-  async function handleActionSubmit(action: WorkflowStepAction, value: boolean) {
+  async function handleChoiceSubmit(key: string, value: boolean) {
     const opts: Record<string, boolean> = {
-      [action.key]: value,
+      [key]: value,
     };
 
     await onSubmit(opts);
@@ -50,15 +49,24 @@
       return null;
     }
 
-    if (stepConfig.actions.length > 1) {
-      // Create dropdown for multiple actions with alternating boolean values
+    // Flatten all choices from all actions into dropdown items
+    const items = stepConfig.actions.flatMap((action) =>
+      action.choices.map((choice: WorkflowStepActionChoice) => ({
+        label: choice.label,
+        icon: getIcon(choice.icon),
+        action: () => handleChoiceSubmit(action.name, choice.value),
+      })),
+    );
+
+    if (items.length === 0) {
+      return null;
+    }
+
+    // Only show dropdown if there are multiple choices across all actions
+    if (items.length > 1) {
       const menus: IDropdownMenus = {
         actions: {
-          items: stepConfig.actions.map((action, index) => ({
-            label: action.label,
-            icon: getIcon(action.icon),
-            action: () => handleActionSubmit(action, index === 0),
-          })),
+          items,
         },
       };
       return menus;
@@ -67,39 +75,52 @@
     return null;
   });
 
-  // For single action or simple submit
+  // For single choice or simple submit
   const hasSimpleAction = $derived(
-    !stepConfig?.actions || stepConfig.actions.length === 0 || stepConfig.actions.length === 1,
+    !stepConfig?.actions ||
+      stepConfig.actions.length === 0 ||
+      (stepConfig.actions.length === 1 && stepConfig.actions[0].choices.length <= 1),
   );
+
+  // Get the single action key/value for simple action submit
+  const simpleActionKey = $derived(stepConfig?.actions?.[0]?.name);
+
+  const simpleActionValue = $derived(stepConfig?.actions?.[0]?.choices?.[0]?.value ?? false);
 </script>
 
 {#if hasSimpleAction}
   <!-- Simple submit button for steps without complex actions -->
   <Button
     {loading}
-    loadingLabel="Submitting {getStepLabel(context.workflowStep)}"
+    loadingLabel="Submitting {getStepLabel(workflowStep)}"
     size="sm"
-    onclick={() => onSubmit({})}
+    onclick={() => {
+      if (simpleActionKey) {
+        onSubmit({ [simpleActionKey]: simpleActionValue });
+      } else {
+        onSubmit({});
+      }
+    }}
   >
-    Submit {stepConfig?.label || getStepLabel(context.workflowStep)}
+    Submit {stepConfig?.label || getStepLabel(workflowStep)}
   </Button>
 {:else if dropdownMenus}
-  <!-- Dropdown menu for steps with multiple boolean actions -->
+  <!-- Dropdown menu for steps with multiple choices -->
   <DropdownMenus menus={dropdownMenus}>
     {#snippet trigger({ props })}
       <Button
         {...props}
         size="sm"
         {loading}
-        loadingLabel="Submitting {stepConfig?.label || getStepLabel(context.workflowStep)}"
+        loadingLabel="Submitting {stepConfig?.label || getStepLabel(workflowStep)}"
       >
-        Submit {stepConfig?.label || getStepLabel(context.workflowStep)}
+        Submit {stepConfig?.label || getStepLabel(workflowStep)}
       </Button>
     {/snippet}
   </DropdownMenus>
 {:else}
   <!-- Fallback: Simple button -->
   <Button {loading} loadingLabel="Submitting" size="sm" onclick={() => onSubmit({})}>
-    Submit {stepConfig?.label || getStepLabel(context.workflowStep)}
+    Submit {stepConfig?.label || getStepLabel(workflowStep)}
   </Button>
 {/if}

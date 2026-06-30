@@ -142,6 +142,97 @@ This example workflow has the following states:
 5. **done** - Completed
 6. **error** - Error state
 
+## Workflow Step Actions
+
+Steps can define actions that appear as dropdown options in the frontend. Each action has a `name` (the key sent to the backend) and a `choices` array with the available options. Each choice explicitly specifies its boolean `value`, which is used as the value for the key when submitting.
+
+### Action Structure
+
+```ruby
+# In the workflow definition's steps array:
+{
+  name: "review",
+  label: "Review",
+  description: "Review the annotation",
+  actions: [
+    {
+      name: "approved",
+      choices: [
+        { label: "Approve",          icon: "SquareCheckIcon", value: true },
+        { label: "Request Changes",  icon: "SquareXIcon",    value: false }
+      ]
+    }
+  ]
+}
+```
+
+- `name` - The key sent to the backend (e.g., `{ approved: true }`)
+- `choices` - Array of available options for that key
+  - `label` - Display text in the dropdown
+  - `icon` - Optional icon component name (mapped to Lucide icons in the frontend)
+  - `value` - The boolean value to send for this choice's key (explicit, not derived from position)
+
+### Frontend Behavior
+
+The `WorkflowStepActions` component reads the actions and choices:
+
+- **Multiple choices**: Renders a dropdown menu. Each item calls `onSubmit({ [action.name]: choice.value })`
+- **Single choice**: Renders a simple button that submits the single value
+- **No actions**: Renders a simple submit button with no key/values
+
+### Example: Review Step
+
+The review step in this workflow defines one action (`approved`) with two choices:
+
+| Choice          | Key sent   | Value   |
+| --------------- | ---------- | ------- |
+| Approve         | `approved` | `true`  |
+| Request Changes | `approved` | `false` |
+
+This produces `{ approved: true }` or `{ approved: false }` when submitted. The backend workflow's `approved?` method reads this value to determine the next state transition.
+
+### Custom Definition File
+
+The workflow step definitions live in `workflow/custom_annotation_definition.rb`. This class provides the step configuration that the frontend fetches via the API.
+
+```ruby
+def self.steps
+  [
+    { name: "start", label: "Start", description: "Entry is ready for annotation" },
+    { name: "annotate", label: "Annotate", description: "Annotate the entry" },
+    {
+      name: "review",
+      label: "Review",
+      description: "Review the annotation",
+      actions: [
+        {
+          name: "approved",
+          choices: [
+            { label: "Approve", icon: "SquareCheckIcon", value: true },
+            { label: "Request Changes", icon: "SquareXIcon", value: false }
+          ]
+        }
+      ]
+    },
+    {
+      name: "final_check",
+      label: "Final Check",
+      description: "Final check before completion",
+      actions: [
+        {
+          name: "final_approved",
+          choices: [
+            { label: "Approve Final Check",           icon: "SquareCheckIcon", value: true },
+            { label: "Request Changes in Final Check", icon: "SquareXIcon",    value: false }
+          ]
+        }
+      ]
+    },
+    { name: "done", label: "Done", description: "Annotation workflow completed" },
+  ]
+end
+```
+
 ## Flow Diagram
 
 ```
