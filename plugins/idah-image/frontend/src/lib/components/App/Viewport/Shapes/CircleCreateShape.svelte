@@ -11,6 +11,7 @@
   import { onMount } from "svelte";
 
   import { IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE } from "$lib/types";
+  import { hexToRgba } from "$lib/utils/color";
 
   import type { Point } from "$lib/utils/math/point";
 
@@ -20,9 +21,13 @@
     mediaWidth: number;
     mediaHeight: number;
     onSelection: (type: string, points?: Point[], extraProps?: Record<string, unknown>, id?: string) => void;
+    /** Category color for the preview shape. */
+    color?: string;
   };
 
-  let { cursor, mediaWidth, mediaHeight, onSelection }: Props = $props();
+  let { cursor, mediaWidth, mediaHeight, onSelection, color = undefined }: Props = $props();
+  let strokeColor = $derived(hexToRgba(color, 0.8));
+  let fillColor = $derived(hexToRgba(color, 0.15));
 
   // ── Build state ────────────────────────────────────────────────────────
   let buildStart: Point | undefined = $state();
@@ -66,8 +71,8 @@
     cx={cxCenter}
     cy={cyCenter}
     r={Math.sqrt((cx - cxCenter) ** 2 + (cy - cyCenter) ** 2)}
-    fill="rgba(246, 64, 43, 0.15)"
-    stroke="rgba(246, 64, 43, 0.8)"
+    fill={fillColor}
+    stroke={strokeColor}
     stroke-width="2"
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"

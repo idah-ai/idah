@@ -14,6 +14,7 @@ import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
   name: "annotation.keyframe_add",
@@ -75,10 +76,12 @@ export function register(driver: IIdahDriverV2): void {
             ...snapshot,
             shape: { ...snapshot.shape, start: min, end: max, frames },
           });
+          viewport.video.currentFrame.value = selection.frame;
         },
         async undo() {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
+          viewport.video.currentFrame.value = selection.frame;
         },
         isCombinable() {
           return false;

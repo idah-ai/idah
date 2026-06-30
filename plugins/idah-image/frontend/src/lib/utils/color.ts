@@ -83,3 +83,18 @@ export function resolveAnnotationColor(
     return config?.values?.find((v) => v.id === catId)?.color ?? null;
   });
 }
+
+/**
+ * Convert a hex color string (e.g. `#F6402B`) to rgba with the given alpha.
+ * Falls back to the default rgba string if color is falsy.
+ */
+export function hexToRgba(color: string | undefined | null, alpha: number, fallbackR = 246, fallbackG = 64, fallbackB = 43): string {
+  if (!color) return `rgba(${fallbackR}, ${fallbackG}, ${fallbackB}, ${alpha})`;
+  const hex = color.replace("#", "");
+  if (hex.length < 6) return `rgba(${fallbackR}, ${fallbackG}, ${fallbackB}, ${alpha})`;
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(${fallbackR}, ${fallbackG}, ${fallbackB}, ${alpha})`;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}

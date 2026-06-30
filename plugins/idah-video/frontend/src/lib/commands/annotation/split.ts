@@ -152,6 +152,7 @@ export function register(driver: IIdahDriverV2): void {
             // createdAt, updatedAt) are added by the server on create.
             metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
           });
+          viewport.video.currentFrame.value = at;
         },
         async undo() {
           if (!data.annotations) return;
@@ -159,6 +160,7 @@ export function register(driver: IIdahDriverV2): void {
           await data.annotations.update(record);
           // Delete the right part — rightId is always stable
           await data.annotations.delete(rightId);
+          viewport.video.currentFrame.value = at;
         },
         isCombinable() {
           return false;

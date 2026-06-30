@@ -26,8 +26,8 @@
   let { children }: Props = $props();
 
   // Variables
-  let projectId: string = page.params.projectId as string;
-  let datasetId: string = page.params.datasetId as string;
+  let projectId: string = $derived(page.params.projectId as string);
+  let datasetId: string = $derived(page.params.datasetId as string);
   let tabs = $state(datasetTabs);
   let activeTab: DatasetTab = $derived(page.url.pathname.split("/").pop() as DatasetTab);
 
@@ -83,7 +83,7 @@
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
             <DatasetModality dataset={datasetRecord}></DatasetModality>
-            <ProjectDatasetDropdownMenu {datasetId} {projectId} align="center" />
+            <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}
       </PageHeader>

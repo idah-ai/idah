@@ -93,8 +93,8 @@
   });
 
   // State for thumbnail
-  let imgContainer: HTMLDivElement | undefined = $state(undefined);
   let containerWidth: number = $state(240);
+  let imgContainer: HTMLDivElement | undefined = $state(undefined);
   let thumbnailImg: HTMLImageElement = $state(new Image());
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
