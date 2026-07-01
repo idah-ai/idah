@@ -482,6 +482,9 @@ export interface ICommandDriverV2 {
   /** Return the current undo / redo stacks (each up to `n` entries). */
   history(n?: number): { undo: ICommandStackEntry[]; redo: ICommandStackEntry[] };
 
+  /** Subscribe to undo/redo stack changes. Returns unsubscribe function. */
+  onStackChange(cb: () => void): () => void;
+
   /** Return commands whose mode list includes the current mode. */
   getActiveCommands(): ICommandDescriptor[];
 
@@ -597,6 +600,35 @@ export interface IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void;
 }
 
+// ─── V2 Driver — Account settings submodule ───────────────────────────────
+
+/**
+ * Loads & persists the current user's account settings. A generic store
+ * (themes / prefs later); today it backs command-palette shortcut overrides.
+ */
+export interface IAccountSettingsDriverV2 {
+  /** Load all of the current user's account settings into memory. */
+  load(accountId: string): Promise<void>;
+
+  /** Read a raw setting value by key, or undefined if not loaded. */
+  get(key: string): unknown;
+
+  /**
+   * The live command-name → shortcut override map. Stable reference, mutated
+   * in place — safe to hold onto and read reactively.
+   */
+  getShortcutOverrides(): Record<string, string>;
+
+  /** Set (and persist) a shortcut override for a command. */
+  setShortcut(name: string, shortcut: string): Promise<void>;
+
+  /** Remove (and persist) a single command's override, reverting to default. */
+  resetShortcut(name: string): Promise<void>;
+
+  /** Clear (and persist) all overrides, reverting every command to default. */
+  resetAll(): Promise<void>;
+}
+
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
 /**
@@ -668,6 +700,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
+  readonly accountSettings: IAccountSettingsDriverV2;
   readonly stats: IStatsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────

@@ -89,10 +89,12 @@ export function register(driver: IIdahDriverV2): void {
             ...snapshot,
             shape: { ...snapshot.shape, start: min, end: max, frames: newFrames },
           });
+          viewport.video.currentFrame.value = frame;
         },
         async undo() {
           if (!data.annotations) return;
           await data.annotations.update(snapshot);
+          viewport.video.currentFrame.value = frame;
         },
         isCombinable() {
           return false;
