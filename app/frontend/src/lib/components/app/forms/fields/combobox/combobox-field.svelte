@@ -235,7 +235,7 @@
       {/if}
 
       <Combobox.Trigger class="absolute end-2 top-1/2 size-4 -translate-y-1/2 touch-none">
-        <ChevronsUpDownIcon class="text-muted-foreground size-4" />
+        <ChevronsUpDownIcon class="text-muted-foreground size-4 hover:cursor-pointer" />
       </Combobox.Trigger>
     </div>
 
