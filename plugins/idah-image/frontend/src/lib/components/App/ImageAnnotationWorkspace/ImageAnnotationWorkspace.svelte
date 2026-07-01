@@ -12,7 +12,7 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -22,6 +22,8 @@
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import Image from "$lib/components/App/Viewport/Image.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
+  import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
+  import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
 
   import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
@@ -94,6 +96,29 @@
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
+
+  /** Pending annotation (shape + value) waiting for category confirmation. */
+  let pendingAnnotation = $derived.by<IImageAnnotationRecord | undefined>(() => {
+    if (!shapeSelectionArgs) return undefined;
+    const [type, points, extraProps] = shapeSelectionArgs;
+    return {
+      id: "pending",
+      shape: { type, points, ...extraProps } as IImageAnnotationShape,
+      value: { ...pendingValue },
+      metadata: {},
+      synced: true,
+    } as IImageAnnotationRecord;
+  });
+
+  /** Category color for the create-shape previews — uses the selected category from the toolbar or popover. */
+  let categoryColor = $derived.by<string | undefined>(() => {
+    if (!pendingValue.category) return undefined;
+    // Determine the active shape type — during drawing it's viewport.mode, during popover it's from shapeSelectionArgs
+    const shapeType = shapeSelectionArgs?.[0] ?? viewport.mode;
+    const config = getDriver().config[shapeType];
+    const cat = config?.values?.find((v) => v.id === pendingValue.category);
+    return cat?.color ?? undefined;
+  });
   $effect(() => {
     if (typeof window === "undefined") return;
 
@@ -426,6 +451,24 @@
   <Popover
     open={showPopOver}
     onOpenChange={(open: boolean) => {
+      if (!open && showPopOver) {
+        // Popover closed via Escape/click-outside — restore drawing state
+        annotationValue = {};
+        pendingValue = {};
+        const args = shapeSelectionArgs;
+        shapeSelectionArgs = undefined;
+        if (args) {
+          const [type, points] = args;
+          if (type === IMAGE_POLYGON) {
+            polygonDraft.points = points;
+            viewport.mode = IMAGE_POLYGON;
+          } else if (type === IMAGE_LINE) {
+            lineDraft.points = points;
+            viewport.mode = IMAGE_LINE;
+          }
+        }
+        selectAnnotation();
+      }
       showPopOver = open;
     }}
   >
@@ -434,6 +477,7 @@
     <PopoverContent
       class="min-w-80 p-0"
       onkeydown={(e) => {
+        e.stopPropagation();
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           if (!canConfirm) return;
@@ -485,7 +529,19 @@
             showPopOver = false;
             annotationValue = {};
             pendingValue = {};
+            // Restore the drawing state so the user can continue editing
+            const args = shapeSelectionArgs;
             shapeSelectionArgs = undefined;
+            if (args) {
+              const [type, points] = args;
+              if (type === IMAGE_POLYGON) {
+                polygonDraft.points = points;
+                viewport.mode = IMAGE_POLYGON;
+              } else if (type === IMAGE_LINE) {
+                lineDraft.points = points;
+                viewport.mode = IMAGE_LINE;
+              }
+            }
             selectAnnotation();
           }}
         >
@@ -540,6 +596,8 @@
                 <ShapesContainer
                   bind:this={overlay}
                   {annotations_promise}
+                  {pendingAnnotation}
+                  {categoryColor}
                   onSelectAnnotation={selectAnnotation}
                   onSelection={onShapeSelection}
                   onAddNewNote={showNewNotePopup}

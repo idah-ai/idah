@@ -16,6 +16,7 @@ import type {
   IShapeConfig,
   ISyncErrorEvent,
   ISyncEvent,
+  IAccountSettingsDriverV2,
   Unsubscribe,
 } from "../types";
 
@@ -25,6 +26,7 @@ import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
 import { ToolbarManagerV2 } from "./manager/toolbar-manager";
+import { AccountSettingsManager } from "./manager/account-settings-manager.svelte";
 
 import type { RecordResponse } from "@/data/model/types";
 
@@ -38,6 +40,7 @@ const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
 export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
+  private readonly accountSettingsMgr = new AccountSettingsManager();
   private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
@@ -58,6 +61,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _media: IMediaInfo;
   private _config: IConfig;
   private _workflowStep: string;
+  private _entryStatus: string;
   private _mode = "editor";
   private _ready = false;
 
@@ -79,6 +83,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     media: IMediaInfo;
     config: IConfig;
     workflowStep: string;
+    entryStatus: string;
   }) {
     this._id = opts.id;
     this._dataset = opts.dataset;
@@ -86,6 +91,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._media = opts.media;
     this._config = opts.config;
     this._workflowStep = opts.workflowStep;
+    this._entryStatus = opts.entryStatus;
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
     });
@@ -93,6 +99,11 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     // Build command & toolbar adapters
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
+
+    // Hand the live override map to the dispatcher. AccountSettingsManager
+    // populates it in place on load(), so the dispatcher sees overrides without
+    // any re-wiring.
+    this.commandMgr.attachOverrides(this.accountSettingsMgr.getShortcutOverrides());
 
     const backendDriver = createBackendCrudDriver(this._id, this.rpc);
     const idbDriver = IdbBackedAnnotationsDriverAdapter({
@@ -196,11 +207,18 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   get workflowStep(): string {
     return this._workflowStep;
   }
+  get entryStatus(): string {
+    return this._entryStatus;
+  }
   get mode(): string {
     return this._mode;
   }
   get config(): IConfig {
     return this._config;
+  }
+
+  get accountSettings(): IAccountSettingsDriverV2 {
+    return this.accountSettingsMgr;
   }
 
   getFilteredConfig(
@@ -298,6 +316,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get workflowStep() {
         return driver.workflowStep;
       },
+      get entryStatus() {
+        return driver.entryStatus;
+      },
       get mode() {
         return driver.mode;
       },
@@ -315,6 +336,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       },
       get notes() {
         return driver.notes;
+      },
+      get accountSettings() {
+        return driver.accountSettings;
       },
       get stats() {
         return driver.stats;
@@ -390,6 +414,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
     workflowStep: entry.wf_step,
+    entryStatus: entry.status,
   });
 
   return driver;

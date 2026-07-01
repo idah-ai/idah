@@ -41,6 +41,7 @@
 
   driver.onModeChange((_) => refreshToolbar());
   driver.onSyncChange(() => refreshToolbar());
+  driver.command.onStackChange(() => refreshToolbar());
   onMount(refreshToolbar);
 
   function cmdShortcut(name: string): string | undefined {

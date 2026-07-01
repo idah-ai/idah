@@ -69,6 +69,7 @@
     onOpenChange={(o) => driver.command.openPalette(o)}
     commandManager={driver.command}
     mode={currentMode}
+    accountSettings={driver.accountSettings}
   />
 
   <!-- V2 Toolbar — simulates the outer IDAH toolbar -->

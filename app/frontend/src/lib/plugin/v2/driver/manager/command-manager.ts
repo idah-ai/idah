@@ -25,6 +25,37 @@ export class CommandManagerV2 {
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
   currentMode: string = "editor";
 
+  /** Listeners notified each time the undo/redo stacks change. */
+  private stackChangeListeners: Set<() => void> = new Set();
+
+  /** Subscribe to stack changes (undo/redo/call). Returns unsubscribe function. */
+  onStackChange(cb: () => void): () => void {
+    this.stackChangeListeners.add(cb);
+    return () => this.stackChangeListeners.delete(cb);
+  }
+
+  /** Notify all stack-change listeners. */
+  private notifyStackChanged(): void {
+    for (const cb of this.stackChangeListeners) cb();
+  }
+
+  /**
+   * Live command-name → shortcut override map, owned by AccountSettingsManager.
+   * The registry is never mutated; keypresses resolve against the *effective*
+   * shortcut = user override if present, otherwise the shipped default.
+   */
+  private overrides: Record<string, string> | null = null;
+
+  /** Attach the live override map (populated in place by AccountSettingsManager). */
+  attachOverrides(map: Record<string, string>): void {
+    this.overrides = map;
+  }
+
+  /** Effective shortcut for a command: user override if set, else the default. */
+  private effectiveShortcut(name: string, fallback: IShortcut | null): IShortcut | null {
+    return this.overrides?.[name] ?? fallback;
+  }
+
   /**
    * Normalize shortcut strings so that `Control` is replaced with `Meta` on
    * Apple platforms (macOS / iOS). This ensures command files can always use
@@ -91,6 +122,7 @@ export class CommandManagerV2 {
             timestamp: Date.now(),
           };
           combined.do();
+          this.notifyStackChanged();
           return;
         }
       }
@@ -103,6 +135,7 @@ export class CommandManagerV2 {
     }
 
     action.do();
+    this.notifyStackChanged();
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -124,6 +157,7 @@ export class CommandManagerV2 {
       this.redoStack.push(entry);
       did = true;
     }
+    if (did) this.notifyStackChanged();
     return did;
   }
 
@@ -136,6 +170,7 @@ export class CommandManagerV2 {
       this.undoStack.push(entry);
       did = true;
     }
+    if (did) this.notifyStackChanged();
     return did;
   }
 
@@ -231,34 +266,44 @@ export class CommandManagerV2 {
   // ── Keyboard resolution ────────────────────────────────────────────────
 
   /**
-   * Resolve a KeyboardEvent against the registered shortcuts for a given mode.
-   * If a matching command is found (with activeWhen passing), it is executed
-   * via `call()`. When multiple commands share the same shortcut, the most
-   * specific one wins (activeWhen commands take priority over those without).
-   * Returns `true` if a shortcut was matched (event should be consumed),
-   * `false` otherwise.
+   * Resolve a KeyboardEvent against the *effective* shortcuts (user override ??
+   * shipped default) for a given mode. Conflicts are allowed and resolved
+   * deterministically; when a key matches more than one eligible command the
+   * winner is chosen by precedence:
+   *   1. a user override beats a shipped default
+   *   2. an active context-gated command (activeWhen) beats a plain one
+   *   3. otherwise registration order (stable)
+   * Returns `true` if a command was matched (event should be consumed).
    */
   resolveKeyEvent(event: KeyboardEvent, mode: string): boolean {
     const combo = buildKeyCombination(event);
-    // First pass: look for a command with activeWhen that passes
+
+    // Eligible: effective shortcut matches the combo, mode matches, and any
+    // activeWhen predicate passes.
+    const candidates: { name: string; isOverride: boolean; hasActiveWhen: boolean }[] = [];
     for (const entry of this.registry.values()) {
-      if (!entry.shortcut || entry.shortcut !== combo) continue;
       if (!this.modeMatches(entry.modes, mode)) continue;
-      if (entry.activeWhen && entry.activeWhen()) {
-        this.call(entry.name);
-        return true;
-      }
+      const effective = this.effectiveShortcut(entry.name, entry.shortcut);
+      if (!effective || effective !== combo) continue;
+      if (entry.activeWhen && !entry.activeWhen()) continue;
+      candidates.push({
+        name: entry.name,
+        isOverride: this.overrides?.[entry.name] === combo,
+        hasActiveWhen: !!entry.activeWhen,
+      });
     }
-    // Second pass: look for a matching command without activeWhen (or whose activeWhen is null)
-    for (const entry of this.registry.values()) {
-      if (!entry.shortcut || entry.shortcut !== combo) continue;
-      if (!this.modeMatches(entry.modes, mode)) continue;
-      if (!entry.activeWhen) {
-        this.call(entry.name);
-        return true;
-      }
-    }
-    return false;
+
+    if (candidates.length === 0) return false;
+
+    // Stable sort by precedence (registration order preserved for ties).
+    candidates.sort((a, b) => {
+      if (a.isOverride !== b.isOverride) return a.isOverride ? -1 : 1;
+      if (a.hasActiveWhen !== b.hasActiveWhen) return a.hasActiveWhen ? -1 : 1;
+      return 0;
+    });
+
+    this.call(candidates[0].name);
+    return true;
   }
 
   /**
@@ -269,9 +314,11 @@ export class CommandManagerV2 {
   getKeyMapForMode(mode: string): Record<string, string> {
     const map: Record<string, string> = {};
     for (const entry of this.registry.values()) {
-      if (!entry.shortcut || !this.modeMatches(entry.modes, mode)) continue;
+      if (!this.modeMatches(entry.modes, mode)) continue;
+      const effective = this.effectiveShortcut(entry.name, entry.shortcut);
+      if (!effective) continue;
       if (entry.activeWhen) continue; // resolved dynamically
-      map[entry.shortcut] = entry.name;
+      map[effective] = entry.name;
     }
     return map;
   }

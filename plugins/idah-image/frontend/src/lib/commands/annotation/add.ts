@@ -11,9 +11,11 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
-import { DEFAULT_MODE, type IImageAnnotationShape } from "$lib/types";
+import { DEFAULT_MODE, IMAGE_POLYGON, IMAGE_LINE, type IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 import { uuidv7 } from "uuidv7";
+import { draft as polygonDraft } from "./polygon.add_point.svelte";
+import { lineDraft } from "./line.add_point.svelte";
 
 export const command = {
   name: "annotation.add",
@@ -61,6 +63,16 @@ export function register(driver: IIdahDriverV2): void {
         async undo() {
           if (data.annotations) {
             await data.annotations.delete(createdId);
+          }
+          // Restore drawing mode for multi-step shapes so the user can
+          // continue editing or individually undo add_point commands.
+          // For line, restore the first point so the preview is visible.
+          if (props.shape.type === IMAGE_POLYGON) {
+            driver.setMode(IMAGE_POLYGON);
+            polygonDraft.points = props.shape.points
+          } else if (props.shape.type === IMAGE_LINE) {
+            driver.setMode(IMAGE_LINE);
+            lineDraft.points = props.shape.points.slice(0, 1);
           }
         },
         isCombinable() {
