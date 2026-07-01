@@ -94,4 +94,3 @@ export function createEntryColumns(workflowSteps: LabelValue<string>[]): Columns
     },
   } as ColumnsSettings<EntryRecord>;
 }
-

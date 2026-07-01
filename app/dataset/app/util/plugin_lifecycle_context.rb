@@ -14,14 +14,6 @@ class PluginLifecycleContext
     )
   end
 
-  def mount_plugin(plugin_name)
-    # Do nothing
-  end
-
-  def unmount_plugin
-    Workflow::Registry.clear(@plugin_name)
-  end
-
   def register_stats_generator(modality, klass)
     EntryStats::Registry.register(@plugin_name, modality, klass)
   end
@@ -31,6 +23,7 @@ class PluginLifecycleContext
   end
 
   def unmount_plugin
+    Workflow::Registry.clear(@plugin_name)
     EntryStats::Registry.clear(@plugin_name)
   end
 end

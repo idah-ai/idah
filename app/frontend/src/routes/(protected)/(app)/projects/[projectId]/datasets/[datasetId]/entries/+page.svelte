@@ -68,7 +68,7 @@
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} {workflowName}/>
+    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} {workflowName} />
   {/snippet}
 </PageHeader>
 

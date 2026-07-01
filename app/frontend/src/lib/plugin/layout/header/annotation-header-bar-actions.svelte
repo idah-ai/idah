@@ -241,7 +241,6 @@
     const s = driver.command.getShortcut(name);
     return s ? getShortcutLabel(s) : undefined;
   }
-
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">

@@ -28,9 +28,7 @@ export const workflowsBackendDataSource = createBackendDataSource(WorkflowRecord
     const data = await response.json();
 
     // Add "default" as the first option
-    const workflows: WorkflowRecord[] = [
-      ...(data.data?.workflows || []),
-    ];
+    const workflows: WorkflowRecord[] = [...(data.data?.workflows || [])];
 
     return workflows;
   },
