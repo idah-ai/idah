@@ -1,8 +1,4 @@
 <script lang="ts">
-  import ErrorIcon from "./_ErrorIcon.svg";
-  import SuccessIcon from "./_SuccessIcon.svg";
-  import WarningIcon from "./_WarningIcon.svg";
-
   interface Props {
     isZip: boolean;
     totalUploaded: number;
@@ -31,9 +27,9 @@
 </script>
 
 {#if icon === "success"}
-  <img src={SuccessIcon} alt="Success" class="size-5 shrink-0" />
+  <img src="/assets/icons/SuccessIcon.svg" alt="Success" class="size-5 shrink-0" />
 {:else if icon === "warning"}
-  <img src={WarningIcon} alt="Warning" class="size-5 shrink-0" />
+  <img src="/assets/icons/WarningIcon.svg" alt="Warning" class="size-5 shrink-0" />
 {:else if icon === "error"}
-  <img src={ErrorIcon} alt="Error" class="size-5 shrink-0" />
+  <img src="/assets/icons/ErrorIcon.svg" alt="Error" class="size-5 shrink-0" />
 {/if}
