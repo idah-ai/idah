@@ -50,7 +50,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     visible: true,
     hidable: false,
   },
-  assigned_to_id: {
+  assigned_to_email: {
     label: "Assigned to",
     dataType: "string",
     clickable: false,

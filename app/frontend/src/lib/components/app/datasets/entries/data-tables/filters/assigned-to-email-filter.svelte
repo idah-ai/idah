@@ -12,6 +12,7 @@
     DataTableColumnFilterOperation,
     DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
+  import type { LabelValue } from "@/utils/types";
 
   // Sentinel value for the "Unassigned" choice (distinct from a real email).
   const UNASSIGNED = "__unassigned__";
@@ -34,10 +35,18 @@
   // when the applied filter changes). Used only to decide Unassigned visibility.
   let inputText: string = $state((filters[emailKey] as string | undefined) ?? "");
 
+  // The currently loaded member choices (from ComboboxField), to tell whether the input is a real member.
+  let members: LabelValue<string | number>[] = $state([]);
+
   // Display flags
   let unassignedActive = $derived(String(filters["assigned"]) === "false");
-  // Show "Unassigned" only when the input is empty or the text matches its label.
-  let showUnassigned = $derived(!inputText || "unassigned".includes(inputText.toLowerCase()));
+  // Show "Unassigned" when the input is empty, the text matches its label, or the input is a selected
+  // member's email. Hide it only while typing a non-member search like "admin".
+  let showUnassigned = $derived(
+    !inputText ||
+      "unassigned".includes(inputText.toLowerCase()) ||
+      members.some((member) => String(member.value) === inputText),
+  );
 
   // Functions — member-pick and free text both write the same key; "" removes it.
   function applyEmail(text: string): void {
@@ -47,6 +56,15 @@
   function selectUnassigned(): void {
     onFilter({ filters: { ...filters, [emailKey]: undefined, assigned: false } });
   }
+
+  // Live filtering: apply the typed text to the entries table as you type (debounced). Local timer so
+  // it doesn't clash with ComboboxField's shared `delayedInput` (used for the member-list search).
+  let applyTimer: ReturnType<typeof setTimeout> | undefined;
+  function handleInput(text: string): void {
+    inputText = text;
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(() => applyEmail(text), 300);
+  }
 </script>
 
 {#snippet noLabel()}{/snippet}
@@ -55,18 +73,20 @@
   <ComboboxField
     name="assigned-to/email"
     dataSource={projectMembersBackendDataSource}
+    class="min-w-64"
     listOptions={{ filters: { project_id: projectId } }}
     searchKeyWithOperation="email__match"
     displayKey="email"
     valueKey="email"
     value={(filters[emailKey] as string | undefined) ?? null}
-    placeholder="Search a member or type an email"
+    placeholder="Select a member or search email"
     clearable
     additionalChoices={showUnassigned ? [{ label: "Unassigned", value: UNASSIGNED }] : []}
     slotLabel={noLabel}
     onSelected={(value) => (value === UNASSIGNED ? selectUnassigned() : applyEmail(String(value ?? "")))}
     onEnter={(text) => applyEmail(text)}
-    onInput={(text) => (inputText = text)}
+    onInput={handleInput}
+    onChoicesChange={(choices) => (members = choices)}
   >
     {#snippet slotChoice({ choice })}
       <Combobox.Item

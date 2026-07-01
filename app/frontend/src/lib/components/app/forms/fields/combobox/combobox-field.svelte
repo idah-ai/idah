@@ -20,6 +20,7 @@
     clearable?: boolean;
     onInput?: (value: string) => void;
     onEnter?: (inputValue: string) => void;
+    onChoicesChange?: (choices: LabelValue<string | number>[]) => void;
   }
   let {
     dataSource,
@@ -43,6 +44,7 @@
     onSelected,
     onInput,
     onEnter,
+    onChoicesChange,
     slotLabel,
     slotChoice,
     slotInfo,
@@ -52,7 +54,8 @@
   // Variables
   let filtering = $state(false);
   let filteredChoices = $state<LabelValue<string | number>[]>([]);
-  let inputValue = $state("");
+  // Seed from `value` so the clear (X) reflects the seeded/displayed text on mount, not only typing.
+  let inputValue = $state(value != null ? String(value) : "");
   let selectedLabel = $state("");
   let inputRef = $state<HTMLInputElement | null>(null);
 
@@ -81,6 +84,7 @@
           data: record,
         }));
 
+      onChoicesChange?.(filteredChoices);
       filtering = false;
     });
   }
@@ -213,7 +217,7 @@
         aria-invalid={errors && errors.length > 0 ? "true" : "false"}
       ></Combobox.Input>
 
-      {#if clearable && (value != null || inputValue)}
+      {#if clearable && inputValue}
         <button
           type="button"
           class="text-muted-foreground hover:text-foreground absolute end-8 top-1/2 size-4 -translate-y-1/2 cursor-pointer"
