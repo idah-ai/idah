@@ -1,5 +1,6 @@
 <script lang="ts" generics="T extends Record">
   import { Combobox } from "bits-ui";
+  import { onDestroy } from "svelte";
 
   import UnassignedAvartar from "@/components/app/datasets/entries/data-tables/filters/unassigned-avartar.svelte";
   import ComboboxField from "@/components/app/forms/fields/combobox/combobox-field.svelte";
@@ -59,12 +60,19 @@
 
   // Live filtering: apply the typed text to the entries table as you type (debounced). Local timer so
   // it doesn't clash with ComboboxField's shared `delayedInput` (used for the member-list search).
+  // Clearing (empty text, incl. the X) applies immediately; non-empty text is debounced.
   let applyTimer: ReturnType<typeof setTimeout> | undefined;
   function handleInput(text: string): void {
     inputText = text;
     clearTimeout(applyTimer);
+    if (!text) {
+      applyEmail("");
+      return;
+    }
     applyTimer = setTimeout(() => applyEmail(text), 300);
   }
+
+  onDestroy(() => clearTimeout(applyTimer));
 </script>
 
 {#snippet noLabel()}{/snippet}
@@ -83,7 +91,13 @@
     clearable
     additionalChoices={showUnassigned ? [{ label: "Unassigned", value: UNASSIGNED }] : []}
     slotLabel={noLabel}
-    onSelected={(value) => (value === UNASSIGNED ? selectUnassigned() : applyEmail(String(value ?? "")))}
+    onSelected={(value) => {
+      // Ignore null (ComboboxField emits it when typing drops the selection); clearing is handled by
+      // `onInput`. Only real member picks / Unassigned apply here.
+      if (value == null) return;
+      if (value === UNASSIGNED) selectUnassigned();
+      else applyEmail(String(value));
+    }}
     onEnter={(text) => applyEmail(text)}
     onInput={handleInput}
     onChoicesChange={(choices) => (members = choices)}

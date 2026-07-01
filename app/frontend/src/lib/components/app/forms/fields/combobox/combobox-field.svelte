@@ -110,14 +110,17 @@
   function onComboboxInput(e: Event): void {
     const newValue = (e.currentTarget as HTMLInputElement).value;
     inputValue = newValue;
-    onInput?.(newValue);
 
-    // bits-ui auto-fills input after selection — don't clear the selection
-    if (newValue === selectedLabel) {
+    // bits-ui auto-fills the input with the selected item's label — don't clear the selection or emit
+    // `onInput` (guarded to non-empty so delete-to-empty is treated as genuine typing).
+    if (newValue && newValue === selectedLabel) {
       filterChoices(newValue);
       return;
     }
     selectedLabel = "";
+
+    // Genuine typing (including delete-to-empty)
+    onInput?.(newValue);
 
     // Clear selection if input is fully cleared — reload all choices
     if (!newValue) {
@@ -125,6 +128,7 @@
         value = null;
         onSelected?.(null);
       }
+      filterChoices("");
       return;
     }
 
@@ -150,6 +154,8 @@
     selectedLabel = "";
     if (inputRef) inputRef.value = "";
     onSelected?.(null);
+    // Also notify live-filter consumers (which ignore onSelected(null)) so the applied filter clears.
+    onInput?.("");
     filterChoices("");
   }
 
@@ -209,7 +215,7 @@
         oninput={onComboboxInput}
         onblur={onBlur}
         onkeydown={(e) => {
-          if (e.key === "Enter") onEnter?.(inputValue);
+          if (e.key === "Enter") onEnter?.((e.currentTarget as HTMLInputElement).value);
         }}
         autofocus={false}
         {disabled}
@@ -217,7 +223,7 @@
         aria-invalid={errors && errors.length > 0 ? "true" : "false"}
       ></Combobox.Input>
 
-      {#if clearable && inputValue}
+      {#if clearable && (inputValue || value != null)}
         <button
           type="button"
           class="text-muted-foreground hover:text-foreground absolute end-8 top-1/2 size-4 -translate-y-1/2 cursor-pointer"
