@@ -31,6 +31,11 @@
   const projectId = page.params.projectId as string;
   const datasetId = page.params.datasetId as string;
 
+  // Workflow name from the dataset for filtering by workflow stage
+  const workflowName = dataset.workflow_name ?? "default";
+
+  // Controller owns all list state, fetching, URL sync, and persistence
+  // const controller = new EntriesListController(datasetId);
   // Generic list controller (owns filters/sort/pagination/url-sync/persistence/refetch);
   // DataView drives its lifecycle. Entry-specific derivations live in EntrySelection.
   const controller = createEntriesController(datasetId);
@@ -63,7 +68,7 @@
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} {workflowName} />
   {/snippet}
 </PageHeader>
 

@@ -26,6 +26,8 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
+  import WorkflowStepActions from "@/plugin/layout/header/workflow-step-actions.svelte";
+  import type { WorkflowStepConfig } from "@/plugin/layout/header/workflow-step-types";
 
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
@@ -50,9 +52,19 @@
   }
   let { driver, noteSidebarOpen = false, onNoteToggle }: Props = $props();
 
+  // Workflow configuration from API response
+  interface WorkflowConfig {
+    name: string;
+    label: string;
+    description?: string;
+    plugin: string;
+    steps?: WorkflowStepConfig[];
+  }
+
   // Variables
   let loading = $state(false);
   let openSettingsPopover = $state(false);
+  let currentStepConfig: WorkflowStepConfig | undefined = $state(undefined);
 
   // Persist auto-select preference in localStorage
   let autoSelectNextEntryStore = writableWithLocal("auto-select-next-entry", false);
@@ -119,6 +131,36 @@
     },
   };
 
+  import { onMount } from "svelte";
+  import { workflowsBasePath } from "@/data/model/dataset/workflows/record";
+
+  // Lifecycle
+  onMount(async () => {
+    /** If frame step is not set in localStorage, set it to 10 as default */
+    if (!localStorage.getItem("idah-video-frame-step")) {
+      localStorage.setItem("idah-video-frame-step", "10");
+    }
+
+    // Fetch workflow configuration from backend
+    try {
+      const workflowsList = await fetch(workflowsBasePath);
+      const jsonData = await workflowsList.json();
+
+      const workflows: WorkflowConfig[] = jsonData.data.workflows;
+
+      // Find the workflow configuration for the current dataset
+      if (workflows && driver.workflowName) {
+        const workflow = workflows.find((w: WorkflowConfig) => w.name === driver.workflowName);
+        if (workflow) {
+          // Find current step config by matching driver.workflowStep
+          currentStepConfig = workflow.steps?.find((s: WorkflowStepConfig) => s.name === driver.workflowStep);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch workflow configuration:", error);
+    }
+  });
+
   // Functions
   async function submitAnnotation() {
     loading = true;
@@ -131,7 +173,7 @@
     await submit({ approved });
   }
 
-  async function submit(opts?: { approved: boolean }) {
+  async function submit(opts?: Record<string, boolean>) {
     entriesBackendDataSource.submit(driver.id, opts).then(async () => {
       $refetches.entries.list = new Date();
 
@@ -173,6 +215,22 @@
         goto(resolve(`/projects/${driver.project.id}/datasets`));
       }
     });
+  }
+
+  // Determine the current workflow step type
+  const isReviewStep = $derived(driver.workflowStep === "review");
+  const isDoneStep = $derived(driver.workflowStep === "done");
+  const isAnnotateStep = $derived(driver.workflowStep === "annotate");
+
+  // For custom workflow steps (not standard review/annotate/done)
+  const isCustomStep = $derived(!isReviewStep && !isDoneStep && !isAnnotateStep && driver.workflowStep !== "start");
+
+  // Get a human-readable label for the current step
+  function getStepLabel(step: string): string {
+    return step
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   }
 
   function toggleCommand() {
@@ -312,15 +370,53 @@
   {#if driver.workflowStep === "done"}
     <!-- TODO: What to show? -->
   {:else if driver.workflowStep === "review"}
-    <DropdownMenus menus={reviewMenus}>
-      {#snippet trigger({ props })}
-        <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
-          Submit Review
-          <ChevronDownIcon />
-        </Button>
-      {/snippet}
-    </DropdownMenus>
+    {#if currentStepConfig}
+      <!-- Use dynamic workflow step component for review with config -->
+      <WorkflowStepActions
+        workflowStep={driver.workflowStep}
+        {loading}
+        stepConfig={currentStepConfig}
+        onSubmit={async (opts) => {
+          loading = true;
+          await submit(opts);
+        }}
+      />
+    {:else}
+      <!-- Fallback to default review menus -->
+      <DropdownMenus menus={reviewMenus}>
+        {#snippet trigger({ props })}
+          <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
+            Submit Review
+            <ChevronDownIcon />
+          </Button>
+        {/snippet}
+      </DropdownMenus>
+    {/if}
+  {:else if isCustomStep}
+    <!-- Custom workflow step - use dynamic component if config available -->
+    {#if currentStepConfig}
+      <WorkflowStepActions
+        workflowStep={driver.workflowStep}
+        {loading}
+        stepConfig={currentStepConfig}
+        onSubmit={async (opts) => {
+          loading = true;
+          await submit(opts);
+        }}
+      />
+    {:else}
+      <!-- Fallback: simple submit button with step name -->
+      <Button
+        {loading}
+        loadingLabel="Submitting {getStepLabel(driver.workflowStep)}"
+        size="sm"
+        onclick={submitAnnotation}
+      >
+        Submit {getStepLabel(driver.workflowStep)}
+      </Button>
+    {/if}
   {:else}
+    <!-- Default annotation step or other standard steps -->
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>

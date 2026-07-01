@@ -22,6 +22,24 @@ module PluginSystem
       field? :shapes, Hash, of: shape_type
     end
 
+    field? :workflows, Array do
+      field :name, String
+      field :label, String
+      field? :description, String
+
+      field? :steps, Array do
+        field :name, String
+        field :label, String
+        field? :description, String
+
+        field? :actions, Array do
+          field :name, String
+          field :label, String
+          field? :icon, String
+        end
+      end
+    end
+
     field? :repository do
       field :type, String
       field :url, String

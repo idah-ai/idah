@@ -7,7 +7,7 @@
   let {
     panelHeight = $bindable(0),
     class: className,
-    children,
+    children
   }: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
     panelHeight: number;
   } = $props();

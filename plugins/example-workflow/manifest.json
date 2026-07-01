@@ -1,0 +1,28 @@
+{
+  "type": "idah-plugin",
+  "name": "example-workflow",
+  "version": "1.0.0",
+
+  "title": "Example Custom Workflow",
+  "description": "An example plugin demonstrating custom workflow registration for a modality.",
+
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+
+  "workflows": [
+    {
+      "name": "custom-annotation-workflow",
+      "label": "Custom Annotation Workflow",
+      "description": "A custom annotation workflow with multiple states"
+    }
+  ],
+
+  "entryPoints": {
+    "backend": {
+      "module": "ExampleWorkflow",
+      "path": "backends"
+    }
+  }
+}

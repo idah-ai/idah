@@ -49,6 +49,10 @@ module Workflow
       ["annotate", "review"].include?(@entry.wf_step)
     end
 
+    def self.definition
+      DefaultDefinition
+    end
+
     private
 
     def on_submit
@@ -97,6 +101,33 @@ module Workflow
           reviewed_by_email:,
         }
       )
+    end
+  end
+
+  class DefaultDefinition
+    def self.name
+      "default"
+    end
+
+    def self.label
+      "Default Workflow"
+    end
+
+    def self.description
+      "Simple annotation workflow with review step."
+    end
+
+    def self.steps
+      [
+        { name: "start", label: "Start", description: "Entry is ready for annotation" },
+        { name: "annotate", label: "Annotate", description: "Annotate the entry" },
+        { name: "review", label: "Review", description: "Review the annotation" },
+        { name: "done", label: "Done", description: "Entry is completed" }
+      ]
+    end
+
+    def self.allowed_note_feed
+      ["annotate", "review"]
     end
   end
 end
