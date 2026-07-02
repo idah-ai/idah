@@ -16,6 +16,7 @@ import type {
   IShapeConfig,
   ISyncErrorEvent,
   ISyncEvent,
+  IAccountSettingsDriverV2,
   Unsubscribe,
 } from "../types";
 
@@ -25,6 +26,7 @@ import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
 import { ToolbarManagerV2 } from "./manager/toolbar-manager";
+import { AccountSettingsManager } from "./manager/account-settings-manager.svelte";
 
 import type { RecordResponse } from "@/data/model/types";
 
@@ -38,6 +40,7 @@ const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
 export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
+  private readonly accountSettingsMgr = new AccountSettingsManager();
   private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
@@ -96,6 +99,11 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     // Build command & toolbar adapters
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
+
+    // Hand the live override map to the dispatcher. AccountSettingsManager
+    // populates it in place on load(), so the dispatcher sees overrides without
+    // any re-wiring.
+    this.commandMgr.attachOverrides(this.accountSettingsMgr.getShortcutOverrides());
 
     const backendDriver = createBackendCrudDriver(this._id, this.rpc);
     const idbDriver = IdbBackedAnnotationsDriverAdapter({
@@ -207,6 +215,10 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
   get config(): IConfig {
     return this._config;
+  }
+
+  get accountSettings(): IAccountSettingsDriverV2 {
+    return this.accountSettingsMgr;
   }
 
   getFilteredConfig(
@@ -324,6 +336,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       },
       get notes() {
         return driver.notes;
+      },
+      get accountSettings() {
+        return driver.accountSettings;
       },
       get stats() {
         return driver.stats;
