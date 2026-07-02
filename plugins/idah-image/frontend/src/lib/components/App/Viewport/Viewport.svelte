@@ -3,7 +3,7 @@
 
   import { viewport, VIEWPORT_MAX_ZOOM, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
   import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE } from "$lib/types";
-  import { modKey } from "$lib/utils/browser";
+  import { modKey, isMouseWheelEvent } from "$lib/utils/browser";
 
   import SyncIndicator from "./SyncIndicator.svelte";
 
@@ -113,12 +113,13 @@
     if (viewport.mode === NOTE_MODE) return;
     e.preventDefault();
 
-    // Touchpad pinch-to-zoom sets ctrlKey on most platforms, or metaKey on Mac.
-    // Plain two-finger pan (any direction) and mouse wheel do NOT set ctrlKey.
-    const isZoom = modKey(e);
+    // A physical mouse wheel zooms directly (modifier pans); a touchpad keeps
+    // pinch-to-zoom and two-finger pan. Touchpad pinch sets ctrlKey on most
+    // platforms (metaKey on Mac); plain pan and mouse wheel do NOT set it.
+    const isZoom = isMouseWheelEvent(e) ? !modKey(e) : modKey(e);
 
     if (isZoom) {
-      // Pinch zoom: Ctrl/meta + wheel → scale
+      // Mouse wheel / touchpad pinch → scale
       // Cap per-tick delta so a single mouse tick doesn't over-zoom,
       // while touchpad's many small deltas accumulate naturally.
       zoomAccumulator += Math.sign(-e.deltaY) * Math.min(Math.abs(e.deltaY), 40);
