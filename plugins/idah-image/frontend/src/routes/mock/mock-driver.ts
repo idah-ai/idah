@@ -2,6 +2,7 @@
 // V2 IdahDriver — the main in-memory mock driver hub
 // ---------------------------------------------------------------------------
 import type {
+  IAccountSettingsDriverV2,
   IAnnotationRecord,
   IAnnotationsDriverV2,
   ICommandAction,
@@ -30,6 +31,7 @@ import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, REVIEW_MODE, type IIma
 import { modKey } from "$lib/utils/browser";
 import { uuidv7 } from "uuidv7";
 import { AstProcessor } from "./ast-evaluator";
+import { AccountSettingsManager } from "./account-settings-manager.svelte";
 import { CommandManagerV2 } from "./command-manager";
 import { InMemoryStore } from "./in-memory-store";
 import { ToolbarManagerV2 } from "./toolbar-manager";
@@ -275,6 +277,9 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
   /** Toolbar manager (exposed for direct access in the mock page). */
   readonly toolbarMgr = new ToolbarManagerV2();
 
+  /** Account settings manager (in-memory; backs command shortcut overrides). */
+  readonly accountSettingsMgr = new AccountSettingsManager();
+
   // ── Default project config ──────────────────────────────────────────
   private _config: IConfig = {
     IMAGE_BOUNDING_BOX: {
@@ -350,6 +355,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<IImageAnnotationShape, IImageAnnotationValue>;
   readonly notes: INotesDriverV2;
+  readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
 
@@ -384,6 +390,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
     this.annotations = new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
+
+    // Account settings — the manager implements IAccountSettingsDriverV2 directly.
+    this.accountSettings = this.accountSettingsMgr;
+
+    // Hand the live override map to the dispatcher. AccountSettingsManager
+    // mutates it in place, so the dispatcher sees overrides without re-wiring.
+    this.commandMgr.attachOverrides(this.accountSettingsMgr.getShortcutOverrides());
 
     // ── Register default idah commands ────────────────────────────────
 

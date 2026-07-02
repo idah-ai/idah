@@ -15,6 +15,7 @@ RecordFactory.registerTypes(AccountSettingRecord);
 
 export const organizationActivitiesKey = "notification:organization:activities";
 export const projectActivitiesKey = "notification:project:activities";
+export const commandShortcutKey = "command:shortcut";
 
 export const accountSettingBackendDataSource = createBackendDataSource(
   AccountSettingRecord,

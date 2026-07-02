@@ -7,6 +7,8 @@ module AccountSettings
       # notifications
       "notification:organization:activities" => true,
       "notification:project:activities" => true,
+      # command palette shortcut overrides — { "<command-name>" => "<shortcut>" }
+      "command:shortcut" => {},
     }.freeze
   end
 end
