@@ -5,9 +5,11 @@
   import Can from "@/security/can.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import SaveNewTemplateFormModal from "$lib/components/app/datasets/labels/overlays/SaveNewTemplateFormModal.svelte";
+  import LabelConfigTemplateManagementModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateManagementModal.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
+  let labelConfigTemplateManagementDialogOpen = $state(false);
   let saveNewTemplateFormModalOpen = $state(false);
 
   let menus: IDropdownMenus = $state({
@@ -16,6 +18,9 @@
         {
           label: "Select template",
           icon: ArrowDownIcon,
+          action: () => {
+            labelConfigTemplateManagementDialogOpen = true;
+          },
         },
         {
           label: "Save as a template",
@@ -62,5 +67,7 @@
     {/snippet}
   </DropdownMenus>
 </Can>
+
+<LabelConfigTemplateManagementModal bind:open={labelConfigTemplateManagementDialogOpen} />
 
 <SaveNewTemplateFormModal title="Template" action="create" bind:open={saveNewTemplateFormModalOpen} />
