@@ -185,7 +185,7 @@
 * SYNC-025 - Inconsistent primary key types
 
 **[audit](06-audit-service.md)**
-* AUD-001 - `Log::Repository` has no `scoped(action)` override  ⭐ writes the reference impl the shared table depends on
+* AUD-001 - `Log::Repository` has no `scoped(action)` override
 * AUD-002 - No role grants any right on `audit:logs`
 * AUD-003 - Actor email and role persisted in plaintext and indexed (PII)
 * AUD-004 - Failed-login audit entries leak the victim account
