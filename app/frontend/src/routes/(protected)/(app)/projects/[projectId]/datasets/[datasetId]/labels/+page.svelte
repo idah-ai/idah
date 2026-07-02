@@ -6,6 +6,7 @@
   import { SvelteSet } from "svelte/reactivity";
 
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
+  import LabelConfigTemplateDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/LabelConfigTemplateDropdownMenu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -515,6 +516,12 @@
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
+      <div>
+        <LabelConfigTemplateDropdownMenu />
+      </div>
+    {/snippet}
+
+    {#snippet actions()}
       <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
         <Button
           class="ml-auto"
