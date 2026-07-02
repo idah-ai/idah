@@ -9,6 +9,7 @@
     DropdownMenuGroup,
     DropdownMenuGroupHeading,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
@@ -108,6 +109,10 @@
                 <DropdownMenuSubContent>
                   {#each Object.entries(item.items) as [subGroupKey, subGroup], subGroupIndex (subGroupKey)}
                     {@const isLastSubItem = subGroupIndex === Object.keys(item.items).length - 1}
+
+                    {#if subGroup.label}
+                      <DropdownMenuLabel class="text-muted-foreground text-xs">{subGroup.label}</DropdownMenuLabel>
+                    {/if}
 
                     {#each subGroup.items as subItem, subItemIndex (subItemIndex)}
                       {@render DropdownMenusItem(subItem)}

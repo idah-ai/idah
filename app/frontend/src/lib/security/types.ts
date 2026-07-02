@@ -25,6 +25,7 @@ export const resources = [
   "dataset:entries",
   "dataset:projects",
   "dataset:project_members",
+  "dataset:labeling_configuration_templates",
 
   /** AUDIT */
   "audit:logs",
