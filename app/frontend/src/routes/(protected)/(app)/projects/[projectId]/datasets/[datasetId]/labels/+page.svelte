@@ -141,6 +141,12 @@
     }
   }
 
+  /** Next display order for a new shape config — appended after existing ones. */
+  function nextShapeOrder(): number {
+    const orders = Object.values(labelConfig).map((c) => c.order ?? -1);
+    return orders.length > 0 ? Math.max(...orders) + 1 : 0;
+  }
+
   function addLabelConfig(labelConfigKey: string) {
     if (!labelConfig) return;
 
@@ -148,6 +154,7 @@
       labelConfig[labelConfigKey] = {
         values: [],
         properties: [],
+        order: nextShapeOrder(),
       };
     }
   }
@@ -163,7 +170,36 @@
       return;
     }
 
-    labelConfig[targetLabelConfigKey] = JSON.parse(JSON.stringify(labelConfig[sourceLabelConfigKey]));
+    labelConfig[targetLabelConfigKey] = {
+      ...JSON.parse(JSON.stringify(labelConfig[sourceLabelConfigKey])),
+      order: nextShapeOrder(),
+    };
+  }
+
+  function reorderShape(draggedKey: string, targetKey: string, position: "before" | "after") {
+    if (!labelConfig) return;
+    if (draggedKey === targetKey) return;
+
+    // Current display order of shape keys (sorted by `order`, legacy fallback to
+    // existing key order).
+    const keys = Object.keys(labelConfig)
+      .map((key, index) => ({ key, index, order: labelConfig[key]?.order ?? Number.POSITIVE_INFINITY }))
+      .sort((a, b) => (a.order !== b.order ? a.order - b.order : a.index - b.index))
+      .map((e) => e.key);
+
+    const from = keys.indexOf(draggedKey);
+    if (from === -1) return;
+    keys.splice(from, 1);
+
+    const target = keys.indexOf(targetKey);
+    if (target === -1) return;
+    keys.splice(position === "before" ? target : target + 1, 0, draggedKey);
+
+    // Reassign sequential order numbers; mutating each config marks the change
+    // (enables Save) and re-derives the sorted list in the editor.
+    keys.forEach((key, i) => {
+      labelConfig[key].order = i;
+    });
   }
 
   function removeLabelConfig(key: string) {
@@ -437,6 +473,81 @@
     }
   }
 
+  /**
+   * Compare two category ids by tree position: walk the shared path segments and,
+   * at the first differing segment, compare by categoryOrderMap order.  Ancestors
+   * sort before their descendants.  Produces a DFS display order where each
+   * subtree is contiguous.
+   */
+  function compareByTreeOrder(aId: string, bId: string): number {
+    const aParts = aId.split("/");
+    const bParts = bId.split("/");
+    let prefix = "";
+    const len = Math.min(aParts.length, bParts.length);
+    for (let i = 0; i < len; i++) {
+      const aPath = prefix ? `${prefix}/${aParts[i]}` : aParts[i];
+      const bPath = prefix ? `${prefix}/${bParts[i]}` : bParts[i];
+      if (aPath !== bPath) {
+        const ao = getCategoryOrder(aPath) ?? Infinity;
+        const bo = getCategoryOrder(bPath) ?? Infinity;
+        if (ao !== bo) return ao - bo;
+        return aPath.localeCompare(bPath);
+      }
+      prefix = aPath;
+    }
+    return aParts.length - bParts.length;
+  }
+
+  function reorderCategory(labelConfigKey: string, draggedId: string, targetId: string, position: "before" | "after") {
+    if (!labelConfig) return;
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    if (!selectedLabelConfig) return;
+    if (draggedId === targetId) return;
+
+    const inSubtree = (id: string, rootId: string) => id === rootId || id.startsWith(rootId + "/");
+
+    // Never drop a node into its own subtree.
+    if (inSubtree(targetId, draggedId)) return;
+
+    // Work in display order so each subtree is a contiguous block.  This also
+    // covers unselectable/intermediate nodes (not in `values`): we move their
+    // whole descendant block, not just a single order slot.
+    const ordered = [...selectedLabelConfig.values].sort((a, b) => compareByTreeOrder(a.id, b.id));
+
+    const draggedBlock = ordered.filter((v) => inSubtree(v.id, draggedId));
+    if (draggedBlock.length === 0) return;
+    const remaining = ordered.filter((v) => !inSubtree(v.id, draggedId));
+
+    // Target's contiguous block within `remaining`.
+    const targetStart = remaining.findIndex((v) => inSubtree(v.id, targetId));
+    if (targetStart === -1) return;
+    let targetEnd = targetStart;
+    while (targetEnd + 1 < remaining.length && inSubtree(remaining[targetEnd + 1].id, targetId)) {
+      targetEnd++;
+    }
+
+    const insertIndex = position === "before" ? targetStart : targetEnd + 1;
+    const reordered = [...remaining.slice(0, insertIndex), ...draggedBlock, ...remaining.slice(insertIndex)];
+
+    // Renumber leaf orders from the new DFS order; drop intermediate entries so
+    // the tree recomputes their position from their (renumbered) children.
+    const valueIds = new Set(reordered.map((v) => v.id));
+    reordered.forEach((v, index) => {
+      categoryOrderMap[v.id] = index;
+    });
+    for (const v of reordered) {
+      const parts = v.id.split("/");
+      let path = "";
+      for (let i = 0; i < parts.length - 1; i++) {
+        path = path ? `${path}/${parts[i]}` : parts[i];
+        if (!valueIds.has(path)) delete categoryOrderMap[path];
+      }
+    }
+
+    // Reassign to reflect the change (enables Save) and re-derive the tree.
+    selectedLabelConfig.values = reordered;
+  }
+
   function removeCategory(labelConfigKey: string, categoryId: string) {
     if (!labelConfig) return;
     // Filter out the exact category with the given ID
@@ -537,11 +648,13 @@
     onAddLabelConfig={addLabelConfig}
     onDuplicateConfig={duplicateConfig}
     onRemoveLabelConfig={removeLabelConfig}
+    onReorderShape={reorderShape}
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}
     onEditCategory={editCategory}
     onChangeSelectableCategory={changeSelectableCategory}
     onRemoveCategory={removeCategory}
+    onReorderCategory={reorderCategory}
     onSetProperty={setProperty}
     onRemoveProperty={removeProperty}
   />
