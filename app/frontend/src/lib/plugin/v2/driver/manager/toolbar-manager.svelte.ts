@@ -7,8 +7,19 @@ export class ToolbarManagerV2 {
   /** All registered items. */
   private items: IToolbarItem[] = [];
 
-  /** Per-mode group ordering. Not set => natural insertion order for groups. */
+  /** Per-mode group ordering. */
   private groupOrders: Map<string, string[]> = new Map();
+
+  /**
+   * Monotonically increasing counter. Incremented when a toolbar item's
+   * toggle state (whenToggled) may have changed. The header bar reads
+   * this inside its toggledMap derived to force re-evaluation.
+   */
+  revision = $state(0);
+
+  invalidate(): void {
+    this.revision++;
+  }
 
   // ── Registration ──────────────────────────────────────────────────────
 

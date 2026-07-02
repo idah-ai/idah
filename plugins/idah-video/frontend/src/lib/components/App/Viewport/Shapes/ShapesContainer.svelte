@@ -26,10 +26,15 @@
 
   import { BOUNDING_BOX_MODE, EDITOR_MODE, NOTE_MODE, POLYGON_MODE, REVIEW_MODE, viewport } from "$lib/state/viewport.svelte";
 
+  import { snapEngine } from "$lib/snap-engine/instance";
+
+  import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
+
   import { annotation } from "$lib/state/annotation.svelte";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { data, setPendingNoteScene } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
+  import { snapDebug } from "$lib/state/ui.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
@@ -98,6 +103,41 @@
     const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
     return [media.width > 0 ? sv.x / media.width : 0, media.height > 0 ? sv.y / media.height : 0];
   });
+
+  // ── Magnetic snap state ─────────────────────────────────────────────
+  let _snapResult = $state<{ point: [number, number]; kind: string; sourceShapeId?: string } | null>(null);
+
+  /** Resolve the snap indicator color from the source annotation's category, or default to #00FF88. */
+  let snapColor = $derived.by((): string => {
+    if (!_snapResult?.sourceShapeId) return "#00FF88";
+    const src = visibleAnnotations.find((a: any) => a.id === _snapResult.sourceShapeId);
+    if (!src) return "#00FF88";
+    return resolveAnnotationColor(src);
+  });
+
+  /** Cursor in scene pixel space — used for snap queries (avoids normalized-space aspect-ratio issues). */
+  let scenePixelCursor: [number, number] = $derived.by((): [number, number] => {
+    const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
+    return [sv.x, sv.y];
+  });
+
+  /** Cursor after snap correction (in normalized space for creation shapes). */
+  let snappedCursor = $derived.by((): [number, number] => {
+    if (magneticSnap.enabled && _snapResult) {
+      return [
+        media.width > 0 ? _snapResult.point[0] / media.width : 0,
+        media.height > 0 ? _snapResult.point[1] / media.height : 0,
+      ];
+    }
+    return sceneNormalizedCursor;
+  });
+
+  /** Threshold in scene pixels: ~10 screen pixels adjusted for zoom. */
+  let snapThreshold = $derived(
+    viewport.workspace.transform.scale > 0
+      ? 10 / viewport.workspace.transform.scale
+      : 10,
+  );
 
   // ── Viewport ref ──────────────────────────────────────────────────────
   let zoomableElement = $state<Viewport | undefined>(undefined);
@@ -201,6 +241,45 @@
     viewport.workspace.dimensions[1] = rect.height;
   }
 
+  // ── Update snap engine targets when visible annotations change ──
+  $effect(() => {
+    const anns = visibleAnnotations;
+    const snapOn = magneticSnap.enabled;
+
+    snapDebug.enabled = snapOn;
+    snapDebug.targetCount = anns.length;
+
+    if (!snapOn) {
+      _snapResult = null;
+      snapDebug.snapped = null;
+      snapDebug.kind = null;
+      return;
+    }
+
+    snapEngine.setTargets(
+      anns.map((ann) => {
+        const shape = ann.shape as IVideoAnnotationShape | undefined;
+        if (!shape) {
+          return { id: ann.id, kind: "", data: null };
+        }
+        // Resolve interpolated geometry for the current displayed frame
+        const interpolated = getInterpolatedFrame(
+          shape,
+          viewport.video.displayedFrame.value,
+        );
+        if (!interpolated || !interpolated.points) {
+          // Shape has no keyframe data for this frame — skip by returning unknown kind
+          return { id: ann.id, kind: "", data: null };
+        }
+        return {
+          id: ann.id,
+          kind: shape.type,
+          data: { points: interpolated.points, angle: interpolated.angle },
+        };
+      }),
+    );
+  });
+
   onMount(() => {
     viewport.svgElement = svgEl ?? null;
     const ro = new ResizeObserver(() => syncDimensions());
@@ -279,6 +358,36 @@
   // ── Event handlers ───────────────────────────────────────────────────
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
+
+    // ── Magnetic snap query ────────────────────────────────────────
+    if (magneticSnap.enabled && (viewport.isCreationMode || selAnnotation)) {
+      let activeEdgeFrom: [number, number] | undefined;
+      const excludeShapeId: string | undefined = selAnnotation?.id;
+      if (viewport.mode === "idah-video:polygon" && polygonDraft.points.length > 0) {
+        const last = polygonDraft.points[polygonDraft.points.length - 1];
+        activeEdgeFrom = [last[0] * media.width, last[1] * media.height];
+      }
+
+      const result = snapEngine.querySnap(scenePixelCursor, {
+        threshold: snapThreshold,
+        activeEdgeFrom,
+        excludeShapeId,
+      });
+      _snapResult = result;
+
+      // Update debug info
+      snapDebug.cursor = scenePixelCursor;
+      snapDebug.threshold = snapThreshold;
+      snapDebug.snapped = result?.point ?? null;
+      snapDebug.kind = result?.kind ?? null;
+      snapDebug.candidates = result ? 1 : 0;
+    } else {
+      _snapResult = null;
+      snapDebug.snapped = null;
+      snapDebug.kind = null;
+      snapDebug.candidates = 0;
+    }
+
     // Only pan in editor mode
     if (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE) {
       zoomableElement!.mouseMove(e);
@@ -298,13 +407,13 @@
     // ── Polygon creation mode — delegate to PolygonCreateShape ─────
     if (isPolygonMode) {
       e.stopPropagation();
-      polygonCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      polygonCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
     // ── Bounding-box creation mode — delegate to BBoxCreateShape ───
     if (isBoundingBoxMode) {
-      bboxCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      bboxCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
@@ -344,7 +453,7 @@
   function onMouseUp(e: MouseEvent) {
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
-      bboxCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      bboxCreateComp?.handleMouseUp(snappedCursor);
       return;
     }
 
@@ -486,12 +595,38 @@
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
+    <!-- Magnetic snap visual feedback (handler-style dot + ring) -->
+    {#if magneticSnap.enabled && _snapResult}
+      {@const snapPx = _snapResult.point}
+      {@const invScale = 1 / viewport.workspace.transform.scale}
+      <!-- Outer ring -->
+      <circle
+        cx={snapPx[0]}
+        cy={snapPx[1]}
+        r={8 * invScale}
+        fill="none"
+        stroke={snapColor}
+        stroke-width={2 * invScale}
+        opacity="0.8"
+        vector-effect="non-scaling-stroke"
+      />
+      <!-- Inner dot -->
+      <circle
+        cx={snapPx[0]}
+        cy={snapPx[1]}
+        r={4 * invScale}
+        fill={snapColor}
+        opacity="0.9"
+        vector-effect="non-scaling-stroke"
+      />
+    {/if}
+
     <g>
       <!-- Build mode: bounding box creation preview -->
       {#if isBoundingBoxMode && !pendingAnnotation}
         <BBoxCreateShape
           bind:this={bboxCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {frame}
@@ -504,7 +639,7 @@
       {#if isPolygonMode && !pendingAnnotation}
         <PolygonCreateShape
           bind:this={polygonCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {frame}
@@ -522,7 +657,7 @@
           editable={viewport.mode === EDITOR_MODE &&
             selection.isAnnotationSelected(ann.id) &&
             !annotation.isLocked(ann)}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
           onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}
@@ -535,7 +670,7 @@
           annotation={pendingAnnotation}
           selected={false}
           editable={false}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mode={viewport.mode}
         />
       {/if}
