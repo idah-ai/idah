@@ -27,20 +27,21 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
+  import Text from "@/components/ui/text/Text.svelte";
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
-  import writableWithLocal from "@/utils/writableWithLocal";
-  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IIdahDriverV2 } from "@/plugin/v2/types";
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-  import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
-  import { page } from "$app/state";
+  import { cn } from "@/utils";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { refetches } from "@/utils/refetch";
+  import writableWithLocal from "@/utils/writableWithLocal";
 
+  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
-  import Text from "@/components/ui/text/Text.svelte";
+  import type { IIdahDriverV2 } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -275,6 +276,9 @@
     {/if}
     <div class="relative">
       <Button
+        class={cn({
+          "hover:bg-primary cursor-default": driver.entryStatus === "completed",
+        })}
         variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
         size="sm"
         onclick={() => driver.setMode("review")}
