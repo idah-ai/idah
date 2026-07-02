@@ -1,6 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { BoltIcon, CopyIcon, EllipsisVerticalIcon, PlusIcon, Trash2Icon, WorkflowIcon } from "@lucide/svelte";
+  import {
+    BoltIcon,
+    CopyIcon,
+    EllipsisVerticalIcon,
+    GripVerticalIcon,
+    PlusIcon,
+    Trash2Icon,
+    WorkflowIcon,
+  } from "@lucide/svelte";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
@@ -28,11 +36,18 @@
     onAddLabelConfig: (labelConfigKey: string) => void;
     onDuplicateConfig: (sourceLabelConfigKey: string, targetLabelConfigKey: string) => void;
     onRemoveLabelConfig: (labelConfigKey: string) => void;
+    onReorderShape: (draggedKey: string, targetKey: string, position: "before" | "after") => void;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
     onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
     onEditCategory: (labelConfigKey: string, category: IConfigValue) => void;
     onChangeSelectableCategory: (labelConfigKey: string, editedCategory: IConfigValue, selectable: boolean) => void;
     onRemoveCategory: (labelConfigKey: string, categoryId: string) => void;
+    onReorderCategory: (
+      labelConfigKey: string,
+      draggedId: string,
+      targetId: string,
+      position: "before" | "after",
+    ) => void;
     onSetProperty: (labelConfigKey: string, property: IConfigProperty) => void;
     onRemoveProperty: (labelConfigKey: string, propertyId: string) => void;
   }
@@ -43,23 +58,84 @@
     onAddLabelConfig,
     onDuplicateConfig,
     onRemoveLabelConfig,
+    onReorderShape,
     onAddCategory,
     onEditCategoryId,
     onEditCategory,
     onChangeSelectableCategory,
     onRemoveCategory,
+    onReorderCategory,
     onSetProperty,
     onRemoveProperty,
   }: Props = $props();
+
+  /** Shape keys sorted by their persisted `order` (legacy configs without an
+   *  order fall back to their existing key order via the index tie-break). */
+  function getOrderedConfigKeys(config: IConfig): string[] {
+    return Object.keys(config)
+      .map((key, index) => ({ key, index, order: config[key]?.order ?? Number.POSITIVE_INFINITY }))
+      .sort((a, b) => (a.order !== b.order ? a.order - b.order : a.index - b.index))
+      .map((e) => e.key);
+  }
 
   // Variables
   let projectId: string = page.params.projectId as string;
   let duplicating = $state(false);
   let openDuplicateConfigModal = $state(false);
-  let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
+  let selectedConfigKey: string = $state(getOrderedConfigKeys(labelConfig)[0]);
   let selectedLabelConfig = $derived(
-    labelConfig[selectedConfigKey] ?? labelConfig[Object.keys(labelConfig)[0]] ?? null,
+    labelConfig[selectedConfigKey] ?? labelConfig[getOrderedConfigKeys(labelConfig)[0]] ?? null,
   );
+
+  let orderedConfigKeys = $derived(getOrderedConfigKeys(labelConfig));
+
+  /** Drag-and-drop reorder state for the shape (configuration) list. */
+  let shapeDragState = $state<{
+    draggedKey: string | null;
+    dragOverKey: string | null;
+    dropPosition: "before" | "after" | null;
+  }>({ draggedKey: null, dragOverKey: null, dropPosition: null });
+
+  const shapeDrag = {
+    get draggedKey() {
+      return shapeDragState.draggedKey;
+    },
+    get dragOverKey() {
+      return shapeDragState.dragOverKey;
+    },
+    get dropPosition() {
+      return shapeDragState.dropPosition;
+    },
+    start(key: string) {
+      shapeDragState.draggedKey = key;
+    },
+    over(e: DragEvent, targetKey: string) {
+      const dragged = shapeDragState.draggedKey;
+      if (!dragged || dragged === targetKey) return;
+      e.preventDefault();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      shapeDragState.dragOverKey = targetKey;
+      shapeDragState.dropPosition = e.clientY > rect.top + rect.height / 2 ? "after" : "before";
+    },
+    leave() {
+      shapeDragState.dragOverKey = null;
+      shapeDragState.dropPosition = null;
+    },
+    end() {
+      shapeDragState.draggedKey = null;
+      shapeDragState.dragOverKey = null;
+      shapeDragState.dropPosition = null;
+    },
+    drop(e: DragEvent, targetKey: string) {
+      e.preventDefault();
+      const dragged = shapeDragState.draggedKey;
+      const pos = shapeDragState.dropPosition;
+      if (dragged && pos && dragged !== targetKey) {
+        onReorderShape(dragged, targetKey, pos);
+      }
+      shapeDrag.end();
+    },
+  };
   let labelConfigIsEmpty: boolean = $derived(Object.keys(labelConfig).length === 0);
   let hasAtLeastOneCategory: boolean = $derived(selectedLabelConfig ? selectedLabelConfig.values.length > 0 : false);
   let hasAtLeastOneProperty: boolean = $derived(
@@ -163,7 +239,7 @@
 
   function removeLabelConfig(key: string) {
     if (selectedConfigKey === key) {
-      selectedConfigKey = Object.keys(labelConfig)[0] || "";
+      selectedConfigKey = getOrderedConfigKeys(labelConfig).find((k) => k !== key) || "";
     } else {
       selectedConfigKey = "";
     }
@@ -186,6 +262,10 @@
 
   function removeCategory(categoryId: string) {
     onRemoveCategory(selectedConfigKey, categoryId);
+  }
+
+  function reorderCategory(draggedId: string, targetId: string, position: "before" | "after") {
+    onReorderCategory(selectedConfigKey, draggedId, targetId, position);
   }
 
   function addNewProperty() {
@@ -253,33 +333,65 @@
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
-        {#each Object.keys(labelConfig) as labelConfigKey (labelConfigKey)}
+        {#each orderedConfigKeys as labelConfigKey (labelConfigKey)}
           {@const isSelect = selectedConfigKey === labelConfigKey}
           {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
           {@const currentShape = shapes[shapeKey] as ModalityShape}
           {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
-          <Button
-            variant={isSelect ? "default" : "secondary"}
-            class="group w-full justify-start"
-            onclick={() => selectConfigKey(labelConfigKey)}
+          <div
+            role="listitem"
+            class={cn("group/shape relative flex w-full items-center gap-1 rounded-md", {
+              "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:z-10 before:h-0.5":
+                shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "before",
+              "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:z-10 after:h-0.5":
+                shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "after",
+              "opacity-50": shapeDrag.draggedKey === labelConfigKey,
+            })}
+            ondragover={(e) => shapeDrag.over(e, labelConfigKey)}
+            ondragleave={shapeDrag.leave}
+            ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
           >
-            {currentShape ? currentShape.label : humanize(labelConfigKeyDisplay)}
+            <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+              <span
+                role="button"
+                tabindex="-1"
+                aria-label="Drag to reorder configuration"
+                draggable="true"
+                class="shrink-0 cursor-grab opacity-0 transition-opacity duration-200 group-hover/shape:opacity-100 active:cursor-grabbing"
+                ondragstart={(e) => {
+                  e.dataTransfer?.setData("text/plain", labelConfigKey);
+                  if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+                  shapeDrag.start(labelConfigKey);
+                }}
+                ondragend={shapeDrag.end}
+              >
+                <GripVerticalIcon class="text-muted-foreground size-4" />
+              </span>
+            </Can>
 
-            <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
-              {#snippet trigger({ props })}
-                <Button
-                  {...props}
-                  variant="ghost"
-                  size="icon-sm"
-                  class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
-                    "opacity-100": props["data-state"] === "open",
-                  })}
-                >
-                  <EllipsisVerticalIcon />
-                </Button>
-              {/snippet}
-            </DropdownMenus>
-          </Button>
+            <Button
+              variant={isSelect ? "default" : "secondary"}
+              class="group w-full justify-start"
+              onclick={() => selectConfigKey(labelConfigKey)}
+            >
+              {currentShape ? currentShape.label : humanize(labelConfigKeyDisplay)}
+
+              <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
+                {#snippet trigger({ props })}
+                  <Button
+                    {...props}
+                    variant="ghost"
+                    size="icon-sm"
+                    class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
+                      "opacity-100": props["data-state"] === "open",
+                    })}
+                  >
+                    <EllipsisVerticalIcon />
+                  </Button>
+                {/snippet}
+              </DropdownMenus>
+            </Button>
+          </div>
         {:else}
           <ResponseBlock
             title="No label configurations Yet"
@@ -321,6 +433,7 @@
             onEditCategory={editCategory}
             onChangeSelectableCategory={changeSelectableCategory}
             onRemoveCategory={removeCategory}
+            onReorderCategory={reorderCategory}
           />
         {:else}
           <ResponseBlock

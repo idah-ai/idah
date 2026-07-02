@@ -170,6 +170,13 @@ export interface IConfigProperty {
 export interface IShapeConfig {
   values: IConfigValue[];
   properties: IConfigProperty[];
+  /**
+   * Display order of this shape within the Label Editor's configuration list.
+   * Persisted as a value (object key order is not preserved by jsonb).
+   * Optional for backward compatibility — legacy configs fall back to their
+   * existing key order.
+   */
+  order?: number;
 }
 
 /**
@@ -600,6 +607,35 @@ export interface IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void;
 }
 
+// ─── V2 Driver — Account settings submodule ───────────────────────────────
+
+/**
+ * Loads & persists the current user's account settings. A generic store
+ * (themes / prefs later); today it backs command-palette shortcut overrides.
+ */
+export interface IAccountSettingsDriverV2 {
+  /** Load all of the current user's account settings into memory. */
+  load(accountId: string): Promise<void>;
+
+  /** Read a raw setting value by key, or undefined if not loaded. */
+  get(key: string): unknown;
+
+  /**
+   * The live command-name → shortcut override map. Stable reference, mutated
+   * in place — safe to hold onto and read reactively.
+   */
+  getShortcutOverrides(): Record<string, string>;
+
+  /** Set (and persist) a shortcut override for a command. */
+  setShortcut(name: string, shortcut: string): Promise<void>;
+
+  /** Remove (and persist) a single command's override, reverting to default. */
+  resetShortcut(name: string): Promise<void>;
+
+  /** Clear (and persist) all overrides, reverting every command to default. */
+  resetAll(): Promise<void>;
+}
+
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
 /**
@@ -671,6 +707,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
+  readonly accountSettings: IAccountSettingsDriverV2;
   readonly stats: IStatsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────

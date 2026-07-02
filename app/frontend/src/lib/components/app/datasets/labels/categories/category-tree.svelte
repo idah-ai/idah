@@ -22,14 +22,76 @@
     onEditCategory: (editedCategory: IConfigValue) => void;
     onRemoveCategory: (categoryId: string) => void;
     onChangeSelectableCategory: (editedCategory: IConfigValue, selectable: boolean) => void;
+    onReorderCategory: (draggedId: string, targetId: string, position: "before" | "after") => void;
   }
-  let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory, onChangeSelectableCategory }: Props =
-    $props();
+  let {
+    values,
+    onAddCategory,
+    onEditCategoryId,
+    onEditCategory,
+    onRemoveCategory,
+    onChangeSelectableCategory,
+    onReorderCategory,
+  }: Props = $props();
 
   /** IDs of nodes the user has collapsed.  All nodes start expanded.
    *  Stored separately from tree nodes so that expand/collapse doesn't
    *  break the $derived reactivity chain on treeItems. */
   let collapsedIds = new SvelteSet<string>();
+
+  /** Drag-and-drop reorder state, owned here and shared with every tree node
+   *  via the `drag` controller below.  Only one drag happens at a time. */
+  let dragState = $state<{
+    draggedId: string | null;
+    dragOverId: string | null;
+    dropPosition: "before" | "after" | null;
+  }>({ draggedId: null, dragOverId: null, dropPosition: null });
+
+  function parentOf(id: string): string {
+    return id.includes("/") ? id.split("/").slice(0, -1).join("/") : "";
+  }
+
+  const drag = {
+    get draggedId() {
+      return dragState.draggedId;
+    },
+    get dragOverId() {
+      return dragState.dragOverId;
+    },
+    get dropPosition() {
+      return dragState.dropPosition;
+    },
+    start(id: string) {
+      dragState.draggedId = id;
+    },
+    over(e: DragEvent, targetId: string) {
+      const dragged = dragState.draggedId;
+      if (!dragged || dragged === targetId) return;
+      if (parentOf(dragged) !== parentOf(targetId)) return; // siblings only
+      e.preventDefault();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      dragState.dragOverId = targetId;
+      dragState.dropPosition = e.clientY > rect.top + rect.height / 2 ? "after" : "before";
+    },
+    leave() {
+      dragState.dragOverId = null;
+      dragState.dropPosition = null;
+    },
+    end() {
+      dragState.draggedId = null;
+      dragState.dragOverId = null;
+      dragState.dropPosition = null;
+    },
+    drop(e: DragEvent, targetId: string) {
+      e.preventDefault();
+      const dragged = dragState.draggedId;
+      const pos = dragState.dropPosition;
+      if (dragged && pos && dragged !== targetId && parentOf(dragged) === parentOf(targetId)) {
+        onReorderCategory(dragged, targetId, pos);
+      }
+      drag.end();
+    },
+  };
 
   // Functions
   function constructCategoryTree(values: IConfigValue[]) {
@@ -196,6 +258,7 @@
       values,
       treeItem: treeItem,
       level: 1,
+      drag,
       onToggleExpand: toggleExpand,
       onAddCategory,
       onEditCategoryId,

@@ -11,6 +11,7 @@ import type {
   ICommandDriverV2,
   IToolbarDriverV2,
   IStatsDriverV2,
+  IAccountSettingsDriverV2,
   IStatProvider,
   IAnnotationRecord,
   INoteRecord,
@@ -32,6 +33,7 @@ import type { IVideoAnnotationShape, IVideoAnnotationValue, IVideoFrameSelection
 import { InMemoryStore } from "./in-memory-store";
 import { CommandManagerV2 } from "./command-manager";
 import { ToolbarManagerV2 } from "./toolbar-manager";
+import { AccountSettingsManager } from "./account-settings-manager.svelte";
 import { AstProcessor } from "./ast-evaluator";
 import { modKey } from "$lib/utils/browser";
 import { uuidv7 } from "uuidv7";
@@ -514,6 +516,9 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   /** Toolbar manager (exposed for direct access in the mock page). */
   readonly toolbarMgr = new ToolbarManagerV2();
 
+  /** Account settings manager (in-memory; backs command shortcut overrides). */
+  readonly accountSettingsMgr = new AccountSettingsManager();
+
   // ── Default project config ──────────────────────────────────────────
   private _config: IConfig = {
     "idah-video:bounding-box": {
@@ -631,6 +636,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   readonly annotations: IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue>;
   readonly notes: INotesDriverV2;
   readonly stats: IStatsDriverV2;
+  readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
 
@@ -665,6 +671,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
     this.annotations = new AnnotationsDriverAdapter(this.annotationStore);
     this.notes = new NotesDriverAdapter(this.noteStore);
+
+    // Account settings — the manager implements IAccountSettingsDriverV2 directly.
+    this.accountSettings = this.accountSettingsMgr;
+
+    // Hand the live override map to the dispatcher. AccountSettingsManager
+    // mutates it in place, so the dispatcher sees overrides without re-wiring.
+    this.commandMgr.attachOverrides(this.accountSettingsMgr.getShortcutOverrides());
 
     // Minimal stats driver — collects whatever providers register (no core stats in the mock)
     const statProviders: IStatProvider[] = [];
