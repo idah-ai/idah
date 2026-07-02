@@ -36,5 +36,4 @@ admin:
 
     # Sync Service
     - "sync:jobs.read.*"
-    - "sync:exports.read.*"
-    - "sync:exports.create.*"
+    - "sync:exports.*.*"
