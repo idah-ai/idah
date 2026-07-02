@@ -8,6 +8,7 @@
 
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { Record } from "@/data/model/Record";
+  import { debounce } from "@/utils/delayed";
 
   import type {
     DataTableColumnFilterOperation,
@@ -58,21 +59,20 @@
     onFilter({ filters: { ...filters, [emailKey]: undefined, assigned: false } });
   }
 
-  // Live filtering: apply the typed text to the entries table as you type (debounced). Local timer so
-  // it doesn't clash with ComboboxField's shared `delayedInput` (used for the member-list search).
-  // Clearing (empty text, incl. the X) applies immediately; non-empty text is debounced.
-  let applyTimer: ReturnType<typeof setTimeout> | undefined;
+  // Live filtering: apply the typed text to the entries table as you type. Per-instance `debounce` so
+  // it doesn't collide with ComboboxField's shared member-search debounce. Empty clears immediately.
+  const debouncedApply = debounce((text: string) => applyEmail(text));
   function handleInput(text: string): void {
     inputText = text;
-    clearTimeout(applyTimer);
     if (!text) {
+      debouncedApply.cancel();
       applyEmail("");
       return;
     }
-    applyTimer = setTimeout(() => applyEmail(text), 300);
+    debouncedApply(text);
   }
 
-  onDestroy(() => clearTimeout(applyTimer));
+  onDestroy(() => debouncedApply.cancel());
 </script>
 
 {#snippet noLabel()}{/snippet}
