@@ -17,6 +17,7 @@
   import { cn } from "$lib/utils";
 
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
+  import FramePendingOverlay from "$lib/components/App/Viewport/FramePendingOverlay.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
@@ -94,7 +95,7 @@
   });
 
   // ── Viewport ref ──────────────────────────────────────────────────────
-  let zoomableElement: Viewport;
+  let zoomableElement = $state<Viewport | undefined>(undefined);
 
   // ── Component refs for tool selection ─────────────────────────────────
   let _compRefs: any[] = $state([]);
@@ -106,8 +107,13 @@
   //
   // Performance note: uses a single O(n) reduce pass to both filter visibility and
   // separate the selected annotation — no extra findIndex() pass needed.
+  //
+  // NOTE: uses displayedFrame (not currentFrame) so annotations only update once
+  // the video element has confirmed the seek via the `seeked` event. This prevents
+  // the annotation layer from jumping ahead of the actual video pixels on screen
+  // when the user rapidly steps through frames on a slow connection.
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
-    const frame = viewport.video.currentFrame.value;
+    const frame = viewport.video.displayedFrame.value;
     const items = data.annotations?.items ?? [];
 
     // Single-pass: filter visible annotations while partitioning selected vs rest
@@ -212,10 +218,10 @@
 
   // ── Exported zoom helpers ────────────────────────────────────────────
   export function zoomIn() {
-    zoomableElement.zoomIn();
+    zoomableElement!.zoomIn();
   }
   export function zoomOut() {
-    zoomableElement.zoomOut();
+    zoomableElement!.zoomOut();
   }
 
   // ── Check if cursor is hovering the first polygon draft point ────────
@@ -242,7 +248,8 @@
   });
 
   let showCrosshair = $derived(
-    screenDimensions[0] > 0 &&
+    !viewport.video.framePending &&
+      screenDimensions[0] > 0 &&
       screenDimensions[1] > 0 &&
       !isPlaying &&
       viewport.mode !== EDITOR_MODE &&
@@ -262,13 +269,13 @@
     mousePosition = [e.offsetX, e.offsetY];
     // Only pan in editor mode
     if (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE) {
-      zoomableElement.mouseMove(e);
+      zoomableElement!.mouseMove(e);
     }
   }
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    zoomableElement.onWheel(e);
+    zoomableElement!.onWheel(e);
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -297,7 +304,7 @@
     // ── Review mode: deselect and start panning (no shape editing) ─
     if (viewport.mode === REVIEW_MODE) {
       selection.deselect();
-      zoomableElement.mouseDown(e);
+      zoomableElement!.mouseDown(e);
       return;
     }
 
@@ -312,14 +319,14 @@
 
     // Nothing hit — deselect and start panning
     selection.deselect();
-    zoomableElement.mouseDown(e);
+    zoomableElement!.mouseDown(e);
   }
 
   function onMouseLeave(_e: MouseEvent) {
     // Cancel any active tool edit (bounding box drag, resize, rotate)
     toolSelection?.endSelection(sceneNormalizedCursor);
     // Stop viewport panning
-    zoomableElement.mouseUp(new MouseEvent("mouseup"));
+    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
 
   function onMouseUp(e: MouseEvent) {
@@ -340,7 +347,7 @@
     toolSelection?.endSelection(sceneNormalizedCursor);
 
     // Only pan on mouseup if we were panning
-    zoomableElement.mouseUp(e);
+    zoomableElement!.mouseUp(e);
   }
 
   function showNewNoteFeedPopup(annotation?: IVideoAnnotationRecord) {
@@ -514,6 +521,9 @@
       {/if}
     </g>
   </svg>
+
+  <!-- Layer 2: Frame-pending blocking overlay -->
+  <FramePendingOverlay {zoomableElement} />
 </div>
 
 <style>

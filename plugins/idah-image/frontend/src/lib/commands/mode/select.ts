@@ -1,0 +1,49 @@
+// plugins/idah-image/frontend/src/lib/commands/mode/select.ts
+import type { IIdahDriverV2 } from "$idah/v2/types";
+import {
+  DEFAULT_MODE,
+  IMAGE_BOUNDING_BOX,
+  IMAGE_CIRCLE,
+  IMAGE_ELLIPSE,
+  IMAGE_LINE,
+  IMAGE_POLYGON,
+  NOTE_MODE,
+  REVIEW_MODE,
+} from "$lib/types";
+
+export const command = {
+  name: "mode.selection",
+  group: "Tools",
+  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE],
+  shortcut: "D",
+  shortDescription: "Select",
+  longDescription: "Selection Tool",
+};
+
+export function register(driver: IIdahDriverV2): void {
+  driver.command.register({
+    name: command.name,
+    modes: command.modes,
+    shortcut: command.shortcut,
+    shortDescription: command.shortDescription,
+    longDescription: command.longDescription,
+    callback: () => ({
+      command: { ...command },
+      do() {
+        // Return to the parent resting mode of the current workspace
+        if (driver.mode === REVIEW_MODE || driver.mode === NOTE_MODE) {
+          driver.setMode(REVIEW_MODE);
+        } else {
+          driver.setMode(DEFAULT_MODE);
+        }
+      },
+      isCombinable() {
+        return false;
+      },
+      combine(p) {
+        return p;
+      },
+    }),
+    group: command.group,
+  });
+}

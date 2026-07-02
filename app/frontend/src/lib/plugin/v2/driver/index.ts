@@ -2,29 +2,29 @@
 // IdahDriverV2 — Core app adapter
 // ---------------------------------------------------------------------------
 import type {
-  IIdahDriverV2,
-  IProjectInfo,
-  IDatasetInfo,
-  IMediaInfo,
-  IConfig,
-  IShapeConfig,
   IAnnotationsDriverV2,
-  INotesDriverV2,
   ICommandDriverV2,
+  IConfig,
+  IDatasetInfo,
+  IIdahDriverV2,
+  IMediaInfo,
   IToolbarDriverV2,
   IStatsDriverV2,
   IModeEvent,
-  ISyncEvent,
+  INotesDriverV2,
+  IProjectInfo,
+  IShapeConfig,
   ISyncErrorEvent,
+  ISyncEvent,
   Unsubscribe,
 } from "../types";
 
-import { CommandManagerV2 } from "./manager/command-manager";
-import { ToolbarManagerV2 } from "./manager/toolbar-manager";
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
 import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
 import registerCommands from "./command";
+import { CommandManagerV2 } from "./manager/command-manager";
+import { ToolbarManagerV2 } from "./manager/toolbar-manager";
 
 import type { RecordResponse } from "@/data/model/types";
 
@@ -58,6 +58,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _media: IMediaInfo;
   private _config: IConfig;
   private _workflowStep: string;
+  private _entryStatus: string;
   private _mode = "editor";
   private _ready = false;
 
@@ -79,6 +80,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     media: IMediaInfo;
     config: IConfig;
     workflowStep: string;
+    entryStatus: string;
   }) {
     this._id = opts.id;
     this._dataset = opts.dataset;
@@ -86,6 +88,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._media = opts.media;
     this._config = opts.config;
     this._workflowStep = opts.workflowStep;
+    this._entryStatus = opts.entryStatus;
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
     });
@@ -196,6 +199,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   get workflowStep(): string {
     return this._workflowStep;
   }
+  get entryStatus(): string {
+    return this._entryStatus;
+  }
   get mode(): string {
     return this._mode;
   }
@@ -298,6 +304,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get workflowStep() {
         return driver.workflowStep;
       },
+      get entryStatus() {
+        return driver.entryStatus;
+      },
       get mode() {
         return driver.mode;
       },
@@ -333,25 +342,16 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────
 
-import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
 import { JsonRpcDatasource } from "@/data/jsonrpc";
-import { CommandDriverAdapter } from "./adapter/command";
+import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
 import { AnnotationsDriverAdapter, createBackendCrudDriver } from "./adapter/annotationsBackendCrud";
+import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
 
-export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2> {
-  const checkEntryRes = await entriesBackendDataSource.get(entryId, {
-    fields: { [EntryRecord.type]: ["wf_step"] },
-    noCache: true,
-  });
-
-  if (checkEntryRes.data.wf_step === "start") {
-    await entriesBackendDataSource.submit(entryId);
-  }
-
+export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
     included: ["dataset", "dataset.project"],
     noCache: true,
@@ -372,33 +372,25 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
   };
 
   // Get media info
-  let mediaInfo: IMediaInfo;
-  try {
-    const mediaRes = (await mediaBackendDataSource.getInfo({
-      resource: entry.resource,
-    })) as RecordResponse<MediaRecord>;
+  const mediaRes = (await mediaBackendDataSource.getInfo({
+    resource: entry.resource,
+  })) as RecordResponse<MediaRecord>;
 
-    const m = mediaRes.data;
-    mediaInfo = {
-      id: entry.id,
-      resource: m.resource,
-      key: m.key,
-      mime_type: m.mime_type,
-      filename: m.filename,
-      meta: m.meta,
-      url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
-    };
-  } catch {
-    mediaInfo = {
-      id: entry.id,
-      resource: entry.resource,
-      key: "",
-      mime_type: "",
-      filename: entry.name,
-      meta: {},
-      url: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`,
-    };
-  }
+  const m = mediaRes.data;
+  const mediaInfo = {
+    id: entry.id,
+    resource: m.resource,
+    key: m.key,
+    mime_type: m.mime_type,
+    filename: m.filename,
+    meta: m.meta,
+    url:
+      // TODO: this is a hack to get the correct media URL for video vs image.
+      // We should have a better way to determine the media type and URL.
+      entry.dataset.modality === "idah-video"
+        ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+        : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+  };
 
   const driver = new IdahDriverV2({
     id: entry.id,
@@ -407,6 +399,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2>
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
     workflowStep: entry.wf_step,
+    entryStatus: entry.status,
   });
 
   return driver;

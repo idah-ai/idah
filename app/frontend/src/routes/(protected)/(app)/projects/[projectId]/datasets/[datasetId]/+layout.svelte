@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { onMount, setContext, type Snippet } from "svelte";
 
+  import DatasetModality from "@/components/app/datasets/badges/dataset-modality.svelte";
   import ProjectDatasetDropdownMenu from "@/components/app/datasets/dropdowns/project-dataset-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
@@ -25,8 +26,8 @@
   let { children }: Props = $props();
 
   // Variables
-  let projectId: string = page.params.projectId as string;
-  let datasetId: string = page.params.datasetId as string;
+  let projectId: string = $derived(page.params.projectId as string);
+  let datasetId: string = $derived(page.params.datasetId as string);
   let tabs = $state(datasetTabs);
   let activeTab: DatasetTab = $derived(page.url.pathname.split("/").pop() as DatasetTab);
 
@@ -60,7 +61,7 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name"],
+        [DatasetRecord.type]: ["name", "modality"],
       },
     });
     dataset = datasetRes.data;
@@ -81,7 +82,8 @@
         {#snippet slotTitle()}
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
-            <ProjectDatasetDropdownMenu {datasetId} {projectId} align="center" />
+            <DatasetModality dataset={datasetRecord}></DatasetModality>
+            <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}
       </PageHeader>

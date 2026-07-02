@@ -1,0 +1,56 @@
+{
+  "type": "idah-plugin",
+  "name": "idah-image",
+  "version": "1.0.0",
+  "title": "IDAH Image Annotation",
+  "description": "A module for annotating image.",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "modalities": [
+    {
+      "id": "idah-image",
+      "label": "Image files",
+      "shapes": {
+        "bounding-box": {
+          "label": "Bounding Box",
+          "icon": "api/v1/plugins/idah-image/assets/bounding-box-icon.svg"
+        },
+        "polygon": {
+          "label": "Polygon",
+          "icon": "api/v1/plugins/idah-image/assets/polygon-icon.svg"
+        },
+        "circle": {
+          "label": "Circle",
+          "icon": "api/v1/plugins/idah-image/assets/circle-icon.svg"
+        },
+        "ellipse": {
+          "label": "Ellipse",
+          "icon": "api/v1/plugins/idah-image/assets/ellipse-icon.svg"
+        },
+        "line": {
+          "label": "Line",
+          "icon": "api/v1/plugins/idah-image/assets/line-icon.svg"
+        }
+      }
+    }
+  ],
+  "entryPoints": {
+    "entryPlugin": {
+      "script": "/frontend/build/plugin.umd.js",
+      "style": "/frontend/build/plugin.css"
+    },
+    "entryDetails": {
+      "script": "/frontend/build/entryDetailsBuild.js",
+      "style": "/frontend/build/entryDetailsBuild.css"
+    },
+    "datasetConfig": "config/dataset.json",
+    "pluginShortcut": "config/shortcut.json",
+    "assetsDirectory": "assets",
+    "backend": {
+      "module": "IdahImage",
+      "path": "backends"
+    }
+  }
+}

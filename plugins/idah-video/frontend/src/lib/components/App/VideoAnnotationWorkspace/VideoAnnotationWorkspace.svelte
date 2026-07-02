@@ -151,11 +151,11 @@
     const meta = driver.media.meta;
     mediaInfo = { meta };
 
-    const totalFrames = Math.round((meta.duration as number) * (meta.fps as number));
+    const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number));
     length = totalFrames;
     viewport.timeline.range.startRange = 0;
     viewport.timeline.range.endRange = totalFrames;
-    viewport.video.currentFrame.value = 0;
+    viewport.video.goToFrame(0);
 
     // annotations are now derived from the global data store
     // The store is already preloaded in initDataStores()
@@ -201,7 +201,8 @@
 
     const toolConfig = toolListConfig.filter((tool) => {
       if (["idah-video:bounding-box", "idah-video:polygon"].includes(tool.type)) {
-        return !!getDriver().config[tool.type];
+        const cfg = getDriver().config[tool.type];
+        return cfg && cfg.values && cfg.values.length > 0;
       }
       return true;
     });
@@ -429,18 +430,6 @@
     }
   }
 
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, selectedFrame?: number) {
-    selection.selectGroup(annotationGroup.groupId);
-
-    if (isNoteMode) return;
-
-    const firstAnnotation = annotationGroup.annotations[0];
-    if (selectedFrame && firstAnnotation?.shape.type && editable) {
-      viewport.mode = firstAnnotation.shape.type;
-      selectClosestAnnotation(annotationGroup, selectedFrame);
-    }
-  }
-
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<IVideoAnnotationRecord>, frame: number) {
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup,
@@ -494,7 +483,13 @@
     return Promise.resolve(viewportAnnotations);
   });
 
-  function showNewNotePopup(params: { anchorType: "entry" | "annotation"; position?: Record<string, unknown>; annotationId?: string | null; screenX?: number; screenY?: number }) {
+  function showNewNotePopup(params: {
+    anchorType: "entry" | "annotation";
+    position?: Record<string, unknown>;
+    annotationId?: string | null;
+    screenX?: number;
+    screenY?: number;
+  }) {
     const { anchorType, position, annotationId, screenX, screenY } = params;
     const driver = getDriver();
     driver.notes.requestCreateNote({

@@ -7,7 +7,7 @@
 
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { getDriver, claimDriverShortcut } from "$lib/state/driver.svelte";
   import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
 
   // Props
@@ -66,7 +66,10 @@
   }
 </script>
 
-<div id="timeline-controller" class="flex items-center gap-2">
+<!-- onkeydowncapture: the bits-ui zoom slider handles arrow keys natively
+     (Cmd+Arrow jumps it to min/max), which collides with frame-navigation
+     shortcuts. Let the driver claim its shortcuts before the slider sees them. -->
+<div id="timeline-controller" class="flex items-center gap-2" onkeydowncapture={claimDriverShortcut}>
   <ToolTooltip label="Zoom Out" shortcut={cmdShortcut("timeline.zoom_out")}>
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomOut}>

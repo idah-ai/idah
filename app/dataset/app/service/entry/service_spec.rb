@@ -188,33 +188,55 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "#complete_entry_processing" do
+    let(:job_id) { UUIDv7.generate }
+
+    before do
+      repo.create({ project_id:, dataset_id:, job_id:, status: "processing", wf_step: "start" })
+    end
+
+    it "advances wf_step from start to annotate via workflow submit" do
+      subject.complete_entry_processing(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:wf_step)).to all(eq("annotate"))
+    end
+
+    it "sets status to pending when no one is assigned" do
+      subject.complete_entry_processing(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("pending"))
+    end
+  end
+
   describe "#mark_entries_status_as" do
     let(:job_id) { UUIDv7.generate }
     let(:other_job_id) { UUIDv7.generate }
 
     before do
       repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
-      repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "pending" })
+      repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "done" })
     end
 
-    it "marks entries with the given job_id as ready" do
-      subject.mark_entries_status_as(job_id, "ready")
+    it "marks the entry with the given job_id as pending" do
+      subject.mark_entries_status_as(job_id, "pending")
 
-      entries = repo.index({ job_id: job_id })
-      expect(entries.map(&:status)).to all(eq("ready"))
+      entry = repo.index({ job_id: job_id }).first
+      expect(entry.status).to eq("pending")
 
       other_entry = repo.index({ job_id: other_job_id }).first
-      expect(other_entry.status).to eq("pending")
+      expect(other_entry.status).to eq("done")
     end
 
-    it "marks entries with the given job_id as processing_error" do
-      subject.mark_entries_status_as(job_id, "processing_error")
+    it "marks the entry with the given job_id as errored" do
+      subject.mark_entries_status_as(job_id, "errored")
 
-      entries = repo.index({ job_id: job_id })
-      expect(entries.map(&:status)).to all(eq("processing_error"))
+      entry = repo.index({ job_id: job_id }).first
+      expect(entry.status).to eq("errored")
 
       other_entry = repo.index({ job_id: other_job_id }).first
-      expect(other_entry.status).to eq("pending")
+      expect(other_entry.status).to eq("done")
     end
   end
 
@@ -288,23 +310,82 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#assign_member" do
-    it "assigns a member to an entry" do
-      record = deserialize(
-        {
-          data: {
-            type: "entries",
-            id: entry.id,
-            attributes: {
-              assigned_to_id: 2,
-            }
-          }
-        }
+    it "assigns a member to an entry and sets status to in_progress" do
+      subject.assign_member(entry.id, 2)
+
+      updated_entry = repo.find!(entry.id)
+      expect(updated_entry.assigned_to_id).to eq(2)
+      expect(updated_entry.status).to eq("in_progress")
+    end
+
+    it "moves the dataset to in_progress" do
+      subject.assign_member(entry.id, 2)
+
+      expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+    end
+  end
+
+  describe "#unassign_member" do
+    before do
+      subject.assign_member(entry.id, 2)
+    end
+
+    it "clears the assigned member and sets status to pending" do
+      subject.unassign_member(entry.id)
+
+      updated_entry = repo.find!(entry.id)
+      expect(updated_entry.assigned_to_id).to be_nil
+      expect(updated_entry.status).to eq("pending")
+    end
+
+    it "moves the dataset back to pending when the last assignment is removed" do
+      expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+
+      subject.unassign_member(entry.id)
+
+      expect(dataset_repo.find!(dataset_id).status).to eq("pending")
+    end
+  end
+
+  describe "assigned_to relation (project-scoped composite key)" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
+    it "resolves assigned_to to the membership in the entry's own project" do
+      project_member_repo.create(
+        project_id:,
+        account_id: 42,
+        email: "member@example.com",
+        role: "annotator",
+        invited_by_id: 1
       )
 
-      subject.assign_member(record.id, 2)
+      subject.assign_member(entry.id, 42)
 
-      updated_entry = repo.find!(record.id)
-      expect(updated_entry.assigned_to_id).to eq(2)
+      result = repo.find!(entry.id, included: [:assigned_to])
+      expect(result.assigned_to).not_to be_nil
+      expect(result.assigned_to.email).to eq("member@example.com")
+    end
+
+    it "does not resolve assigned_to to a membership in a different project" do
+      other_project_id = project_repo.create(
+        name: "Other Project",
+        description: "Another project",
+        created_by_email: "other@example.com",
+        organization_id: 1
+      )
+      # Account 99 is a member of ANOTHER project only, not the entry's project.
+      project_member_repo.create(
+        project_id: other_project_id,
+        account_id: 99,
+        email: "stray@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+
+      subject.assign_member(entry.id, 99)
+
+      result = repo.find!(entry.id, included: [:assigned_to])
+      expect(result.assigned_to).to be_nil
     end
   end
 
@@ -364,27 +445,10 @@ RSpec.describe Entry::Service, database: true do
           project_id:,
           dataset_id:,
           resource: "test-video.mp4",
-          status: "ready",
+          status: "pending",
           wf_step: "start"
         }
       )
-    end
-
-    context "when transitioning from start to annotate" do
-      it "updates the entry workflow step and status" do
-        result = subject.submit(test_entry)
-
-        expect(result.wf_step).to eq("annotate")
-        expect(result.status).to eq("in_progress")
-        expect(result.id).to eq(test_entry)
-      end
-
-      it "includes dataset and annotations in the result" do
-        result = subject.submit(test_entry)
-
-        expect(result.dataset).not_to be_nil
-        expect(result.dataset.id).to eq(dataset_id)
-      end
     end
 
     context "when transitioning from annotate to review" do
@@ -401,7 +465,7 @@ RSpec.describe Entry::Service, database: true do
         result = subject.submit(test_entry)
 
         expect(result.wf_step).to eq("review")
-        expect(result.status).to eq("in_progress")
+        expect(result.status).to eq("pending")
       end
     end
 
@@ -438,7 +502,7 @@ RSpec.describe Entry::Service, database: true do
 
     context "when transitioning from review to annotate" do
       before do
-        repo.update!(test_entry, { wf_step: "review" })
+        repo.update!(test_entry, { wf_step: "review", submitted_by_id: 123 })
       end
 
       it "transitions back to annotate when approved is false" do
@@ -446,6 +510,45 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("annotate")
         expect(result.status).to eq("in_progress")
+      end
+    end
+
+    context "email snapshots stay paired with their ids" do
+      # Use a context carrying a known actor so we can assert the email snapshot
+      let(:auth_context) do
+        Verse::Auth::Context.new(["*.*.*"], metadata: { id: 999, email: "actor@example.com", role: "admin" })
+      end
+
+      it "records submitted_by_email alongside submitted_by_id when annotating" do
+        repo.update!(test_entry, { wf_step: "annotate" })
+        # No sampling -> annotate transitions straight to done
+        dataset_repo.update!(dataset_id, { workflow_configuration: { "sample_rate" => 0 } })
+
+        result = subject.submit(test_entry)
+
+        expect(result.submitted_by_id).to eq(999)
+        expect(result.submitted_by_email).to eq("actor@example.com")
+      end
+
+      it "carries submitted_by_email into assigned_to_email when a review sends it back to annotate" do
+        repo.update!(
+          test_entry,
+          {
+            wf_step: "review",
+            submitted_by_id: 42,
+            submitted_by_email: "annotator@example.com"
+          }
+        )
+
+        result = subject.submit(test_entry, approved: false)
+
+        expect(result.wf_step).to eq("annotate")
+        # Reviewer (acting account) recorded with its email
+        expect(result.reviewed_by_id).to eq(999)
+        expect(result.reviewed_by_email).to eq("actor@example.com")
+        # Re-assigned to the original annotator, email snapshot preserved
+        expect(result.assigned_to_id).to eq(42)
+        expect(result.assigned_to_email).to eq("annotator@example.com")
       end
     end
 
@@ -547,7 +650,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id:,
         resource: "http://example.com/video1.mp4",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: account_id
       )
@@ -566,7 +669,7 @@ RSpec.describe Entry::Service, database: true do
         project_id: @another_project_id,
         dataset_id: @another_dataset_id,
         resource: "http://example.com/image1.jpg",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: account_id
       )
@@ -576,7 +679,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id:,
         resource: "http://example.com/video3.mp4",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: another_account_id
       )
@@ -586,7 +689,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id:,
         resource: "http://example.com/video4.mp4",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: nil
       )
@@ -633,7 +736,7 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id: another_dataset_in_same_project,
         resource: "http://example.com/image2.jpg",
-        status: "ready",
+        status: "pending",
         wf_step: "start",
         assigned_to_id: account_id
       )
@@ -665,6 +768,122 @@ RSpec.describe Entry::Service, database: true do
       # In project 2: entry should still be assigned to account_id
       project2_assigned = project2_entries.select { |e| e.assigned_to_id == account_id }
       expect(project2_assigned.count).to eq(1)
+    end
+  end
+
+  describe "#duplicate_entries" do
+    let(:new_dataset_id) do
+      dataset_repo.create(
+        modality: "video",
+        labels: ["cat", "dog"],
+        labeling_configuration: { "width" => 100, "height" => 100 },
+        workflow_configuration: {},
+        project_id: project_id
+      )
+    end
+
+    # A source whose media is already processed (advanced into the annotation
+    # workflow). Its duplicate must not be reprocessed.
+    let!(:entry_processed) do
+      repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        resource: "http://example.com/processed.mp4",
+        status: "pending",
+        wf_step: "annotate"
+      )
+    end
+
+    # A source still being processed: its media job is in flight (status
+    # "processing", job_id set, still at "start").
+    let(:in_flight_job_id) { UUIDv7.generate }
+    let!(:entry_in_progress) do
+      repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        resource: "http://example.com/in-progress.mp4",
+        status: "processing",
+        wf_step: "start",
+        job_id: in_flight_job_id
+      )
+    end
+
+    # Duplicated media shares the source's resource, so a duplicate never runs
+    # its own processing job (created via no_event). A processed source is
+    # advanced off "start" immediately. Sources still processing are skipped.
+    it "advances a processed source's duplicate off start without reprocessing" do
+      allow(subject.send(:entries)).to receive(:no_event).and_call_original
+
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_processed])
+
+      expect(subject.send(:entries)).to have_received(:no_event)
+      duplicated = repo.index({ dataset_id: new_dataset_id }).first
+      expect(duplicated.wf_step).to eq("annotate")
+      expect(duplicated.status).to eq("pending")
+      expect(duplicated.job_id).to be_nil
+      expect(duplicated.resource).to eq("http://example.com/processed.mp4")
+    end
+
+    it "skips a source still being processed" do
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_in_progress])
+
+      expect(repo.index({ dataset_id: new_dataset_id }).count).to eq(0)
+    end
+
+    it "duplicates only processed entries when entry_ids is nil, skipping in-progress ones" do
+      processed_count = repo.index({ dataset_id: dataset_id }).reject { |e| e.status == "processing" }.count
+
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id)
+
+      duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+      expect(duplicated_entries.count).to eq(processed_count)
+      expect(duplicated_entries.map(&:resource)).not_to include("http://example.com/in-progress.mp4")
+    end
+
+    context "with annotations" do
+      let(:annotation_repo) { Annotation::Repository.new(auth_context) }
+
+      before do
+        annotation_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          entry_id: entry_processed,
+          dimensions: { x: 10, y: 20, width: 30, height: 40 },
+          annotation: { label: "cat" },
+          created_by_email: "user@example.com"
+        )
+      end
+
+      it "duplicates annotations when with_annotations is true" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        expect(duplicated_entries.count).to eq(1)
+
+        duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
+        expect(duplicated_annotations.count).to eq(1)
+        expect(duplicated_annotations.first.created_by_email).to eq("user@example.com")
+      end
+
+      it "does not duplicate annotations when with_annotations is false" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: false
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        expect(duplicated_entries.count).to eq(1)
+
+        duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
+        expect(duplicated_annotations.count).to eq(0)
+      end
     end
   end
 end

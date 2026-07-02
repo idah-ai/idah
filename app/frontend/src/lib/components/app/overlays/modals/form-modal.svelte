@@ -21,6 +21,8 @@
     title,
     description,
     loading,
+    disabled,
+    closeOnOutsideClick = true,
     onCancel,
     onConfirm,
     modalTitle,
@@ -29,6 +31,7 @@
     confirm,
     children,
     canClickOutside = true,
+    class: className,
   }: FormModalBaseProps = $props();
 
   // Types
@@ -89,11 +92,8 @@
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
   <DialogContent
-    onInteractOutside={(e) => {
-      if (!canClickOutside) {
-        e.preventDefault();
-      }
-    }}
+    interactOutsideBehavior={closeOnOutsideClick && canClickOutside ? "close" : "ignore"}
+    class={className}
   >
     {#if modalTitle}
       {@render modalTitle()}
@@ -123,7 +123,7 @@
           {#if confirm}
             {@render confirm()}
           {:else}
-            <Button {loading} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
+            <Button {loading} {disabled} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
               {confirmButtonProps.label}
             </Button>
           {/if}

@@ -17,6 +17,7 @@
   } from "@/components/ui/dropdown-menu";
 
   import { cn } from "@/utils";
+  import { authStatus } from "@/security/AuthContext";
 
   import type {
     DropdownMenuContentAlignment,
@@ -35,6 +36,14 @@
     trigger?: Snippet<[{ props: Record<string, unknown> }]>;
   }
   let { class: className, align = "start", side = "bottom", triggerSize = "icon", menus, trigger }: Props = $props();
+
+  const currentRole = $derived($authStatus.authContext?.roleName);
+
+  function isItemVisible(item: IDropdownMenuItem): boolean {
+    if (item.hidden) return false;
+    if (item.visibleIfRoles) return currentRole ? item.visibleIfRoles.includes(currentRole) : false;
+    return true;
+  }
 </script>
 
 {#snippet DropdownMenusItem(item: IDropdownMenuItem)}
@@ -85,9 +94,7 @@
         {/if}
 
         {#each group.items as item, itemIndex (itemIndex)}
-          {@const hidden = item.hidden ?? false}
-
-          {#if !hidden}
+          {#if isItemVisible(item)}
             {#if item.items && Object.keys(item.items).length > 0}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>

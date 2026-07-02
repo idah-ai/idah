@@ -15,6 +15,7 @@
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Checkbox } from "@/components/ui/checkbox";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,12 +29,18 @@
 
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
 
+  import writableWithLocal from "@/utils/writableWithLocal";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IIdahDriverV2 } from "@/plugin/v2/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { refetches } from "@/utils/refetch";
+
+  import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
+  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   interface Props {
@@ -46,6 +53,48 @@
   // Variables
   let loading = $state(false);
   let openSettingsPopover = $state(false);
+
+  // Persist auto-select preference in localStorage
+  let autoSelectNextEntryStore = writableWithLocal("auto-select-next-entry", false);
+  let autoSelectNextEntry = $state($autoSelectNextEntryStore);
+  $effect(() => {
+    autoSelectNextEntryStore.set(autoSelectNextEntry);
+  });
+
+  let showAutoSelect = $derived(
+    driver.entryStatus && driver.entryStatus !== "completed" && driver.entryStatus !== "errored",
+  );
+
+  // Switch to review mode when entry is completed (only evaluated at mount since entryStatus is static)
+  if (driver.entryStatus === "completed") {
+    driver.setMode("review");
+  }
+
+  // Unresolved note feed count
+  let unresolvedFeedCount = $state(0);
+
+  $effect(() => {
+    // React to refetches so count updates whenever feeds are fetched/resolved/created
+    const _ = $refetches.noteFeeds.list;
+
+    noteFeedsBackendDataSource
+      .list({
+        filters: {
+          entry_id: driver.id,
+          status__in: ["pending"],
+        },
+        fields: { [NoteFeedRecord.type]: ["id"] },
+        pagination: { page: 1, itemsPerPage: 1 },
+        count: true,
+        noCache: true,
+      })
+      .then((res) => {
+        unresolvedFeedCount = res.meta?.count ?? 0;
+      })
+      .catch(() => {
+        unresolvedFeedCount = 0;
+      });
+  });
 
   // Track mode changes reactively
   let currentMode = $state(driver.mode);
@@ -85,6 +134,21 @@
   async function submit(opts?: { approved: boolean }) {
     entriesBackendDataSource.submit(driver.id, opts).then(async () => {
       $refetches.entries.list = new Date();
+
+      // ── Auto-select next entry ──────────────────────────────────────────
+      if (autoSelectNextEntry) {
+        const nextEntryId = await entriesBackendDataSource.findNextEntry(
+          driver.dataset.id,
+          driver.workflowStep as EntryWorkflowStep,
+        );
+        if (nextEntryId) {
+          const pluginId = page.params.pluginId as string;
+          window.location.href = resolve(`/entries/${nextEntryId}/plugin/${pluginId}`);
+          return;
+        }
+      }
+
+      // ── Fallback: existing behavior ─────────────────────────────────────
       try {
         const entriesRes = await entriesBackendDataSource.list({
           fields: {
@@ -134,7 +198,7 @@
           <Button variant={noteSidebarOpen ? "default" : "ghost"} size="icon-sm" onclick={onNoteToggle}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
-                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 17.5329 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
+                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 18.1581 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
@@ -197,34 +261,53 @@
     </DropdownMenu>
 
     <EntryStatsModal {driver} />
-
-    {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <ToolTooltip {label} align="center" delayDuration={100}>
-        {#snippet trigger()}
-          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
-            <Icon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
-    {/each}
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
-    <Button
-      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
-      size="sm"
-      onclick={() => driver.setMode("editor")}
-    >
-      Editor
-    </Button>
-    <Button
-      variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
-      size="sm"
-      onclick={() => driver.setMode("review")}
-    >
-      Review
-    </Button>
+    {#if driver.entryStatus !== "completed"}
+      <Button
+        variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+        size="sm"
+        onclick={() => driver.setMode("editor")}
+      >
+        Editor
+      </Button>
+    {/if}
+    <div class="relative">
+      <Button
+        variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
+        size="sm"
+        onclick={() => driver.setMode("review")}
+      >
+        Review
+      </Button>
+      {#if unresolvedFeedCount > 0}
+        <span
+          class="bg-destructive absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-white"
+        >
+          {unresolvedFeedCount > 99 ? "99+" : unresolvedFeedCount}
+        </span>
+      {/if}
+    </div>
   </div>
+
+  <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
+  {#if showAutoSelect}
+    <ToolTooltip
+      label="Automatically opens the next available entry after you submit the current one."
+      align="center"
+      delayDuration={100}
+    >
+      {#snippet trigger()}
+        <label class="flex cursor-pointer whitespace-nowrap" for="auto-select-next">
+          <div class="flex items-center gap-1.5 p-1.5">
+            <Checkbox bind:checked={autoSelectNextEntry} id="auto-select-next" />
+            <Text size="xs" weight="light">Auto-select next entry</Text>
+          </div>
+        </label>
+      {/snippet}
+    </ToolTooltip>
+  {/if}
 
   {#if driver.workflowStep === "done"}
     <!-- TODO: What to show? -->

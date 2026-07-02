@@ -1,5 +1,6 @@
 <script lang="ts">
   import { RedoIcon, UndoIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -7,10 +8,10 @@
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
-  import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem } from "@/plugin/v2/types";
-  import { onMount } from "svelte";
+  import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
+  import { SvelteMap } from "svelte/reactivity";
 
   // Props
   interface Props {
@@ -22,6 +23,13 @@
   const disabledToolsIfWorkflowSteps = ["done"];
   let currentMode = $state(driver.mode);
   let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
+  let toggledMap = $derived.by(() => {
+    const map = new SvelteMap<string, boolean>();
+    for (const item of toolbarItems) {
+      map.set(item.name ?? item.label, item.whenToggled?.() ?? false);
+    }
+    return map;
+  });
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
@@ -59,12 +67,13 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each toolbarItems as { icon, label, name, onClick, visibleWhen, whenToggled }, toolIndex (toolIndex)}
-    <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
-      {#snippet trigger()}
-        {#if (visibleWhen || (() => true))()}
+  {#each toolbarItems as { icon, label, name, onClick, visibleWhen }, toolIndex (toolIndex)}
+    {#if (visibleWhen || (() => true))()}
+      {@const isToggled = toggledMap.get(name ?? label) ?? false}
+      <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
+        {#snippet trigger()}
           <Button
-            variant={whenToggled?.() || false ? "default" : "ghost"}
+            variant={isToggled ? "default" : "ghost"}
             size="icon-sm"
             onclick={onClick}
             disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
@@ -72,9 +81,9 @@
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>
-        {/if}
-      {/snippet}
-    </ToolTooltip>
+        {/snippet}
+      </ToolTooltip>
+    {/if}
   {/each}
 
   <Separator orientation="vertical"></Separator>

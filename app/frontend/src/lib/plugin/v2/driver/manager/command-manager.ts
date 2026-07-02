@@ -23,7 +23,7 @@ export class CommandManagerV2 {
   private combineWindow = 5000;
 
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
-  currentMode: string = "default";
+  currentMode: string = "editor";
 
   /**
    * Normalize shortcut strings so that `Control` is replaced with `Meta` on
@@ -148,11 +148,19 @@ export class CommandManagerV2 {
     };
   }
 
+  /**
+   * Check whether a command's mode list includes the currentMode,
+   * supporting a '\'*\' wildcard that matches any mode.
+   */
+  private modeMatches(modes: string[], currentMode: string): boolean {
+    if (modes.includes("*")) return true;
+    return modes.includes(currentMode);
+  }
   /** Return commands that are available in the currentMode, with group info. */
   getActiveCommands(): ICommandDescriptor[] {
     const result: ICommandDescriptor[] = [];
     for (const entry of this.registry.values()) {
-      if (!entry.modes.includes(this.currentMode)) continue;
+      if (!this.modeMatches(entry.modes, this.currentMode)) continue;
       if (entry.activeWhen && !entry.activeWhen()) continue;
       result.push(this._toDescriptor(entry));
     }
@@ -185,7 +193,7 @@ export class CommandManagerV2 {
     for (const entry of this.registry.values()) {
       // If currentMode is provided, filter by mode match + activeWhen
       if (currentMode !== undefined) {
-        if (!entry.modes.includes(currentMode)) continue;
+        if (!this.modeMatches(entry.modes, currentMode)) continue;
         if (entry.activeWhen && !entry.activeWhen()) continue;
       }
       const desc = this._toDescriptor(entry);
@@ -235,7 +243,7 @@ export class CommandManagerV2 {
     // First pass: look for a command with activeWhen that passes
     for (const entry of this.registry.values()) {
       if (!entry.shortcut || entry.shortcut !== combo) continue;
-      if (!entry.modes.includes(mode)) continue;
+      if (!this.modeMatches(entry.modes, mode)) continue;
       if (entry.activeWhen && entry.activeWhen()) {
         this.call(entry.name);
         return true;
@@ -244,7 +252,7 @@ export class CommandManagerV2 {
     // Second pass: look for a matching command without activeWhen (or whose activeWhen is null)
     for (const entry of this.registry.values()) {
       if (!entry.shortcut || entry.shortcut !== combo) continue;
-      if (!entry.modes.includes(mode)) continue;
+      if (!this.modeMatches(entry.modes, mode)) continue;
       if (!entry.activeWhen) {
         this.call(entry.name);
         return true;
@@ -261,7 +269,7 @@ export class CommandManagerV2 {
   getKeyMapForMode(mode: string): Record<string, string> {
     const map: Record<string, string> = {};
     for (const entry of this.registry.values()) {
-      if (!entry.shortcut || !entry.modes.includes(mode)) continue;
+      if (!entry.shortcut || !this.modeMatches(entry.modes, mode)) continue;
       if (entry.activeWhen) continue; // resolved dynamically
       map[entry.shortcut] = entry.name;
     }

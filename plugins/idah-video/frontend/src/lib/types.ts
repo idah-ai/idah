@@ -6,11 +6,7 @@
 // dealing with video annotation.
 // ---------------------------------------------------------------------------
 
-import type {
-  IAnnotationRecord,
-  IAnnotationMetadata,
-  IAnnotationValue,
-} from "$idah/v2/types";
+import type { IAnnotationMetadata, IAnnotationRecord, IAnnotationValue } from "$idah/v2/types";
 
 // ─── Frame range ─────────────────────────────────────────────────────────
 
@@ -74,10 +70,7 @@ export interface IVideoAnnotationValue extends IAnnotationValue {
 /**
  * Video annotation record with transient UI state fields.
  */
-export interface IVideoAnnotationRecord extends IAnnotationRecord<
-  IVideoAnnotationShape,
-  IVideoAnnotationValue
-> {
+export interface IVideoAnnotationRecord extends IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue> {
   synced?: boolean;
 }
 

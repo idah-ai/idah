@@ -8,12 +8,13 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { ui } from "$lib/state/ui.svelte";
 
 function makeAction(): ICommandAction {
-  const current = viewport.video.currentFrame.value;
   const step = ui.frameStep;
   return {
-    command: { name: "viewport.skip_backward", group: "Viewport", modes: ["default", "review"], shortcut: null, shortDescription: "Skip backward", longDescription: "Jump backward by the configured number of frames" },
+    command: { name: "viewport.skip_backward", group: "Viewport", modes: ["editor", "review"], shortcut: null, shortDescription: "Skip backward", longDescription: "Jump backward by the configured number of frames" },
     do() {
-      viewport.video.currentFrame.value = Math.max(current - step, 0);
+      // stepBy gates on framePending (and clamps), so scrubbing can never
+      // run ahead of what is painted on screen.
+      viewport.video.stepBy(-step);
     },
     isCombinable() { return false; },
     combine(prev: ICommandAction) { return prev; },

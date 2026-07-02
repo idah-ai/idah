@@ -16,7 +16,7 @@
     selected = false,
     editable = false,
     cursor,
-    mode = "default",
+    mode = "editor",
     onClick,
     onEditComplete,
   }: {
@@ -37,10 +37,12 @@
   let w = $derived(media.width);
   let h = $derived(media.height);
 
+  // Use displayedFrame (not currentFrame) so vertex positions stay in sync
+  // with the actual video pixels on screen during rapid frame navigation.
   let baseVertices = $derived.by((): Point[] => {
     const shape = annotation?.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     return result?.points ?? [];
   });
 

@@ -52,6 +52,20 @@ class EntriesExpo < BaseExpo
     service.assign_member(id, member_id)
   end
 
+  expose on_http(:patch, "/:id/unassign") do
+    desc "Unassign a project member to an entry"
+    input do
+      field :id, String
+    end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
+  end
+  def unassign
+    id = params[:id]
+
+    service.unassign_member(id)
+  end
+
   expose on_http(:get, "/:id/select") do
     desc "Select workflow event for an entry"
     input do
@@ -109,14 +123,14 @@ class EntriesExpo < BaseExpo
   def on_job_completed
     job_id = message.content[:resource_id]
 
-    service.mark_entries_status_as(job_id, "ready")
+    service.complete_entry_processing(job_id)
   end
 
   expose on_resource_event(Resource::Media::Jobs, "errored")
   def on_job_errored
     job_id = message.content[:resource_id]
 
-    service.mark_entries_status_as(job_id, "processing_error")
+    service.mark_entries_status_as(job_id, "errored")
   end
 
   expose on_resource_event(Resource::Dataset::ProjectMembers, "updated")
@@ -128,5 +142,16 @@ class EntriesExpo < BaseExpo
     return if message.content.dig(:args, 0, :disabled_at).nil?
 
     service.unassign_account_entries(account_id, project_id)
+  end
+
+  expose on_resource_event(Resource::Dataset::Datasets, "duplicated")
+  def on_dataset_duplicated
+    dataset_id = params[:resource_id]
+    arg = params[:args].first
+    duping_dataset_id = arg[:duping_dataset_id]
+    entry_ids = arg[:entry_ids]
+    with_annotations = arg[:with_annotations]
+
+    service.duplicate_entries(dataset_id, duping_dataset_id:, entry_ids:, with_annotations:)
   end
 end

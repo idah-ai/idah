@@ -19,7 +19,7 @@
         })
         .then((entry) => {
           // const plugins = modalities[entry.data.dataset.modality];
-          const plugins = ["idah-video"];
+          const plugins = [entry.data.dataset.modality];
 
           if (!plugins) ko(`no available plugin for modality ${entry.data.dataset.modality}`);
 

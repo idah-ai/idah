@@ -48,8 +48,7 @@ export interface IMediaInfo {
   mime_type: string;
   filename: string;
   meta: Record<string, unknown>;
-  /** Optional explicit URL (overrides the auto-generated path from resource/key). */
-  url?: string;
+  url: string;
 }
 
 // ─── Sync event ───────────────────────────────────────────────────────────
@@ -644,6 +643,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly project: IProjectInfo;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
+  readonly entryStatus: string;
   readonly mode: string;
 
   setMode(mode: string): void;
