@@ -19,8 +19,9 @@ import {
 } from "@/data/model/dataset/datasets/constants";
 import type { DataSourceOptions } from "@/data/DataSource";
 import type { RecordResponse } from "@/data/model/types";
-import type { IConfig } from "@/plugin/interface/Activity";
+
 import type { Hash } from "@/utils/types";
+import type { IConfig } from "@/plugin/v2/types";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
