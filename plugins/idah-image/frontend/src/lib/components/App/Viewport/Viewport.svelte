@@ -7,6 +7,7 @@
 
   import SyncIndicator from "./SyncIndicator.svelte";
 
+  import { computeWheelPan } from "$lib/utils/wheel";
   import { type Point } from "$lib/utils/math/point";
 
   // Props
@@ -109,17 +110,6 @@
     viewport.workspace.transform.translate = newOffset;
   }
 
-  /**
-   * Converts a WheelEvent delta to pixels.
-   * Linux/Windows mouse wheels typically use DOM_DELTA_LINE (mode 1) with small
-   * integer values (e.g. 3), which would be imperceptible without this conversion.
-   */
-  function normalizeWheelDelta(delta: number, deltaMode: number): number {
-    if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
-    if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * viewport.workspace.dimensions[1];
-    return delta; // DOM_DELTA_PIXEL — already in pixels
-  }
-
   export function onWheel(e: WheelEvent) {
     if (viewport.mode === NOTE_MODE) return;
     e.preventDefault();
@@ -158,18 +148,7 @@
       }
     } else {
       // Scroll / two-finger drag → translate
-
-      // Normalise deltas to pixels first — on Linux and Windows a standard mouse
-      let dx = normalizeWheelDelta(e.deltaX, e.deltaMode);
-      let dy = normalizeWheelDelta(e.deltaY, e.deltaMode);
-
-      // macOS natively swaps deltaX/deltaY when Shift is held (vertical wheel →
-      // horizontal pan). Windows/Linux do NOT — we must handle it here so
-      // Shift+wheel consistently provides horizontal panning across platforms.
-      if (e.shiftKey && dx === 0 && dy !== 0) {
-        dx = dy;
-        dy = 0;
-      }
+      const [dx, dy] = computeWheelPan(e.deltaX, e.deltaY, e.deltaMode, e.shiftKey, viewport.workspace.dimensions[1]);
       const curTranslate = viewport.workspace.transform.translate;
       viewport.workspace.transform.translate = [curTranslate[0] - dx, curTranslate[1] - dy];
       viewport.workspace.clampTranslate();
