@@ -24,7 +24,14 @@
   import Crosshair from "./Crosshair.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
-  import { BOUNDING_BOX_MODE, EDITOR_MODE, NOTE_MODE, POLYGON_MODE, REVIEW_MODE, viewport } from "$lib/state/viewport.svelte";
+  import {
+    BOUNDING_BOX_MODE,
+    EDITOR_MODE,
+    NOTE_MODE,
+    POLYGON_MODE,
+    REVIEW_MODE,
+    viewport,
+  } from "$lib/state/viewport.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
@@ -67,7 +74,15 @@
     categoryColor?: string;
   };
 
-  let { frame, children, onSelection, onAddNewNote, isPlaying, pendingAnnotation = undefined, categoryColor = undefined }: Props = $props();
+  let {
+    frame,
+    children,
+    onSelection,
+    onAddNewNote,
+    isPlaying,
+    pendingAnnotation = undefined,
+    categoryColor = undefined,
+  }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -521,7 +536,8 @@
           selected={selection.isAnnotationSelected(ann.id)}
           editable={viewport.mode === EDITOR_MODE &&
             selection.isAnnotationSelected(ann.id) &&
-            !annotation.isLocked(ann)}
+            !annotation.isLocked(ann) &&
+            getDriver().entryStatus !== "completed"}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}

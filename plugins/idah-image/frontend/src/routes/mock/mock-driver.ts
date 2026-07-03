@@ -370,6 +370,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     meta: { duration: 0, fps: 0, width: 1920, height: 1080 },
   };
   private _workflowStep = "annotate";
+  private _entryStatus = "in_progress";
   private _mode = DEFAULT_MODE;
   private _ready = false;
 
@@ -506,6 +507,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   get workflowStep(): string {
     return this._workflowStep;
+  }
+
+  get entryStatus(): string {
+    return this._entryStatus;
   }
 
   get mode(): string {
