@@ -8,6 +8,12 @@
   import LabelConfigTemplateManagementModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateManagementModal.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { IConfig } from "@/plugin/v2/types";
+
+  interface Props {
+    onApply?: (config: IConfig) => void;
+  }
+  let { onApply }: Props = $props();
 
   let labelConfigTemplateManagementDialogOpen = $state(false);
   let saveNewTemplateFormModalOpen = $state(false);
@@ -68,6 +74,6 @@
   </DropdownMenus>
 </Can>
 
-<LabelConfigTemplateManagementModal bind:open={labelConfigTemplateManagementDialogOpen} />
+<LabelConfigTemplateManagementModal bind:open={labelConfigTemplateManagementDialogOpen} {onApply} />
 
 <SaveNewTemplateFormModal title="Template" action="create" bind:open={saveNewTemplateFormModalOpen} />

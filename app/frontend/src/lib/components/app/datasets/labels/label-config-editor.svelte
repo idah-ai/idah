@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import {
     BoltIcon,
     CopyIcon,
@@ -13,6 +12,10 @@
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
   import CategoryTree from "@/components/app/datasets/labels/categories/category-tree.svelte";
+  import {
+    setLabelConfigController,
+    type LabelConfigController,
+  } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import DuplicateConfigModal from "@/components/app/datasets/labels/overlays/duplicate-config-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
@@ -20,54 +23,32 @@
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
   import Can from "@/security/can.svelte";
 
+  import { untrack } from "svelte";
+
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
-  import type { ProjectMemberScope } from "@/security/types";
+  import type { Resource, Scope } from "@/security/types";
 
   // Props
   interface Props {
     modality: string;
     shapes: ModalityShapes;
-    labelConfig: IConfig;
-    onAddLabelConfig: (labelConfigKey: string) => void;
-    onDuplicateConfig: (sourceLabelConfigKey: string, targetLabelConfigKey: string) => void;
-    onRemoveLabelConfig: (labelConfigKey: string) => void;
-    onReorderShape: (draggedKey: string, targetKey: string, position: "before" | "after") => void;
-    onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
-    onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
-    onEditCategory: (labelConfigKey: string, category: IConfigValue) => void;
-    onChangeSelectableCategory: (labelConfigKey: string, editedCategory: IConfigValue, selectable: boolean) => void;
-    onRemoveCategory: (labelConfigKey: string, categoryId: string) => void;
-    onReorderCategory: (
-      labelConfigKey: string,
-      draggedId: string,
-      targetId: string,
-      position: "before" | "after",
-    ) => void;
-    onSetProperty: (labelConfigKey: string, property: IConfigProperty) => void;
-    onRemoveProperty: (labelConfigKey: string, propertyId: string) => void;
+    controller: LabelConfigController;
+    permission: { resource: Resource; scopes: Scope[] };
+    /** Whether to show the "duplicate configuration to other datasets" affordance
+     *  (only meaningful when editing a dataset's config, not a template). */
+    allowDuplicateToDatasets?: boolean;
   }
-  let {
-    modality,
-    labelConfig,
-    shapes,
-    onAddLabelConfig,
-    onDuplicateConfig,
-    onRemoveLabelConfig,
-    onReorderShape,
-    onAddCategory,
-    onEditCategoryId,
-    onEditCategory,
-    onChangeSelectableCategory,
-    onRemoveCategory,
-    onReorderCategory,
-    onSetProperty,
-    onRemoveProperty,
-  }: Props = $props();
+  let { modality, shapes, controller, permission, allowDuplicateToDatasets = false }: Props = $props();
+
+  // Share the controller instance with descendants (CategoryTree reads its orderMap).
+  setLabelConfigController(controller);
+
+  let labelConfig = $derived(controller.labelConfig);
 
   /** Shape keys sorted by their persisted `order` (legacy configs without an
    *  order fall back to their existing key order via the index tie-break). */
@@ -79,10 +60,10 @@
   }
 
   // Variables
-  let projectId: string = page.params.projectId as string;
   let duplicating = $state(false);
   let openDuplicateConfigModal = $state(false);
-  let selectedConfigKey: string = $state(getOrderedConfigKeys(labelConfig)[0]);
+  // Initial selection only — must not reset when the config later changes.
+  let selectedConfigKey: string = $state(untrack(() => getOrderedConfigKeys(controller.labelConfig)[0]));
   let selectedLabelConfig = $derived(
     labelConfig[selectedConfigKey] ?? labelConfig[getOrderedConfigKeys(labelConfig)[0]] ?? null,
   );
@@ -131,7 +112,7 @@
       const dragged = shapeDragState.draggedKey;
       const pos = shapeDragState.dropPosition;
       if (dragged && pos && dragged !== targetKey) {
-        onReorderShape(dragged, targetKey, pos);
+        controller.reorderShape(dragged, targetKey, pos);
       }
       shapeDrag.end();
     },
@@ -150,7 +131,7 @@
           label: shape.label,
           disabled: Object.keys(labelConfig).includes(`${modality}:${shapeKey}`),
           action: () => {
-            onAddLabelConfig(`${modality}:${shapeKey}`);
+            controller.addLabelConfig(`${modality}:${shapeKey}`);
             selectedConfigKey = `${modality}:${shapeKey}`;
           },
         };
@@ -163,20 +144,13 @@
           label: "Entry Root",
           disabled: Object.keys(labelConfig).includes("entry:root"),
           action: () => {
-            onAddLabelConfig("entry:root");
+            controller.addLabelConfig("entry:root");
             selectedConfigKey = "entry:root";
           },
         },
       ],
     },
   });
-
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: {
-      projectId,
-      projectMemberRoles: ["project_owner"],
-    },
-  };
 
   function getLabelConfigActionMenus(labelConfigKey: string): IDropdownMenus {
     return {
@@ -193,7 +167,7 @@
                     label: shape.label,
                     disabled: labelConfigKey === `${modality}:${shapeKey}`,
                     action: () => {
-                      onDuplicateConfig(labelConfigKey, `${modality}:${shapeKey}`);
+                      controller.duplicateConfig(labelConfigKey, `${modality}:${shapeKey}`);
                     },
                   };
                 }),
@@ -205,7 +179,7 @@
                     label: "Entry Root",
                     disabled: labelConfigKey === "entry:root",
                     action: () => {
-                      onDuplicateConfig(labelConfigKey, "entry:root");
+                      controller.duplicateConfig(labelConfigKey, "entry:root");
                     },
                   },
                 ],
@@ -244,32 +218,31 @@
       selectedConfigKey = "";
     }
 
-    // delete labelConfig[key];
-    onRemoveLabelConfig(key);
+    controller.removeLabelConfig(key);
   }
 
   function addCategory(nodeId?: string) {
-    onAddCategory(selectedConfigKey, nodeId);
+    controller.addCategory(selectedConfigKey, nodeId);
   }
 
   function editCategoryId(oldId: string, newId: string) {
-    onEditCategoryId(selectedConfigKey, oldId, newId);
+    controller.editCategoryId(selectedConfigKey, oldId, newId);
   }
 
   function editCategory(editedCategory: IConfigValue) {
-    onEditCategory(selectedConfigKey, editedCategory);
+    controller.editCategory(selectedConfigKey, editedCategory);
   }
 
   function removeCategory(categoryId: string) {
-    onRemoveCategory(selectedConfigKey, categoryId);
+    controller.removeCategory(selectedConfigKey, categoryId);
   }
 
   function reorderCategory(draggedId: string, targetId: string, position: "before" | "after") {
-    onReorderCategory(selectedConfigKey, draggedId, targetId, position);
+    controller.reorderCategory(selectedConfigKey, draggedId, targetId, position);
   }
 
   function addNewProperty() {
-    onSetProperty(selectedConfigKey, {
+    controller.setProperty(selectedConfigKey, {
       id: `property-${new Date().getTime()}`,
       label: "New Property",
       type: "text",
@@ -281,15 +254,15 @@
   }
 
   function setProperty(property: IConfigProperty) {
-    onSetProperty(selectedConfigKey, property);
+    controller.setProperty(selectedConfigKey, property);
   }
 
   function changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
-    onChangeSelectableCategory(selectedConfigKey, editedCategory, selectable);
+    controller.changeSelectableCategory(selectedConfigKey, editedCategory, selectable);
   }
 
   function removeProperty(propertyId: string) {
-    onRemoveProperty(selectedConfigKey, propertyId);
+    controller.removeProperty(selectedConfigKey, propertyId);
   }
 </script>
 
@@ -301,25 +274,27 @@
         <CardTitle>Configurations</CardTitle>
         <CardDescription class="text-xs">Select a label configuration to manage</CardDescription>
 
-        <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+        <Can action="update" resource={permission.resource} scopes={permission.scopes}>
           <CardAction>
-            <Tooltips align="center">
-              {#snippet trigger()}
-                <Button
-                  variant="secondary"
-                  size="icon-sm"
-                  loading={duplicating}
-                  loadingLabel="Duplicating"
-                  onclick={() => (openDuplicateConfigModal = true)}
-                >
-                  <CopyIcon />
-                </Button>
-              {/snippet}
+            {#if allowDuplicateToDatasets}
+              <Tooltips align="center">
+                {#snippet trigger()}
+                  <Button
+                    variant="secondary"
+                    size="icon-sm"
+                    loading={duplicating}
+                    loadingLabel="Duplicating"
+                    onclick={() => (openDuplicateConfigModal = true)}
+                  >
+                    <CopyIcon />
+                  </Button>
+                {/snippet}
 
-              {#snippet content()}
-                Duplicate configurations to other datasets
-              {/snippet}
-            </Tooltips>
+                {#snippet content()}
+                  Duplicate configurations to other datasets
+                {/snippet}
+              </Tooltips>
+            {/if}
 
             <DropdownMenus menus={labelConfigMenus} align="end">
               {#snippet trigger({ props })}
@@ -351,7 +326,7 @@
             ondragleave={shapeDrag.leave}
             ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
           >
-            <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+            <Can action="update" resource={permission.resource} scopes={permission.scopes}>
               <span
                 role="button"
                 tabindex="-1"
@@ -497,4 +472,6 @@
   </Button>
 {/snippet}
 
-<DuplicateConfigModal action="create" {labelConfig} {modality} bind:open={openDuplicateConfigModal} />
+{#if allowDuplicateToDatasets}
+  <DuplicateConfigModal action="create" {labelConfig} {modality} bind:open={openDuplicateConfigModal} />
+{/if}
