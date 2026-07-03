@@ -283,7 +283,7 @@
   let hoveringFirstPoint = $derived(
     isPolygonMode &&
       nearFirstPolygonPoint(
-        sceneNormalizedCursor,
+        snappedCursor,
         media.width,
         media.height,
         polygonDraft.points,
@@ -568,6 +568,22 @@
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
+    <!-- Rendered annotations -->
+    {#each visibleAnnotations as ann, i (ann.id)}
+      <AnnotationGeometry
+        bind:this={_compRefs[i]}
+        annotation={ann}
+        selected={selection.isAnnotationSelected(ann.id)}
+        editable={viewport.mode === DEFAULT_MODE &&
+          selection.isAnnotationSelected(ann.id) &&
+          !annotation.isLocked(ann)}
+        cursor={snappedCursor}
+        mode={viewport.mode}
+        onClick={() => handleClick(ann)}
+        onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
+      />
+    {/each}
+
     <!-- Magnetic snap visual feedback (handler-style dot + ring) -->
     {#if magneticSnap.enabled && _snapResult}
       {@const snapPx = _snapResult.point}
@@ -579,7 +595,7 @@
         r={8 * invScale}
         fill="none"
         stroke={snapColor}
-        stroke-width={2 * invScale}
+        stroke-width={2}
         opacity="0.8"
         vector-effect="non-scaling-stroke"
       />
@@ -654,22 +670,6 @@
           color={previewColor}
         />
       {/if}
-
-      <!-- Rendered annotations -->
-      {#each visibleAnnotations as ann, i (ann.id)}
-        <AnnotationGeometry
-          bind:this={_compRefs[i]}
-          annotation={ann}
-          selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE &&
-            selection.isAnnotationSelected(ann.id) &&
-            !annotation.isLocked(ann)}
-          cursor={snappedCursor}
-          mode={viewport.mode}
-          onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
-        />
-      {/each}
 
       <!-- Pending annotation (waiting for category in popover) -->
       {#if pendingAnnotation}
