@@ -109,8 +109,9 @@
 
   /** Resolve the snap indicator color from the source annotation's category, or default to #00FF88. */
   let snapColor = $derived.by((): string => {
-    if (!_snapResult?.sourceShapeId) return "#00FF88";
-    const src = visibleAnnotations.find((a: any) => a.id === _snapResult.sourceShapeId);
+    const snap = _snapResult;
+    if (!snap?.sourceShapeId) return "#00FF88";
+    const src = visibleAnnotations.find((a: any) => a.id === snap.sourceShapeId);
     if (!src) return "#00FF88";
     return resolveAnnotationColor(src);
   });

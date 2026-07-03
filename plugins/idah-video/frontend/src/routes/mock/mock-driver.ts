@@ -414,6 +414,14 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void {
     this.mgr.orderGroups(mode, groups);
   }
+
+  get revision(): number {
+    return this.mgr.revision;
+  }
+
+  invalidate(): void {
+    this.mgr.invalidate();
+  }
 }
 
 // ---------------------------------------------------------------------------
