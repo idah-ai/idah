@@ -116,7 +116,7 @@
    */
   function normalizeWheelDelta(delta: number, deltaMode: number): number {
     if (deltaMode === 1 /* DOM_DELTA_LINE */) return delta * 40;
-    if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * size[1];
+    if (deltaMode === 2 /* DOM_DELTA_PAGE */) return delta * viewport.workspace.dimensions[1];
     return delta; // DOM_DELTA_PIXEL — already in pixels
   }
 
