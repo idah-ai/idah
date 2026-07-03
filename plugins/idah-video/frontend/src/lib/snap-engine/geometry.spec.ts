@@ -3,8 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   nearestPointOnSegment,
   nearestPointOnEllipse,
-  segmentSegmentIntersection,
-  segmentEllipseIntersections,
   pointDistSq,
 } from "./geometry";
 import type { Segment, CircleArc, Point } from "./index";
@@ -73,70 +71,6 @@ describe("nearestPointOnEllipse", () => {
     const [px, py] = r.point;
     const lhs = (px * px) / (4 * 4) + (py * py) / (2 * 2);
     expect(lhs).toBeCloseTo(1, 0.5);
-  });
-});
-
-// ─── segmentSegmentIntersection ───────────────────────────────────────
-
-describe("segmentSegmentIntersection", () => {
-  it("finds the intersection of two crossing segments", () => {
-    const s1: Segment = { a: [0, 0], b: [4, 4] };
-    const s2: Segment = { a: [0, 4], b: [4, 0] };
-    const r = segmentSegmentIntersection(s1, s2);
-    expect(r).not.toBeNull();
-    expect(r![0]).toBeCloseTo(2);
-    expect(r![1]).toBeCloseTo(2);
-  });
-
-  it("returns null for parallel segments", () => {
-    const s1: Segment = { a: [0, 0], b: [4, 4] };
-    const s2: Segment = { a: [1, 1], b: [3, 3] };
-    expect(segmentSegmentIntersection(s1, s2)).toBeNull();
-  });
-
-  it("returns null for non-intersecting segments", () => {
-    const s1: Segment = { a: [0, 0], b: [1, 0] };
-    const s2: Segment = { a: [2, 0], b: [3, 0] };
-    expect(segmentSegmentIntersection(s1, s2)).toBeNull();
-  });
-
-  it("finds intersection at segment endpoint", () => {
-    const s1: Segment = { a: [0, 0], b: [2, 0] };
-    const s2: Segment = { a: [2, 0], b: [2, 2] };
-    const r = segmentSegmentIntersection(s1, s2);
-    expect(r).not.toBeNull();
-    expect(r![0]).toBeCloseTo(2);
-    expect(r![1]).toBeCloseTo(0);
-  });
-});
-
-// ─── segmentEllipseIntersections ──────────────────────────────────────
-
-describe("segmentEllipseIntersections", () => {
-  it("finds intersection of a line through a circle", () => {
-    const arc: CircleArc = { center: [0, 0], rx: 2, ry: 2, rotation: 0 };
-    const seg: Segment = { a: [-5, 0], b: [5, 0] };
-    const r = segmentEllipseIntersections(seg, arc);
-    expect(r.length).toBe(2);
-    const xs = r.map(p => p[0]).sort((a, b) => a - b);
-    expect(xs[0]).toBeCloseTo(-2, 0);
-    expect(xs[1]).toBeCloseTo(2, 0);
-  });
-
-  it("returns empty for a line that misses the ellipse", () => {
-    const arc: CircleArc = { center: [0, 0], rx: 2, ry: 2, rotation: 0 };
-    const seg: Segment = { a: [5, 5], b: [10, 10] };
-    const r = segmentEllipseIntersections(seg, arc);
-    expect(r.length).toBe(0);
-  });
-
-  it("finds a tangent intersection", () => {
-    const arc: CircleArc = { center: [0, 0], rx: 2, ry: 1, rotation: 0 };
-    // Tangent at (0, 1) — horizontal line y=1
-    const seg: Segment = { a: [-5, 1], b: [5, 1] };
-    const r = segmentEllipseIntersections(seg, arc);
-    // Should intersect at exactly one point (or very close)
-    expect(r.length).toBeGreaterThanOrEqual(1);
   });
 });
 

@@ -278,6 +278,8 @@
           data: { points: interpolated.points, angle: interpolated.angle },
         };
       }),
+      media.width,
+      media.height,
     );
   });
 
@@ -362,16 +364,10 @@
 
     // ── Magnetic snap query ────────────────────────────────────────
     if (magneticSnap.enabled && (viewport.isCreationMode || selAnnotation)) {
-      let activeEdgeFrom: [number, number] | undefined;
       const excludeShapeId: string | undefined = selAnnotation?.id;
-      if (viewport.mode === "idah-video:polygon" && polygonDraft.points.length > 0) {
-        const last = polygonDraft.points[polygonDraft.points.length - 1];
-        activeEdgeFrom = [last[0] * media.width, last[1] * media.height];
-      }
 
       const result = snapEngine.querySnap(scenePixelCursor, {
         threshold: snapThreshold,
-        activeEdgeFrom,
         excludeShapeId,
       });
       _snapResult = result;

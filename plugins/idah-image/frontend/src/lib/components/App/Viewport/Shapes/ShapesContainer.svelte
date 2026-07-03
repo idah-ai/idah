@@ -247,6 +247,8 @@
         kind: (ann.shape as Record<string, unknown>)?.type as string ?? "",
         data: ann.shape,
       })),
+      media.width,
+      media.height,
     );
   });
 
@@ -320,17 +322,10 @@
 
     // ── Magnetic snap query ────────────────────────────────────────
     if (magneticSnap.enabled && (viewport.isCreationMode || selAnnotation)) {
-      // Determine active edge from point for intersection snapping
-      let activeEdgeFrom: Point | undefined;
       const excludeShapeId: string | undefined = selAnnotation?.id;
-      if (isPolygonMode && polygonDraft.points.length > 0) {
-        const last = polygonDraft.points[polygonDraft.points.length - 1];
-        activeEdgeFrom = [last[0] * media.width, last[1] * media.height];
-      }
 
       const result = snapEngine.querySnap(scenePixelCursor, {
         threshold: snapThreshold,
-        activeEdgeFrom,
         excludeShapeId,
       });
       _snapResult = result;

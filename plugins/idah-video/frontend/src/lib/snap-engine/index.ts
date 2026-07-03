@@ -9,15 +9,13 @@
 //   engine.registerAdapter("idah-image:bounding-box", boxAdapter);
 //   engine.registerAdapter("idah-image:polygon", polygonAdapter);
 //   engine.setTargets(allAnnotationsOnCurrentFrame);
-//   const snap = engine.querySnap(cursor, { thresholdPx, excludeShapeId, activeEdgeFrom });
+//   const snap = engine.querySnap(cursor, { thresholdPx, excludeShapeId });
 //   if (snap) cursor = snap.point;
 // ---------------------------------------------------------------------------
 
 import {
   nearestPointOnSegment,
   nearestPointOnEllipse,
-  segmentSegmentIntersection,
-  segmentEllipseIntersections,
   pointDistSq,
 } from "./geometry";
 import { SpatialIndex, type IndexedItem } from "./spatial-index";
@@ -67,14 +65,12 @@ export interface SnapQueryOptions {
   threshold: number;
   /** Shape id to ignore (the shape currently being drawn). */
   excludeShapeId?: string;
-  /** If set, snaps to intersections between the in-progress edge and targets. */
-  activeEdgeFrom?: Point;
 }
 
 /** The result of a successful snap query. */
 export interface SnapResult {
   point: Point;
-  kind: "vertex" | "edge" | "intersection";
+  kind: "vertex" | "edge";
   sourceShapeId?: string;
 }
 
@@ -121,7 +117,11 @@ export class SnapEngine {
    * Set the current set of shapes to snap against. Rebuilds the spatial
    * index. Unknown shape kinds are silently skipped.
    */
-  setTargets(shapes: { id: string; kind: string; data: unknown }[]): void {
+  setTargets(
+    shapes: { id: string; kind: string; data: unknown }[],
+    worldWidth?: number,
+    worldHeight?: number,
+  ): void {
     this.targetShapes = shapes;
 
     const geometries: { shapeId: string; geometry: SnapGeometry }[] = [];
@@ -133,7 +133,7 @@ export class SnapEngine {
       geometries.push({ shapeId: shape.id, geometry });
     }
 
-    this.index.rebuild(geometries);
+    this.index.rebuild(geometries, worldWidth ?? 1, worldHeight ?? 1);
   }
 
   /**
@@ -150,8 +150,8 @@ export class SnapEngine {
    * Query the snap engine for the best snap candidate near `cursor`.
    * Returns null if nothing is within threshold.
    *
-   * Priority: vertex > intersection > edge (vertices win when multiple
-   * candidates are within threshold).
+   * Priority: vertex > edge (vertices win when multiple candidates are
+   * within threshold).
    */
   querySnap(cursor: Point, opts: SnapQueryOptions): SnapResult | null {
     // ── Gather candidates within threshold ──────────────────────────
@@ -163,7 +163,6 @@ export class SnapEngine {
 
     let bestVertex: { point: Point; distSq: number; shapeId: string } | null = null;
     let bestEdge: { point: Point; distSq: number; shapeId: string } | null = null;
-    let bestIntersection: { point: Point; distSq: number; shapeId: string } | null = null;
 
     for (const item of candidates) {
       if (item.shapeId === opts.excludeShapeId) continue;
@@ -198,48 +197,10 @@ export class SnapEngine {
       }
     }
 
-    // ── Check intersections with the active edge ────────────────────
-    // Only if activeEdgeFrom is set AND no vertex is already winning,
-    // since vertices have highest priority.
-    if (opts.activeEdgeFrom && !bestVertex) {
-      const activeSeg: Segment = { a: opts.activeEdgeFrom, b: cursor };
-
-      for (const item of candidates) {
-        if (item.shapeId === opts.excludeShapeId) continue;
-
-        // Segment–segment intersections
-        if (item.type === "segment") {
-          const seg = item.data as Segment;
-          const intersection = segmentSegmentIntersection(activeSeg, seg);
-          if (intersection) {
-            const dSq = pointDistSq(cursor, intersection);
-            if (dSq < thresholdSq && (!bestIntersection || dSq < bestIntersection.distSq)) {
-              bestIntersection = { point: intersection, distSq: dSq, shapeId: item.shapeId };
-            }
-          }
-        }
-
-        // Segment–arc intersections
-        if (item.type === "arc") {
-          const arc = item.data as CircleArc;
-          const intersections = segmentEllipseIntersections(activeSeg, arc);
-          for (const intersection of intersections) {
-            const dSq = pointDistSq(cursor, intersection);
-            if (dSq < thresholdSq && (!bestIntersection || dSq < bestIntersection.distSq)) {
-              bestIntersection = { point: intersection, distSq: dSq, shapeId: item.shapeId };
-            }
-          }
-        }
-      }
-    }
-
     // ── Select winner by priority ───────────────────────────────────
-    // Priority: vertex > intersection > edge
+    // Priority: vertex > edge
     if (bestVertex) {
       return { point: bestVertex.point, kind: "vertex", sourceShapeId: bestVertex.shapeId };
-    }
-    if (bestIntersection) {
-      return { point: bestIntersection.point, kind: "intersection", sourceShapeId: bestIntersection.shapeId };
     }
     if (bestEdge) {
       return { point: bestEdge.point, kind: "edge", sourceShapeId: bestEdge.shapeId };
