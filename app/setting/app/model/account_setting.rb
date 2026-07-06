@@ -25,8 +25,6 @@ module AccountSetting
         scope.all? { table }
 
         scope.own? {
-          table if action == :create
-
           table.where(account_id: auth_context.metadata[:id])
         }
       end
