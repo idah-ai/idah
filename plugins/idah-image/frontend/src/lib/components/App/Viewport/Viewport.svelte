@@ -113,10 +113,11 @@
     if (viewport.mode === NOTE_MODE) return;
     e.preventDefault();
 
-    // A physical mouse wheel zooms directly (modifier pans); a touchpad keeps
-    // pinch-to-zoom and two-finger pan. Touchpad pinch sets ctrlKey on most
-    // platforms (metaKey on Mac); plain pan and mouse wheel do NOT set it.
-    const isZoom = isMouseWheelEvent(e) ? !modKey(e) : modKey(e);
+    // A physical mouse wheel zooms directly (keyboard modifier pans); a touchpad
+    // keeps pinch-to-zoom and two-finger pan. Browsers synthesize touchpad pinch
+    // as a wheel event with ctrlKey set on every platform (including Mac, which
+    // does NOT use metaKey here); plain pan and mouse wheel do NOT set it.
+    const isZoom = isMouseWheelEvent(e) ? !modKey(e) : e.ctrlKey;
 
     if (isZoom) {
       // Mouse wheel / touchpad pinch → scale
