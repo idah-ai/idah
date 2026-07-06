@@ -104,7 +104,12 @@
   <PageHeader title="Label">
     {#snippet slotTitle()}
       <div>
-        <LabelConfigTemplateDropdownMenu onApply={(config) => controller.apply(config)} />
+        <LabelConfigTemplateDropdownMenu
+          getConfig={() => controller.getCleanedConfig()}
+          organizationId={project.organization_id}
+          onApply={(config) => controller.apply(config)}
+          onSaved={() => controller.markCurrentAsSaved()}
+        />
       </div>
     {/snippet}
 

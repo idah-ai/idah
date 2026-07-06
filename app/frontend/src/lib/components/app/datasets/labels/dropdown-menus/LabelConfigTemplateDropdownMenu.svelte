@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { ArrowDownIcon, ChevronsUpDownIcon, SaveIcon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
@@ -7,18 +8,71 @@
   import SaveNewTemplateFormModal from "$lib/components/app/datasets/labels/overlays/SaveNewTemplateFormModal.svelte";
   import LabelConfigTemplateManagementModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateManagementModal.svelte";
 
-  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import {
+    LabellingConfigurationTemplateRecord,
+    labellingConfigurationTemplateDataSource,
+  } from "@/data/model/dataset/labelling-configuration-template/record";
+  import { showToast } from "@/components/ui/toast/index.svelte";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
+
+  import type { IDropdownMenus, IDropdownMenuItem } from "@/components/app/dropdown-menus/types";
   import type { IConfig } from "@/plugin/v2/types";
 
   interface Props {
+    getConfig: () => IConfig;
+    organizationId: number | string;
     onApply?: (config: IConfig) => void;
+    onSaved?: () => void;
   }
-  let { onApply }: Props = $props();
+  let { getConfig, organizationId, onApply, onSaved }: Props = $props();
 
   let labelConfigTemplateManagementDialogOpen = $state(false);
   let saveNewTemplateFormModalOpen = $state(false);
+  let templates = $state<LabellingConfigurationTemplateRecord[]>([]);
 
-  let menus: IDropdownMenus = $state({
+  async function loadTemplates() {
+    try {
+      const res = await labellingConfigurationTemplateDataSource.list({
+        fields: { [LabellingConfigurationTemplateRecord.type]: ["name"] },
+      });
+      templates = res.data;
+    } catch (error) {
+      showActionFailedToast(error);
+    }
+  }
+
+  onMount(loadTemplates);
+
+  /** Refresh the dirty flag on the host + keep the Replace list up to date. */
+  async function handleSaved() {
+    onSaved?.();
+    await loadTemplates();
+  }
+
+  async function replaceTemplate(id: string) {
+    try {
+      await labellingConfigurationTemplateDataSource.update(
+        id,
+        { attributes: { labeling_configuration: getConfig() } },
+        { showErrorToast: false },
+      );
+      showToast.success({ title: "Template replaced", description: "The template has been updated." });
+      await handleSaved();
+    } catch (error) {
+      showActionFailedToast(error);
+    }
+  }
+
+  const replaceItems = $derived<IDropdownMenuItem[]>(
+    templates.length === 0
+      ? [{ label: "No templates yet", disabled: true }]
+      : templates.map((template) => ({
+          label: template.name,
+          action: () => replaceTemplate(template.id),
+        })),
+  );
+
+  const menus = $derived<IDropdownMenus>({
     actions: {
       items: [
         {
@@ -34,17 +88,7 @@
           items: {
             replace: {
               label: "Replace template",
-              items: [
-                {
-                  label: "Template 1",
-                },
-                {
-                  label: "Template 2",
-                },
-                {
-                  label: "Template 3",
-                },
-              ],
+              items: replaceItems,
             },
             save: {
               items: [
@@ -76,4 +120,11 @@
 
 <LabelConfigTemplateManagementModal bind:open={labelConfigTemplateManagementDialogOpen} {onApply} />
 
-<SaveNewTemplateFormModal title="Template" action="create" bind:open={saveNewTemplateFormModalOpen} />
+<SaveNewTemplateFormModal
+  title="Template"
+  action="create"
+  config={getConfig()}
+  {organizationId}
+  onSaved={handleSaved}
+  bind:open={saveNewTemplateFormModalOpen}
+/>

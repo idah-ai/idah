@@ -103,25 +103,25 @@
 
 <Dialog.Root bind:open>
   <Dialog.Content class="max-h-[90vh] max-w-[95vw] min-w-[95vw]">
-    <Dialog.Header>
-      <Dialog.Title>Select Template</Dialog.Title>
+    <Dialog.Header class="flex-row items-center gap-4">
+      <Dialog.Title class="shrink-0 ">Select Template</Dialog.Title>
+
+      <SingleSelectDatasourceField
+        name="{resource}.id"
+        class="max-w-64"
+        displayKey="name"
+        searchable
+        searchKeyWithOperation="name__match"
+        placeholder="Select template"
+        valueKey="id"
+        dataSource={labellingConfigurationTemplateDataSource}
+        value={selectedTemplateId}
+        onSelected={loadTemplate}
+      />
     </Dialog.Header>
 
     <section class="flex">
       <div class="flex items-end gap-4">
-        <SingleSelectDatasourceField
-          name="{resource}.id"
-          class="min-w-64"
-          displayKey="name"
-          searchable
-          searchKeyWithOperation="name__match"
-          placeholder="Select template"
-          valueKey="id"
-          dataSource={labellingConfigurationTemplateDataSource}
-          value={selectedTemplateId}
-          onSelected={loadTemplate}
-        />
-
         {#if loaded}
           <InputField
             name="{resource}.name"

@@ -37,6 +37,13 @@ export class LabelConfigController {
     this.savedSnapshot = JSON.stringify(this.labelConfig);
   }
 
+  /** Marks the current live config as saved without pruning or replacing it.
+   *  Used after saving/replacing a template, where we want to clear the dirty
+   *  flag but keep the editor (including in-progress empty shapes) intact. */
+  markCurrentAsSaved() {
+    this.savedSnapshot = JSON.stringify(this.labelConfig);
+  }
+
   /** Replace the config WITHOUT resetting the snapshot, so it registers as an
    *  unsaved change (used by "Apply template"). */
   apply(config: IConfig | undefined) {
