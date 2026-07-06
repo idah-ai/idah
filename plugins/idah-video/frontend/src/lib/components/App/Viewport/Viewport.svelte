@@ -67,6 +67,19 @@
     }
   }
 
+  /**
+   * Begin panning from absolute client coordinates, independent of the current
+   * mode. Used by the middle-mouse-button grab so the viewport can be panned
+   * even when the cursor is over an annotation that would otherwise capture the
+   * event. Coords are resolved via the element rect so there's no first-move jump.
+   */
+  export function startPan(clientX: number, clientY: number) {
+    if (panOrigin) return;
+    const rect = sizeElement.getBoundingClientRect();
+    panStart(clientX - rect.left, clientY - rect.top);
+    onPanStart?.();
+  }
+
   export function zoomIn() {
     const curScale = viewport.workspace.transform.scale;
     const curTranslate = viewport.workspace.transform.translate;

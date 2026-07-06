@@ -290,6 +290,17 @@
     zoomableElement!.onWheel(e);
   }
 
+  // Middle-mouse-button grab: pan the viewport from anywhere, even when the
+  // cursor is over an annotation. Shape handlers stopPropagation on the bubble
+  // phase, so this runs in the capture phase to get in first. Once started, the
+  // Viewport's own document-level listeners carry the drag to completion.
+  function onMouseDownCapture(e: MouseEvent) {
+    if (e.button !== 1) return;
+    e.preventDefault(); // suppress the browser's middle-click autoscroll
+    e.stopPropagation(); // keep shape/selection handlers from reacting
+    zoomableElement!.startPan(e.clientX, e.clientY);
+  }
+
   function onMouseDown(e: MouseEvent) {
     // Sync mousePosition so the cursor prop used by shape components
     // reflects the actual click position (not the last mousemove).
@@ -476,6 +487,7 @@
     {viewBox}
     onkeydown={() => {}}
     bind:this={svgEl}
+    onmousedowncapture={onMouseDownCapture}
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
     onclick={onSvgClick}
