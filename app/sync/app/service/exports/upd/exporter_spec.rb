@@ -83,12 +83,14 @@ RSpec.describe Exports::Upd::Exporter do
       # Stub system calls by default
       allow(exporter).to receive(:system).and_return(true)
 
+      # Stub Dir.mktmpdir to return a predictable temp dir
+      allow(Dir).to receive(:mktmpdir).with("idah-export-").and_return("/tmp/dummy-export-dir")
+
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
-      allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
+      allow(File).to receive(:open).with("/tmp/dummy-export-dir/export.upd").and_return(mock_file)
       allow(File).to receive(:extname).and_call_original
       allow(File).to receive(:basename).and_call_original
-
       # Stub Tempfile
       allow(Tempfile).to receive(:new).and_return(
         instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile")
@@ -102,7 +104,7 @@ RSpec.describe Exports::Upd::Exporter do
           cmd, *rest, opts = args
           if cmd == "updcli-static" && rest.include?("init")
             init_called = true
-            expect(rest).to include(match(%r{/tmp/idah-export-\d+\.upd}))
+            expect(rest).to include("/tmp/dummy-export-dir/export.upd")
             expect(opts).to eq({ exception: true })
           end
           true
@@ -183,21 +185,11 @@ RSpec.describe Exports::Upd::Exporter do
         expect(context.io.file).to eq(mock_file)
       end
 
-      it "creates a temporary UPD file with timestamp" do
-        allow(Time).to receive_message_chain(:now, :to_i).and_return(1_234_567_890)
-
-        init_with_timestamp = false
-        allow(exporter).to receive(:system) do |*args|
-          cmd, *rest, opts = args
-          if cmd == "updcli-static" && rest.include?("init")
-            init_with_timestamp = rest.any? { |a| a.to_s.include?("/tmp/idah-export-1234567890.upd") }
-          end
-          true
-        end
-
+      it "creates a private temp directory via Dir.mktmpdir" do
         exporter.export(context)
-        expect(init_with_timestamp).to be(true)
+        expect(Dir).to have_received(:mktmpdir).with("idah-export-")
       end
+
     end
 
     context "metadata transformation" do

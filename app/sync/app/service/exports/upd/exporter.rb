@@ -8,7 +8,8 @@ module Exports
       def options = Verse::Schema.empty
 
       def export(context)
-        file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
+        tmpdir = Dir.mktmpdir("idah-export-")
+        file_path = File.join(tmpdir, "export.upd")
 
         # Init UPD file
         system("updcli-static", "--input", file_path, "init", exception: true)
