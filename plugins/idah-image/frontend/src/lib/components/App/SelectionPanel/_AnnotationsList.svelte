@@ -52,17 +52,32 @@
   let activeTab = $state<string>("all");
   let page = $state(1);
 
-  const hiddenAnnotations = $derived(annotations.filter((ann) => annotation.isHidden(ann)));
-  const lockedAnnotations = $derived(annotations.filter((ann) => annotation.isLocked(ann)));
+  // Latest created first (descending by created_at). Newly-created annotations
+  // don't have a created_at yet (the server assigns it), so treat a missing
+  // value as "just now" so they sort to the top immediately. Ties (e.g. several
+  // just-created annotations) fall back to insertion order reversed, so the most
+  // recently added one comes first.
+  const createdAtMs = (ann: IImageAnnotationRecord) =>
+    ann.created_at ? Date.parse(ann.created_at) : Number.POSITIVE_INFINITY;
+  const sortedAnnotations = $derived(
+    annotations
+      // Parse each timestamp once, then compare cheap numbers during the sort.
+      .map((ann, i) => ({ ann, i, ts: createdAtMs(ann) }))
+      .sort((a, b) => b.ts - a.ts || b.i - a.i)
+      .map((entry) => entry.ann),
+  );
+
+  const hiddenAnnotations = $derived(sortedAnnotations.filter((ann) => annotation.isHidden(ann)));
+  const lockedAnnotations = $derived(sortedAnnotations.filter((ann) => annotation.isLocked(ann)));
 
   const tabs = $derived<{ id: Tab; label: string; count: number }[]>([
-    { id: "all", label: "All", count: annotations.length },
+    { id: "all", label: "All", count: sortedAnnotations.length },
     { id: "hidden", label: "Hidden", count: hiddenAnnotations.length },
     { id: "locked", label: "Locked", count: lockedAnnotations.length },
   ]);
 
   const filteredAnnotations = $derived(
-    activeTab === "hidden" ? hiddenAnnotations : activeTab === "locked" ? lockedAnnotations : annotations,
+    activeTab === "hidden" ? hiddenAnnotations : activeTab === "locked" ? lockedAnnotations : sortedAnnotations,
   );
 
   // -----------------------------------------------------------------------
