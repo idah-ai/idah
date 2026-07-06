@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends Record">
-  import { CheckIcon, ChevronsUpDownIcon } from "@lucide/svelte";
+  import { CheckIcon, ChevronsUpDownIcon, XIcon } from "@lucide/svelte";
   import { Combobox } from "bits-ui";
   import { onMount } from "svelte";
 
@@ -16,8 +16,11 @@
   // Props
   interface Props extends SingleSelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
-    onInput?: () => void;
-    onEnter?: () => void;
+    additionalChoices?: LabelValue<string | number>[];
+    clearable?: boolean;
+    onInput?: (value: string) => void;
+    onEnter?: (inputValue: string) => void;
+    onChoicesChange?: (choices: LabelValue<string | number>[]) => void;
   }
   let {
     dataSource,
@@ -32,7 +35,8 @@
     disabled = false,
     disabledChoices = [],
     hiddenChoices = [],
-    // clearable = false,
+    additionalChoices = [],
+    clearable = false,
     required = false,
     info,
     errors,
@@ -40,6 +44,7 @@
     onSelected,
     onInput,
     onEnter,
+    onChoicesChange,
     slotLabel,
     slotChoice,
     slotInfo,
@@ -49,8 +54,10 @@
   // Variables
   let filtering = $state(false);
   let filteredChoices = $state<LabelValue<string | number>[]>([]);
-  let inputValue = $state("");
+  // Seed from `value` so the clear (X) reflects the seeded/displayed text on mount, not only typing.
+  let inputValue = $state(value != null ? String(value) : "");
   let selectedLabel = $state("");
+  let inputRef = $state<HTMLInputElement | null>(null);
 
   // Convert external value to string for bits-ui controlled value
   let comboboxValue = $derived(value != null ? String(value) : undefined);
@@ -77,6 +84,7 @@
           data: record,
         }));
 
+      onChoicesChange?.(filteredChoices);
       filtering = false;
     });
   }
@@ -91,7 +99,7 @@
     }
 
     // Find the choice to get its typed value and label
-    const choice = filteredChoices.find((c) => String(c.value) === newValue);
+    const choice = [...additionalChoices, ...filteredChoices].find((c) => String(c.value) === newValue);
     if (choice) {
       value = choice.value;
       selectedLabel = String(choice.label);
@@ -103,12 +111,16 @@
     const newValue = (e.currentTarget as HTMLInputElement).value;
     inputValue = newValue;
 
-    // bits-ui auto-fills input after selection — don't clear the selection
-    if (newValue === selectedLabel) {
+    // bits-ui auto-fills the input with the selected item's label — don't clear the selection or emit
+    // `onInput` (guarded to non-empty so delete-to-empty is treated as genuine typing).
+    if (newValue && newValue === selectedLabel) {
       filterChoices(newValue);
       return;
     }
     selectedLabel = "";
+
+    // Genuine typing (including delete-to-empty)
+    onInput?.(newValue);
 
     // Clear selection if input is fully cleared — reload all choices
     if (!newValue) {
@@ -116,6 +128,7 @@
         value = null;
         onSelected?.(null);
       }
+      filterChoices("");
       return;
     }
 
@@ -126,8 +139,6 @@
     }
     // Trigger async filter for dropdown
     filterChoices(newValue);
-
-    onInput?.();
   }
 
   function onBlur(): void {
@@ -135,6 +146,17 @@
     if (inputValue && value === null) {
       onSelected?.(inputValue);
     }
+  }
+
+  function clear(): void {
+    value = null;
+    inputValue = "";
+    selectedLabel = "";
+    if (inputRef) inputRef.value = "";
+    onSelected?.(null);
+    // Also notify live-filter consumers (which ignore onSelected(null)) so the applied filter clears.
+    onInput?.("");
+    filterChoices("");
   }
 
   // Lifecycle
@@ -183,6 +205,8 @@
   <Combobox.Root type="single" value={comboboxValue} {onValueChange}>
     <div class="relative">
       <Combobox.Input
+        bind:ref={inputRef}
+        defaultValue={value != null ? String(value) : undefined}
         class={cn(
           "selection:bg-primary dark:bg-input/30 selection:text-primary-foreground border-input ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 text-sm font-medium shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
@@ -191,7 +215,7 @@
         oninput={onComboboxInput}
         onblur={onBlur}
         onkeydown={(e) => {
-          if (e.key === "Enter") onEnter?.();
+          if (e.key === "Enter") onEnter?.((e.currentTarget as HTMLInputElement).value);
         }}
         autofocus={false}
         {disabled}
@@ -199,8 +223,19 @@
         aria-invalid={errors && errors.length > 0 ? "true" : "false"}
       ></Combobox.Input>
 
+      {#if clearable && (inputValue || value != null)}
+        <button
+          type="button"
+          class="text-muted-foreground hover:text-foreground absolute end-8 top-1/2 size-4 -translate-y-1/2 cursor-pointer"
+          aria-label="Clear"
+          onclick={clear}
+        >
+          <XIcon class="size-4" />
+        </button>
+      {/if}
+
       <Combobox.Trigger class="absolute end-2 top-1/2 size-4 -translate-y-1/2 touch-none">
-        <ChevronsUpDownIcon class="text-muted-foreground size-4" />
+        <ChevronsUpDownIcon class="text-muted-foreground size-4 hover:cursor-pointer" />
       </Combobox.Trigger>
     </div>
 
@@ -211,7 +246,7 @@
         sideOffset={4}
       >
         <Combobox.Viewport class="p-1">
-          {#each filteredChoices as choice (choice.value)}
+          {#each [...additionalChoices, ...filteredChoices] as choice (choice.value)}
             {#if slotChoice}
               {@render slotChoice({
                 choice,

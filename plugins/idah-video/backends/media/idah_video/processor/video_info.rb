@@ -30,7 +30,12 @@ module IdahVideo
         fps = Rational(r_frame_rate).to_f
         width = json_streams[:width].to_i
         height = json_streams[:height].to_i
-        duration = json_format[:duration].to_f
+
+        # Prefer the video stream duration over the container (format) duration.
+        # For MPEG-TS files the container duration can be longer than the video
+        # (e.g. a KLV metadata stream that outlasts the video track), which makes
+        # `duration * fps` overestimate the number of frames.
+        duration = (json_streams[:duration] || json_format[:duration]).to_f
 
         VideoInfo.new(
           width:,
