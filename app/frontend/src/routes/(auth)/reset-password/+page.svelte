@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { onMount } from "svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -35,7 +36,20 @@
   });
 
   let showErrorAlert = $state(false);
-  let token = $derived(page.url.searchParams.get("token") as string);
+  // Capture the reset token once, then strip it from the visible URL so it doesn't linger in
+  // browser history or ride the Referer header on subsequent same-origin resource loads.
+  // (Must be $state, not $derived: stripping the URL would otherwise null the value at submit time.)
+  let token = $state("");
+
+  onMount(() => {
+    const url = new URL(page.url);
+    token = url.searchParams.get("token") ?? "";
+
+    if (url.searchParams.has("token")) {
+      url.searchParams.delete("token");
+      replaceState(url.pathname + url.search + url.hash, {});
+    }
+  });
 
   // Functions
   async function updatePassword(): Promise<void> {
