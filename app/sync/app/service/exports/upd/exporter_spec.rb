@@ -98,11 +98,12 @@ RSpec.describe Exports::Upd::Exporter do
     context "basic export flow" do
       it "initializes a UPD file with updcli-static" do
         init_called = false
-        allow(exporter).to receive(:system) do |cmd, options|
-          if cmd.include?("init")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("init")
             init_called = true
-            expect(cmd).to match(%r{updcli-static --input /tmp/idah-export-\d+\.upd init})
-            expect(options).to eq({ exception: true })
+            expect(rest).to include(match(%r{/tmp/idah-export-\d+\.upd}))
+            expect(opts).to eq({ exception: true })
           end
           true
         end
@@ -113,13 +114,17 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "creates datasets in the UPD file" do
         dataset_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("dataset create")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("dataset") && rest.include?("create")
             dataset_created = true
-            expect(cmd).to include("--id \"#{dataset_id}\"")
-            expect(cmd).to include("--name \"Dataset 1\"")
-            expect(cmd).to include("--modality idah-video")
-            expect(cmd).to include("--metadata")
+            expect(rest).to include("--id")
+            expect(rest).to include(dataset_id)
+            expect(rest).to include("--name")
+            expect(rest).to include("Dataset 1")
+            expect(rest).to include("--modality")
+            expect(rest).to include("idah-video")
+            expect(rest).to include("--metadata")
           end
           true
         end
@@ -130,13 +135,17 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "creates entries in the UPD file" do
         entry_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("entry create")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("entry") && rest.include?("create")
             entry_created = true
-            expect(cmd).to include("--id \"#{entry_id}\"")
-            expect(cmd).to include("--dataset_id \"#{dataset_id}\"")
-            expect(cmd).to include("--url \"http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov\"")
-            expect(cmd).to include("--metadata")
+            expect(rest).to include("--id")
+            expect(rest).to include(entry_id)
+            expect(rest).to include("--dataset_id")
+            expect(rest).to include(dataset_id)
+            expect(rest).to include("--url")
+            expect(rest).to include("http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov")
+            expect(rest).to include("--metadata")
           end
           true
         end
@@ -147,15 +156,19 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "creates annotations in the UPD file" do
         annotation_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("annotation") && rest.include?("create")
             annotation_created = true
-            expect(cmd).to include("--id \"#{annotation_id}\"")
-            expect(cmd).to include("--entry_id \"#{entry_id}\"")
-            expect(cmd).to include("--type \"idah-video:bounding-box\"")
-            expect(cmd).to include("--shape")
-            expect(cmd).to include("--annotation")
-            expect(cmd).to include("--metadata")
+            expect(rest).to include("--id")
+            expect(rest).to include(annotation_id)
+            expect(rest).to include("--entry_id")
+            expect(rest).to include(entry_id)
+            expect(rest).to include("--type")
+            expect(rest).to include("idah-video:bounding-box")
+            expect(rest).to include("--shape")
+            expect(rest).to include("--annotation")
+            expect(rest).to include("--metadata")
           end
           true
         end
@@ -174,9 +187,10 @@ RSpec.describe Exports::Upd::Exporter do
         allow(Time).to receive_message_chain(:now, :to_i).and_return(1_234_567_890)
 
         init_with_timestamp = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("init")
-            init_with_timestamp = cmd.include?("/tmp/idah-export-1234567890.upd")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("init")
+            init_with_timestamp = rest.any? { |a| a.to_s.include?("/tmp/idah-export-1234567890.upd") }
           end
           true
         end
@@ -189,11 +203,12 @@ RSpec.describe Exports::Upd::Exporter do
     context "metadata transformation" do
       it "transforms dataset metadata keys to capitalized-dashed format" do
         dataset_metadata_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("dataset create")
-            json_match = cmd.match(/--metadata '({.*})'/)
-            if json_match
-              metadata = JSON.parse(json_match[1])
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("dataset") && rest.include?("create")
+            md_idx = rest.index("--metadata")
+            if md_idx
+              metadata = JSON.parse(rest[md_idx + 1])
               dataset_metadata_valid = metadata.key?("Labeling-Configuration") &&
                                        metadata.key?("Workflow-Configuration") &&
                                        metadata.key?("Status") &&
@@ -212,11 +227,12 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "transforms entry metadata keys to capitalized-dashed format" do
         entry_metadata_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("entry create")
-            json_match = cmd.match(/--metadata '({.*})'/)
-            if json_match
-              metadata = JSON.parse(json_match[1])
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("entry") && rest.include?("create")
+            md_idx = rest.index("--metadata")
+            if md_idx
+              metadata = JSON.parse(rest[md_idx + 1])
               entry_metadata_valid = metadata.key?("Priority") &&
                                      metadata.key?("Name") &&
                                      metadata.key?("Wf-Step") &&
@@ -236,11 +252,12 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "transforms annotation metadata with special created-by field" do
         annotation_metadata_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create")
-            json_match = cmd.match(/--metadata '({.*})'/)
-            if json_match
-              metadata = JSON.parse(json_match[1])
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("annotation") && rest.include?("create")
+            md_idx = rest.index("--metadata")
+            if md_idx
+              metadata = JSON.parse(rest[md_idx + 1])
               annotation_metadata_valid = metadata.key?("Created-By") &&
                                           metadata["Created-By"] == "admin@idah.ai" &&
                                           metadata.key?("Created-At") &&
@@ -258,13 +275,18 @@ RSpec.describe Exports::Upd::Exporter do
     context "annotation dimensions handling" do
       it "extracts type from dimensions and passes shape separately" do
         shape_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create") && cmd.include?("--type \"idah-video:bounding-box\"")
-            # Shape should not contain type
-            shape_match = cmd.match(/--shape '({.*?})' --annotation/)
-            if shape_match
-              shape = JSON.parse(shape_match[1])
-              shape_valid = !shape.key?("type") && shape.key?("end") && shape.key?("start")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("annotation") && rest.include?("create")
+            type_idx = rest.index("--type")
+            shape_idx = rest.index("--shape")
+            if type_idx && shape_idx
+              type_val = rest[type_idx + 1]
+              shape_val = rest[shape_idx + 1]
+              if type_val == "idah-video:bounding-box"
+                shape = JSON.parse(shape_val)
+                shape_valid = !shape.key?("type") && shape.key?("end") && shape.key?("start")
+              end
             end
           end
           true
@@ -276,11 +298,12 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "passes annotation data as JSON" do
         annotation_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create")
-            annotation_match = cmd.match(/--annotation '({.*?})' --metadata/)
-            if annotation_match
-              annotation = JSON.parse(annotation_match[1])
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("annotation") && rest.include?("create")
+            ann_idx = rest.index("--annotation")
+            if ann_idx
+              annotation = JSON.parse(rest[ann_idx + 1])
               annotation_valid = (annotation == { "category" => "vehicles/car" })
             end
           end
@@ -298,8 +321,9 @@ RSpec.describe Exports::Upd::Exporter do
 
         it "does not include any medias" do
           media_created = false
-          allow(exporter).to receive(:system) do |cmd, _options|
-            media_created = true if cmd.include?("media create")
+          allow(exporter).to receive(:system) do |*args|
+            cmd, *rest, opts = args
+            media_created = true if cmd == "updcli-static" && rest.include?("media") && rest.include?("create")
             true
           end
 
@@ -329,8 +353,9 @@ RSpec.describe Exports::Upd::Exporter do
           allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
 
           media_create_count = 0
-          allow(exporter).to receive(:system) do |cmd, _options|
-            media_create_count += 1 if cmd.include?("media create")
+          allow(exporter).to receive(:system) do |*args|
+            cmd, *rest, opts = args
+            media_create_count += 1 if cmd == "updcli-static" && rest.include?("media") && rest.include?("create")
             true
           end
 
@@ -366,8 +391,9 @@ RSpec.describe Exports::Upd::Exporter do
           allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
 
           media_create_count = 0
-          allow(exporter).to receive(:system) do |cmd, _options|
-            media_create_count += 1 if cmd.include?("media create")
+          allow(exporter).to receive(:system) do |*args|
+            cmd, *rest, opts = args
+            media_create_count += 1 if cmd == "updcli-static" && rest.include?("media") && rest.include?("create")
             true
           end
 
@@ -409,13 +435,17 @@ RSpec.describe Exports::Upd::Exporter do
 
         it "creates media in UPD file with correct parameters" do
           media_params_valid = false
-          allow(exporter).to receive(:system) do |cmd, _options|
-            if cmd.include?("media create")
-              # Changed to use media.media.resource instead of media.media.id
-              media_params_valid = cmd.include?("--id \"4c2052a1475842e9.mov\"") &&
-                                   cmd.include?("--file \"/tmp/tempfile\"") &&
-                                   cmd.include?("--key \"\"") &&
-                                   cmd.include?("--mimetype \"video/quicktime\"")
+          allow(exporter).to receive(:system) do |*args|
+            cmd, *rest, opts = args
+            if cmd == "updcli-static" && rest.include?("media") && rest.include?("create")
+              id_idx = rest.index("--id")
+              file_idx = rest.index("--file")
+              key_idx = rest.index("--key")
+              mime_idx = rest.index("--mimetype")
+              media_params_valid = id_idx && rest[id_idx + 1] == "4c2052a1475842e9.mov" &&
+                                   file_idx && rest[file_idx + 1] == "/tmp/tempfile" &&
+                                   key_idx && rest[key_idx + 1] == "" &&
+                                   mime_idx && rest[mime_idx + 1] == "video/quicktime"
             end
             true
           end
@@ -465,8 +495,9 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "creates multiple datasets in UPD file" do
         dataset_creates = 0
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("dataset create")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          if cmd == "updcli-static" && rest.include?("dataset") && rest.include?("create")
             dataset_creates += 1
           end
           true
@@ -479,10 +510,7 @@ RSpec.describe Exports::Upd::Exporter do
 
     context "when system command fails" do
       it "raises an exception" do
-        allow(exporter).to receive(:system).with(
-          anything,
-          exception: true
-        ).and_raise(RuntimeError.new("Command failed"))
+        allow(exporter).to receive(:system).and_raise(RuntimeError.new("Command failed"))
 
         expect {
           exporter.export(context)
@@ -500,9 +528,10 @@ RSpec.describe Exports::Upd::Exporter do
       it "creates dataset without entries" do
         dataset_created = false
         entry_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          dataset_created = true if cmd.include?("dataset create")
-          entry_created = true if cmd.include?("entry create")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          dataset_created = true if cmd == "updcli-static" && rest.include?("dataset") && rest.include?("create")
+          entry_created = true if cmd == "updcli-static" && rest.include?("entry") && rest.include?("create")
           true
         end
 
@@ -519,8 +548,9 @@ RSpec.describe Exports::Upd::Exporter do
 
       it "creates entries without annotations" do
         annotation_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          annotation_created = true if cmd.include?("annotation create")
+        allow(exporter).to receive(:system) do |*args|
+          cmd, *rest, opts = args
+          annotation_created = true if cmd == "updcli-static" && rest.include?("annotation") && rest.include?("create")
           true
         end
 

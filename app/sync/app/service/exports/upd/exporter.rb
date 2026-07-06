@@ -11,7 +11,7 @@ module Exports
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
         # Init UPD file
-        system("updcli-static --input #{file_path} init", exception: true)
+        system("updcli-static", "--input", file_path, "init", exception: true)
 
         context.datasets.each do |dataset|
           append_dataset(file_path, dataset)
@@ -74,11 +74,12 @@ module Exports
 
         # Create dataset in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "dataset create --id \"#{dataset.record.id}\" "\
-          "--name \"#{dataset.record.name}\" "\
-          "--modality #{dataset.record.modality} "\
-          "--metadata '#{metadata.to_json}'",
+          "updcli-static", "--input", file_path,
+          "dataset", "create",
+          "--id", dataset.record.id.to_s,
+          "--name", dataset.record.name.to_s,
+          "--modality", dataset.record.modality.to_s,
+          "--metadata", metadata.to_json,
           exception: true
         )
       end
@@ -113,11 +114,12 @@ module Exports
 
         # Create entry in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "entry create --id \"#{entry.record.id}\" "\
-          "--dataset_id \"#{dataset_id}\" "\
-          "--url \"#{media_url}\" "\
-          "--metadata '#{metadata.to_json}'",
+          "updcli-static", "--input", file_path,
+          "entry", "create",
+          "--id", entry.record.id.to_s,
+          "--dataset_id", dataset_id.to_s,
+          "--url", media_url.to_s,
+          "--metadata", metadata.to_json,
           exception: true
         )
       end
@@ -138,13 +140,14 @@ module Exports
 
         # Create annotation in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "annotation create --id \"#{annotation.record.id}\" "\
-          "--entry_id \"#{entry_id}\" "\
-          "--type \"#{type}\" "\
-          "--shape '#{dimensions.to_json}' "\
-          "--annotation '#{annotation.record.annotation.to_json}' "\
-          "--metadata '#{metadata.to_json}'",
+          "updcli-static", "--input", file_path,
+          "annotation", "create",
+          "--id", annotation.record.id.to_s,
+          "--entry_id", entry_id.to_s,
+          "--type", type.to_s,
+          "--shape", dimensions.to_json,
+          "--annotation", annotation.record.annotation.to_json,
+          "--metadata", metadata.to_json,
           exception: true
         )
       end
@@ -163,11 +166,12 @@ module Exports
 
         # Create media in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "media create --id \"#{media.record.resource}\" "\
-          "--file \"#{tempfile.path}\" "\
-          "--key \"#{media.record.key}\" "\
-          "--mimetype \"#{media.record.mime_type}\"",
+          "updcli-static", "--input", file_path,
+          "media", "create",
+          "--id", media.record.resource.to_s,
+          "--file", tempfile.path.to_s,
+          "--key", media.record.key.to_s,
+          "--mimetype", media.record.mime_type.to_s,
           exception: true
         )
       end
