@@ -1,9 +1,26 @@
 <script lang="ts">
-  import Badge from "$lib/components/ui/Badge/Badge.svelte";
+  import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNextButton,
+    PaginationPrevButton,
+  } from "$lib/components/ui/Pagination";
   import { Separator } from "$lib/components/ui/Separator";
+  import { Tabs, TabsList, TabsTrigger } from "$lib/components/ui/Tabs";
   import Text from "$lib/components/ui/Text/Text.svelte";
 
-  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+  import {
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    EyeIcon,
+    EyeOffIcon,
+    LockIcon,
+    LockOpenIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
 
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
@@ -25,6 +42,44 @@
   };
 
   let { annotations }: Props = $props();
+
+  const PAGE_SIZE = 10;
+
+  // -----------------------------------------------------------------------
+  // Tabs: filter the list by annotation state
+  // -----------------------------------------------------------------------
+  type Tab = "all" | "hidden" | "locked";
+  let activeTab = $state<string>("all");
+  let page = $state(1);
+
+  const hiddenAnnotations = $derived(annotations.filter((ann) => annotation.isHidden(ann)));
+  const lockedAnnotations = $derived(annotations.filter((ann) => annotation.isLocked(ann)));
+
+  const tabs = $derived<{ id: Tab; label: string; count: number }[]>([
+    { id: "all", label: "All", count: annotations.length },
+    { id: "hidden", label: "Hidden", count: hiddenAnnotations.length },
+    { id: "locked", label: "Locked", count: lockedAnnotations.length },
+  ]);
+
+  const filteredAnnotations = $derived(
+    activeTab === "hidden" ? hiddenAnnotations : activeTab === "locked" ? lockedAnnotations : annotations,
+  );
+
+  // -----------------------------------------------------------------------
+  // Pagination
+  // -----------------------------------------------------------------------
+  const totalPages = $derived(Math.max(1, Math.ceil(filteredAnnotations.length / PAGE_SIZE)));
+  const pagedAnnotations = $derived(filteredAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  const showPagination = $derived(filteredAnnotations.length > PAGE_SIZE);
+
+  // When paginating, pad the last (shorter) page with empty rows so every page
+  // keeps the same height and the pagination controls stay anchored at the bottom.
+  const placeholderCount = $derived(showPagination ? PAGE_SIZE - pagedAnnotations.length : 0);
+
+  // Keep the current page within bounds when the list or tab changes.
+  $effect(() => {
+    if (page > totalPages) page = totalPages;
+  });
 
   const isAllHidden = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isHidden(ann)));
   const isAllLocked = $derived(annotations.length > 0 && annotations.every((ann) => annotation.isLocked(ann)));
@@ -67,7 +122,6 @@
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <Text weight="semibold">Annotations</Text>
-    <Badge variant="secondary">{annotations.length}</Badge>
 
     <div class="ml-auto flex items-center">
       {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick, disabled }] (key)}
@@ -75,9 +129,21 @@
       {/each}
     </div>
   </div>
+
+  <Tabs bind:value={activeTab} onValueChange={() => (page = 1)}>
+    <TabsList class="w-full">
+      {#each tabs as tab (tab.id)}
+        <TabsTrigger value={tab.id} class="text-xs">
+          <span class="font-semibold">{tab.count}</span>
+          {tab.label}
+        </TabsTrigger>
+      {/each}
+    </TabsList>
+  </Tabs>
+
   <div class="flex flex-col gap-1">
     <Separator class="my-2" />
-    {#each annotations as ann (ann.id)}
+    {#each pagedAnnotations as ann (ann.id)}
       {@const annShapeType = ann.shape.type as string}
       {@const annConfig = getDriver().config[annShapeType]}
       {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
@@ -118,5 +184,49 @@
         </div>
       </div>
     {/each}
+
+    {#if filteredAnnotations.length === 0}
+      <div class="text-muted-foreground px-2 py-4 text-center text-xs">
+        No {activeTab === "all" ? "" : activeTab} annotations
+      </div>
+    {/if}
+
+    <!-- Reserve space on the last page so pagination doesn't shift upward.
+         Height matches a real annotation row (icon + actions ≈ 40px). -->
+    {#each Array(placeholderCount) as _, i (`placeholder-${i}`)}
+      <div class="h-10 shrink-0" aria-hidden="true"></div>
+    {/each}
   </div>
+
+  {#if showPagination}
+    <Pagination count={filteredAnnotations.length} perPage={PAGE_SIZE} bind:page>
+      {#snippet children({ pages, currentPage })}
+        <PaginationContent class="gap-0.5">
+          <PaginationItem>
+            <PaginationPrevButton class="size-7 gap-0 px-0 sm:px-0">
+              <ChevronLeftIcon class="size-4" />
+            </PaginationPrevButton>
+          </PaginationItem>
+          {#each pages as p (p.key)}
+            {#if p.type === "ellipsis"}
+              <PaginationItem>
+                <PaginationEllipsis class="size-7" />
+              </PaginationItem>
+            {:else}
+              <PaginationItem>
+                <PaginationLink page={p} size="icon-sm" class="text-xs" isActive={currentPage === p.value}>
+                  {p.value}
+                </PaginationLink>
+              </PaginationItem>
+            {/if}
+          {/each}
+          <PaginationItem>
+            <PaginationNextButton class="size-7 gap-0 px-0 sm:px-0">
+              <ChevronRightIcon class="size-4" />
+            </PaginationNextButton>
+          </PaginationItem>
+        </PaginationContent>
+      {/snippet}
+    </Pagination>
+  {/if}
 </section>
