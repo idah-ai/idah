@@ -21,7 +21,7 @@ RecordFactory.registerTypes(LabellingConfigurationTemplateRecord);
 
 export const labellingConfigurationTemplateBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/labeling_configuration_templates`;
 
-export const labellingConfigurationTemplateDataSource = createBackendDataSource<
+export const labellingConfigurationTemplateDataSource = createBackendDataSource(
   LabellingConfigurationTemplateRecord,
-  {}
->(LabellingConfigurationTemplateRecord, labellingConfigurationTemplateBasePath, {});
+  labellingConfigurationTemplateBasePath,
+);

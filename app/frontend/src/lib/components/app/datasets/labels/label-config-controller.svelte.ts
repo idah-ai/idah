@@ -1,5 +1,5 @@
 import { getContext, setContext } from "svelte";
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
 import { showToast } from "@/components/ui/toast/index.svelte";
@@ -184,7 +184,7 @@ export class LabelConfigController {
   }
 
   addCategory(labelConfigKey: string, nodeId?: string) {
-    const currentTime = new Date().getTime().toString();
+    const currentTime = Date.now().toString();
     const newLabel = "New Category";
     const newId = slugify(currentTime);
     const selected = this.labelConfig[labelConfigKey];
@@ -368,7 +368,7 @@ export class LabelConfigController {
 
     // Renumber leaf orders from the new DFS order; drop intermediate entries so
     // the tree recomputes their position from their (renumbered) children.
-    const valueIds = new Set(reordered.map((v) => v.id));
+    const valueIds = new SvelteSet(reordered.map((v) => v.id));
     reordered.forEach((v, index) => {
       this.categoryOrderMap[v.id] = index;
     });
@@ -430,7 +430,7 @@ export class LabelConfigController {
   }
 
   private applyCategoryIdUpdates(values: IConfigValue[], childUpdates: { oldId: string; newId: string }[]) {
-    const updateMap = new Map(childUpdates.map((u) => [u.oldId, u.newId]));
+    const updateMap = new SvelteMap(childUpdates.map((u) => [u.oldId, u.newId]));
     return values.map((cat) => {
       const newId = updateMap.get(cat.id);
       return newId ? { ...cat, id: newId } : cat;
