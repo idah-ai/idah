@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { ArrowDownIcon, ChevronsUpDownIcon, SaveIcon } from "@lucide/svelte";
+  import { ArrowDownIcon, ChevronsUpDownIcon, FileIcon, FilePlusIcon, SaveIcon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
@@ -65,9 +65,10 @@
 
   const replaceItems = $derived<IDropdownMenuItem[]>(
     templates.length === 0
-      ? [{ label: "No templates yet", disabled: true }]
+      ? [{ label: "No templates to overwrite", disabled: true }]
       : templates.map((template) => ({
           label: template.name,
+          icon: FileIcon,
           action: () => replaceTemplate(template.id),
         })),
   );
@@ -76,29 +77,30 @@
     actions: {
       items: [
         {
-          label: "Select template",
+          label: "Browse templates",
           icon: ArrowDownIcon,
           action: () => {
             labelConfigTemplateManagementDialogOpen = true;
           },
         },
         {
-          label: "Save as a template",
+          label: "Save as template",
           icon: SaveIcon,
           items: {
-            replace: {
-              label: "Replace template",
-              items: replaceItems,
-            },
             save: {
               items: [
                 {
-                  label: "Save new template",
+                  label: "Create new template",
+                  icon: FilePlusIcon,
                   action: () => {
                     saveNewTemplateFormModalOpen = true;
                   },
                 },
               ],
+            },
+            replace: {
+              label: "Overwrite existing",
+              items: replaceItems,
             },
           },
         },

@@ -157,8 +157,6 @@
 <Sheet.Root bind:open>
   <Sheet.Content class="max-w-[85vw] min-w-[85vw]">
     <Sheet.Header class="flex-row items-center gap-4">
-      <Sheet.Title class="shrink-0 ">Select Template</Sheet.Title>
-
       {@render SingleSelectTemplateField()}
     </Sheet.Header>
 
