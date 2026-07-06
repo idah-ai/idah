@@ -3,11 +3,16 @@
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
 
+  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
   import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
 
+  import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
+  import { selection } from "$lib/state/selection.svelte";
+  import { cn } from "$lib/utils";
+
   import type { IConfigProperty, IConfigValue } from "$idah/v2/types";
-  import type { IImageAnnotationValue } from "$lib/types";
+  import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
 
   type Props = {
     modeTitle: string;
@@ -35,10 +40,11 @@
     disabled,
   }: Props = $props();
 
+  let annotation = $derived(selection.value as IImageAnnotationRecord | null);
   let displayName = $derived(category?.label ?? undefined);
 </script>
 
-<section class="flex flex-col gap-3">
+<section class="relative flex flex-col gap-3">
   <div class="flex flex-col gap-1">
     <div class="flex items-center gap-2">
       <Text weight="semibold">{modeTitle}</Text>
@@ -50,6 +56,23 @@
       </Text>
     {/if}
   </div>
+
+  {#if annotation}
+    <div class="absolute top-0 right-0 flex items-center gap-0">
+      {#each getAnnotationActions( { items: [annotation], annotationId: annotation.id }, ) as { label, icon: Icon, disabled: actionDisabled, onClick }, index (index)}
+        <CategoryAction
+          {label}
+          icon={Icon}
+          onclick={(e) => {
+            if (actionDisabled) return;
+            e.stopPropagation();
+            onClick(e);
+          }}
+          class={cn({ "cursor-not-allowed opacity-30": actionDisabled })}
+        />
+      {/each}
+    </div>
+  {/if}
 
   <CategorySelect
     {configValues}
