@@ -38,13 +38,13 @@ module Plugins
       assets_directory = manifest.entry_points&.assets_directory
       return nil unless assets_directory
 
-      asset_path = File.join(
-        plugin.path,
-        assets_directory,
-        filename
-      )
+      root       = File.expand_path(File.join(plugin.path, assets_directory))
+      asset_path = File.expand_path(File.join(root, filename))
 
-      return nil unless File.exist?(asset_path)
+      # Containment: reject anything that escapes the asset root
+      # (encoded/suffixed traversal, manifest-supplied `..`, symlinks, etc.).
+      return nil unless asset_path.start_with?("#{root}/")
+      return nil unless File.file?(asset_path)
 
       File.open(asset_path, "rb")
     end
@@ -134,11 +134,15 @@ module Plugins
 
       return nil if file_path.nil?
 
-      return unless file_path
+      root      = File.expand_path(plugin.path)
+      full_path = File.expand_path(File.join(root, file_path))
 
-      File.read(
-        File.join(plugin.path, file_path)
-      )
+      # Containment: a tampered manifest could point `file_path` outside the
+      # plugin dir (e.g. "../../../../etc/passwd"). Reject and 404 instead.
+      return nil unless full_path.start_with?("#{root}/")
+      return nil unless File.file?(full_path)
+
+      File.read(full_path)
     end
   end
 end
