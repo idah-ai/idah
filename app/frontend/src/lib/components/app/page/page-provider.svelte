@@ -29,8 +29,11 @@
 
     result = await currentAccount.can(action, resource, scopes);
 
-    if (roles) {
-      result = roles.includes(currentAccount.roleName);
+    // AND semantics: `roles` only narrows the server-authoritative can()
+    // result, it must never widen access beyond it. (Previously this
+    // overrode can() entirely, discarding the server check.)
+    if (roles?.length) {
+      result = result && roles.includes(currentAccount.roleName);
     }
 
     return result;
