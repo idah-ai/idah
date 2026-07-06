@@ -41,7 +41,7 @@
         [AccountRecord.type]: ["name", "email", "picture_url"],
       },
       filters: {
-        actor_account_id__in: actorAccountIds,
+        id__in: actorAccountIds,
       },
     });
     accounts.push(...accountsRes.data);
@@ -72,7 +72,6 @@
               break;
           }
 
-          ids["account_ids"].push(log.resource_id);
           break;
         }
         case "account_sessions":
@@ -122,7 +121,7 @@
         if (_ids.length === 0) return;
 
         switch (resource) {
-          case "accounts_ids": {
+          case "account_ids": {
             const accountsRes = await accountsBackendDataSource.list({
               fields: {
                 [AccountRecord.type]: ["id", "email"],
