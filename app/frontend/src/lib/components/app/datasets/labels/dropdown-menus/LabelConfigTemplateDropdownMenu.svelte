@@ -6,7 +6,7 @@
   import Can from "@/security/can.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import SaveNewTemplateFormModal from "$lib/components/app/datasets/labels/overlays/SaveNewTemplateFormModal.svelte";
-  import LabelConfigTemplateManagementModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateManagementModal.svelte";
+  import LabelConfigTemplateManagementSheet from "@/components/app/datasets/labels/overlays/LabelConfigTemplateManagementSheet.svelte";
 
   import {
     LabellingConfigurationTemplateRecord,
@@ -118,7 +118,7 @@
   </DropdownMenus>
 </Can>
 
-<LabelConfigTemplateManagementModal bind:open={labelConfigTemplateManagementDialogOpen} {onApply} />
+<LabelConfigTemplateManagementSheet bind:open={labelConfigTemplateManagementDialogOpen} {onApply} />
 
 <SaveNewTemplateFormModal
   title="Template"

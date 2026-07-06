@@ -266,10 +266,10 @@
   }
 </script>
 
-<section class="flex w-full flex-col gap-2 lg:flex-row">
+<section class="flex h-full w-full flex-col gap-2 lg:flex-row">
   <!-- LABEL CONFIG::NAVIGATION -->
   <div class="flex w-full lg:max-w-80 lg:min-w-72">
-    <Card class="w-full gap-2">
+    <Card class="h-full w-full gap-2">
       <CardHeader>
         <CardTitle>Configurations</CardTitle>
         <CardDescription class="text-xs">Select a label configuration to manage</CardDescription>
@@ -315,7 +315,7 @@
           {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
           <div
             role="listitem"
-            class={cn("group/shape relative flex w-full items-center gap-1 rounded-md", {
+            class={cn("group/shape relative flex w-full items-center gap-1 rounded-md pr-5", {
               "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:z-10 before:h-0.5":
                 shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "before",
               "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:z-10 after:h-0.5":
@@ -346,7 +346,7 @@
 
             <Button
               variant={isSelect ? "default" : "secondary"}
-              class="group w-full justify-start"
+              class="group w-full justify-start pr-1"
               onclick={() => selectConfigKey(labelConfigKey)}
             >
               {currentShape ? currentShape.label : humanize(labelConfigKeyDisplay)}
@@ -382,7 +382,7 @@
   <!-- LABEL CONFIG::CATEGORIES & PROPERTIES -->
   <div class="grid flex-1 grid-cols-1 gap-2 lg:grid-cols-5">
     <!-- CATEGORIES -->
-    <Card class="col-span-1 gap-2 lg:col-span-3">
+    <Card class="col-span-1 h-full gap-2 lg:col-span-3">
       <CardHeader>
         <CardTitle>Categories</CardTitle>
         <CardDescription class="text-xs">
@@ -422,7 +422,7 @@
     </Card>
 
     <!-- PROPERTIES -->
-    <Card class="col-span-1 gap-2 md:col-span-2">
+    <Card class="col-span-1 h-full gap-2 md:col-span-2">
       <CardHeader>
         <CardTitle>Properties</CardTitle>
         <CardDescription class="text-xs">

@@ -39,7 +39,7 @@
         },
         { showErrorToast: false },
       );
-      showToast.success({ title: `${name} has been created as a new tempalte` });
+      showToast.success({ title: `"${name}" has been created as a new template` });
       onSaved?.();
       open = false;
       resetForm();
@@ -65,6 +65,7 @@
       name="labeling_configuration_template.name"
       label="Name"
       placeholder="Template name"
+      required
       value={name}
       oninput={(e) => (name = e.currentTarget.value)}
     />
