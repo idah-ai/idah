@@ -41,7 +41,7 @@
         [AccountRecord.type]: ["name", "email", "picture_url"],
       },
       filters: {
-        id__in: actorAccountIds,
+        id: actorAccountIds,
       },
     });
     accounts.push(...accountsRes.data);
