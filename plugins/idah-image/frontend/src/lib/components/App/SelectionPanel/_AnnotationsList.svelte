@@ -201,7 +201,7 @@
   {#if showPagination}
     <Pagination count={filteredAnnotations.length} perPage={PAGE_SIZE} bind:page>
       {#snippet children({ pages, currentPage })}
-        <PaginationContent class="gap-0.5">
+        <PaginationContent class="flex-wrap gap-0.5">
           <PaginationItem>
             <PaginationPrevButton class="size-7 gap-0 px-0 sm:px-0">
               <ChevronLeftIcon class="size-4" />
@@ -214,7 +214,12 @@
               </PaginationItem>
             {:else}
               <PaginationItem>
-                <PaginationLink page={p} size="icon-sm" class="text-xs" isActive={currentPage === p.value}>
+                <PaginationLink
+                  page={p}
+                  size="icon-sm"
+                  class="h-7 w-auto min-w-7 px-1.5 text-xs"
+                  isActive={currentPage === p.value}
+                >
                   {p.value}
                 </PaginationLink>
               </PaginationItem>
