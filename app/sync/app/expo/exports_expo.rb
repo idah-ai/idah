@@ -33,7 +33,21 @@ class ExportsExpo < BaseExpo
     export = service.show(params[:id])
 
     renderer.content_type = export.mime_type
-    server.response.headers["Content-Disposition"] = "attachment;filename=#{export.filename}"
+
+    # Escape quotes and backslashes in the quoted filename per RFC 6266 §4.1
+    # to prevent header injection (e.g. CRLF, quote breakout).
+    # The filename* parameter uses percent-encoding via URI.encode_www_form_component
+    # which handles all dangerous characters automatically and ensures compatibility
+    # with modern clients that support the extended filename encoding.
+    filename = export.filename
+
+    safe_filename = filename.gsub(/["\\]/, '\\\\\0')
+
+    header =
+      "attachment; " \
+      "filename=\"#{safe_filename}\"; " \
+      "filename*=UTF-8''#{URI.encode_www_form_component(filename)}"
+    server.response.headers["Content-Disposition"] = header
     server.response.headers["Content-Length"] = export.size
 
     export.open

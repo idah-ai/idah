@@ -88,8 +88,35 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
       get "/exports/#{export_id}/download"
 
       expect(last_response.status).to eq 200
-      expect(last_response.headers["Content-Disposition"]).to eq "attachment;filename=export.zip"
+      expect(last_response.headers["Content-Disposition"]).to eq "attachment; filename=\"export.zip\"; filename*=UTF-8''export.zip"
       expect(last_response.content_type).to eq "application/zip"
+    end
+
+    it "escapes quotes and backslashes in filename for Content-Disposition" do
+      mock_io = StringIO.new("export content")
+      export_with_special = Exports::Record.new(
+        {
+          id: export_id,
+          job_id:,
+          project_id:,
+          created_by_id:,
+          file_id: "test_file_id",
+          filename: %(malicious"; inject.\\csv),
+          mime_type: "application/zip",
+          size: 1024,
+          created_at: now
+        }
+      )
+
+      expect_any_instance_of(Exports::Service).to receive(:show).with(export_id).and_return(export_with_special)
+      expect(export_with_special).to receive(:open).and_return(mock_io)
+
+      get "/exports/#{export_id}/download"
+
+      expect(last_response.status).to eq 200
+      expect(last_response.headers["Content-Disposition"]).to eq(
+        'attachment; filename="malicious\\"; inject.\\\\csv"; filename*=UTF-8\'\'malicious%22%3B+inject.%5Ccsv'
+      )
     end
   end
 
