@@ -170,6 +170,13 @@ export interface IConfigProperty {
 export interface IShapeConfig {
   values: IConfigValue[];
   properties: IConfigProperty[];
+  /**
+   * Display order of this shape within the Label Editor's configuration list.
+   * Persisted as a value (object key order is not preserved by jsonb).
+   * Optional for backward compatibility — legacy configs fall back to their
+   * existing key order.
+   */
+  order?: number;
 }
 
 /**

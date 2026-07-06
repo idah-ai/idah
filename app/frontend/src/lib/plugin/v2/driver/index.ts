@@ -34,6 +34,21 @@ import type { RecordResponse } from "@/data/model/types";
 
 const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
 
+/**
+ * Return a config whose shape keys are ordered by their persisted `order` field.
+ * The `labeling_configuration` comes from a jsonb column, which does not preserve
+ * object key order, so we re-establish the Label Editor order here — once, at the
+ * driver source — so every consumer (`Object.entries(config)` in the plugins,
+ * selectors, etc.) sees shapes in the intended order.  Legacy shapes without an
+ * `order` fall back to the end. JS preserves string-key insertion order, so
+ * rebuilding the object is enough.
+ */
+function sortConfigByOrder(config: IConfig): IConfig {
+  return Object.fromEntries(
+    Object.entries(config).sort(([, a], [, b]) => (a.order ?? Infinity) - (b.order ?? Infinity)),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main IdahDriverV2 — Core App Adapter
 // ---------------------------------------------------------------------------
@@ -89,7 +104,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._dataset = opts.dataset;
     this._project = opts.project;
     this._media = opts.media;
-    this._config = opts.config;
+    this._config = sortConfigByOrder(opts.config);
     this._workflowStep = opts.workflowStep;
     this._entryStatus = opts.entryStatus;
     this.rpc.setErrorObserver((err) => {
