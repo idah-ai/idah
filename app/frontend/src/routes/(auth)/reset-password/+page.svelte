@@ -47,6 +47,8 @@
 
     if (url.searchParams.has("token")) {
       url.searchParams.delete("token");
+      // Same-page URL rewrite to drop the token from the address bar; not a route navigation.
+      // eslint-disable-next-line svelte/no-navigation-without-resolve
       replaceState(url.pathname + url.search + url.hash, {});
     }
   });
