@@ -13,6 +13,7 @@
 // The queue implementation is the caller's concern.
 // ---------------------------------------------------------------------------
 
+import type { ListOptions } from "@/data/DataSource";
 import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../../types";
 import { uuidv7 } from "uuidv7";
 
@@ -33,7 +34,7 @@ const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
  * serialisation are transport concerns, not consumer-facing API concerns.
  */
 export interface ICrudDriver<T extends { id: string }> {
-  list(params: { filters: Record<string, unknown>; page: number; pageSize: number }): Promise<{ data: T[] }>;
+  list(params: ListOptions): Promise<{ data: T[] }>;
   create(record: T): Promise<T>;
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
@@ -334,9 +335,12 @@ export const IdbBackedAnnotationsDriverAdapter = <
           hasMore = true;
         while (hasMore) {
           const response = await backend.list({
-            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
-            page,
-            pageSize: SYNC_PAGE_SIZE,
+            filters: { entry_id: entryId, updated_at__gte: lastUpdated.toISOString() },
+            sort: ["updated_at"],
+            pagination: {
+              page,
+              itemsPerPage: SYNC_PAGE_SIZE,
+            },
           });
           response.data.forEach((a) => {
             const updatedAt = new Date(a.updated_at || 0);
