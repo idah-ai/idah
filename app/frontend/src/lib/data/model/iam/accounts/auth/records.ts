@@ -24,7 +24,7 @@ const accountAuthBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/ia
 RecordFactory.registerTypes(AccountAuthRecord);
 
 export interface AuthService {
-  signInWithEmailAndPassword: (email: string, passowrd: string) => Promise<RecordResponse<AccountAuthRecord>>;
+  signInWithEmailAndPassword: (email: string, password: string) => Promise<RecordResponse<AccountAuthRecord>>;
   refresh: () => Promise<RecordResponse<AccountAuthRecord>>;
   signOut: () => Promise<void>;
 }

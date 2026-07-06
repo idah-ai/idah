@@ -38,7 +38,7 @@
     const accounts: AccountRecord[] = [];
     const accountsRes = await accountsBackendDataSource.list({
       fields: {
-        [AccountRecord.type]: ["name", "email", "pciture_url"],
+        [AccountRecord.type]: ["name", "email", "picture_url"],
       },
       filters: {
         actor_account_id__in: actorAccountIds,
