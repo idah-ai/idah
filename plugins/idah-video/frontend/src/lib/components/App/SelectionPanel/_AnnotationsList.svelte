@@ -38,12 +38,27 @@
   const PAGE_SIZE = 10;
   let page = $state(1);
 
+  // Latest created first (descending by created_at). Newly-created annotations
+  // don't have a created_at yet (the server assigns it), so treat a missing
+  // value as "just now" so they sort to the top immediately. Ties (e.g. several
+  // just-created annotations) fall back to insertion order reversed, so the most
+  // recently added one comes first.
+  const createdAtMs = (ann: IVideoAnnotationRecord) =>
+    ann.created_at ? Date.parse(ann.created_at) : Number.POSITIVE_INFINITY;
+  const sortedAnnotations = $derived(
+    annotations
+      // Parse each timestamp once, then compare cheap numbers during the sort.
+      .map((ann, i) => ({ ann, i, ts: createdAtMs(ann) }))
+      .sort((a, b) => b.ts - a.ts || b.i - a.i)
+      .map((entry) => entry.ann),
+  );
+
   // -----------------------------------------------------------------------
   // Pagination
   // -----------------------------------------------------------------------
-  const totalPages = $derived(Math.max(1, Math.ceil(annotations.length / PAGE_SIZE)));
-  const pagedAnnotations = $derived(annotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  const showPagination = $derived(annotations.length > PAGE_SIZE);
+  const totalPages = $derived(Math.max(1, Math.ceil(sortedAnnotations.length / PAGE_SIZE)));
+  const pagedAnnotations = $derived(sortedAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  const showPagination = $derived(sortedAnnotations.length > PAGE_SIZE);
 
   // When paginating, pad the last (shorter) page with empty rows so every page
   // keeps the same height and the pagination controls stay anchored at the bottom.
