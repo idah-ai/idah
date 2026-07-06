@@ -29,7 +29,7 @@ module Email
       return unless send_email
 
       mail = Mail.new do
-        from    ENV.fetch( "MAIL_FROM", "Idah Notification <no-reply@idah.ingedata.ai>" )
+        from    ENV.fetch("MAIL_FROM", "Idah Notification <no-reply@idah.ingedata.ai>")
         to      to_email
         subject notification.title
       end
