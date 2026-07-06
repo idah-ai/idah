@@ -71,7 +71,7 @@ describe("filtersToHash", () => {
     ).toEqual({ name: "John", age__gt: 18 });
   });
 
-  it("does not drop single-value filters (regression: FE-010)", () => {
+  it("does not drop single-value filters (regression)", () => {
     // Before the fix, filtersToHash returned {} for every input because it
     // never assigned out[key] on first sight of a key.
     const out = filtersToHash({ status: { op: "eq", value: "active" } });
