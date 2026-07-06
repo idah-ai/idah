@@ -25,7 +25,8 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       const filters: Record<string, unknown> = { ...params.filters };
       const res = await annotationsBackendDataSource.list({
         filters,
-        pagination: { page: params.page, itemsPerPage: params.pageSize },
+        pagination: params.pagination,
+        sort: params.sort,
         noCache: true,
       });
       return { data: res.data.map(annotationRecordToV2) };
