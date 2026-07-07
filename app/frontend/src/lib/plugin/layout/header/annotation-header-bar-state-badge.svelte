@@ -8,10 +8,6 @@
   };
 
   let { driver }: Props = $props();
-
-  $effect(() => {
-    console.log("driver", driver);
-  });
 </script>
 
 <Badge variant="info">{driver.workflowStep}</Badge>
