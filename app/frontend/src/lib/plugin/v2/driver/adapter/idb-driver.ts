@@ -93,18 +93,7 @@ const idbFetch = <T extends { id: string }>(
         return;
       }
       const rec = c.value;
-      let matches = true;
-      if (filter) {
-        for (const [field, expected] of Object.entries(filter)) {
-          const val =
-            virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
-          if (!matchesFilter(val, expected)) {
-            matches = false;
-            break;
-          }
-        }
-      }
-      if (matches) results.push({ ...rec });
+      if (!filter || recordMatches(rec, filter, virtualFields)) results.push({ ...rec });
       c.continue();
     };
     req.onerror = reject;
@@ -240,6 +229,19 @@ function matchesFilter(fieldValue: unknown, filterValue: IFilterValue): boolean 
   return true;
 }
 
+/** Whether a record satisfies every field of `filter` (virtual fields resolved). */
+const recordMatches = <T extends { id: string }>(
+  rec: T,
+  filter: IFilter,
+  virtualFields?: Map<string, (ann: T) => unknown>,
+): boolean => {
+  for (const [field, expected] of Object.entries(filter)) {
+    const val = virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
+    if (!matchesFilter(val, expected)) return false;
+  }
+  return true;
+};
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 export interface IndexedDbAnnotationsDriverConfig<
@@ -309,7 +311,10 @@ export const IdbBackedAnnotationsDriverAdapter = <
       await idbPurgeEntry(db, entryId);
     },
 
-    async fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]> {
+    async fetch(
+      filter?: IFilter,
+      onBatch?: (records: IAnnotationRecord<Shape, Annotation>[]) => void,
+    ): Promise<IAnnotationRecord<Shape, Annotation>[]> {
       const db = await getDb();
 
       if (!visitMarked) {
@@ -348,6 +353,12 @@ export const IdbBackedAnnotationsDriverAdapter = <
             if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
           });
           await idbUpsertBatch(db, entryId, response.data);
+          if (onBatch && response.data.length) {
+            const matched = filter
+              ? response.data.filter((r) => recordMatches(r, filter, virtualFields))
+              : response.data;
+            if (matched.length) onBatch(matched.map((r) => ({ ...r })));
+          }
           hasMore = response.data.length === SYNC_PAGE_SIZE;
           page++;
         }

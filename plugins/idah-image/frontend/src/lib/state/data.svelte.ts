@@ -78,6 +78,13 @@ export interface DataStore<T extends DataItem> {
   preloadRange(newStart: number, newEnd: number): Promise<void>;
   remove(id: string): void;
   upsert(item: T): void;
+
+  /**
+   * Append items without the per-item dedup scan `upsert` performs.
+   * O(n) for the whole batch instead of O(n·m). Fast path for bulk/streaming
+   * loads where the caller guarantees the items are not already present.
+   */
+  bulkAppend(items: T[]): void;
   reset(items: T[], range: [number, number]): void;
   clear(): void;
 
@@ -134,7 +141,10 @@ export type AnnotationItem = {
  * @returns       A DataStore wired up for annotations.
  */
 export interface AnnotationDriver {
-  fetch(filter?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  fetch(
+    filter?: Record<string, unknown>,
+    onBatch?: (records: Record<string, unknown>[]) => void,
+  ): Promise<Record<string, unknown>[]>;
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
@@ -157,7 +167,17 @@ function syncSelectionOnDelete(deletedId: string): void {
 
 export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
   const store = createDataStore<AnnotationItem>(async () => {
-    const items = await driver.fetch();
+    // Paint each synced page as it lands so a large cold load renders
+    // progressively instead of blocking on the full dataset. `streamed`
+    // guards against duplicate pages; the store starts empty on this path,
+    // so a plain append is safe. The final resolved array is deduped by
+    // `preloadRange`, making the merge below a no-op after streaming.
+    const streamed = new Set<string>();
+    const items = await driver.fetch(undefined, (batch) => {
+      const fresh = (batch as AnnotationItem[]).filter((r) => !streamed.has(r.id));
+      for (const r of fresh) streamed.add(r.id);
+      if (fresh.length) store.bulkAppend(fresh);
+    });
     return items as AnnotationItem[];
   });
 
@@ -200,6 +220,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
     upsert: (item: AnnotationItem) => {
       originalUpsert(item);
     },
+    bulkAppend: (items: AnnotationItem[]) => store.bulkAppend(items),
     reset: (items: AnnotationItem[], range: [number, number]) => store.reset(items, range),
     clear: () => store.clear(),
 
@@ -387,6 +408,10 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
     }
   }
 
+  function bulkAppend(newItems: T[]): void {
+    for (const item of newItems) items.push(item);
+  }
+
   function reset(initialItems: T[], range: [number, number]): void {
     items.length = 0;
     for (const item of initialItems) {
@@ -414,6 +439,7 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
     preloadRange,
     remove,
     upsert,
+    bulkAppend,
     reset,
     clear,
 
