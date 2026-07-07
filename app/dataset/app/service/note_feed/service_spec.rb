@@ -109,6 +109,37 @@ RSpec.describe NoteFeed::Service, database: true do
         end
       end
 
+      context "when annotation belongs to a different entry" do
+        it "raises a validation error" do
+          other_entry_id = entry_repo.create(
+            priority: 1,
+            resource: "http://example.com/other.mp4",
+            wf_step: "review",
+            status: "in_progress",
+            assigned_to_id: 1,
+            project_id:,
+            dataset_id:
+          )
+
+          other_annotation_id = annotation_repo.create(
+            project_id:,
+            dataset_id:,
+            entry_id: other_entry_id,
+            dimensions: { "x" => 0, "y" => 0, "width" => 10, "height" => 10 },
+            annotation: { "label" => "dog" },
+            created_by_email: "user@example.com"
+          )
+
+          params = note_feed_attributes.merge(
+            anchor_type: "annotation",
+            annotation_id: other_annotation_id
+          )
+
+          expect { subject.create_from_params(params) }
+            .to raise_error(Verse::Error::ValidationFailed, /annotation/)
+        end
+      end
+
       context "when entry is not provided" do
         it "raises a not found error" do
           note_feed_attributes.delete(:entry_id)
