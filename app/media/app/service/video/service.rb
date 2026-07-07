@@ -6,8 +6,6 @@ module Video
     def process(arguments)
       job_service = Jobs::Service.new(auth_context)
 
-      puts "Arguments = #{arguments.inspect}"
-
       job_service.create(
         "Video::Job",
         arguments:,
