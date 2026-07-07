@@ -51,6 +51,16 @@ RSpec.describe ProjectMember::Service, database: true do
       invited_by_id: 1
     )
   }
+  let(:other_owner_member_id) {
+    project_member_repo.create(
+      project_id: first_project_id,
+      account_id: 6,
+      role: "project_owner",
+      name: "Other Owner",
+      email: "other_owner@example.com",
+      invited_by_id: 1
+    )
+  }
 
   let(:update_data) do
     {
@@ -144,6 +154,15 @@ RSpec.describe ProjectMember::Service, database: true do
         member = project_member_repo.find(annotator_member_id)
         expect(member.disabled_at).not_to be_nil
       end
+
+      it "can demote a project_owner in an owned org" do
+        update_data[:data][:id] = other_owner_member_id
+        update_data[:data][:attributes][:role] = "annotator"
+
+        record = subject.update(deserialize(update_data))
+
+        expect(record.role).to eq "annotator"
+      end
     end
 
     describe "with projects not in owned organization scope" do
@@ -225,6 +244,17 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.name).to eq "Jane Doe"
         expect(record.email).to eq "janedoe@example.com"
         expect(record.role).to eq "reviewer"
+      end
+
+      it "cannot demote another project_owner" do
+        update_data[:data][:id] = other_owner_member_id
+        update_data[:data][:attributes][:role] = "annotator"
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::Unauthorized)
+
+        expect(project_member_repo.find!(other_owner_member_id).role).to eq "project_owner"
       end
 
       it "can soft delete" do
