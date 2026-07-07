@@ -6,7 +6,6 @@
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { isEditable } from "$lib/state/editor.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { DEFAULT_MODE } from "$lib/types";
 
