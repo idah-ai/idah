@@ -45,7 +45,15 @@ module Email
         body renderer.render_html
       end
 
-      Mail.deliver(mail)
+      begin
+        Mail.deliver(mail)
+      rescue => e
+        Verse.logger&.error do
+          "email delivery failed: [#{e.class}] #{e.message} " \
+            "(to=#{to_email}, category=#{notification.category})"
+        end
+        raise
+      end
     end
   end
 end
