@@ -47,7 +47,7 @@ module Email
 
       begin
         Mail.deliver(mail)
-      rescue => e
+      rescue StandardError => e
         Verse.logger&.error do
           "email delivery failed: [#{e.class}] #{e.message} " \
             "(to=#{to_email}, category=#{notification.category})"
