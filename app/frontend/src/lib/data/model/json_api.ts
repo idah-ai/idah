@@ -25,7 +25,7 @@ export const parseSingleElementError = (dataRaw: Hash): JsonApiErrorResponse => 
 };
 
 export const parseSingleElementReturn = <T extends Record>(dataRaw: Hash): RecordResponse<T> => {
-  if (dataRaw.errors) throw "TODO: Handle error output";
+  if (dataRaw.errors) throw parseSingleElementError(dataRaw);
 
   const data = dataRaw.data as JsonApiRecord<Hash>;
   if (dataRaw.included) {
@@ -44,7 +44,7 @@ export const parseSingleElementReturn = <T extends Record>(dataRaw: Hash): Recor
 };
 
 export const parseCollectionReturn = <T extends Record>(dataRaw: Hash): CollectionResponse<T> => {
-  if (dataRaw.errors) throw "TODO: Handle error output";
+  if (dataRaw.errors) throw parseSingleElementError(dataRaw);
 
   const data = dataRaw.data as Array<JsonApiRecord<Hash>>;
 
