@@ -323,7 +323,8 @@ module Entry
     end
 
     def mark_entries_status_as(job_id, status)
-      entry = find_by!({ job_id: job_id, status: "processing" })
+      entry = find_by({ job_id: job_id, status: "processing" })
+      return unless entry
 
       transaction do
         update!(entry.id, { status: })

@@ -208,6 +208,17 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("pending"))
     end
+
+    it "tolerates a duplicate/late job event without raising" do
+      subject.complete_entry_processing(job_id)
+
+      expect {
+        subject.complete_entry_processing(job_id)
+      }.not_to raise_error
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("pending"))
+    end
   end
 
   describe "#mark_entries_status_as" do
@@ -237,6 +248,17 @@ RSpec.describe Entry::Service, database: true do
 
       other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("done")
+    end
+
+    it "tolerates a duplicate/late job event without raising" do
+      subject.mark_entries_status_as(job_id, "errored")
+
+      expect {
+        subject.mark_entries_status_as(job_id, "errored")
+      }.not_to raise_error
+
+      entry = repo.index({ job_id: job_id }).first
+      expect(entry.status).to eq("errored")
     end
   end
 

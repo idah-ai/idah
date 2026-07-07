@@ -82,7 +82,9 @@ module Entry
 
     def complete_entry_processing(job_id)
       system_entries_repo.transaction do
-        entry = system_entries_repo.find_by!({ job_id:, status: "processing" }, included: [:dataset])
+        entry = system_entries_repo.find_by({ job_id:, status: "processing" }, included: [:dataset])
+        next unless entry
+
         entry_workflow = entry.dataset.entry_workflow.new(system_entries_repo, entry)
         entry_workflow.submit!
         system_datasets_repo.update_progress!(entry.dataset.id)
