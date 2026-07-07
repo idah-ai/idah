@@ -39,7 +39,18 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE,
+    IMAGE_ELLIPSE,
+    IMAGE_LINE,
+    IMAGE_POLYGON,
+    NOTE_MODE,
+    REVIEW_MODE,
+    type IImageAnnotationShape,
+    type IImageAnnotationRecord,
+  } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
@@ -65,7 +76,13 @@
     categoryColor?: string;
   };
 
-  let { children, onSelection, onAddNewNote, pendingAnnotation = undefined, categoryColor = undefined }: Props = $props();
+  let {
+    children,
+    onSelection,
+    onAddNewNote,
+    pendingAnnotation = undefined,
+    categoryColor = undefined,
+  }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -108,40 +125,33 @@
   // in SVG), and non-selected annotations are ordered by creation (earliest first).
   // This ensures overlapping shapes always have the selected one on top.
   //
-  // Performance note: uses a single O(n) reduce pass to both filter visibility and
-  // separate the selected annotation — no extra findIndex() pass needed.
+  // Performance note: a single O(n) pass filters visibility and partitions the
+  // selected annotation. Each created_at is parsed exactly once here (decorate),
+  // so the sort compares precomputed numbers instead of calling Date.parse
+  // O(n log n) times — this recompute runs on every annotation batch during a
+  // large streaming load, so the difference compounds.
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
-    const frame = viewport.image.currentFrame.value;
     const items = data.annotations?.items ?? [];
 
-    // Single-pass: filter visible annotations while partitioning selected vs rest
-    const { rest, selected } = items.reduce<{
-      rest: IAnnotationRecord[];
-      selected: IAnnotationRecord[];
-    }>(
-      (acc, ann) => {
-        // Skip hidden annotations
-        if (annotation.isHidden(ann)) return acc;
-        // Separate selected annotation (goes at end for z-order) from the rest
-        if (selection.isAnnotationSelected(ann.id)) {
-          acc.selected.push(ann);
-        } else {
-          acc.rest.push(ann);
-        }
-        return acc;
-      },
-      { rest: [], selected: [] },
-    );
+    const selected: IAnnotationRecord[] = [];
+    const rest: { ann: IAnnotationRecord; t: number }[] = [];
+    for (const ann of items) {
+      // Skip hidden annotations
+      if (annotation.isHidden(ann)) continue;
+      // Separate selected annotation (goes at end for z-order) from the rest,
+      // decorating the rest with a parsed creation timestamp for sorting.
+      if (selection.isAnnotationSelected(ann.id)) {
+        selected.push(ann);
+      } else {
+        rest.push({ ann, t: ann.created_at ? Date.parse(ann.created_at as string) : 0 });
+      }
+    }
 
     // Sort non-selected by creation order (earliest first) for stable z-ordering.
     // The selected annotation is appended unsorted — only one, so no sort needed.
-    rest.sort((a, b) => {
-      const aTime = a.created_at ? Date.parse(a.created_at) : 0;
-      const bTime = b.created_at ? Date.parse(b.created_at) : 0;
-      return aTime - bTime;
-    });
+    rest.sort((a, b) => a.t - b.t);
 
-    return [...rest, ...selected];
+    return [...rest.map((r) => r.ann), ...selected];
   });
 
   // Keep refs array sized to match visible annotations
@@ -240,9 +250,7 @@
     return "cursor-grab";
   });
 
-  let showCrosshair = $derived(
-    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode,
-  );
+  let showCrosshair = $derived(screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode);
 
   const viewBox = $derived.by(() => {
     const [tx, ty] = viewport.workspace.transform.translate;
@@ -387,10 +395,7 @@
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.points?.length) {
         const pts = shape.points;
-        centroidN = [
-          pts.reduce((s, p) => s + p[0], 0) / pts.length,
-          pts.reduce((s, p) => s + p[1], 0) / pts.length,
-        ];
+        centroidN = [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
       }
       const offsetX = sceneNormalizedCursor[0] - centroidN[0];
       const offsetY = sceneNormalizedCursor[1] - centroidN[1];
@@ -548,7 +553,8 @@
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
+          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
+            handleEditComplete(ann.id, aabb, extraProps)}
         />
       {/each}
 

@@ -43,10 +43,6 @@ class Viewport {
     this.#mode = val;
   }
 
-  image = $state({
-    currentFrame: { value: 0 },
-  });
-
   /** Reference to the SVG element for screen coordinate calculations */
   svgElement: SVGSVGElement | null = $state(null);
 
