@@ -15,11 +15,7 @@
             ({syncStatus.error.failedCount} item(s))
           {/if}
         </span>
-        <button
-          class="sync-dismiss"
-          onclick={dismissSyncError}
-          title="Dismiss"
-        >✕</button>
+        <button class="sync-dismiss" onclick={dismissSyncError} title="Dismiss">✕</button>
       </div>
     {:else}
       <div class="sync-loading">
@@ -34,10 +30,6 @@
 
 <style>
   .sync-indicator {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 100;
     pointer-events: auto;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 13px;
@@ -75,7 +67,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .sync-icon {

@@ -6,6 +6,7 @@
   import { modKey } from "$lib/utils/browser";
 
   import SyncIndicator from "./SyncIndicator.svelte";
+  import LoadingIndicator from "./LoadingIndicator.svelte";
 
   import { computeWheelPan } from "$lib/utils/wheel";
   import { type Point } from "$lib/utils/math/point";
@@ -200,7 +201,10 @@
   bind:clientHeight={viewport.workspace.dimensions[1]}
   bind:clientWidth={viewport.workspace.dimensions[0]}
 >
-  <SyncIndicator />
+  <div class="viewport-indicators">
+    <SyncIndicator />
+    <LoadingIndicator />
+  </div>
   <div
     class="target"
     style:transform-origin="top left"
@@ -217,5 +221,15 @@
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  .viewport-indicators {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
   }
 </style>
