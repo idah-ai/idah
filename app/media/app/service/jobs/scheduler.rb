@@ -142,7 +142,7 @@ module Jobs
         end
       rescue StandardError => e
         jobs.error(job.id, error: [e.class.name, e.message].join(": "))
-        raise e
+        Verse.logger&.error { "Job #{job.id} failed:\n#{e.backtrace.join("\n")}" }
       end
     end
 
