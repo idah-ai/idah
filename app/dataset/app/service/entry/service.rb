@@ -109,7 +109,13 @@ module Entry
       entries.transaction do
         entry = entries.find!(id)
         member = project_members.find_by({ account_id: assigned_to_id, project_id: entry.project_id })
-        entries.assign(id, assigned_to_id, member&.email)
+
+        if member.nil? || !member.disabled_at.nil?
+          raise Verse::Error::ValidationFailed,
+                "assignee is not an active member of this project"
+        end
+
+        entries.assign(id, assigned_to_id, member.email)
         system_datasets_repo.update_progress!(entry.dataset_id)
         entries.find!(id)
       end

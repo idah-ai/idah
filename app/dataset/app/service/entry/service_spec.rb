@@ -332,6 +332,15 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#assign_member" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
+    before do
+      project_member_repo.create(
+        project_id:, account_id: 2, email: "annotator@example.com",
+        role: "annotator", invited_by_id: 1
+      )
+    end
+
     it "assigns a member to an entry and sets status to in_progress" do
       subject.assign_member(entry.id, 2)
 
@@ -345,10 +354,34 @@ RSpec.describe Entry::Service, database: true do
 
       expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
     end
+
+    it "rejects assigning a non-member of the project" do
+      expect {
+        subject.assign_member(entry.id, 999)
+      }.to raise_error(Verse::Error::ValidationFailed, /active member/)
+    end
+
+    it "rejects assigning a disabled member" do
+      disabled_id = project_member_repo.create(
+        project_id:, account_id: 3, email: "disabled@example.com",
+        role: "annotator", invited_by_id: 1
+      )
+      project_member_repo.update!(disabled_id, { disabled_at: Time.now })
+
+      expect {
+        subject.assign_member(entry.id, 3)
+      }.to raise_error(Verse::Error::ValidationFailed, /active member/)
+    end
   end
 
   describe "#unassign_member" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
     before do
+      project_member_repo.create(
+        project_id:, account_id: 2, email: "annotator@example.com",
+        role: "annotator", invited_by_id: 1
+      )
       subject.assign_member(entry.id, 2)
     end
 
@@ -404,7 +437,9 @@ RSpec.describe Entry::Service, database: true do
         invited_by_id: 1
       )
 
-      subject.assign_member(entry.id, 99)
+      # D13 blocks assigning a cross-project member through the service, so set
+      # the assignment directly to exercise the relation-resolution guard.
+      repo.assign(entry.id, 99, "stray@example.com")
 
       result = repo.find!(entry.id, included: [:assigned_to])
       expect(result.assigned_to).to be_nil
