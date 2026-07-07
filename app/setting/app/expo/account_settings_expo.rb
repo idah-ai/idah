@@ -20,12 +20,12 @@ class AccountSettingsExpo < BaseExpo
     update
   end
 
-  expose on_resource_event("iam:accounts", "created")
+  expose on_resource_event(Resource::Iam::Accounts,"created")
   def create_account_settings
     service.create(params[:resource_id])
   end
 
-  expose on_resource_event("iam:accounts", "deleted")
+  expose on_resource_event(Resource::Iam::Accounts,"deleted")
   def delete_account_settings
     service.delete(params[:resource_id])
   end
