@@ -22,6 +22,7 @@
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig } from "@/plugin/v2/types";
   import type { Resource, Scope } from "@/security/types";
+  import { refetches } from "@/utils/refetch";
 
   interface Props {
     open: boolean;
@@ -121,10 +122,13 @@
     if (!selectedTemplateId) return;
     try {
       await labellingConfigurationTemplateDataSource.delete(selectedTemplateId);
+      $refetches.labellingConfigurationTemplates.list = new Date();
       selectedTemplateId = null;
       loaded = false;
       await loadTemplates();
-      showToast.success({ title: "Template deleted" });
+      openConfirmDeleteModal = false;
+      await loadTemplates();
+      showToast.success({ title: "Template deleted", description: "The template has been deleted." });
     } catch (error) {
       showActionFailedToast(error);
     }
@@ -157,7 +161,9 @@
 <Sheet.Root bind:open>
   <Sheet.Content class="max-w-[85vw] min-w-[85vw]">
     <Sheet.Header class="flex-row items-center gap-4">
-      {@render SingleSelectTemplateField()}
+      {#key $refetches.labellingConfigurationTemplates.list}
+        {@render SingleSelectTemplateField()}
+      {/key}
     </Sheet.Header>
 
     <div class="flex h-full flex-col gap-4 px-4 pb-4">
@@ -184,7 +190,7 @@
               onclick={saveChanges}
             >
               <SaveIcon />
-              Save Changes
+              {controller.hasUnsavedChanges ? "Save Changes" : "Saved"}
             </Button>
 
             <Button disabled={!loaded} onclick={applyTemplate}>
@@ -205,11 +211,13 @@
               title={templatesIsEmpty ? "No Templates Yet" : "No Template Selected"}
               description={templatesIsEmpty
                 ? "You haven't created any labelling configuration templates. Build a configuration, then use “Save as a template” to reuse it across datasets."
-                : "Select a labelling configuration template above to view, edit, or apply it."}
+                : "Select a label configuration template to view, edit, or apply it."}
             >
               {#snippet actions()}
                 {#if !templatesIsEmpty}
-                  {@render SingleSelectTemplateField()}
+                  {#key $refetches.labellingConfigurationTemplates.list}
+                    {@render SingleSelectTemplateField()}
+                  {/key}
                 {/if}
               {/snippet}
             </ResponseBlock>

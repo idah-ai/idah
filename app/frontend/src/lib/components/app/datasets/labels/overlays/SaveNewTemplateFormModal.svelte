@@ -39,7 +39,7 @@
         },
         { showErrorToast: false },
       );
-      showToast.success({ title: `"${name}" has been created as a new template` });
+      showToast.success({ title: "Template created", description: ` The template "${name}" has been created.` });
       onSaved?.();
       open = false;
       resetForm();

@@ -19,6 +19,7 @@
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import { refetches } from "@/utils/refetch";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { Resource, Scope, ProjectMemberScope } from "@/security/types";
@@ -104,12 +105,14 @@
   <PageHeader title="Label">
     {#snippet slotTitle()}
       <div>
-        <LabelConfigTemplateDropdownMenu
-          getConfig={() => controller.getCleanedConfig()}
-          organizationId={project.organization_id}
-          onApply={(config) => controller.apply(config)}
-          onSaved={() => controller.markCurrentAsSaved()}
-        />
+        {#key $refetches.labellingConfigurationTemplates.list}
+          <LabelConfigTemplateDropdownMenu
+            getConfig={() => controller.getCleanedConfig()}
+            organizationId={project.organization_id}
+            onApply={(config) => controller.apply(config)}
+            onSaved={() => controller.markCurrentAsSaved()}
+          />
+        {/key}
       </div>
     {/snippet}
 

@@ -114,9 +114,11 @@
                       <DropdownMenuLabel class="text-muted-foreground text-xs">{subGroup.label}</DropdownMenuLabel>
                     {/if}
 
-                    {#each subGroup.items as subItem, subItemIndex (subItemIndex)}
-                      {@render DropdownMenusItem(subItem)}
-                    {/each}
+                    <div class="max-h-64 overflow-x-hidden overflow-y-auto">
+                      {#each subGroup.items as subItem, subItemIndex (subItemIndex)}
+                        {@render DropdownMenusItem(subItem)}
+                      {/each}
+                    </div>
 
                     {#if !isLastSubItem}
                       <DropdownMenuSeparator />

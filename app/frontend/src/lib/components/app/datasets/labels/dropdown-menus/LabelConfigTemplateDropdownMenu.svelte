@@ -49,14 +49,17 @@
     await loadTemplates();
   }
 
-  async function replaceTemplate(id: string) {
+  async function replaceTemplate(template: LabellingConfigurationTemplateRecord) {
     try {
       await labellingConfigurationTemplateDataSource.update(
-        id,
+        template.id,
         { attributes: { labeling_configuration: getConfig() } },
         { showErrorToast: false },
       );
-      showToast.success({ title: "Template replaced", description: "The template has been updated." });
+      showToast.success({
+        title: "Template overwritten",
+        description: `The template "${template.name}" has been updated.`,
+      });
       await handleSaved();
     } catch (error) {
       showActionFailedToast(error);
@@ -69,7 +72,7 @@
       : templates.map((template) => ({
           label: template.name,
           icon: FileIcon,
-          action: () => replaceTemplate(template.id),
+          action: () => replaceTemplate(template),
         })),
   );
 
