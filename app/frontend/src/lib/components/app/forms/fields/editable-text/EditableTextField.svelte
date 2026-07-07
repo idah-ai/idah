@@ -3,6 +3,7 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { cn } from "@/utils";
+  import Button from "@/components/ui/button/button.svelte";
 
   interface Props {
     /** Current value, controlled by the parent. */
@@ -85,16 +86,15 @@
       {label}
       {placeholder}
       {disabled}
-      class={inputClass}
+      class={cn("h-9", inputClass)}
       value={draft}
       oninput={(e) => (draft = e.currentTarget.value)}
       onblur={commit}
     />
   </div>
 {:else}
-  <span
-    role="button"
-    tabindex={disabled ? -1 : 0}
+  <Button
+    variant="ghost"
     class={cn("cursor-text", disabled && "cursor-default", className)}
     onclick={startEditing}
     onkeydown={(e) => {
@@ -105,5 +105,5 @@
     }}
   >
     {value || placeholder}
-  </span>
+  </Button>
 {/if}

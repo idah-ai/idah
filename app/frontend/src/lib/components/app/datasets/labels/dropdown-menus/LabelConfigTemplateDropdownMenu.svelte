@@ -76,6 +76,10 @@
         })),
   );
 
+  function updateTemplates(fetchedTemplates: LabellingConfigurationTemplateRecord[]) {
+    templates = fetchedTemplates;
+  }
+
   const menus = $derived<IDropdownMenus>({
     actions: {
       items: [
@@ -123,7 +127,11 @@
   </DropdownMenus>
 </Can>
 
-<LabelConfigTemplateManagementSheet bind:open={labelConfigTemplateManagementDialogOpen} {onApply} />
+<LabelConfigTemplateManagementSheet
+  bind:open={labelConfigTemplateManagementDialogOpen}
+  {onApply}
+  onMutated={updateTemplates}
+/>
 
 <SaveNewTemplateFormModal
   title="Template"

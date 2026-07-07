@@ -16,19 +16,20 @@
     LabellingConfigurationTemplateRecord,
   } from "@/data/model/dataset/labelling-configuration-template/record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { refetches } from "@/utils/refetch";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig } from "@/plugin/v2/types";
   import type { Resource, Scope } from "@/security/types";
-  import { refetches } from "@/utils/refetch";
 
   interface Props {
     open: boolean;
     onApply?: (config: IConfig) => void;
+    onMutated?: (templates: LabellingConfigurationTemplateRecord[]) => void;
   }
-  let { open = $bindable(), onApply }: Props = $props();
+  let { open = $bindable(), onApply, onMutated }: Props = $props();
 
   const resource: Resource = "dataset:labeling_configuration_templates";
   const permission: { resource: Resource; scopes: Scope[] } = {
@@ -38,7 +39,7 @@
 
   const controller = new LabelConfigController();
   let selectedTemplateId = $state<string | null>(null);
-  let name = $state("");
+  let selectedTemplateName = $state<string>("");
   let modality = $state("");
   let shapes = $state<ModalityShapes>({});
   let saving = $state(false);
@@ -76,7 +77,7 @@
 
     try {
       const res = await labellingConfigurationTemplateDataSource.get(selectedTemplateId);
-      name = res.data.name;
+      selectedTemplateName = res.data.name;
       controller.load(res.data.labeling_configuration);
       modality = deriveModality(res.data.labeling_configuration);
       shapes = modality ? (await pluginsBackendDataSource.showModality(modality)).shapes : {};
@@ -94,7 +95,10 @@
     try {
       const cleaned = controller.getCleanedConfig();
       await labellingConfigurationTemplateDataSource.update(selectedTemplateId, {
-        attributes: { name, labeling_configuration: cleaned },
+        attributes: {
+          name: selectedTemplateName,
+          labeling_configuration: cleaned,
+        },
       });
       controller.markSaved(cleaned);
       showToast.success({ title: "Template updated", description: "The changes have been saved." });
@@ -111,7 +115,12 @@
       await labellingConfigurationTemplateDataSource.update(selectedTemplateId, {
         attributes: { name: newName },
       });
-      name = newName;
+      selectedTemplateName = newName;
+
+      $refetches.labellingConfigurationTemplates.list = new Date();
+      await loadTemplates();
+      onMutated?.(templates);
+
       showToast.success({ title: "Template renamed" });
     } catch (error) {
       showActionFailedToast(error);
@@ -122,12 +131,14 @@
     if (!selectedTemplateId) return;
     try {
       await labellingConfigurationTemplateDataSource.delete(selectedTemplateId);
-      $refetches.labellingConfigurationTemplates.list = new Date();
       selectedTemplateId = null;
       loaded = false;
-      await loadTemplates();
       openConfirmDeleteModal = false;
+
+      $refetches.labellingConfigurationTemplates.list = new Date();
       await loadTemplates();
+      onMutated?.(templates);
+
       showToast.success({ title: "Template deleted", description: "The template has been deleted." });
     } catch (error) {
       showActionFailedToast(error);
@@ -151,7 +162,7 @@
     valueKey="id"
     dataSource={labellingConfigurationTemplateDataSource}
     listOptions={{
-      sort: ["name"],
+      sort: ["name", "created_at"],
     }}
     value={selectedTemplateId}
     onSelected={loadTemplate}
@@ -171,7 +182,7 @@
         <section class="flex items-center">
           <EditableTextField
             inputClass="min-w-80"
-            value={name}
+            value={selectedTemplateName}
             onSave={renameTemplate}
             placeholder="Untitled template"
           />
@@ -230,7 +241,7 @@
 
 <ConfirmModal
   title="Delete Template"
-  description="Are you sure you want to delete this template? This action cannot be undone."
+  description={`Are you sure you want to delete this template "${selectedTemplateName}"? This action cannot be undone.`}
   confirmLabel="Yes, Delete"
   onConfirm={deleteTemplate}
   bind:open={openConfirmDeleteModal}
