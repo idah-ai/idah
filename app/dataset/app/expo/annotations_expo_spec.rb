@@ -112,10 +112,6 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
       }
     end
 
-    def rpc_batch_call(calls)
-      post "/annotations/rpc", calls, { "CONTENT_TYPE" => "application/json" }
-    end
-
     it "show" do
       expect(service).to receive(:show).with(uuid).and_return(annotation_record)
       rpc_call rpc_cmd("show", { id: uuid })
