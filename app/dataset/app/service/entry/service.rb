@@ -9,6 +9,8 @@ module Entry
         annotations: Annotation::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
+    PROTECTED_FIELDS = %i[status wf_step job_id].freeze
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
         filter,
@@ -70,6 +72,10 @@ module Entry
       attributes[:project_id] = dataset.project_id
       attributes[:dataset_id] = dataset.id
 
+      unless auth_context.can?(:create, entries.class.resource) == :all
+        attributes = attributes.except(*PROTECTED_FIELDS)
+      end
+
       entries.transaction do
         id = entries.create(attributes)
         entries.find!(id)
@@ -92,7 +98,12 @@ module Entry
     end
 
     def update(record)
-      entries.update!(record.id, record.attributes)
+      attributes = record.attributes
+      unless auth_context.can?(:update, entries.class.resource) == :all
+        attributes = attributes.except(*PROTECTED_FIELDS)
+      end
+
+      entries.update!(record.id, attributes)
       entries.find!(record.id)
     end
 

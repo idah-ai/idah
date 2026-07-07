@@ -329,6 +329,30 @@ RSpec.describe Entry::Service, database: true do
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.status).to eq("in_progress")
     end
+
+    it "still allows a system caller to write status/wf_step/job_id (media processor path)" do
+      job_uuid = UUIDv7.generate
+      record = deserialize(
+        {
+          data: {
+            type: "entries",
+            id: entry.id,
+            attributes: {
+              status: "processing",
+              wf_step: "annotate",
+              job_id: job_uuid,
+            }
+          }
+        }
+      )
+
+      subject.update(record)
+
+      updated_entry = repo.find!(entry.id)
+      expect(updated_entry.status).to eq("processing")
+      expect(updated_entry.wf_step).to eq("annotate")
+      expect(updated_entry.job_id).to eq(job_uuid)
+    end
   end
 
   describe "#assign_member" do
