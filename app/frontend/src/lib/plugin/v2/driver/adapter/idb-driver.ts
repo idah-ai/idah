@@ -374,7 +374,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
           hasMore = true;
         while (hasMore) {
           const response = await backend.list({
-            filters: { entry_id: entryId, updated_at__gte: lastUpdated.toISOString() },
+            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
             sort: ["updated_at"],
             pagination: {
               page,
