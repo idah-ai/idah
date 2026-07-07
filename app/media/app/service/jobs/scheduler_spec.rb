@@ -196,10 +196,10 @@ RSpec.describe Jobs::Scheduler do
     end
 
     context "when a job uses `reschedule` command" do
-      it "reschedules the job" do
+      it "reschedules the job (M-14: correct reschedule call signature)" do
         expect(job_repository).to receive(:lock_available).and_return([reschedule_job])
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
-        expect(job_repository).to receive(:reschedule).with(3, "pending", scheduled_at: be_within(1).of(Time.now + 60))
+        expect(job_repository).to receive(:reschedule).with(3, scheduled_at: be_within(1).of(Time.now + 60))
         # The job should not complete, so no update_progress to 1.0
         expect(job_repository).not_to receive(:update_progress).with(3, 1.0)
 
