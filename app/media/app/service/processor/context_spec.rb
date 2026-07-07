@@ -58,6 +58,37 @@ RSpec.describe Processor::Context, type: :repository, database: true do
         expect { context.download_original }.to raise_error("media not found")
       end
     end
+
+    context "when streaming the object to the tempfile (M-12)" do
+      let(:resource) { "m12-streaming-resource-#{UUIDv7.generate}" }
+
+      it "copies the full content without slurping it into a String first" do
+        media_id = media_repo.create(
+          id: UUIDv7.generate,
+          resource: resource,
+          key: "",
+          filename: "file.txt",
+          size: 1024,
+          mime_type: "text/plain",
+        )
+
+        fake_source = StringIO.new("A" * 1024)
+        fake_storage = instance_double(Verse::Shrine::Manager, open: fake_source)
+        fake_plugin = instance_double(Verse::Shrine::Plugin)
+        allow(fake_plugin).to receive(:with_storage).and_yield(fake_storage)
+        allow(Verse::Plugin).to receive(:[]).and_call_original
+        allow(Verse::Plugin).to receive(:[]).with(:shrine).and_return(fake_plugin)
+
+        # IO.copy_stream reads in chunks via #read/#readpartial, never .read(nil) that
+        # would slurp the whole object into one String - verify that's what's called.
+        expect(fake_source).to receive(:read).at_least(:once).and_call_original
+
+        temp_path = context.download_original
+
+        expect(File.size(temp_path)).to eq(1024)
+        expect(File.read(temp_path)).to eq("A" * 1024)
+      end
+    end
   end
 
   describe "#upload_media" do
