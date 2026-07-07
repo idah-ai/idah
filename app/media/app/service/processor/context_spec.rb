@@ -7,7 +7,7 @@ RSpec.describe Processor::Context, type: :repository, database: true do
     Verse::Auth::Context.new
   end
 
-  let(:job) { double("job", update_progress: nil, reschedule!: nil, error: nil) }
+  let(:job) { instance_double(Jobs::Base, update_progress: nil, reschedule: nil, error: nil) }
   let(:resource) { "some-resource" }
   let(:config) { {} }
 
@@ -122,8 +122,8 @@ RSpec.describe Processor::Context, type: :repository, database: true do
       context.progress = 50
     end
 
-    it "delegates reschedule to the job" do
-      expect(job).to receive(:reschedule!).with(after: 20)
+    it "delegates reschedule to the job's reschedule command (M-17)" do
+      expect(job).to receive(:reschedule).with(after: 20)
       context.reschedule!(after: 20)
     end
 

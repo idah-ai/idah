@@ -101,7 +101,7 @@ module Processor
     end
 
     def reschedule!(after: 10)
-      job.reschedule!(after:)
+      job.reschedule(after:)
     end
 
     def error!(message)
