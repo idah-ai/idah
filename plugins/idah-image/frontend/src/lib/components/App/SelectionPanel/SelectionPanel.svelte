@@ -28,6 +28,7 @@
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import {
     DEFAULT_MODE,
@@ -137,7 +138,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          disabled: isSomeLocked || viewport.isReviewWorkspace,
+          disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
