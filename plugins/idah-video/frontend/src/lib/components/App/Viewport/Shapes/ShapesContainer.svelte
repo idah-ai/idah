@@ -234,6 +234,15 @@
   let isPanning = $state(false);
   let isDragging = $state(false);
 
+  /** Whether the user is actively dragging/resizing/rotating a shape handle — derived from the selected annotation's component. */
+  let isEditingShape = $derived.by((): boolean => {
+    const selId = selection.value?.type === "annotation" ? selection.value.annotation?.id : null;
+    if (!selId) return false;
+    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
+    if (idx === -1) return false;
+    return _compRefs[idx]?.getIsEditing?.() ?? false;
+  });
+
   // ── Resize observer to sync dimensions ────────────────────────────────
   function syncDimensions() {
     if (!svgEl) return;
@@ -363,7 +372,10 @@
     mousePosition = [e.offsetX, e.offsetY];
 
     // ── Magnetic snap query ────────────────────────────────────────
-    if (magneticSnap.enabled && (viewport.isCreationMode || selAnnotation)) {
+    // Only snap while creating a shape OR actively editing (dragging/resizing) an existing shape.
+    // Don't snap when merely hovering a selected annotation — the preview dots would
+    // obscure the cursor and make it hard to see you can drag.
+    if (magneticSnap.enabled && (viewport.isCreationMode || isEditingShape)) {
       const excludeShapeId: string | undefined = selAnnotation?.id;
 
       const result = snapEngine.querySnap(scenePixelCursor, {
