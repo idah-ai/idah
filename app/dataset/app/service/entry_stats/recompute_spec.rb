@@ -82,6 +82,14 @@ RSpec.describe EntryStats::Recompute, database: true do
     end
   end
 
+  describe ".persist" do
+    it "constructs the repository with a real auth context, not nil" do
+      expect(EntryStat::Repository).to receive(:new).with(an_instance_of(Verse::Auth::Context)).and_call_original
+
+      described_class.persist(entry_id, { "a" => "1" })
+    end
+  end
+
   describe ".collect_plugin_stats" do
     let(:modality) { "test-collect-modality" }
     let(:dataset)  { instance_double(Dataset::Record, modality: modality) }
