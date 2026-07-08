@@ -10,9 +10,10 @@ module LabelingConfigurationTemplate
 
     field :name, type: String
     field :labeling_configuration, type: Hash
+    field :modality, type: String
 
     field :created_by_id, type: Integer, readonly: true
-    field :updated_by_id, type: Integer
+    field :updated_by_id, type: Integer, readonly: true
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
   end

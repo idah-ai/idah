@@ -9,6 +9,7 @@ Sequel.migration do
 
       column :name, String, null: false, index: true
       column :labeling_configuration, :jsonb, null: false, default: "{}"
+      column :modality, String, null: false
 
       column :created_by_id, :bigint, null: false
       column :updated_by_id, :bigint, null: false
