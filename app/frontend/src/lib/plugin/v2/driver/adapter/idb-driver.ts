@@ -375,7 +375,11 @@ export const IdbBackedAnnotationsDriverAdapter = <
         while (hasMore) {
           const response = await backend.list({
             filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
-            sort: ["updated_at"],
+            // Sort by updated_at with `id` as a unique tiebreaker. Without the
+            // tiebreaker, records sharing an updated_at order inconsistently
+            // across the paginated requests, so ~1 record slips through each
+            // page boundary and never gets synced (missing annotations).
+            sort: ["updated_at", "id"],
             pagination: {
               page,
               itemsPerPage: SYNC_PAGE_SIZE,
