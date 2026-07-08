@@ -33,6 +33,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { cn } from "$lib/utils";
   import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { isEditable } from "$lib/state/editor.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IImageAnnotationRecord } from "$lib/types";
@@ -120,7 +121,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          disabled: isSomeLocked || viewport.isReviewWorkspace,
+          disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",

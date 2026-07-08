@@ -264,15 +264,13 @@
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
-    {#if driver.entryStatus !== "completed"}
-      <Button
-        variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
-        size="sm"
-        onclick={() => driver.setMode("editor")}
-      >
-        Editor
-      </Button>
-    {/if}
+    <Button
+      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("editor")}
+    >
+      Editor
+    </Button>
     <div class="relative">
       <Button
         variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
@@ -309,7 +307,7 @@
     </ToolTooltip>
   {/if}
 
-  {#if driver.workflowStep === "done"}
+  {#if ["done", "error"].includes(driver.workflowStep)}
     <!-- TODO: What to show? -->
   {:else if driver.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>
