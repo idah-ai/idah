@@ -221,6 +221,9 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       VITE_IDAH_HOST: https://idah.localhost:8443
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
     ports:
       - "5173"
     volumes:
