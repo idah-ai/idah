@@ -7,11 +7,6 @@ RUN apt-get update && apt-get install -y \
     # Basic build tools
     build-essential \
     pkg-config \
-    # FFmpeg and its dependencies
-    ffmpeg \
-    # ImageMagick and its dependencies
-    imagemagick \
-    libmagickwand-dev \
     # pgSQL client libraries
     libpq-dev \
     # Additional useful packages
