@@ -307,7 +307,7 @@
     </ToolTooltip>
   {/if}
 
-  {#if driver.workflowStep === "done"}
+  {#if ["done", "error"].includes(driver.workflowStep)}
     <!-- TODO: What to show? -->
   {:else if driver.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>

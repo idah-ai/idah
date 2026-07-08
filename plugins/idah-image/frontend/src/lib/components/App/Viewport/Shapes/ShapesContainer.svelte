@@ -557,7 +557,7 @@
           editable={viewport.mode === DEFAULT_MODE &&
             selection.isAnnotationSelected(ann.id) &&
             !annotation.isLocked(ann) &&
-            getDriver().entryStatus !== "completed"}
+            !["errored", "completed"].includes(getDriver().entryStatus)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
