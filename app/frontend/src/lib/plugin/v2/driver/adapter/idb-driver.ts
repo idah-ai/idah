@@ -23,7 +23,7 @@ const VERSION = 1;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SYNC_PAGE_SIZE = 1000;
+const SYNC_PAGE_SIZE = 100;
 const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
 
 // ─── ICrudDriver ──────────────────────────────────────────────────────────────
