@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { ArrowDownIcon, GalleryVerticalEndIcon, SaveIcon, Trash2Icon } from "@lucide/svelte";
 
   import * as Sheet from "$lib/components/ui/sheet";
@@ -71,7 +70,15 @@
     }
   }
 
-  onMount(loadTemplates);
+  const sheetRefreshKey = $derived(
+    controller.hasUnsavedChanges ? "dirty" : $refetches.labellingConfigurationTemplates.list,
+  );
+
+  async function refreshSheetData() {
+    await loadTemplates();
+    onMutated?.(templates);
+    if (selectedTemplateId) await loadTemplate(selectedTemplateId);
+  }
 
   async function loadTemplate(id: string | number | null) {
     selectedTemplateId = id === null ? null : String(id);
@@ -104,6 +111,7 @@
         },
       });
       controller.markSaved(cleaned);
+      $refetches.labellingConfigurationTemplates.list = new Date();
       showToast.success({ title: "Template updated", description: "The changes have been saved." });
     } catch (error) {
       showActionFailedToast(error);
@@ -119,11 +127,7 @@
         attributes: { name: newName },
       });
       selectedTemplateName = newName;
-
       $refetches.labellingConfigurationTemplates.list = new Date();
-      await loadTemplates();
-      onMutated?.(templates);
-
       showToast.success({ title: "Template renamed" });
     } catch (error) {
       showActionFailedToast(error);
@@ -137,11 +141,7 @@
       selectedTemplateId = null;
       loaded = false;
       openConfirmDeleteModal = false;
-
       $refetches.labellingConfigurationTemplates.list = new Date();
-      await loadTemplates();
-      onMutated?.(templates);
-
       showToast.success({ title: "Template deleted", description: "The template has been deleted." });
     } catch (error) {
       showActionFailedToast(error);
@@ -176,70 +176,78 @@
 <Sheet.Root bind:open>
   <Sheet.Content class="max-w-[85vw] min-w-[85vw]">
     <Sheet.Header class="flex-row items-center gap-4">
-      {#key $refetches.labellingConfigurationTemplates.list}
+      {#key sheetRefreshKey}
         {@render SingleSelectTemplateField()}
       {/key}
     </Sheet.Header>
 
-    <div class="flex h-full flex-col gap-4 px-4 pb-4">
-      {#if isSelected && loaded}
-        <section class="flex items-center">
-          <EditableTextField
-            inputClass="min-w-80"
-            value={selectedTemplateName}
-            onSave={renameTemplate}
-            placeholder="Untitled template"
-          />
+    {#key sheetRefreshKey}
+      {#await refreshSheetData() then}
+        <div class="flex h-full flex-col gap-4 px-4 pb-4">
+          {#if isSelected && loaded}
+            <section class="flex items-center">
+              <EditableTextField
+                inputClass="min-w-80"
+                value={selectedTemplateName}
+                onSave={renameTemplate}
+                placeholder="Untitled"
+              />
 
-          <div class="ml-auto flex items-center gap-4">
-            <Button variant="destructive-outline" disabled={!loaded} onclick={() => (openConfirmDeleteModal = true)}>
-              <Trash2Icon />
-              Delete
-            </Button>
+              <div class="ml-auto flex items-center gap-4">
+                <Button
+                  variant="destructive-outline"
+                  disabled={!loaded}
+                  onclick={() => (openConfirmDeleteModal = true)}
+                >
+                  <Trash2Icon />
+                  Delete
+                </Button>
 
-            <Button
-              variant="outline"
-              loading={saving}
-              loadingLabel="Saving"
-              disabled={!loaded || !controller.hasUnsavedChanges}
-              onclick={saveChanges}
-            >
-              <SaveIcon />
-              {controller.hasUnsavedChanges ? "Save Changes" : "Saved"}
-            </Button>
+                <Button
+                  variant="outline"
+                  loading={saving}
+                  loadingLabel="Saving"
+                  disabled={!loaded || !controller.hasUnsavedChanges}
+                  onclick={saveChanges}
+                >
+                  <SaveIcon />
+                  {controller.hasUnsavedChanges ? "Save Changes" : "Saved"}
+                </Button>
 
-            <Button disabled={!loaded} onclick={applyTemplate}>
-              <ArrowDownIcon />
-              Apply This Template
-            </Button>
-          </div>
-        </section>
-      {/if}
+                <Button disabled={!loaded} onclick={applyTemplate}>
+                  <ArrowDownIcon />
+                  Apply This Template
+                </Button>
+              </div>
+            </section>
+          {/if}
 
-      <section class="h-full">
-        {#if loaded}
-          <LabelConfigEditor {modality} {shapes} {controller} {permission} />
-        {:else}
-          <div class="flex h-full items-center justify-center">
-            <ResponseBlock
-              icon={GalleryVerticalEndIcon}
-              title={templatesIsEmpty ? "No Templates Yet" : "No Template Selected"}
-              description={templatesIsEmpty
-                ? "You haven't created any labelling configuration templates. Build a configuration, then use “Save as a template” to reuse it across datasets."
-                : "Select a label configuration template to view, edit, or apply it."}
-            >
-              {#snippet actions()}
-                {#if !templatesIsEmpty}
-                  {#key $refetches.labellingConfigurationTemplates.list}
-                    {@render SingleSelectTemplateField()}
-                  {/key}
-                {/if}
-              {/snippet}
-            </ResponseBlock>
-          </div>
-        {/if}
-      </section>
-    </div>
+          <section class="h-full">
+            {#if loaded}
+              <LabelConfigEditor {modality} {shapes} {controller} {permission} />
+            {:else}
+              <div class="flex h-full items-center justify-center">
+                <ResponseBlock
+                  icon={GalleryVerticalEndIcon}
+                  title={templatesIsEmpty ? "No Templates Yet" : "No Template Selected"}
+                  description={templatesIsEmpty
+                    ? "You haven't created any labelling configuration templates. Build a configuration, then use “Save as a template to reuse it across datasets."
+                    : "Select a label configuration template to view, edit, or apply it."}
+                >
+                  {#snippet actions()}
+                    {#if !templatesIsEmpty}
+                      {#key sheetRefreshKey}
+                        {@render SingleSelectTemplateField()}
+                      {/key}
+                    {/if}
+                  {/snippet}
+                </ResponseBlock>
+              </div>
+            {/if}
+          </section>
+        </div>
+      {/await}
+    {/key}
   </Sheet.Content>
 </Sheet.Root>
 

@@ -14,6 +14,7 @@
   } from "@/data/model/dataset/labelling-configuration-template/record";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import { refetches } from "@/utils/refetch";
 
   import type { IDropdownMenus, IDropdownMenuItem } from "@/components/app/dropdown-menus/types";
   import type { IConfig } from "@/plugin/v2/types";
@@ -48,6 +49,7 @@
   /** Refresh the dirty flag on the host + keep the Replace list up to date. */
   async function handleSaved() {
     onSaved?.();
+    $refetches.labellingConfigurationTemplates.list = new Date();
     await loadTemplates();
   }
 
