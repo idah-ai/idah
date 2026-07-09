@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
   import { truncate } from "@/utils/string";
 
@@ -13,11 +12,11 @@
 <TooltipProvider>
   <Tooltip>
     <TooltipTrigger class="max-w-full min-w-0 overflow-hidden">
-      <Button variant="ghost" size="sm" class="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-        <span class="overflow-hidden text-ellipsis">
-          {truncate(name, 80)}
-        </span>
-      </Button>
+      <div
+        class="text-accent-foreground max-w-full overflow-hidden text-xs font-semibold text-ellipsis whitespace-nowrap hover:cursor-default"
+      >
+        {truncate(name, 80)}
+      </div>
     </TooltipTrigger>
 
     <TooltipContent>

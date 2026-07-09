@@ -33,6 +33,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { cn } from "$lib/utils";
   import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { isEditable } from "$lib/state/editor.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IImageAnnotationRecord } from "$lib/types";
@@ -52,17 +53,32 @@
   let activeTab = $state<string>("all");
   let page = $state(1);
 
-  const hiddenAnnotations = $derived(annotations.filter((ann) => annotation.isHidden(ann)));
-  const lockedAnnotations = $derived(annotations.filter((ann) => annotation.isLocked(ann)));
+  // Latest created first (descending by created_at). Newly-created annotations
+  // don't have a created_at yet (the server assigns it), so treat a missing
+  // value as "just now" so they sort to the top immediately. Ties (e.g. several
+  // just-created annotations) fall back to insertion order reversed, so the most
+  // recently added one comes first.
+  const createdAtMs = (ann: IImageAnnotationRecord) =>
+    ann.created_at ? Date.parse(ann.created_at) : Number.POSITIVE_INFINITY;
+  const sortedAnnotations = $derived(
+    annotations
+      // Parse each timestamp once, then compare cheap numbers during the sort.
+      .map((ann, i) => ({ ann, i, ts: createdAtMs(ann) }))
+      .sort((a, b) => b.ts - a.ts || b.i - a.i)
+      .map((entry) => entry.ann),
+  );
+
+  const hiddenAnnotations = $derived(sortedAnnotations.filter((ann) => annotation.isHidden(ann)));
+  const lockedAnnotations = $derived(sortedAnnotations.filter((ann) => annotation.isLocked(ann)));
 
   const tabs = $derived<{ id: Tab; label: string; count: number }[]>([
-    { id: "all", label: "All", count: annotations.length },
+    { id: "all", label: "All", count: sortedAnnotations.length },
     { id: "hidden", label: "Hidden", count: hiddenAnnotations.length },
     { id: "locked", label: "Locked", count: lockedAnnotations.length },
   ]);
 
   const filteredAnnotations = $derived(
-    activeTab === "hidden" ? hiddenAnnotations : activeTab === "locked" ? lockedAnnotations : annotations,
+    activeTab === "hidden" ? hiddenAnnotations : activeTab === "locked" ? lockedAnnotations : sortedAnnotations,
   );
 
   // -----------------------------------------------------------------------
@@ -105,7 +121,7 @@
         "delete-all": {
           label: "Delete all annotations",
           icon: Trash2Icon,
-          disabled: isSomeLocked || viewport.isReviewWorkspace,
+          disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
             showConfirmDialog({
               title: "Delete all annotations",
@@ -201,7 +217,7 @@
   {#if showPagination}
     <Pagination count={filteredAnnotations.length} perPage={PAGE_SIZE} bind:page>
       {#snippet children({ pages, currentPage })}
-        <PaginationContent class="gap-0.5">
+        <PaginationContent class="flex-wrap gap-0.5">
           <PaginationItem>
             <PaginationPrevButton class="size-7 gap-0 px-0 sm:px-0">
               <ChevronLeftIcon class="size-4" />
@@ -214,7 +230,12 @@
               </PaginationItem>
             {:else}
               <PaginationItem>
-                <PaginationLink page={p} size="icon-sm" class="text-xs" isActive={currentPage === p.value}>
+                <PaginationLink
+                  page={p}
+                  size="icon-sm"
+                  class="h-7 w-auto min-w-7 px-1.5 text-xs"
+                  isActive={currentPage === p.value}
+                >
                   {p.value}
                 </PaginationLink>
               </PaginationItem>
