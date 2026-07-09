@@ -39,7 +39,18 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE,
+    IMAGE_ELLIPSE,
+    IMAGE_LINE,
+    IMAGE_POLYGON,
+    NOTE_MODE,
+    REVIEW_MODE,
+    type IImageAnnotationShape,
+    type IImageAnnotationRecord,
+  } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
@@ -65,7 +76,13 @@
     categoryColor?: string;
   };
 
-  let { children, onSelection, onAddNewNote, pendingAnnotation = undefined, categoryColor = undefined }: Props = $props();
+  let {
+    children,
+    onSelection,
+    onAddNewNote,
+    pendingAnnotation = undefined,
+    categoryColor = undefined,
+  }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -240,9 +257,7 @@
     return "cursor-grab";
   });
 
-  let showCrosshair = $derived(
-    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode,
-  );
+  let showCrosshair = $derived(screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode);
 
   const viewBox = $derived.by(() => {
     const [tx, ty] = viewport.workspace.transform.translate;
@@ -387,10 +402,7 @@
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.points?.length) {
         const pts = shape.points;
-        centroidN = [
-          pts.reduce((s, p) => s + p[0], 0) / pts.length,
-          pts.reduce((s, p) => s + p[1], 0) / pts.length,
-        ];
+        centroidN = [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
       }
       const offsetX = sceneNormalizedCursor[0] - centroidN[0];
       const offsetY = sceneNormalizedCursor[1] - centroidN[1];
@@ -544,11 +556,13 @@
           selected={selection.isAnnotationSelected(ann.id)}
           editable={viewport.mode === DEFAULT_MODE &&
             selection.isAnnotationSelected(ann.id) &&
-            !annotation.isLocked(ann)}
+            !annotation.isLocked(ann) &&
+            !["errored", "completed"].includes(getDriver().entryStatus)}
           cursor={sceneNormalizedCursor}
           mode={viewport.mode}
           onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
+          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
+            handleEditComplete(ann.id, aabb, extraProps)}
         />
       {/each}
 
