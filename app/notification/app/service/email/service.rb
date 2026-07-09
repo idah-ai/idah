@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 
 require "mail"
+require "uri"
 
 module Email
   class Service < Verse::Service::Base
     def send_email(to_email, notification)
+      unless to_email.is_a?(String) && to_email.match?(URI::MailTo::EMAIL_REGEXP)
+        raise Verse::Error::ValidationFailed, "Invalid to_email: #{to_email.inspect}"
+      end
+
       account = Api[:idah].iam.accounts.index(
         {
           filter: { email: to_email }

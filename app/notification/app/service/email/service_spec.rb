@@ -198,6 +198,22 @@ RSpec.describe Email::Service, database: true do
       end
     end
 
+    context "when to_email is malformed" do
+      it "raises ValidationFailed and does not deliver" do
+        expect {
+          subject.send_email("not-an-email", notification)
+        }.to raise_error(Verse::Error::ValidationFailed)
+
+        expect(Mail).not_to have_received(:deliver)
+      end
+
+      it "rejects header-injection payloads" do
+        expect {
+          subject.send_email("a@b.com\r\nBcc: evil@example.com", notification)
+        }.to raise_error(Verse::Error::ValidationFailed)
+      end
+    end
+
     context "when mail delivery fails" do
       let(:logger) { instance_double(Logger, error: nil) }
 
