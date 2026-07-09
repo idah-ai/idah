@@ -1,18 +1,18 @@
 // ---------------------------------------------------------------------------
-// toggle-debug-console — Toggle the debug overlay
-// Shortcut: Ctrl+`
+// snap/magnetic_toggle — Toggle magnetic snap on/off
+// Shortcut: Shift+S
 // Not undoable.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { ui } from "$lib/state/ui.svelte";
+import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 
 export const command = {
-  name: "debug.toggle_console",
-  group: "Display",
-  modes: ["*"],
-  shortcut: "Control+Shift+Backquote",
-  shortDescription: "Toggle debug console",
-  longDescription: "Show/hide the debug information overlay",
+  name: "snap.magnetic_toggle",
+  group: "Tools",
+  modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
+  shortcut: "Shift+S",
+  shortDescription: "Toggle magnetic snap",
+  longDescription: "Enable or disable magnetic snap-to-edge for drawing tools",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -25,7 +25,8 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
-        ui.toggleDebugConsole();
+        magneticSnap.toggle();
+        driver.toolbar.invalidate();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

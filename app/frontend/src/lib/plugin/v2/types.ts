@@ -617,6 +617,12 @@ export interface IToolbarDriverV2 {
 
   /** Define the display order of groups for a given mode. */
   orderGroups(mode: string, groups: string[]): void;
+
+  /** Monotonically increasing counter for toggle state invalidation. */
+  readonly revision: number;
+
+  /** Notify that toggle states may have changed. */
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────

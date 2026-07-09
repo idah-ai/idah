@@ -5,6 +5,7 @@
   import AnnotationHeaderBarActions from "./annotation-header-bar-actions.svelte";
   import AnnotationHeaderBarBackButton from "./annotation-header-bar-back-button.svelte";
   import AnnotationHeaderBarMediaName from "./annotation-header-bar-media-name.svelte";
+  import AnnotationHeaderBarStateBadge from "./annotation-header-bar-state-badge.svelte";
   import AnnotationHeaderBarTools from "./annotation-header-bar-tools.svelte";
 
   import type { WithElementRef } from "@/utils";
@@ -36,6 +37,8 @@
     <Separator orientation="vertical" />
     <!-- MEDIA NAME -->
     <AnnotationHeaderBarMediaName name={driver.media.filename} />
+
+    <AnnotationHeaderBarStateBadge {driver} />
   </div>
 
   <!-- CENTER::TOOLS -->

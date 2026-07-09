@@ -232,6 +232,10 @@
     _selectedIndices = new Set();
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   // ── Cursor style for the shape body ──────────────────────────────────
   //   "cursor-grabbing"  → actively dragging (vertex drag, pan, or multi-drag in progress)
   //   "cursor-grab"      → editable & selected (ready to start a drag)

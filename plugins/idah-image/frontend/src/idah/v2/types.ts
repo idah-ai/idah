@@ -579,6 +579,12 @@ export interface IToolbarDriverV2 {
 
   /** Define the display order of groups for a given mode. */
   orderGroups(mode: string, groups: string[]): void;
+
+  /** Monotonically increasing counter for toggle state invalidation. */
+  readonly revision: number;
+
+  /** Notify that toggle states may have changed. */
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
@@ -617,6 +623,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly id: string;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
+  readonly entryStatus: string;
   readonly mode: string;
 
   setMode(mode: string): void;
