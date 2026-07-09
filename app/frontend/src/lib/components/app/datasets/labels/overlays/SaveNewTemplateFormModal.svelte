@@ -11,10 +11,11 @@
 
   interface Props extends FormModalBaseProps {
     config: IConfig;
+    modality: string;
     organizationId: number | string;
     onSaved?: () => void;
   }
-  let { action, open = $bindable(), title, config, organizationId, onSaved }: Props = $props();
+  let { action, open = $bindable(), title, config, modality, organizationId, onSaved }: Props = $props();
 
   let name = $state("");
   let submitting = $state(false);
@@ -34,6 +35,7 @@
           attributes: {
             name,
             labeling_configuration: config,
+            modality,
             organization_id: String(organizationId),
           },
         },

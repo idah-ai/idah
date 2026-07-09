@@ -19,12 +19,13 @@
   import type { IConfig } from "@/plugin/v2/types";
 
   interface Props {
+    modality: string;
     getConfig: () => IConfig;
     organizationId: number | string;
     onApply?: (config: IConfig) => void;
     onSaved?: () => void;
   }
-  let { getConfig, organizationId, onApply, onSaved }: Props = $props();
+  let { modality, getConfig, organizationId, onApply, onSaved }: Props = $props();
 
   let labelConfigTemplateManagementDialogOpen = $state(false);
   let saveNewTemplateFormModalOpen = $state(false);
@@ -34,6 +35,7 @@
     try {
       const res = await labellingConfigurationTemplateDataSource.list({
         fields: { [LabellingConfigurationTemplateRecord.type]: ["name"] },
+        filters: { modality },
       });
       templates = res.data;
     } catch (error) {
@@ -129,6 +131,7 @@
 
 <LabelConfigTemplateManagementSheet
   bind:open={labelConfigTemplateManagementDialogOpen}
+  datasetModality={modality}
   {onApply}
   onMutated={updateTemplates}
 />
@@ -137,6 +140,7 @@
   title="Template"
   action="create"
   config={getConfig()}
+  {modality}
   {organizationId}
   onSaved={handleSaved}
   bind:open={saveNewTemplateFormModalOpen}

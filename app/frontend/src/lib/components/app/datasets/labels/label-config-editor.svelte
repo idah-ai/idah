@@ -23,14 +23,12 @@
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
   import Can from "@/security/can.svelte";
 
-  import { untrack } from "svelte";
-
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
+  import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { Resource, Scope } from "@/security/types";
 
   // Props
@@ -50,25 +48,14 @@
 
   let labelConfig = $derived(controller.labelConfig);
 
-  /** Shape keys sorted by their persisted `order` (legacy configs without an
-   *  order fall back to their existing key order via the index tie-break). */
-  function getOrderedConfigKeys(config: IConfig): string[] {
-    return Object.keys(config)
-      .map((key, index) => ({ key, index, order: config[key]?.order ?? Number.POSITIVE_INFINITY }))
-      .sort((a, b) => (a.order !== b.order ? a.order - b.order : a.index - b.index))
-      .map((e) => e.key);
-  }
-
   // Variables
   let duplicating = $state(false);
   let openDuplicateConfigModal = $state(false);
-  // Initial selection only — must not reset when the config later changes.
-  let selectedConfigKey: string = $state(untrack(() => getOrderedConfigKeys(controller.labelConfig)[0]));
-  let selectedLabelConfig = $derived(
-    labelConfig[selectedConfigKey] ?? labelConfig[getOrderedConfigKeys(labelConfig)[0]] ?? null,
-  );
+  // Selection lives in the controller so load()/apply() can point it at the
+  // first shape (e.g. after applying a template).
+  let selectedLabelConfig = $derived(labelConfig[controller.selectedConfigKey] ?? null);
 
-  let orderedConfigKeys = $derived(getOrderedConfigKeys(labelConfig));
+  let orderedConfigKeys = $derived(controller.getOrderedConfigKeys(labelConfig));
 
   /** Drag-and-drop reorder state for the shape (configuration) list. */
   let shapeDragState = $state<{
@@ -132,7 +119,7 @@
           disabled: Object.keys(labelConfig).includes(`${modality}:${shapeKey}`),
           action: () => {
             controller.addLabelConfig(`${modality}:${shapeKey}`);
-            selectedConfigKey = `${modality}:${shapeKey}`;
+            controller.selectedConfigKey = `${modality}:${shapeKey}`;
           },
         };
       }),
@@ -145,7 +132,7 @@
           disabled: Object.keys(labelConfig).includes("entry:root"),
           action: () => {
             controller.addLabelConfig("entry:root");
-            selectedConfigKey = "entry:root";
+            controller.selectedConfigKey = "entry:root";
           },
         },
       ],
@@ -208,41 +195,41 @@
   }
 
   function selectConfigKey(key: string) {
-    selectedConfigKey = key;
+    controller.selectedConfigKey = key;
   }
 
   function removeLabelConfig(key: string) {
-    if (selectedConfigKey === key) {
-      selectedConfigKey = getOrderedConfigKeys(labelConfig).find((k) => k !== key) || "";
+    if (controller.selectedConfigKey === key) {
+      controller.selectedConfigKey = controller.getOrderedConfigKeys().find((k) => k !== key) || "";
     } else {
-      selectedConfigKey = "";
+      controller.selectedConfigKey = "";
     }
 
     controller.removeLabelConfig(key);
   }
 
   function addCategory(nodeId?: string) {
-    controller.addCategory(selectedConfigKey, nodeId);
+    controller.addCategory(nodeId);
   }
 
   function editCategoryId(oldId: string, newId: string) {
-    controller.editCategoryId(selectedConfigKey, oldId, newId);
+    controller.editCategoryId(oldId, newId);
   }
 
   function editCategory(editedCategory: IConfigValue) {
-    controller.editCategory(selectedConfigKey, editedCategory);
+    controller.editCategory(editedCategory);
   }
 
   function removeCategory(categoryId: string) {
-    controller.removeCategory(selectedConfigKey, categoryId);
+    controller.removeCategory(categoryId);
   }
 
   function reorderCategory(draggedId: string, targetId: string, position: "before" | "after") {
-    controller.reorderCategory(selectedConfigKey, draggedId, targetId, position);
+    controller.reorderCategory(draggedId, targetId, position);
   }
 
   function addNewProperty() {
-    controller.setProperty(selectedConfigKey, {
+    controller.setProperty({
       id: `property-${new Date().getTime()}`,
       label: "New Property",
       type: "text",
@@ -254,15 +241,15 @@
   }
 
   function setProperty(property: IConfigProperty) {
-    controller.setProperty(selectedConfigKey, property);
+    controller.setProperty(property);
   }
 
   function changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
-    controller.changeSelectableCategory(selectedConfigKey, editedCategory, selectable);
+    controller.changeSelectableCategory(editedCategory, selectable);
   }
 
   function removeProperty(propertyId: string) {
-    controller.removeProperty(selectedConfigKey, propertyId);
+    controller.removeProperty(propertyId);
   }
 </script>
 
@@ -309,7 +296,7 @@
 
       <CardContent class="flex flex-col gap-2">
         {#each orderedConfigKeys as labelConfigKey (labelConfigKey)}
-          {@const isSelect = selectedConfigKey === labelConfigKey}
+          {@const isSelect = controller.selectedConfigKey === labelConfigKey}
           {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
           {@const currentShape = shapes[shapeKey] as ModalityShape}
           {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
@@ -386,7 +373,7 @@
       <CardHeader>
         <CardTitle>Categories</CardTitle>
         <CardDescription class="text-xs">
-          Manage the categories for the {getSelectLabelConfigLabel(selectedConfigKey)} label configuration
+          Manage the categories for the {getSelectLabelConfigLabel(controller.selectedConfigKey)} label configuration
         </CardDescription>
 
         <CardAction>
@@ -426,7 +413,7 @@
       <CardHeader>
         <CardTitle>Properties</CardTitle>
         <CardDescription class="text-xs">
-          Manage the properties for the {getSelectLabelConfigLabel(selectedConfigKey)} label configuration
+          Manage the properties for the {getSelectLabelConfigLabel(controller.selectedConfigKey)} label configuration
         </CardDescription>
 
         <CardAction>

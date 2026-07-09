@@ -26,10 +26,12 @@
 
   interface Props {
     open: boolean;
+    /** Dataset modality used to scope the template picker to matching templates. */
+    datasetModality: string;
     onApply?: (config: IConfig) => void;
     onMutated?: (templates: LabellingConfigurationTemplateRecord[]) => void;
   }
-  let { open = $bindable(), onApply, onMutated }: Props = $props();
+  let { open = $bindable(), datasetModality, onApply, onMutated }: Props = $props();
 
   const resource: Resource = "dataset:labeling_configuration_templates";
   const permission: { resource: Resource; scopes: Scope[] } = {
@@ -61,6 +63,7 @@
     try {
       const res = await labellingConfigurationTemplateDataSource.list({
         fields: { [LabellingConfigurationTemplateRecord.type]: ["name"] },
+        filters: { modality: datasetModality },
       });
       templates = res.data;
     } catch (error) {
@@ -163,6 +166,7 @@
     dataSource={labellingConfigurationTemplateDataSource}
     listOptions={{
       sort: ["name", "created_at"],
+      filters: { modality: datasetModality },
     }}
     value={selectedTemplateId}
     onSelected={loadTemplate}

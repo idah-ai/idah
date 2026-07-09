@@ -9,6 +9,7 @@ export class LabellingConfigurationTemplateRecord extends Record {
 
   @field() public name!: string;
   @field() public labeling_configuration!: IConfig;
+  @field() public modality!: string;
 
   @field() public readonly created_by_id!: string;
   @field() public readonly updated_by_id!: string;

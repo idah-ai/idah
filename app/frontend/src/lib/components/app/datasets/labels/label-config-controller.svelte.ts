@@ -18,6 +18,10 @@ export class LabelConfigController {
   labelConfig = $state<IConfig>({});
   savedSnapshot = $state("");
 
+  /** Shape key currently selected in the editor. Owned here so lifecycle
+   *  transitions (load/apply) can point it at the first shape. */
+  selectedConfigKey = $state("");
+
   /** Per-instance replacement for the former module-global categoryOrderMap.
    *  Plain object (not $state): mutated in place during tree construction,
    *  exactly as the previous global was. */
@@ -30,11 +34,16 @@ export class LabelConfigController {
     this.clearOrderMap();
     this.labelConfig = config ?? {};
     this.savedSnapshot = JSON.stringify(this.labelConfig);
+    this.selectedConfigKey = this.getOrderedConfigKeys()[0] ?? "";
   }
 
   markSaved(config: IConfig | undefined) {
     this.labelConfig = config ?? {};
     this.savedSnapshot = JSON.stringify(this.labelConfig);
+    // Selection may point at a shape pruned on save; heal only if it's gone.
+    if (!this.getOrderedConfigKeys().includes(this.selectedConfigKey)) {
+      this.selectedConfigKey = this.getOrderedConfigKeys()[0] ?? "";
+    }
   }
 
   /** Marks the current live config as saved without pruning or replacing it.
@@ -45,10 +54,11 @@ export class LabelConfigController {
   }
 
   /** Replace the config WITHOUT resetting the snapshot, so it registers as an
-   *  unsaved change (used by "Apply template"). */
+   *  unsaved change (used by "Apply template"). Selects the first shape. */
   apply(config: IConfig | undefined) {
     this.clearOrderMap();
     this.labelConfig = JSON.parse(JSON.stringify(config ?? {}));
+    this.selectedConfigKey = this.getOrderedConfigKeys()[0] ?? "";
   }
 
   private clearOrderMap() {
@@ -120,6 +130,15 @@ export class LabelConfigController {
     return orders.length > 0 ? Math.max(...orders) + 1 : 0;
   }
 
+  /** Shape keys in display order (by `order`; legacy keys without an order
+   *  fall back to their existing position via the index tie-break). */
+  getOrderedConfigKeys(config: IConfig = this.labelConfig): string[] {
+    return Object.keys(config)
+      .map((key, index) => ({ key, index, order: config[key]?.order ?? Number.POSITIVE_INFINITY }))
+      .sort((a, b) => (a.order !== b.order ? a.order - b.order : a.index - b.index))
+      .map((e) => e.key);
+  }
+
   addLabelConfig(labelConfigKey: string) {
     if (!this.labelConfig[labelConfigKey]) {
       this.labelConfig[labelConfigKey] = { values: [], properties: [], order: this.nextShapeOrder() };
@@ -143,12 +162,8 @@ export class LabelConfigController {
   reorderShape(draggedKey: string, targetKey: string, position: "before" | "after") {
     if (draggedKey === targetKey) return;
 
-    // Current display order of shape keys (sorted by `order`, legacy fallback to
-    // existing key order).
-    const keys = Object.keys(this.labelConfig)
-      .map((key, index) => ({ key, index, order: this.labelConfig[key]?.order ?? Number.POSITIVE_INFINITY }))
-      .sort((a, b) => (a.order !== b.order ? a.order - b.order : a.index - b.index))
-      .map((e) => e.key);
+    // Current display order of shape keys.
+    const keys = this.getOrderedConfigKeys();
 
     const from = keys.indexOf(draggedKey);
     if (from === -1) return;
@@ -170,8 +185,8 @@ export class LabelConfigController {
   }
 
   // -------------------------------------------------------- category mutations
-  private getColor(labelConfigKey: string) {
-    const selected = this.labelConfig[labelConfigKey];
+  private getColor() {
+    const selected = this.labelConfig[this.selectedConfigKey];
     const usedColors = selected.values.map((cat) => cat.color);
     const remaining = labelColors.filter((color) => !usedColors.includes(color.color));
     const pick = remaining.length > 0 ? remaining[Math.floor(Math.random() * remaining.length)] : undefined;
@@ -183,12 +198,12 @@ export class LabelConfigController {
     return { color: pick.color, text_color: pick.text_color };
   }
 
-  addCategory(labelConfigKey: string, nodeId?: string) {
+  addCategory(nodeId?: string) {
     const currentTime = Date.now().toString();
     const newLabel = "New Category";
     const newId = slugify(currentTime);
-    const selected = this.labelConfig[labelConfigKey];
-    const { color, text_color } = this.getColor(labelConfigKey);
+    const selected = this.labelConfig[this.selectedConfigKey];
+    const { color, text_color } = this.getColor();
     const categoryExists = (id: string) => selected.values.some((cat) => cat.id === id);
 
     /** Add a new root category */
@@ -226,8 +241,8 @@ export class LabelConfigController {
     selected.values.push({ id: childId, label: newLabel, color, text_color });
   }
 
-  editCategory(labelConfigKey: string, category: IConfigValue) {
-    const selected = this.labelConfig[labelConfigKey];
+  editCategory(category: IConfigValue) {
+    const selected = this.labelConfig[this.selectedConfigKey];
     const idx = selected.values.findIndex((cat) => cat.id === category.id);
 
     // Editing an existing selectable category
@@ -269,8 +284,8 @@ export class LabelConfigController {
     selected.values.push(category);
   }
 
-  editCategoryId(labelConfigKey: string, oldId: string, newId: string) {
-    const selected = this.labelConfig[labelConfigKey];
+  editCategoryId(oldId: string, newId: string) {
+    const selected = this.labelConfig[this.selectedConfigKey];
 
     if (selected.values.some((cat) => cat.id === newId && cat.id !== oldId)) {
       this.showDuplicateCategoryError(newId);
@@ -304,9 +319,9 @@ export class LabelConfigController {
     }
   }
 
-  changeSelectableCategory(labelConfigKey: string, editedCategory: IConfigValue, selectable: boolean) {
-    const selected = this.labelConfig[labelConfigKey];
-    const { color, text_color } = this.getColor(labelConfigKey);
+  changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
+    const selected = this.labelConfig[this.selectedConfigKey];
+    const { color, text_color } = this.getColor();
 
     if (selectable) {
       if (selected.values.some((v) => v.id === editedCategory.id)) return;
@@ -339,8 +354,8 @@ export class LabelConfigController {
     }
   }
 
-  reorderCategory(labelConfigKey: string, draggedId: string, targetId: string, position: "before" | "after") {
-    const selected = this.labelConfig[labelConfigKey];
+  reorderCategory(draggedId: string, targetId: string, position: "before" | "after") {
+    const selected = this.labelConfig[this.selectedConfigKey];
     if (!selected || draggedId === targetId) return;
 
     const inSubtree = (id: string, rootId: string) => id === rootId || id.startsWith(rootId + "/");
@@ -384,8 +399,8 @@ export class LabelConfigController {
     selected.values = reordered;
   }
 
-  removeCategory(labelConfigKey: string, categoryId: string) {
-    const selected = this.labelConfig[labelConfigKey];
+  removeCategory(categoryId: string) {
+    const selected = this.labelConfig[this.selectedConfigKey];
     if (!selected) return;
 
     const normalizedId = categoryId.trim();
@@ -402,8 +417,8 @@ export class LabelConfigController {
   }
 
   // -------------------------------------------------------- property mutations
-  setProperty(labelConfigKey: string, property: IConfigProperty) {
-    const selected = this.labelConfig[labelConfigKey];
+  setProperty(property: IConfigProperty) {
+    const selected = this.labelConfig[this.selectedConfigKey];
     const idx = selected.properties.findIndex((p) => p.id === property.id);
     if (idx >= 0) {
       /** Update existing property */
@@ -419,8 +434,8 @@ export class LabelConfigController {
     }
   }
 
-  removeProperty(labelConfigKey: string, propertyId: string) {
-    const selected = this.labelConfig[labelConfigKey];
+  removeProperty(propertyId: string) {
+    const selected = this.labelConfig[this.selectedConfigKey];
     selected.properties = selected.properties.filter((p) => p.id !== propertyId);
   }
 

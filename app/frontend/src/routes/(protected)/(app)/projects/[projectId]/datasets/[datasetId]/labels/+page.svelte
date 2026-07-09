@@ -105,6 +105,7 @@
     {#snippet slotTitle()}
       <div>
         <LabelConfigTemplateDropdownMenu
+          {modality}
           getConfig={() => controller.getCleanedConfig()}
           organizationId={project.organization_id}
           onApply={(config) => controller.apply(config)}
