@@ -27,20 +27,20 @@
   } from "@/components/ui/dropdown-menu";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
+  import Text from "@/components/ui/text/Text.svelte";
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
-
   import writableWithLocal from "@/utils/writableWithLocal";
-  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IIdahDriverV2 } from "@/plugin/v2/types";
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-  import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
-  import { page } from "$app/state";
+
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { refetches } from "@/utils/refetch";
 
+  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
-  import Text from "@/components/ui/text/Text.svelte";
+  import type { IIdahDriverV2 } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -264,15 +264,13 @@
   </div>
   <!-- Editor / Review segmented toggle -->
   <div class="bg-muted flex items-center gap-0.5 rounded-lg border p-0.5">
-    {#if driver.entryStatus !== "completed"}
-      <Button
-        variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
-        size="sm"
-        onclick={() => driver.setMode("editor")}
-      >
-        Editor
-      </Button>
-    {/if}
+    <Button
+      variant={currentMode !== "review" && currentMode !== "note" ? "default" : "ghost"}
+      size="sm"
+      onclick={() => driver.setMode("editor")}
+    >
+      Editor
+    </Button>
     <div class="relative">
       <Button
         variant={currentMode === "review" || currentMode === "note" ? "default" : "ghost"}
@@ -309,7 +307,7 @@
     </ToolTooltip>
   {/if}
 
-  {#if driver.workflowStep === "done"}
+  {#if ["done", "error"].includes(driver.workflowStep)}
     <!-- TODO: What to show? -->
   {:else if driver.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>

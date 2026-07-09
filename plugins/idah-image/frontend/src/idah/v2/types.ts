@@ -611,6 +611,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly id: string;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
+  readonly entryStatus: string;
   readonly mode: string;
 
   setMode(mode: string): void;

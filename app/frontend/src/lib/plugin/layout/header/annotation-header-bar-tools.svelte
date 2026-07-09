@@ -20,7 +20,7 @@
   let { driver }: Props = $props();
 
   // Variables
-  const disabledToolsIfWorkflowSteps = ["done"];
+  const disabledToolsIfWorkflowSteps = ["done", "error"];
   let currentMode = $state(driver.mode);
   let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
   let toggledMap = $derived.by(() => {

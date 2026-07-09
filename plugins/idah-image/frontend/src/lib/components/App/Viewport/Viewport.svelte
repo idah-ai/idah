@@ -7,6 +7,7 @@
 
   import SyncIndicator from "./SyncIndicator.svelte";
 
+  import { computeWheelPan } from "$lib/utils/wheel";
   import { type Point } from "$lib/utils/math/point";
 
   // Props
@@ -147,8 +148,9 @@
       }
     } else {
       // Scroll / two-finger drag → translate
+      const [dx, dy] = computeWheelPan(e.deltaX, e.deltaY, e.deltaMode, e.shiftKey, viewport.workspace.dimensions[1]);
       const curTranslate = viewport.workspace.transform.translate;
-      viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
+      viewport.workspace.transform.translate = [curTranslate[0] - dx, curTranslate[1] - dy];
       viewport.workspace.clampTranslate();
     }
   }
