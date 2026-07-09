@@ -70,10 +70,6 @@
     }
   }
 
-  const sheetRefreshKey = $derived(
-    controller.hasUnsavedChanges ? "dirty" : $refetches.labellingConfigurationTemplates.list,
-  );
-
   async function refreshSheetData() {
     await loadTemplates();
     onMutated?.(templates);
@@ -176,12 +172,12 @@
 <Sheet.Root bind:open>
   <Sheet.Content class="max-w-[85vw] min-w-[85vw]">
     <Sheet.Header class="flex-row items-center gap-4">
-      {#key sheetRefreshKey}
+      {#key $refetches.labellingConfigurationTemplates.list}
         {@render SingleSelectTemplateField()}
       {/key}
     </Sheet.Header>
 
-    {#key sheetRefreshKey}
+    {#key $refetches.labellingConfigurationTemplates.list}
       {#await refreshSheetData() then}
         <div class="flex h-full flex-col gap-4 px-4 pb-4">
           {#if isSelected && loaded}
@@ -236,7 +232,7 @@
                 >
                   {#snippet actions()}
                     {#if !templatesIsEmpty}
-                      {#key sheetRefreshKey}
+                      {#key $refetches.labellingConfigurationTemplates.list}
                         {@render SingleSelectTemplateField()}
                       {/key}
                     {/if}
