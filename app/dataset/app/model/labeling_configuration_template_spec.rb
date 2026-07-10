@@ -63,6 +63,7 @@ RSpec.describe LabelingConfigurationTemplate, database: true do
         organization_id: 1,
         name: "Org 1 Template",
         labeling_configuration: { "tools" => ["bbox"] },
+        modality: "idah-video",
         created_by_id: 1,
         updated_by_id: 1
       )
@@ -73,6 +74,7 @@ RSpec.describe LabelingConfigurationTemplate, database: true do
         organization_id: 2,
         name: "Org 2 Template",
         labeling_configuration: { "tools" => ["polygon"] },
+        modality: "idah-video",
         created_by_id: 1,
         updated_by_id: 1
       )
