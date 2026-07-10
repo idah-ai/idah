@@ -45,7 +45,8 @@ RSpec.describe LabelingConfigurationTemplate::Service, database: true do
         attributes: {
           organization_id: 1,
           name: "New Template",
-          labeling_configuration: { "tools" => ["polygon"] }
+          labeling_configuration: { "tools" => ["polygon"] },
+          modality: "idah-video"
         }
       }
     }
