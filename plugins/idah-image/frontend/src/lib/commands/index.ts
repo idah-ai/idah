@@ -57,6 +57,7 @@ import { register as registerModeEllipse } from "./mode/ellipse";
 import { register as registerModeLine } from "./mode/line";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
+import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 
@@ -105,4 +106,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerToggleColorMode(driver);
   registerToggleDebugConsole(driver);
   registerToggleRenderMode(driver);
+
+  // ── Snap ─────────────────────────────────────────────────────────────
+  registerSnapMagneticToggle(driver);
 }

@@ -5,9 +5,11 @@
 // ---------------------------------------------------------------------------
 import { selection } from "$lib/state/selection.svelte";
 import { data, type AnnotationItem } from "$lib/state/data.svelte";
+import { isEditable } from "$lib/state/editor.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { DEFAULT_MODE } from "$lib/types";
+import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
   name: "selection.delete",
@@ -26,6 +28,7 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: () => {
+      if (!isEditable() || viewport.isReviewWorkspace) return noopAction(command);
       const sel = selection.value;
       if (!sel || !data.annotations) return noopAction(command);
 

@@ -9,6 +9,10 @@ import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
+import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
+
+// ── Magnet icon as inline SVG ──────────────────────────────────────────
+const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 16 19"/><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"/><path d="M5 8 9 12"/></svg>`;
 
 export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
@@ -106,4 +110,18 @@ export function initToolbar(driver: IIdahDriverV2): void {
 
   t.orderGroups(DEFAULT_MODE, ["selection"]);
   t.orderGroups(NOTE_MODE, ["selection"]);
+
+  // ── Magnetic snap toggle (available in all edit modes) ──────────────
+  t.add({
+    icon: magnetIcon,
+    label: "Magnetic snap",
+    name: "snap.magnetic_toggle",
+    modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
+    group: "selection",
+    onClick: () => {
+      magneticSnap.toggle();
+      driver.toolbar.invalidate();
+    },
+    whenToggled: () => magneticSnap.enabled,
+  });
 }
