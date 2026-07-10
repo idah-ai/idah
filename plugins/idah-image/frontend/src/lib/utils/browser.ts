@@ -23,20 +23,6 @@ export function modKey(e: KeyboardEvent | MouseEvent | WheelEvent): boolean {
 }
 
 /**
- * Heuristically detects whether a wheel event came from a physical mouse wheel
- * rather than a touchpad. Line/page-mode deltas are only ever produced by a real
- * wheel; in pixel mode a mouse wheel emits a coarse, integer step with no
- * horizontal component, whereas a touchpad emits small and/or fractional deltas.
- *
- * Used to pick the zoom gesture: a mouse wheel zooms directly (modifier pans),
- * while a touchpad keeps pinch-to-zoom (modifier) and two-finger pan.
- */
-export function isMouseWheelEvent(e: WheelEvent): boolean {
-  if (e.deltaMode !== 0 /* DOM_DELTA_PIXEL */) return true;
-  return e.deltaX === 0 && Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 50;
-}
-
-/**
  * Convert a shortcut string from the canonical `Control+...` form to
  * the platform-appropriate form.
  *

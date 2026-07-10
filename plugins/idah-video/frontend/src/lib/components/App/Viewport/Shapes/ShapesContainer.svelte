@@ -216,7 +216,8 @@
       .cursor-note { cursor: url('data:image/svg+xml;charset=utf-8,${cursorSvg}') 0 24, auto; }
       .cursor-crosshair { cursor: crosshair; }
       .cursor-grab { cursor: grab; }
-      .cursor-grabbing { cursor: grabbing; }
+      /* !important so an active grab also beats the shapes' inline style:cursor */
+      .cursor-grabbing, .cursor-grabbing * { cursor: grabbing !important; }
       .cursor-pointer { cursor: pointer; }
       .cursor-target { cursor: alias; }
     `;
@@ -250,11 +251,12 @@
 
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
+    // An active grab (middle-mouse or drag pan) outranks every other cursor.
+    if (isPanning) return "cursor-grabbing";
     if (isNoteMode) return "cursor-note";
     if (hoveringFirstPoint) return "cursor-target";
     if (viewport.isCreationMode) return "cursor-crosshair";
     if (selAnnotation) return "cursor-pointer";
-    if (isPanning) return "cursor-grabbing";
 
     return "cursor-grab";
   });

@@ -3,7 +3,6 @@
 
   import { viewport, VIEWPORT_MAX_ZOOM, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
   import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE } from "$lib/types";
-  import { modKey, isMouseWheelEvent } from "$lib/utils/browser";
 
   import SyncIndicator from "./SyncIndicator.svelte";
 
@@ -122,48 +121,49 @@
     viewport.workspace.transform.translate = newOffset;
   }
 
+  /**
+   * Converts a WheelEvent delta to pixels.
+   * Linux/Windows mouse wheels typically use DOM_DELTA_LINE (mode 1) with small
+   * integer values (e.g. 3), which would be imperceptible without this conversion.
+   */
+  function normalizeWheelDelta(delta: number, deltaMode: number): number {
+    if (deltaMode === 0 /* DOM_DELTA_PIXEL */) return delta;
+    return delta * 40; // DOM_DELTA_LINE / DOM_DELTA_PAGE — the per-tick cap flattens any excess
+  }
+
   export function onWheel(e: WheelEvent) {
     if (viewport.mode === NOTE_MODE) return;
     e.preventDefault();
 
-    // A physical mouse wheel zooms directly (keyboard modifier pans); a touchpad
-    // keeps pinch-to-zoom and two-finger pan. Browsers synthesize touchpad pinch
-    // as a wheel event with ctrlKey set on every platform (including Mac, which
-    // does NOT use metaKey here); plain pan and mouse wheel do NOT set it.
-    const isZoom = isMouseWheelEvent(e) ? !modKey(e) : e.ctrlKey;
+    // Every wheel input zooms — mouse wheel, touchpad two-finger scroll, and
+    // touchpad pinch (which browsers synthesize as a wheel event with ctrlKey).
+    // Panning is done by dragging. Same-device scroll/zoom splits would require
+    // guessing the input device from the event, which cannot be done reliably.
+    // Cap per-tick delta so a single mouse tick doesn't over-zoom,
+    // while touchpad's many small deltas accumulate naturally.
+    const deltaY = normalizeWheelDelta(e.deltaY, e.deltaMode);
+    zoomAccumulator += Math.sign(-deltaY) * Math.min(Math.abs(deltaY), 40);
 
-    if (isZoom) {
-      // Mouse wheel / touchpad pinch → scale
-      // Cap per-tick delta so a single mouse tick doesn't over-zoom,
-      // while touchpad's many small deltas accumulate naturally.
-      zoomAccumulator += Math.sign(-e.deltaY) * Math.min(Math.abs(e.deltaY), 40);
+    const THRESHOLD = 15;
+    const steps = Math.trunc(zoomAccumulator / THRESHOLD);
+    if (steps !== 0) {
+      zoomAccumulator -= steps * THRESHOLD;
 
-      const THRESHOLD = 15;
-      const steps = Math.trunc(zoomAccumulator / THRESHOLD);
-      if (steps !== 0) {
-        zoomAccumulator -= steps * THRESHOLD;
-
-        const curScale = viewport.workspace.transform.scale;
-        const curTranslate = viewport.workspace.transform.translate;
-
-        // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
-        // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
-        const factor = Math.pow(1.05, steps);
-        const newScale = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, curScale * factor));
-
-        if (Math.abs(newScale - curScale) < 0.001) return;
-
-        // Zoom towards the cursor position
-        let ox = (e.offsetX - curTranslate[0]) / curScale;
-        let oy = (e.offsetY - curTranslate[1]) / curScale;
-        viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
-        viewport.workspace.transform.scale = newScale;
-        viewport.workspace.clampTranslate();
-      }
-    } else {
-      // Scroll / two-finger drag → translate
+      const curScale = viewport.workspace.transform.scale;
       const curTranslate = viewport.workspace.transform.translate;
-      viewport.workspace.transform.translate = [curTranslate[0] - e.deltaX, curTranslate[1] - e.deltaY];
+
+      // steps > 0 (deltaY < 0) → pinch out → zoom out (scale decreases)
+      // steps < 0 (deltaY > 0) → pinch in  → zoom in  (scale increases)
+      const factor = Math.pow(1.05, steps);
+      const newScale = Math.max(VIEWPORT_MIN_ZOOM, Math.min(VIEWPORT_MAX_ZOOM, curScale * factor));
+
+      if (Math.abs(newScale - curScale) < 0.001) return;
+
+      // Zoom towards the cursor position
+      let ox = (e.offsetX - curTranslate[0]) / curScale;
+      let oy = (e.offsetY - curTranslate[1]) / curScale;
+      viewport.workspace.transform.translate = [e.offsetX - ox * newScale, e.offsetY - oy * newScale];
+      viewport.workspace.transform.scale = newScale;
       viewport.workspace.clampTranslate();
     }
   }
