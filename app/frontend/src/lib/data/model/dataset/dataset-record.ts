@@ -1,22 +1,13 @@
-import { Layers2Icon } from "@lucide/svelte";
-
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
-import { humanize } from "@/utils/string";
-
 import { EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
-import {
-  type DatasetModalityBadgeProps,
-  type DatasetStatusBadgeProps,
-  datasetsModalities,
-  datasetsStatuses,
-} from "@/data/model/dataset/datasets/constants";
+import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { DataSourceOptions } from "@/data/DataSource";
 import type { RecordResponse } from "@/data/model/types";
 
@@ -38,19 +29,6 @@ export class DatasetRecord extends Record {
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];
-
-  public get modalityBadge(): DatasetModalityBadgeProps {
-    const defaultBadgeProps: DatasetModalityBadgeProps = {
-      label: humanize(this.modality),
-      value: this.modality,
-      icon: Layers2Icon,
-      variant: "outline",
-    };
-
-    const foundDatasetModality = datasetsModalities.find((m) => m.value === this.modality);
-
-    return foundDatasetModality ?? defaultBadgeProps;
-  }
 
   public get statusBadge(): DatasetStatusBadgeProps {
     const defaultBadgeProps: DatasetStatusBadgeProps = {

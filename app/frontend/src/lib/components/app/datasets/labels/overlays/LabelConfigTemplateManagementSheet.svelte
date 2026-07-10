@@ -4,6 +4,7 @@
   import * as Sheet from "$lib/components/ui/sheet";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
+  import DatasetModalityBadge from "@/components/app/datasets/badges/DatasetModalityBadge.svelte";
   import EditableTextField from "@/components/app/forms/fields/editable-text/EditableTextField.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
@@ -175,6 +176,8 @@
       {#key $refetches.labellingConfigurationTemplates.list}
         {@render SingleSelectTemplateField()}
       {/key}
+
+      <DatasetModalityBadge modality={datasetModality} />
     </Sheet.Header>
 
     {#key $refetches.labellingConfigurationTemplates.list}
