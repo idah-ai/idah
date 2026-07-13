@@ -12,7 +12,7 @@
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
-  import { MediaRecord } from "@/data/model/media/medias/medias-record";
+  import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
   import { Record } from "@/data/model/Record";
   import { refetches } from "@/utils/refetch";
 
@@ -122,7 +122,7 @@
         if (_ids.length === 0) return;
 
         switch (resource) {
-          case "accounts_ids": {
+          case "account_ids": {
             const accountsRes = await accountsBackendDataSource.list({
               fields: {
                 [AccountRecord.type]: ["id", "email"],
@@ -200,13 +200,25 @@
           case "entries": {
             const entriesRes = await entriesBackendDataSource.list({
               fields: {
-                [EntryRecord.type]: ["id", "resource"],
+                [EntryRecord.type]: ["id", "resource", "name"],
               },
               filters: {
                 id: Array.from(new Set(_ids)),
               },
             });
             entries.push(...entriesRes.data);
+            break;
+          }
+          case "medias": {
+            const mediasRes = await mediaBackendDataSource.list({
+              fields: {
+                [MediaRecord.type]: ["resource", "filename"],
+              },
+              filters: {
+                resource: Array.from(new Set(_ids)),
+              },
+            });
+            medias.push(...mediasRes.data);
             break;
           }
           default: {
