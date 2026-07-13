@@ -1,14 +1,26 @@
 // ---------------------------------------------------------------------------
 // V2 Toolbar Manager — items, groups, ordering (V2 duplicate)
 // ---------------------------------------------------------------------------
+import { SvelteMap } from "svelte/reactivity";
 import type { IToolbarItem, ToolbarItemOptions } from "../../types";
 
 export class ToolbarManagerV2 {
   /** All registered items. */
   private items: IToolbarItem[] = [];
 
-  /** Per-mode group ordering. Not set => natural insertion order for groups. */
-  private groupOrders: Map<string, string[]> = new Map();
+  /** Per-mode group ordering. */
+  private groupOrders: Map<string, string[]> = new SvelteMap();
+
+  /**
+   * Monotonically increasing counter. Incremented when a toolbar item's
+   * toggle state (whenToggled) may have changed. The header bar reads
+   * this inside its toggledMap derived to force re-evaluation.
+   */
+  revision = $state(0);
+
+  invalidate(): void {
+    this.revision++;
+  }
 
   // ── Registration ──────────────────────────────────────────────────────
 
@@ -49,7 +61,7 @@ export class ToolbarManagerV2 {
     // Stable sort:
     // 1) null group first
     // 2) by index in order (if provided), then by insertion order
-    const orderIndex = new Map<string, number>();
+    const orderIndex = new SvelteMap<string, number>();
     if (order) {
       order.forEach((g, i) => orderIndex.set(g, i));
     }
