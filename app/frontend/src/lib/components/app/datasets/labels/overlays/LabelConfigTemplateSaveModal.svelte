@@ -2,7 +2,7 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
 
-  import { labellingConfigurationTemplateDataSource } from "@/data/model/dataset/labelling-configuration-template/record";
+  import { labelConfigTemplateDataSource } from "@/data/model/dataset/label-config-template/record";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
@@ -30,7 +30,7 @@
   async function submit() {
     submitting = true;
     try {
-      await labellingConfigurationTemplateDataSource.create(
+      await labelConfigTemplateDataSource.create(
         {
           attributes: {
             name,
@@ -64,7 +64,7 @@
 >
   <section class="px-1 pb-1">
     <InputField
-      name="labeling_configuration_template.name"
+      name="label_config_template.name"
       label="Name"
       placeholder="Template name"
       required

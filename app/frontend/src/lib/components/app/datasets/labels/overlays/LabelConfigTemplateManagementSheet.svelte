@@ -12,9 +12,9 @@
 
   import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import {
-    labellingConfigurationTemplateDataSource,
-    LabellingConfigurationTemplateRecord,
-  } from "@/data/model/dataset/labelling-configuration-template/record";
+    labelConfigTemplateDataSource,
+    LabelConfigTemplateRecord,
+  } from "@/data/model/dataset/label-config-template/record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { refetches } from "@/utils/refetch";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -29,11 +29,11 @@
     /** Dataset modality used to scope the template picker to matching templates. */
     datasetModality: string;
     onApply?: (config: IConfig) => void;
-    onMutated?: (templates: LabellingConfigurationTemplateRecord[]) => void;
+    onMutated?: (templates: LabelConfigTemplateRecord[]) => void;
   }
   let { open = $bindable(), datasetModality, onApply, onMutated }: Props = $props();
 
-  const resource: Resource = "dataset:labeling_configuration_templates";
+  const resource: Resource = "dataset:label_config_templates";
   const permission: { resource: Resource; scopes: Scope[] } = {
     resource,
     scopes: ["as_org_owner", "as_user"],
@@ -46,7 +46,7 @@
   let shapes = $state<ModalityShapes>({});
   let saving = $state(false);
   let loaded = $state(false);
-  let templates = $state<LabellingConfigurationTemplateRecord[]>([]);
+  let templates = $state<LabelConfigTemplateRecord[]>([]);
   let openConfirmDeleteModal = $state(false);
 
   const isSelected = $derived(selectedTemplateId !== null);
@@ -61,8 +61,8 @@
 
   async function loadTemplates() {
     try {
-      const res = await labellingConfigurationTemplateDataSource.list({
-        fields: { [LabellingConfigurationTemplateRecord.type]: ["name"] },
+      const res = await labelConfigTemplateDataSource.list({
+        fields: { [LabelConfigTemplateRecord.type]: ["name"] },
         filters: { modality: datasetModality },
       });
       templates = res.data;
@@ -83,7 +83,7 @@
     if (selectedTemplateId === null) return;
 
     try {
-      const res = await labellingConfigurationTemplateDataSource.get(selectedTemplateId);
+      const res = await labelConfigTemplateDataSource.get(selectedTemplateId);
       selectedTemplateName = res.data.name;
       controller.load(res.data.labeling_configuration);
       modality = deriveModality(res.data.labeling_configuration);
@@ -101,14 +101,14 @@
     saving = true;
     try {
       const cleaned = controller.getCleanedConfig();
-      await labellingConfigurationTemplateDataSource.update(selectedTemplateId, {
+      await labelConfigTemplateDataSource.update(selectedTemplateId, {
         attributes: {
           name: selectedTemplateName,
           labeling_configuration: cleaned,
         },
       });
       controller.markSaved(cleaned);
-      $refetches.labellingConfigurationTemplates.list = new Date();
+      $refetches.labelConfigTemplates.list = new Date();
       showToast.success({ title: "Template updated", description: "The changes have been saved." });
     } catch (error) {
       showActionFailedToast(error);
@@ -120,11 +120,11 @@
   async function renameTemplate(newName: string) {
     if (!selectedTemplateId) return;
     try {
-      await labellingConfigurationTemplateDataSource.update(selectedTemplateId, {
+      await labelConfigTemplateDataSource.update(selectedTemplateId, {
         attributes: { name: newName },
       });
       selectedTemplateName = newName;
-      $refetches.labellingConfigurationTemplates.list = new Date();
+      $refetches.labelConfigTemplates.list = new Date();
       showToast.success({ title: "Template renamed" });
     } catch (error) {
       showActionFailedToast(error);
@@ -134,11 +134,11 @@
   async function deleteTemplate() {
     if (!selectedTemplateId) return;
     try {
-      await labellingConfigurationTemplateDataSource.delete(selectedTemplateId);
+      await labelConfigTemplateDataSource.delete(selectedTemplateId);
       selectedTemplateId = null;
       loaded = false;
       openConfirmDeleteModal = false;
-      $refetches.labellingConfigurationTemplates.list = new Date();
+      $refetches.labelConfigTemplates.list = new Date();
       showToast.success({ title: "Template deleted", description: "The template has been deleted." });
     } catch (error) {
       showActionFailedToast(error);
@@ -160,7 +160,7 @@
     searchKeyWithOperation="name__match"
     placeholder="Select template"
     valueKey="id"
-    dataSource={labellingConfigurationTemplateDataSource}
+    dataSource={labelConfigTemplateDataSource}
     listOptions={{
       sort: ["name", "created_at"],
       filters: { modality: datasetModality },
@@ -173,14 +173,14 @@
 <Sheet.Root bind:open>
   <Sheet.Content class="max-w-[85vw] min-w-[85vw]">
     <Sheet.Header class="flex-row items-center gap-4">
-      {#key $refetches.labellingConfigurationTemplates.list}
+      {#key $refetches.labelConfigTemplates.list}
         {@render SingleSelectTemplateField()}
       {/key}
 
       <DatasetModalityBadge modality={datasetModality} />
     </Sheet.Header>
 
-    {#key $refetches.labellingConfigurationTemplates.list}
+    {#key $refetches.labelConfigTemplates.list}
       {#await refreshSheetData() then}
         <div class="flex h-full flex-col gap-4 px-4 pb-4">
           {#if isSelected && loaded}
@@ -230,12 +230,12 @@
                   icon={GalleryVerticalEndIcon}
                   title={templatesIsEmpty ? "No Templates Yet" : "No Template Selected"}
                   description={templatesIsEmpty
-                    ? "You haven't created any labelling configuration templates. Build a configuration, then use “Save as a template to reuse it across datasets."
+                    ? "You haven't created any label config templates. Build a configuration, then use “Save as a template to reuse it across datasets."
                     : "Select a label configuration template to view, edit, or apply it."}
                 >
                   {#snippet actions()}
                     {#if !templatesIsEmpty}
-                      {#key $refetches.labellingConfigurationTemplates.list}
+                      {#key $refetches.labelConfigTemplates.list}
                         {@render SingleSelectTemplateField()}
                       {/key}
                     {/if}

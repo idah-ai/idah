@@ -5,13 +5,13 @@
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import SaveNewTemplateFormModal from "$lib/components/app/datasets/labels/overlays/SaveNewTemplateFormModal.svelte";
+  import LabelConfigTemplateSaveModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateSaveModal.svelte";
   import LabelConfigTemplateManagementSheet from "@/components/app/datasets/labels/overlays/LabelConfigTemplateManagementSheet.svelte";
 
   import {
-    LabellingConfigurationTemplateRecord,
-    labellingConfigurationTemplateDataSource,
-  } from "@/data/model/dataset/labelling-configuration-template/record";
+    LabelConfigTemplateRecord,
+    labelConfigTemplateDataSource,
+  } from "@/data/model/dataset/label-config-template/record";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -29,13 +29,13 @@
   let { modality, getConfig, organizationId, onApply, onSaved }: Props = $props();
 
   let labelConfigTemplateManagementDialogOpen = $state(false);
-  let saveNewTemplateFormModalOpen = $state(false);
-  let templates = $state<LabellingConfigurationTemplateRecord[]>([]);
+  let labelConfigTemplateSaveModalOpen = $state(false);
+  let templates = $state<LabelConfigTemplateRecord[]>([]);
 
   async function loadTemplates() {
     try {
-      const res = await labellingConfigurationTemplateDataSource.list({
-        fields: { [LabellingConfigurationTemplateRecord.type]: ["name"] },
+      const res = await labelConfigTemplateDataSource.list({
+        fields: { [LabelConfigTemplateRecord.type]: ["name"] },
         filters: { modality },
       });
       templates = res.data;
@@ -49,13 +49,13 @@
   /** Refresh the dirty flag on the host + keep the Replace list up to date. */
   async function handleSaved() {
     onSaved?.();
-    $refetches.labellingConfigurationTemplates.list = new Date();
+    $refetches.labelConfigTemplates.list = new Date();
     await loadTemplates();
   }
 
-  async function replaceTemplate(template: LabellingConfigurationTemplateRecord) {
+  async function replaceTemplate(template: LabelConfigTemplateRecord) {
     try {
-      await labellingConfigurationTemplateDataSource.update(
+      await labelConfigTemplateDataSource.update(
         template.id,
         { attributes: { labeling_configuration: getConfig() } },
         { showErrorToast: false },
@@ -80,7 +80,7 @@
         })),
   );
 
-  function updateTemplates(fetchedTemplates: LabellingConfigurationTemplateRecord[]) {
+  function updateTemplates(fetchedTemplates: LabelConfigTemplateRecord[]) {
     templates = fetchedTemplates;
   }
 
@@ -104,7 +104,7 @@
                   label: "Create new template",
                   icon: FilePlusIcon,
                   action: () => {
-                    saveNewTemplateFormModalOpen = true;
+                    labelConfigTemplateSaveModalOpen = true;
                   },
                 },
               ],
@@ -120,7 +120,7 @@
   });
 </script>
 
-<Can action="update" resource="dataset:labeling_configuration_templates" scopes={["as_org_owner", "as_user"]}>
+<Can action="update" resource="dataset:label_config_templates" scopes={["as_org_owner", "as_user"]}>
   <DropdownMenus {menus}>
     {#snippet trigger({ props })}
       <Button {...props} variant="outline" class="w-auto">
@@ -138,12 +138,12 @@
   onMutated={updateTemplates}
 />
 
-<SaveNewTemplateFormModal
+<LabelConfigTemplateSaveModal
   title="Template"
   action="create"
   config={getConfig()}
   {modality}
   {organizationId}
   onSaved={handleSaved}
-  bind:open={saveNewTemplateFormModalOpen}
+  bind:open={labelConfigTemplateSaveModalOpen}
 />

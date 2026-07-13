@@ -18,7 +18,7 @@ export interface Refetches {
   organizations: Refetch;
   noteFeeds: Refetch;
   noteComments: Refetch;
-  labellingConfigurationTemplates: Refetch;
+  labelConfigTemplates: Refetch;
 
   /** SETTING */
   accountSettings: Refetch;
@@ -73,7 +73,7 @@ export const refetches = writable<Refetches>({
     list: new Date(),
     get: new Date(),
   },
-  labellingConfigurationTemplates: {
+  labelConfigTemplates: {
     list: new Date(),
     get: new Date(),
   },

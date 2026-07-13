@@ -3,8 +3,8 @@ import { createBackendDataSource } from "@/data/BackendDataSource";
 
 import type { IConfig } from "@/plugin/v2/types";
 
-@type("dataset:labeling_configuration_templates")
-export class LabellingConfigurationTemplateRecord extends Record {
+@type("dataset:label_config_templates")
+export class LabelConfigTemplateRecord extends Record {
   @field() public readonly organization_id!: string;
 
   @field() public name!: string;
@@ -18,11 +18,11 @@ export class LabellingConfigurationTemplateRecord extends Record {
   @field() public readonly updated_at!: Date;
 }
 
-RecordFactory.registerTypes(LabellingConfigurationTemplateRecord);
+RecordFactory.registerTypes(LabelConfigTemplateRecord);
 
-export const labellingConfigurationTemplateBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/labeling_configuration_templates`;
+export const labelConfigTemplateBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/label_config_templates`;
 
-export const labellingConfigurationTemplateDataSource = createBackendDataSource(
-  LabellingConfigurationTemplateRecord,
-  labellingConfigurationTemplateBasePath,
+export const labelConfigTemplateDataSource = createBackendDataSource(
+  LabelConfigTemplateRecord,
+  labelConfigTemplateBasePath,
 );
