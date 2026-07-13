@@ -2,11 +2,11 @@
 
 require "spec_helper"
 
-RSpec.describe LabelingConfigurationTemplatesExpo, type: :exposition, as: :system do
+RSpec.describe LabelConfigTemplatesExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
   let(:template_record) do
-    LabelingConfigurationTemplate::Record.new(
+    LabelConfigTemplate::Record.new(
       {
         id: 1,
         organization_id: 1,
@@ -23,7 +23,7 @@ RSpec.describe LabelingConfigurationTemplatesExpo, type: :exposition, as: :syste
   let(:template_data) do
     {
       data: {
-        type: Resource::Dataset::LabelingConfigurationTemplates,
+        type: Resource::Dataset::LabelConfigTemplates,
         id: "1",
         attributes: {
           organization_id: 1,
@@ -34,15 +34,15 @@ RSpec.describe LabelingConfigurationTemplatesExpo, type: :exposition, as: :syste
     }
   end
 
-  let(:service) { instance_double(LabelingConfigurationTemplate::Service) }
+  let(:service) { instance_double(LabelConfigTemplate::Service) }
 
   before do
-    allow(LabelingConfigurationTemplate::Service).to receive(:new).and_return(service)
+    allow(LabelConfigTemplate::Service).to receive(:new).and_return(service)
   end
 
   it "lists templates" do
     expect(service).to receive(:index).and_return([template_record])
-    get "/labeling_configuration_templates"
+    get "/label_config_templates"
 
     expect(last_response.status).to eq 200
     records = deserialize(JSON.parse(last_response.body, symbolize_names: true))
@@ -54,7 +54,7 @@ RSpec.describe LabelingConfigurationTemplatesExpo, type: :exposition, as: :syste
 
   it "shows a template" do
     expect(service).to receive(:show).with(1, included: []).and_return(template_record)
-    get "/labeling_configuration_templates/1"
+    get "/label_config_templates/1"
 
     expect(last_response.status).to eq 200
     record = deserialize(JSON.parse(last_response.body, symbolize_names: true))
@@ -65,7 +65,7 @@ RSpec.describe LabelingConfigurationTemplatesExpo, type: :exposition, as: :syste
 
   it "creates a template" do
     expect(service).to receive(:create).and_return(template_record)
-    post "/labeling_configuration_templates", template_data
+    post "/label_config_templates", template_data
 
     expect(last_response.status).to eq 201
     created_record = deserialize(JSON.parse(last_response.body, symbolize_names: true))
@@ -80,13 +80,13 @@ RSpec.describe LabelingConfigurationTemplatesExpo, type: :exposition, as: :syste
       template_record
     end
 
-    patch "/labeling_configuration_templates/1", template_data
+    patch "/label_config_templates/1", template_data
     expect(last_response.status).to eq 200
   end
 
   it "deletes a template" do
     expect(service).to receive(:delete).with(1).and_return(true)
-    delete "/labeling_configuration_templates/1"
+    delete "/label_config_templates/1"
 
     expect(last_response.status).to eq 204
   end

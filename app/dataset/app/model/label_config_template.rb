@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module LabelingConfigurationTemplate
+module LabelConfigTemplate
   class Record < Verse::Model::Record::Base
-    type Resource::Dataset::LabelingConfigurationTemplates
+    type Resource::Dataset::LabelConfigTemplates
 
     field :id, type: Integer, primary: true
 
@@ -19,8 +19,8 @@ module LabelingConfigurationTemplate
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "labeling_configuration_templates"
-    self.resource = Resource::Dataset::LabelingConfigurationTemplates
+    self.table = "label_config_templates"
+    self.resource = Resource::Dataset::LabelConfigTemplates
 
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
 
@@ -56,7 +56,7 @@ module LabelingConfigurationTemplate
           WHERE pm.account_id = :account_id
             AND pm.disabled_at IS NULL
             AND pm.role IN :roles
-            AND p.organization_id = labeling_configuration_templates.organization_id
+            AND p.organization_id = label_config_templates.organization_id
         )
       SQL
 

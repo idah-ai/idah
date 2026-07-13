@@ -2,12 +2,12 @@
 
 require "spec_helper"
 
-RSpec.describe LabelingConfigurationTemplate, database: true do
-  describe LabelingConfigurationTemplate::Repository do
+RSpec.describe LabelConfigTemplate, database: true do
+  describe LabelConfigTemplate::Repository do
     subject { described_class.new(Verse::Auth::Context.new) }
 
     it "can be instantiated" do
-      expect(subject).to be_a(LabelingConfigurationTemplate::Repository)
+      expect(subject).to be_a(LabelConfigTemplate::Repository)
     end
 
     # Use system context to create test data without scoping restrictions

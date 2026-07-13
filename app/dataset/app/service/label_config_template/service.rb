@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module LabelingConfigurationTemplate
+module LabelConfigTemplate
   class Service < Verse::Service::Base
-    use templates: LabelingConfigurationTemplate::Repository
+    use templates: LabelConfigTemplate::Repository
     use_system system_project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)

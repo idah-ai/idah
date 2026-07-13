@@ -2,7 +2,7 @@
 
 Sequel.migration do
   change do
-    create_table(:labeling_configuration_templates) do
+    create_table(:label_config_templates) do
       primary_key :id, :bigserial
 
       column :organization_id, :bigint, null: false, index: true
@@ -16,6 +16,6 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :labeling_configuration_templates)
+    Migration::Timestamps.trg_updated_at(self, :label_config_templates)
   end
 end

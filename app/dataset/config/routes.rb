@@ -11,6 +11,6 @@ Verse.on_boot do
     NoteFeedsExpo,
     NoteCommentsExpo,
     EntryStatsExpo,
-    LabelingConfigurationTemplatesExpo
+    LabelConfigTemplatesExpo
   ].each(&:register)
 end

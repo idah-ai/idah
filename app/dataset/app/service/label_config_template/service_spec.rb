@@ -2,11 +2,11 @@
 
 require "spec_helper"
 
-RSpec.describe LabelingConfigurationTemplate::Service, database: true do
+RSpec.describe LabelConfigTemplate::Service, database: true do
   let(:system_context) { Verse::Auth::Context[:system] }
   let(:project_repo) { Project::Repository.new(system_context) }
   let(:project_member_repo) { ProjectMember::Repository.new(system_context) }
-  let(:template_repo) { LabelingConfigurationTemplate::Repository.new(system_context) }
+  let(:template_repo) { LabelConfigTemplate::Repository.new(system_context) }
 
   # Projects: account 3 owns a project in org 1
   let!(:project_org1) do
@@ -41,7 +41,7 @@ RSpec.describe LabelingConfigurationTemplate::Service, database: true do
   let(:create_data) do
     {
       data: {
-        type: Resource::Dataset::LabelingConfigurationTemplates,
+        type: Resource::Dataset::LabelConfigTemplates,
         attributes: {
           organization_id: 1,
           name: "New Template",
@@ -55,7 +55,7 @@ RSpec.describe LabelingConfigurationTemplate::Service, database: true do
   let(:update_data) do
     {
       data: {
-        type: Resource::Dataset::LabelingConfigurationTemplates,
+        type: Resource::Dataset::LabelConfigTemplates,
         id: template_org1_id,
         attributes: {
           name: "Renamed Template"
