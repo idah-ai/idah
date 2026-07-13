@@ -559,6 +559,20 @@ RSpec.describe Entry::Service, database: true do
       end
     end
 
+    context "when sample_rate is not configured" do
+      before do
+        repo.update!(test_entry, { wf_step: "annotate" })
+      end
+
+      it "defaults to always routing annotated entries to review" do
+        # dataset fixture uses workflow_configuration: {} so sample_rate falls
+        # back to 1; rand is always < 1, so review is deterministic here.
+        result = subject.submit(test_entry)
+
+        expect(result.wf_step).to eq("review")
+      end
+    end
+
     context "when transitioning from annotate to done" do
       before do
         repo.update!(test_entry, { wf_step: "annotate" })
