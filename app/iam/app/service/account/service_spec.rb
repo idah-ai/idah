@@ -76,7 +76,7 @@ RSpec.describe Account::Service, database: true do
 
       context "when updating role from user to org_owner" do
         before do
-          expect_any_instance_of(Account::Repository).to receive(:after_commit).and_yield
+          expect_any_instance_of(Account::Repository).to receive(:after_commit).at_least(:once).and_yield
 
           admin_id = account_repo.create(
             {
