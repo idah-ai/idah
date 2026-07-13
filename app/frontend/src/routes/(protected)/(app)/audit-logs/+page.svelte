@@ -210,15 +210,20 @@
             break;
           }
           case "medias": {
-            const mediasRes = await mediaBackendDataSource.list({
-              fields: {
-                [MediaRecord.type]: ["resource", "filename"],
-              },
-              filters: {
-                resource: Array.from(new Set(_ids)),
-              },
+            /**
+             * A `resource` can have multiple rows (transcoded variants, thumbnails, ...)
+             * each with an artifact-derived filename. Only the `key: ""` row is the
+             * canonical upload with the real filename, so fetch each one individually
+             * via `info` rather than a bulk `.list()`, which would return every variant.
+             */
+            const mediaResults = await Promise.allSettled(
+              Array.from(new Set(_ids)).map((id) =>
+                mediaBackendDataSource.getInfo({ resource: String(id), showErrorToast: false }),
+              ),
+            );
+            mediaResults.forEach((result) => {
+              if (result.status === "fulfilled" && "data" in result.value) medias.push(result.value.data);
             });
-            medias.push(...mediasRes.data);
             break;
           }
           default: {
