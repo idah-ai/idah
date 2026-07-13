@@ -30,6 +30,16 @@ gem "bootsnap", "~> 1.16"
 gem "rmagick", "~> 6.0.1"
 gem "rubyzip", "~> 3.2"
 
+# --- Observability (see common/lib/telemetry.rb) ---
+gem "sentry-ruby"
+gem "sentry-opentelemetry"
+gem "opentelemetry-sdk"
+gem "opentelemetry-instrumentation-rack"
+gem "opentelemetry-instrumentation-sinatra"
+gem "opentelemetry-instrumentation-net_http"
+gem "opentelemetry-instrumentation-pg"
+gem "opentelemetry-instrumentation-concurrent_ruby"
+
 group :test, :development do
   gem "relaxed-rubocop"
 end

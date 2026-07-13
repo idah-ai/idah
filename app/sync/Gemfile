@@ -28,6 +28,16 @@ gem "sinatra-contrib"
 gem "aasm"
 gem "bootsnap", "~> 1.16"
 
+# --- Observability (see common/lib/telemetry.rb) ---
+gem "sentry-ruby"
+gem "sentry-opentelemetry"
+gem "opentelemetry-sdk"
+gem "opentelemetry-instrumentation-rack"
+gem "opentelemetry-instrumentation-sinatra"
+gem "opentelemetry-instrumentation-net_http"
+gem "opentelemetry-instrumentation-pg"
+gem "opentelemetry-instrumentation-concurrent_ruby"
+
 group :test do
   gem "rack-test"
   gem "rspec", "~> 3.0"

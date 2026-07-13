@@ -106,6 +106,41 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.4)
+    opentelemetry-api (1.10.1)
+      logger
+    opentelemetry-common (0.25.1)
+      opentelemetry-api (~> 1.0)
+    opentelemetry-helpers-sql (0.4.0)
+      opentelemetry-api (~> 1.7)
+    opentelemetry-helpers-sql-processor (0.5.0)
+      opentelemetry-api (~> 1.0)
+      opentelemetry-common (~> 0.21)
+    opentelemetry-instrumentation-base (0.26.1)
+      opentelemetry-api (~> 1.7)
+      opentelemetry-common (~> 0.21)
+      opentelemetry-registry (~> 0.1)
+    opentelemetry-instrumentation-concurrent_ruby (0.25.0)
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-net_http (0.29.0)
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-pg (0.36.0)
+      opentelemetry-helpers-sql
+      opentelemetry-helpers-sql-processor
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-rack (0.31.1)
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-sinatra (0.30.0)
+      opentelemetry-instrumentation-rack (~> 0.29)
+    opentelemetry-registry (0.6.1)
+      opentelemetry-api (~> 1.1)
+    opentelemetry-sdk (1.12.1)
+      logger
+      opentelemetry-api (~> 1.1)
+      opentelemetry-common (~> 0.20)
+      opentelemetry-registry (~> 0.2)
+      opentelemetry-semantic_conventions
+    opentelemetry-semantic_conventions (1.43.0)
+      opentelemetry-api (~> 1.0)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -168,6 +203,13 @@ GEM
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
+    sentry-opentelemetry (6.6.2)
+      opentelemetry-sdk (~> 1.0)
+      sentry-ruby (~> 6.6.2)
+    sentry-ruby (6.6.2)
+      bigdecimal
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      logger
     sequel (5.96.0)
       bigdecimal
     simplecov (0.22.0)
@@ -214,6 +256,12 @@ DEPENDENCIES
   bootsnap (~> 1.16)
   dotenv
   mail
+  opentelemetry-instrumentation-concurrent_ruby
+  opentelemetry-instrumentation-net_http
+  opentelemetry-instrumentation-pg
+  opentelemetry-instrumentation-rack
+  opentelemetry-instrumentation-sinatra
+  opentelemetry-sdk
   pg
   pry
   puma (~> 6)
@@ -221,6 +269,8 @@ DEPENDENCIES
   rake
   rspec (~> 3.0)
   rubocop
+  sentry-opentelemetry
+  sentry-ruby
   simplecov
   sinatra-contrib
   verse-core!
@@ -234,4 +284,4 @@ DEPENDENCIES
   zeitwerk
 
 BUNDLED WITH
-   2.6.7
+   2.6.9
