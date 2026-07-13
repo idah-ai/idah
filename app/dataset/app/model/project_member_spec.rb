@@ -226,6 +226,15 @@ RSpec.describe ProjectMember, database: true do
           expect(result[0].email).to eq("disabled@example.com")
           expect(result[0].disabled_at).not_to be_nil
         end
+
+        it "treats any value other than the literal string \"true\" as false" do
+          ["1", "yes", "garbage"].each do |value|
+            result = subject.index({ enabled: value })
+
+            expect(result.map { |r| r[:email] }).to eq(["disabled@example.com"]),
+                                                    "expected #{value.inspect} to select the disabled branch"
+          end
+        end
       end
     end
   end
