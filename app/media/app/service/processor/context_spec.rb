@@ -63,7 +63,7 @@ RSpec.describe Processor::Context, type: :repository, database: true do
       let(:resource) { "m12-streaming-resource-#{UUIDv7.generate}" }
 
       it "copies the full content without slurping it into a String first" do
-        media_id = media_repo.create(
+        media_repo.create(
           id: UUIDv7.generate,
           resource: resource,
           key: "",

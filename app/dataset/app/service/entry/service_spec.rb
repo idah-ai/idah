@@ -360,8 +360,11 @@ RSpec.describe Entry::Service, database: true do
 
     before do
       project_member_repo.create(
-        project_id:, account_id: 2, email: "annotator@example.com",
-        role: "annotator", invited_by_id: 1
+        project_id:,
+        account_id: 2,
+        email: "annotator@example.com",
+        role: "annotator",
+        invited_by_id: 1
       )
     end
 
@@ -387,8 +390,11 @@ RSpec.describe Entry::Service, database: true do
 
     it "rejects assigning a disabled member" do
       disabled_id = project_member_repo.create(
-        project_id:, account_id: 3, email: "disabled@example.com",
-        role: "annotator", invited_by_id: 1
+        project_id:,
+        account_id: 3,
+        email: "disabled@example.com",
+        role: "annotator",
+        invited_by_id: 1
       )
       project_member_repo.update!(disabled_id, { disabled_at: Time.now })
 
@@ -403,8 +409,11 @@ RSpec.describe Entry::Service, database: true do
 
     before do
       project_member_repo.create(
-        project_id:, account_id: 2, email: "annotator@example.com",
-        role: "annotator", invited_by_id: 1
+        project_id:,
+        account_id: 2,
+        email: "annotator@example.com",
+        role: "annotator",
+        invited_by_id: 1
       )
       subject.assign_member(entry.id, 2)
     end
