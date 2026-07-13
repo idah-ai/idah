@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-class LabelingConfigurationTemplatesExpo < BaseExpo
-  http_path "/labeling_configuration_templates"
+class LabelConfigTemplatesExpo < BaseExpo
+  http_path "/label_config_templates"
 
-  use_service LabelingConfigurationTemplate::Service
+  use_service LabelConfigTemplate::Service
 
   desc <<~MD
     Reusable labeling configuration templates, scoped to an organization,
     that project owners can apply when configuring datasets.
   MD
 
-  json_api LabelingConfigurationTemplate::Record do
+  json_api LabelConfigTemplate::Record do
     show
     index do
       allowed_filters :organization_id,

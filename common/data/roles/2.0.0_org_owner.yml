@@ -32,7 +32,7 @@ org_owner:
     - "dataset:note_feeds.*.as_org_owner"
     - "dataset:note_comments.*.as_org_owner"
     - "dataset:entry_stats.read.as_org_owner"
-    - "dataset:labeling_configuration_templates.*.as_org_owner"
+    - "dataset:label_config_templates.*.as_org_owner"
 
     # Media Service
     - "media:medias.*.as_org_owner"
