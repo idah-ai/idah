@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
+  import type { Snippet } from "svelte";
 
   import { authStatus } from "@/security/AuthContext";
 
@@ -20,20 +20,35 @@
   // Variables
   let hasAccess: boolean = $state(false);
 
-  // Lifecycle
-  onMount(async () => {
+  // Re-evaluate whenever auth state or any input prop changes (not just once
+  // on mount). The cancelled flag drops a stale async result if inputs change
+  // before can() resolves.
+  $effect(() => {
     const currentAccount = $authStatus.authContext;
+    const currentAction = action;
+    const currentResource = resource;
+    const currentScopes = scopes;
+    const currentRoles = roles;
 
-    if (!currentAccount) {
-      hasAccess = false;
-      return;
-    }
+    let cancelled = false;
 
-    hasAccess = (await currentAccount?.can(action, resource, scopes)) || false;
+    (async () => {
+      if (!currentAccount) {
+        hasAccess = false;
+        return;
+      }
 
-    if (roles?.length) {
-      hasAccess = roles.includes(currentAccount.roleName);
-    }
+      const allowed = (await currentAccount.can(currentAction, currentResource, currentScopes)) || false;
+      // AND semantics: roles only narrows the server-authoritative can()
+      // result, it never widens it.
+      const roleOk = currentRoles?.length ? currentRoles.includes(currentAccount.roleName) : true;
+
+      if (!cancelled) hasAccess = allowed && roleOk;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
