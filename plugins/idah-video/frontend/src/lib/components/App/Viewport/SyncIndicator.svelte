@@ -2,11 +2,24 @@
   import { syncStatus, retrySync, resetSync } from "$lib/state/driver.svelte";
 
   let visible = $derived(syncStatus.queued > 0 || syncStatus.error !== null);
+  let hasError = $derived(syncStatus.error !== null);
 </script>
 
 {#if visible}
-  <div class="sync-indicator">
-    {#if syncStatus.error}
+  {#if hasError}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="sync-blocking-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label="Sync error"
+      onkeydown={(e) => e.stopPropagation()}
+      onkeypress={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
+      onmousedown={(e) => e.stopPropagation()}
+    >
+      <div class="sync-blocking-backdrop"></div>
+      <div class="sync-blocking-dialog">
         <div class="sync-banner sync-banner--error" role="alert" aria-live="assertive">
           <span class="sync-text">
             {syncStatus.error.message} ({syncStatus.error.code})
@@ -26,16 +39,19 @@
             >Reset</button>
           </span>
         </div>
-    {:else}
-      <div class="sync-loading" aria-live="polite" aria-label="Syncing {syncStatus.queued} item{syncStatus.queued === 1 ? '' : 's'}">
-        <span class="sync-spinner" aria-hidden="true"></span>
-        <span class="sync-text">Syncing {syncStatus.queued} item{syncStatus.queued === 1 ? "" : "s"}…</span>
       </div>
-    {/if}
-  </div>
+    </div>
+  {:else}
+    <div class="sync-indicator" aria-live="polite" aria-label="Syncing {syncStatus.queued} item{syncStatus.queued === 1 ? '' : 's'}">
+      <span class="sync-spinner" aria-hidden="true"></span>
+      <span class="sync-text">Syncing {syncStatus.queued} item{syncStatus.queued === 1 ? "" : "s"}…</span>
+    </div>
+  {/if}
 {/if}
 
 <style>
+  /* ── Loading indicator (corner pill) ──────────────────────────────── */
+
   .sync-indicator {
     position: absolute;
     top: 8px;
@@ -44,24 +60,70 @@
     pointer-events: auto;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 13px;
-    max-width: 520px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
   }
 
-  /* ── Shared banner layout ─────────────────────────────────────────── */
+  .sync-spinner {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Blocking overlay (shown on error) ─────────────────────────────── */
+
+  .sync-blocking-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+  }
+
+  .sync-blocking-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+  }
+
+  .sync-blocking-dialog {
+    position: relative;
+    background: transparent;
+    max-width: 480px;
+    width: 90%;
+  }
+
+  /* ── Error banner (inside the dialog) ──────────────────────────────── */
 
   .sync-banner {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    padding: 8px 10px 8px 14px;
-    border-radius: 12px;
+    padding: 20px 24px;
+    border-radius: 16px;
     backdrop-filter: blur(4px);
     line-height: 1.4;
-  }
-
-  .sync-banner--error {
     background: rgba(185, 28, 28, 0.92);
     color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
   }
 
   .sync-text {
@@ -98,9 +160,9 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
-    padding: 3px 10px;
+    padding: 6px 16px;
     transition: opacity 0.15s, background 0.15s;
     white-space: nowrap;
     line-height: 1.6;
@@ -124,32 +186,5 @@
 
   .sync-btn--ghost:hover {
     background: rgba(255, 255, 255, 0.28);
-  }
-
-  /* ── Loading ──────────────────────────────────────────────────────── */
-
-  .sync-loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 20px;
-    backdrop-filter: blur(4px);
-  }
-
-  .sync-spinner {
-    flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
   }
 </style>
