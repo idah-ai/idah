@@ -14,13 +14,13 @@ import type {
   JsonApiRecord,
   JsonApiReference,
   JsonApiSingleModelResponse,
-  RecordResponse
+  RecordResponse,
 } from "./types";
 
 export const parseSingleElementError = (dataRaw: Hash): JsonApiErrorResponse => {
   return {
     status: dataRaw.status,
-    errors: dataRaw.errors
+    errors: dataRaw.errors,
   };
 };
 
@@ -33,12 +33,12 @@ export const parseSingleElementReturn = <T extends Record>(dataRaw: Hash): Recor
 
     return {
       data: RecordFactory.create<T>(data, includeList),
-      meta: dataRaw.meta
+      meta: dataRaw.meta,
     };
   } else {
     return {
       data: RecordFactory.create<T>(data),
-      meta: dataRaw.meta
+      meta: dataRaw.meta,
     };
   }
 };
@@ -52,13 +52,13 @@ export const parseCollectionReturn = <T extends Record>(dataRaw: Hash): Collecti
     const includeList = new IncludeList(dataRaw.included);
 
     return {
-      data: data.map(record => RecordFactory.create<T>(record, includeList)),
-      meta: dataRaw.meta
+      data: data.map((record) => RecordFactory.create<T>(record, includeList)),
+      meta: dataRaw.meta,
     };
   } else {
     return {
-      data: data.map(record => RecordFactory.create<T>(record)),
-      meta: dataRaw.meta
+      data: data.map((record) => RecordFactory.create<T>(record)),
+      meta: dataRaw.meta,
     };
   }
 };
@@ -68,22 +68,22 @@ export function makeSingleElement<T extends Hash>(
   type: string,
   opts: Hash,
   included: string[] = [],
-  includeSet?: IncludeSet
+  includeSet?: IncludeSet,
 ): JsonApiSingleModelResponse<T> {
-  let out: JsonApiSingleModelResponse<T> = {
+  const out: JsonApiSingleModelResponse<T> = {
     data: {
       type: type,
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       id: (data as any).id,
-      attributes: data
+      attributes: data,
     },
-    ...opts
+    ...opts,
   };
 
   if (includeSet) {
-    let includedList: JsonApiRecord<Hash>[] = [];
-    included.forEach(relation => {
-      let [localRelation, ...foreignRelations] = relation.split(".");
+    const includedList: JsonApiRecord<Hash>[] = [];
+    included.forEach((relation) => {
+      const [localRelation, ...foreignRelations] = relation.split(".");
 
       console.log("try to get", type, localRelation, <string>out.data.id);
       console.log(includeSet);
@@ -93,39 +93,39 @@ export function makeSingleElement<T extends Hash>(
 
         if (includeSet.getType(relation) == "hasMany") {
           out.data.relationships[localRelation] ||= {
-            data: []
+            data: [],
           };
 
-          let data = out.data.relationships[localRelation].data as JsonApiReference[];
+          const data = out.data.relationships[localRelation].data as JsonApiReference[];
           data.push({
             type: record.type,
-            id: record.id
+            id: record.id,
           });
 
-          let foreignIncluded = foreignRelations.length > 0 ? [foreignRelations.join(".")] : [];
+          const foreignIncluded = foreignRelations.length > 0 ? [foreignRelations.join(".")] : [];
 
-          let object = makeSingleElement(
+          const object = makeSingleElement(
             Object.assign({ id: record.id }, record._jsonapiData.attributes),
             record.type,
             {},
             foreignIncluded,
-            includeSet
+            includeSet,
           );
           includedList.push(object.data);
         } else {
           out.data.relationships[localRelation] = {
             data: {
               type: record.type,
-              id: record.id
-            }
+              id: record.id,
+            },
           };
 
-          let object = makeSingleElement(
+          const object = makeSingleElement(
             Object.assign({ id: record.id }, record._jsonapiData.attributes),
             record.type,
             {},
             foreignRelations,
-            includeSet
+            includeSet,
           );
 
           includedList.push(object.data);
@@ -146,61 +146,61 @@ export function makeCollection<T extends Hash>(
   type: string,
   included: string[] = [],
   includeSet: IncludeSet,
-  opts: Hash = {}
+  opts: Hash = {},
 ): JsonApiCollectionModelResponse<T> {
-  let includedList: JsonApiRecord<Hash>[] = [];
+  const includedList: JsonApiRecord<Hash>[] = [];
 
-  let result: JsonApiCollectionModelResponse<T> = {
-    data: data.map(item => {
-      let out: JsonApiRecord<T> = {
+  const result: JsonApiCollectionModelResponse<T> = {
+    data: data.map((item) => {
+      const out: JsonApiRecord<T> = {
         type: type,
         /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         id: (item as any).id,
-        attributes: item
+        attributes: item,
       };
 
       if (includeSet) {
-        included.forEach(relation => {
-          let [localRelation, ...foreignRelations] = relation.split(".");
+        included.forEach((relation) => {
+          const [localRelation, ...foreignRelations] = relation.split(".");
 
           includeSet.get(type, localRelation, <string>out.id).forEach((record: Record) => {
             out.relationships ||= {};
 
             if (includeSet.getType(relation) == "hasMany") {
               out.relationships[localRelation] ||= {
-                data: []
+                data: [],
               };
 
-              let data = out.relationships[localRelation].data as JsonApiReference[];
+              const data = out.relationships[localRelation].data as JsonApiReference[];
               data.push({
                 type: record.type,
-                id: record.id
+                id: record.id,
               });
 
-              let foreignIncluded = foreignRelations.length > 0 ? [foreignRelations.join(".")] : [];
+              const foreignIncluded = foreignRelations.length > 0 ? [foreignRelations.join(".")] : [];
 
-              let object = makeSingleElement(
+              const object = makeSingleElement(
                 Object.assign({ id: record.id }, record._jsonapiData.attributes),
                 record.type,
                 {},
                 foreignIncluded,
-                includeSet
+                includeSet,
               );
               includedList.push(object.data);
             } else {
               out.relationships[localRelation] = {
                 data: {
                   type: record.type,
-                  id: record.id
-                }
+                  id: record.id,
+                },
               };
 
-              let object = makeSingleElement(
+              const object = makeSingleElement(
                 Object.assign({ id: record.id }, record._jsonapiData.attributes),
                 record.type,
                 {},
                 foreignRelations,
-                includeSet
+                includeSet,
               );
 
               includedList.push(object.data);
@@ -211,7 +211,7 @@ export function makeCollection<T extends Hash>(
 
       return out;
     }),
-    ...opts
+    ...opts,
   };
 
   if (includedList.length > 0) {
