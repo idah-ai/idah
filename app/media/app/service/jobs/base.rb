@@ -28,6 +28,11 @@ module Jobs
     end
 
     def emit(event, **args)
+      unless @command
+        raise "Jobs::Base#emit called before run - a job must be run with a " \
+              "block before it can emit events"
+      end
+
       @command.call(
         event, **args
       )
