@@ -238,15 +238,27 @@ module Entry
           entry = find!(id)
 
           if entry.status == "pending"
-            update!(
+            account_id = auth_context.metadata[:id]
+
+            # Narrowed scope makes the claim atomic: a concurrent claimer's
+            # UPDATE re-evaluates the condition after the winner commits,
+            # matches zero rows and loses deterministically instead of
+            # silently overwriting the first claim.
+            updated = update(
               id,
               {
-                assigned_to_id: auth_context.metadata[:id],
+                assigned_to_id: account_id,
                 assigned_to_email: auth_context.metadata[:email],
                 status: "in_progress"
               },
               scope: scoped(:read)
+                     .where(status: "pending")
+                     .where(Sequel.expr(assigned_to_id: nil) | Sequel.expr(assigned_to_id: account_id))
             )
+
+            unless updated
+              raise Verse::Error::Unauthorized, "Entry already claimed by another user"
+            end
           end
         end
       end
