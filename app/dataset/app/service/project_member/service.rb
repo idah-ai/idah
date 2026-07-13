@@ -66,16 +66,26 @@ module ProjectMember
       end
     end
 
+    UPDATABLE_FIELDS = %i[role name email].freeze
+
     def update(record)
       access = auth_context.can?(:update, project_members.class.resource)
-      # "project_owner" can only be added by an org_owner of the project
-      if record.attributes[:role] == "project_owner"
+      member = project_members.find!(record.id)
+
+      attributes = record.attributes.slice(*UPDATABLE_FIELDS)
+
+      # Promoting to or demoting from "project_owner" can only be done by an org_owner of the project
+      owner_role_change =
+        attributes.key?(:role) &&
+        attributes[:role] != member.role &&
+        (attributes[:role] == "project_owner" || member.role == "project_owner")
+
+      if owner_role_change
         unless [:as_org_owner, :all].include?(access)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member for this project"
         end
 
-        member = project_members.find!(record.id)
         project = projects.find!(member.project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
 
         # Check if org_owner has access to the project's organization
@@ -85,7 +95,7 @@ module ProjectMember
         end
       end
 
-      project_members.update!(record.id, record.attributes)
+      project_members.update!(record.id, attributes)
       project_members.find!(record.id)
     end
 

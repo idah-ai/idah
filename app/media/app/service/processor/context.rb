@@ -27,7 +27,7 @@ module Processor
         # Copy the file to a temporary location:
         tempfile = Tempfile.create("idah_media_#{media.id}_", binmode: true)
 
-        tempfile.write(file.read)
+        IO.copy_stream(file, tempfile)
         tempfile.close
 
         tempfile.path
@@ -101,7 +101,7 @@ module Processor
     end
 
     def reschedule!(after: 10)
-      job.reschedule!(after:)
+      job.reschedule(after:)
     end
 
     def error!(message)

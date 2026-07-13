@@ -31,6 +31,14 @@ module Processor
         return
       end
 
+      # The registry allows a modality to register multiple processors, so
+      # this creates one job per processor. Today every modality registers
+      # exactly one (idah-image, idah-video), so the entry is linked to that
+      # single job. If a modality ever registers more than one processor,
+      # only the last job_id survives on the entry - earlier jobs still run
+      # but are not linked back. Revisit the entry->job data model (array of
+      # ids, or a composite job) before relying on multiple processors per
+      # modality.
       processor_entries.each do |processor_entry|
         job_id = jobs.create(
           job_class: "Processor::Job",
@@ -45,8 +53,7 @@ module Processor
           priority: 1,
           scheduled_at: Time.now
         )
-        # TODO: what to do with multiple job ids?
-        # Update the entry with the job_id
+        # Link the entry to this processor's job.
         Api[:idah].dataset.entries.update(
           id: entry.id,
           status: "processing",

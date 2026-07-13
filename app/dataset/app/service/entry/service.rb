@@ -9,6 +9,8 @@ module Entry
         annotations: Annotation::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
+    PROTECTED_FIELDS = %i[status wf_step job_id].freeze
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
         filter,
@@ -70,6 +72,10 @@ module Entry
       attributes[:project_id] = dataset.project_id
       attributes[:dataset_id] = dataset.id
 
+      unless auth_context.can?(:create, entries.class.resource) == :all
+        attributes = attributes.except(*PROTECTED_FIELDS)
+      end
+
       entries.transaction do
         id = entries.create(attributes)
         entries.find!(id)
@@ -82,7 +88,9 @@ module Entry
 
     def complete_entry_processing(job_id)
       system_entries_repo.transaction do
-        entry = system_entries_repo.find_by!({ job_id:, status: "processing" }, included: [:dataset])
+        entry = system_entries_repo.find_by({ job_id:, status: "processing" }, included: [:dataset])
+        next unless entry
+
         entry_workflow = entry.dataset.entry_workflow.new(system_entries_repo, entry)
         entry_workflow.submit!
         system_datasets_repo.update_progress!(entry.dataset.id)
@@ -90,7 +98,12 @@ module Entry
     end
 
     def update(record)
-      entries.update!(record.id, record.attributes)
+      attributes = record.attributes
+      unless auth_context.can?(:update, entries.class.resource) == :all
+        attributes = attributes.except(*PROTECTED_FIELDS)
+      end
+
+      entries.update!(record.id, attributes)
       entries.find!(record.id)
     end
 
@@ -107,7 +120,13 @@ module Entry
       entries.transaction do
         entry = entries.find!(id)
         member = project_members.find_by({ account_id: assigned_to_id, project_id: entry.project_id })
-        entries.assign(id, assigned_to_id, member&.email)
+
+        if member.nil? || !member.disabled_at.nil?
+          raise Verse::Error::ValidationFailed,
+                "assignee is not an active member of this project"
+        end
+
+        entries.assign(id, assigned_to_id, member.email)
         system_datasets_repo.update_progress!(entry.dataset_id)
         entries.find!(id)
       end

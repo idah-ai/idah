@@ -83,6 +83,58 @@ RSpec.describe Annotation::Service, database: true do
         expect(annotation.project_id).to eq(project_id)
       end
 
+      it "ignores client-supplied project/dataset/entry ids in favor of the entry's" do
+        other_project_id = project_repo.create(
+          name: "Other Project",
+          description: "Another test project",
+          created_by_email: "user@example.com",
+          organization_id: 1,
+        )
+
+        other_dataset_id = dataset_repo.create(
+          modality: "image_labeling",
+          labels: ["cat", "dog"],
+          labeling_configuration: { "width" => 100, "height" => 100 },
+          workflow_configuration: {},
+          project_id: other_project_id
+        )
+
+        other_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "start",
+          status: "pending",
+          assigned_to_id: 1,
+          project_id: other_project_id,
+          dataset_id: other_dataset_id
+        )
+
+        record = deserialize(
+          {
+            data: {
+              type: "dataset:annotations",
+              attributes: attributes.merge(
+                project_id: other_project_id,
+                dataset_id: other_dataset_id,
+                entry_id: other_entry_id
+              ),
+              relationships: {
+                entry: {
+                  data: {
+                    type: "dataset:entries",
+                    id: entry_id
+                  }
+                }
+              }
+            }
+          }
+        )
+
+        annotation = subject.create(record)
+        expect(annotation.project_id).to eq(project_id)
+        expect(annotation.dataset_id).to eq(dataset_id)
+        expect(annotation.entry_id).to eq(entry_id)
+      end
+
       it "raises error when entry is completed" do
         completed_entry_id = entry_repo.create(
           priority: 1,

@@ -208,6 +208,17 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("pending"))
     end
+
+    it "tolerates a duplicate/late job event without raising" do
+      subject.complete_entry_processing(job_id)
+
+      expect {
+        subject.complete_entry_processing(job_id)
+      }.not_to raise_error
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("pending"))
+    end
   end
 
   describe "#mark_entries_status_as" do
@@ -237,6 +248,17 @@ RSpec.describe Entry::Service, database: true do
 
       other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("done")
+    end
+
+    it "tolerates a duplicate/late job event without raising" do
+      subject.mark_entries_status_as(job_id, "errored")
+
+      expect {
+        subject.mark_entries_status_as(job_id, "errored")
+      }.not_to raise_error
+
+      entry = repo.index({ job_id: job_id }).first
+      expect(entry.status).to eq("errored")
     end
   end
 
@@ -307,9 +329,45 @@ RSpec.describe Entry::Service, database: true do
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.status).to eq("in_progress")
     end
+
+    it "still allows a system caller to write status/wf_step/job_id (media processor path)" do
+      job_uuid = UUIDv7.generate
+      record = deserialize(
+        {
+          data: {
+            type: "entries",
+            id: entry.id,
+            attributes: {
+              status: "processing",
+              wf_step: "annotate",
+              job_id: job_uuid,
+            }
+          }
+        }
+      )
+
+      subject.update(record)
+
+      updated_entry = repo.find!(entry.id)
+      expect(updated_entry.status).to eq("processing")
+      expect(updated_entry.wf_step).to eq("annotate")
+      expect(updated_entry.job_id).to eq(job_uuid)
+    end
   end
 
   describe "#assign_member" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
+    before do
+      project_member_repo.create(
+        project_id:,
+        account_id: 2,
+        email: "annotator@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+    end
+
     it "assigns a member to an entry and sets status to in_progress" do
       subject.assign_member(entry.id, 2)
 
@@ -323,10 +381,40 @@ RSpec.describe Entry::Service, database: true do
 
       expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
     end
+
+    it "rejects assigning a non-member of the project" do
+      expect {
+        subject.assign_member(entry.id, 999)
+      }.to raise_error(Verse::Error::ValidationFailed, /active member/)
+    end
+
+    it "rejects assigning a disabled member" do
+      disabled_id = project_member_repo.create(
+        project_id:,
+        account_id: 3,
+        email: "disabled@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+      project_member_repo.update!(disabled_id, { disabled_at: Time.now })
+
+      expect {
+        subject.assign_member(entry.id, 3)
+      }.to raise_error(Verse::Error::ValidationFailed, /active member/)
+    end
   end
 
   describe "#unassign_member" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+
     before do
+      project_member_repo.create(
+        project_id:,
+        account_id: 2,
+        email: "annotator@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
       subject.assign_member(entry.id, 2)
     end
 
@@ -382,7 +470,9 @@ RSpec.describe Entry::Service, database: true do
         invited_by_id: 1
       )
 
-      subject.assign_member(entry.id, 99)
+      # D13 blocks assigning a cross-project member through the service, so set
+      # the assignment directly to exercise the relation-resolution guard.
+      repo.assign(entry.id, 99, "stray@example.com")
 
       result = repo.find!(entry.id, included: [:assigned_to])
       expect(result.assigned_to).to be_nil
@@ -466,6 +556,20 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("review")
         expect(result.status).to eq("pending")
+      end
+    end
+
+    context "when sample_rate is not configured" do
+      before do
+        repo.update!(test_entry, { wf_step: "annotate" })
+      end
+
+      it "defaults to always routing annotated entries to review" do
+        # dataset fixture uses workflow_configuration: {} so sample_rate falls
+        # back to 1; rand is always < 1, so review is deterministic here.
+        result = subject.submit(test_entry)
+
+        expect(result.wf_step).to eq("review")
       end
     end
 

@@ -54,6 +54,15 @@ module Spec
       raise "Job failed"
     end
   end
+
+  class UnconstructableJob < Jobs::Base
+    def initialize(job_id, arguments)
+      super
+      raise "boom during construction"
+    end
+
+    def run_impl; end
+  end
 end
 
 RSpec.describe Jobs::Scheduler do
@@ -128,6 +137,20 @@ RSpec.describe Jobs::Scheduler do
     )
   }
 
+  let(:unconstructable_job) {
+    double(
+      "job",
+      id: 6,
+      job_class: "Spec::UnconstructableJob",
+      arguments: {},
+      priority: 0,
+      status: "pending",
+      scheduled_at: Time.now,
+      retry_count: 0,
+      class: Spec::UnconstructableJob
+    )
+  }
+
   let(:thread_pool) {
     double("ThreadPool")
   }
@@ -196,10 +219,10 @@ RSpec.describe Jobs::Scheduler do
     end
 
     context "when a job uses `reschedule` command" do
-      it "reschedules the job" do
+      it "reschedules the job (M-14: correct reschedule call signature)" do
         expect(job_repository).to receive(:lock_available).and_return([reschedule_job])
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
-        expect(job_repository).to receive(:reschedule).with(3, "pending", scheduled_at: be_within(1).of(Time.now + 60))
+        expect(job_repository).to receive(:reschedule).with(3, scheduled_at: be_within(1).of(Time.now + 60))
         # The job should not complete, so no update_progress to 1.0
         expect(job_repository).not_to receive(:update_progress).with(3, 1.0)
 
@@ -281,6 +304,19 @@ RSpec.describe Jobs::Scheduler do
         sleep 0.1
         scheduler_thread = subject.instance_variable_get(:@scheduler)
         expect(scheduler_thread).to be_alive
+      end
+    end
+  end
+
+  describe "#process" do
+    context "when an error occurs outside run_impl (e.g. job construction fails)" do
+      it "records the job as errored and does not raise past process (M-10)" do
+        subject.instance_variable_set(:@thread_pool, thread_pool)
+        allow(thread_pool).to receive(:run) { |&block| block.call }
+
+        expect(job_repository).to receive(:error).with(6, error: /boom during construction/)
+
+        expect { subject.process(unconstructable_job) }.not_to raise_error
       end
     end
   end

@@ -51,6 +51,10 @@ module Annotation
       end
 
       # Assign attributes
+      # NOTE: overwriting project_id/dataset_id/entry_id from the scoped entry
+      # is load-bearing — the JSON:API create schema does not strip readonly
+      # fields, so client-supplied ids reach record.attributes and would
+      # otherwise allow cross-project writes.
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = entry.project_id

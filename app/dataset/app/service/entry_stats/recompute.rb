@@ -61,7 +61,7 @@ module EntryStats
 
     # Deletes all existing stats for the entry and inserts the new set in one transaction.
     def self.persist(entry_id, stats)
-      repo = EntryStat::Repository.new(nil)
+      repo = EntryStat::Repository.new(Verse::Auth::Context[:system])
       repo.transaction do
         repo.delete_by_entry_id(entry_id)
         repo.bulk_insert(entry_id, stats)

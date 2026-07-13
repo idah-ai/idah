@@ -225,8 +225,9 @@ RSpec.describe Entry::Service, database: true do
 
         expect(record.priority).to eq 2
         expect(record.resource).to eq "http://example.com/updated.mp4"
-        expect(record.wf_step).to eq "end"
-        expect(record.status).to eq "done"
+        # status/wf_step are protected fields (D22): PATCH cannot change them for non-system callers
+        expect(record.wf_step).to eq "start"
+        expect(record.status).to eq "pending"
         expect(record.assigned_to_id).to eq update_data[:data][:attributes][:assigned_to_id]
       end
 
@@ -312,8 +313,9 @@ RSpec.describe Entry::Service, database: true do
 
         expect(record.priority).to eq 2
         expect(record.resource).to eq "http://example.com/updated.mp4"
-        expect(record.wf_step).to eq "end"
-        expect(record.status).to eq "done"
+        # status/wf_step are protected fields (D22): PATCH cannot change them for non-system callers
+        expect(record.wf_step).to eq "start"
+        expect(record.status).to eq "pending"
         expect(record.assigned_to_id).to eq update_data[:data][:attributes][:assigned_to_id]
       end
 

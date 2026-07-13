@@ -27,8 +27,11 @@ module Workflow
       end
     end
 
+    # Fraction of annotated entries routed to review, read from the dataset's
+    # workflow_configuration. Expected range 0..1; defaults to 1 when unset,
+    # so review is mandatory unless an operator explicitly lowers it. A value
+    # of 0 skips review entirely (annotate transitions straight to done).
     def sample_rate
-      # Get sample rate from dataset workflow configuration
       @entry.dataset.workflow_configuration[:sample_rate] || 1
     end
 

@@ -36,7 +36,6 @@ module Dataset
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = record.project.id
-      # attributes[:created_by_email] ||= auth_context.metadata[:email]
 
       datasets.transaction do
         id = datasets.create(attributes)

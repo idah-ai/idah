@@ -81,7 +81,12 @@ module NoteFeed
 
       if attributes[:annotation_id] && attributes[:anchor_type] == "annotation"
         annotation_id = attributes[:annotation_id]
-        annotations.find!(annotation_id)
+        annotation = annotations.find!(annotation_id)
+
+        unless annotation.entry_id == attributes[:entry_id]
+          raise Verse::Error::ValidationFailed,
+                "annotation does not belong to this entry"
+        end
       else
         attributes.delete(:annotation_id)
       end

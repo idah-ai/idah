@@ -59,8 +59,6 @@ module Medias
       end
     end
 
-    # TODO: background processors also trigger this event and causing error logs on audit as there's no actor id
-    # might need to review or suppress on that
     def create(attributes)
       with_metadata do
         add_event_metadata(

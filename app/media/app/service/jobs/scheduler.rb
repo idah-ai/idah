@@ -98,7 +98,7 @@ module Jobs
               jobs.update_progress(job.id, opts[:value])
             when :reschedule
               reschedule_in = Time.now + opts.fetch(:after, 10) # Default to 10 seconds if not provided
-              jobs.reschedule(job.id, "pending", scheduled_at: reschedule_in)
+              jobs.reschedule(job.id, scheduled_at: reschedule_in)
               throw :stop # Stop processing this job, it will be retried
             when :error
               error = opts[:error]
@@ -142,7 +142,7 @@ module Jobs
         end
       rescue StandardError => e
         jobs.error(job.id, error: [e.class.name, e.message].join(": "))
-        raise e
+        Verse.logger&.error { "Job #{job.id} failed:\n#{e.backtrace.join("\n")}" }
       end
     end
 
