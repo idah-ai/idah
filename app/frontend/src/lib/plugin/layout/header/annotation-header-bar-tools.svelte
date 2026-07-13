@@ -20,10 +20,12 @@
   let { driver }: Props = $props();
 
   // Variables
-  const disabledToolsIfWorkflowSteps = ["done"];
+  const disabledToolsIfWorkflowSteps = ["done", "error"];
   let currentMode = $state(driver.mode);
   let toolbarItems: IToolbarItem[] = $derived.by(() => driver.toolbar.mgr.getItemsForMode(currentMode));
   let toggledMap = $derived.by(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    driver.toolbar.revision; // track revision so toggledMap re-evaluates on invalidate()
     const map = new SvelteMap<string, boolean>();
     for (const item of toolbarItems) {
       map.set(item.name ?? item.label, item.whenToggled?.() ?? false);
@@ -42,6 +44,7 @@
   driver.onModeChange((_) => refreshToolbar());
   driver.onSyncChange(() => refreshToolbar());
   driver.command.onStackChange(() => refreshToolbar());
+
   onMount(refreshToolbar);
 
   function cmdShortcut(name: string): string | undefined {

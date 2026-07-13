@@ -58,6 +58,21 @@
     | undefined {
     return _toolSelection;
   }
+
+  /** Expose whether the user is actively editing (dragging/resizing) this annotation. */
+  let _isEditing = $derived.by((): boolean => {
+    const comp =
+      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
+      annotation?.shape?.type === IDAH_IMAGE_CIRCLE ? _circleComp :
+      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
+      annotation?.shape?.type === IDAH_IMAGE_LINE ? _lineComp :
+      _polyComp;
+    return comp?.getIsEditing?.() ?? false;
+  });
+
+  export function getIsEditing(): boolean {
+    return _isEditing;
+  }
 </script>
 
 {#if annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX}
