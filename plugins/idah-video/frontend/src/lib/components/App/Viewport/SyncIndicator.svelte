@@ -2,11 +2,10 @@
   import { syncStatus, retrySync, resetSync } from "$lib/state/driver.svelte";
 
   let visible = $derived(syncStatus.queued > 0 || syncStatus.error !== null);
-  let hasError = $derived(syncStatus.error !== null);
 </script>
 
 {#if visible}
-  {#if hasError}
+  {#if syncStatus.error}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="sync-blocking-overlay"
@@ -17,6 +16,7 @@
       onkeypress={(e) => e.stopPropagation()}
       onclick={(e) => e.stopPropagation()}
       onmousedown={(e) => e.stopPropagation()}
+      tabindex=0
     >
       <div class="sync-blocking-backdrop"></div>
       <div class="sync-blocking-dialog">
