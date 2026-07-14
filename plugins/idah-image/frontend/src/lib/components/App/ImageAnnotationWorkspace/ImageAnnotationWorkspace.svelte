@@ -28,6 +28,7 @@
   import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { syncStatus } from "$lib/state/driver.svelte";
 
   // Local type aliases for V1-compatible annotation values
   type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
@@ -123,6 +124,13 @@
     if (typeof window === "undefined") return;
 
     const handleKeydown = (e: KeyboardEvent) => {
+      // Block all keyboard shortcuts while sync error is active.
+      if (syncStatus.error !== null) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       const activeElement = document.activeElement as HTMLElement | null;
       const isTyping =
         activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA" || activeElement?.isContentEditable;
