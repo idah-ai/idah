@@ -14,14 +14,14 @@ module Exports
 
       export_class = Verse::Util::Reflection.constantize(export_class)
       export_class.new.export(export_context)
-
+      binding.pry
       import_file =
         case export_context.io.mode
         when :file
           export_context.io.file.rewind
           export_context.io.file
         when :dir
-          File.open(export_context.io.zip_directory)
+          export_context.io.zip_directory
         else
           raise "Invalid IO mode: #{export_context.io.mode}"
         end

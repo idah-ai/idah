@@ -3,6 +3,8 @@
 module Exports
   module Upd
     class Exporter
+      UPDCLI_TIMEOUT = 300 # 5 minutes per updcli-static invocation
+
       def name = "Universal Portable Dataset"
       def description = "Export to UPD file."
       def options = Verse::Schema.empty
@@ -12,7 +14,7 @@ module Exports
         file_path = File.join(tmpdir, "export.upd")
 
         # Init UPD file
-        system("updcli-static", "--input", file_path, "init", exception: true)
+        updcli("--input", file_path, "init")
 
         context.datasets.each do |dataset|
           append_dataset(file_path, dataset)
@@ -51,6 +53,17 @@ module Exports
 
       private
 
+      def updcli(*args)
+        executor.call(
+          "updcli-static #{Shellwords.join(args)}",
+          timeout: UPDCLI_TIMEOUT
+        )
+      end
+
+      def executor
+        @executor ||= Executor.new
+      end
+
       def capitalized_dashed_keys(hash)
         hash.transform_keys do |key|
           key.to_s.split("_").map(&:capitalize).join("-")
@@ -74,14 +87,13 @@ module Exports
         )
 
         # Create dataset in UPD
-        system(
-          "updcli-static", "--input", file_path,
+        updcli(
+          "--input", file_path,
           "dataset", "create",
           "--id", dataset.record.id.to_s,
           "--name", dataset.record.name.to_s,
           "--modality", dataset.record.modality.to_s,
-          "--metadata", metadata.to_json,
-          exception: true
+          "--metadata", metadata.to_json
         )
       end
 
@@ -114,14 +126,13 @@ module Exports
         )
 
         # Create entry in UPD
-        system(
-          "updcli-static", "--input", file_path,
+        updcli(
+          "--input", file_path,
           "entry", "create",
           "--id", entry.record.id.to_s,
           "--dataset_id", dataset_id.to_s,
           "--url", media_url.to_s,
-          "--metadata", metadata.to_json,
-          exception: true
+          "--metadata", metadata.to_json
         )
       end
 
@@ -140,16 +151,15 @@ module Exports
         )
 
         # Create annotation in UPD
-        system(
-          "updcli-static", "--input", file_path,
+        updcli(
+          "--input", file_path,
           "annotation", "create",
           "--id", annotation.record.id.to_s,
           "--entry_id", entry_id.to_s,
           "--type", type.to_s,
           "--shape", dimensions.to_json,
           "--annotation", annotation.record.annotation.to_json,
-          "--metadata", metadata.to_json,
-          exception: true
+          "--metadata", metadata.to_json
         )
       end
 
@@ -161,14 +171,13 @@ module Exports
         tempfile_path = media.stream_download_to_tempfile(base_name, extension)
 
         # Create media in UPD
-        system(
-          "updcli-static", "--input", file_path,
+        updcli(
+          "--input", file_path,
           "media", "create",
           "--id", media.record.resource.to_s,
           "--file", tempfile_path.to_s,
           "--key", media.record.key.to_s,
-          "--mimetype", media.record.mime_type.to_s,
-          exception: true
+          "--mimetype", media.record.mime_type.to_s
         )
       end
     end

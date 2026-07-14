@@ -105,12 +105,11 @@ RSpec.describe Exports::Job do
 
       before do
         allow(mock_io_context).to receive(:mode).and_return(:dir)
-        allow(mock_io_context).to receive(:zip_directory).and_return("/tmp/export.zip")
-        allow(File).to receive(:open).with("/tmp/export.zip").and_return(mock_zip_file)
+        allow(mock_io_context).to receive(:zip_directory).and_return(mock_zip_file)
       end
 
-      it "opens the zip directory and uploads it" do
-        expect(File).to receive(:open).with("/tmp/export.zip").and_return(mock_zip_file)
+      it "zips the directory and uploads it" do
+        expect(mock_io_context).to receive(:zip_directory).and_return(mock_zip_file)
         expect(mock_exports_service).to receive(:upload).with(mock_export_record.id, mock_zip_file)
 
         subject.run_impl
