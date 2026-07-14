@@ -31,6 +31,10 @@ module Jobs
 
       synchronize{ @running = true }
 
+      # Recover stale jobs from previous runs
+      stale_count = jobs.requeue_stale
+      Verse.logger&.info "Requeued #{stale_count} stale jobs"
+
       @thread_pool = ThreadPool.new(
         size: Verse.config.extra_fields.dig(:idah, :jobs, :concurrency) || 4
       )

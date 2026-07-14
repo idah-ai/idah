@@ -4,6 +4,7 @@ require "cgi"
 require "net/http"
 require "json"
 require "uri"
+require "timeout"
 require "pry"
 require_relative "./multipart_stream"
 
@@ -19,6 +20,19 @@ class Api
 
     def get(path, headers: {}, params: {}, options: {})
       execute_request(:get, path, headers:, params:, options:)
+    end
+
+    # Streaming GET — yields response body chunks to the block without
+    # loading the entire response into memory. Wraps the request in a
+    # configurable timeout to prevent worker stalls.
+    #
+    # @param path [String] URL path with optional `:symbol` placeholders
+    # @param headers [Hash] extra headers
+    # @param params [Hash] query / path parameters
+    # @param options [Hash] request options (auth, etc.)
+    # @yield [String] response body chunk
+    def get_stream(path, headers: {}, params: {}, options: {}, &block)
+      stream_request(:get, path, headers:, params:, options:, &block)
     end
 
     def post(path, headers: {}, params: {}, options: {})
@@ -214,6 +228,61 @@ class Api
       total_length += "--#{boundary}--\r\n".bytesize
 
       total_length
+    end
+
+    # Streaming request — yields response body chunks to the block without
+    # loading the entire response into memory. Wraps the request in a
+    # configurable timeout to prevent worker stalls.
+    #
+    # @param method [Symbol] HTTP method (:get, :post, etc.)
+    # @param path [String] URL path with optional `:symbol` placeholders
+    # @param headers [Hash] extra headers
+    # @param params [Hash] query / path parameters
+    # @param options [Hash] request options (auth:, timeout:)
+    # @yield [String] response body chunk
+    def stream_request(method, path, headers: {}, params: {}, options: {}, &block)
+      # Extract path parameters
+      path_params = []
+      processed_path = path.gsub(/:\w+/) do |match|
+        symbol = match[1..].to_sym
+        path_params << symbol
+        params[symbol] || raise("Missing parameter: #{symbol}")
+      end
+
+      # Remove path params from params hash
+      remaining_params = params.except(*path_params)
+
+      # Build URI
+      uri = build_uri(processed_path, method, remaining_params, headers)
+
+      # Create HTTP request
+      request = create_request(method, uri, headers, remaining_params)
+
+      # Handle authentication if needed
+      if options[:auth]
+        parent.auth(options[:auth], request)
+      end
+
+      # Build HTTP connection
+      http = Net::HTTP.new(uri.host, uri.port)
+      use_ssl = uri.scheme == "https"
+      http.use_ssl = use_ssl
+
+      # TODO: It's probably better to generate a set of self-signed authority
+      # internally to the cluster., rather than disabling verification.
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE if use_ssl
+
+      timeout = options[:timeout] || 300
+
+      Timeout.timeout(timeout, "Request timed out after #{timeout}s") do
+        http.request(request) do |response|
+          if response.code.to_i >= 400
+            raise "HTTP Error: #{response.code} - #{response.message}"
+          end
+
+          response.read_body(&block)
+        end
+      end
     end
 
     def file_like?(value)

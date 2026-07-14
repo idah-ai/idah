@@ -158,19 +158,14 @@ module Exports
         extension = File.extname(filename)
 
         base_name = File.basename(filename, extension)
-        bin_data = media.download
-
-        tempfile = Tempfile.new([base_name, extension])
-        tempfile.binmode
-        tempfile.write(bin_data)
-        tempfile.rewind
+        tempfile_path = media.stream_download_to_tempfile(base_name, extension)
 
         # Create media in UPD
         system(
           "updcli-static", "--input", file_path,
           "media", "create",
           "--id", media.record.resource.to_s,
-          "--file", tempfile.path.to_s,
+          "--file", tempfile_path.to_s,
           "--key", media.record.key.to_s,
           "--mimetype", media.record.mime_type.to_s,
           exception: true

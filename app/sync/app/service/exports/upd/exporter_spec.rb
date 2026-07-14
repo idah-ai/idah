@@ -67,6 +67,7 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     let(:media_binary_data) { "fake binary video data" }
+    let(:streamed_chunks) { ["fake ", "binary ", "video ", "data"] }
     let(:mock_file) { instance_double(File, close: true) }
 
     before do
@@ -80,6 +81,11 @@ RSpec.describe Exports::Upd::Exporter do
       allow(Api[:idah].media.medias).to receive(:index_all).and_return([media_response])
       allow(Api[:idah].media.medias).to receive(:files).and_return(media_binary_data)
 
+      # Stub streaming media download to yield chunks
+      allow(Api[:idah].media.medias).to receive(:files_stream) do |**args, &block|
+        streamed_chunks.each { |chunk| block.call(chunk) }
+      end
+
       # Stub system calls by default
       allow(exporter).to receive(:system).and_return(true)
 
@@ -91,10 +97,11 @@ RSpec.describe Exports::Upd::Exporter do
       allow(File).to receive(:open).with("/tmp/dummy-export-dir/export.upd").and_return(mock_file)
       allow(File).to receive(:extname).and_call_original
       allow(File).to receive(:basename).and_call_original
-      # Stub Tempfile
-      allow(Tempfile).to receive(:new).and_return(
-        instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile")
-      )
+      # Stub Tempfile — the streaming path uses `<<` (not `write`)
+      # `<<` on Tempfile returns self, so mock it to return self for chaining
+      mock_tempfile = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile")
+      allow(mock_tempfile).to receive(:<<).and_return(mock_tempfile)
+      allow(Tempfile).to receive(:new).and_return(mock_tempfile)
     end
 
     context "basic export flow" do
@@ -397,11 +404,11 @@ RSpec.describe Exports::Upd::Exporter do
       context "media creation" do
         let(:options) { { include_medias: "all" } }
 
-        it "downloads media binary data" do
-          expect(Api[:idah].media.medias).to receive(:files).with(
+        it "streams media binary data via files_stream" do
+          expect(Api[:idah].media.medias).to receive(:files_stream).with(
             resource: "4c2052a1475842e9.mov",
             key: ""
-          ).and_return(media_binary_data)
+          ).and_yield("chunk1").and_yield("chunk2")
 
           exporter.export(context)
         end
@@ -409,23 +416,31 @@ RSpec.describe Exports::Upd::Exporter do
         it "creates tempfile with correct extension" do
           expect(File).to receive(:extname).with("dc160a222abc4a6e.mov").and_return(".mov")
           expect(File).to receive(:basename).with("dc160a222abc4a6e.mov", ".mov").and_return("dc160a222abc4a6e")
-          expect(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_return(
-            instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile.mov")
-          )
+          # The global Tempfile stub (in before block) already handles << for the default mock.
+          # Here we just verify the correct arguments are passed to Tempfile.new.
+          # This test doesn't need to also verify << — that's covered by "writes streamed chunks" test.
+          expect(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_call_original
 
           exporter.export(context)
         end
 
-        it "writes binary data to tempfile" do
+        it "writes streamed chunks to tempfile via <<" do
           tempfile = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile.mov")
           allow(Tempfile).to receive(:new).and_return(tempfile)
 
-          expect(tempfile).to receive(:write).with(media_binary_data)
+          streamed_chunks.each do |chunk|
+            expect(tempfile).to receive(:<<).with(chunk).ordered
+          end
 
           exporter.export(context)
         end
 
         it "creates media in UPD file with correct parameters" do
+          # Override tempfile stub to return a path matching the media filename
+          mock_tf = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile.mov")
+          allow(mock_tf).to receive(:<<).and_return(mock_tf)
+          allow(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_return(mock_tf)
+
           media_params_valid = false
           allow(exporter).to receive(:system) do |*args|
             cmd, *rest, opts = args
@@ -435,7 +450,7 @@ RSpec.describe Exports::Upd::Exporter do
               key_idx = rest.index("--key")
               mime_idx = rest.index("--mimetype")
               media_params_valid = id_idx && rest[id_idx + 1] == "4c2052a1475842e9.mov" &&
-                                   file_idx && rest[file_idx + 1] == "/tmp/tempfile" &&
+                                   file_idx && rest[file_idx + 1] == "/tmp/tempfile.mov" &&
                                    key_idx && rest[key_idx + 1] == "" &&
                                    mime_idx && rest[mime_idx + 1] == "video/quicktime"
             end
