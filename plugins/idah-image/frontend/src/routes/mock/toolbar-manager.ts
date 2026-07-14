@@ -7,8 +7,15 @@ export class ToolbarManagerV2 {
   /** All registered items. */
   private items: IToolbarItem[] = [];
 
-  /** Per-mode group ordering. Not set => natural insertion order for groups. */
+  /** Per-mode group ordering. */
   private groupOrders: Map<string, string[]> = new Map();
+
+  /** Revision counter for toggle state invalidation. */
+  revision = 0;
+
+  invalidate(): void {
+    this.revision++;
+  }
 
   // ── Registration ──────────────────────────────────────────────────────
 

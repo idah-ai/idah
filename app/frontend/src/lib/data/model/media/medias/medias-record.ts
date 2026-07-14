@@ -53,8 +53,9 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
   getInfo: async (param: {
     resource: string;
     key?: string;
+    showErrorToast?: boolean;
   }): Promise<RecordResponse<MediaRecord> | JsonApiErrorResponse> => {
-    const { resource, key } = param;
+    const { resource, key, showErrorToast: shouldShowErrorToast = true } = param;
     let mediaInfoUrl = `${mediaBasePath}/info/${resource}`;
 
     if (key) {
@@ -73,7 +74,7 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
       )
       .then((body) => {
         if (body && body.errors) {
-          if (body.errors.length > 0) {
+          if (body.errors.length > 0 && shouldShowErrorToast) {
             body.errors.forEach((err: Hash<string>) => {
               showErrorToast({ title: err.title, message: err.detail, error: err });
             });
