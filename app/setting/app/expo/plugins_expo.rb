@@ -76,6 +76,10 @@ class PluginsExpo < BaseExpo
 
     return server.not_found unless io
 
+    # Explicit content type + no MIME sniffing on untrusted plugin assets.
+    renderer.content_type = PluginMimeType.for(params[:splat].last)
+    server.response.headers["X-Content-Type-Options"] = "nosniff"
+
     io
   end
 
@@ -83,19 +87,7 @@ class PluginsExpo < BaseExpo
     :get,
     ":plugin/files/:filename",
     auth: nil,
-    # renderer: Verse::Http::Renderer::Identity
-    renderer: Class.new do
-      def render(result, server)
-        case File.extname(server.request.env["verse.http.server"].params["filename"])
-        when ".js"
-          server.response["content-type"] = "text/javascript"
-        when ".css"
-          server.response["content-type"] = "text/css"
-        end
-
-        result
-      end
-    end
+    renderer: Verse::Http::Renderer::Identity
   ) do
     input do
       field :plugin, String
@@ -103,9 +95,18 @@ class PluginsExpo < BaseExpo
     end
   end
   def serve
-    service.serve_file(
+    content = service.serve_file(
       params[:plugin],
       params[:filename]
-    ) || server.not_found
+    )
+
+    return server.not_found unless content
+
+    # Content type is derived from the requested filename (not the on-disk
+    # manifest path), with sniffing disabled on untrusted plugin files.
+    server.response.headers["Content-Type"] = PluginMimeType.for(params[:filename])
+    server.response.headers["X-Content-Type-Options"] = "nosniff"
+
+    content
   end
 end

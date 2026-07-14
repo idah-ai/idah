@@ -17,6 +17,8 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
 
       expect(last_response.status).to eq(200)
       expect(last_response.body).to eq("file content")
+      expect(last_response.headers["Content-Type"]).to eq("text/javascript")
+      expect(last_response.headers["X-Content-Type-Options"]).to eq("nosniff")
     end
 
     it "returns 404 if the plugin file is not found" do
@@ -54,6 +56,8 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
 
       expect(last_response.status).to eq(200)
       expect(last_response.body).to eq("asset content")
+      expect(last_response.headers["Content-Type"]).to eq("image/png")
+      expect(last_response.headers["X-Content-Type-Options"]).to eq("nosniff")
     end
 
     it "sanitize the path to prevent directory traversal" do

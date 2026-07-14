@@ -4,6 +4,9 @@ module Plugins
   class Service < Verse::Service::Base
     use repo: Plugin::Repository
 
+    ALLOWED_ASSET_EXT = %w[.png .jpg .jpeg .gif .svg .webp .js .css .json .woff .woff2].freeze
+    MAX_ASSET_BYTES = 10 * 1024 * 1024
+
     def install(_plugin_name)
       Manager.run do
         install_plugin
@@ -45,6 +48,8 @@ module Plugins
       # (encoded/suffixed traversal, manifest-supplied `..`, symlinks, etc.).
       return nil unless asset_path.start_with?("#{root}/")
       return nil unless File.file?(asset_path)
+      return nil unless ALLOWED_ASSET_EXT.include?(File.extname(asset_path).downcase)
+      return nil if File.size(asset_path) > MAX_ASSET_BYTES
 
       File.open(asset_path, "rb")
     end
