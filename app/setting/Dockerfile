@@ -1,43 +1,53 @@
-FROM ruby:3.4.2-slim
+# syntax=docker/dockerfile:1
+#
+# Multi-stage build. The environment picks a stage via `build.target`:
+#   development -> all gem groups, dev entrypoint (source bind-mounted at runtime)
+#   production  -> prod gems only, source baked in, migrate + puma
+# See compose.override.yaml (dev) and compose.staging.yaml / compose.prod.yaml.
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# ---- base: shared runtime + system deps (incl. media processing) ----
+FROM ruby:3.4.2-slim AS base
 
-RUN apt-get update && apt-get install -y \
-    # Basic build tools
-    build-essential \
-    pkg-config \
-    # FFmpeg and its dependencies
-    ffmpeg \
-    # ImageMagick and its dependencies
-    imagemagick \
-    libmagickwand-dev \
-    # pgSQL client libraries
-    libpq-dev \
-    # Additional useful packages
-    curl \
-    wget \
-    git \
-    # Clean up apt cache to reduce image size
+ENV DEBIAN_FRONTEND=noninteractive \
+    BUNDLE_SILENCE_ROOT_WARNING=1 \
+    PORT=3000
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      pkg-config \
+      ffmpeg \
+      imagemagick \
+      libmagickwand-dev \
+      libpq-dev \
+      curl \
+      wget \
+      git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Build arguments
-ARG BUNDLE_WITHOUT="development test"
-ARG APP_ENVIRONMENT
-
-ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
-ENV PORT=3000
-
-RUN mkdir -p /app
-
 WORKDIR /app
-
-COPY Gemfile* .
-
 RUN bundle config set force_ruby_platform true
-RUN bundle config set --local without "$BUNDLE_WITHOUT"
+
+# ---- development ----
+FROM base AS development
+
+ENV APP_ENVIRONMENT=development
+
+COPY Gemfile* ./
 RUN bundle install --jobs 20 --retry 5
+
+COPY . .
+
+CMD ["./dev-entrypoint.sh", "puma"]
+
+# ---- production ----
+FROM base AS production
+
+ENV APP_ENVIRONMENT=production
+
+COPY Gemfile* ./
+RUN bundle config set --local without "development test" \
+ && bundle install --jobs 20 --retry 5
 
 COPY . .
 

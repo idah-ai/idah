@@ -1,0 +1,87 @@
+# Base stack — shared by every environment.
+#
+# This file defines WHAT the services are (build context, image, network).
+# HOW each environment runs them (build target, mounts, commands, env files,
+# databases) lives in the overlays:
+#
+#   dev      -> compose.override.yaml   (auto-applied: `docker compose up`)
+#   staging  -> compose.staging.yaml    (`docker compose -f compose.yaml -f compose.staging.yaml up`)
+#   prod     -> compose.prod.yaml       (`docker compose -f compose.yaml -f compose.prod.yaml up`)
+
+x-app-defaults: &app-defaults
+  networks:
+    - app-network
+  expose:
+    - "3000"
+
+services:
+  iam:
+    <<: *app-defaults
+    build:
+      context: ./app/iam
+      dockerfile: Dockerfile
+
+  media:
+    <<: *app-defaults
+    build:
+      context: ./app/media
+      dockerfile: Dockerfile
+    depends_on:
+      - dataset
+
+  dataset:
+    <<: *app-defaults
+    build:
+      context: ./app/dataset
+      dockerfile: Dockerfile
+
+  setting:
+    <<: *app-defaults
+    build:
+      context: ./app/setting
+      dockerfile: Dockerfile
+
+  audit:
+    <<: *app-defaults
+    build:
+      context: ./app/audit
+      dockerfile: Dockerfile
+
+  sync:
+    <<: *app-defaults
+    build:
+      context: ./app/sync
+      dockerfile: Dockerfile
+
+  notification:
+    <<: *app-defaults
+    build:
+      context: ./app/notification
+      dockerfile: Dockerfile
+
+  frontend:
+    # Build context is the repo root: the production target needs the shared
+    # plugins/ dir. app/frontend/Dockerfile.dockerignore trims the context.
+    build:
+      context: .
+      dockerfile: app/frontend/Dockerfile
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    networks:
+      - app-network
+    depends_on:
+      - frontend
+      - iam
+      - media
+      - dataset
+      - setting
+      - audit
+      - sync
+      - notification
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,58 +1,61 @@
-FROM ruby:3.4.2-slim
+# syntax=docker/dockerfile:1
+#
+# Multi-stage build. The environment picks a stage via `build.target`:
+#   development -> all gem groups, dev entrypoint (source bind-mounted at runtime)
+#   production  -> prod gems only, source baked in, migrate + puma
+# See compose.override.yaml (dev) and compose.staging.yaml / compose.prod.yaml.
+#
+# updcli is NOT baked in. It is provided at runtime via an optional read-only
+# mount of the repo's updcli/ dir (see install-updcli.sh + compose). That keeps
+# updcli shareable across services and lets this image build from ./app/sync.
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# ---- base: shared runtime + system deps ----
+FROM ruby:3.4.2-slim AS base
 
-RUN apt-get update && apt-get install -y \
-    # Basic build tools
-    build-essential \
-    pkg-config \
-    # Handle media processing
-    file \
-    # pgSQL client libraries
-    libpq-dev \
-    # Additional useful packages
-    curl \
-    git \
-    tar \
-    # Clean up apt cache to reduce image size
+ENV DEBIAN_FRONTEND=noninteractive \
+    BUNDLE_SILENCE_ROOT_WARNING=1 \
+    PORT=3000
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      pkg-config \
+      file \
+      libpq-dev \
+      curl \
+      git \
+      tar \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Build arguments
-ARG TARGETARCH
-ARG UPDCLI_VERSION=v0.1.0
-ARG BUNDLE_WITHOUT="development test"
-ARG APP_ENVIRONMENT
-
-ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
-ENV PORT=3000
-
-RUN mkdir -p /app
-
 WORKDIR /app
-
-COPY app/sync/Gemfile* .
-
 RUN bundle config set force_ruby_platform true
-RUN bundle config set --local without "$BUNDLE_WITHOUT"
+
+# Optional updcli installer runs before the command; no-op if the mount is absent.
+COPY install-updcli.sh /usr/local/bin/install-updcli
+RUN chmod +x /usr/local/bin/install-updcli
+ENTRYPOINT ["install-updcli"]
+
+# ---- development ----
+FROM base AS development
+
+ENV APP_ENVIRONMENT=development
+
+COPY Gemfile* ./
 RUN bundle install --jobs 20 --retry 5
 
-COPY app/sync/ .
+COPY . .
 
-# Copy updcli tar files
-COPY updcli/${UPDCLI_VERSION}/ /tmp/updcli-tars/
+CMD ["./dev-entrypoint.sh", "puma"]
 
-# Extract updcli binary based on architecture
-RUN ARCH=${TARGETARCH} && \
-    if [ "$ARCH" = "amd64" ]; then ARCH_SUFFIX="amd64"; \
-    elif [ "$ARCH" = "arm64" ]; then ARCH_SUFFIX="arm64"; \
-    else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
-    echo "Extracting updcli-linux-${ARCH_SUFFIX}.tar.gz..." && \
-    mkdir -p /usr/local/bin && \
-    tar -xf /tmp/updcli-tars/updcli-linux-${ARCH_SUFFIX}.tar.gz -C /usr/local/bin && \
-    mv /usr/local/bin/updcli-linux-${ARCH_SUFFIX} /usr/local/bin/updcli-static && \
-    chmod +x /usr/local/bin/updcli-static && \
-    rm -rf /tmp/updcli-tars
+# ---- production ----
+FROM base AS production
+
+ENV APP_ENVIRONMENT=production
+
+COPY Gemfile* ./
+RUN bundle config set --local without "development test" \
+ && bundle install --jobs 20 --retry 5
+
+COPY . .
 
 CMD ["bundle", "exec", "puma"]
