@@ -49,6 +49,23 @@ GIT
     verse-shrine (0.1.0)
       shrine (~> 3.5)
 
+PATH
+  remote: common/gems/verse-otel
+  specs:
+    verse-otel (0.1.0)
+      opentelemetry-instrumentation-concurrent_ruby
+      opentelemetry-instrumentation-net_http
+      opentelemetry-instrumentation-pg
+      opentelemetry-instrumentation-rack
+      opentelemetry-instrumentation-sinatra
+      opentelemetry-sdk (~> 1.0)
+
+PATH
+  remote: common/gems/verse-sentry
+  specs:
+    verse-sentry (0.1.0)
+      sentry-ruby (~> 6)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -255,12 +272,6 @@ DEPENDENCIES
   bootsnap (~> 1.16)
   dotenv
   listen (~> 3.9)
-  opentelemetry-instrumentation-concurrent_ruby
-  opentelemetry-instrumentation-net_http
-  opentelemetry-instrumentation-pg
-  opentelemetry-instrumentation-rack
-  opentelemetry-instrumentation-sinatra
-  opentelemetry-sdk
   pg
   pry
   puma (~> 6)
@@ -272,14 +283,15 @@ DEPENDENCIES
   rubocop
   rubyzip (~> 3.2)
   sentry-opentelemetry
-  sentry-ruby
   simplecov
   sinatra-contrib
   verse-core!
   verse-http!
   verse-jsonapi!
+  verse-otel!
   verse-redis!
   verse-schema (~> 1.2.4)
+  verse-sentry!
   verse-sequel!
   verse-shrine!
   webmock

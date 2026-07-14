@@ -28,15 +28,10 @@ gem "sinatra-contrib"
 gem "aasm"
 gem "bootsnap", "~> 1.16"
 
-# --- Observability (see common/lib/telemetry.rb) ---
-gem "sentry-ruby"
-gem "sentry-opentelemetry"
-gem "opentelemetry-sdk"
-gem "opentelemetry-instrumentation-rack"
-gem "opentelemetry-instrumentation-sinatra"
-gem "opentelemetry-instrumentation-net_http"
-gem "opentelemetry-instrumentation-pg"
-gem "opentelemetry-instrumentation-concurrent_ruby"
+# --- Observability (see common/gems/verse-otel and verse-sentry) ---
+gem "sentry-opentelemetry" # verse-sentry `tracing: otel` bridge
+gem "verse-otel", path: "./common/gems/verse-otel"
+gem "verse-sentry", path: "./common/gems/verse-sentry"
 
 group :test do
   gem "rack-test"

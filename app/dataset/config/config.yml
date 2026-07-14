@@ -3,6 +3,17 @@ description: Project, batches and annotation management service
 em:
   adapter: redis
 plugins:
+  - name: sentry
+    config:
+      dsn: <%= ENV["SENTRY_DSN"] %>
+      tracing: otel
+      traces_sample_rate: <%= ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", 1.0) %>
+  - name: otel
+    config:
+      enabled: <%= !ENV["SENTRY_DSN"].to_s.empty? %>
+      service_name_prefix: "idah-"
+      instrumentations: [rack, sinatra, net_http, pg, concurrent_ruby]
+      db_statement: obfuscate
   - name: http
     config:
       show_error_details: <%= ENV.fetch("LOG_SHOW_ERROR_DETAILS", "true") %>
