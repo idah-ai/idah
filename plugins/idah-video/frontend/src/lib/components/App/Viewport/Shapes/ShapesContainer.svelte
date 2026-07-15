@@ -322,7 +322,8 @@
       .cursor-note { cursor: url('data:image/svg+xml;charset=utf-8,${cursorSvg}') 0 24, auto; }
       .cursor-crosshair { cursor: crosshair; }
       .cursor-grab { cursor: grab; }
-      .cursor-grabbing { cursor: grabbing; }
+      /* !important so an active grab also beats the shapes' inline style:cursor */
+      .cursor-grabbing, .cursor-grabbing * { cursor: grabbing !important; }
       .cursor-pointer { cursor: pointer; }
       .cursor-target { cursor: alias; }
     `;
@@ -356,11 +357,12 @@
 
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
+    // An active grab (middle-mouse or drag pan) outranks every other cursor.
+    if (isPanning) return "cursor-grabbing";
     if (isNoteMode) return "cursor-note";
     if (hoveringFirstPoint) return "cursor-target";
     if (viewport.isCreationMode) return "cursor-crosshair";
     if (selAnnotation) return "cursor-pointer";
-    if (isPanning) return "cursor-grabbing";
 
     return "cursor-grab";
   });
@@ -421,6 +423,17 @@
   function onWheel(e: WheelEvent) {
     e.preventDefault();
     zoomableElement!.onWheel(e);
+  }
+
+  // Middle-mouse-button grab: pan the viewport from anywhere, even when the
+  // cursor is over an annotation. Shape handlers stopPropagation on the bubble
+  // phase, so this runs in the capture phase to get in first. Once started, the
+  // Viewport's own document-level listeners carry the drag to completion.
+  function onMouseDownCapture(e: MouseEvent) {
+    if (e.button !== 1) return;
+    e.preventDefault(); // suppress the browser's middle-click autoscroll
+    e.stopPropagation(); // keep shape/selection handlers from reacting
+    zoomableElement!.startPan(e.clientX, e.clientY);
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -609,6 +622,7 @@
     {viewBox}
     onkeydown={() => {}}
     bind:this={svgEl}
+    onmousedowncapture={onMouseDownCapture}
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
     onclick={onSvgClick}
