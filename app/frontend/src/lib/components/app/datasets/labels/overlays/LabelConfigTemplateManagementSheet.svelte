@@ -145,7 +145,11 @@
     }
   }
 
-  function applyTemplate() {
+  async function applyTemplate() {
+    if (controller.hasUnsavedChanges) {
+      await saveChanges();
+      if (controller.hasUnsavedChanges) return; // save failed, keep the sheet open to retry
+    }
     onApply?.(controller.getCleanedConfig());
     open = false;
   }
@@ -213,7 +217,12 @@
                   {controller.hasUnsavedChanges ? "Save Changes" : "Saved"}
                 </Button>
 
-                <Button disabled={!loaded} onclick={applyTemplate}>
+                <Button
+                  disabled={!loaded}
+                  loading={saving}
+                  loadingLabel="Saving"
+                  onclick={applyTemplate}
+                >
                   <ArrowDownIcon />
                   Apply This Template
                 </Button>

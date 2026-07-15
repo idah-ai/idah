@@ -1,12 +1,14 @@
 <script lang="ts">
+  import { beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { SaveIcon } from "@lucide/svelte";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import LabelConfigTemplateDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/LabelConfigTemplateDropdownMenu.svelte";
+  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -35,6 +37,11 @@
   let saving = $state(false);
   let modality = $state("");
   let shapes = $state<ModalityShapes>({});
+  let loaded = $state(false);
+  let openUnsavedChangesModal = $state(false);
+  let pendingNavigationUrl = $state<URL | null>(null);
+  // Set right before re-triggering goto() from the modal so beforeNavigate doesn't re-block it.
+  let bypassNavigationGuard = false;
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -68,6 +75,7 @@
     shapes = showModalityRes.shapes;
 
     controller.load(datasetRes.data.labeling_configuration);
+    loaded = true;
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
@@ -96,6 +104,44 @@
       saving = false;
     }
   }
+
+  function leaveWithoutSaving() {
+    openUnsavedChangesModal = false;
+    const url = pendingNavigationUrl;
+    pendingNavigationUrl = null;
+    if (!url) return;
+    bypassNavigationGuard = true;
+    // destination captured from SvelteKit's own beforeNavigate event, not a static route pattern.
+    // eslint-disable-next-line svelte/no-navigation-without-resolve -- url is already a resolved
+    goto(url).finally(() => {
+      bypassNavigationGuard = false;
+    });
+  }
+
+  async function saveAndLeave() {
+    await saveLabelConfigChanges();
+    if (controller.hasUnsavedChanges) return; // save failed, stay on the page
+    leaveWithoutSaving();
+  }
+
+  // In-app navigation (e.g. clicking to another dataset): cancel and ask via ConfirmModal.
+  beforeNavigate((navigation) => {
+    if (bypassNavigationGuard || !loaded || !controller.hasUnsavedChanges || !navigation.to) return;
+    navigation.cancel();
+    pendingNavigationUrl = navigation.to.url;
+    openUnsavedChangesModal = true;
+  });
+
+  // Tab close / refresh / external navigation: browsers only allow their own generic prompt.
+  function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (!loaded || !controller.hasUnsavedChanges) return;
+    event.preventDefault();
+  }
+
+  onMount(() => {
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  });
 </script>
 
 {#await fetchData()}
@@ -132,3 +178,17 @@
 
   <LabelConfigEditor {modality} {shapes} {controller} {permission} {datasetId} allowDuplicateToDatasets />
 {/await}
+
+<ConfirmModal
+  title="Unsaved changes"
+  description="You have unsaved changes. Do you want to save them before leaving the page?"
+  onCancel={() => {
+    pendingNavigationUrl = null;
+  }}
+  bind:open={openUnsavedChangesModal}
+>
+  {#snippet confirm()}
+    <Button variant="outline" onclick={leaveWithoutSaving}>Don't Save</Button>
+    <Button loading={saving} loadingLabel="Saving" onclick={saveAndLeave}>Save</Button>
+  {/snippet}
+</ConfirmModal>
