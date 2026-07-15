@@ -4,6 +4,7 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
+  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import LabelConfigTemplateSaveModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateSaveModal.svelte";
   import LabelConfigTemplateManagementSheet from "@/components/app/datasets/labels/overlays/LabelConfigTemplateManagementSheet.svelte";
@@ -31,6 +32,8 @@
   let labelConfigTemplateManagementDialogOpen = $state(false);
   let labelConfigTemplateSaveModalOpen = $state(false);
   let templates = $state<LabelConfigTemplateRecord[]>([]);
+  let pendingReplaceTemplate = $state<LabelConfigTemplateRecord | null>(null);
+  let openConfirmReplaceModal = $state(false);
 
   async function loadTemplates() {
     try {
@@ -70,13 +73,23 @@
     }
   }
 
+  function confirmReplaceTemplate() {
+    if (!pendingReplaceTemplate) return;
+    replaceTemplate(pendingReplaceTemplate);
+    pendingReplaceTemplate = null;
+    openConfirmReplaceModal = false;
+  }
+
   const replaceItems = $derived<IDropdownMenuItem[]>(
     templates.length === 0
       ? [{ label: "No templates to overwrite", disabled: true }]
       : templates.map((template) => ({
           label: template.name,
           icon: FileIcon,
-          action: () => replaceTemplate(template),
+          action: () => {
+            pendingReplaceTemplate = template;
+            openConfirmReplaceModal = true;
+          },
         })),
   );
 
@@ -146,4 +159,15 @@
   {organizationId}
   onSaved={handleSaved}
   bind:open={labelConfigTemplateSaveModalOpen}
+/>
+
+<ConfirmModal
+  title="Overwrite template"
+  description={`Are you sure you want to overwrite this template "${pendingReplaceTemplate?.name}"? This action cannot be undone.`}
+  confirmLabel="Yes, Overwrite"
+  onCancel={() => {
+    pendingReplaceTemplate = null;
+  }}
+  onConfirm={confirmReplaceTemplate}
+  bind:open={openConfirmReplaceModal}
 />

@@ -21,8 +21,10 @@
   interface Props extends FormModalBaseProps {
     labelConfig: IConfig;
     modality: string;
+    /** Current dataset id, excluded from the duplicate target list. */
+    datasetId?: string;
   }
-  let { action, open = $bindable(), title, labelConfig, modality }: Props = $props();
+  let { action, open = $bindable(), title, labelConfig, modality, datasetId }: Props = $props();
 
   // Variables
   const resource: Resource = "dataset:datasets";
@@ -58,7 +60,9 @@
           },
           sort: ["created_at"],
         });
-        selectedDatasets = allDatasetsRes.data.map((dataset) => dataset.id);
+        selectedDatasets = allDatasetsRes.data
+          .map((dataset) => dataset.id)
+          .filter((id) => id !== datasetId);
       }
 
       for (const datasetId of selectedDatasets) {
@@ -110,6 +114,7 @@
       <MultipleSelectDatasourceField
         name="{resource}/label_configuration"
         values={selectedDatasets}
+        hiddenChoices={datasetId ? [datasetId] : []}
         dataSource={datasetsBackendDataSource}
         listOptions={{
           filters: {

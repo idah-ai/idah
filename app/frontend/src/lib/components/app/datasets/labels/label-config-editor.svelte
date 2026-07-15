@@ -40,8 +40,10 @@
     /** Whether to show the "duplicate configuration to other datasets" affordance
      *  (only meaningful when editing a dataset's config, not a template). */
     allowDuplicateToDatasets?: boolean;
+    /** Current dataset id, used to exclude it from the duplicate-to-datasets target list. */
+    datasetId?: string;
   }
-  let { modality, shapes, controller, permission, allowDuplicateToDatasets = false }: Props = $props();
+  let { modality, shapes, controller, permission, allowDuplicateToDatasets = false, datasetId }: Props = $props();
 
   // Share the controller instance with descendants (CategoryTree reads its orderMap).
   setLabelConfigController(controller);
@@ -460,5 +462,5 @@
 {/snippet}
 
 {#if allowDuplicateToDatasets}
-  <DuplicateConfigModal action="create" {labelConfig} {modality} bind:open={openDuplicateConfigModal} />
+  <DuplicateConfigModal action="create" {labelConfig} {modality} {datasetId} bind:open={openDuplicateConfigModal} />
 {/if}

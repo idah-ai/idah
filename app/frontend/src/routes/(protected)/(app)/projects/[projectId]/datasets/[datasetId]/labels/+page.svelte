@@ -130,5 +130,5 @@
     {/snippet}
   </PageHeader>
 
-  <LabelConfigEditor {modality} {shapes} {controller} {permission} allowDuplicateToDatasets />
+  <LabelConfigEditor {modality} {shapes} {controller} {permission} {datasetId} allowDuplicateToDatasets />
 {/await}
