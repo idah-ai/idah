@@ -60,9 +60,7 @@
           },
           sort: ["created_at"],
         });
-        selectedDatasets = allDatasetsRes.data
-          .map((dataset) => dataset.id)
-          .filter((id) => id !== datasetId);
+        selectedDatasets = allDatasetsRes.data.map((dataset) => dataset.id).filter((id) => id !== datasetId);
       }
 
       for (const datasetId of selectedDatasets) {

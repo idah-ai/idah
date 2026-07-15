@@ -217,12 +217,7 @@
                   {controller.hasUnsavedChanges ? "Save Changes" : "Saved"}
                 </Button>
 
-                <Button
-                  disabled={!loaded}
-                  loading={saving}
-                  loadingLabel="Saving"
-                  onclick={applyTemplate}
-                >
+                <Button disabled={!loaded} loading={saving} loadingLabel="Saving" onclick={applyTemplate}>
                   <ArrowDownIcon />
                   Apply This Template
                 </Button>
