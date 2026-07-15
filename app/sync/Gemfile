@@ -30,6 +30,7 @@ gem "bootsnap", "~> 1.16"
 
 # --- Observability (see common/gems/verse-otel and verse-sentry) ---
 gem "sentry-opentelemetry" # verse-sentry `tracing: otel` bridge
+gem "stackprof" # Sentry Profiles backend
 gem "verse-otel", path: "./common/gems/verse-otel"
 gem "verse-sentry", path: "./common/gems/verse-sentry"
 
