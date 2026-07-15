@@ -74,6 +74,7 @@
   let hasMore = $state(true);
   let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
   let allChoicesSelected = $state(false);
+  let showClearButton = $derived(clearable && selectedChoices.length > 0);
 
   // Lifecycle
   onMount(async () => {
@@ -243,7 +244,9 @@
           <div class="ml-auto inline-flex items-center gap-2">
             <button
               type="button"
-              class={cn("cursor-pointer", clearable && selectedChoices.length > 0 ? "opacity-50" : "opacity-0")}
+              class={cn("cursor-pointer", showClearButton ? "opacity-50" : "pointer-events-none opacity-0")}
+              tabindex={showClearButton ? 0 : -1}
+              aria-hidden={!showClearButton}
               onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0" />
