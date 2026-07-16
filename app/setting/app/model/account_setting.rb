@@ -25,8 +25,6 @@ module AccountSetting
         scope.all? { table }
 
         scope.own? {
-          table if action == :create
-
           table.where(account_id: auth_context.metadata[:id])
         }
       end
@@ -47,7 +45,9 @@ module AccountSetting
     def set(key, value, account_id:, plugin: "")
       table = scoped(:update)
 
-      value = Sequel.lit("?::jsonb", value.to_json)
+      # Explicit cast: the insert_conflict upsert bypasses the :value
+      # JsonEncoder, so the jsonb column needs the value cast here.
+      value = Sequel.cast(value.to_json, :jsonb)
 
       table.insert_conflict(
         target: %i[key account_id plugin],

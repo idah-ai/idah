@@ -34,22 +34,20 @@
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMemberAccountId) return;
 
-    let projectMemberRecord: ProjectMemberRecord | undefined = $state(undefined);
-    for (const entryId of entryIds) {
-      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMemberAccountId });
+    const memberAccountId = selectedMemberAccountId;
 
-      /** Get the email of selected member */
-      const projectMemberRes = await projectMembersBackendDataSource.list({
-        fields: {
-          [ProjectMemberRecord.type]: ["email"],
-        },
-        filters: {
-          account_id: selectedMemberAccountId,
-        },
-      });
+    await Promise.all(entryIds.map((entryId) => entriesBackendDataSource.assign({ id: entryId, memberAccountId })));
 
-      projectMemberRecord = projectMemberRes.data.at(0);
-    }
+    /** Get the email of the selected member (identical for every entry). */
+    const projectMemberRes = await projectMembersBackendDataSource.list({
+      fields: {
+        [ProjectMemberRecord.type]: ["email"],
+      },
+      filters: {
+        account_id: memberAccountId,
+      },
+    });
+    const projectMemberRecord = projectMemberRes.data.at(0);
 
     open = false;
     selectedMemberAccountId = null;

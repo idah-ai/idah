@@ -50,12 +50,12 @@ export const filtersToHash = (filters: Filters): Hash => {
       key = `${key}__${value.op}`;
     }
 
-    if (out[key]) {
-      if (!(out[key] instanceof Array)) {
-        out[key].push(value.value);
-      } else {
-        out[key] = [out[key], value.value];
-      }
+    if (out[key] == null) {
+      out[key] = value.value;
+    } else if (Array.isArray(out[key])) {
+      out[key].push(value.value);
+    } else {
+      out[key] = [out[key], value.value];
     }
   }
 

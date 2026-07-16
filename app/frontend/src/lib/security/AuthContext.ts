@@ -89,6 +89,12 @@ export class AuthContext {
 
   public readonly actionMap: ActionMap;
 
+  // Dedupes concurrent as_user membership lookups within this auth session.
+  // Keyed by `${projectId}:${accountId}`; caches the in-flight promise so N
+  // simultaneous can() checks share one request. Scoped to the instance, so a
+  // new AuthContext on login/refresh starts empty. Failures are not cached.
+  private readonly projectMemberCache = new Map<string, Promise<ProjectMemberRecord | undefined>>();
+
   public readonly id: string;
 
   public readonly email: string;
@@ -152,17 +158,26 @@ export class AuthContext {
         if (typeof scope === "object") {
           const { projectId, projectMemberRoles } = scope["as_user"];
 
-          const projectMemberRes = await projectMembersBackendDataSource.list({
-            fields: {
-              [ProjectMemberRecord.type]: ["id", "role"],
-            },
-            filters: {
-              project_id: projectId,
-              account_id: this.id,
-            },
-          });
+          const cacheKey = `${projectId}:${this.id}`;
+          let lookup = this.projectMemberCache.get(cacheKey);
+          if (!lookup) {
+            lookup = projectMembersBackendDataSource
+              .list({
+                fields: {
+                  [ProjectMemberRecord.type]: ["id", "role"],
+                },
+                filters: {
+                  project_id: projectId,
+                  account_id: this.id,
+                },
+              })
+              .then((res) => res.data[0]);
+            // Don't cache transient failures — allow a later retry.
+            lookup.catch(() => this.projectMemberCache.delete(cacheKey));
+            this.projectMemberCache.set(cacheKey, lookup);
+          }
 
-          const currentAccountProjectMember = projectMemberRes.data[0];
+          const currentAccountProjectMember = await lookup;
           if (!currentAccountProjectMember) return false;
 
           if (projectMemberRoles.includes(currentAccountProjectMember.role)) {

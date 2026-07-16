@@ -3,10 +3,11 @@
 class PluginsExpo < BaseExpo
   http_path "/plugins"
 
-  # GET plugins/modalities # return all modalities available
-  # GET plugins/:plugin_name/files/plugin.js|css # Entrypoint pour le plugin
-  # GET plugins/:plugin_name/files/entry.js|css # Entrypoint for show les entries
-  # GET plugins/:plugin_name/assets/... # public static files
+  # GET plugins/modalities                  # list all available modalities
+  # GET plugins/modalities/:modality_name   # shapes for a single modality
+  # GET plugins/:plugin/files/:filename      # serve an allowlisted plugin file
+  #   (plugin.js|css, details.js|css, dataset_config.json, plugin_shortcut.json)
+  # GET plugins/:plugin/assets/*             # serve public static plugin assets
 
   use_service Plugins::Service
 
