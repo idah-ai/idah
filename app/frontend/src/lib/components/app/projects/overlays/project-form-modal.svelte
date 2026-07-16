@@ -27,9 +27,11 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
+  // mutating the parent's fetched record in place).
   let project: ProjectRecord = $derived(
     projectRecord
-      ? projectRecord
+      ? projectRecord.clone()
       : new ProjectRecord({
           type: "datasets:projects",
           attributes: {
@@ -40,9 +42,22 @@
         }),
   );
 
+  // Dirty-state tracking (only the editable fields, fixed key order).
+  function serializeEditableFields(record: ProjectRecord): Hash {
+    return {
+      name: record.name,
+      description: record.description,
+      organization_id: record.organization_id,
+    };
+  }
+  let savedSnapshot: string = $derived(projectRecord ? JSON.stringify(serializeEditableFields(projectRecord)) : "");
+  let editedSnapshot: string | null = $state(null);
+  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+
   // Functions
   function resetForm(): void {
     fieldErrors = {};
+    editedSnapshot = null;
     project = new ProjectRecord({
       type: "datasets:projects",
       attributes: {
@@ -57,6 +72,11 @@
     project.name = value.name;
     project.description = value.description;
     project.organization_id = value.organization_id;
+    editedSnapshot = JSON.stringify({
+      name: value.name,
+      description: value.description,
+      organization_id: value.organization_id,
+    });
   }
 
   async function createProject() {
@@ -136,6 +156,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <ProjectForm {project} {fieldErrors} {preSelectedOrganizationId} onValueChange={setValue}></ProjectForm>
 </FormModal>

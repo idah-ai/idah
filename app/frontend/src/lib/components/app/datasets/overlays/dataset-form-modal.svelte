@@ -31,9 +31,11 @@
   let submitting: boolean = $state(false);
   let selectedDatasetId = $state<string | null>(null);
 
+  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
+  // mutating the parent's fetched record in place).
   let dataset: DatasetRecord = $derived(
     datasetRecord
-      ? datasetRecord
+      ? datasetRecord.clone()
       : new DatasetRecord({
           type: "datasets:datasets",
           attributes: {
@@ -43,9 +45,21 @@
         }),
   );
 
+  // Dirty-state tracking (only the editable fields, fixed key order).
+  function serializeEditableFields(record: DatasetRecord): Hash {
+    return {
+      name: record.name,
+      modality: record.modality,
+    };
+  }
+  let savedSnapshot: string = $derived(datasetRecord ? JSON.stringify(serializeEditableFields(datasetRecord)) : "");
+  let editedSnapshot: string | null = $state(null);
+  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+
   // Functions
   function resetForm(): void {
     fieldErrors = {};
+    editedSnapshot = null;
     dataset = new DatasetRecord({
       type: "datasets:datasets",
       attributes: {
@@ -59,6 +73,10 @@
     dataset.name = value.name;
     dataset.modality = value.modality;
     selectedDatasetId = value.selectedDatasetId;
+    editedSnapshot = JSON.stringify({
+      name: value.name,
+      modality: value.modality,
+    });
   }
 
   async function getLabelConfig() {
@@ -168,6 +186,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <DatasetForm {dataset} {fieldErrors} {newRecord} onValueChange={setValue}></DatasetForm>
 </FormModal>

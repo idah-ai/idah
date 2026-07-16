@@ -27,9 +27,11 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
+  // mutating the parent's fetched record in place).
   let organization: OrganizationRecord = $derived(
     organizationRecord
-      ? organizationRecord
+      ? organizationRecord.clone()
       : new OrganizationRecord({
           type: OrganizationRecord.type,
           attributes: {
@@ -38,6 +40,16 @@
         }),
   );
 
+  // Dirty-state tracking (only the editable fields, fixed key order).
+  function serializeEditableFields(record: OrganizationRecord): Hash {
+    return {
+      name: record.name,
+    };
+  }
+  let savedSnapshot: string = $derived(organizationRecord ? JSON.stringify(serializeEditableFields(organizationRecord)) : "");
+  let editedSnapshot: string | null = $state(null);
+  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+
   // Functions
   function closeThisModal(): void {
     open = false;
@@ -45,6 +57,7 @@
 
   function resetForm(): void {
     fieldErrors = {};
+    editedSnapshot = null;
     organization = new OrganizationRecord({
       type: OrganizationRecord.type,
       attributes: {
@@ -55,6 +68,9 @@
 
   function setValue(value: Hash): void {
     organization.name = value.name;
+    editedSnapshot = JSON.stringify({
+      name: value.name,
+    });
   }
 
   async function createOrganization(): Promise<void> {
@@ -128,6 +144,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <OrganizationForm {organization} {fieldErrors} onValueChange={setValue} />
 </FormModal>

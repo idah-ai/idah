@@ -30,9 +30,11 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
+  // mutating the parent's fetched record in place).
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
-      ? apiKeyRecord
+      ? apiKeyRecord.clone()
       : new ApiKeyRecord({
           type: ApiKeyRecord.type,
           attributes: {
@@ -45,6 +47,18 @@
         }),
   );
 
+  // Dirty-state tracking. Only `name` and `expires_at` are editable on update
+  // (see updateApiKey payload), so those are the diffed fields, fixed key order.
+  function serializeEditableFields(record: ApiKeyRecord): Hash {
+    return {
+      name: record.name,
+      expires_at: record.expires_at,
+    };
+  }
+  let savedSnapshot: string = $derived(apiKeyRecord ? JSON.stringify(serializeEditableFields(apiKeyRecord)) : "");
+  let editedSnapshot: string | null = $state(null);
+  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+
   // Functions
   function closeThisModal(): void {
     open = false;
@@ -52,6 +66,7 @@
 
   function resetForm(): void {
     fieldErrors = {};
+    editedSnapshot = null;
     apiKey = new ApiKeyRecord({
       type: ApiKeyRecord.type,
       attributes: {
@@ -71,6 +86,10 @@
     apiKey.permissions = value.permissions;
     apiKey.expires_at = value.expires_at;
     apiKey.key = value.key;
+    editedSnapshot = JSON.stringify({
+      name: value.name,
+      expires_at: value.expires_at,
+    });
   }
 
   async function createApiKey(): Promise<void> {
@@ -161,6 +180,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <ApiKeyForm {apiKey} {fieldErrors} {newRecord} onValueChange={setValue} />
 </FormModal>

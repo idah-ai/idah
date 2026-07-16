@@ -29,9 +29,11 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
+  // mutating the parent's fetched record in place).
   let account: AccountRecord = $derived(
     accountRecord
-      ? accountRecord
+      ? accountRecord.clone()
       : new AccountRecord({
           type: AccountRecord.type,
           attributes: {
@@ -44,6 +46,20 @@
         }),
   );
 
+  // Dirty-state tracking (only the editable fields, fixed key order).
+  function serializeEditableFields(record: AccountRecord): Hash {
+    return {
+      name: record.name,
+      email: record.email,
+      role_name: record.role_name,
+      sso_channel: record.sso_channel,
+      enabled: record.enabled,
+    };
+  }
+  let savedSnapshot: string = $derived(accountRecord ? JSON.stringify(serializeEditableFields(accountRecord)) : "");
+  let editedSnapshot: string | null = $state(null);
+  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+
   // Functions
   function closeThisModal(): void {
     open = false;
@@ -51,6 +67,7 @@
 
   function resetForm(): void {
     fieldErrors = {};
+    editedSnapshot = null;
     account = new AccountRecord({
       type: AccountRecord.type,
       attributes: {
@@ -68,6 +85,13 @@
     account.role_name = value.role_name;
     account.sso_channel = value.sso_channel;
     account.enabled = value.enabled;
+    editedSnapshot = JSON.stringify({
+      name: value.name,
+      email: value.email,
+      role_name: value.role_name,
+      sso_channel: value.sso_channel,
+      enabled: value.enabled,
+    });
   }
 
   async function createAccount(): Promise<void> {
@@ -158,6 +182,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <AccountForm {account} {newRecord} {fieldErrors} onValueChange={setValue} />
 </FormModal>
