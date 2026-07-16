@@ -29,8 +29,6 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
-  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
-  // mutating the parent's fetched record in place).
   let account: AccountRecord = $derived(
     accountRecord
       ? accountRecord

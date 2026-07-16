@@ -31,8 +31,6 @@
   let submitting: boolean = $state(false);
   let selectedDatasetId = $state<string | null>(null);
 
-  // Clone so the incoming prop stays pristine as the diff baseline (also avoids
-  // mutating the parent's fetched record in place).
   let dataset: DatasetRecord = $derived(
     datasetRecord
       ? datasetRecord
