@@ -89,7 +89,7 @@
       name: value.name,
       email: value.email,
       role_name: value.role_name,
-      sso_channel: value.sso_channel,
+      sso_channel: value.sso_channel ? value.sso_channel : null,
       enabled: value.enabled,
     });
   }
