@@ -46,7 +46,9 @@
       name: record.name,
     };
   }
-  let savedSnapshot: string = $derived(organizationRecord ? JSON.stringify(serializeEditableFields(organizationRecord)) : "");
+  let savedSnapshot: string = $derived(
+    organizationRecord ? JSON.stringify(serializeEditableFields(organizationRecord)) : "",
+  );
   let editedSnapshot: string | null = $state(null);
   let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
 

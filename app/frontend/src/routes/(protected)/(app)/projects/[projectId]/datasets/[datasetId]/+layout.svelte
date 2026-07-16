@@ -4,7 +4,7 @@
   import { page } from "$app/state";
   import { onMount, setContext, type Snippet } from "svelte";
 
-  import DatasetModality from "@/components/app/datasets/badges/dataset-modality.svelte";
+  import DatasetModalityBadge from "@/components/app/datasets/badges/DatasetModalityBadge.svelte";
   import ProjectDatasetDropdownMenu from "@/components/app/datasets/dropdowns/project-dataset-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
@@ -82,7 +82,7 @@
         {#snippet slotTitle()}
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
-            <DatasetModality dataset={datasetRecord}></DatasetModality>
+            <DatasetModalityBadge modality={datasetRecord.modality} />
             <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}
