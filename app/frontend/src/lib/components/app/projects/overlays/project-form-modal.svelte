@@ -31,7 +31,7 @@
   // mutating the parent's fetched record in place).
   let project: ProjectRecord = $derived(
     projectRecord
-      ? projectRecord.clone()
+      ? projectRecord
       : new ProjectRecord({
           type: "datasets:projects",
           attributes: {

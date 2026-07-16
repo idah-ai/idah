@@ -35,7 +35,7 @@
   // mutating the parent's fetched record in place).
   let dataset: DatasetRecord = $derived(
     datasetRecord
-      ? datasetRecord.clone()
+      ? datasetRecord
       : new DatasetRecord({
           type: "datasets:datasets",
           attributes: {

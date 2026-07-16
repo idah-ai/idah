@@ -33,7 +33,7 @@
   // mutating the parent's fetched record in place).
   let account: AccountRecord = $derived(
     accountRecord
-      ? accountRecord.clone()
+      ? accountRecord
       : new AccountRecord({
           type: AccountRecord.type,
           attributes: {

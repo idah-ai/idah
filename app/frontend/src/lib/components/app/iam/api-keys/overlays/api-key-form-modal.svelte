@@ -34,7 +34,7 @@
   // mutating the parent's fetched record in place).
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
-      ? apiKeyRecord.clone()
+      ? apiKeyRecord
       : new ApiKeyRecord({
           type: ApiKeyRecord.type,
           attributes: {

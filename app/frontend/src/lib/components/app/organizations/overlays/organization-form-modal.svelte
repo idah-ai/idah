@@ -31,7 +31,7 @@
   // mutating the parent's fetched record in place).
   let organization: OrganizationRecord = $derived(
     organizationRecord
-      ? organizationRecord.clone()
+      ? organizationRecord
       : new OrganizationRecord({
           type: OrganizationRecord.type,
           attributes: {
