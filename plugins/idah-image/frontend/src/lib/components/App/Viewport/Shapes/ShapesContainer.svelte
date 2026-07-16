@@ -13,6 +13,7 @@
   // ---------------------------------------------------------------------------
 
   import { onMount, type Snippet } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { cn } from "$lib/utils";
 
@@ -156,8 +157,22 @@
   // ── Viewport ref ──────────────────────────────────────────────────────
   let zoomableElement = $state<Viewport | undefined>(undefined);
 
-  // ── Component refs for tool selection ─────────────────────────────────
-  let _compRefs: any[] = $state([]);
+  // ── Component API registry for tool selection ─────────────────────────
+  // Children self-register their API here, keyed by annotation id. We avoid
+  // `bind:this={_compRefs[i]}` in the {#each}: its teardowns chain onto this
+  // component's root effect, so destroying N annotations at once overflows the
+  // stack (RangeError). Self-registration tears down flat. Only the selected
+  // annotation's API is ever read, so a map by id fits better than an array.
+  type AnnotationApi = {
+    getToolSelection: () => { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined;
+    getIsEditing: () => boolean;
+  };
+  const compApis = new SvelteMap<string, AnnotationApi>();
+
+  function registerAnnotationApi(id: string, api: AnnotationApi | null) {
+    if (api) compApis.set(id, api);
+    else compApis.delete(id);
+  }
 
   // Build a flat list of visible annotations (filtered by current frame and hidden state).
   // The list is ordered so the selected annotation always comes last (highest z-order
@@ -193,22 +208,13 @@
     return [...rest.map((r) => r.ann), ...selected];
   });
 
-  // Keep refs array sized to match visible annotations
-  $effect(() => {
-    if (_compRefs.length < visibleAnnotations.length) {
-      _compRefs.length = visibleAnnotations.length;
-    }
-  });
-
   // Derive tool selection from the currently selected annotation's component
   let selAnnotation = $derived(selection.value);
 
   let toolSelection = $derived.by(() => {
     const selId = selection.value?.id ?? null;
     if (!selId) return undefined;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
-    if (idx === -1) return undefined;
-    return _compRefs[idx]?.getToolSelection();
+    return compApis.get(selId)?.getToolSelection();
   });
 
   // ── Create shape component refs ───────────────────────────────────────
@@ -240,9 +246,7 @@
   let isEditingShape = $derived.by((): boolean => {
     const selId = selection.value?.id ?? null;
     if (!selId) return false;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
-    if (idx === -1) return false;
-    return _compRefs[idx]?.getIsEditing?.() ?? false;
+    return compApis.get(selId)?.getIsEditing?.() ?? false;
   });
 
   // ── Update snap engine targets when visible annotations change ──
@@ -596,9 +600,9 @@
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
     <!-- Rendered annotations -->
-    {#each visibleAnnotations as ann, i (ann.id)}
+    {#each visibleAnnotations as ann (ann.id)}
       <AnnotationGeometry
-        bind:this={_compRefs[i]}
+        register={registerAnnotationApi}
         annotation={ann}
         selected={selection.isAnnotationSelected(ann.id)}
         editable={viewport.mode === DEFAULT_MODE &&
