@@ -12,6 +12,7 @@
   } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { syncStatus } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -144,6 +145,13 @@
     if (typeof window === "undefined") return;
 
     const handleKeydown = (e: KeyboardEvent) => {
+      // Block all keyboard shortcuts while sync error is active.
+      if (syncStatus.error !== null) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       const activeElement = document.activeElement as HTMLElement | null;
       const isTyping =
         activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA" || activeElement?.isContentEditable;

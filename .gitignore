@@ -54,3 +54,6 @@ test/version_tmp/
 *.tmp
 *.bak
 *.backup
+
+# Local git worktrees
+.claude/worktrees/

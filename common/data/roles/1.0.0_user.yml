@@ -28,6 +28,7 @@ user:
     - "dataset:note_feeds.*.as_user"
     - "dataset:note_comments.*.as_user"
     - "dataset:entry_stats.read.as_user"
+    - "dataset:label_config_templates.*.as_user"
 
     # Media Service
     - "media:medias.*.as_user"

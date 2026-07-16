@@ -43,9 +43,12 @@ type BatchFailure = {
 
 type JSONRpcConfig = {
   batch_size?: number;
+  /** Max duration (ms) for which network errors are silently retried before
+   *  escalating to a visible sync error (paused + onSyncError). Default: 120_000 (2 min). */
+  network_retry_max_duration?: number;
 };
 
-// ── Datasou`rce ────────────────────────────────────────────────────────────
+// ── Datasource ────────────────────────────────────────────────────────────
 
 export class JsonRpcDatasource {
   private queue: QueueItem[] = [];
@@ -56,7 +59,11 @@ export class JsonRpcDatasource {
   private readonly retry_base_delay = 1000;
   private readonly retry_max_delay = 30000;
   private readonly batch_size: number;
+  private readonly network_retry_max_duration: number;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Timestamp (Date.now()) of the first network failure in the current streak. */
+  private networkFailureStart: number | null = null;
 
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;
@@ -64,6 +71,7 @@ export class JsonRpcDatasource {
   constructor(base_url: string, config?: JSONRpcConfig) {
     this.base_url = base_url;
     this.batch_size = config?.batch_size ?? 50;
+    this.network_retry_max_duration = config?.network_retry_max_duration ?? 120_000;
   }
 
   setErrorObserver(fn: RpcErrorObserver): void {
@@ -72,6 +80,9 @@ export class JsonRpcDatasource {
 
   resume(): void {
     this.paused = false;
+    // Set networkFailureStart so the next network error immediately exceeds the
+    // max duration cap — Retry means one attempt, escalate if it fails.
+    this.networkFailureStart = Date.now() - this.network_retry_max_duration;
     if (this.retryTimer !== null) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;
@@ -97,6 +108,12 @@ export class JsonRpcDatasource {
       return;
     }
 
+    // If a retry timer is already pending, don't start another flush.
+    if (this.retryTimer !== null) {
+      this.processing = false;
+      return;
+    }
+
     this.processing = true;
 
     const batch: BatchItem[] = [];
@@ -109,6 +126,7 @@ export class JsonRpcDatasource {
     this.process_batch(batch)
       .then(() => {
         this.failedCount = 0;
+        this.networkFailureStart = null;
         this.processing = false;
         this.process();
       })
@@ -117,6 +135,24 @@ export class JsonRpcDatasource {
         this.processing = false;
         this.failedCount++;
         if (failure.isNetworkError) {
+          // Track the start of the current network-failure streak.
+          if (this.networkFailureStart === null) {
+            this.networkFailureStart = Date.now();
+          }
+
+          // If we've been failing for longer than the max duration, escalate.
+          const elapsed = Date.now() - this.networkFailureStart;
+          if (elapsed >= this.network_retry_max_duration) {
+            this.paused = true;
+            this.networkFailureStart = null;
+            this.errorObserver?.({
+              message: "We're having trouble reaching the server.",
+              code: "-32001",
+              failedCount: this.failedCount,
+            });
+            return;
+          }
+
           const delay = Math.min(this.retry_base_delay * Math.pow(2, this.failedCount), this.retry_max_delay);
           if (this.retryTimer !== null) {
             clearTimeout(this.retryTimer);
