@@ -14,7 +14,7 @@ module Exports
 
       export_class = Verse::Util::Reflection.constantize(export_class)
       export_class.new.export(export_context)
-      binding.pry
+
       import_file =
         case export_context.io.mode
         when :file
@@ -26,7 +26,7 @@ module Exports
           raise "Invalid IO mode: #{export_context.io.mode}"
         end
 
-      export = exports.index({ job_id: }, items_per_page: 1).first
+      export = exports.show(arguments[:export_id])
       exports.upload(export.id, import_file)
     ensure
       export_context.io&.cleanup

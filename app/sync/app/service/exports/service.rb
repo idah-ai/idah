@@ -56,6 +56,11 @@ module Exports
           }
         )
 
+        # Store export_id in job arguments for deterministic lookup
+        # in Exports::Job#run_impl
+        job.arguments = job.arguments.merge(export_id:)
+        jobs.update(job)
+
         exports.find!(export_id, included: [:job])
       end
     end

@@ -9,11 +9,13 @@ RSpec.describe Exports::Job do
   let(:dataset_ids) { [1, 2] }
   let(:exporter_class_name) { "Exports::TestExporter" }
   let(:job_id) { 1 }
+  let(:export_id) { 123 }
   let(:job_arguments) do
     {
       options: export_options,
       dataset_ids: dataset_ids,
-      exporter: exporter_class_name
+      exporter: exporter_class_name,
+      export_id: export_id
     }
   end
 
@@ -32,7 +34,7 @@ RSpec.describe Exports::Job do
   let(:mock_io_context) { instance_double(Exports::IoContext) }
   let(:mock_file) { instance_double(File, rewind: nil, write: nil) }
   let(:mock_exports_service) { Exports::Service.new(Verse::Auth::Context.new) }
-  let(:mock_export_record) { double(id: 123) }
+  let(:mock_export_record) { double(id: export_id) }
 
   before do
     stub_const("Exports::TestExporter", test_exporter_class)
@@ -43,10 +45,7 @@ RSpec.describe Exports::Job do
     allow(mock_io_context).to receive(:cleanup)
 
     allow(Exports::Service).to receive(:new).and_return(mock_exports_service)
-    allow(mock_exports_service).to receive(:index).with(
-      { job_id: },
-      items_per_page: 1
-    ).and_return([mock_export_record])
+    allow(mock_exports_service).to receive(:show).with(export_id).and_return(mock_export_record)
     allow(mock_exports_service).to receive(:upload).with(any_args)
   end
 
@@ -84,11 +83,8 @@ RSpec.describe Exports::Job do
         subject.run_impl
       end
 
-      it "queries for export by job_id" do
-        expect(mock_exports_service).to receive(:index).with(
-          { job_id: },
-          items_per_page: 1
-        ).and_return([mock_export_record])
+      it "looks up export by export_id from arguments" do
+        expect(mock_exports_service).to receive(:show).with(export_id).and_return(mock_export_record)
 
         subject.run_impl
       end
