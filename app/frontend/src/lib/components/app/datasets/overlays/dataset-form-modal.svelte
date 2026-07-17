@@ -52,12 +52,18 @@
   }
   let savedSnapshot: string = $derived(datasetRecord ? JSON.stringify(serializeEditableFields(datasetRecord)) : "");
   let editedSnapshot: string | null = $state(null);
-  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+  // A "Copy label configurations from" selection is a change on its own (the
+  // select can't be cleared, so there is no revert-to-none for it).
+  let hasCopyLabelConfigSelected: boolean = $derived(!!selectedDatasetId);
+  let hasUnsavedChanges: boolean = $derived(
+    hasCopyLabelConfigSelected || (editedSnapshot !== null && editedSnapshot !== savedSnapshot),
+  );
 
   // Functions
   function resetForm(): void {
     fieldErrors = {};
     editedSnapshot = null;
+    selectedDatasetId = null;
     dataset = new DatasetRecord({
       type: "datasets:datasets",
       attributes: {
