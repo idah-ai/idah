@@ -73,7 +73,7 @@ module Exports
       Verse::Plugin[:shrine].with_storage do |storage|
         file = storage.upload(file)
 
-        exports.table.db.after_rollback do
+        exports.on_rollback do
           Verse.logger.warn{
             "Rollback called, deleting `#{file.id}` from storage"
           }

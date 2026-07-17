@@ -69,5 +69,12 @@ module Exports
         }
       end
     end
+
+    # Register a rollback hook on the current database transaction.
+    # This is a wrapper around Sequel's after_rollback that avoids
+    # coupling the service layer to Sequel internals.
+    def on_rollback(&block)
+      table.db.after_rollback(&block)
+    end
   end
 end

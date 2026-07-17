@@ -2,6 +2,8 @@
 
 module Exports
   class Job < Jobs::Base
+    self.max_retries = 3
+
     def run_impl
       options, dataset_ids = arguments.values_at(:options, :dataset_ids)
       export_class = arguments[:exporter]

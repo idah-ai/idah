@@ -139,7 +139,7 @@ module Exports
       def append_annotation(file_path, entry_id, annotation)
         attributes = annotation.record.data[:attributes]
         metadata = attributes[:metadata] || {}
-        dimensions = annotation.record.dimensions
+        dimensions = annotation.record.dimensions.dup
         type = dimensions.delete(:type)
 
         metadata = capitalized_dashed_keys(metadata).merge(
