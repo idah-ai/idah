@@ -44,13 +44,14 @@
         }),
   );
 
-  // Dirty-state tracking (only the editable fields, fixed key order).
+  // Dirty-state tracking. Keys must match exactly what the form emits via
+  // onValueChange (name, email, role_name, enabled). sso_channel is displayed
+  // but read-only and never emitted, so it must not be part of the dirty diff.
   function serializeEditableFields(record: AccountRecord): Hash {
     return {
       name: record.name,
       email: record.email,
       role_name: record.role_name,
-      sso_channel: record.sso_channel,
       enabled: record.enabled,
     };
   }
@@ -81,13 +82,13 @@
     account.name = value.name;
     account.email = value.email;
     account.role_name = value.role_name;
-    account.sso_channel = value.sso_channel;
     account.enabled = value.enabled;
+    // sso_channel is read-only and not emitted by the form; leave the record's
+    // original value untouched so it is preserved on save.
     editedSnapshot = JSON.stringify({
       name: value.name,
       email: value.email,
       role_name: value.role_name,
-      sso_channel: value.sso_channel ? value.sso_channel : null,
       enabled: value.enabled,
     });
   }
