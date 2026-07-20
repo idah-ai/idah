@@ -47,13 +47,14 @@ RSpec.describe Exports::Service, database: true do
         job = Jobs::Service.new(auth_context).show(export.job_id)
 
         expect(job.job_class).to eq "Exports::Job"
-        expect(job.arguments).to eq(
+        expect(job.arguments).to include(
           {
             dataset_ids:,
             exporter:,
             options: {}
           }
         )
+        expect(job.arguments).to have_key(:export_id)
       end
 
       it "creates records within a transaction" do

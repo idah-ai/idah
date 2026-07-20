@@ -58,8 +58,8 @@ module Exports
 
         # Store export_id in job arguments for deterministic lookup
         # in Exports::Job#run_impl
-        job.arguments = job.arguments.merge(export_id:)
-        jobs.update(job)
+        job_system_repo = Jobs::Repository.new(Verse::Auth::Context[:system])
+        job_system_repo.update!(job.id, { arguments: job.arguments.merge(export_id: export_id) })
 
         exports.find!(export_id, included: [:job])
       end
