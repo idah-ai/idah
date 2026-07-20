@@ -61,14 +61,19 @@ module Account
         # As project membership will be created after account creation
         created_account = accounts_system.find!(id)
 
-        # Send the join invitation email
-        ::Service::Notification.email(
-          to: created_account.email,
-          title: "Account Created",
-          category: "account_created",
-          recipient_id: created_account.id,
-          invitation_token:
-        )
+        # Send the join invitation email AFTER the transaction commits. Otherwise the event is
+        # published before commit and the notification worker's cross-service account lookup
+        # (Api[:idah].iam.accounts.index) can't see the uncommitted row, raises NotFound, and
+        # drops the invitation email. Mirrors the after_commit pattern used in #update.
+        accounts.after_commit do
+          ::Service::Notification.email(
+            to: created_account.email,
+            title: "Account Created",
+            category: "account_created",
+            recipient_id: created_account.id,
+            invitation_token:
+          )
+        end
 
         created_account
       end

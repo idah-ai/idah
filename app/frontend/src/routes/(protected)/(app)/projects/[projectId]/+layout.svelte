@@ -64,6 +64,8 @@
         [ProjectRecord.type]: ["name", "description", "organization_id"],
       },
     });
+    // In-place merge (not reassignment): preserves the object identity captured by
+    // setContext("project", project) at init, which child pages read via getContext("project").
     Object.assign(project, projectRes.data);
 
     return project;

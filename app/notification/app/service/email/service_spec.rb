@@ -197,5 +197,44 @@ RSpec.describe Email::Service, database: true do
         }.to raise_error(StandardError, "No template found for unknown_category")
       end
     end
+
+    context "when to_email is malformed" do
+      it "raises ValidationFailed and does not deliver" do
+        expect {
+          subject.send_email("not-an-email", notification)
+        }.to raise_error(Verse::Error::ValidationFailed)
+
+        expect(Mail).not_to have_received(:deliver)
+      end
+
+      it "rejects header-injection payloads" do
+        expect {
+          subject.send_email("a@b.com\r\nBcc: evil@example.com", notification)
+        }.to raise_error(Verse::Error::ValidationFailed)
+      end
+    end
+
+    context "when mail delivery fails" do
+      let(:logger) { instance_double(Logger, error: nil) }
+
+      before do
+        allow(Verse).to receive(:logger).and_return(logger)
+        allow(Mail).to receive(:deliver).and_raise(StandardError.new("smtp unavailable"))
+      end
+
+      it "re-raises the delivery error" do
+        expect {
+          subject.send_email(to_email, notification)
+        }.to raise_error(StandardError, "smtp unavailable")
+      end
+
+      it "logs the failure with recipient and category context" do
+        expect {
+          subject.send_email(to_email, notification)
+        }.to raise_error(StandardError, "smtp unavailable")
+
+        expect(logger).to have_received(:error)
+      end
+    end
   end
 end

@@ -14,7 +14,8 @@
       const passwordResetToken = accountResponse.meta?.password_reset_token || "";
 
       /* eslint-disable svelte/no-navigation-without-resolve */
-      goto(`/reset-password?token=${passwordResetToken}`);
+      // replaceState so the token URL isn't left as a back-button history entry.
+      goto(`/reset-password?token=${passwordResetToken}`, { replaceState: true });
     } catch (error) {
       console.error("Error accepting invitation", error);
       goto(resolve("/error"));
