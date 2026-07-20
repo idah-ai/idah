@@ -31,7 +31,7 @@
 
   let account: AccountRecord = $derived(
     accountRecord
-      ? accountRecord
+      ? accountRecord.clone()
       : new AccountRecord({
           type: AccountRecord.type,
           attributes: {

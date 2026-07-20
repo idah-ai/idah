@@ -33,7 +33,7 @@
 
   let dataset: DatasetRecord = $derived(
     datasetRecord
-      ? datasetRecord
+      ? datasetRecord.clone()
       : new DatasetRecord({
           type: "datasets:datasets",
           attributes: {

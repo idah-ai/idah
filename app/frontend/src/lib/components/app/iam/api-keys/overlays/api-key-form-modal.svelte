@@ -32,7 +32,7 @@
 
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
-      ? apiKeyRecord
+      ? apiKeyRecord.clone()
       : new ApiKeyRecord({
           type: ApiKeyRecord.type,
           attributes: {

@@ -29,7 +29,7 @@
 
   let project: ProjectRecord = $derived(
     projectRecord
-      ? projectRecord
+      ? projectRecord.clone()
       : new ProjectRecord({
           type: "datasets:projects",
           attributes: {

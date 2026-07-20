@@ -29,7 +29,7 @@
 
   let organization: OrganizationRecord = $derived(
     organizationRecord
-      ? organizationRecord
+      ? organizationRecord.clone()
       : new OrganizationRecord({
           type: OrganizationRecord.type,
           attributes: {
