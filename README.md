@@ -3,7 +3,7 @@
 [![CI](https://github.com/idah-ai/idah/actions/workflows/ci.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci.yml)
 [![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
 [![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
-[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](compose.yaml)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
@@ -149,6 +149,54 @@ docker compose restart frontend  # Specific service
 ```bash
 docker compose up -d --build
 ```
+
+---
+
+## 🌍 Environments (dev / staging / prod)
+
+The stack is defined once in **`compose.yaml`** (base) and specialized per environment
+by small overlays that only hold the differences:
+
+| Environment | Command | Notes |
+|-------------|---------|-------|
+| **dev**     | `docker compose up -d --build` | `compose.override.yaml` is applied automatically: `development` image stage, source bind-mounted for hot reload, MailHog, host DBs. |
+| **staging** | `docker compose -f compose.yaml -f compose.staging.yaml up -d --build` | Prod-faithful: `production` image stage, no source mounts, bundled Postgres/Redis. Pinned to the `staging` Compose project so `staging_*` volumes are reused. |
+| **prod**    | `docker compose -f compose.yaml -f compose.prod.yaml up -d --build` | Scaffold — fill in `config/production/envs/*` and `prod/*` before deploying. |
+
+Each service selects its stage via `build.target` (`development` or `production`) in
+its overlay; the multi-stage `Dockerfile`s live next to each service.
+
+### Environment variables
+
+Env files live under **`config/<env>/envs/`** and are loaded via `env_file:` in each
+overlay. Real values for `staging`/`prod` are git-ignored; copy the committed
+`.env.example` templates and fill them in. Dev defaults are committed
+(`config/dev/envs/.env.common`).
+
+### Database migrations
+
+Each service owns its database. Production images run puma directly and do **not**
+migrate on boot — run migrations explicitly as a deploy step:
+
+```bash
+bin/migrate staging   # or: bin/migrate prod
+```
+
+(For local development, use `bin/dev migrate`.)
+
+First-time databases still need a one-off `rake db:setup` per service.
+
+### Build contexts & `.dockerignore`
+
+One rule: **the `.dockerignore` lives next to whatever `context:` points at.**
+Each service builds from its own `./app/<service>` folder with its own
+`app/<service>/.dockerignore`. The **only** repo-root-context build is the frontend
+production image (it needs the shared `plugins/`), which uses an allowlist
+`app/frontend/Dockerfile.dockerignore` (a plain `.dockerignore` in the repo root is
+never read for that build, because the ignore-file must sit at the context root).
+
+`updcli` is not baked into any image — it is provided at runtime as an optional
+read-only mount (`./updcli:/opt/updcli:ro`) so it stays shareable across services.
 
 ---
 

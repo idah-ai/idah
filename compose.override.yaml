@@ -1,0 +1,137 @@
+# Development overlay — auto-applied by `docker compose up`.
+#
+# Runs the `development` image stage with the source bind-mounted for hot reload.
+# Databases come from docker-compose-db.yml (or a host Postgres/Redis) via
+# host.docker.internal, matching config/dev/envs/.env.common.
+
+x-ruby-dev: &ruby-dev
+  build:
+    target: development
+  env_file:
+    - config/dev/envs/.env.common
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+    - "idah.localhost:host-gateway"
+  stdin_open: true
+  tty: true
+
+services:
+  iam:
+    <<: *ruby-dev
+    volumes:
+      - ./app/iam:/app
+      - ./app/iam/common:/app/common
+      - ./config/dev/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - iam_bundler_cache:/usr/local/bundle
+
+  media:
+    <<: *ruby-dev
+    volumes:
+      - ./app/media:/app
+      - ./app/media/common:/app/common
+      - ./plugins:/app/plugins
+      - ./plugins_dev:/app/plugins_dev
+      - media_bundler_cache:/usr/local/bundle
+
+  dataset:
+    <<: *ruby-dev
+    volumes:
+      - ./app/dataset:/app
+      - ./app/dataset/common:/app/common
+      - ./plugins:/app/plugins
+      - ./plugins_dev:/app/plugins_dev
+      - ./config/dev/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - dataset_bundler_cache:/usr/local/bundle
+
+  setting:
+    <<: *ruby-dev
+    volumes:
+      - ./app/setting:/app
+      - ./app/setting/common:/app/common
+      - ./plugins:/app/plugins
+      - ./plugins_dev:/app/plugins_dev
+      - setting_bundler_cache:/usr/local/bundle
+
+  audit:
+    <<: *ruby-dev
+    volumes:
+      - ./app/audit:/app
+      - ./app/audit/common:/app/common
+      - ./config/dev/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - audit_bundler_cache:/usr/local/bundle
+
+  sync:
+    <<: *ruby-dev
+    volumes:
+      - ./app/sync:/app
+      - ./app/sync/common:/app/common
+      - ./plugins:/app/plugins
+      - ./plugins_dev:/app/plugins_dev
+      - ./config/dev/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - sync_bundler_cache:/usr/local/bundle
+      - ./updcli:/opt/updcli:ro   # shared, optional updcli source
+
+  notification:
+    <<: *ruby-dev
+    volumes:
+      - ./app/notification:/app
+      - ./app/notification/common:/app/common
+      - ./config/dev/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - notification_bundler_cache:/usr/local/bundle
+
+  frontend:
+    build:
+      target: development
+    environment:
+      VITE_IDAH_HOST: https://idah.localhost:8443
+    expose:
+      - "5173"
+    volumes:
+      - ./app/frontend:/app/frontend
+      - ./plugins:/app/plugins
+      - ./plugins_dev/plugins:/app/plugins_dev/plugins
+      - node_modules:/app/frontend/node_modules
+    entrypoint: ./dev-entrypoint.sh
+    command: pnpm run dev
+    stdin_open: true
+    tty: true
+
+  nginx:
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./config/dev/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/dev/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - media
+      - dataset
+      - iam
+      - setting
+      - audit
+      - sync
+      - notification
+      - mails
+
+  mails:
+    image: mailhog/mailhog
+    platform: linux/amd64
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app-network
+
+volumes:
+  iam_bundler_cache:
+  media_bundler_cache:
+  dataset_bundler_cache:
+  setting_bundler_cache:
+  audit_bundler_cache:
+  sync_bundler_cache:
+  notification_bundler_cache:
+  node_modules:

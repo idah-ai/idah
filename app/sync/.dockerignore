@@ -1,0 +1,19 @@
+# Build context = this service dir. Keep runtime data and local files out of it.
+
+# Runtime data & caches (created in the container, never needed at build)
+tmp/storage
+tmp/cache
+log
+*.log
+coverage
+.byebug_history
+
+# Local env files — provided at runtime via env_file, never baked into the image
+.env
+.env.*
+!.env.example
+!.env.test
+
+# VCS / OS cruft
+.git
+.DS_Store
