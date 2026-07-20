@@ -84,51 +84,42 @@ class Executor
     escaped_command = escape(command, **opts)
 
     @pool.run do
-      begin
-        Open3.popen3(escaped_command, popen_opts) do |stdin, stdout, stderr, wait_thr|
-          block&.call(stdin, stdout, stderr, wait_thr)
+      Open3.popen3(escaped_command, popen_opts) do |stdin, stdout, stderr, wait_thr|
+        block&.call(stdin, stdout, stderr, wait_thr)
 
-          if timeout
-            deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+        if timeout
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
 
-            loop do
-              remaining = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          loop do
+            remaining = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-              if remaining <= 0
-                Process.kill("TERM", wait_thr.pid)
+            if remaining <= 0
+              Process.kill("TERM", wait_thr.pid)
 
-                unless wait_thr.join(2)
-                  Process.kill("KILL", wait_thr.pid) rescue nil
+              unless wait_thr.join(2)
+                begin
+                  Process.kill("KILL", wait_thr.pid)
+                rescue StandardError
+                  nil
                 end
+              end
 
-                wait_thr.value
+              wait_thr.value
 
-                promise.raise(
-                  TimeoutError.new(
-                    "Command timed out after #{timeout}s:\n#{stderr.read}"
-                  )
+              promise.raise(
+                TimeoutError.new(
+                  "Command timed out after #{timeout}s:\n#{stderr.read}"
                 )
-                break
-              end
-
-              # Wait for the thread with a short poll interval
-              result = wait_thr.join([remaining, 0.1].min)
-              if result
-                # Thread finished — process exited
-                value = wait_thr.value
-                if value.success?
-                  promise.resolve(value)
-                else
-                  promise.raise(
-                    ExecutionError.new(stderr.read)
-                  )
-                end
-                break
-              end
+              )
+              break
             end
-          else
-            value = wait_thr.value
 
+            # Wait for the thread with a short poll interval
+            result = wait_thr.join([remaining, 0.1].min)
+            next unless result
+
+            # Thread finished — process exited
+            value = wait_thr.value
             if value.success?
               promise.resolve(value)
             else
@@ -136,11 +127,22 @@ class Executor
                 ExecutionError.new(stderr.read)
               )
             end
+            break
+          end
+        else
+          value = wait_thr.value
+
+          if value.success?
+            promise.resolve(value)
+          else
+            promise.raise(
+              ExecutionError.new(stderr.read)
+            )
           end
         end
-      rescue StandardError => e
-        promise.raise(e)
       end
+    rescue StandardError => e
+      promise.raise(e)
     end
 
     promise

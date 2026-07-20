@@ -107,7 +107,7 @@ module Jobs
 
     def requeue_stale(ttl: 3600)
       stalled_jobs = table.where(status: "running")
-                     .where { updated_at < Time.now - ttl }
+                          .where { updated_at < Time.now - ttl }
 
       count = stalled_jobs.count
 

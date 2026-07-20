@@ -88,7 +88,9 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
       get "/exports/#{export_id}/download"
 
       expect(last_response.status).to eq 200
-      expect(last_response.headers["Content-Disposition"]).to eq "attachment; filename=\"export.zip\"; filename*=UTF-8''export.zip"
+      expect(
+        last_response.headers["Content-Disposition"]
+      ).to eq "attachment; filename=\"export.zip\"; filename*=UTF-8''export.zip"
       expect(last_response.content_type).to eq "application/zip"
     end
 

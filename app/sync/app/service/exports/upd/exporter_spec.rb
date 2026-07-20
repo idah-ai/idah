@@ -93,7 +93,7 @@ RSpec.describe Exports::Upd::Exporter do
       allow(Api[:idah].media.medias).to receive(:files).and_return(media_binary_data)
 
       # Stub streaming media download to yield chunks
-      allow(Api[:idah].media.medias).to receive(:files_stream) do |**args, &block|
+      allow(Api[:idah].media.medias).to receive(:files_stream) do |**_args, &block|
         streamed_chunks.each { |chunk| block.call(chunk) }
       end
 
@@ -297,7 +297,9 @@ RSpec.describe Exports::Upd::Exporter do
         it "does not include any medias" do
           exporter.export(context)
 
-          media_calls = updcli_calls.select { |c| parsed_args(c).include?("media") && parsed_args(c).include?("create") }
+          media_calls = updcli_calls.select { |c|
+            parsed_args(c).include?("media") && parsed_args(c).include?("create")
+          }
           expect(media_calls).to be_empty
         end
       end
@@ -324,7 +326,9 @@ RSpec.describe Exports::Upd::Exporter do
 
           exporter.export(context)
 
-          media_calls = updcli_calls.select { |c| parsed_args(c).include?("media") && parsed_args(c).include?("create") }
+          media_calls = updcli_calls.select { |c|
+            parsed_args(c).include?("media") && parsed_args(c).include?("create")
+          }
           expect(media_calls.size).to eq(1) # Only original media
         end
       end
@@ -357,7 +361,9 @@ RSpec.describe Exports::Upd::Exporter do
 
           exporter.export(context)
 
-          media_calls = updcli_calls.select { |c| parsed_args(c).include?("media") && parsed_args(c).include?("create") }
+          media_calls = updcli_calls.select { |c|
+            parsed_args(c).include?("media") && parsed_args(c).include?("create")
+          }
           expect(media_calls.size).to eq(2) # All medias
         end
       end
@@ -460,7 +466,9 @@ RSpec.describe Exports::Upd::Exporter do
       it "creates multiple datasets in UPD file" do
         exporter.export(context)
 
-        dataset_calls = updcli_calls.select { |c| parsed_args(c).include?("dataset") && parsed_args(c).include?("create") }
+        dataset_calls = updcli_calls.select { |c|
+          parsed_args(c).include?("dataset") && parsed_args(c).include?("create")
+        }
         expect(dataset_calls.size).to eq(2)
       end
     end
@@ -503,7 +511,9 @@ RSpec.describe Exports::Upd::Exporter do
       it "creates dataset without entries" do
         exporter.export(context)
 
-        dataset_calls = updcli_calls.select { |c| parsed_args(c).include?("dataset") && parsed_args(c).include?("create") }
+        dataset_calls = updcli_calls.select { |c|
+          parsed_args(c).include?("dataset") && parsed_args(c).include?("create")
+        }
         entry_calls = updcli_calls.select { |c| parsed_args(c).include?("entry") && parsed_args(c).include?("create") }
         expect(dataset_calls).not_to be_empty
         expect(entry_calls).to be_empty
@@ -518,7 +528,9 @@ RSpec.describe Exports::Upd::Exporter do
       it "creates entries without annotations" do
         exporter.export(context)
 
-        ann_calls = updcli_calls.select { |c| parsed_args(c).include?("annotation") && parsed_args(c).include?("create") }
+        ann_calls = updcli_calls.select { |c|
+          parsed_args(c).include?("annotation") && parsed_args(c).include?("create")
+        }
         expect(ann_calls).to be_empty
       end
     end

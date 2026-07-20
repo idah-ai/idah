@@ -88,12 +88,18 @@ module Exports
 
         # Create dataset in UPD
         updcli(
-          "--input", file_path,
-          "dataset", "create",
-          "--id", dataset.record.id.to_s,
-          "--name", dataset.record.name.to_s,
-          "--modality", dataset.record.modality.to_s,
-          "--metadata", metadata.to_json
+          "--input",
+          file_path,
+          "dataset",
+          "create",
+          "--id",
+          dataset.record.id.to_s,
+          "--name",
+          dataset.record.name.to_s,
+          "--modality",
+          dataset.record.modality.to_s,
+          "--metadata",
+          metadata.to_json
         )
       end
 
@@ -127,12 +133,18 @@ module Exports
 
         # Create entry in UPD
         updcli(
-          "--input", file_path,
-          "entry", "create",
-          "--id", entry.record.id.to_s,
-          "--dataset_id", dataset_id.to_s,
-          "--url", media_url.to_s,
-          "--metadata", metadata.to_json
+          "--input",
+          file_path,
+          "entry",
+          "create",
+          "--id",
+          entry.record.id.to_s,
+          "--dataset_id",
+          dataset_id.to_s,
+          "--url",
+          media_url.to_s,
+          "--metadata",
+          metadata.to_json
         )
       end
 
@@ -152,14 +164,22 @@ module Exports
 
         # Create annotation in UPD
         updcli(
-          "--input", file_path,
-          "annotation", "create",
-          "--id", annotation.record.id.to_s,
-          "--entry_id", entry_id.to_s,
-          "--type", type.to_s,
-          "--shape", dimensions.to_json,
-          "--annotation", annotation.record.annotation.to_json,
-          "--metadata", metadata.to_json
+          "--input",
+          file_path,
+          "annotation",
+          "create",
+          "--id",
+          annotation.record.id.to_s,
+          "--entry_id",
+          entry_id.to_s,
+          "--type",
+          type.to_s,
+          "--shape",
+          dimensions.to_json,
+          "--annotation",
+          annotation.record.annotation.to_json,
+          "--metadata",
+          metadata.to_json
         )
       end
 
@@ -172,12 +192,18 @@ module Exports
 
         # Create media in UPD
         updcli(
-          "--input", file_path,
-          "media", "create",
-          "--id", media.record.resource.to_s,
-          "--file", tempfile_path.to_s,
-          "--key", media.record.key.to_s,
-          "--mimetype", media.record.mime_type.to_s
+          "--input",
+          file_path,
+          "media",
+          "create",
+          "--id",
+          media.record.resource.to_s,
+          "--file",
+          tempfile_path.to_s,
+          "--key",
+          media.record.key.to_s,
+          "--mimetype",
+          media.record.mime_type.to_s
         )
       end
     end

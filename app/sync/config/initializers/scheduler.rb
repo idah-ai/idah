@@ -9,7 +9,7 @@ Verse.on_stop do
   EXECUTOR.stop
 end
 
-Verse.logger&.debug "PUMA_WORKERS=#{ENV['PUMA_WORKERS']}"
+Verse.logger&.debug "PUMA_WORKERS=#{ENV["PUMA_WORKERS"]}"
 
 if ENV["PUMA_WORKERS"] &&
    ENV["PUMA_WORKERS"] == "1"
