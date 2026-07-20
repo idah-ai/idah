@@ -1,17 +1,14 @@
 <script lang="ts">
   import { RedoIcon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
-  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
-  import Button from "@/components/ui/button/button.svelte";
+  import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
-
-  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
-  import { SvelteMap } from "svelte/reactivity";
 
   // Props
   interface Props {
@@ -47,11 +44,6 @@
 
   onMount(refreshToolbar);
 
-  function cmdShortcut(name: string): string | undefined {
-    const s = driver.command.getShortcut(name);
-    return s ? getShortcutLabel(s) : undefined;
-  }
-
   const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
       name: "core.undo",
@@ -74,31 +66,37 @@
   {#each toolbarItems as { icon, label, name, onClick, visibleWhen }, toolIndex (toolIndex)}
     {#if (visibleWhen || (() => true))()}
       {@const isToggled = toggledMap.get(name ?? label) ?? false}
-      <ToolTooltip {label} shortcut={name ? cmdShortcut(name) : undefined} align="center" delayDuration={100}>
-        {#snippet trigger()}
-          <Button
-            variant={isToggled ? "default" : "ghost"}
-            size="icon-sm"
-            onclick={onClick}
-            disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
-          >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html icon}
-          </Button>
-        {/snippet}
-      </ToolTooltip>
+      <KbdTooltipButton
+        {label}
+        {driver}
+        commandName={name}
+        align="center"
+        delayDuration={100}
+        variant={isToggled ? "default" : "ghost"}
+        size="icon-sm"
+        onclick={onClick}
+        disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
+      >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html icon}
+      </KbdTooltipButton>
     {/if}
   {/each}
 
   <Separator orientation="vertical"></Separator>
 
-  {#each commands as { name, label, icon: Icon, disabled, handleClick }, commandIndex (commandIndex)}
-    <ToolTooltip {label} shortcut={cmdShortcut(name)} align="center" delayDuration={100}>
-      {#snippet trigger()}
-        <Button variant="ghost" size="icon-sm" {disabled} onclick={handleClick}>
-          <Icon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+  {#each commands as { name, label, icon, disabled, handleClick }, commandIndex (commandIndex)}
+    <KbdTooltipButton
+      {label}
+      {driver}
+      commandName={name}
+      {icon}
+      align="center"
+      delayDuration={100}
+      variant="ghost"
+      size="icon-sm"
+      {disabled}
+      onclick={handleClick}
+    />
   {/each}
 </div>

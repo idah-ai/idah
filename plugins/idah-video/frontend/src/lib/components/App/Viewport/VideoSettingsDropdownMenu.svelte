@@ -12,7 +12,7 @@
   } from "$lib/components/ui/DropdownMenu";
   import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
   import { Slider } from "$lib/components/ui/Slider";
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
 
   import { ui } from "$lib/state/ui.svelte";
@@ -49,13 +49,16 @@
   <!-- PLAYBACK SPEED -->
   <DropdownMenuTrigger>
     {#snippet child({ props })}
-      <ToolTooltip label="Video Settings" align="center" delayDuration={100}>
-        {#snippet trigger()}
-          <Button {...props} variant="outline" class="focus:outline-none" size="icon-sm">
-            <SettingsIcon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
+      <KbdTooltipButton
+        {...props}
+        label="Video Settings"
+        icon={SettingsIcon}
+        align="center"
+        delayDuration={100}
+        variant="outline"
+        class="focus:outline-none"
+        size="icon-sm"
+      />
     {/snippet}
   </DropdownMenuTrigger>
 
