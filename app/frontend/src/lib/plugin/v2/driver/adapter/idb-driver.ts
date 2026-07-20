@@ -330,13 +330,18 @@ export const IdbBackedAnnotationsDriverAdapter = <
       }
 
       if (!synced) {
-        let lastUpdated = await idbGetLastUpdated(db, entryId);
+        const lastUpdated = await idbGetLastUpdated(db, entryId);
+        let currentLastUpdatedAt = lastUpdated;
         let page = 1,
           hasMore = true;
         while (hasMore) {
           const response = await backend.list({
-            filters: { entry_id: entryId, updated_at__gte: lastUpdated.toISOString() },
-            sort: ["updated_at"],
+            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
+            // Sort by updated_at with `id` as a unique tiebreaker. Without the
+            // tiebreaker, records sharing an updated_at order inconsistently
+            // across the paginated requests, so ~1 record slips through each
+            // page boundary and never gets synced (missing annotations).
+            sort: ["updated_at", "id"],
             pagination: {
               page,
               itemsPerPage: SYNC_PAGE_SIZE,
@@ -344,13 +349,13 @@ export const IdbBackedAnnotationsDriverAdapter = <
           });
           response.data.forEach((a) => {
             const updatedAt = new Date(a.updated_at || 0);
-            if (updatedAt > lastUpdated) lastUpdated = updatedAt;
+            if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
           });
           await idbUpsertBatch(db, entryId, response.data);
           hasMore = response.data.length === SYNC_PAGE_SIZE;
           page++;
         }
-        await idbSetLastUpdated(db, entryId, lastUpdated);
+        await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
         synced = true;
       }
 

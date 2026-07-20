@@ -164,6 +164,10 @@
     _localRadius = undefined;
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   // ── Internal handlers ─────────────────────────────────────────────────
   function handleStartScale() {
     if (!cursor) return;

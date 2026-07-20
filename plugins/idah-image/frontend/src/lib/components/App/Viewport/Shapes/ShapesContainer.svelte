@@ -28,18 +28,31 @@
 
   import { viewport } from "$lib/state/viewport.svelte";
 
-  import { ui } from "$lib/state/ui.svelte";
+  import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
+  import { snapEngine } from "$lib/snap-engine/instance";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data, setPendingNoteScene } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { snapDebug } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationRecord } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE,
+    IMAGE_ELLIPSE,
+    IMAGE_LINE,
+    IMAGE_POLYGON,
+    NOTE_MODE,
+    REVIEW_MODE,
+    type IImageAnnotationShape,
+    type IImageAnnotationRecord,
+  } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
@@ -65,7 +78,13 @@
     categoryColor?: string;
   };
 
-  let { children, onSelection, onAddNewNote, pendingAnnotation = undefined, categoryColor = undefined }: Props = $props();
+  let {
+    children,
+    onSelection,
+    onAddNewNote,
+    pendingAnnotation = undefined,
+    categoryColor = undefined,
+  }: Props = $props();
 
   // ── SVG element ref ───────────────────────────────────────────────────
   let svgEl: SVGSVGElement | undefined = $state();
@@ -96,6 +115,43 @@
     const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
     return [media.width > 0 ? sv.x / media.width : 0, media.height > 0 ? sv.y / media.height : 0];
   });
+
+  // ── Magnetic snap state ─────────────────────────────────────────────
+  let _snapResult = $state<{ point: Point; kind: string; sourceShapeId?: string } | null>(null);
+
+  /** Resolve the snap indicator color from the source annotation's category, or default to #00FF88. */
+  let snapColor = $derived.by((): string => {
+    const snap = _snapResult;
+    if (!snap?.sourceShapeId) return "#00FF88";
+    const src = visibleAnnotations.find((a) => a.id === snap.sourceShapeId);
+    if (!src) return "#00FF88";
+    return resolveAnnotationColor(src);
+  });
+
+  /** Cursor in scene pixel space — used for snap queries (avoids normalized-space aspect-ratio issues). */
+  let scenePixelCursor: Point = $derived.by((): Point => {
+    const sv = viewport.workspace.screenToScene(mousePosition[0], mousePosition[1]);
+    return [sv.x, sv.y];
+  });
+
+  /** Cursor after snap correction (in normalized space for creation shapes). */
+  let snappedCursor: Point = $derived.by((): Point => {
+    if (magneticSnap.enabled && _snapResult) {
+      // Convert snapped pixel-space point back to normalized
+      return [
+        media.width > 0 ? _snapResult.point[0] / media.width : 0,
+        media.height > 0 ? _snapResult.point[1] / media.height : 0,
+      ];
+    }
+    return sceneNormalizedCursor;
+  });
+
+  /** Threshold in scene pixels: ~10 screen pixels adjusted for zoom. */
+  let snapThreshold = $derived(
+    viewport.workspace.transform.scale > 0
+      ? 10 / viewport.workspace.transform.scale
+      : 10,
+  );
 
   // ── Viewport ref ──────────────────────────────────────────────────────
   let zoomableElement = $state<Viewport | undefined>(undefined);
@@ -187,6 +243,41 @@
   let isPanning = $state(false);
   let isDragging = $state(false);
 
+  /** Whether the user is actively dragging/resizing/rotating a shape handle — derived from the selected annotation's component. */
+  let isEditingShape = $derived.by((): boolean => {
+    const selId = selection.value?.id ?? null;
+    if (!selId) return false;
+    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
+    if (idx === -1) return false;
+    return _compRefs[idx]?.getIsEditing?.() ?? false;
+  });
+
+  // ── Update snap engine targets when visible annotations change ──
+  $effect(() => {
+    const anns = visibleAnnotations;
+    const snapOn = magneticSnap.enabled;
+
+    snapDebug.enabled = snapOn;
+    snapDebug.targetCount = anns.length;
+
+    if (!snapOn) {
+      _snapResult = null;
+      snapDebug.snapped = null;
+      snapDebug.kind = null;
+      return;
+    }
+
+    snapEngine.setTargets(
+      anns.map((ann) => ({
+        id: ann.id,
+        kind: (ann.shape as Record<string, unknown>)?.type as string ?? "",
+        data: ann.shape,
+      })),
+      media.width,
+      media.height,
+    );
+  });
+
   onMount(() => {
     viewport.svgElement = svgEl ?? null;
 
@@ -197,7 +288,8 @@
       .cursor-note { cursor: url('data:image/svg+xml;charset=utf-8,${cursorSvg}') 0 24, auto; }
       .cursor-crosshair { cursor: crosshair; }
       .cursor-grab { cursor: grab; }
-      .cursor-grabbing { cursor: grabbing; }
+      /* !important so an active grab also beats the shapes' inline style:cursor */
+      .cursor-grabbing, .cursor-grabbing * { cursor: grabbing !important; }
       .cursor-pointer { cursor: pointer; }
       .cursor-target { cursor: alias; }
     `;
@@ -221,7 +313,7 @@
   let hoveringFirstPoint = $derived(
     isPolygonMode &&
       nearFirstPolygonPoint(
-        sceneNormalizedCursor,
+        snappedCursor,
         media.width,
         media.height,
         polygonDraft.points,
@@ -231,18 +323,17 @@
 
   // ── Cursor class ─────────────────────────────────────────────────────
   let pointer = $derived.by(() => {
+    // An active grab (middle-mouse or drag pan) outranks every other cursor.
+    if (isPanning) return "cursor-grabbing";
     if (hoveringFirstPoint) return "cursor-target";
     if (viewport.isCreationMode) return "cursor-crosshair";
     if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
-    if (isPanning) return "cursor-grabbing";
 
     return "cursor-grab";
   });
 
-  let showCrosshair = $derived(
-    screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode,
-  );
+  let showCrosshair = $derived(screenDimensions[0] > 0 && screenDimensions[1] > 0 && viewport.isCreationMode);
 
   const viewBox = $derived.by(() => {
     const [tx, ty] = viewport.workspace.transform.translate;
@@ -254,6 +345,33 @@
   // ── Event handlers ───────────────────────────────────────────────────
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
+
+    // ── Magnetic snap query ────────────────────────────────────────
+    // Only snap while creating a shape OR actively editing (dragging/resizing) an existing shape.
+    // Don't snap when merely hovering a selected annotation — the preview dots would
+    // obscure the cursor and make it hard to see you can drag.
+    if (magneticSnap.enabled && (viewport.isCreationMode || isEditingShape)) {
+      const excludeShapeId: string | undefined = selAnnotation?.id;
+
+      const result = snapEngine.querySnap(scenePixelCursor, {
+        threshold: snapThreshold,
+        excludeShapeId,
+      });
+      _snapResult = result;
+
+      // Update debug info
+      snapDebug.cursor = scenePixelCursor;
+      snapDebug.threshold = snapThreshold;
+      snapDebug.snapped = result?.point ?? null;
+      snapDebug.kind = result?.kind ?? null;
+      snapDebug.candidates = result ? 1 : 0;
+    } else {
+      _snapResult = null;
+      snapDebug.snapped = null;
+      snapDebug.kind = null;
+      snapDebug.candidates = 0;
+    }
+
     // Only pan in default mode
     if (viewport.mode === DEFAULT_MODE) {
       zoomableElement!.mouseMove(e);
@@ -265,6 +383,17 @@
     zoomableElement!.onWheel(e);
   }
 
+  // Middle-mouse-button grab: pan the viewport from anywhere, even when the
+  // cursor is over an annotation. Shape handlers stopPropagation on the bubble
+  // phase, so this runs in the capture phase to get in first. Once started, the
+  // Viewport's own document-level listeners carry the drag to completion.
+  function onMouseDownCapture(e: MouseEvent) {
+    if (e.button !== 1) return;
+    e.preventDefault(); // suppress the browser's middle-click autoscroll
+    e.stopPropagation(); // keep shape/selection handlers from reacting
+    zoomableElement!.startPan(e.clientX, e.clientY);
+  }
+
   function onMouseDown(e: MouseEvent) {
     // Sync mousePosition so the cursor prop used by shape components
     // reflects the actual click position (not the last mousemove).
@@ -273,31 +402,31 @@
     // ── Polygon creation mode — delegate to PolygonCreateShape ─────
     if (isPolygonMode) {
       e.stopPropagation();
-      polygonCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      polygonCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
     // ── Bounding-box creation mode — delegate to BBoxCreateShape ───
     if (isBoundingBoxMode) {
-      bboxCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      bboxCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
     // ── Circle creation mode — delegate to CircleCreateShape ─────
     if (isCircleMode) {
-      circleCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      circleCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
     // ── Ellipse creation mode — delegate to EllipseCreateShape ───
     if (isEllipseMode) {
-      ellipseCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      ellipseCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
     // ── Line creation mode — delegate to LineCreateShape ─────────
     if (isLineMode) {
-      lineCreateComp?.handleMouseDown(sceneNormalizedCursor);
+      lineCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
@@ -330,19 +459,19 @@
   function onMouseUp(e: MouseEvent) {
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
-      bboxCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      bboxCreateComp?.handleMouseUp(snappedCursor);
       return;
     }
 
     // ── Circle creation mode — finalize on CircleCreateShape ────
     if (isCircleMode) {
-      circleCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      circleCreateComp?.handleMouseUp(snappedCursor);
       return;
     }
 
     // ── Ellipse creation mode — finalize on EllipseCreateShape ──
     if (isEllipseMode) {
-      ellipseCreateComp?.handleMouseUp(sceneNormalizedCursor);
+      ellipseCreateComp?.handleMouseUp(snappedCursor);
       return;
     }
 
@@ -387,10 +516,7 @@
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.points?.length) {
         const pts = shape.points;
-        centroidN = [
-          pts.reduce((s, p) => s + p[0], 0) / pts.length,
-          pts.reduce((s, p) => s + p[1], 0) / pts.length,
-        ];
+        centroidN = [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
       }
       const offsetX = sceneNormalizedCursor[0] - centroidN[0];
       const offsetY = sceneNormalizedCursor[1] - centroidN[1];
@@ -465,6 +591,7 @@
     {viewBox}
     onkeydown={() => {}}
     bind:this={svgEl}
+    onmousedowncapture={onMouseDownCapture}
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
     onmousemove={onMouseMove}
@@ -475,12 +602,56 @@
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
+    <!-- Rendered annotations -->
+    {#each visibleAnnotations as ann, i (ann.id)}
+      <AnnotationGeometry
+        bind:this={_compRefs[i]}
+        annotation={ann}
+        selected={selection.isAnnotationSelected(ann.id)}
+        editable={viewport.mode === DEFAULT_MODE &&
+          selection.isAnnotationSelected(ann.id) &&
+          !annotation.isLocked(ann) &&
+          !["errored", "completed"].includes(getDriver().entryStatus)}
+        cursor={snappedCursor}
+        mode={viewport.mode}
+        onClick={() => handleClick(ann)}
+        onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
+          handleEditComplete(ann.id, aabb, extraProps)}
+      />
+    {/each}
+
+    <!-- Magnetic snap visual feedback (handler-style dot + ring) -->
+    {#if magneticSnap.enabled && _snapResult}
+      {@const snapPx = _snapResult.point}
+      {@const invScale = 1 / viewport.workspace.transform.scale}
+      <!-- Outer ring -->
+      <circle
+        cx={snapPx[0]}
+        cy={snapPx[1]}
+        r={8 * invScale}
+        fill="none"
+        stroke={snapColor}
+        stroke-width={2}
+        opacity="0.8"
+        vector-effect="non-scaling-stroke"
+      />
+      <!-- Inner dot -->
+      <circle
+        cx={snapPx[0]}
+        cy={snapPx[1]}
+        r={4 * invScale}
+        fill={snapColor}
+        opacity="0.9"
+        vector-effect="non-scaling-stroke"
+      />
+    {/if}
+
     <g>
       <!-- Build mode: bounding box creation preview -->
       {#if isBoundingBoxMode && !pendingAnnotation}
         <BBoxCreateShape
           bind:this={bboxCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
@@ -492,7 +663,7 @@
       {#if isCircleMode && !pendingAnnotation}
         <CircleCreateShape
           bind:this={circleCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
@@ -504,7 +675,7 @@
       {#if isEllipseMode && !pendingAnnotation}
         <EllipseCreateShape
           bind:this={ellipseCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
@@ -516,7 +687,7 @@
       {#if isLineMode && !pendingAnnotation}
         <LineCreateShape
           bind:this={lineCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
@@ -528,7 +699,7 @@
       {#if isPolygonMode && !pendingAnnotation}
         <PolygonCreateShape
           bind:this={polygonCreateComp}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
           {onSelection}
@@ -536,29 +707,13 @@
         />
       {/if}
 
-      <!-- Rendered annotations -->
-      {#each visibleAnnotations as ann, i (ann.id)}
-        <AnnotationGeometry
-          bind:this={_compRefs[i]}
-          annotation={ann}
-          selected={selection.isAnnotationSelected(ann.id)}
-          editable={viewport.mode === DEFAULT_MODE &&
-            selection.isAnnotationSelected(ann.id) &&
-            !annotation.isLocked(ann)}
-          cursor={sceneNormalizedCursor}
-          mode={viewport.mode}
-          onClick={() => handleClick(ann)}
-          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) => handleEditComplete(ann.id, aabb, extraProps)}
-        />
-      {/each}
-
       <!-- Pending annotation (waiting for category in popover) -->
       {#if pendingAnnotation}
         <AnnotationGeometry
           annotation={pendingAnnotation}
           selected={false}
           editable={false}
-          cursor={sceneNormalizedCursor}
+          cursor={snappedCursor}
           mode={viewport.mode}
         />
       {/if}

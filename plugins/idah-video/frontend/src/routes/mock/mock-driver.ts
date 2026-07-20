@@ -414,6 +414,14 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void {
     this.mgr.orderGroups(mode, groups);
   }
+
+  get revision(): number {
+    return this.mgr.revision;
+  }
+
+  invalidate(): void {
+    this.mgr.invalidate();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -651,6 +659,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     meta: { duration: 60, fps: 30, width: 1920, height: 1080 },
   };
   private _workflowStep = "annotate";
+  private _entryStatus = "in_progress";
   private _mode = "default";
   private _ready = false;
 
@@ -794,6 +803,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
 
   get workflowStep(): string {
     return this._workflowStep;
+  }
+
+  get entryStatus(): string {
+    return this._entryStatus;
   }
 
   get mode(): string {
