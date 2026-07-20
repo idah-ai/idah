@@ -4,22 +4,19 @@
   import TooltipButton from "$lib/components/app/tooltips/TooltipButton.svelte";
   import KbdGroup from "$lib/components/ui/kbd/kbd-group.svelte";
   import Kbd from "$lib/components/ui/kbd/kbd.svelte";
-  import type { ButtonProps } from "$lib/components/ui/button/button.svelte";
 
   import { getShortcutLabel } from "$lib/components/ui/kbd/utils";
 
+  import type { ButtonProps } from "$lib/components/ui/button/button.svelte";
   import type { IIdahDriverV2 } from "$lib/plugin/v2/types";
+  import type { TooltipPositionProps } from "$lib/components/app/tooltips/tooltips.svelte";
 
   // Props
-  interface Props extends ButtonProps {
+  interface Props extends ButtonProps, TooltipPositionProps {
     label: string;
     driver: IIdahDriverV2;
     commandName?: string;
     icon?: Component;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
-    delayDuration?: number;
-    onOpenChange?: (open: boolean) => void;
   }
 
   let {

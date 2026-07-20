@@ -4,16 +4,14 @@
 
   import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
+
   import type { ButtonProps } from "$lib/components/ui/Button/button-variants";
+  import type { TooltipPositionProps } from "$lib/components/ui/Tooltips/Tooltips.svelte";
 
   // Props
-  interface Props extends ButtonProps {
+  interface Props extends ButtonProps, TooltipPositionProps {
     content: Snippet;
     icon?: typeof IconType;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
-    delayDuration?: number;
-    onOpenChange?: (open: boolean) => void;
   }
 
   let {

@@ -4,20 +4,18 @@
   import TooltipButton from "$lib/components/ui/Tooltips/TooltipButton.svelte";
   import KbdGroup from "$lib/components/ui/Kbd/KbdGroup.svelte";
   import Kbd from "$lib/components/ui/Kbd/Kbd.svelte";
-  import type { ButtonProps } from "$lib/components/ui/Button/button-variants";
 
   import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
   import { getDriver } from "$lib/state/driver.svelte";
 
+  import type { ButtonProps } from "$lib/components/ui/Button/button-variants";
+  import type { TooltipPositionProps } from "$lib/components/ui/Tooltips/Tooltips.svelte";
+
   // Props
-  interface Props extends ButtonProps {
+  interface Props extends ButtonProps, TooltipPositionProps {
     label: string;
     commandName?: string;
     icon?: typeof IconType;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
-    delayDuration?: number;
-    onOpenChange?: (open: boolean) => void;
   }
 
   let {
