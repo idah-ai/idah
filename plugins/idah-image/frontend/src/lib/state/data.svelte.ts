@@ -78,6 +78,13 @@ export interface DataStore<T extends DataItem> {
   preloadRange(newStart: number, newEnd: number): Promise<void>;
   remove(id: string): void;
   upsert(item: T): void;
+
+  /**
+   * Append items without the per-item dedup scan `upsert` performs.
+   * O(n) for the whole batch instead of O(n·m). Fast path for bulk/streaming
+   * loads where the caller guarantees the items are not already present.
+   */
+  bulkAppend(items: T[]): void;
   reset(items: T[], range: [number, number]): void;
   clear(): void;
 
@@ -134,7 +141,10 @@ export type AnnotationItem = {
  * @returns       A DataStore wired up for annotations.
  */
 export interface AnnotationDriver {
-  fetch(filter?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  fetch(
+    filter?: Record<string, unknown>,
+    onBatch?: (records: Record<string, unknown>[]) => void,
+  ): Promise<Record<string, unknown>[]>;
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
@@ -157,7 +167,13 @@ function syncSelectionOnDelete(deletedId: string): void {
 
 export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
   const store = createDataStore<AnnotationItem>(async () => {
-    const items = await driver.fetch();
+    // Paint each page as it lands so a large load renders progressively
+    // instead of blocking on the full dataset. bulkAppend is idempotent, so
+    // duplicate/overlapping batches (e.g. a warm delta re-emitted by the full
+    // read) are skipped without any local bookkeeping here.
+    const items = await driver.fetch(undefined, (batch) => {
+      store.bulkAppend(batch as AnnotationItem[]);
+    });
     return items as AnnotationItem[];
   });
 
@@ -200,6 +216,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
     upsert: (item: AnnotationItem) => {
       originalUpsert(item);
     },
+    bulkAppend: (items: AnnotationItem[]) => store.bulkAppend(items),
     reset: (items: AnnotationItem[], range: [number, number]) => store.reset(items, range),
     clear: () => store.clear(),
 
@@ -286,6 +303,11 @@ export const pendingNoteScene = {
 export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): DataStore<T> {
   // ── Internal state ──────────────────────────────────────────────────
   let items = $state<T[]>([]);
+  // Membership index kept in sync with `items` on every mutation. Plain (not
+  // $state) — it's an internal lookup, not rendered. Gives O(1) dedup so
+  // bulkAppend is idempotent (safe against retried/overlapping loads) without
+  // an O(n²) scan.
+  const ids = new Set<string>();
   let loadedRange: [number, number] | null = $state(null);
   let pending = $state(false);
   let maxItems = 1000;
@@ -317,11 +339,14 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
 
     // Remove items whose range doesn't overlap with retainRange
     const old = items.splice(0, items.length); // drain first
+    ids.clear();
     for (const item of old) {
       const range = getItemRange(item);
       if (range === null) {
+        ids.add(item.id);
         items.push(item); // keep items without frame info
       } else if (range[0] <= retainRange[1] && range[1] >= retainRange[0]) {
+        ids.add(item.id);
         items.push(item);
       }
     }
@@ -340,22 +365,12 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
       const missingRanges = computeMissingRanges(loadedRange, [newStart, newEnd]);
 
       if (missingRanges.length > 0) {
-        // Fetch each missing range and collect new items
-        const newItems: T[] = [];
+        // Fetch each missing range and merge (bulkAppend dedups by id, so it's
+        // safe whether records arrive here via the return value or already
+        // landed through a streaming onBatch callback).
         for (const [segStart, segEnd] of missingRanges) {
           const fetched = await fetchFn(segStart, segEnd);
-          newItems.push(...fetched);
-        }
-
-        if (newItems.length > 0) {
-          // Merge new items into the existing collection (dedup by id)
-          const existingIds = new Set(items.map((i) => i.id));
-          for (const item of newItems) {
-            if (!existingIds.has(item.id)) {
-              items.push(item);
-              existingIds.add(item.id);
-            }
-          }
+          if (fetched.length > 0) bulkAppend(fetched);
         }
 
         // Always extend loaded range so we don't re-fetch empty regions
@@ -375,6 +390,7 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
     const idx = items.findIndex((i) => i.id === id);
     if (idx !== -1) {
       items.splice(idx, 1);
+      ids.delete(id);
     }
   }
 
@@ -383,13 +399,25 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
     if (idx !== -1) {
       items[idx] = item;
     } else {
+      ids.add(item.id);
+      items.push(item);
+    }
+  }
+
+  function bulkAppend(newItems: T[]): void {
+    for (const item of newItems) {
+      if (ids.has(item.id)) continue; // idempotent: skip records already present
+      ids.add(item.id);
       items.push(item);
     }
   }
 
   function reset(initialItems: T[], range: [number, number]): void {
     items.length = 0;
+    ids.clear();
     for (const item of initialItems) {
+      if (ids.has(item.id)) continue;
+      ids.add(item.id);
       items.push(item);
     }
     loadedRange = range;
@@ -397,6 +425,7 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
 
   function clear(): void {
     items.length = 0;
+    ids.clear();
     loadedRange = null;
   }
 
@@ -414,6 +443,7 @@ export function createDataStore<T extends DataItem>(fetchFn: RangeFetchFn<T>): D
     preloadRange,
     remove,
     upsert,
+    bulkAppend,
     reset,
     clear,
 

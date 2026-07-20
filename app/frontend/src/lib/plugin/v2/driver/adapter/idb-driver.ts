@@ -72,14 +72,28 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
   });
 };
 
+/**
+ * Read all records for an entry from IDB (optionally filtered).
+ *
+ * When `onBatch` is provided, records are delivered exclusively via `onBatch`
+ * in chunks of `batchSize` as the cursor walks the store — each IDB cursor
+ * event is its own event-loop turn, so batches arrive separately and the
+ * consumer can process them incrementally. In that mode the resolved array is
+ * empty: the consumer already has every record, so materialising the full set
+ * here would just double the memory. Without `onBatch`, the full array is
+ * accumulated and returned as before.
+ */
 const idbFetch = <T extends { id: string }>(
   db: IDBDatabase,
   entryId: string,
   virtualFields?: Map<string, (ann: T) => unknown>,
   filter?: IFilter,
+  onBatch?: (records: T[]) => void,
+  batchSize: number = SYNC_PAGE_SIZE,
 ): Promise<T[]> =>
   new Promise((resolve, reject) => {
     const results: T[] = [];
+    let batch: T[] = [];
     const range = IDBKeyRange.only(entryId);
     const req = db
       .transaction(["annotations"], "readonly")
@@ -89,22 +103,24 @@ const idbFetch = <T extends { id: string }>(
     req.onsuccess = (e) => {
       const c = (e.target as IDBRequest<IDBCursorWithValue>).result;
       if (!c) {
+        // Flush the trailing partial batch before resolving.
+        if (onBatch && batch.length) onBatch(batch);
         resolve(results);
         return;
       }
       const rec = c.value;
-      let matches = true;
-      if (filter) {
-        for (const [field, expected] of Object.entries(filter)) {
-          const val =
-            virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
-          if (!matchesFilter(val, expected)) {
-            matches = false;
-            break;
+      if (!filter || recordMatches(rec, filter, virtualFields)) {
+        const cloned = { ...rec } as T;
+        if (onBatch) {
+          batch.push(cloned);
+          if (batch.length >= batchSize) {
+            onBatch(batch);
+            batch = [];
           }
+        } else {
+          results.push(cloned);
         }
       }
-      if (matches) results.push({ ...rec });
       c.continue();
     };
     req.onerror = reject;
@@ -240,6 +256,19 @@ function matchesFilter(fieldValue: unknown, filterValue: IFilterValue): boolean 
   return true;
 }
 
+/** Whether a record satisfies every field of `filter` (virtual fields resolved). */
+const recordMatches = <T extends { id: string }>(
+  rec: T,
+  filter: IFilter,
+  virtualFields?: Map<string, (ann: T) => unknown>,
+): boolean => {
+  for (const [field, expected] of Object.entries(filter)) {
+    const val = virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
+    if (!matchesFilter(val, expected)) return false;
+  }
+  return true;
+};
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 export interface IndexedDbAnnotationsDriverConfig<
@@ -309,7 +338,10 @@ export const IdbBackedAnnotationsDriverAdapter = <
       await idbPurgeEntry(db, entryId);
     },
 
-    async fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]> {
+    async fetch(
+      filter?: IFilter,
+      onBatch?: (records: IAnnotationRecord<Shape, Annotation>[]) => void,
+    ): Promise<IAnnotationRecord<Shape, Annotation>[]> {
       const db = await getDb();
 
       if (!visitMarked) {
@@ -331,6 +363,12 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
       if (!synced) {
         const lastUpdated = await idbGetLastUpdated(db, entryId);
+        // A cold start (never synced before) fetches every record from epoch,
+        // so the pages we stream via onBatch are the complete filtered set —
+        // once delivered we can return empty and skip the full IDB re-read
+        // below. A warm cache only fetches the incremental delta, so it must
+        // still fall through to idbFetch to get the previously-cached records.
+        const coldStart = lastUpdated.getTime() === 0;
         let currentLastUpdatedAt = lastUpdated;
         let page = 1,
           hasMore = true;
@@ -352,14 +390,31 @@ export const IdbBackedAnnotationsDriverAdapter = <
             if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
           });
           await idbUpsertBatch(db, entryId, response.data);
+          if (onBatch && response.data.length) {
+            const matched = filter
+              ? response.data.filter((r) => recordMatches(r, filter, virtualFields))
+              : response.data;
+            if (matched.length) onBatch(matched.map((r) => ({ ...r })));
+          }
           hasMore = response.data.length === SYNC_PAGE_SIZE;
           page++;
         }
         await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
         synced = true;
+
+        // Cold start with streaming: everything was delivered via onBatch, so
+        // return empty and skip the redundant full IDB read.
+        if (onBatch && coldStart) {
+          console.debug("[idb-driver] cold start fetch complete, streamed via onBatch.");
+          return [];
+        }
       }
 
-      return await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
+      // Warm cache: read the full set from IDB. When streaming, idbFetch emits
+      // it in chunks as the cursor walks — the async cursor events separate the
+      // batches naturally, so no injected scheduling is needed here.
+      console.debug("[idb-driver] warm path, reading full set from IDB");
+      return await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter, onBatch);
     },
 
     async update(id, data): Promise<void> {

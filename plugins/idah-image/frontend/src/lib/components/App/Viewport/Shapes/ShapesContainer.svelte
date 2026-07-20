@@ -13,6 +13,7 @@
   // ---------------------------------------------------------------------------
 
   import { onMount, type Snippet } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { cn } from "$lib/utils";
 
@@ -156,55 +157,55 @@
   // ── Viewport ref ──────────────────────────────────────────────────────
   let zoomableElement = $state<Viewport | undefined>(undefined);
 
-  // ── Component refs for tool selection ─────────────────────────────────
-  let _compRefs: any[] = $state([]);
+  // ── Component API registry for tool selection ─────────────────────────
+  // Children self-register their API here, keyed by annotation id. We avoid
+  // `bind:this={_compRefs[i]}` in the {#each}: its teardowns chain onto this
+  // component's root effect, so destroying N annotations at once overflows the
+  // stack (RangeError). Self-registration tears down flat. Only the selected
+  // annotation's API is ever read, so a map by id fits better than an array.
+  type AnnotationApi = {
+    getToolSelection: () => { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined;
+    getIsEditing: () => boolean;
+  };
+  const compApis = new SvelteMap<string, AnnotationApi>();
+
+  function registerAnnotationApi(id: string, api: AnnotationApi | null) {
+    if (api) compApis.set(id, api);
+    else compApis.delete(id);
+  }
 
   // Build a flat list of visible annotations (filtered by current frame and hidden state).
   // The list is ordered so the selected annotation always comes last (highest z-order
   // in SVG), and non-selected annotations are ordered by creation (earliest first).
   // This ensures overlapping shapes always have the selected one on top.
   //
-  // Performance note: uses a single O(n) reduce pass to both filter visibility and
-  // separate the selected annotation — no extra findIndex() pass needed.
+  // Performance note: a single O(n) pass filters visibility and partitions the
+  // selected annotation. Each created_at is parsed exactly once here (decorate),
+  // so the sort compares precomputed numbers instead of calling Date.parse
+  // O(n log n) times — this recompute runs on every annotation batch during a
+  // large streaming load, so the difference compounds.
   let visibleAnnotations = $derived.by<IAnnotationRecord[]>(() => {
-    const frame = viewport.image.currentFrame.value;
     const items = data.annotations?.items ?? [];
 
-    // Single-pass: filter visible annotations while partitioning selected vs rest
-    const { rest, selected } = items.reduce<{
-      rest: IAnnotationRecord[];
-      selected: IAnnotationRecord[];
-    }>(
-      (acc, ann) => {
-        // Skip hidden annotations
-        if (annotation.isHidden(ann)) return acc;
-        // Separate selected annotation (goes at end for z-order) from the rest
-        if (selection.isAnnotationSelected(ann.id)) {
-          acc.selected.push(ann);
-        } else {
-          acc.rest.push(ann);
-        }
-        return acc;
-      },
-      { rest: [], selected: [] },
-    );
+    const selected: IAnnotationRecord[] = [];
+    const rest: { ann: IAnnotationRecord; t: number }[] = [];
+    for (const ann of items) {
+      // Skip hidden annotations
+      if (annotation.isHidden(ann)) continue;
+      // Separate selected annotation (goes at end for z-order) from the rest,
+      // decorating the rest with a parsed creation timestamp for sorting.
+      if (selection.isAnnotationSelected(ann.id)) {
+        selected.push(ann);
+      } else {
+        rest.push({ ann, t: ann.created_at ? Date.parse(ann.created_at as string) : 0 });
+      }
+    }
 
     // Sort non-selected by creation order (earliest first) for stable z-ordering.
     // The selected annotation is appended unsorted — only one, so no sort needed.
-    rest.sort((a, b) => {
-      const aTime = a.created_at ? Date.parse(a.created_at) : 0;
-      const bTime = b.created_at ? Date.parse(b.created_at) : 0;
-      return aTime - bTime;
-    });
+    rest.sort((a, b) => a.t - b.t);
 
-    return [...rest, ...selected];
-  });
-
-  // Keep refs array sized to match visible annotations
-  $effect(() => {
-    if (_compRefs.length < visibleAnnotations.length) {
-      _compRefs.length = visibleAnnotations.length;
-    }
+    return [...rest.map((r) => r.ann), ...selected];
   });
 
   // Derive tool selection from the currently selected annotation's component
@@ -213,9 +214,7 @@
   let toolSelection = $derived.by(() => {
     const selId = selection.value?.id ?? null;
     if (!selId) return undefined;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
-    if (idx === -1) return undefined;
-    return _compRefs[idx]?.getToolSelection();
+    return compApis.get(selId)?.getToolSelection();
   });
 
   // ── Create shape component refs ───────────────────────────────────────
@@ -247,9 +246,7 @@
   let isEditingShape = $derived.by((): boolean => {
     const selId = selection.value?.id ?? null;
     if (!selId) return false;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
-    if (idx === -1) return false;
-    return _compRefs[idx]?.getIsEditing?.() ?? false;
+    return compApis.get(selId)?.getIsEditing?.() ?? false;
   });
 
   // ── Update snap engine targets when visible annotations change ──
@@ -603,9 +600,9 @@
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
     <!-- Rendered annotations -->
-    {#each visibleAnnotations as ann, i (ann.id)}
+    {#each visibleAnnotations as ann (ann.id)}
       <AnnotationGeometry
-        bind:this={_compRefs[i]}
+        register={registerAnnotationApi}
         annotation={ann}
         selected={selection.isAnnotationSelected(ann.id)}
         editable={viewport.mode === DEFAULT_MODE &&

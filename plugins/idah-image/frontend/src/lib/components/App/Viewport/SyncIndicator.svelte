@@ -53,10 +53,6 @@
   /* ── Loading indicator (corner pill) ──────────────────────────────── */
 
   .sync-indicator {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 100;
     pointer-events: auto;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 13px;
@@ -81,7 +77,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* ── Blocking overlay (shown on error) ─────────────────────────────── */

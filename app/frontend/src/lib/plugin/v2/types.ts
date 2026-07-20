@@ -388,8 +388,20 @@ export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotatio
    */
   registerField(name: string, fn: (ann: IAnnotationRecord<Shape, Annotation>) => unknown): void;
 
-  /** Fetch annotations, optionally filtered. */
-  fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]>;
+  /**
+   * Fetch annotations, optionally filtered.
+   *
+   * When `onBatch` is provided, records are delivered incrementally in chunks
+   * as they load (cold cache: as each backend page syncs; warm cache: as the
+   * local store is read), letting consumers paint progressively instead of
+   * waiting for the full dataset. In that mode records are delivered
+   * exclusively via `onBatch` and the resolved array is empty. Without
+   * `onBatch`, the full array is returned and no chunks are emitted.
+   */
+  fetch(
+    filter?: IFilter,
+    onBatch?: (records: IAnnotationRecord<Shape, Annotation>[]) => void,
+  ): Promise<IAnnotationRecord<Shape, Annotation>[]>;
 
   /** Update a single annotation. */
   update(id: string, data: Partial<IAnnotationRecord<Shape, Annotation>>): Promise<void>;
