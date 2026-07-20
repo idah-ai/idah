@@ -16,7 +16,8 @@ class ExportsExpo < BaseExpo
     show
 
     index do
-      allowed_filters :created_at__gte,
+      allowed_filters :id__in,
+                      :created_at__gte,
                       :created_at__lte
     end
     # delete
