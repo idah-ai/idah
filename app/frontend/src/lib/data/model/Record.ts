@@ -144,15 +144,6 @@ export class Record {
 
     return this._jsonapiData.attributes[key];
   }
-
-  // Deep-copies the record so it can be edited in isolation (e.g. in a modal)
-  // without mutating the original the parent still holds. Copies type + id +
-  // attributes only; drops relationship/include caches, so don't use it where
-  // @relationship() getters are read.
-  public clone(): this {
-    const Ctor = this.constructor as new (data?: JsonApiRecord<Hash>) => this;
-    return new Ctor(structuredClone(this._jsonapiData));
-  }
 }
 
 export type RecordClass<T extends Record> = {

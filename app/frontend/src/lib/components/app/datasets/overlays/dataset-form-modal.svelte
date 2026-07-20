@@ -15,7 +15,7 @@
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import type { IConfig } from "@/plugin/interface/Activity";
+  import type { IConfig } from "@/plugin/v2/types";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -31,9 +31,10 @@
   let submitting: boolean = $state(false);
   let selectedDatasetId = $state<string | null>(null);
 
+  // Read-only seed for <DatasetForm>; never mutated here.
   let dataset: DatasetRecord = $derived(
     datasetRecord
-      ? datasetRecord.clone()
+      ? datasetRecord
       : new DatasetRecord({
           type: "datasets:datasets",
           attributes: {
@@ -42,6 +43,8 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
   // fields the form emits via onValueChange — used for BOTH the original-record
@@ -67,18 +70,11 @@
     fieldErrors = {};
     editedSnapshot = null;
     selectedDatasetId = null;
-    dataset = new DatasetRecord({
-      type: "datasets:datasets",
-      attributes: {
-        name: null,
-        modality: null,
-      },
-    });
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    dataset.name = value.name;
-    dataset.modality = value.modality;
+    draft = { ...value };
     selectedDatasetId = value.selectedDatasetId;
     editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
@@ -107,8 +103,8 @@
     const createdDatasetRes = await datasetsBackendDataSource.create(
       {
         attributes: {
-          name: dataset.name,
-          modality: dataset.modality,
+          name: draft.name,
+          modality: draft.modality,
           labeling_configuration: labelConfig,
           workflow_configuration: {},
         },
@@ -131,7 +127,7 @@
     goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
     showToast.success({
       title: "Dataset created",
-      description: `The dataset "${dataset.name}" has been created.`,
+      description: `The dataset "${draft.name}" has been created.`,
     });
   }
 
@@ -139,11 +135,11 @@
     const labelConfig = await getLabelConfig();
 
     await datasetsBackendDataSource.update(
-      dataset.id,
+      datasetRecord!.id,
       {
         attributes: {
-          name: dataset.name,
-          modality: dataset.modality,
+          name: draft.name,
+          modality: draft.modality,
           labeling_configuration: labelConfig,
         },
       },
@@ -157,7 +153,7 @@
     $refetches.datasets.get = new Date();
     showToast.success({
       title: "Dataset updated",
-      description: `The dataset "${dataset.name}" has been updated.`,
+      description: `The dataset "${draft.name}" has been updated.`,
     });
   }
 
@@ -168,8 +164,8 @@
 
     try {
       const validated = validateData(schema, {
-        name: dataset.name,
-        modality: dataset.modality,
+        name: draft.name,
+        modality: draft.modality,
       });
 
       if (!validated.success) {

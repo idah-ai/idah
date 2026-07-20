@@ -30,9 +30,10 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Read-only seed for <ApiKeyForm>; never mutated here.
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
-      ? apiKeyRecord.clone()
+      ? apiKeyRecord
       : new ApiKeyRecord({
           type: ApiKeyRecord.type,
           attributes: {
@@ -44,6 +45,8 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
   // fields the form emits via onValueChange — used for BOTH the original-record
@@ -67,25 +70,11 @@
   function resetForm(): void {
     fieldErrors = {};
     editedSnapshot = null;
-    apiKey = new ApiKeyRecord({
-      type: ApiKeyRecord.type,
-      attributes: {
-        name: null,
-        scope_type: "",
-        scope_value: [],
-        permissions: [],
-        expires_at: null,
-      },
-    });
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    apiKey.name = value.name;
-    apiKey.scope_type = value.scope_type;
-    apiKey.scope_value = value.scope_value;
-    apiKey.permissions = value.permissions;
-    apiKey.expires_at = value.expires_at;
-    apiKey.key = value.key;
+    draft = { ...value };
     editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
@@ -93,11 +82,11 @@
     const createdApiKeyRes = await apiKeysBackendDataSource.create(
       {
         attributes: {
-          name: apiKey.name,
-          scope_type: apiKey.scope_type,
-          scope_value: apiKey.scope_value || [],
-          permissions: apiKey.permissions || [],
-          expires_at: apiKey.expires_at,
+          name: draft.name,
+          scope_type: draft.scope_type,
+          scope_value: draft.scope_value || [],
+          permissions: draft.permissions || [],
+          expires_at: draft.expires_at,
         },
       },
       {
@@ -110,7 +99,7 @@
     $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key created",
-      description: `The API Key "${apiKey.name}" has been created.`,
+      description: `The API Key "${draft.name}" has been created.`,
     });
 
     onCreatedApiKey(createdApiKeyRes.data.key);
@@ -118,11 +107,11 @@
 
   async function updateApiKey(): Promise<void> {
     await apiKeysBackendDataSource.update(
-      apiKey.id,
+      apiKeyRecord!.id,
       {
         attributes: {
-          name: apiKey.name,
-          expires_at: apiKey.expires_at,
+          name: draft.name,
+          expires_at: draft.expires_at,
         },
       },
       {
@@ -140,7 +129,7 @@
     $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key updated",
-      description: `The API Key "${apiKey.name}" has been updated.`,
+      description: `The API Key "${draft.name}" has been updated.`,
     });
   }
 
@@ -151,11 +140,11 @@
 
     try {
       const validated = validateData(schema, {
-        name: apiKey.name,
-        scope_type: apiKey.scope_type,
-        scope_value: apiKey.scope_value,
-        permissions: apiKey.permissions,
-        expires_at: apiKey.expires_at,
+        name: draft.name,
+        scope_type: draft.scope_type,
+        scope_value: draft.scope_value,
+        permissions: draft.permissions,
+        expires_at: draft.expires_at,
       });
 
       if (!validated.success) {

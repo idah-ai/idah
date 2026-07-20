@@ -29,9 +29,10 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Read-only seed for <AccountForm>; never mutated here.
   let account: AccountRecord = $derived(
     accountRecord
-      ? accountRecord.clone()
+      ? accountRecord
       : new AccountRecord({
           type: AccountRecord.type,
           attributes: {
@@ -43,6 +44,8 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
   // fields the form emits via onValueChange (name, email, role_name, enabled) —
@@ -68,24 +71,13 @@
   function resetForm(): void {
     fieldErrors = {};
     editedSnapshot = null;
-    account = new AccountRecord({
-      type: AccountRecord.type,
-      attributes: {
-        name: null,
-        email: null,
-        sso_channel: null,
-        enabled: true,
-      },
-    });
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    account.name = value.name;
-    account.email = value.email;
-    account.role_name = value.role_name;
-    account.enabled = value.enabled;
-    // sso_channel is read-only and not emitted by the form; leave the record's
-    // original value untouched so it is preserved on save.
+    // sso_channel is read-only and not emitted by the form; it is sourced from
+    // the original record at submit time, so it is intentionally absent here.
+    draft = { ...value };
     editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
@@ -93,11 +85,11 @@
     await accountsBackendDataSource.create(
       {
         attributes: {
-          name: account.name,
-          email: account.email,
-          sso_channel: account.sso_channel,
-          enabled: account.enabled,
-          role_name: account.role_name,
+          name: draft.name,
+          email: draft.email,
+          sso_channel: accountRecord?.sso_channel ?? null,
+          enabled: draft.enabled,
+          role_name: draft.role_name,
         },
       },
       {
@@ -109,20 +101,20 @@
     $refetches.accounts.list = new Date();
     showToast.success({
       title: "Account created",
-      description: `The account has been created and an invitation email has been sent to "${account.email}".`,
+      description: `The account has been created and an invitation email has been sent to "${draft.email}".`,
     });
   }
 
   async function updateAccount(): Promise<void> {
     await accountsBackendDataSource.update(
-      account.id,
+      accountRecord!.id,
       {
         attributes: {
-          name: account.name,
-          email: account.email,
-          role_name: account.role_name,
-          sso_channel: account.sso_channel,
-          enabled: account.enabled,
+          name: draft.name,
+          email: draft.email,
+          role_name: draft.role_name,
+          sso_channel: accountRecord?.sso_channel ?? null,
+          enabled: draft.enabled,
         },
       },
       {
@@ -140,7 +132,7 @@
     $refetches.accounts.list = new Date();
     showToast.success({
       title: "Account updated",
-      description: `The account of "${account.email}" has been updated.`,
+      description: `The account of "${draft.email}" has been updated.`,
     });
   }
 
@@ -151,11 +143,11 @@
 
     try {
       const validated = validateData(schema, {
-        name: account.name,
-        email: account.email,
-        role_name: account.role_name,
-        sso_channel: account.sso_channel,
-        enabled: account.enabled,
+        name: draft.name,
+        email: draft.email,
+        role_name: draft.role_name,
+        sso_channel: accountRecord?.sso_channel ?? null,
+        enabled: draft.enabled,
       });
 
       if (!validated.success) {
