@@ -2,9 +2,8 @@
   import { ChartColumnIcon } from "@lucide/svelte";
   import { SvelteMap } from "svelte/reactivity";
 
-  import Button from "@/components/ui/button/button.svelte";
   import * as Dialog from "@/components/ui/dialog";
-  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
+  import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
 
   import type { IIdahDriverV2, IStatEntry } from "@/plugin/v2/types";
 
@@ -77,13 +76,15 @@
 
 <Dialog.Root {open} onOpenChange={handleOpen}>
   <Dialog.Trigger>
-    <ToolTooltip label="Statistics" align="center" delayDuration={100}>
-      {#snippet trigger()}
-        <Button variant={open ? "default" : "ghost"} size="icon-sm">
-          <ChartColumnIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label="Statistics"
+      {driver}
+      icon={ChartColumnIcon}
+      align="center"
+      delayDuration={100}
+      variant={open ? "default" : "ghost"}
+      size="icon-sm"
+    />
   </Dialog.Trigger>
 
   <Dialog.Portal>

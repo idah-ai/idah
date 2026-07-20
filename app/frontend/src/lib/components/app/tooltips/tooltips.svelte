@@ -1,3 +1,12 @@
+<script lang="ts" module>
+  export interface TooltipPositionProps {
+    delayDuration?: number;
+    align?: "start" | "center" | "end";
+    side?: "top" | "right" | "bottom" | "left";
+    onOpenChange?: (open: boolean) => void;
+  }
+</script>
+
 <script lang="ts">
   import type { Snippet } from "svelte";
 
@@ -6,12 +15,8 @@
   import { cn } from "@/utils";
 
   // Props
-  interface Props {
-    delayDuration?: number;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
+  interface Props extends TooltipPositionProps {
     ignoreNonKeyboardFocus?: boolean;
-    onOpenChange?: (open: boolean) => void;
     class?: string | null;
     trigger: Snippet;
     content: Snippet;
