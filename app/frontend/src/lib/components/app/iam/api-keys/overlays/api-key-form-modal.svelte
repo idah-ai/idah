@@ -45,12 +45,14 @@
         }),
   );
 
-  // Dirty-state tracking. Only `name` and `expires_at` are editable on update
-  // (see updateApiKey payload), so those are the diffed fields, fixed key order.
-  function serializeEditableFields(record: ApiKeyRecord): Hash {
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // snapshot and the current-value snapshot. Only name/expires_at are editable
+  // on update (see updateApiKey payload).
+  function serializeEditableFields(source: Hash): Hash {
     return {
-      name: record.name,
-      expires_at: record.expires_at,
+      name: source.name,
+      expires_at: source.expires_at,
     };
   }
   let savedSnapshot: string = $derived(apiKeyRecord ? JSON.stringify(serializeEditableFields(apiKeyRecord)) : "");
@@ -84,10 +86,7 @@
     apiKey.permissions = value.permissions;
     apiKey.expires_at = value.expires_at;
     apiKey.key = value.key;
-    editedSnapshot = JSON.stringify({
-      name: value.name,
-      expires_at: value.expires_at,
-    });
+    editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
   async function createApiKey(): Promise<void> {

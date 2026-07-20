@@ -44,15 +44,16 @@
         }),
   );
 
-  // Dirty-state tracking. Keys must match exactly what the form emits via
-  // onValueChange (name, email, role_name, enabled). sso_channel is displayed
-  // but read-only and never emitted, so it must not be part of the dirty diff.
-  function serializeEditableFields(record: AccountRecord): Hash {
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange (name, email, role_name, enabled) —
+  // used for BOTH the original-record and current-value snapshots. sso_channel
+  // is displayed but read-only and never emitted, so it must not be diffed.
+  function serializeEditableFields(source: Hash): Hash {
     return {
-      name: record.name,
-      email: record.email,
-      role_name: record.role_name,
-      enabled: record.enabled,
+      name: source.name,
+      email: source.email,
+      role_name: source.role_name,
+      enabled: source.enabled,
     };
   }
   let savedSnapshot: string = $derived(accountRecord ? JSON.stringify(serializeEditableFields(accountRecord)) : "");
@@ -85,12 +86,7 @@
     account.enabled = value.enabled;
     // sso_channel is read-only and not emitted by the form; leave the record's
     // original value untouched so it is preserved on save.
-    editedSnapshot = JSON.stringify({
-      name: value.name,
-      email: value.email,
-      role_name: value.role_name,
-      enabled: value.enabled,
-    });
+    editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
   async function createAccount(): Promise<void> {

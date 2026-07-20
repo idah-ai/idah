@@ -43,11 +43,14 @@
         }),
   );
 
-  // Dirty-state tracking (only the editable fields, fixed key order).
-  function serializeEditableFields(record: DatasetRecord): Hash {
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // and current-value snapshots. The copy-from source (selectedDatasetId) is
+  // not a DatasetRecord field, so it is tracked separately below, not here.
+  function serializeEditableFields(source: Hash): Hash {
     return {
-      name: record.name,
-      modality: record.modality,
+      name: source.name,
+      modality: source.modality,
     };
   }
   let savedSnapshot: string = $derived(datasetRecord ? JSON.stringify(serializeEditableFields(datasetRecord)) : "");
@@ -77,10 +80,7 @@
     dataset.name = value.name;
     dataset.modality = value.modality;
     selectedDatasetId = value.selectedDatasetId;
-    editedSnapshot = JSON.stringify({
-      name: value.name,
-      modality: value.modality,
-    });
+    editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
   async function getLabelConfig() {

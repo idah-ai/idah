@@ -38,10 +38,12 @@
         }),
   );
 
-  // Dirty-state tracking (only the editable fields, fixed key order).
-  function serializeEditableFields(record: OrganizationRecord): Hash {
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // snapshot and the current-value snapshot.
+  function serializeEditableFields(source: Hash): Hash {
     return {
-      name: record.name,
+      name: source.name,
     };
   }
   let savedSnapshot: string = $derived(
@@ -68,9 +70,7 @@
 
   function setValue(value: Hash): void {
     organization.name = value.name;
-    editedSnapshot = JSON.stringify({
-      name: value.name,
-    });
+    editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
   async function createOrganization(): Promise<void> {

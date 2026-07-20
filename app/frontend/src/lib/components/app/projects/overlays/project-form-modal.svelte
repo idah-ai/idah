@@ -40,12 +40,14 @@
         }),
   );
 
-  // Dirty-state tracking (only the editable fields, fixed key order).
-  function serializeEditableFields(record: ProjectRecord): Hash {
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // snapshot and the current-value snapshot.
+  function serializeEditableFields(source: Hash): Hash {
     return {
-      name: record.name,
-      description: record.description,
-      organization_id: record.organization_id,
+      name: source.name,
+      description: source.description,
+      organization_id: source.organization_id,
     };
   }
   let savedSnapshot: string = $derived(projectRecord ? JSON.stringify(serializeEditableFields(projectRecord)) : "");
@@ -70,11 +72,7 @@
     project.name = value.name;
     project.description = value.description;
     project.organization_id = value.organization_id;
-    editedSnapshot = JSON.stringify({
-      name: value.name,
-      description: value.description,
-      organization_id: value.organization_id,
-    });
+    editedSnapshot = JSON.stringify(serializeEditableFields(value));
   }
 
   async function createProject() {
