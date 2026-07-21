@@ -5,6 +5,8 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
@@ -53,20 +55,18 @@
       organization_id: source.organization_id,
     };
   }
-  let savedSnapshot: string = $derived(projectRecord ? JSON.stringify(serializeEditableFields(projectRecord)) : "");
-  let editedSnapshot: string | null = $state(null);
-  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => projectRecord);
 
   // Functions
   function resetForm(): void {
     fieldErrors = {};
-    editedSnapshot = null;
+    changeTracker.reset();
     draft = {};
   }
 
   function setValue(value: Hash): void {
     draft = { ...value };
-    editedSnapshot = JSON.stringify(serializeEditableFields(value));
+    changeTracker.update(value);
   }
 
   async function createProject() {
@@ -150,7 +150,7 @@
   {action}
   {title}
   loading={submitting}
-  disabled={action === "update" ? !hasUnsavedChanges : false}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open

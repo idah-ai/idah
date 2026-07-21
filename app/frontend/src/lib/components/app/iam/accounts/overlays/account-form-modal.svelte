@@ -2,6 +2,8 @@
   import AccountForm from "@/components/app/iam/accounts/forms/account-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { refetches } from "@/utils/refetch";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -59,9 +61,7 @@
       enabled: source.enabled,
     };
   }
-  let savedSnapshot: string = $derived(accountRecord ? JSON.stringify(serializeEditableFields(accountRecord)) : "");
-  let editedSnapshot: string | null = $state(null);
-  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => accountRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -70,7 +70,7 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    editedSnapshot = null;
+    changeTracker.reset();
     draft = {};
   }
 
@@ -78,7 +78,7 @@
     // sso_channel is read-only and not emitted by the form; it is sourced from
     // the original record at submit time, so it is intentionally absent here.
     draft = { ...value };
-    editedSnapshot = JSON.stringify(serializeEditableFields(value));
+    changeTracker.update(value);
   }
 
   async function createAccount(): Promise<void> {
@@ -173,7 +173,7 @@
   {action}
   {title}
   loading={submitting}
-  disabled={action === "update" ? !hasUnsavedChanges : false}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open

@@ -2,6 +2,8 @@
   import ApiKeyForm from "@/components/app/iam/api-keys/forms/api-key-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { refetches } from "@/utils/refetch";
 
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
@@ -58,9 +60,7 @@
       expires_at: source.expires_at,
     };
   }
-  let savedSnapshot: string = $derived(apiKeyRecord ? JSON.stringify(serializeEditableFields(apiKeyRecord)) : "");
-  let editedSnapshot: string | null = $state(null);
-  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => apiKeyRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -69,13 +69,13 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    editedSnapshot = null;
+    changeTracker.reset();
     draft = {};
   }
 
   function setValue(value: Hash): void {
     draft = { ...value };
-    editedSnapshot = JSON.stringify(serializeEditableFields(value));
+    changeTracker.update(value);
   }
 
   async function createApiKey(): Promise<void> {
@@ -170,7 +170,7 @@
   {action}
   {title}
   loading={submitting}
-  disabled={action === "update" ? !hasUnsavedChanges : false}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open

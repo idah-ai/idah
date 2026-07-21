@@ -5,6 +5,8 @@
   import OrganizationForm from "@/components/app/organizations/forms/organization-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { refetches } from "@/utils/refetch";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -49,11 +51,7 @@
       name: source.name,
     };
   }
-  let savedSnapshot: string = $derived(
-    organizationRecord ? JSON.stringify(serializeEditableFields(organizationRecord)) : "",
-  );
-  let editedSnapshot: string | null = $state(null);
-  let hasUnsavedChanges: boolean = $derived(editedSnapshot !== null && editedSnapshot !== savedSnapshot);
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => organizationRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -62,13 +60,13 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    editedSnapshot = null;
+    changeTracker.reset();
     draft = {};
   }
 
   function setValue(value: Hash): void {
     draft = { ...value };
-    editedSnapshot = JSON.stringify(serializeEditableFields(value));
+    changeTracker.update(value);
   }
 
   async function createOrganization(): Promise<void> {
@@ -146,7 +144,7 @@
   {action}
   {title}
   loading={submitting}
-  disabled={action === "update" ? !hasUnsavedChanges : false}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open
