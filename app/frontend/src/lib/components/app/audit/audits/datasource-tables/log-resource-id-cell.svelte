@@ -11,6 +11,7 @@
   import { AccountRecord } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
   import { MediaRecord } from "@/data/model/media/medias/medias-record";
+  import { ExportRecord } from "@/data/model/sync/exports/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
@@ -26,8 +27,9 @@
     datasets: DatasetRecord[];
     entries: EntryRecord[];
     medias: MediaRecord[];
+    exports: ExportRecord[];
   };
-  let { accounts, organizations, projects, projectMembers, datasets, entries, medias }: Context = $derived(
+  let { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports }: Context = $derived(
     (contexts as Context) || {
       accounts: [],
       organizations: [],
@@ -36,6 +38,7 @@
       datasets: [],
       entries: [],
       medias: [],
+      exports: [],
     },
   );
 
@@ -49,6 +52,7 @@
       datasets,
       entries,
       medias,
+      exports,
     }),
   );
 </script>

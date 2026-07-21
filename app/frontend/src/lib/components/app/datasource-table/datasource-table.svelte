@@ -146,10 +146,20 @@
         contexts: contexts,
       }));
 
-      /** Update TablePreferences */
+      /**
+       * Update TablePreferences
+       * NOTE: `filters` is intentionally left untouched here (not set to `mergedFilters`).
+       * URL-provided filters (`urlSearchParamsFilters`) are applied to this fetch's request
+       * only; persisting them to `tablePreferences` would write them to sessionStorage
+       * (see `getTablePreferences`) with no UI control to ever clear them again for filter
+       * keys that have no matching column, permanently "sticking" the table to a deep link.
+       */
       tableState.tablePreferences.update((prefs) => ({
         ...prefs,
-        filters: mergedFilters,
+        filters: {
+          ...listOptions?.filters,
+          ...tablePreferences.filters,
+        },
         pagination: { ...prefs.pagination, ...mergedPagination },
         sort: mergedSort,
       }));
