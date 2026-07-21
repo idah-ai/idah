@@ -42,7 +42,7 @@
         [AccountRecord.type]: ["name", "email", "pciture_url"],
       },
       filters: {
-        actor_account_id__in: actorAccountIds,
+        id__in: actorAccountIds,
       },
     });
     accounts.push(...accountsRes.data);
@@ -74,7 +74,6 @@
               break;
           }
 
-          ids["account_ids"].push(log.resource_id);
           break;
         }
         case "account_sessions":
