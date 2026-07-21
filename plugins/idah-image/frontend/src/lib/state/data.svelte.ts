@@ -138,6 +138,7 @@ export interface AnnotationDriver {
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
@@ -209,7 +210,12 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       // Optimistic: insert locally first
       originalUpsert(item);
       try {
-        await driver.create($state.snapshot({ ...data, id }));
+        // Strip null metadata — backend only accepts a Hash or omitted field
+        const payload = $state.snapshot({ ...data, id });
+        if (payload.metadata == null) {
+          delete payload.metadata;
+        }
+        await driver.create(payload);
       } catch {
         // Rollback on failure
         store.remove(id);
@@ -243,6 +249,33 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
         // Rollback
         if (old) originalUpsert(old);
         throw new Error("Failed to update annotation");
+      }
+    },
+
+    async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+      // Optimistic local update: merge tile data into the annotation's shape
+      const record = store.items.find((i) => i.id === annotationId);
+      if (record) {
+        const shape = { ...(record.shape as Record<string, unknown>) };
+        if (value === null) {
+          delete shape[key];
+        } else {
+          shape[key] = value;
+        }
+        // Use store.upsert to update the local record, then force reactivity
+        // by replacing the entire items array (store.upsert mutates in-place
+        // which Svelte 5 $state doesn't track).
+        originalUpsert({ ...record, shape: shape as any });
+        // Force a new array reference for Svelte 5 reactivity
+        const all = [...store.items];
+        store.reset(all, store.loadedRange ?? [0, 0]);
+      }
+
+      try {
+        await driver.setShape(annotationId, key, $state.snapshot(value));
+      } catch (e) {
+        // Rollback is non-trivial for shape rows; log and move on
+        console.error("Failed to save shape tile", { annotationId, key, error: e });
       }
     },
   };

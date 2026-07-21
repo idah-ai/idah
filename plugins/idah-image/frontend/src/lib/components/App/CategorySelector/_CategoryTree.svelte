@@ -28,6 +28,7 @@
     IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
     IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
     IMAGE_LINE as IDAH_IMAGE_LINE,
+    IMAGE_MASK,
     IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
   } from "$lib/types";
 
@@ -79,6 +80,14 @@
   let mode = $derived(viewport.mode);
   let selAnnotation = $derived(selection.value);
   let currentModeIsSameAsShape = $derived(mode == modalityShape && !selAnnotation);
+  let usedMaskCategories = $derived(
+    new Set(
+      items
+        .filter((a) => a.shape.type === IMAGE_MASK)
+        .map((a) => a.value?.category)
+        .filter(Boolean),
+    ),
+  );
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
@@ -172,6 +181,11 @@
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
     e.preventDefault();
 
+    // In popover mode, leaf mask categories already used by another mask annotation are disabled
+      if (view === "popover" && modalityShape === IMAGE_MASK && !category.nestedCategories && usedMaskCategories.has(category.id)) {
+      return;
+    }
+
     if (categories.find((c) => c.id === category.id)) {
       onSelectCategory(category.id);
     }
@@ -227,12 +241,15 @@
       {@const annotations = items.filter(
         (a) => a.value?.category?.startsWith(category.id) && a.shape.type === modalityShape,
       )}
+      {@const isDisabledMaskInPopover = view === "popover" && modalityShape === IMAGE_MASK && !category.nestedCategories && usedMaskCategories.has(category.id)}
 
       <CollapsibleTrigger
+        title={isDisabledMaskInPopover ? "Already used by another mask on this entry" : undefined}
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
           "bg-secondary border-primary border": !selAnnotation && selectedCategory == category.id,
-          "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
-          "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+          "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested && !isDisabledMaskInPopover,
+          "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape && !isDisabledMaskInPopover,
+          "cursor-not-allowed opacity-50": isDisabledMaskInPopover,
         })}
         onclick={(e) => toggleCategory(e, category)}
       >
@@ -311,6 +328,12 @@
             />
 
             <CategoryName name={category.name} />
+
+            {#if isDisabledMaskInPopover}
+              <span class="ml-1 text-[0.625rem] text-red-400 dark:text-red-500">
+                Category already in use
+              </span>
+            {/if}
 
             <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
             {@const actions = getCategoryActions({

@@ -42,6 +42,10 @@ import { register as registerAnnotationLineAddPoint } from "./annotation/line.ad
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
+import { register as registerMaskFlush } from "./annotation/mask_shapes.flush";
+import { register as registerMaskBrushRadiusIncrease } from "./annotation/mask_brush_radius_increase";
+import { register as registerMaskBrushRadiusDecrease } from "./annotation/mask_brush_radius_decrease";
+import { register as registerMaskToggleMode } from "./annotation/mask_toggle_mode";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
 import { register as registerToggleDebugConsole } from "./display/toggle-debug-console";
@@ -57,8 +61,10 @@ import { register as registerModeEllipse } from "./mode/ellipse";
 import { register as registerModeLine } from "./mode/line";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
+import { register as registerModeMaskBrush } from "./mode/mask_brush";
+import { register as registerModeMaskPolygon } from "./mode/mask_polygon";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
-import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
+import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 
 /**
@@ -88,6 +94,12 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationLineAddPoint(driver);
   registerAnnotationUpdate(driver);
+  if (hasConfig(driver, IMAGE_MASK)) {
+    registerMaskFlush(driver);
+    registerMaskBrushRadiusIncrease(driver);
+    registerMaskBrushRadiusDecrease(driver);
+    registerMaskToggleMode(driver);
+  }
 
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
@@ -101,6 +113,10 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   if (hasConfig(driver, IMAGE_CIRCLE)) registerModeCircle(driver);
   if (hasConfig(driver, IMAGE_ELLIPSE)) registerModeEllipse(driver);
   if (hasConfig(driver, IMAGE_LINE)) registerModeLine(driver);
+  if (hasConfig(driver, IMAGE_MASK)) {
+    registerModeMaskBrush(driver);
+    registerModeMaskPolygon(driver);
+  }
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

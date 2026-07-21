@@ -38,6 +38,7 @@ export interface ICrudDriver<T extends { id: string }> {
   create(record: T): Promise<T>;
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
 }
 
 // ─── Minimal IDB helpers ──────────────────────────────────────────────────────
@@ -65,8 +66,10 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       for (const s of IDB_STORES) {
-        const os = db.createObjectStore(s.name, s.options);
-        for (const idx of s.indexes) os.createIndex(idx.name, idx.keyPath);
+        if (!db.objectStoreNames.contains(s.name)) {
+          const os = db.createObjectStore(s.name, s.options);
+          for (const idx of s.indexes) os.createIndex(idx.name, idx.keyPath);
+        }
       }
     };
   });
@@ -301,6 +304,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
         create: driver.create.bind(driver),
         update: driver.update.bind(driver),
         delete: driver.delete.bind(driver),
+        setShape: driver.setShape.bind(driver),
       };
     },
 
@@ -382,6 +386,40 @@ export const IdbBackedAnnotationsDriverAdapter = <
       await idbCreate(db, entryId, record);
       enqueue(backend.create(record));
       return record;
+    },
+
+    async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+      // Store tiles directly in the annotation's shape field in the main
+      // annotations store (not in a separate annotation_shapes store).
+      // This mirrors how the backend returns annotations with tiles merged
+      // into `dimensions`, and how data.svelte.ts manages the in-memory
+      // shape. No separate merge step needed.
+      const db = await getDb();
+      const tx = db.transaction(["annotations"], "readwrite");
+      const store = tx.objectStore("annotations");
+
+      const getReq = store.get([entryId, annotationId]);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+          const shape = { ...(record.shape as Record<string, unknown>) };
+          if (value === null) {
+            delete shape[key];
+          } else {
+            shape[key] = value;
+          }
+          store.put({ ...record, entryId, shape, updated_at: new Date().toISOString() });
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
+      });
+
+      // Enqueue the backend sync
+      enqueue(backend.setShape(annotationId, key, value));
     },
   };
 };

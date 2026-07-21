@@ -11,12 +11,15 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
-import { DEFAULT_MODE, IMAGE_POLYGON, IMAGE_LINE, type IImageAnnotationShape } from "$lib/types";
+import { DEFAULT_MODE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK, type IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { uuidv7 } from "uuidv7";
 import { draft as polygonDraft } from "./polygon.add_point.svelte";
 import { lineDraft } from "./line.add_point.svelte";
+import { maskSession } from "$lib/state/mask-session.svelte";
+import { flushDirtyTiles } from "$lib/mask/flush-tiles";
+import { invalidateAll } from "$lib/mask/tile-cache";
 
 export const command = {
   name: "annotation.add",
@@ -30,6 +33,8 @@ export const command = {
 export interface AnnotationAddProps {
   shape: IImageAnnotationShape;
   value?: { category?: string; label?: string; [key: string]: unknown };
+  /** Optional pre-generated ID. If omitted, one is generated. */
+  id?: string;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -44,10 +49,22 @@ export function register(driver: IIdahDriverV2): void {
       if (!isEditable()) return noopAction(command);
       if (!props || !data.annotations) return noopAction(command);
 
-      // Generate the ID once per command action so redo recreates the same
-      // annotation instead of generating a new ID. Follow-up actions in the
-      // undo/redo stack can then keep targeting this annotation safely.
-      const createdId = uuidv7();
+      const createdId = props.id ?? uuidv7();
+
+      // Capture the session's painted tiles NOW, not inside do(). do() runs
+      // again on redo against the same action object, but maskSession.reset()
+      // clears the live session after the first run — a live read inside do()
+      // would see nothing on redo. Cloning here means every do() call, first
+      // run or any later redo, replays the exact same originally-painted tiles.
+      const maskBufferSnapshot = new Map<string, Uint8Array>();
+      if (props.shape.type === IMAGE_MASK) {
+        for (const tileKey of maskSession.getDirtyTiles()) {
+          const [colStr, rowStr] = tileKey.split(":");
+          const buf = maskSession.getTileBuffer(parseInt(colStr, 10), parseInt(rowStr, 10));
+          if (buf) maskBufferSnapshot.set(tileKey, buf.slice()); // clone — never alias the live buffer
+        }
+      }
+      const dirtyTileKeys = [...maskBufferSnapshot.keys()];
 
       return {
         command: { ...command },
@@ -57,13 +74,28 @@ export function register(driver: IIdahDriverV2): void {
             shape: props.shape,
             value: props.value,
           });
-          // Select the newly created annotation
           selection.selectAnnotation(created as any);
-          // Exit drawing mode after successful creation
-          driver.setMode(DEFAULT_MODE);
+
+          if (props.shape.type === IMAGE_MASK && dirtyTileKeys.length > 0) {
+            await flushDirtyTiles(
+              createdId,
+              dirtyTileKeys,
+              (col, row) => maskBufferSnapshot.get(`${col}:${row}`),
+              (annId, key, value) => data.annotations!.setShape(annId, key, value),
+            );
+            maskSession.reset();
+          }
+
+          if (props.shape.type !== IMAGE_MASK) {
+            driver.setMode(DEFAULT_MODE);
+          }
         },
         async undo() {
           if (data.annotations) {
+            // Free cached mask bitmaps before the annotation is deleted
+            if (props.shape.type === IMAGE_MASK) {
+              invalidateAll(createdId);
+            }
             await data.annotations.delete(createdId);
           }
           // Restore drawing mode for multi-step shapes so the user can
