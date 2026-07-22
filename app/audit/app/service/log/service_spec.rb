@@ -84,7 +84,7 @@ RSpec.describe Log::Service, database: true do
         expect do
           result = service.create_from_message(message: nil_content_message)
           expect(result).to be_nil
-        end.not_to change { repo.index({}).size }
+        end.not_to(change { repo.index({}).size })
       end
     end
 
@@ -101,7 +101,7 @@ RSpec.describe Log::Service, database: true do
         expect do
           result = service.create_from_message(message: nil_metadata_message)
           expect(result).to be_nil
-        end.not_to change { repo.index({}).size }
+        end.not_to(change { repo.index({}).size })
       end
     end
 
@@ -118,7 +118,7 @@ RSpec.describe Log::Service, database: true do
         expect do
           result = service.create_from_message(message: missing_timestamp_message)
           expect(result).to be_nil
-        end.not_to change { repo.index({}).size }
+        end.not_to(change { repo.index({}).size })
       end
     end
 

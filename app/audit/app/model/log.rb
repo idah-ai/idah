@@ -34,7 +34,7 @@ module Log
       collection.where(Sequel.lit("actor_account_role_name NOT IN ? OR actor_account_role_name IS NULL", value))
     end
 
-    def scoped(action)
+    def scoped(_action)
       auth_context.can!(:read, self.class.resource) do |scope|
         # only allow access to lgs for admin users
         scope.all? { table }

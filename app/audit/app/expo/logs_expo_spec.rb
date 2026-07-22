@@ -12,7 +12,7 @@ RSpec.describe LogsExpo, database: true do
 
     context "when receiving events from trusted services" do
       it "processes iam:accounts:created event" do
-        expect(service).to receive(:create_from_message) do |message:, **additional|
+        expect(service).to receive(:create_from_message) do |message:, **_additional|
           expect(message.event).to eq("iam:accounts:created")
         end
 
@@ -49,7 +49,8 @@ RSpec.describe LogsExpo, database: true do
           resource_type: Resource::Media::Medias,
           resource_id: "media-1",
           event: "deleted",
-          payload: { resource_id: "media-1", metadata: { at: Time.now, actor_account_id: 1, media_resource: "media-1" } }
+          payload: { resource_id: "media-1",
+                     metadata: { at: Time.now, actor_account_id: 1, media_resource: "media-1" } }
         )
       end
     end
@@ -181,6 +182,7 @@ RSpec.describe LogsExpo, database: true do
 
       it "processes when submission_type is present" do
         expect(service).to receive(:create_from_message) do |message:, **additional|
+          _ = message # satisfy RuboCop
           expect(additional[:action]).to eq("review")
         end
 
@@ -206,6 +208,7 @@ RSpec.describe LogsExpo, database: true do
     context "with account logged_in events" do
       it "sets action to logged_in when validation passes" do
         expect(service).to receive(:create_from_message) do |message:, **additional|
+          _ = message # satisfy RuboCop
           expect(additional[:action]).to eq("logged_in")
         end
 
@@ -222,6 +225,7 @@ RSpec.describe LogsExpo, database: true do
 
       it "sets action to failed_log_in_attempt when validation fails" do
         expect(service).to receive(:create_from_message) do |message:, **additional|
+          _ = message # satisfy RuboCop
           expect(additional[:action]).to eq("failed_log_in_attempt")
         end
 
@@ -238,6 +242,7 @@ RSpec.describe LogsExpo, database: true do
 
       it "sets action to failed_log_in_attempt when validation is missing" do
         expect(service).to receive(:create_from_message) do |message:, **additional|
+          _ = message # satisfy RuboCop
           expect(additional[:action]).to eq("failed_log_in_attempt")
         end
 
