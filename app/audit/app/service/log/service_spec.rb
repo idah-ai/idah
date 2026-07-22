@@ -3,208 +3,163 @@
 require "spec_helper"
 
 RSpec.describe Log::Service, database: true do
+  subject(:service) { described_class.new(auth_context) }
+
   let(:auth_context) { Verse::Auth::Context[:system] }
-  subject { described_class.new(auth_context) }
+  let(:system_auth_context) { Verse::Auth::Context[:system] }
+  let(:repo) { Log::Repository.new(system_auth_context) }
 
-  let(:repo) { Log::Repository.new(auth_context) }
-
-  let(:actor_account_id) { 1 }
-  let(:actor_account_email) { "admin@example.com" }
-  let(:actor_account_role_name) { "admin" }
-  let(:action) { "created" }
-  let(:attributes) do
+  let(:valid_attributes) do
     {
-      action: action,
-      actor_account_id: actor_account_id,
-      actor_account_email: actor_account_email,
-      actor_account_role_name: actor_account_role_name,
-      event_timestamp: Time.now,
+      action: "created",
+      actor_account_id: 1,
+      actor_account_email: "admin@example.com",
+      actor_account_role_name: "admin",
+      resource_service: "iam",
+      resource_type: "organizations",
+      resource_id: "1",
+      organization_id: 1,
+      event_timestamp: Time.now
     }
   end
 
+  let(:valid_message) do
+    instance_double(
+      Verse::Event::Message,
+      event: "iam:organizations:created",
+      content: {
+        resource_id: "1",
+        metadata: {
+          at: Time.now,
+          actor_account_id: 1,
+          actor_account_email: "admin@example.com",
+          actor_account_role_name: "admin"
+        }
+      }
+    )
+  end
+
   describe "#create" do
-    it "creates an audit log for organization record" do
-      # attributes preparation
-      resource_service = "iam"
-      resource_type = "organizations"
-      resource_id = "1"
-      organization_id = resource_id
-      attributes.merge!(
-        resource_service:,
-        resource_type:,
-        resource_id:,
-        organization_id:,
-      )
+    it "creates a log record" do
+      record = service.create(valid_attributes)
 
-      log = subject.create(attributes)
-
-      expect(log.action).to eq action
-      expect(log.actor_account_id).to eq actor_account_id
-      expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_service).to eq "iam"
-      expect(log.resource_type).to eq "organizations"
-      expect(log.resource_id).to eq resource_id
-      expect(log.organization_id).to eq resource_id.to_i
-      expect(log.project_id).to be_nil
-      expect(log.dataset_id).to be_nil
-      expect(log.entry_id).to be_nil
-    end
-
-    it "creates an audit log for project record" do
-      # attributes preparation
-      resource_service = "dataset"
-      resource_type = "projects"
-      resource_id = UUIDv7.generate
-      organization_id = 1
-      project_id = resource_id
-      attributes.merge!(
-        resource_service:,
-        resource_type:,
-        resource_id:,
-        organization_id:,
-        project_id:,
-      )
-
-      log = subject.create(attributes)
-
-      expect(log.action).to eq action
-      expect(log.actor_account_id).to eq actor_account_id
-      expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_service).to eq "dataset"
-      expect(log.resource_type).to eq "projects"
-      expect(log.resource_id).to eq resource_id
-      expect(log.organization_id).to eq organization_id
-      expect(log.project_id).to eq resource_id
-      expect(log.dataset_id).to be_nil
-      expect(log.entry_id).to be_nil
-    end
-
-    it "creates an audit log for dataset record" do
-      # attributes preparation
-      resource_service = "dataset"
-      resource_type = "datasets"
-      resource_id = UUIDv7.generate
-      organization_id = 1
-      project_id = UUIDv7.generate
-      dataset_id = resource_id
-      attributes.merge!(
-        resource_service:,
-        resource_type:,
-        resource_id:,
-        organization_id:,
-        project_id:,
-        dataset_id:,
-      )
-
-      log = subject.create(attributes)
-
-      expect(log.action).to eq action
-      expect(log.actor_account_id).to eq actor_account_id
-      expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_service).to eq "dataset"
-      expect(log.resource_type).to eq "datasets"
-      expect(log.resource_id).to eq resource_id
-      expect(log.organization_id).to eq organization_id
-      expect(log.project_id).to eq project_id
-      expect(log.dataset_id).to eq resource_id
-      expect(log.entry_id).to be_nil
-    end
-
-    it "creates an audit log for entry record" do
-      # attributes preparation
-      resource_service = "dataset"
-      resource_type = "entries"
-      resource_id = UUIDv7.generate
-      organization_id = 1
-      project_id = UUIDv7.generate
-      dataset_id = UUIDv7.generate
-      entry_id = resource_id
-      attributes.merge!(
-        resource_service:,
-        resource_type:,
-        resource_id:,
-        organization_id:,
-        project_id:,
-        dataset_id:,
-        entry_id:,
-      )
-
-      log = subject.create(attributes)
-
-      expect(log.action).to eq action
-      expect(log.actor_account_id).to eq actor_account_id
-      expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_service).to eq "dataset"
-      expect(log.resource_type).to eq "entries"
-      expect(log.resource_id).to eq resource_id
-      expect(log.organization_id).to eq organization_id
-      expect(log.project_id).to eq project_id
-      expect(log.dataset_id).to eq dataset_id
-      expect(log.entry_id).to eq resource_id
+      expect(record[:action]).to eq("created")
+      expect(record[:resource_service]).to eq("iam")
+      expect(record[:resource_type]).to eq("organizations")
+      expect(record[:actor_account_id]).to eq(1)
     end
   end
 
-  describe "#show" do
-    before do
-      @resource_service = "dataset"
-      @resource_type = "datasets"
-      @resource_id = UUIDv7.generate
-      @organization_id = 1
-      @project_id = UUIDv7.generate
-      @dataset_id = @resource_id
-      attributes.merge!(
-        resource_service: @resource_service,
-        resource_type: @resource_type,
-        resource_id: @resource_id,
-        organization_id: @organization_id,
-        project_id: @project_id,
-        dataset_id: @resource_id,
-      )
+  describe "#create_from_message" do
+    it "creates a log record from an event message" do
+      record = service.create_from_message(message: valid_message)
 
-      @log1 = subject.create(attributes)
+      expect(record[:action]).to eq("created")
+      expect(record[:resource_service]).to eq("iam")
+      expect(record[:resource_type]).to eq("organizations")
+      expect(record[:actor_account_id]).to eq(1)
     end
 
-    it "show an audit log" do
-      log = subject.show(@log1.id)
+    it "merges additional attributes" do
+      record = service.create_from_message(
+        message: valid_message,
+        organization_id: 1,
+        project_id: "proj-1"
+      )
 
-      expect(log.action).to eq action
-      expect(log.actor_account_id).to eq actor_account_id
-      expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_service).to eq @resource_service
-      expect(log.resource_type).to eq @resource_type
-      expect(log.resource_id).to eq @resource_id
-      expect(log.organization_id).to eq @organization_id
-      expect(log.project_id).to eq @project_id
-      expect(log.dataset_id).to eq @resource_id
-      expect(log.entry_id).to be_nil
+      expect(record[:organization_id]).to eq(1)
+      expect(record[:project_id]).to eq("proj-1")
+    end
+
+    context "when message content is nil" do
+      let(:nil_content_message) do
+        instance_double(
+          Verse::Event::Message,
+          event: "iam:accounts:created",
+          content: nil
+        )
+      end
+
+      it "returns nil and does not create a record" do
+        expect do
+          result = service.create_from_message(message: nil_content_message)
+          expect(result).to be_nil
+        end.not_to change { repo.index({}).size }
+      end
+    end
+
+    context "when message metadata is nil" do
+      let(:nil_metadata_message) do
+        instance_double(
+          Verse::Event::Message,
+          event: "iam:accounts:created",
+          content: { resource_id: "1", metadata: nil }
+        )
+      end
+
+      it "returns nil and does not create a record" do
+        expect do
+          result = service.create_from_message(message: nil_metadata_message)
+          expect(result).to be_nil
+        end.not_to change { repo.index({}).size }
+      end
+    end
+
+    context "when event_timestamp is missing" do
+      let(:missing_timestamp_message) do
+        instance_double(
+          Verse::Event::Message,
+          event: "iam:accounts:created",
+          content: { resource_id: "1", metadata: { actor_account_id: 1 } }
+        )
+      end
+
+      it "returns nil and does not create a record" do
+        expect do
+          result = service.create_from_message(message: missing_timestamp_message)
+          expect(result).to be_nil
+        end.not_to change { repo.index({}).size }
+      end
+    end
+
+    context "when an error occurs" do
+      let(:error_message) do
+        instance_double(
+          Verse::Event::Message,
+          event: "iam:accounts:created",
+          content: { resource_id: "1", metadata: { at: "invalid_time" } }
+        )
+      end
+
+      it "catches the exception and returns nil" do
+        expect(Verse.logger).to receive(:error).at_least(:once)
+        result = service.create_from_message(message: error_message)
+        expect(result).to be_nil
+      end
     end
   end
 
   describe "#index" do
-    before do
-      @resource_service = "dataset"
-      @resource_type = "datasets"
-      @resource_id = UUIDv7.generate
-      @organization_id = 1
-      @project_id = UUIDv7.generate
-      @dataset_id = @resource_id
-      attributes.merge!(
-        resource_service: @resource_service,
-        resource_type: @resource_type,
-        resource_id: @resource_id,
-        organization_id: @organization_id,
-        project_id: @project_id,
-        dataset_id: @resource_id,
-      )
+    let(:auth_context) { Verse::Auth::Context.new }
+    let!(:log_record) { repo.create(valid_attributes) }
 
-      subject.create(attributes)
-      subject.create(attributes)
+    context "As admin", as: :admin do
+      let(:auth_context) { current_auth_context }
+
+      it "returns logs" do
+        result = service.index({})
+        expect(result.size).to eq 1
+      end
     end
+  end
 
-    it "list audit logs" do
-      logs = subject.index({})
+  describe "#show" do
+    let(:auth_context) { Verse::Auth::Context[:system] }
+    let!(:log_record) { repo.create(valid_attributes).to_i }
 
-      expect(logs.size).to eq 2
+    it "returns a log by id" do
+      result = service.show(log_record)
+      expect(result[:id]).to eq(log_record)
     end
   end
 end

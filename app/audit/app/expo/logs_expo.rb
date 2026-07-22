@@ -33,29 +33,23 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Iam::Accounts, event)
     def on_account_event
-      service.create(log_attributes(message:))
+      service.create_from_message(message:)
     end
   end
 
   expose on_resource_event(Resource::Iam::Accounts, "logged_in")
   def on_account_logged_in
-    service.create(
-      log_attributes(
-        message:,
-        action: message.content[:metadata][:validation] ? "logged_in" : "failed_log_in_attempt"
-      )
-    )
+    action = message.content&.dig(:metadata, :validation) ? "logged_in" : "failed_log_in_attempt"
+    service.create_from_message(message:, action:)
   end
 
   # Account Session events
   %w[logged_out].each do |event|
     expose on_resource_event(Resource::Iam::AccountSessions, event)
     def on_account_session_event
-      service.create(
-        log_attributes(
-          message:,
-          resource_id: message.content[:metadata][:actor_account_email]
-        )
+      service.create_from_message(
+        message:,
+        resource_id: message.content&.dig(:metadata, :actor_account_email)
       )
     end
   end
@@ -64,11 +58,9 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Iam::Organizations, event)
     def on_organization_event
-      service.create(
-        log_attributes(
-          message:,
-          organization_id: message.content[:resource_id]
-        )
+      service.create_from_message(
+        message:,
+        organization_id: message.content[:resource_id]
       )
     end
   end
@@ -77,12 +69,10 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::Projects, event)
     def on_project_event
-      service.create(
-        log_attributes(
-          message:,
-          organization_id: message.content[:metadata][:organization_id],
-          project_id: message.content[:resource_id]
-        )
+      service.create_from_message(
+        message:,
+        organization_id: message.content&.dig(:metadata, :organization_id),
+        project_id: message.content[:resource_id]
       )
     end
   end
@@ -91,11 +81,9 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::ProjectMembers, event)
     def on_project_member_event
-      service.create(
-        log_attributes(
-          message:,
-          project_id: message.content[:metadata][:project_id]
-        )
+      service.create_from_message(
+        message:,
+        project_id: message.content&.dig(:metadata, :project_id)
       )
     end
   end
@@ -104,13 +92,11 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::Datasets, event)
     def on_dataset_event
-      service.create(
-        log_attributes(
-          message:,
-          organization_id: message.content[:metadata][:organization_id],
-          project_id: message.content[:metadata][:project_id],
-          dataset_id: message.content[:resource_id]
-        )
+      service.create_from_message(
+        message:,
+        organization_id: message.content&.dig(:metadata, :organization_id),
+        project_id: message.content&.dig(:metadata, :project_id),
+        dataset_id: message.content[:resource_id]
       )
     end
   end
@@ -119,33 +105,29 @@ class LogsExpo < BaseExpo
   %w[created updated deleted assigned unassigned].each do |event|
     expose on_resource_event(Resource::Dataset::Entries, event)
     def on_entry_event
-      return unless message.content[:metadata][:actor_account_id] # excluding entries updated by background worker
+      return unless message.content&.dig(:metadata, :actor_account_id) # excluding entries updated by background worker
 
-      service.create(
-        log_attributes(
-          message:,
-          organization_id: message.content[:metadata][:organization_id],
-          project_id: message.content[:metadata][:project_id],
-          dataset_id: message.content[:metadata][:dataset_id],
-          entry_id: message.content[:resource_id]
-        )
+      service.create_from_message(
+        message:,
+        organization_id: message.content&.dig(:metadata, :organization_id),
+        project_id: message.content&.dig(:metadata, :project_id),
+        dataset_id: message.content&.dig(:metadata, :dataset_id),
+        entry_id: message.content[:resource_id]
       )
     end
   end
 
   expose on_resource_event(Resource::Dataset::Entries, "submitted")
   def on_entry_submitted
-    return unless message.content[:metadata][:submission_type] # process only actual submission from annotation/review
+    return unless message.content&.dig(:metadata, :submission_type) # process only actual submission from annotation/review
 
-    service.create(
-      log_attributes(
-        message:,
-        action: message.content[:metadata][:submission_type],
-        organization_id: message.content[:metadata][:organization_id],
-        project_id: message.content[:metadata][:project_id],
-        dataset_id: message.content[:metadata][:dataset_id],
-        entry_id: message.content[:resource_id]
-      )
+    service.create_from_message(
+      message:,
+      action: message.content&.dig(:metadata, :submission_type),
+      organization_id: message.content&.dig(:metadata, :organization_id),
+      project_id: message.content&.dig(:metadata, :project_id),
+      dataset_id: message.content&.dig(:metadata, :dataset_id),
+      entry_id: message.content[:resource_id]
     )
   end
 
@@ -153,37 +135,14 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Media::Medias, event)
     def on_media_event
-      return unless message.content[:metadata][:actor_account_id] # excluding medias created from background worker
+      return unless message.content&.dig(:metadata, :actor_account_id) # excluding medias created from background worker
 
-      service.create(
-        log_attributes(
-          message:,
-          resource_id: message.content[:metadata][:media_resource]
-        )
+      service.create_from_message(
+        message:,
+        resource_id: message.content&.dig(:metadata, :media_resource)
       )
     end
   end
 
   # rubocop:enable Style/CombinableLoops
-
-  private
-
-  def log_attributes(message:, **additional_attributes)
-    service, type, action = message.event.split(":")
-    resource_id = message.content[:resource_id]
-    metadata = message.content[:metadata]
-
-    attributes = {
-      action: action,
-      resource_service: service,
-      resource_type: type,
-      resource_id:,
-      event_timestamp: metadata[:at],
-      actor_account_id: metadata[:actor_account_id],
-      actor_account_email: metadata&.[](:actor_account_email),
-      actor_account_role_name: metadata&.[](:actor_account_role_name),
-    }
-
-    attributes.merge(additional_attributes)
-  end
 end
