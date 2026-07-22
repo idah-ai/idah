@@ -2,6 +2,8 @@
   import AccountForm from "@/components/app/iam/accounts/forms/account-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { refetches } from "@/utils/refetch";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -29,6 +31,7 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Read-only seed for <AccountForm>; never mutated here.
   let account: AccountRecord = $derived(
     accountRecord
       ? accountRecord
@@ -43,6 +46,22 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
+
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange (name, email, role_name, enabled) —
+  // used for BOTH the original-record and current-value snapshots. sso_channel
+  // is displayed but read-only and never emitted, so it must not be diffed.
+  function serializeEditableFields(source: Hash): Hash {
+    return {
+      name: source.name,
+      email: source.email,
+      role_name: source.role_name,
+      enabled: source.enabled,
+    };
+  }
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => accountRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -51,34 +70,26 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    account = new AccountRecord({
-      type: AccountRecord.type,
-      attributes: {
-        name: null,
-        email: null,
-        sso_channel: null,
-        enabled: true,
-      },
-    });
+    changeTracker.reset();
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    account.name = value.name;
-    account.email = value.email;
-    account.role_name = value.role_name;
-    account.sso_channel = value.sso_channel;
-    account.enabled = value.enabled;
+    // sso_channel is read-only and not emitted by the form; it is sourced from
+    // the original record at submit time, so it is intentionally absent here.
+    draft = { ...value };
+    changeTracker.update(value);
   }
 
   async function createAccount(): Promise<void> {
     await accountsBackendDataSource.create(
       {
         attributes: {
-          name: account.name,
-          email: account.email,
-          sso_channel: account.sso_channel,
-          enabled: account.enabled,
-          role_name: account.role_name,
+          name: draft.name,
+          email: draft.email,
+          sso_channel: accountRecord?.sso_channel ?? null,
+          enabled: draft.enabled,
+          role_name: draft.role_name,
         },
       },
       {
@@ -90,20 +101,20 @@
     $refetches.accounts.list = new Date();
     showToast.success({
       title: "Account created",
-      description: `The account has been created and an invitation email has been sent to "${account.email}".`,
+      description: `The account has been created and an invitation email has been sent to "${draft.email}".`,
     });
   }
 
   async function updateAccount(): Promise<void> {
     await accountsBackendDataSource.update(
-      account.id,
+      accountRecord!.id,
       {
         attributes: {
-          name: account.name,
-          email: account.email,
-          role_name: account.role_name,
-          sso_channel: account.sso_channel,
-          enabled: account.enabled,
+          name: draft.name,
+          email: draft.email,
+          role_name: draft.role_name,
+          sso_channel: accountRecord?.sso_channel ?? null,
+          enabled: draft.enabled,
         },
       },
       {
@@ -121,7 +132,7 @@
     $refetches.accounts.list = new Date();
     showToast.success({
       title: "Account updated",
-      description: `The account of "${account.email}" has been updated.`,
+      description: `The account of "${draft.email}" has been updated.`,
     });
   }
 
@@ -132,11 +143,11 @@
 
     try {
       const validated = validateData(schema, {
-        name: account.name,
-        email: account.email,
-        role_name: account.role_name,
-        sso_channel: account.sso_channel,
-        enabled: account.enabled,
+        name: draft.name,
+        email: draft.email,
+        role_name: draft.role_name,
+        sso_channel: accountRecord?.sso_channel ?? null,
+        enabled: draft.enabled,
       });
 
       if (!validated.success) {
@@ -158,6 +169,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <AccountForm {account} {newRecord} {fieldErrors} onValueChange={setValue} />
 </FormModal>

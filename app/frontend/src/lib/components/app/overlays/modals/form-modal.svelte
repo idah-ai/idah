@@ -74,7 +74,7 @@
   // Lifecycle
   onMount(() => {
     function handlePressEnter(event: KeyboardEvent) {
-      if (event.key === "Enter" && !event.shiftKey && !loading) {
+      if (event.key === "Enter" && !event.shiftKey && !loading && !disabled) {
         event.preventDefault();
         if (open) {
           handleClickConfirm();
