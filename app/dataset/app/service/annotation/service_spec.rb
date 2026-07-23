@@ -173,6 +173,112 @@ RSpec.describe Annotation::Service, database: true do
           subject.update(record)
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
       end
+
+      it "strips annotation_shape keys from dimensions before persisting to parent record" do
+        annotation_id = repo.create(attributes)
+
+        # Write a shape row so the key exists in annotation_shape
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+
+        # Simulate an update where dimensions includes the shape key (as it would
+        # after a read that merged shapes into dimensions)
+        record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                dimensions: {
+                  x: 10,
+                  y: 20,
+                  width: 30,
+                  height: 40,
+                  "tile-0x0" => { "rle" => "ABC" },
+                  "tile-0x1" => { "rle" => "DEF" }
+                },
+                annotation: { label: "dog" }
+              }
+            }
+          }
+        )
+
+        subject.update(record)
+
+        # The shape keys must NOT appear in the parent annotations.dimensions column
+        raw_dimensions = nil
+        subject.annotations.client do |db|
+          raw_dimensions = db[:annotations].where(id: annotation_id).get(:dimensions)
+        end
+
+        expect(raw_dimensions).to be_a(Hash)
+        expect(raw_dimensions).to include("x" => 10, "y" => 20, "width" => 30, "height" => 40)
+        expect(raw_dimensions).not_to have_key("tile-0x0")
+        expect(raw_dimensions).not_to have_key("tile-0x1")
+
+        # The annotation_shape rows must be unaffected
+        shape_rows = nil
+        subject.annotations.client do |db|
+          shape_rows = db[:annotation_shape].where(annotation_id:).all
+        end
+        expect(shape_rows.size).to eq(1)
+        expect(shape_rows.first[:key]).to eq("tile-0x0")
+        expect(shape_rows.first[:value]).to eq({ "rle" => "ABC" })
+      end
+
+      it "leaves dimensions unchanged when there are no annotation_shape keys" do
+        annotation_id = repo.create(attributes)
+
+        record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                dimensions: {
+                  x: 10,
+                  y: 20,
+                  width: 50,
+                  height: 60
+                },
+                annotation: { label: "dog" }
+              }
+            }
+          }
+        )
+
+        subject.update(record)
+
+        raw_dimensions = nil
+        subject.annotations.client do |db|
+          raw_dimensions = db[:annotations].where(id: annotation_id).get(:dimensions)
+        end
+
+        expect(raw_dimensions).to be_a(Hash)
+        expect(raw_dimensions).to include("x" => 10, "y" => 20, "width" => 50, "height" => 60)
+        expect(raw_dimensions).not_to have_key("tile-0x0")
+      end
+
+      it "works normally for a non-mask annotation (no shape rows at all)" do
+        annotation_id = repo.create(attributes)
+
+        record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                annotation: { label: "dog" },
+              }
+            }
+          }
+        )
+
+        subject.update(record)
+
+        updated_annotation = repo.find!(annotation_id)
+        expect(updated_annotation.annotation).to eq({ label: "dog" })
+        expect(updated_annotation.dimensions).to include(x: 10, y: 20)
+      end
     end
 
     describe "#update_attr" do
@@ -491,6 +597,127 @@ RSpec.describe Annotation::Service, database: true do
         results = subject.index
         expect(results.find { |r| r.id == my_annotation_id }).not_to be_nil
         expect(results.find { |r| r.id == other_annotation_id }).to be_nil
+      end
+    end
+
+    describe "#full_cycle — create, write_shape, update, delete, recreate with same id" do
+      it "never stores tile keys in the parent annotations.dimensions column at any point" do
+        annotation_id = nil
+
+        # Step 1: Create the annotation
+        record = deserialize(
+          {
+            data: {
+              type: "dataset:annotations",
+              attributes:,
+              relationships: {
+                entry: {
+                  data: { type: "dataset:entries", id: entry_id }
+                }
+              }
+            }
+          }
+        )
+        created = subject.create(record)
+        annotation_id = created.id
+
+        # Helper to read raw dimensions from the DB
+        raw_dims = -> {
+          result = nil
+          subject.annotations.client { |db| result = db[:annotations].where(id: annotation_id).get(:dimensions) }
+          result
+        }
+
+        # Step 2: Write shape rows (tiles)
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+        subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
+
+        # Raw dimensions must NOT contain tile keys
+        expect(raw_dims.call).not_to have_key("tile-0x0")
+        expect(raw_dims.call).not_to have_key("tile-0x1")
+
+        # Step 3: Update the annotation with aggregated dimensions (as a frontend
+        # would send after a read that merged shapes into dimensions)
+        update_record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                dimensions: {
+                  x: 10, y: 20, width: 30, height: 40,
+                  "tile-0x0" => { "rle" => "ABC" },
+                  "tile-0x1" => { "rle" => "DEF" }
+                },
+                annotation: { label: "dog" }
+              }
+            }
+          }
+        )
+        subject.update(update_record)
+
+        # Raw dimensions must still NOT contain tile keys (guard stripped them)
+        expect(raw_dims.call).not_to have_key("tile-0x0")
+        expect(raw_dims.call).not_to have_key("tile-0x1")
+        # annotation_shape rows must be unaffected
+        shape_rows = nil
+        subject.annotations.client do |db|
+          shape_rows = db[:annotation_shape].where(annotation_id:).all
+        end
+        expect(shape_rows.size).to eq(2)
+
+        # Step 4: Delete the annotation
+        subject.delete(annotation_id)
+
+        # annotation_shape rows must be cascade-deleted
+        subject.annotations.client do |db|
+          shape_rows = db[:annotation_shape].where(annotation_id:).all
+        end
+        expect(shape_rows).to be_empty
+
+        # Step 5: Recreate with the same id (simulating undo-of-delete)
+        # At this point annotation_shape is empty for this id, so the backend
+        # guard can't help — frontend discipline is required. This test verifies
+        # that the raw dimensions don't contain tile keys (the frontend must
+        # strip them before calling create). We simulate that by passing clean
+        # dimensions.
+        recreated = subject.create(
+          deserialize(
+            {
+              data: {
+                type: "dataset:annotations",
+                id: annotation_id,
+                attributes: attributes.merge(
+                  dimensions: { x: 10, y: 20, width: 30, height: 40 },
+                  annotation: { label: "cat" }
+                ),
+                relationships: {
+                  entry: {
+                    data: { type: "dataset:entries", id: entry_id }
+                  }
+                }
+              }
+            }
+          )
+        )
+        expect(recreated.id).to eq(annotation_id)
+
+        # Raw dimensions must not contain tile keys
+        expect(raw_dims.call).not_to have_key("tile-0x0")
+        expect(raw_dims.call).not_to have_key("tile-0x1")
+
+        # Write shapes back (simulating frontend's setShape/setShapes after recreate)
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+        subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
+
+        # Final assertion: raw dimensions still clean
+        expect(raw_dims.call).not_to have_key("tile-0x0")
+        expect(raw_dims.call).not_to have_key("tile-0x1")
+
+        # The aggregated read should show tiles merged in
+        fetched = subject.show(annotation_id)
+        expect(fetched.dimensions["tile-0x0"]).to eq({ "rle" => "ABC" })
+        expect(fetched.dimensions["tile-0x1"]).to eq({ "rle" => "DEF" })
       end
     end
   end

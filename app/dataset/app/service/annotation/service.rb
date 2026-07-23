@@ -78,7 +78,23 @@ module Annotation
 
         check_entry_not_completed!(annotation.entry, :update)
 
-        annotations.update!(record.id, record.attributes)
+        # Strip any keys from dimensions that exist in annotation_shape
+        # (guards against tile keys being persisted into the parent
+        #  annotations.dimensions jsonb column)
+        attrs = record.attributes
+        if attrs[:dimensions].is_a?(Hash)
+          annotations.client do |db|
+            shape_keys = db[:annotation_shape]
+                         .where(annotation_id: record.id)
+                         .select_map(:key)
+                         .map(&:to_s)
+            unless shape_keys.empty?
+              attrs[:dimensions] = attrs[:dimensions].reject { |k, _| shape_keys.include?(k.to_s) }
+            end
+          end
+        end
+
+        annotations.update!(record.id, attrs)
         annotations.find!(record.id)
       end
     end

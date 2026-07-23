@@ -13,6 +13,7 @@ import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { encode } from "$lib/mask/rle";
 import { isEmpty } from "$lib/mask/raster";
 import { invalidate } from "$lib/mask/tile-cache";
+import { writeTileEntries } from "$lib/mask/write-tile-entries";
 
 /**
  * Flush dirty tiles to the backend.
@@ -61,11 +62,10 @@ export async function flushDirtyTiles(
 
   if (entries.length === 0) return;
 
-  if (entries.length > 1 && setShapes) {
-    // Batched path: single IDB transaction + single store reset
-    await setShapes(annotationId, entries);
+  if (setShapes) {
+    await writeTileEntries({ setShape, setShapes }, annotationId, entries);
   } else {
-    // Single entry or no batching available: fire all in parallel
+    // No batching available: fire all in parallel
     const pending: Promise<void>[] = [];
     for (const { key, value } of entries) {
       pending.push(setShape(annotationId, key, value));

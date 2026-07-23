@@ -1,15 +1,5 @@
 export const MASK_TILE_SIZE = 64;
 
-// ── Mask layer z-order (single source of truth) ──────────────────────────
-
-/**
- * Which layer wins on overlap between mask canvas and SVG shapes.
- * - "below-svg" (default v1): SVG shapes are on top; vector shapes win on overlap.
- * - "above-svg": Mask canvas is on top; mask tiles win on overlap.
- */
-export const MASK_LAYER_Z_ORDER = "below-svg" as const;
-export type MaskLayerZOrder = typeof MASK_LAYER_Z_ORDER;
-
 // ── Color palette for mask categories ────────────────────────────────────
 
 /**

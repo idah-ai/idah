@@ -23,6 +23,7 @@ import { invalidate } from "$lib/mask/tile-cache";
 import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
+import { writeTileEntries } from "$lib/mask/write-tile-entries";
 
 export const command = {
   name: "annotation.mask_shapes.flush",
@@ -128,11 +129,7 @@ export function register(driver: IIdahDriverV2): void {
             // Invalidate the cached bitmap — the tile's value changed back
             invalidate(annotationId, tileKey);
           }
-          if (entries.length > 1) {
-            await data.annotations!.setShapes(annotationId, entries);
-          } else if (entries.length === 1) {
-            await data.annotations!.setShape(annotationId, entries[0].key, entries[0].value);
-          }
+          await writeTileEntries(data.annotations!, annotationId, entries);
         },
 
         isCombinable() { return false; },

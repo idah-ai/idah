@@ -72,14 +72,6 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       });
     },
 
-    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-      for (const { key, value } of entries) {
-        await rpc.call({
-          method: "write_shape",
-          params: { annotation_id: annotationId, key, value: value ?? null },
-        });
-      }
-    },
   };
 }
 
@@ -161,11 +153,13 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   }
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    for (const { key, value } of entries) {
-      await this.rpc.call({
-        method: "write_shape",
-        params: { annotation_id: annotationId, key, value: value ?? null },
-      });
-    }
+    await Promise.all(
+      entries.map(({ key, value }) =>
+        this.rpc.call({
+          method: "write_shape",
+          params: { annotation_id: annotationId, key, value: value ?? null },
+        }),
+      ),
+    );
   }
 }

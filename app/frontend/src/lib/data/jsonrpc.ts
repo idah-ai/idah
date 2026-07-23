@@ -66,6 +66,9 @@ export class JsonRpcDatasource {
   /** Timestamp (Date.now()) of the first network failure in the current streak. */
   private networkFailureStart: number | null = null;
 
+  /** @internal Test-only accessor — allows tests to observe paused state without exposing internals. */
+  get isPaused(): boolean { return this.paused; }
+
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;
 

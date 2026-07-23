@@ -14,6 +14,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { IMAGE_MASK } from "$lib/types";
 import { invalidateAll } from "$lib/mask/tile-cache";
+import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
   name: "annotation.delete",
@@ -61,25 +62,7 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          // Recreate the annotation first, without tile data in dimensions
-          const { shape: _shape, ...rest } = record;
-          const tileKeys = _shape ? Object.keys(_shape).filter((k) => k.startsWith("tile-")) : [];
-          const cleanShape = _shape ? { ..._shape } : {};
-          for (const k of tileKeys) delete cleanShape[k];
-          await data.annotations!.create({ ...rest, id: record.id, shape: cleanShape });
-          // Restore tiles via setShape/setShapes so they land in annotation_shape, not dimensions
-          const entries: Array<{ key: string; value: object | null }> = [];
-          for (const k of tileKeys) {
-            const val = (_shape as Record<string, unknown>)[k] as { rle?: string } | undefined;
-            if (val?.rle) {
-              entries.push({ key: k, value: { rle: val.rle } });
-            }
-          }
-          if (entries.length > 1) {
-            await data.annotations!.setShapes(record.id, entries);
-          } else if (entries.length === 1) {
-            await data.annotations!.setShape(record.id, entries[0].key, entries[0].value);
-          }
+          await recreateAnnotationWithTiles(data.annotations!, record);
         },
         isCombinable() { return false; },
         combine(p) { return p; },
