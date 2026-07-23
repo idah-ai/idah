@@ -53,12 +53,18 @@ export function register(driver: IIdahDriverV2): void {
           const cleanShape = _shape ? { ..._shape } : {};
           for (const k of tileKeys) delete cleanShape[k];
           await data.annotations!.create({ ...rest, id: record.id, shape: cleanShape });
-          // Restore tiles via setShape so they land in annotation_shape, not dimensions
+          // Restore tiles via setShape/setShapes so they land in annotation_shape, not dimensions
+          const entries: Array<{ key: string; value: object | null }> = [];
           for (const k of tileKeys) {
             const val = (_shape as Record<string, unknown>)[k] as { rle?: string } | undefined;
             if (val?.rle) {
-              await data.annotations!.setShape(record.id, k, { rle: val.rle });
+              entries.push({ key: k, value: { rle: val.rle } });
             }
+          }
+          if (entries.length > 1) {
+            await data.annotations!.setShapes(record.id, entries);
+          } else if (entries.length === 1) {
+            await data.annotations!.setShape(record.id, entries[0].key, entries[0].value);
           }
         },
         isCombinable() { return false; },

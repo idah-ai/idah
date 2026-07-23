@@ -110,21 +110,28 @@ export function register(driver: IIdahDriverV2): void {
               return undefined;
             },
             (annId, key, value) => data.annotations!.setShape(annId, key, value),
+            (annId, entries) => data.annotations!.setShapes(annId, entries),
           );
           maskSession.reset();
         },
 
         async undo() {
           if (!data.annotations) return;
+          const entries: Array<{ key: string; value: object | null }> = [];
           for (const tileKey of dirtyTiles) {
             const [colStr, rowStr] = tileKey.split(":");
             const col = parseInt(colStr, 10);
             const row = parseInt(rowStr, 10);
             const tileKeyStr = `tile-${col}x${row}`;
             const priorValue = snapshot.get(tileKey) ?? null;
-            await data.annotations!.setShape(annotationId, tileKeyStr, priorValue);
+            entries.push({ key: tileKeyStr, value: priorValue });
             // Invalidate the cached bitmap — the tile's value changed back
             invalidate(annotationId, tileKey);
+          }
+          if (entries.length > 1) {
+            await data.annotations!.setShapes(annotationId, entries);
+          } else if (entries.length === 1) {
+            await data.annotations!.setShape(annotationId, entries[0].key, entries[0].value);
           }
         },
 

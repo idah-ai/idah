@@ -54,6 +54,7 @@ export class JsonRpcDatasource {
   private queue: QueueItem[] = [];
   private processing = false;
   private paused = false;
+  private flushScheduled = false;
 
   private failedCount = 0;
   private readonly retry_base_delay = 1000;
@@ -93,12 +94,21 @@ export class JsonRpcDatasource {
   call(method: JsonRpcMethod): Promise<JsonRpcResult> {
     return new Promise<JsonRpcResult>((onResolve) => {
       this.queue.push({ method, onResolve });
-      this.process();
+      this.scheduleFlush();
     });
   }
 
+  private scheduleFlush(): void {
+    if (this.processing || this.paused || this.flushScheduled) return;
+    this.flushScheduled = true;
+    setTimeout(() => {
+      this.flushScheduled = false;
+      this.process();
+    }, 15);
+  }
+
   private process(): void {
-    if (this.processing || this.paused || this.queue.length === 0) return;
+    if (this.processing || this.paused || this.queue.length === 0 || this.flushScheduled) return;
     this.flush();
   }
 

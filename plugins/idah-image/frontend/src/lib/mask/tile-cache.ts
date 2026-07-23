@@ -5,10 +5,15 @@
 // all three decode call sites (canvas redraw, click hit-test, hover hit-test)
 // share the same decoded data instead of decoding independently.
 //
-// Cache entries are keyed by "annotationId:tileKey:colorKey" so that the same
-// tile rendered with different alpha values (e.g. selected vs unselected) gets
-// separate cached entries.  The color key is a 4-byte hex string of the RGBA
-// values, so any color change invalidates the cache lookup.
+// Cache entries are keyed by a nested map structure:
+//   Map<annotationId, Map<tileKey, Map<colorKey, CacheEntry>>>
+//
+// This makes invalidation O(tiles for this annotation) instead of O(total cache
+// size), since we only iterate the annotation's own tile map rather than the
+// entire flat cache.
+//
+// The color key is a 4-byte hex string of the RGBA values, so any color change
+// invalidates the cache lookup.
 //
 // The offscreen canvas uses nearest-neighbor interpolation (imageSmoothingEnabled
 // = false) to keep mask pixels sharp when the bitmap is composited onto a
@@ -28,7 +33,12 @@ interface CacheEntry {
   bitmap: ImageBitmap;
 }
 
-const _cache = new Map<string, CacheEntry>();
+/**
+ * Nested cache: annotationId → tileKey → colorKey → CacheEntry.
+ * This structure keeps invalidation scoped to a single annotation's tiles
+ * rather than requiring a full linear scan of the entire cache.
+ */
+const _cache = new Map<string, Map<string, Map<string, CacheEntry>>>();
 
 /**
  * Build a colour key string from an RGBA tuple so different alpha values
@@ -53,8 +63,20 @@ export function getOrCreate(
   rle: string,
   color: [number, number, number, number],
 ): { buffer: Uint8Array; bitmap: ImageBitmap } {
-  const cacheKey = `${annotationId}:${tileKey}:${colorKey(color)}`;
-  const existing = _cache.get(cacheKey);
+  const ck = colorKey(color);
+
+  // Navigate the nested map, creating levels as needed
+  let annMap = _cache.get(annotationId);
+  if (!annMap) {
+    annMap = new Map();
+    _cache.set(annotationId, annMap);
+  }
+  let tileMap = annMap.get(tileKey);
+  if (!tileMap) {
+    tileMap = new Map();
+    annMap.set(tileKey, tileMap);
+  }
+  const existing = tileMap.get(ck);
 
   // Return cached entry if source RLE AND colour match
   if (existing && existing.sourceRle === rle) {
@@ -85,7 +107,7 @@ export function getOrCreate(
   const bitmap = offscreen.transferToImageBitmap();
 
   const entry: CacheEntry = { sourceRle: rle, buffer, bitmap };
-  _cache.set(cacheKey, entry);
+  tileMap.set(ck, entry);
 
   return { buffer: entry.buffer, bitmap: entry.bitmap };
 }
@@ -94,14 +116,23 @@ export function getOrCreate(
  * Invalidate a specific tile in the cache.
  * Call this whenever a tile's committed value changes (on flush success) or
  * is deleted, so the cache doesn't serve stale pixels.
+ *
+ * O(tiles for this annotation) — only iterates the annotation's own tile map,
+ * not the entire cache.
  */
 export function invalidate(annotationId: string, tileKey: string): void {
-  const prefix = `${annotationId}:${tileKey}:`;
-  for (const [key, entry] of _cache) {
-    if (key.startsWith(prefix)) {
-      entry.bitmap.close(); // Free GPU memory
-      _cache.delete(key);
-    }
+  const annMap = _cache.get(annotationId);
+  if (!annMap) return;
+  const tileMap = annMap.get(tileKey);
+  if (!tileMap) return;
+  // Close all bitmaps for this tile before removing
+  for (const entry of tileMap.values()) {
+    entry.bitmap.close();
+  }
+  annMap.delete(tileKey);
+  // Clean up empty annotation maps
+  if (annMap.size === 0) {
+    _cache.delete(annotationId);
   }
 }
 
@@ -109,23 +140,31 @@ export function invalidate(annotationId: string, tileKey: string): void {
  * Invalidate all tiles for a given annotation.
  * Call this when an annotation is deleted or when undo/redo restores
  * a prior state for multiple tiles at once.
+ *
+ * O(tiles for this annotation) — only iterates the annotation's own tile map.
  */
 export function invalidateAll(annotationId: string): void {
-  const prefix = `${annotationId}:`;
-  for (const [key, entry] of _cache) {
-    if (key.startsWith(prefix)) {
+  const annMap = _cache.get(annotationId);
+  if (!annMap) return;
+  // Close all bitmaps for this annotation
+  for (const tileMap of annMap.values()) {
+    for (const entry of tileMap.values()) {
       entry.bitmap.close();
-      _cache.delete(key);
     }
   }
+  _cache.delete(annotationId);
 }
 
 /**
  * Clear the entire cache.
  */
 export function clearCache(): void {
-  for (const entry of _cache.values()) {
-    entry.bitmap.close();
+  for (const annMap of _cache.values()) {
+    for (const tileMap of annMap.values()) {
+      for (const entry of tileMap.values()) {
+        entry.bitmap.close();
+      }
+    }
   }
   _cache.clear();
 }

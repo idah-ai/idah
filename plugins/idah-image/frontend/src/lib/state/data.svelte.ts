@@ -139,6 +139,7 @@ export interface AnnotationDriver {
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
@@ -255,6 +256,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
       // Optimistic local update: merge tile data into the annotation's shape
       const record = store.items.find((i) => i.id === annotationId);
+      const originalShape = record ? { ...(record.shape as Record<string, unknown>) } : null;
       if (record) {
         const shape = { ...(record.shape as Record<string, unknown>) };
         if (value === null) {
@@ -274,8 +276,49 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       try {
         await driver.setShape(annotationId, key, $state.snapshot(value));
       } catch (e) {
-        // Rollback is non-trivial for shape rows; log and move on
+        // Rollback optimistic update on failure
+        if (record && originalShape) {
+          originalUpsert({ ...record, shape: originalShape as any });
+          const all = [...store.items];
+          store.reset(all, store.loadedRange ?? [0, 0]);
+        }
         console.error("Failed to save shape tile", { annotationId, key, error: e });
+        throw e; // Re-throw so the caller (flush-tiles / sync-error observer) can surface it
+      }
+    },
+
+    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+      if (entries.length === 0) return;
+
+      // Optimistic local update: apply all tile mutations in a single pass
+      const record = store.items.find((i) => i.id === annotationId);
+      const originalShape = record ? { ...(record.shape as Record<string, unknown>) } : null;
+      if (record) {
+        const shape = { ...(record.shape as Record<string, unknown>) };
+        for (const { key, value } of entries) {
+          if (value === null) {
+            delete shape[key];
+          } else {
+            shape[key] = value;
+          }
+        }
+        originalUpsert({ ...record, shape: shape as any });
+        // Single store reset for the entire batch, not one per tile
+        const all = [...store.items];
+        store.reset(all, store.loadedRange ?? [0, 0]);
+      }
+
+      try {
+        await driver.setShapes(annotationId, entries.map((e) => ({ key: e.key, value: $state.snapshot(e.value) })));
+      } catch (e) {
+        // Rollback all tile mutations on failure
+        if (record && originalShape) {
+          originalUpsert({ ...record, shape: originalShape as any });
+          const all = [...store.items];
+          store.reset(all, store.loadedRange ?? [0, 0]);
+        }
+        console.error("Failed to save shape tiles in batch", { annotationId, entries, error: e });
+        throw e;
       }
     },
   };

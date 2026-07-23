@@ -39,6 +39,7 @@ export interface ICrudDriver<T extends { id: string }> {
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── Minimal IDB helpers ──────────────────────────────────────────────────────
@@ -305,6 +306,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
         update: driver.update.bind(driver),
         delete: driver.delete.bind(driver),
         setShape: driver.setShape.bind(driver),
+        setShapes: driver.setShapes.bind(driver),
       };
     },
 
@@ -420,6 +422,40 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
       // Enqueue the backend sync
       enqueue(backend.setShape(annotationId, key, value));
+    },
+
+    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+      if (entries.length === 0) return;
+      const db = await getDb();
+      const tx = db.transaction(["annotations"], "readwrite");
+      const store = tx.objectStore("annotations");
+
+      const getReq = store.get([entryId, annotationId]);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+          const shape = { ...(record.shape as Record<string, unknown>) };
+          for (const { key, value } of entries) {
+            if (value === null) {
+              delete shape[key];
+            } else {
+              shape[key] = value;
+            }
+          }
+          store.put({ ...record, entryId, shape, updated_at: new Date().toISOString() });
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
+      });
+
+      // Enqueue individual backend syncs
+      for (const { key, value } of entries) {
+        enqueue(backend.setShape(annotationId, key, value));
+      }
     },
   };
 };

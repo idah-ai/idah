@@ -18,7 +18,7 @@
   import { onMount, onDestroy } from "svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { maskSession } from "$lib/state/mask-session.svelte";
-  import { applyViewportTransform, MASK_COLORS, COMMIT_ALPHA, HIGHLIGHT_ALPHA, withAlpha } from "$lib/mask/canvas-render";
+  import { applyViewportTransform, MASK_COLORS, COMMIT_ALPHA, HIGHLIGHT_ALPHA, withAlpha } from "$lib/mask/constants";
   import { IMAGE_MASK } from "$lib/types";
   import { data } from "$lib/state/data.svelte";
   import { annotation } from "$lib/state/annotation.svelte";

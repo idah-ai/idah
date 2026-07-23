@@ -82,6 +82,7 @@ export function register(driver: IIdahDriverV2): void {
               dirtyTileKeys,
               (col, row) => maskBufferSnapshot.get(`${col}:${row}`),
               (annId, key, value) => data.annotations!.setShape(annId, key, value),
+              (annId, entries) => data.annotations!.setShapes(annId, entries),
             );
             maskSession.reset();
           }

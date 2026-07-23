@@ -410,6 +410,7 @@ export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotatio
    * plugin.  Any plugin may use it (e.g. idah-video for per-frame data).
    */
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────

@@ -10,7 +10,7 @@
 // once per value change, not once per frame/hover-event/click.
 // ---------------------------------------------------------------------------
 
-import { MASK_TILE_SIZE } from "$lib/mask/constants";
+import { MASK_TILE_SIZE, MASK_LAYER_Z_ORDER, type MaskLayerZOrder } from "$lib/mask/constants";
 import { IMAGE_MASK } from "$lib/types";
 import { getOrCreate } from "$lib/mask/tile-cache";
 
@@ -102,4 +102,60 @@ export function hitTestMaskLayer(
   }
 
   return { annotationId: null, annotation: null };
+}
+
+// ── Z-order resolver ───────────────────────────────────────────────────────
+
+/**
+ * Result of a combined hit-test across both mask canvas and SVG shape layers.
+ */
+export interface HitTestResult {
+  annotationId: string | null;
+  annotation: unknown | null;
+}
+
+/**
+ * Resolve which layer wins at a given pixel, based on the shared z-order config.
+ *
+ * When `MASK_LAYER_Z_ORDER` is "below-svg" (default):
+ *   1. Check SVG shapes first (via the provided SVG hit-test callback).
+ *   2. If no SVG shape was hit, check the mask canvas layer.
+ *
+ * When `MASK_LAYER_Z_ORDER` is "above-svg":
+ *   1. Check the mask canvas layer first.
+ *   2. If no mask tile was hit, check SVG shapes.
+ *
+ * @param imgX Image-pixel X coordinate
+ * @param imgY Image-pixel Y coordinate
+ * @param maskAnnotations Array of mask annotation records
+ * @param isHiddenFn Function to check if an annotation is hidden
+ * @param resolveColorFn Function to resolve the color for a given annotation
+ * @param svgHitTestFn Callback that returns the first SVG annotation hit at (imgX, imgY),
+ *        or null if nothing was hit. Only called when the z-order requires it.
+ * @returns The winning annotation, or null if nothing was hit.
+ */
+export function resolveHitTest(
+  imgX: number,
+  imgY: number,
+  maskAnnotations: Array<{
+    id: string;
+    shape: Record<string, unknown>;
+    value?: Record<string, unknown>;
+  }>,
+  isHiddenFn: (ann: { id: string }) => boolean,
+  resolveColorFn: (ann: { id: string; value?: Record<string, unknown> }) => [number, number, number, number],
+  svgHitTestFn: () => { annotationId: string | null; annotation: unknown | null },
+  zOrder: MaskLayerZOrder = MASK_LAYER_Z_ORDER,
+): HitTestResult {
+  if (zOrder === "above-svg") {
+    // Mask on top: check mask first, fall through to SVG
+    const maskHit = hitTestMaskLayer(imgX, imgY, maskAnnotations, isHiddenFn, resolveColorFn);
+    if (maskHit.annotationId) return maskHit;
+    return svgHitTestFn();
+  } else {
+    // SVG on top (default): check SVG first, fall through to mask
+    const svgHit = svgHitTestFn();
+    if (svgHit.annotationId) return svgHit;
+    return hitTestMaskLayer(imgX, imgY, maskAnnotations, isHiddenFn, resolveColorFn);
+  }
 }
