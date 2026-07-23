@@ -20,7 +20,6 @@ import { encode, decode } from "$lib/mask/rle";
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { isEmpty } from "$lib/mask/raster";
 import { invalidate } from "$lib/mask/tile-cache";
-import { markOccupancyDirty } from "$lib/mask/occupancy";
 import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
@@ -115,7 +114,6 @@ export function register(driver: IIdahDriverV2): void {
             (annId, entries) => data.annotations!.setShapes(annId, entries),
           );
           maskSession.reset();
-          markOccupancyDirty();
         },
 
         async undo() {
@@ -132,7 +130,6 @@ export function register(driver: IIdahDriverV2): void {
             invalidate(annotationId, tileKey);
           }
           await writeTileEntries(data.annotations!, annotationId, entries);
-          markOccupancyDirty();
         },
 
         isCombinable() { return false; },

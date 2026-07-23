@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 import { selection } from "$lib/state/selection.svelte";
 import { uuidv7 } from "uuidv7";
+import { markOccupancyDirty } from "$lib/mask/occupancy";
 
 /** Minimum interface an item must expose. */
 export interface DataItem {
@@ -232,6 +233,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       store.remove(id);
       try {
         await driver.delete(id);
+        markOccupancyDirty();
       } catch {
         // Rollback
         if (item) originalUpsert(item);
@@ -275,6 +277,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
 
       try {
         await driver.setShape(annotationId, key, $state.snapshot(value));
+        markOccupancyDirty();
       } catch (e) {
         // Rollback optimistic update on failure
         if (record && originalShape) {
@@ -310,6 +313,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
 
       try {
         await driver.setShapes(annotationId, entries.map((e) => ({ key: e.key, value: $state.snapshot(e.value) })));
+        markOccupancyDirty();
       } catch (e) {
         // Rollback all tile mutations on failure
         if (record && originalShape) {

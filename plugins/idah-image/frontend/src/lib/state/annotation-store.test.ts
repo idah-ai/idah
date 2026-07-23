@@ -4,6 +4,15 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { mockMarkOccupancyDirty } = vi.hoisted(() => ({
+  mockMarkOccupancyDirty: vi.fn(),
+}));
+
+vi.mock("$lib/mask/occupancy", () => ({
+  markOccupancyDirty: mockMarkOccupancyDirty,
+}));
+
 import { createAnnotationStore, type AnnotationItem } from "./data.svelte";
 
 describe("createAnnotationStore setShape/setShapes rollback", () => {
@@ -18,6 +27,7 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
   let store: ReturnType<typeof createAnnotationStore>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     driver = {
       fetch: vi.fn().mockResolvedValue([]),
       create: vi.fn().mockResolvedValue({ id: "ann-1" }),
@@ -144,5 +154,74 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       // The original tile should be restored
       expect((store.items[0].shape as any)["tile-0x0"]).toEqual({ rle: "ABC" });
     });
+  });
+});
+
+describe("createAnnotationStore occupancy dirty flag", () => {
+  let driver: {
+    fetch: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+    setShape: ReturnType<typeof vi.fn>;
+    setShapes: ReturnType<typeof vi.fn>;
+  };
+  let store: ReturnType<typeof createAnnotationStore>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    driver = {
+      fetch: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({ id: "ann-1" }),
+      update: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+      setShape: vi.fn().mockResolvedValue(undefined),
+      setShapes: vi.fn().mockResolvedValue(undefined),
+    };
+    store = createAnnotationStore(driver);
+    store.upsert({ id: "ann-1", shape: { type: "idah-image:mask" }, value: { category: "cat" } } as any);
+  });
+
+  it("delete() calls markOccupancyDirty once on success", async () => {
+    await store.delete("ann-1");
+    expect(mockMarkOccupancyDirty).toHaveBeenCalledTimes(1);
+  });
+
+  it("delete() does not call markOccupancyDirty on failure", async () => {
+    driver.delete.mockRejectedValue(new Error("fail"));
+    await expect(store.delete("ann-1")).rejects.toThrow();
+    expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
+  });
+
+  it("setShape() calls markOccupancyDirty once on success", async () => {
+    await store.setShape("ann-1", "tile-0x0", { rle: "AA==" });
+    expect(mockMarkOccupancyDirty).toHaveBeenCalledTimes(1);
+  });
+
+  it("setShape() does not call markOccupancyDirty on failure", async () => {
+    driver.setShape.mockRejectedValue(new Error("fail"));
+    await expect(store.setShape("ann-1", "tile-0x0", { rle: "AA==" })).rejects.toThrow();
+    expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
+  });
+
+  it("setShapes() calls markOccupancyDirty once on success", async () => {
+    await store.setShapes("ann-1", [{ key: "tile-0x0", value: { rle: "AA==" } }]);
+    expect(mockMarkOccupancyDirty).toHaveBeenCalledTimes(1);
+  });
+
+  it("setShapes() does not call markOccupancyDirty on failure", async () => {
+    driver.setShapes.mockRejectedValue(new Error("fail"));
+    await expect(store.setShapes("ann-1", [{ key: "tile-0x0", value: { rle: "AA==" } }])).rejects.toThrow();
+    expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
+  });
+
+  it("create() does not call markOccupancyDirty", async () => {
+    await store.create({ id: "ann-2", shape: { type: "idah-image:mask" }, value: { category: "cat" } } as any);
+    expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
+  });
+
+  it("update() does not call markOccupancyDirty", async () => {
+    await store.update({ id: "ann-1", shape: { type: "idah-image:mask", x: 10 }, value: { category: "cat" } } as any);
+    expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
   });
 });
