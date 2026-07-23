@@ -5,8 +5,9 @@
 // is enabled, paint operations check this grid before adding pixels, so
 // masks cannot overlap one another.
 //
-// The grid is rebuilt from scratch whenever annotations change (caller's
-// responsibility to trigger rebuild at the right time).
+// The grid is rebuilt only when annotations change, tracked via a dirty
+// flag.  Callers should call markDirty() on flush/load/undo/redo instead of
+// rebuilding on every pointer down.
 // ---------------------------------------------------------------------------
 
 import { MASK_TILE_SIZE } from "./constants";
@@ -22,10 +23,30 @@ import { annotation } from "$lib/state/annotation.svelte";
 let _grid = new Map<string, Uint8Array>();
 
 /**
- * Rebuild the occupancy grid from all committed mask annotations.
- * Call this whenever annotations change (e.g. on load, after flush).
+ * Dirty flag — set to true whenever annotations have changed and the
+ * grid needs to be rebuilt.  Cleared after rebuildOccupancy() is called.
  */
-export function rebuildOccupancy(annotations: AnnotationItem[]): void {
+let _dirty = true;
+
+/**
+ * Mark the occupancy grid as dirty (needs rebuild).
+ * Call this after flush, load, undo/redo, or any committed annotation change.
+ */
+export function markOccupancyDirty(): void {
+  _dirty = true;
+}
+
+/**
+ * Rebuild the occupancy grid from all committed mask annotations.
+ * Skips the rebuild if the grid is already clean (no changes since last build).
+ * Returns true if the grid was rebuilt, false if it was already up-to-date.
+ */
+export function rebuildOccupancy(annotations: AnnotationItem[]): boolean {
+  if (!_dirty) {
+    return false; // already up-to-date
+  }
+  _dirty = false;
+
   const grid = new Map<string, Uint8Array>();
 
   for (const ann of annotations) {
@@ -59,6 +80,7 @@ export function rebuildOccupancy(annotations: AnnotationItem[]): void {
   }
 
   _grid = grid;
+  return true;
 }
 
 /**

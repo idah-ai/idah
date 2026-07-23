@@ -454,6 +454,7 @@
 
     // ── Mask brush mode — start painting ────────────────────────────
     if (isMaskBrushMode) {
+      e.preventDefault();
       e.stopPropagation();
       const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
         ? selAnnotation.id
@@ -502,17 +503,6 @@
     // Check if the click landed on a mask pixel BEFORE the SVG shape
     // tool selection check, so mask annotations are selectable even
     // when a vector annotation is currently selected.
-    console.log('[MASK] onMouseDown DEFAULT_MODE', {
-      sceneX: scenePixelCursor[0],
-      sceneY: scenePixelCursor[1],
-      mouseX: mousePosition[0],
-      mouseY: mousePosition[1],
-      annotationCount: data.annotations?.items?.length,
-      maskAnnotations: data.annotations?.items?.filter(a => (a.shape as any)?.type === IMAGE_MASK)?.map(a => ({
-        id: a.id,
-        shapeKeys: Object.keys(a.shape as any).filter(k => k.startsWith('tile-')),
-      })),
-    });
     const maskHit = hitTestMaskLayer(
       scenePixelCursor[0],
       scenePixelCursor[1],
@@ -524,7 +514,6 @@
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
     );
-    console.log('[MASK] hitTest result:', maskHit.annotationId);
     if (maskHit.annotationId) {
       e.stopPropagation();
       selection.selectAnnotation(maskHit.annotation as any);
@@ -946,13 +935,12 @@
       class="brush-cursor-overlay"
       width="100%"
       height="100%"
+      {viewBox}
       style:position="absolute"
       style:top="0"
       style:left="0"
       style:pointer-events="none"
       style:z-index="10"
-      style:transform-origin="top left"
-      style:transform={`translate(${viewport.workspace.transform.translate[0]}px, ${viewport.workspace.transform.translate[1]}px) scale(${viewport.workspace.transform.scale})`}
     >
       <circle
         cx={px}

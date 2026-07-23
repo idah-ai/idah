@@ -5,10 +5,14 @@
   // Renders both committed mask tiles (from backend annotations) and
   // in-progress session tiles on an HTMLCanvasElement.
   //
-  // Performance: renders through the shared decode cache (tile-cache.ts)
-  // which produces ImageBitmaps for each tile. These are composited onto
-  // the main canvas via ctx.drawImage(), a single GPU call per tile instead
-  // of thousands of fillRect calls per frame.
+  // Performance:
+  //   - Committed tiles render through the shared decode cache (tile-cache.ts)
+  //     which produces ImageBitmaps for each tile. These are composited onto
+  //     the main canvas via ctx.drawImage(), a single GPU call per tile.
+  //   - Session tiles (in-progress brush strokes) are rasterized to per-tile
+  //     ImageBitmaps using ImageData (not per-pixel fillRect), then composited
+  //     with drawImage().  Per-tile version tracking ensures only tiles that
+  //     actually changed are re-rasterized each frame.
   // ---------------------------------------------------------------------------
 
   import { onMount, onDestroy } from "svelte";
@@ -40,17 +44,33 @@
 
   let redrawScheduled = false;
 
+  // ─── Session tile bitmap cache (per-tile, version-tracked) ──────────────
+  /** Per-tile cached ImageBitmap for session buffers. */
+  let _sessionTileBitmaps = new Map<string, ImageBitmap>();
+  /** Cached version for each session tile bitmap. */
+  let _sessionTileVersions = new Map<string, number>();
+  /** Unsubscribe from maskSession.onChange — cleaned up in onDestroy. */
+  let _unsubscribeSession: (() => void) | null = null;
+
   // ─── Lifecycle ──────────────────────────────────────────────────────────
 
   onMount(() => {
     if (!canvasEl) return;
     ctx = canvasEl.getContext("2d");
     resizeCanvas();
+    _unsubscribeSession = maskSession.onChange(() => scheduleRedraw());
     redraw();
   });
 
   onDestroy(() => {
     if (settleTimer) clearTimeout(settleTimer);
+    _unsubscribeSession?.();
+    // Free session tile bitmaps
+    for (const bmp of _sessionTileBitmaps.values()) {
+      bmp.close();
+    }
+    _sessionTileBitmaps.clear();
+    _sessionTileVersions.clear();
   });
 
   // ─── Resize to match viewport dimensions ─────────────────────────────────
@@ -134,40 +154,92 @@
 
     // ── Render in-progress session tiles on top (highlighted) ────────
     if (maskSession.tileBuffers.size > 0) {
-      // Resolve the session color: previewColor prop > selected annotation > blue
-      let sessionColor: [number, number, number, number] = MASK_COLORS[1];
-      if (previewColor) {
-        sessionColor = parseHexColor(previewColor);
-      } else {
-        const sel = selection.value;
-        const catId = sel && (sel.shape as any)?.type === IMAGE_MASK
-          ? (sel.value as any)?.category as string | undefined
-          : undefined;
-        if (catId) {
-          sessionColor = resolveCategoryColor(catId);
-        }
+      renderSessionLayer();
+    }
+  }
+
+  /**
+   * Render in-progress session tiles using per-tile cached bitmaps.
+   * Only re-rasterizes tiles whose buffer has changed since the last frame.
+   * Uses ImageData for efficient pixel rasterization (avoids per-pixel fillRect).
+   */
+  function renderSessionLayer(): void {
+    if (!ctx) return;
+
+    // Resolve the session color
+    let sessionColor: [number, number, number, number] = MASK_COLORS[1];
+    if (previewColor) {
+      sessionColor = parseHexColor(previewColor);
+    } else {
+      const sel = selection.value;
+      const catId = sel && (sel.shape as any)?.type === IMAGE_MASK
+        ? (sel.value as any)?.category as string | undefined
+        : undefined;
+      if (catId) {
+        sessionColor = resolveCategoryColor(catId);
       }
-      // Session/buffer tiles always render at highlight alpha
-      sessionColor = withAlpha(sessionColor, HIGHLIGHT_ALPHA);
+    }
+    sessionColor = withAlpha(sessionColor, HIGHLIGHT_ALPHA);
 
-      // Session tiles are in-memory Uint8Array buffers — render them
-      // directly with fillRect on the main canvas for now (they're
-      // transient and small in number during a single gesture).
-      for (const [key, buffer] of maskSession.tileBuffers) {
-        const [colStr, rowStr] = key.split(":");
-        const col = parseInt(colStr, 10);
-        const row = parseInt(rowStr, 10);
-        const tileX = col * MASK_TILE_SIZE;
-        const tileY = row * MASK_TILE_SIZE;
+    const [r, g, b, a] = sessionColor;
 
-        ctx.fillStyle = `rgba(${sessionColor[0]},${sessionColor[1]},${sessionColor[2]},${sessionColor[3] / 255})`;
+    for (const [key, buffer] of maskSession.tileBuffers) {
+      const [colStr, rowStr] = key.split(":");
+      const col = parseInt(colStr, 10);
+      const row = parseInt(rowStr, 10);
+      const tileX = col * MASK_TILE_SIZE;
+      const tileY = row * MASK_TILE_SIZE;
+
+      // Check if this tile's bitmap is cached and up-to-date
+      const cachedVersion = _sessionTileVersions.get(key) ?? -1;
+      const currentVersion = maskSession.getTileVersion(key);
+
+      let bitmap = _sessionTileBitmaps.get(key);
+      if (!bitmap || cachedVersion !== currentVersion) {
+        // Rasterize this session tile to an offscreen bitmap using ImageData
+        if (bitmap) bitmap.close(); // free old GPU memory
+
+        const imageData = new ImageData(MASK_TILE_SIZE, MASK_TILE_SIZE);
+        const pixels = imageData.data;
+
         for (let py = 0; py < MASK_TILE_SIZE; py++) {
           for (let px = 0; px < MASK_TILE_SIZE; px++) {
             if (buffer[py * MASK_TILE_SIZE + px] === 1) {
-              ctx.fillRect(tileX + px, tileY + py, 1, 1);
+              const idx = (py * MASK_TILE_SIZE + px) * 4;
+              pixels[idx] = r;
+              pixels[idx + 1] = g;
+              pixels[idx + 2] = b;
+              pixels[idx + 3] = a;
             }
           }
         }
+
+        const offscreen = new OffscreenCanvas(MASK_TILE_SIZE, MASK_TILE_SIZE);
+        const octx = offscreen.getContext("2d")!;
+        octx.imageSmoothingEnabled = false;
+        octx.putImageData(imageData, 0, 0);
+
+        bitmap = offscreen.transferToImageBitmap();
+        _sessionTileBitmaps.set(key, bitmap);
+        _sessionTileVersions.set(key, currentVersion);
+      }
+
+      // Composite with a single drawImage call
+      ctx.drawImage(
+        bitmap,
+        tileX,
+        tileY,
+        MASK_TILE_SIZE,
+        MASK_TILE_SIZE,
+      );
+    }
+
+    // Clean up bitmaps for tiles that are no longer in the session
+    for (const [key, bmp] of _sessionTileBitmaps) {
+      if (!maskSession.tileBuffers.has(key)) {
+        bmp.close();
+        _sessionTileBitmaps.delete(key);
+        _sessionTileVersions.delete(key);
       }
     }
   }
@@ -226,10 +298,8 @@
 
   // ─── Reactive redraws ───────────────────────────────────────────────────
 
-  // Redraw on session changes
+  // Session mode changes (via $state — called infrequently)
   $effect(() => {
-    maskSession.tileBuffers;
-    maskSession.dirty;
     maskSession.mode;
     if (!isDragging && ctx) scheduleRedraw();
   });

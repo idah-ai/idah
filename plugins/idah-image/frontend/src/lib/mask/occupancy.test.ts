@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { rebuildOccupancy, isOccupied } from "./occupancy";
+import { rebuildOccupancy, isOccupied, markOccupancyDirty } from "./occupancy";
 import { MASK_TILE_SIZE } from "./constants";
 import { decode } from "./rle";
 import { paintCircle } from "./raster";
@@ -24,6 +24,10 @@ function makeMaskAnn(
 }
 
 describe("rebuildOccupancy", () => {
+  beforeEach(() => {
+    markOccupancyDirty();
+  });
+
   it("clears the grid when no annotations exist", () => {
     rebuildOccupancy([]);
     expect(isOccupied(0, 0, 0, 0)).toBe(false);
