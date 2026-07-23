@@ -261,6 +261,24 @@ RSpec.describe Exports::Service, database: true do
           subject.create(project_id, dataset_ids, exporter)
         }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
       end
+
+      context "when no org or project scope is configured" do
+        subject { described_class.new(current_auth_context) }
+
+        before do
+          # Clear the org scope from the org_owner context
+          current_auth_context.custom_scopes.clear
+        end
+
+        it "raises early from filter_dataset_ids_by_rights when no :org or :project scope is set" do
+          expect {
+            subject.create(project_id, dataset_ids, exporter)
+          }.to raise_error(
+            Verse::Error::Authorization,
+            /Org-owner scope requires either :org or :project custom scope/
+          )
+        end
+      end
     end
 
     context "as Project Owner", as: :project_owner do
@@ -574,6 +592,32 @@ RSpec.describe Exports::Service, database: true do
           created_by_id: 1
         }
       )
+    end
+
+    context "as Organization Owner without custom scopes", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      before do
+        current_auth_context.custom_scopes.clear
+      end
+
+      it "raises Authorization error on index from repository scope" do
+        expect {
+          subject.index
+        }.to raise_error(
+          Verse::Error::Authorization,
+          /Org-owner scope requires either :org or :project custom scope/
+        )
+      end
+
+      it "raises Authorization error on show from repository scope" do
+        expect {
+          subject.show(export_id)
+        }.to raise_error(
+          Verse::Error::Authorization,
+          /Org-owner scope requires either :org or :project custom scope/
+        )
+      end
     end
 
     describe "#delete" do
