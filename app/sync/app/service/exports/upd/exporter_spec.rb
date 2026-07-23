@@ -3,6 +3,14 @@
 require_relative "../../../spec_helper"
 
 RSpec.describe Exports::Upd::Exporter do
+  let(:mock_executor) { instance_double(Executor) }
+  let(:executor_result) { instance_double(Process::Status, success?: true) }
+
+  before do
+    allow(Executor).to receive(:new).and_return(mock_executor)
+    allow(mock_executor).to receive(:call).and_return(executor_result)
+  end
+
   subject(:exporter) { described_class.new }
 
   describe "metadata methods" do
@@ -67,101 +75,112 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     let(:media_binary_data) { "fake binary video data" }
+    let(:streamed_chunks) { ["fake ", "binary ", "video ", "data"] }
     let(:mock_file) { instance_double(File, close: true) }
+
+    # Track all updcli-static invocations for verification
+    let(:updcli_calls) { [] }
 
     before do
       # Stub ENV
       allow(ENV).to receive(:fetch).with("IDAH_URL").and_return("http://localhost:3000/")
 
       # Stub API calls
+      # index_all returns a paginated enumerator that yields pages (arrays of items).
+      # Each stub returns an array of pages: [[item]].
       allow(Api[:idah].dataset.datasets).to receive(:show).with(id: dataset_id).and_return(dataset_response)
-      allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([entry_response])
-      allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([annotation_response])
-      allow(Api[:idah].media.medias).to receive(:index_all).and_return([media_response])
+      allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([[entry_response]])
+      allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([[annotation_response]])
+      allow(Api[:idah].media.medias).to receive(:index_all).and_return([[media_response]])
       allow(Api[:idah].media.medias).to receive(:files).and_return(media_binary_data)
 
-      # Stub system calls by default
-      allow(exporter).to receive(:system).and_return(true)
+      # Stub streaming media download to yield chunks
+      allow(Api[:idah].media.medias).to receive(:files_stream) do |**_args, &block|
+        streamed_chunks.each { |chunk| block.call(chunk) }
+      end
+
+      # Stub Dir.mktmpdir to return a predictable temp dir
+      allow(Dir).to receive(:mktmpdir).with("idah-export-").and_return("/tmp/dummy-export-dir")
 
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
-      allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
+      allow(File).to receive(:open).with("/tmp/dummy-export-dir/export.upd").and_return(mock_file)
       allow(File).to receive(:extname).and_call_original
       allow(File).to receive(:basename).and_call_original
+      # Stub Tempfile — the streaming path uses `<<` (not `write`)
+      # `<<` on Tempfile returns self, so mock it to return self for chaining
+      mock_tempfile = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile")
+      allow(mock_tempfile).to receive(:<<).and_return(mock_tempfile)
+      allow(Tempfile).to receive(:new).and_return(mock_tempfile)
 
-      # Stub Tempfile
-      allow(Tempfile).to receive(:new).and_return(
-        instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile")
-      )
+      # Track executor calls for verification
+      allow(mock_executor).to receive(:call) do |command, **opts|
+        updcli_calls << { command: command, opts: opts }
+        executor_result
+      end
+    end
+
+    # Helper: parse the shell-escaped command string back into an array for inspection
+    def parsed_args(call)
+      _cmd, *args = Shellwords.split(call[:command])
+      args
     end
 
     context "basic export flow" do
       it "initializes a UPD file with updcli-static" do
-        init_called = false
-        allow(exporter).to receive(:system) do |cmd, options|
-          if cmd.include?("init")
-            init_called = true
-            expect(cmd).to match(%r{updcli-static --input /tmp/idah-export-\d+\.upd init})
-            expect(options).to eq({ exception: true })
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(init_called).to be(true)
+
+        init_call = updcli_calls.find { |c| parsed_args(c).include?("init") }
+        expect(init_call).not_to be_nil
+        expect(parsed_args(init_call)).to include("/tmp/dummy-export-dir/export.upd")
+        expect(init_call[:opts][:timeout]).to eq(300)
       end
 
       it "creates datasets in the UPD file" do
-        dataset_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("dataset create")
-            dataset_created = true
-            expect(cmd).to include("--id \"#{dataset_id}\"")
-            expect(cmd).to include("--name \"Dataset 1\"")
-            expect(cmd).to include("--modality idah-video")
-            expect(cmd).to include("--metadata")
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(dataset_created).to be(true)
+
+        dataset_call = updcli_calls.find { |c| parsed_args(c).include?("dataset") && parsed_args(c).include?("create") }
+        expect(dataset_call).not_to be_nil
+        args = parsed_args(dataset_call)
+        expect(args).to include("--id")
+        expect(args).to include(dataset_id)
+        expect(args).to include("--name")
+        expect(args).to include("Dataset 1")
+        expect(args).to include("--modality")
+        expect(args).to include("idah-video")
+        expect(args).to include("--metadata")
       end
 
       it "creates entries in the UPD file" do
-        entry_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("entry create")
-            entry_created = true
-            expect(cmd).to include("--id \"#{entry_id}\"")
-            expect(cmd).to include("--dataset_id \"#{dataset_id}\"")
-            expect(cmd).to include("--url \"http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov\"")
-            expect(cmd).to include("--metadata")
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(entry_created).to be(true)
+
+        entry_call = updcli_calls.find { |c| parsed_args(c).include?("entry") && parsed_args(c).include?("create") }
+        expect(entry_call).not_to be_nil
+        args = parsed_args(entry_call)
+        expect(args).to include("--id")
+        expect(args).to include(entry_id)
+        expect(args).to include("--dataset_id")
+        expect(args).to include(dataset_id)
+        expect(args).to include("--url")
+        expect(args).to include("http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov")
+        expect(args).to include("--metadata")
       end
 
       it "creates annotations in the UPD file" do
-        annotation_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create")
-            annotation_created = true
-            expect(cmd).to include("--id \"#{annotation_id}\"")
-            expect(cmd).to include("--entry_id \"#{entry_id}\"")
-            expect(cmd).to include("--type \"idah-video:bounding-box\"")
-            expect(cmd).to include("--shape")
-            expect(cmd).to include("--annotation")
-            expect(cmd).to include("--metadata")
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(annotation_created).to be(true)
+
+        ann_call = updcli_calls.find { |c| parsed_args(c).include?("annotation") && parsed_args(c).include?("create") }
+        expect(ann_call).not_to be_nil
+        args = parsed_args(ann_call)
+        expect(args).to include("--id")
+        expect(args).to include(annotation_id)
+        expect(args).to include("--entry_id")
+        expect(args).to include(entry_id)
+        expect(args).to include("--type")
+        expect(args).to include("idah-video:bounding-box")
+        expect(args).to include("--shape")
+        expect(args).to include("--annotation")
+        expect(args).to include("--metadata")
       end
 
       it "sets the file to context.io" do
@@ -170,125 +189,106 @@ RSpec.describe Exports::Upd::Exporter do
         expect(context.io.file).to eq(mock_file)
       end
 
-      it "creates a temporary UPD file with timestamp" do
-        allow(Time).to receive_message_chain(:now, :to_i).and_return(1_234_567_890)
-
-        init_with_timestamp = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("init")
-            init_with_timestamp = cmd.include?("/tmp/idah-export-1234567890.upd")
-          end
-          true
-        end
-
+      it "creates a private temp directory via Dir.mktmpdir" do
         exporter.export(context)
-        expect(init_with_timestamp).to be(true)
+        expect(Dir).to have_received(:mktmpdir).with("idah-export-")
+      end
+
+      it "passes timeout to all executor calls" do
+        exporter.export(context)
+
+        expect(updcli_calls).not_to be_empty
+        updcli_calls.each do |call|
+          expect(call[:opts][:timeout]).to eq(300)
+        end
       end
     end
 
     context "metadata transformation" do
       it "transforms dataset metadata keys to capitalized-dashed format" do
-        dataset_metadata_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("dataset create")
-            json_match = cmd.match(/--metadata '({.*})'/)
-            if json_match
-              metadata = JSON.parse(json_match[1])
-              dataset_metadata_valid = metadata.key?("Labeling-Configuration") &&
-                                       metadata.key?("Workflow-Configuration") &&
-                                       metadata.key?("Status") &&
-                                       metadata.key?("Progress") &&
-                                       metadata.key?("Entries-Total-Count") &&
-                                       metadata.key?("Created-At") &&
-                                       metadata.key?("Updated-At")
-            end
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(dataset_metadata_valid).to be(true)
+
+        dataset_call = updcli_calls.find { |c| parsed_args(c).include?("dataset") && parsed_args(c).include?("create") }
+        expect(dataset_call).not_to be_nil
+        args = parsed_args(dataset_call)
+        md_idx = args.index("--metadata")
+        expect(md_idx).not_to be_nil
+        metadata = JSON.parse(args[md_idx + 1])
+        expect(metadata).to include(
+          "Labeling-Configuration",
+          "Workflow-Configuration",
+          "Status",
+          "Progress",
+          "Entries-Total-Count",
+          "Created-At",
+          "Updated-At"
+        )
       end
 
       it "transforms entry metadata keys to capitalized-dashed format" do
-        entry_metadata_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("entry create")
-            json_match = cmd.match(/--metadata '({.*})'/)
-            if json_match
-              metadata = JSON.parse(json_match[1])
-              entry_metadata_valid = metadata.key?("Priority") &&
-                                     metadata.key?("Name") &&
-                                     metadata.key?("Wf-Step") &&
-                                     metadata.key?("Status") &&
-                                     metadata.key?("Resource") &&
-                                     metadata.key?("Assigned-To-Id") &&
-                                     metadata.key?("Created-At") &&
-                                     metadata.key?("Updated-At")
-            end
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(entry_metadata_valid).to be(true)
+
+        entry_call = updcli_calls.find { |c| parsed_args(c).include?("entry") && parsed_args(c).include?("create") }
+        expect(entry_call).not_to be_nil
+        args = parsed_args(entry_call)
+        md_idx = args.index("--metadata")
+        expect(md_idx).not_to be_nil
+        metadata = JSON.parse(args[md_idx + 1])
+        expect(metadata).to include(
+          "Priority",
+          "Name",
+          "Wf-Step",
+          "Status",
+          "Resource",
+          "Assigned-To-Id",
+          "Created-At",
+          "Updated-At"
+        )
       end
 
       it "transforms annotation metadata with special created-by field" do
-        annotation_metadata_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create")
-            json_match = cmd.match(/--metadata '({.*})'/)
-            if json_match
-              metadata = JSON.parse(json_match[1])
-              annotation_metadata_valid = metadata.key?("Created-By") &&
-                                          metadata["Created-By"] == "admin@idah.ai" &&
-                                          metadata.key?("Created-At") &&
-                                          metadata.key?("Updated-At")
-            end
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(annotation_metadata_valid).to be(true)
+
+        ann_call = updcli_calls.find { |c| parsed_args(c).include?("annotation") && parsed_args(c).include?("create") }
+        expect(ann_call).not_to be_nil
+        args = parsed_args(ann_call)
+        md_idx = args.index("--metadata")
+        expect(md_idx).not_to be_nil
+        metadata = JSON.parse(args[md_idx + 1])
+        expect(metadata["Created-By"]).to eq("admin@idah.ai")
+        expect(metadata).to have_key("Created-At")
+        expect(metadata).to have_key("Updated-At")
       end
     end
 
     context "annotation dimensions handling" do
       it "extracts type from dimensions and passes shape separately" do
-        shape_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create") && cmd.include?("--type \"idah-video:bounding-box\"")
-            # Shape should not contain type
-            shape_match = cmd.match(/--shape '({.*?})' --annotation/)
-            if shape_match
-              shape = JSON.parse(shape_match[1])
-              shape_valid = !shape.key?("type") && shape.key?("end") && shape.key?("start")
-            end
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(shape_valid).to be(true)
+
+        ann_call = updcli_calls.find { |c| parsed_args(c).include?("annotation") && parsed_args(c).include?("create") }
+        expect(ann_call).not_to be_nil
+        args = parsed_args(ann_call)
+        type_idx = args.index("--type")
+        shape_idx = args.index("--shape")
+        expect(type_idx).not_to be_nil
+        expect(shape_idx).not_to be_nil
+        expect(args[type_idx + 1]).to eq("idah-video:bounding-box")
+        shape = JSON.parse(args[shape_idx + 1])
+        expect(shape).not_to have_key("type")
+        expect(shape).to have_key("end")
+        expect(shape).to have_key("start")
       end
 
       it "passes annotation data as JSON" do
-        annotation_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create")
-            annotation_match = cmd.match(/--annotation '({.*?})' --metadata/)
-            if annotation_match
-              annotation = JSON.parse(annotation_match[1])
-              annotation_valid = (annotation == { "category" => "vehicles/car" })
-            end
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(annotation_valid).to be(true)
+
+        ann_call = updcli_calls.find { |c| parsed_args(c).include?("annotation") && parsed_args(c).include?("create") }
+        expect(ann_call).not_to be_nil
+        args = parsed_args(ann_call)
+        ann_idx = args.index("--annotation")
+        expect(ann_idx).not_to be_nil
+        annotation = JSON.parse(args[ann_idx + 1])
+        expect(annotation).to eq({ "category" => "vehicles/car" })
       end
     end
 
@@ -297,14 +297,12 @@ RSpec.describe Exports::Upd::Exporter do
         let(:options) { {} }
 
         it "does not include any medias" do
-          media_created = false
-          allow(exporter).to receive(:system) do |cmd, _options|
-            media_created = true if cmd.include?("media create")
-            true
-          end
-
           exporter.export(context)
-          expect(media_created).to be(false)
+
+          media_calls = updcli_calls.select { |c|
+            parsed_args(c).include?("media") && parsed_args(c).include?("create")
+          }
+          expect(media_calls).to be_empty
         end
       end
 
@@ -316,26 +314,26 @@ RSpec.describe Exports::Upd::Exporter do
             filter: { resource: "res1", key: "" }
           ).and_return(
             [
-              double(
-                "Media",
-                id: "media1",
-                resource: "res1",
-                key: "",
-                filename: "file.mov",
-                mime_type: "video/quicktime"
-              )
+              [
+                double(
+                  "Media",
+                  id: "media1",
+                  resource: "res1",
+                  key: "",
+                  filename: "file.mov",
+                  mime_type: "video/quicktime"
+                )
+              ]
             ]
           )
           allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
 
-          media_create_count = 0
-          allow(exporter).to receive(:system) do |cmd, _options|
-            media_create_count += 1 if cmd.include?("media create")
-            true
-          end
-
           exporter.export(context)
-          expect(media_create_count).to eq(1) # Only original media
+
+          media_calls = updcli_calls.select { |c|
+            parsed_args(c).include?("media") && parsed_args(c).include?("create")
+          }
+          expect(media_calls.size).to eq(1) # Only original media
         end
       end
 
@@ -345,45 +343,45 @@ RSpec.describe Exports::Upd::Exporter do
         it "includes all medias" do
           allow(Api[:idah].media.medias).to receive(:index_all).and_return(
             [
-              double(
-                "Media",
-                id: "media1",
-                resource: "res1",
-                key: "",
-                filename: "file.mov",
-                mime_type: "video/quicktime"
-              ),
-              double(
-                "Media",
-                id: "media2",
-                resource: "res1",
-                key: "240p.m3u8",
-                filename: "240p.m3u8",
-                mime_type: "application/vnd.apple.mpegurl"
-              )
+              [
+                double(
+                  "Media",
+                  id: "media1",
+                  resource: "res1",
+                  key: "",
+                  filename: "file.mov",
+                  mime_type: "video/quicktime"
+                ),
+                double(
+                  "Media",
+                  id: "media2",
+                  resource: "res1",
+                  key: "240p.m3u8",
+                  filename: "240p.m3u8",
+                  mime_type: "application/vnd.apple.mpegurl"
+                )
+              ]
             ]
           )
           allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
 
-          media_create_count = 0
-          allow(exporter).to receive(:system) do |cmd, _options|
-            media_create_count += 1 if cmd.include?("media create")
-            true
-          end
-
           exporter.export(context)
-          expect(media_create_count).to eq(2) # All medias
+
+          media_calls = updcli_calls.select { |c|
+            parsed_args(c).include?("media") && parsed_args(c).include?("create")
+          }
+          expect(media_calls.size).to eq(2) # All medias
         end
       end
 
       context "media creation" do
         let(:options) { { include_medias: "all" } }
 
-        it "downloads media binary data" do
-          expect(Api[:idah].media.medias).to receive(:files).with(
+        it "streams media binary data via files_stream" do
+          expect(Api[:idah].media.medias).to receive(:files_stream).with(
             resource: "4c2052a1475842e9.mov",
             key: ""
-          ).and_return(media_binary_data)
+          ).and_yield("chunk1").and_yield("chunk2")
 
           exporter.export(context)
         end
@@ -391,37 +389,45 @@ RSpec.describe Exports::Upd::Exporter do
         it "creates tempfile with correct extension" do
           expect(File).to receive(:extname).with("dc160a222abc4a6e.mov").and_return(".mov")
           expect(File).to receive(:basename).with("dc160a222abc4a6e.mov", ".mov").and_return("dc160a222abc4a6e")
-          expect(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_return(
-            instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile.mov")
-          )
+          expect(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_call_original
 
           exporter.export(context)
         end
 
-        it "writes binary data to tempfile" do
+        it "writes streamed chunks to tempfile via <<" do
           tempfile = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile.mov")
           allow(Tempfile).to receive(:new).and_return(tempfile)
 
-          expect(tempfile).to receive(:write).with(media_binary_data)
+          streamed_chunks.each do |chunk|
+            expect(tempfile).to receive(:<<).with(chunk).ordered
+          end
 
           exporter.export(context)
         end
 
         it "creates media in UPD file with correct parameters" do
-          media_params_valid = false
-          allow(exporter).to receive(:system) do |cmd, _options|
-            if cmd.include?("media create")
-              # Changed to use media.media.resource instead of media.media.id
-              media_params_valid = cmd.include?("--id \"4c2052a1475842e9.mov\"") &&
-                                   cmd.include?("--file \"/tmp/tempfile\"") &&
-                                   cmd.include?("--key \"\"") &&
-                                   cmd.include?("--mimetype \"video/quicktime\"")
-            end
-            true
-          end
+          # Override tempfile stub to return a path matching the media filename
+          mock_tf = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile.mov")
+          allow(mock_tf).to receive(:<<).and_return(mock_tf)
+          allow(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_return(mock_tf)
 
           exporter.export(context)
-          expect(media_params_valid).to be(true)
+
+          media_call = updcli_calls.find { |c| parsed_args(c).include?("media") && parsed_args(c).include?("create") }
+          expect(media_call).not_to be_nil
+          args = parsed_args(media_call)
+          id_idx = args.index("--id")
+          file_idx = args.index("--file")
+          key_idx = args.index("--key")
+          mime_idx = args.index("--mimetype")
+          expect(id_idx).not_to be_nil
+          expect(args[id_idx + 1]).to eq("4c2052a1475842e9.mov")
+          expect(file_idx).not_to be_nil
+          expect(args[file_idx + 1]).to eq("/tmp/tempfile.mov")
+          expect(key_idx).not_to be_nil
+          expect(args[key_idx + 1]).to eq("")
+          expect(mime_idx).not_to be_nil
+          expect(args[mime_idx + 1]).to eq("video/quicktime")
         end
       end
     end
@@ -464,29 +470,40 @@ RSpec.describe Exports::Upd::Exporter do
       end
 
       it "creates multiple datasets in UPD file" do
-        dataset_creates = 0
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("dataset create")
-            dataset_creates += 1
-          end
-          true
-        end
-
         exporter.export(context)
-        expect(dataset_creates).to eq(2)
+
+        dataset_calls = updcli_calls.select { |c|
+          parsed_args(c).include?("dataset") && parsed_args(c).include?("create")
+        }
+        expect(dataset_calls.size).to eq(2)
       end
     end
 
-    context "when system command fails" do
-      it "raises an exception" do
-        allow(exporter).to receive(:system).with(
-          anything,
-          exception: true
-        ).and_raise(RuntimeError.new("Command failed"))
+    context "when executor command fails" do
+      before do
+        allow(mock_executor).to receive(:call).and_raise(
+          Executor::ExecutionError.new("updcli-static failed with stderr output")
+        )
+      end
 
+      it "raises an ExecutionError" do
         expect {
           exporter.export(context)
-        }.to raise_error(RuntimeError, "Command failed")
+        }.to raise_error(Executor::ExecutionError, /updcli-static failed/)
+      end
+    end
+
+    context "when executor times out" do
+      before do
+        allow(mock_executor).to receive(:call).and_raise(
+          Executor::TimeoutError.new("Command timed out after 300s")
+        )
+      end
+
+      it "raises a TimeoutError" do
+        expect {
+          exporter.export(context)
+        }.to raise_error(Executor::TimeoutError, /timed out/)
       end
     end
 
@@ -498,17 +515,14 @@ RSpec.describe Exports::Upd::Exporter do
       end
 
       it "creates dataset without entries" do
-        dataset_created = false
-        entry_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          dataset_created = true if cmd.include?("dataset create")
-          entry_created = true if cmd.include?("entry create")
-          true
-        end
-
         exporter.export(context)
-        expect(dataset_created).to be(true)
-        expect(entry_created).to be(false)
+
+        dataset_calls = updcli_calls.select { |c|
+          parsed_args(c).include?("dataset") && parsed_args(c).include?("create")
+        }
+        entry_calls = updcli_calls.select { |c| parsed_args(c).include?("entry") && parsed_args(c).include?("create") }
+        expect(dataset_calls).not_to be_empty
+        expect(entry_calls).to be_empty
       end
     end
 
@@ -518,14 +532,12 @@ RSpec.describe Exports::Upd::Exporter do
       end
 
       it "creates entries without annotations" do
-        annotation_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          annotation_created = true if cmd.include?("annotation create")
-          true
-        end
-
         exporter.export(context)
-        expect(annotation_created).to be(false)
+
+        ann_calls = updcli_calls.select { |c|
+          parsed_args(c).include?("annotation") && parsed_args(c).include?("create")
+        }
+        expect(ann_calls).to be_empty
       end
     end
 

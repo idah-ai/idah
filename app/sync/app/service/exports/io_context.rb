@@ -54,7 +54,7 @@ module Exports
           zipfile.add(file.sub("#{@directory}/", ""), file)
         end
       end
-      zip_path
+      @file = File.open(zip_path)
     end
 
     def cleanup
@@ -73,6 +73,8 @@ module Exports
 
     def cleanup_dir
       FileUtils.rm_rf(@directory)
+      zip_path = "#{@directory}.zip"
+      File.unlink(zip_path) if File.exist?(zip_path)
       @directory = nil
     end
   end
