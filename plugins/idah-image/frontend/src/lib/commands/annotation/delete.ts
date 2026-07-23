@@ -14,6 +14,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { IMAGE_MASK } from "$lib/types";
 import { invalidateAll } from "$lib/mask/tile-cache";
+import { markOccupancyDirty } from "$lib/mask/occupancy";
 import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
@@ -59,10 +60,12 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           await data.annotations!.delete(props.annotationId);
+          markOccupancyDirty();
         },
         async undo() {
           if (!data.annotations) return;
           await recreateAnnotationWithTiles(data.annotations!, record);
+          markOccupancyDirty();
         },
         isCombinable() { return false; },
         combine(p) { return p; },

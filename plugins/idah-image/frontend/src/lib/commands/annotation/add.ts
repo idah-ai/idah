@@ -20,6 +20,7 @@ import { lineDraft } from "./line.add_point.svelte";
 import { maskSession } from "$lib/state/mask-session.svelte";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { invalidateAll } from "$lib/mask/tile-cache";
+import { markOccupancyDirty } from "$lib/mask/occupancy";
 
 export const command = {
   name: "annotation.add",
@@ -85,6 +86,7 @@ export function register(driver: IIdahDriverV2): void {
               (annId, entries) => data.annotations!.setShapes(annId, entries),
             );
             maskSession.reset();
+            markOccupancyDirty();
           }
 
           if (props.shape.type !== IMAGE_MASK) {
@@ -98,6 +100,7 @@ export function register(driver: IIdahDriverV2): void {
               invalidateAll(createdId);
             }
             await data.annotations.delete(createdId);
+            markOccupancyDirty();
           }
           // Restore drawing mode for multi-step shapes so the user can
           // continue editing or individually undo add_point commands.
