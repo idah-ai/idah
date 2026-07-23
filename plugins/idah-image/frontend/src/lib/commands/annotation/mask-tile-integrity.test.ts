@@ -72,6 +72,7 @@ vi.mock("uuidv7", () => ({
 
 vi.mock("$lib/mask/tile-cache", () => ({
   invalidateAll: vi.fn(),
+  invalidate: vi.fn(),
 }));
 
 vi.mock("$lib/state/viewport.svelte", () => ({
@@ -171,16 +172,13 @@ describe("mask tile integrity — full undo/redo cycle", () => {
 
     // The create() call must NOT contain tile keys
     expectNoTileKeysInAnyCreateOrUpdate();
-    // Tiles were flushed via setShape
-    expect(mockSetShape).toHaveBeenCalledWith(
+    // Tiles were flushed via setShapes (batched, since 2 dirty tiles)
+    expect(mockSetShapes).toHaveBeenCalledWith(
       "generated-uuid-123",
-      "tile-0x0",
-      expect.objectContaining({ rle: expect.any(String) }),
-    );
-    expect(mockSetShape).toHaveBeenCalledWith(
-      "generated-uuid-123",
-      "tile-0x1",
-      null,
+      expect.arrayContaining([
+        expect.objectContaining({ key: "tile-0x0", value: expect.objectContaining({ rle: expect.any(String) }) }),
+        expect.objectContaining({ key: "tile-0x1", value: null }),
+      ]),
     );
 
     // ── Step 2: Flush additional tile changes ──
@@ -251,11 +249,10 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     // Non-tile shape fields must be preserved
     expect((createCall.shape as any)?.type).toBe("idah-image:mask");
     // Tiles must be restored via setShape/setShapes
-    expect(mockSetShapes).toHaveBeenCalledWith(
+    expect(mockSetShape).toHaveBeenCalledWith(
       "generated-uuid-123",
-      expect.arrayContaining([
-        expect.objectContaining({ key: "tile-0x0", value: null }),
-      ]),
+      "tile-0x0",
+      { rle: "FULL_TILE" },
     );
 
     // ── Step 5: Redo the delete ──
@@ -283,7 +280,7 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     const createCall2 = mockCreate.mock.calls[0][0] as Record<string, unknown>;
     expectNoTileKeysInShape(createCall2.shape);
     expect(createCall2.id).toBe("generated-uuid-123");
-    expect(mockSetShapes).toHaveBeenCalled();
+    expect(mockSetShape).toHaveBeenCalled();
 
     // Final sanity: no tile keys ever leaked at any point
     expectNoTileKeysInAnyCreateOrUpdate();

@@ -34,13 +34,9 @@ describe("rebuildOccupancy", () => {
   });
 
   it("builds a grid from a single mask annotation", () => {
-    // Create a mask with a single pixel painted in tile (0,0) at position (0,0)
-    // RLE: "0,4095,1,1" = 4095 zeros, then 1 one = only the last pixel is painted
-    // Actually: for a single pixel at (0,0): "1,1,0,4095"
-    // Let's just use a simpler pattern: "0,4096" means all zeros, no occupancy
-    // To test: "1,1,0,4095" = 1 one, then 4095 zeros = pixel 0 is painted
+    // Single pixel at offset 0: runs [0, 1] → "AAE="
     const ann = makeMaskAnn("ann-1", {
-      "tile-0x0": { rle: "1,1,0,4095" },
+      "tile-0x0": { rle: "AAE=" },
     });
     rebuildOccupancy([ann]);
 
@@ -51,11 +47,13 @@ describe("rebuildOccupancy", () => {
   });
 
   it("correctly ORs overlapping tiles from multiple annotations", () => {
+    // ann1: 50 ones at start → runs [0, 50] → "ADI="
     const ann1 = makeMaskAnn("ann-1", {
-      "tile-0x0": { rle: "1,50,0,4046" },
+      "tile-0x0": { rle: "ADI=" },
     });
+    // ann2: 20 zeros, 30 ones → runs [20, 30] → "FB4="
     const ann2 = makeMaskAnn("ann-2", {
-      "tile-0x0": { rle: "0,20,1,30,0,4046" },
+      "tile-0x0": { rle: "FB4=" },
     });
     rebuildOccupancy([ann1, ann2]);
 
@@ -69,14 +67,14 @@ describe("rebuildOccupancy", () => {
 
   it("skips hidden annotations", () => {
     const ann = makeMaskAnn("ann-1", {
-      "tile-0x0": { rle: "1,1,0,4095" },
+      "tile-0x0": { rle: "AAE=" },
     }, true);
     // The isHidden check is done in the caller (mask_brush.ts etc.)
     // via annotation.isHidden(). For the grid test, we just pass
     // non-hidden annotations.
     // rebuildOccupancy doesn't filter by hidden itself — it relies on
     // the caller to filter. Let's test that caller's responsibility.
-    rebuildOccupancy([ann, makeMaskAnn("ann-2", { "tile-0x0": { rle: "1,1,0,4095" } })]);
+    rebuildOccupancy([ann, makeMaskAnn("ann-2", { "tile-0x0": { rle: "AAE=" } })]);
     expect(isOccupied(0, 0, 0, 0)).toBe(true);
   });
 
@@ -84,7 +82,7 @@ describe("rebuildOccupancy", () => {
     it("does not block the currently edited mask from extending its own committed pixels", () => {
       // Create a committed mask annotation with pixel (0,0) in tile (0,0) painted
       const ann = makeMaskAnn("ann-current", {
-        "tile-0x0": { rle: "1,1,0,4095" }, // pixel (0,0) painted
+        "tile-0x0": { rle: "AAE=" }, // pixel (0,0) painted
       });
       rebuildOccupancy([ann]);
 
@@ -92,7 +90,7 @@ describe("rebuildOccupancy", () => {
       // from its committed tile (as onPointerDown does).
       const buf = new Uint8Array(MASK_TILE_SIZE * MASK_TILE_SIZE);
       // Decode the committed RLE into the buffer
-      const committedRle = "1,1,0,4095";
+      const committedRle = "AAE=";
       const decoded = decode(committedRle, MASK_TILE_SIZE, MASK_TILE_SIZE);
       buf.set(decoded);
 
@@ -131,7 +129,7 @@ describe("rebuildOccupancy", () => {
       // Create two different mask annotations, each with a committed pixel
       // in a different position in tile (0,0).
       const ann1 = makeMaskAnn("ann-one", {
-        "tile-0x0": { rle: "1,1,0,4095" }, // pixel (0,0) painted
+        "tile-0x0": { rle: "AAE=" }, // pixel (0,0) painted
       });
 
       // ann2 has no committed tiles yet — we're painting ONTO ann2, so

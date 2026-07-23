@@ -27,7 +27,7 @@ describe("isMaskPixelPainted", () => {
   it("correctly checks a pixel in tile (1, 0)", () => {
     const buf = new Uint8Array(MASK_TILE_SIZE * MASK_TILE_SIZE);
     buf[0] = 1; // top-left of tile (1, 0)
-    expect(isMaskPixelPainted(buf, 1, 0, 64, 0)).toBe(true);
+    expect(isMaskPixelPainted(buf, 1, 0, 128, 0)).toBe(true);
   });
 });
 
@@ -60,7 +60,7 @@ describe("hitTestMaskLayer", () => {
   it("skips hidden annotations", () => {
     const anns = [{
       id: "ann-1",
-      shape: { type: "idah-image:mask", "tile-0x0": { rle: "0,0,0,0" } },
+      shape: { type: "idah-image:mask", "tile-0x0": { rle: "" } },
     }];
     const result = hitTestMaskLayer(
       0, 0,

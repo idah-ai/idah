@@ -6,10 +6,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
-const { mockCreate, mockDelete, mockSetShape, mockSelectAnnotation } = vi.hoisted(() => ({
+const { mockCreate, mockDelete, mockSetShape, mockSetShapes, mockSelectAnnotation } = vi.hoisted(() => ({
   mockCreate: vi.fn(),
   mockDelete: vi.fn(),
   mockSetShape: vi.fn(),
+  mockSetShapes: vi.fn(),
   mockSelectAnnotation: vi.fn(),
 }));
 
@@ -26,6 +27,7 @@ vi.mock("$lib/state/data.svelte", () => ({
       create: mockCreate,
       delete: mockDelete,
       setShape: mockSetShape,
+      setShapes: mockSetShapes,
     },
   },
 }));
@@ -113,16 +115,13 @@ describe("annotation.add (mask path)", () => {
       value: { category: "cat" },
     });
 
-    // Should have flushed tiles via setShape
-    expect(mockSetShape).toHaveBeenCalledWith(
+    // Should have flushed tiles via setShapes (batched, since 2 dirty tiles)
+    expect(mockSetShapes).toHaveBeenCalledWith(
       "generated-uuid-123",
-      "tile-0x0",
-      expect.objectContaining({ rle: expect.any(String) }),
-    );
-    expect(mockSetShape).toHaveBeenCalledWith(
-      "generated-uuid-123",
-      "tile-0x1",
-      null,
+      expect.arrayContaining([
+        expect.objectContaining({ key: "tile-0x0", value: expect.objectContaining({ rle: expect.any(String) }) }),
+        expect.objectContaining({ key: "tile-0x1", value: null }),
+      ]),
     );
 
     // Session should have been reset

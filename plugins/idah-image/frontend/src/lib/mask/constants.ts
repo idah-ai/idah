@@ -1,4 +1,4 @@
-export const MASK_TILE_SIZE = 64;
+export const MASK_TILE_SIZE = 128;
 
 // ── Color palette for mask categories ────────────────────────────────────
 

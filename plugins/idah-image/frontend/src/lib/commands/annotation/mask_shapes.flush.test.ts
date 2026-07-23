@@ -6,10 +6,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mocks (vi.hoisted to avoid hoisting issues) ─────────────────────────
 
-const { mockCreate, mockDelete, mockSetShape } = vi.hoisted(() => ({
+const { mockCreate, mockDelete, mockSetShape, mockSetShapes } = vi.hoisted(() => ({
   mockCreate: vi.fn(),
   mockDelete: vi.fn(),
   mockSetShape: vi.fn(),
+  mockSetShapes: vi.fn(),
 }));
 
 // State for the maskSession mock
@@ -25,6 +26,7 @@ vi.mock("$lib/state/data.svelte", () => ({
       create: mockCreate,
       delete: mockDelete,
       setShape: mockSetShape,
+      setShapes: mockSetShapes,
     },
   },
 }));
@@ -115,17 +117,14 @@ describe("annotation.mask_shapes.flush", () => {
 
       await action.do();
 
-      // Full tile should be upserted as RLE
-      expect(mockSetShape).toHaveBeenCalledWith(
+      // Full tile should be upserted as RLE, empty tile deleted
+      // Both are in the same batch call since there are 2 dirty tiles
+      expect(mockSetShapes).toHaveBeenCalledWith(
         "ann-123",
-        "tile-0x0",
-        expect.objectContaining({ rle: expect.any(String) }),
-      );
-      // Empty tile should be deleted
-      expect(mockSetShape).toHaveBeenCalledWith(
-        "ann-123",
-        "tile-0x1",
-        null,
+        expect.arrayContaining([
+          expect.objectContaining({ key: "tile-0x0", value: expect.objectContaining({ rle: expect.any(String) }) }),
+          expect.objectContaining({ key: "tile-0x1", value: null }),
+        ]),
       );
     });
 
@@ -135,8 +134,8 @@ describe("annotation.mask_shapes.flush", () => {
         id: "ann-123",
         shape: {
           type: "idah-image:mask",
-          "tile-0x0": { rle: "1,4096" }, // prior: fully filled
-          "tile-0x1": { rle: "0,4096" }, // prior: empty
+          "tile-0x0": { rle: "AA==" }, // prior: fully filled
+          "tile-0x1": { rle: "" }, // prior: empty
         },
       };
       // Mock the data store
@@ -163,7 +162,7 @@ describe("annotation.mask_shapes.flush", () => {
       expect(mockSetShape).toHaveBeenCalledWith(
         "ann-123",
         "tile-0x0",
-        { rle: "1,4096" },
+        { rle: "AA==" },
       );
 
       // Undo should NOT delete the annotation
