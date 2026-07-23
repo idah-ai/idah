@@ -86,10 +86,12 @@ RSpec.describe Exports::Upd::Exporter do
       allow(ENV).to receive(:fetch).with("IDAH_URL").and_return("http://localhost:3000/")
 
       # Stub API calls
+      # index_all returns a paginated enumerator that yields pages (arrays of items).
+      # Each stub returns an array of pages: [[item]].
       allow(Api[:idah].dataset.datasets).to receive(:show).with(id: dataset_id).and_return(dataset_response)
-      allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([entry_response])
-      allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([annotation_response])
-      allow(Api[:idah].media.medias).to receive(:index_all).and_return([media_response])
+      allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([[entry_response]])
+      allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([[annotation_response]])
+      allow(Api[:idah].media.medias).to receive(:index_all).and_return([[media_response]])
       allow(Api[:idah].media.medias).to receive(:files).and_return(media_binary_data)
 
       # Stub streaming media download to yield chunks
@@ -312,14 +314,16 @@ RSpec.describe Exports::Upd::Exporter do
             filter: { resource: "res1", key: "" }
           ).and_return(
             [
-              double(
-                "Media",
-                id: "media1",
-                resource: "res1",
-                key: "",
-                filename: "file.mov",
-                mime_type: "video/quicktime"
-              )
+              [
+                double(
+                  "Media",
+                  id: "media1",
+                  resource: "res1",
+                  key: "",
+                  filename: "file.mov",
+                  mime_type: "video/quicktime"
+                )
+              ]
             ]
           )
           allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
@@ -339,22 +343,24 @@ RSpec.describe Exports::Upd::Exporter do
         it "includes all medias" do
           allow(Api[:idah].media.medias).to receive(:index_all).and_return(
             [
-              double(
-                "Media",
-                id: "media1",
-                resource: "res1",
-                key: "",
-                filename: "file.mov",
-                mime_type: "video/quicktime"
-              ),
-              double(
-                "Media",
-                id: "media2",
-                resource: "res1",
-                key: "240p.m3u8",
-                filename: "240p.m3u8",
-                mime_type: "application/vnd.apple.mpegurl"
-              )
+              [
+                double(
+                  "Media",
+                  id: "media1",
+                  resource: "res1",
+                  key: "",
+                  filename: "file.mov",
+                  mime_type: "video/quicktime"
+                ),
+                double(
+                  "Media",
+                  id: "media2",
+                  resource: "res1",
+                  key: "240p.m3u8",
+                  filename: "240p.m3u8",
+                  mime_type: "application/vnd.apple.mpegurl"
+                )
+              ]
             ]
           )
           allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
