@@ -95,6 +95,15 @@ export function register(driver: IIdahDriverV2): void {
         }
       }
 
+      // Snapshot any pending mask-polygon-close restoration state at command
+      // creation time, and clear the shared draft immediately — so only this
+      // specific command instance can ever apply it, not whichever undo() happens
+      // to run next and find it still set.
+      const polygonCloseSnapshot = maskPolygonDraft.closedPoints;
+      if (polygonCloseSnapshot) {
+        maskPolygonDraft.closedPoints = null;
+      }
+
       return {
         command: { ...command },
 
@@ -118,11 +127,8 @@ export function register(driver: IIdahDriverV2): void {
           maskSession.reset();
 
           // Clear the mask polygon draft so the polygon preview disappears.
-          // On redo after undo, the draft was restored by undo — save it to
-          // closedPoints first so the next undo of this close can restore it.
-          if (maskPolygonDraft.points.length > 0) {
-            maskPolygonDraft.closedPoints = [...maskPolygonDraft.points];
-          }
+          // The points to restore on undo were captured in polygonCloseSnapshot
+          // at callback creation time, so no need to re-derive them here.
           maskPolygonDraft.points = [];
         },
 
@@ -143,11 +149,10 @@ export function register(driver: IIdahDriverV2): void {
 
           // If this flush was from a mask polygon close, restore the drawing
           // preview so the user can continue editing or undo add_point commands.
-          if (maskPolygonDraft.closedPoints) {
+          if (polygonCloseSnapshot) {
             driver.setMode(IMAGE_MASK);
             maskTool.active = "polygon";
-            maskPolygonDraft.points = maskPolygonDraft.closedPoints;
-            maskPolygonDraft.closedPoints = null;
+            maskPolygonDraft.points = polygonCloseSnapshot;
           }
         },
 

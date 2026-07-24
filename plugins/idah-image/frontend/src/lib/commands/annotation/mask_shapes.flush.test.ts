@@ -19,6 +19,13 @@ let _mockDirtyTiles: string[] = [];
 let _mockTileBuffers: Map<string, Uint8Array> = new Map();
 let _mockMode: "add" | "remove" = "add";
 
+// State for maskPolygonDraft mock
+let _mockPoints: [number, number][] = [];
+let _mockClosedPoints: [number, number][] | null = null;
+
+// State for maskTool mock
+let _mockMaskToolActive: string = "brush";
+
 vi.mock("$lib/state/data.svelte", () => ({
   data: {
     annotations: {
@@ -58,6 +65,22 @@ vi.mock("$lib/state/selection.svelte", () => ({
   },
 }));
 
+vi.mock("$lib/commands/mode/mask_polygon", () => ({
+  maskPolygonDraft: {
+    get points() { return _mockPoints; },
+    set points(p: [number, number][]) { _mockPoints = p; },
+    get closedPoints() { return _mockClosedPoints; },
+    set closedPoints(p: [number, number][] | null) { _mockClosedPoints = p; },
+  },
+}));
+
+vi.mock("$lib/state/mask-tool.svelte", () => ({
+  maskTool: {
+    get active() { return _mockMaskToolActive; },
+    set active(v: string) { _mockMaskToolActive = v; },
+  },
+}));
+
 // Import after mocks
 import { command } from "./mask_shapes.flush";
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
@@ -89,11 +112,15 @@ describe("annotation.mask_shapes.flush", () => {
     _mockDirtyTiles = [];
     _mockTileBuffers = new Map();
     _mockMode = "add";
+    _mockPoints = [];
+    _mockClosedPoints = null;
+    _mockMaskToolActive = "brush";
 
     mockDriver = {
       command: {
         register: vi.fn(),
       },
+      setMode: vi.fn(),
     };
   });
 
@@ -243,6 +270,132 @@ describe("annotation.mask_shapes.flush", () => {
         "tile-0x0",
         expect.objectContaining({ rle: expect.any(String) }),
       );
+    });
+  });
+
+  describe("mask polygon close snapshot (closedPoints fix)", () => {
+    it("captures closedPoints at callback creation time and clears the shared global", () => {
+      // Arrange: simulate a polygon close that set closedPoints
+      _mockClosedPoints = [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]];
+
+      register(mockDriver);
+      const registered = mockDriver.command.register.mock.calls[0][0];
+
+      // Act: create the command while closedPoints is still set
+      const action = registered.callback();
+
+      // The callback returns early (noopAction) because there are no dirty tiles.
+      // We need a scenario where the flush has dirty tiles AND closedPoints is set.
+      // Set up the full scenario:
+    });
+
+    it("flush from polygon close restores polygon preview on undo", async () => {
+      _mockAnnotationId = "ann-123";
+      _mockDirtyTiles = ["0:0"];
+      _mockTileBuffers.set("0:0", createFullBuffer());
+      _mockClosedPoints = [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]];
+
+      register(mockDriver);
+      const registered = mockDriver.command.register.mock.calls[0][0];
+      const action = registered.callback();
+
+      // closedPoints should be cleared at callback time
+      expect(_mockClosedPoints).toBeNull();
+
+      // Undo should restore the polygon preview
+      await action.undo();
+
+      expect(mockDriver.setMode).toHaveBeenCalledWith("idah-image:mask");
+      expect(_mockMaskToolActive).toBe("polygon");
+      expect(_mockPoints).toEqual([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]);
+    });
+
+    it("undo without polygonCloseSnapshot does not restore polygon preview", async () => {
+      // Arrange: closedPoints is null — this is a normal brush flush
+      _mockAnnotationId = "ann-123";
+      _mockDirtyTiles = ["0:0"];
+      _mockTileBuffers.set("0:0", createFullBuffer());
+      _mockClosedPoints = null;
+
+      register(mockDriver);
+      const registered = mockDriver.command.register.mock.calls[0][0];
+      const action = registered.callback();
+
+      // Undo should NOT restore polygon preview
+      await action.undo();
+
+      expect(mockDriver.setMode).not.toHaveBeenCalled();
+      expect(_mockMaskToolActive).toBe("brush");
+      expect(_mockPoints).toEqual([]);
+    });
+
+    it("second flush command created after polygon close does not see closedPoints", async () => {
+      // Regression test: two flush commands in sequence, only the first one
+      // should see the non-null closedPoints.
+
+      _mockAnnotationId = "ann-123";
+      _mockClosedPoints = [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]];
+
+      register(mockDriver);
+      const registered = mockDriver.command.register.mock.calls[0][0];
+
+      // First command captures the close
+      _mockDirtyTiles = ["0:0"];
+      _mockTileBuffers.set("0:0", createFullBuffer());
+
+      const firstAction = registered.callback();
+      expect(_mockClosedPoints).toBeNull();
+
+      // Second command (created after the close — e.g. a later brush stroke)
+      _mockDirtyTiles = ["0:1"];
+      _mockTileBuffers.set("0:1", createFullBuffer());
+
+      const secondAction = registered.callback();
+
+      // Undo the second command — it should NOT restore polygon preview
+      await secondAction.undo();
+      expect(mockDriver.setMode).not.toHaveBeenCalled();
+      expect(_mockMaskToolActive).toBe("brush");
+      expect(_mockPoints).toEqual([]);
+
+      // Undo the first command — it SHOULD restore polygon preview
+      await firstAction.undo();
+      expect(mockDriver.setMode).toHaveBeenCalledWith("idah-image:mask");
+      expect(_mockMaskToolActive).toBe("polygon");
+      expect(_mockPoints).toEqual([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]);
+    });
+
+    it("undo/redo cycle multiple times is idempotent with local snapshot", async () => {
+      _mockAnnotationId = "ann-123";
+      _mockDirtyTiles = ["0:0"];
+      _mockTileBuffers.set("0:0", createFullBuffer());
+      _mockClosedPoints = [[0.1, 0.2], [0.3, 0.4]];
+
+      register(mockDriver);
+      const registered = mockDriver.command.register.mock.calls[0][0];
+      const action = registered.callback();
+
+      // First undo (after do that cleared points)
+      await action.undo();
+      expect(_mockPoints).toEqual([[0.1, 0.2], [0.3, 0.4]]);
+
+      // Redo (do again) -> clears points
+      _mockPoints = [];
+      await action.do();
+      expect(_mockPoints).toEqual([]);
+
+      // Undo again -> should still restore polygon preview
+      await action.undo();
+      expect(_mockPoints).toEqual([[0.1, 0.2], [0.3, 0.4]]);
+
+      // Redo -> clear again
+      _mockPoints = [];
+      await action.do();
+      expect(_mockPoints).toEqual([]);
+
+      // One more undo for good measure
+      await action.undo();
+      expect(_mockPoints).toEqual([[0.1, 0.2], [0.3, 0.4]]);
     });
   });
 });

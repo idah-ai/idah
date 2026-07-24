@@ -68,6 +68,15 @@ export function register(driver: IIdahDriverV2): void {
       }
       const dirtyTileKeys = [...maskBufferSnapshot.keys()];
 
+      // Snapshot any pending mask-polygon-close restoration state at command
+      // creation time, and clear the shared draft immediately — so only this
+      // specific command instance can ever apply it, not whichever undo() happens
+      // to run next and find it still set.
+      const polygonCloseSnapshot = props.shape.type === IMAGE_MASK ? maskPolygonDraft.closedPoints : null;
+      if (polygonCloseSnapshot) {
+        maskPolygonDraft.closedPoints = null;
+      }
+
       return {
         command: { ...command },
         async do() {
@@ -94,12 +103,9 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           // Clear the mask polygon draft so the polygon preview disappears.
-          // On redo after undo, the draft was restored by undo — save it to
-          // closedPoints first so the next undo of this close can restore it.
+          // The points to restore on undo were captured in polygonCloseSnapshot
+          // at callback creation time, so no need to re-derive them here.
           if (props.shape.type === IMAGE_MASK) {
-            if (maskPolygonDraft.points.length > 0) {
-              maskPolygonDraft.closedPoints = [...maskPolygonDraft.points];
-            }
             maskPolygonDraft.points = [];
           }
         },
@@ -120,11 +126,10 @@ export function register(driver: IIdahDriverV2): void {
           } else if (props.shape.type === IMAGE_LINE) {
             driver.setMode(IMAGE_LINE);
             lineDraft.points = props.shape.points.slice(0, 1);
-          } else if (props.shape.type === IMAGE_MASK && maskPolygonDraft.closedPoints) {
+          } else if (props.shape.type === IMAGE_MASK && polygonCloseSnapshot) {
             driver.setMode(IMAGE_MASK);
             maskTool.active = "polygon";
-            maskPolygonDraft.points = maskPolygonDraft.closedPoints;
-            maskPolygonDraft.closedPoints = null;
+            maskPolygonDraft.points = polygonCloseSnapshot;
           }
         },
         isCombinable() {
