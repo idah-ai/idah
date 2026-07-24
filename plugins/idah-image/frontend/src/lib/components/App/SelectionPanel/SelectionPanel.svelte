@@ -7,10 +7,10 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_MASK } from "$lib/types";
 
-  import type { IConfigProperty } from "$idah/v2/types";
-  import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
+    import type { IConfigProperty } from "$idah/v2/types";
+    import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
 
   type Props = {
     selectedCategory: string;
@@ -66,6 +66,17 @@
     (viewport.mode === DEFAULT_MODE || viewport.mode === "review") && currentFrameAnnotations.length > 0,
   );
 
+  // Categories already used by existing mask annotations on this entry.
+  // Used to disable them in the category picker — only one mask per category.
+  let usedMaskCategories = $derived(
+    new Set(
+      currentFrameAnnotations
+        .filter((a) => a.shape?.type === IMAGE_MASK)
+        .map((a) => a.value?.category)
+        .filter((c): c is string => Boolean(c)),
+    ),
+  );
+
   // -----------------------------------------------------------------------
   // Handlers
   // -----------------------------------------------------------------------
@@ -104,6 +115,7 @@
       {onSelectCategory}
       {onValueChange}
       {disabled}
+      {usedMaskCategories}
     />
   {/if}
 {:else}
@@ -119,5 +131,6 @@
     onReSelectCategory={reselectCategory}
     {onValueChange}
     {disabled}
+    {usedMaskCategories}
   />
 {/if}

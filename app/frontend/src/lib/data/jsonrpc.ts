@@ -54,6 +54,7 @@ export class JsonRpcDatasource {
   private queue: QueueItem[] = [];
   private processing = false;
   private paused = false;
+  private flushScheduled = false;
 
   private failedCount = 0;
   private readonly retry_base_delay = 1000;
@@ -64,6 +65,9 @@ export class JsonRpcDatasource {
 
   /** Timestamp (Date.now()) of the first network failure in the current streak. */
   private networkFailureStart: number | null = null;
+
+  /** @internal Test-only accessor — allows tests to observe paused state without exposing internals. */
+  get isPaused(): boolean { return this.paused; }
 
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;
@@ -93,12 +97,21 @@ export class JsonRpcDatasource {
   call(method: JsonRpcMethod): Promise<JsonRpcResult> {
     return new Promise<JsonRpcResult>((onResolve) => {
       this.queue.push({ method, onResolve });
-      this.process();
+      this.scheduleFlush();
     });
   }
 
+  private scheduleFlush(): void {
+    if (this.processing || this.paused || this.flushScheduled) return;
+    this.flushScheduled = true;
+    setTimeout(() => {
+      this.flushScheduled = false;
+      this.process();
+    }, 15);
+  }
+
   private process(): void {
-    if (this.processing || this.paused || this.queue.length === 0) return;
+    if (this.processing || this.paused || this.queue.length === 0 || this.flushScheduled) return;
     this.flush();
   }
 

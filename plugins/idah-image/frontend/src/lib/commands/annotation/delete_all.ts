@@ -10,6 +10,9 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
+import { invalidateAll } from "$lib/mask/tile-cache";
+import { IMAGE_MASK } from "$lib/types";
 
 export const command = {
   name: "annotation.delete_all",
@@ -39,13 +42,17 @@ export function register(driver: IIdahDriverV2): void {
         async do() {
           if (!data.annotations) return;
           for (const ann of snapshot) {
+            const shape = ann.shape as Record<string, unknown> | undefined;
+            if (shape?.type === IMAGE_MASK) {
+              invalidateAll(ann.id);
+            }
             await data.annotations.delete(ann.id);
           }
         },
         async undo() {
           if (!data.annotations) return;
           for (const ann of snapshot) {
-            await data.annotations.create({ ...ann, id: ann.id });
+            await recreateAnnotationWithTiles(data.annotations, ann);
           }
         },
         isCombinable() {

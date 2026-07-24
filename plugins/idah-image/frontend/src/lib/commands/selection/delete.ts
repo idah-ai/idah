@@ -8,8 +8,10 @@ import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
-import { DEFAULT_MODE } from "$lib/types";
+import { DEFAULT_MODE, IMAGE_MASK } from "$lib/types";
 import { viewport } from "$lib/state/viewport.svelte";
+import { invalidateAll } from "$lib/mask/tile-cache";
+import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
   name: "selection.delete",
@@ -37,11 +39,16 @@ export function register(driver: IIdahDriverV2): void {
         command: { ...command },
         async do() {
           selection.deselect();
+          // Free cached mask bitmaps if this is a mask annotation
+          const shape = record.shape as Record<string, unknown> | undefined;
+          if (shape?.type === IMAGE_MASK) {
+            invalidateAll(record.id);
+          }
           await data.annotations!.delete(record.id);
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await recreateAnnotationWithTiles(data.annotations!, record);
         },
         isCombinable() { return false; },
         combine(p) { return p; },

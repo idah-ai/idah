@@ -8,13 +8,14 @@ import {
   IMAGE_LINE,
   IMAGE_POLYGON,
   NOTE_MODE,
+  IMAGE_MASK,
   REVIEW_MODE,
 } from "$lib/types";
 
 export const command = {
   name: "mode.selection",
   group: "Tools",
-  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE],
+  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE],
   shortcut: "D",
   shortDescription: "Select",
   longDescription: "Selection Tool",

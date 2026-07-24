@@ -9,10 +9,10 @@
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { selection } from "$lib/state/selection.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -24,11 +24,15 @@
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
+  import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
   import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
   import { syncStatus } from "$lib/state/driver.svelte";
+  import { maskTool } from "$lib/state/mask-tool.svelte";
+  import { maskSession } from "$lib/state/mask-session.svelte";
+  import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
   type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
@@ -157,12 +161,24 @@
 
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
-    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_CIRCLE && viewportMode !== IMAGE_ELLIPSE && viewportMode !== IMAGE_LINE && viewportMode !== IMAGE_POLYGON) {
+    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_CIRCLE && viewportMode !== IMAGE_ELLIPSE && viewportMode !== IMAGE_LINE && viewportMode !== IMAGE_POLYGON && viewportMode !== IMAGE_MASK) {
       pendingValue = {};
     }
 
-    // Deselect group or annotation when switching to drawing modes
-    if (viewport.isCreationMode) selection.deselect();
+    // When leaving mask mode (e.g. returning to DEFAULT_MODE), clear the
+    // session buffer so any in-progress stroke doesn't remain visible.
+    if (viewportMode !== IMAGE_MASK) {
+      maskSession.reset();
+    }
+
+    // Deselect group or annotation when switching to drawing modes,
+    // but keep the selection if it's a mask annotation (so we can edit it).
+    if (viewport.isCreationMode) {
+      const sel = selection.value;
+      if (!sel || (sel.shape as any)?.type !== IMAGE_MASK) {
+        selection.deselect();
+      }
+    }
   });
 
   onMount(async () => {
@@ -328,9 +344,54 @@
       selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
       if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord, $state.snapshot(value));
     } else if (valueMode !== "entry:root") {
+      // ── Resolve the actual shape type from config ────────────────────
+      // The valueMode may be DEFAULT_MODE (popover/right sidebar flow), but
+      // the category might belong to a mask config. Resolve by checking if
+      // the category ID exists in the IMAGE_MASK config values.
+      const effectiveShapeType = (() => {
+        if (valueMode === IMAGE_MASK) return IMAGE_MASK;
+        if (value.category) {
+          const maskConfig = getDriver().config[IMAGE_MASK];
+          if (maskConfig?.values?.some((v: any) => v.id === value.category)) {
+            return IMAGE_MASK;
+          }
+        }
+        return valueMode;
+      })();
+
+      // ── Mask category: prevent duplicates ───────────────────────────
+      // If a mask annotation with this category already exists, select it
+      // instead of entering drawing mode, and enter mask mode with brush
+      // so the user can continue editing. Only one mask per category.
+      if (effectiveShapeType === IMAGE_MASK && value.category) {
+        const existingMask = data.annotations?.items.find(
+          (a) =>
+            (a.shape as any)?.type === IMAGE_MASK &&
+            (a.value as any)?.category === value.category,
+        );
+        if (existingMask) {
+          selection.selectAnnotation(existingMask as any);
+          // Enter mask mode with brush active so the user can edit
+          viewport.mode = IMAGE_MASK;
+          maskTool.active = "brush";
+          return;
+        }
+      }
+
       // Sidebar category click: store category and enter drawing mode
+      // When switching to a mask category from the sidebar, discard any
+      // in-progress paint session that targets a different category than the
+      // one being selected now.  This prevents pixels from an abandoned
+      // new-mask attempt bleeding into the new one (Trigger 2).
+      if (valueMode === IMAGE_MASK && maskSession.dirty.size > 0 && value.category !== pendingValue.category) {
+        maskSession.reset();
+      }
       pendingValue = value;
       viewport.mode = valueMode;
+      // When entering mask mode from sidebar, activate brush by default
+      if (valueMode === IMAGE_MASK) {
+        maskTool.active = "brush";
+      }
     } else if (shapeSelectionArgs && requirementFullfilled) {
       showPopOver = false;
       onShapeSelection(...shapeSelectionArgs);
@@ -460,22 +521,13 @@
     open={showPopOver}
     onOpenChange={(open: boolean) => {
       if (!open && showPopOver) {
-        // Popover closed via Escape/click-outside — restore drawing state
-        annotationValue = {};
-        pendingValue = {};
-        const args = shapeSelectionArgs;
-        shapeSelectionArgs = undefined;
-        if (args) {
-          const [type, points] = args;
-          if (type === IMAGE_POLYGON) {
-            polygonDraft.points = points;
-            viewport.mode = IMAGE_POLYGON;
-          } else if (type === IMAGE_LINE) {
-            lineDraft.points = points;
-            viewport.mode = IMAGE_LINE;
-          }
-        }
-        selectAnnotation();
+        handlePopoverCancel(shapeSelectionArgs, {
+          setAnnotationValue: (v) => { annotationValue = v; },
+          setPendingValue: (v) => { pendingValue = v; },
+          clearShapeSelectionArgs: () => { shapeSelectionArgs = undefined; },
+          setShowPopOver: (v) => { showPopOver = v; },
+          selectAnnotation: () => { selectAnnotation(); },
+        });
       }
       showPopOver = open;
     }}
@@ -535,22 +587,13 @@
           variant="outline"
           onclick={() => {
             showPopOver = false;
-            annotationValue = {};
-            pendingValue = {};
-            // Restore the drawing state so the user can continue editing
-            const args = shapeSelectionArgs;
-            shapeSelectionArgs = undefined;
-            if (args) {
-              const [type, points] = args;
-              if (type === IMAGE_POLYGON) {
-                polygonDraft.points = points;
-                viewport.mode = IMAGE_POLYGON;
-              } else if (type === IMAGE_LINE) {
-                lineDraft.points = points;
-                viewport.mode = IMAGE_LINE;
-              }
-            }
-            selectAnnotation();
+            handlePopoverCancel(shapeSelectionArgs, {
+              setAnnotationValue: (v) => { annotationValue = v; },
+              setPendingValue: (v) => { pendingValue = v; },
+              clearShapeSelectionArgs: () => { shapeSelectionArgs = undefined; },
+              setShowPopOver: (v) => { showPopOver = v; },
+              selectAnnotation: () => { selectAnnotation(); },
+            });
           }}
         >
           Cancel
