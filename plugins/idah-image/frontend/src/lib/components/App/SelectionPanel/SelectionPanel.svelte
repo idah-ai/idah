@@ -73,7 +73,7 @@
       currentFrameAnnotations
         .filter((a) => a.shape?.type === IMAGE_MASK)
         .map((a) => a.value?.category)
-        .filter(Boolean),
+        .filter((c): c is string => Boolean(c)),
     ),
   );
 

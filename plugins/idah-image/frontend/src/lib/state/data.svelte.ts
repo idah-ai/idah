@@ -71,6 +71,11 @@ export function computeMissingRanges(loaded: [number, number] | null, request: [
 // DataStore factory
 // ---------------------------------------------------------------------------
 
+export interface AnnotationDataStore extends DataStore<AnnotationItem> {
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
+}
+
 export interface DataStore<T extends DataItem> {
   readonly items: T[];
   readonly loadedRange: [number, number] | null;
@@ -158,7 +163,7 @@ function syncSelectionOnDelete(deletedId: string): void {
   }
 }
 
-export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
+export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataStore {
   const store = createDataStore<AnnotationItem>(async () => {
     const items = await driver.fetch();
     return items as AnnotationItem[];
@@ -546,7 +551,7 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { INoteRecord } from "$idah/v2/types";
 
-let _annotations: DataStore<AnnotationItem> | null = $state(null);
+let _annotations: AnnotationDataStore | null = $state(null);
 
 let _noteList: INoteRecord[] = $state([]);
 let _unsubNotes: (() => void) | null = null;
@@ -637,7 +642,7 @@ export function focusNote(note: INoteRecord): void {
 }
 
 export const data: {
-  annotations: DataStore<AnnotationItem> | null;
+  annotations: AnnotationDataStore | null;
 } = {
   get annotations() {
     return _annotations;

@@ -67,15 +67,15 @@ describe("JsonRpcDatasource", () => {
       });
 
       // First batch of calls
-      const p1 = rpc.call({ method: "write_shape", params: { annotation_id: "a1", key: "tile-0x0", value: { rle: "A" } } });
+      rpc.call({ method: "write_shape", params: { annotation_id: "a1", key: "tile-0x0", value: { rle: "A" } } });
       await vi.advanceTimersByTimeAsync(20); // flush the debounce
 
       // First batch is now in flight (processing = true, fetch was called)
       expect(fetchMock).toHaveBeenCalledTimes(1);
 
       // Issue more calls while the first batch is still in flight
-      const p2 = rpc.call({ method: "write_shape", params: { annotation_id: "a1", key: "tile-0x1", value: { rle: "B" } } });
-      const p3 = rpc.call({ method: "write_shape", params: { annotation_id: "a1", key: "tile-0x2", value: { rle: "C" } } });
+      rpc.call({ method: "write_shape", params: { annotation_id: "a1", key: "tile-0x1", value: { rle: "B" } } });
+      rpc.call({ method: "write_shape", params: { annotation_id: "a1", key: "tile-0x2", value: { rle: "C" } } });
 
       // Advance time — the debounce timer fires but process() should see
       // processing=true and skip. The second batch should not be sent yet.

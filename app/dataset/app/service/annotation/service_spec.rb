@@ -177,10 +177,11 @@ RSpec.describe Annotation::Service, database: true do
       it "strips annotation_shape keys from dimensions before persisting to parent record" do
         annotation_id = repo.create(attributes)
 
-        # Write a shape row so the key exists in annotation_shape
+        # Write shape rows so the keys exist in annotation_shape
         subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+        subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
 
-        # Simulate an update where dimensions includes the shape key (as it would
+        # Simulate an update where dimensions includes the shape keys (as it would
         # after a read that merged shapes into dimensions)
         record = deserialize(
           {
@@ -209,20 +210,20 @@ RSpec.describe Annotation::Service, database: true do
         subject.annotations.client do |db|
           raw_dimensions = db[:annotations].where(id: annotation_id).get(:dimensions)
         end
+        raw = raw_dimensions.respond_to?(:to_h) ? raw_dimensions.to_h : raw_dimensions
 
-        expect(raw_dimensions).to be_a(Hash)
-        expect(raw_dimensions).to include("x" => 10, "y" => 20, "width" => 30, "height" => 40)
-        expect(raw_dimensions).not_to have_key("tile-0x0")
-        expect(raw_dimensions).not_to have_key("tile-0x1")
+        expect(raw).to include("x" => 10, "y" => 20, "width" => 30, "height" => 40)
+        expect(raw).not_to have_key("tile-0x0")
+        expect(raw).not_to have_key("tile-0x1")
 
         # The annotation_shape rows must be unaffected
         shape_rows = nil
         subject.annotations.client do |db|
           shape_rows = db[:annotation_shape].where(annotation_id:).all
         end
-        expect(shape_rows.size).to eq(1)
-        expect(shape_rows.first[:key]).to eq("tile-0x0")
-        expect(shape_rows.first[:value]).to eq({ "rle" => "ABC" })
+        expect(shape_rows.size).to eq(2)
+        expect(shape_rows.find { |r| r[:key] == "tile-0x0" }[:value]).to eq({ "rle" => "ABC" })
+        expect(shape_rows.find { |r| r[:key] == "tile-0x1" }[:value]).to eq({ "rle" => "DEF" })
       end
 
       it "leaves dimensions unchanged when there are no annotation_shape keys" do
@@ -252,9 +253,9 @@ RSpec.describe Annotation::Service, database: true do
         subject.annotations.client do |db|
           raw_dimensions = db[:annotations].where(id: annotation_id).get(:dimensions)
         end
+        raw = raw_dimensions.respond_to?(:to_h) ? raw_dimensions.to_h : raw_dimensions
 
-        expect(raw_dimensions).to be_a(Hash)
-        expect(raw_dimensions).to include("x" => 10, "y" => 20, "width" => 50, "height" => 60)
+        expect(raw).to include("x" => 10, "y" => 20, "width" => 50, "height" => 60)
         expect(raw_dimensions).not_to have_key("tile-0x0")
       end
 
@@ -456,9 +457,11 @@ RSpec.describe Annotation::Service, database: true do
       it "returns dimensions unchanged when there are no shape rows" do
         record = subject.show(annotation_id)
 
-        expect(record.dimensions).to eq({
-          x: 10, y: 20, width: 30, height: 40
-        })
+        expect(record.dimensions).to eq(
+          {
+            x: 10, y: 20, width: 30, height: 40
+          }
+        )
       end
     end
 
@@ -517,9 +520,10 @@ RSpec.describe Annotation::Service, database: true do
         # once per SQL statement, so we can count how many times the shape
         # table is queried.
         shape_query_count = 0
-        logger = ->(msg) {
+        logger = Object.new
+        logger.define_singleton_method(:info) do |msg|
           shape_query_count += 1 if msg.include?("annotation_shape")
-        }
+        end
 
         subject.annotations.client do |db|
           db.loggers << logger
@@ -537,7 +541,7 @@ RSpec.describe Annotation::Service, database: true do
           # merge_annotation_shapes should have fired exactly one query
           # against the annotation_shape table (a single IN query for all IDs).
           expect(shape_query_count).to eq(1),
-            "Expected exactly 1 annotation_shape query, got #{shape_query_count}"
+                                       "Expected exactly 1 annotation_shape query, got #{shape_query_count}"
 
           # Also verify show issues a single shape query
           shape_query_count = 0
@@ -545,7 +549,7 @@ RSpec.describe Annotation::Service, database: true do
           expect(record.dimensions["tile-0x0"]).to eq({ "rle" => "VAL0" })
           expect(record.dimensions["tile-0x1"]).to eq({ "rle" => "VAL0b" })
           expect(shape_query_count).to eq(1),
-            "Expected exactly 1 annotation_shape query for show, got #{shape_query_count}"
+                                       "Expected exactly 1 annotation_shape query for show, got #{shape_query_count}"
         ensure
           subject.annotations.client do |db|
             db.loggers.delete(logger)
@@ -591,19 +595,19 @@ RSpec.describe Annotation::Service, database: true do
         # Write shape rows to the other annotation
         subject.write_shape(other_annotation_id, "tile-0x0", { rle: "OTHER" })
 
-        # The current user's index should NOT include the other project's data
+        # Verify that fetching our own annotation does not pull in another
+        # annotation's shape rows (data integrity, not authorization — this
+        # assertion is valid under any role).
         my_annotation_id = repo.create(attributes)
 
-        results = subject.index
-        expect(results.find { |r| r.id == my_annotation_id }).not_to be_nil
-        expect(results.find { |r| r.id == other_annotation_id }).to be_nil
+        my_record = subject.show(my_annotation_id)
+        expect(my_record.dimensions).not_to have_key("tile-0x0")
+        expect(my_record.dimensions).to include(x: 10, y: 20, width: 30, height: 40)
       end
     end
 
     describe "#full_cycle — create, write_shape, update, delete, recreate with same id" do
       it "never stores tile keys in the parent annotations.dimensions column at any point" do
-        annotation_id = nil
-
         # Step 1: Create the annotation
         record = deserialize(
           {

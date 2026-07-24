@@ -15,7 +15,7 @@ function makeMaskAnn(
   id: string,
   tiles: Record<string, { rle: string }>,
   hidden: boolean = false,
-): { id: string; shape: Record<string, unknown>; value?: Record<string, unknown>; isHidden?: boolean } {
+): { id: string; shape: { type: string } & Record<string, unknown>; value?: Record<string, unknown>; isHidden?: boolean } {
   return {
     id,
     shape: { type: "idah-image:mask", ...tiles },

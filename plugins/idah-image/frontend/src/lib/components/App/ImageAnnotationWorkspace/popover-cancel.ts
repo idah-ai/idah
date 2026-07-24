@@ -11,7 +11,7 @@ import type { Point } from "$lib/utils/math/point";
 import { maskSession } from "$lib/state/mask-session.svelte";
 import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 import { maskTool } from "$lib/state/mask-tool.svelte";
-import { polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
+import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
 import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 
