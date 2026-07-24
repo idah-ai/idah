@@ -32,6 +32,7 @@
   import { syncStatus } from "$lib/state/driver.svelte";
   import { maskTool } from "$lib/state/mask-tool.svelte";
   import { maskSession } from "$lib/state/mask-session.svelte";
+  import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
   type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
@@ -378,6 +379,13 @@
       }
 
       // Sidebar category click: store category and enter drawing mode
+      // When switching to a mask category from the sidebar, discard any
+      // in-progress paint session that targets a different category than the
+      // one being selected now.  This prevents pixels from an abandoned
+      // new-mask attempt bleeding into the new one (Trigger 2).
+      if (valueMode === IMAGE_MASK && maskSession.dirty.size > 0 && value.category !== pendingValue.category) {
+        maskSession.reset();
+      }
       pendingValue = value;
       viewport.mode = valueMode;
       // When entering mask mode from sidebar, activate brush by default
@@ -513,36 +521,13 @@
     open={showPopOver}
     onOpenChange={(open: boolean) => {
       if (!open && showPopOver) {
-        // Popover closed via Escape/click-outside — restore drawing state
-        annotationValue = {};
-        pendingValue = {};
-        const args = shapeSelectionArgs;
-        shapeSelectionArgs = undefined;
-        if (args) {
-          const [type, points] = args;
-          if (type === IMAGE_POLYGON) {
-            polygonDraft.points = points;
-            viewport.mode = IMAGE_POLYGON;
-          } else if (type === IMAGE_LINE) {
-            lineDraft.points = points;
-            viewport.mode = IMAGE_LINE;
-          } else if (type === IMAGE_MASK) {
-            // Discard the in-progress paint session on cancel, same as every other
-            // shape type discards its in-progress draft — stay in mask mode so the
-            // user can immediately start a fresh stroke/fill.
-            maskSession.reset();
-            // For mask polygon, restore the drawn vertices from closedPoints
-            // so the user can continue editing the polygon instead of starting
-            // from scratch, matching the vector polygon cancel behavior.
-            if (maskPolygonDraft.closedPoints) {
-              maskPolygonDraft.points = maskPolygonDraft.closedPoints;
-              maskPolygonDraft.closedPoints = null;
-              maskTool.active = "polygon";
-            }
-            viewport.mode = IMAGE_MASK;
-          }
-        }
-        selectAnnotation();
+        handlePopoverCancel(shapeSelectionArgs, {
+          setAnnotationValue: (v) => { annotationValue = v; },
+          setPendingValue: (v) => { pendingValue = v; },
+          clearShapeSelectionArgs: () => { shapeSelectionArgs = undefined; },
+          setShowPopOver: (v) => { showPopOver = v; },
+          selectAnnotation: () => { selectAnnotation(); },
+        });
       }
       showPopOver = open;
     }}
@@ -602,30 +587,13 @@
           variant="outline"
           onclick={() => {
             showPopOver = false;
-            annotationValue = {};
-            pendingValue = {};
-            // Restore the drawing state so the user can continue editing
-            const args = shapeSelectionArgs;
-            shapeSelectionArgs = undefined;
-            if (args) {
-              const [type, points] = args;
-              if (type === IMAGE_POLYGON) {
-                polygonDraft.points = points;
-                viewport.mode = IMAGE_POLYGON;
-              } else if (type === IMAGE_LINE) {
-                lineDraft.points = points;
-                viewport.mode = IMAGE_LINE;
-              } else if (type === IMAGE_MASK) {
-                maskSession.reset();
-                if (maskPolygonDraft.closedPoints) {
-                  maskPolygonDraft.points = maskPolygonDraft.closedPoints;
-                  maskPolygonDraft.closedPoints = null;
-                  maskTool.active = "polygon";
-                }
-                viewport.mode = IMAGE_MASK;
-              }
-            }
-            selectAnnotation();
+            handlePopoverCancel(shapeSelectionArgs, {
+              setAnnotationValue: (v) => { annotationValue = v; },
+              setPendingValue: (v) => { pendingValue = v; },
+              clearShapeSelectionArgs: () => { shapeSelectionArgs = undefined; },
+              setShowPopOver: (v) => { showPopOver = v; },
+              selectAnnotation: () => { selectAnnotation(); },
+            });
           }}
         >
           Cancel

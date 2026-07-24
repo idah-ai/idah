@@ -101,17 +101,27 @@ export const maskSession = {
 
   /**
    * Begin or continue a session for the given annotation.
-   * Preserves existing buffers if the annotation ID is the same, so
-   * multiple brush strokes on the same annotation accumulate rather than
-   * replacing each other. Only resets fully on explicit `reset()`.
+   *
+   * When `annotationId` is a real, non-null ID, the session continues if the
+   * ID matches the current session — multiple brush strokes on the same
+   * existing annotation accumulate.
+   *
+   * When `annotationId` is `undefined` (a brand-new not-yet-created mask),
+   * the session ALWAYS starts fresh unless `continuePending: true` is
+   * explicitly passed and the current session is also `undefined` (i.e. the
+   * caller knows this is still the same pending new-mask attempt).  This
+   * prevents buffer bleeding between unrelated new-mask attempts that both
+   * happen to have no id yet.
    */
-  beginSession(annotationId: string | undefined): void {
-    if (_annotationId === annotationId) {
-      return;
-    }
+  beginSession(annotationId: string | undefined, options?: { continuePending?: boolean }): void {
+    const isContinuation = annotationId !== undefined
+      ? _annotationId === annotationId
+      : options?.continuePending === true && _annotationId === undefined;
+    if (isContinuation) return;
     _annotationId = annotationId;
     _tileBuffers = new Map();
     _dirty = new Set();
+    _tileVersions.clear();
     notify();
   },
 
@@ -196,6 +206,7 @@ export const maskSession = {
     _annotationId = undefined;
     _tileBuffers = new Map();
     _dirty = new Set();
+    _tileVersions.clear();
     notify();
     // Don't reset _mode — it's a persistent user preference, not session state
   },

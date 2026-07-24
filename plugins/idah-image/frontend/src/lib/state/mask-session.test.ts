@@ -2,15 +2,31 @@
 // mask-session.test.ts — Tests for mask session state
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { maskSession } from "./mask-session.svelte";
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { encode } from "$lib/mask/rle";
 import { paintCircle } from "$lib/mask/raster";
+import { IMAGE_MASK } from "$lib/types";
+
+// ---------------------------------------------------------------------------
+// Driver mock — handlePopoverCancel calls viewport.mode setter, which calls
+// getDriver().setMode().  We mock the driver so the test doesn't need a real
+// one.
+// ---------------------------------------------------------------------------
+const mockSetMode = vi.fn();
+vi.mock("$lib/state/driver.svelte", () => ({
+  getDriver: () => ({ setMode: mockSetMode, onModeChange: vi.fn() }),
+  syncStatus: { queued: 0, error: null },
+}));
+
+// Import the real handlePopoverCancel after mocks are set up
+import { handlePopoverCancel } from "$lib/components/App/ImageAnnotationWorkspace/popover-cancel";
 
 describe("maskSession", () => {
   beforeEach(() => {
     maskSession.reset();
+    vi.clearAllMocks();
   });
 
   describe("beginSession", () => {
@@ -32,9 +48,58 @@ describe("maskSession", () => {
       expect(maskSession.tileBuffers.size).toBe(0);
     });
 
+    it("continues (preserves buffers) when called with the same annotation id", () => {
+      maskSession.beginSession("ann-1");
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+
+      maskSession.beginSession("ann-1");
+      expect(maskSession.annotationId).toBe("ann-1");
+      expect(maskSession.dirty.size).toBe(1);
+      expect(maskSession.tileBuffers.size).toBe(1);
+    });
+
     it("accepts undefined annotation id (new mask)", () => {
       maskSession.beginSession(undefined);
       expect(maskSession.annotationId).toBeUndefined();
+    });
+
+    it("beginSession(undefined) ALWAYS clears without continuePending, even if previous session was also undefined", () => {
+      // Start a new-mask session (undefined id)
+      maskSession.beginSession(undefined, { continuePending: true });
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+      expect(maskSession.tileBuffers.size).toBe(1);
+      expect(maskSession.dirty.size).toBe(1);
+
+      // A second undefined-id call WITHOUT continuePending — should clear
+      maskSession.beginSession(undefined);
+      expect(maskSession.tileBuffers.size).toBe(0);
+      expect(maskSession.dirty.size).toBe(0);
+      expect(maskSession.annotationId).toBeUndefined();
+    });
+
+    it("beginSession(undefined, { continuePending: true }) preserves buffers when previous session was also undefined", () => {
+      maskSession.beginSession(undefined, { continuePending: true });
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+
+      // Continue the same pending new-mask attempt
+      maskSession.beginSession(undefined, { continuePending: true });
+      expect(maskSession.tileBuffers.size).toBe(1);
+      expect(maskSession.dirty.size).toBe(1);
+    });
+
+    it("clears _tileVersions on session boundary", () => {
+      maskSession.beginSession("ann-1");
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+      // access to internal state via getTileVersion
+      expect(maskSession.getTileVersion("0:0")).toBeGreaterThanOrEqual(0);
+
+      maskSession.beginSession("ann-2");
+      // Version should be reset for the new session
+      expect(maskSession.getTileVersion("0:0")).toBe(-1);
     });
   });
 
@@ -150,6 +215,16 @@ describe("maskSession", () => {
       // Mode is intentionally NOT reset — it's a persistent user preference
       expect(maskSession.mode).toBe("remove");
     });
+
+    it("clears _tileVersions", () => {
+      maskSession.beginSession("ann-1");
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+      expect(maskSession.getTileVersion("0:0")).toBeGreaterThanOrEqual(0);
+
+      maskSession.reset();
+      expect(maskSession.getTileVersion("0:0")).toBe(-1);
+    });
   });
 
   describe("simulated paint/erase sequence", () => {
@@ -185,6 +260,72 @@ describe("maskSession", () => {
       maskSession.beginSession("ann-2");
       expect(maskSession.dirty.size).toBe(0);
       expect(maskSession.tileBuffers.size).toBe(0);
+    });
+  });
+
+  describe("handlePopoverCancel — real code path", () => {
+    it("popup cancel + restart: second new-mask session is clean", () => {
+      // Step 1: User paints a new mask (undefined annotationId)
+      maskSession.beginSession(undefined, { continuePending: true });
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+      expect(maskSession.tileBuffers.size).toBe(1);
+
+      // Step 2: User cancels the category popup — this calls the REAL handler
+      // extracted from ImageAnnotationWorkspace.svelte.  If this handler
+      // were missing maskSession.reset(), the next session would inherit
+      // the first attempt's buffers — the test would fail.
+      handlePopoverCancel(
+        [IMAGE_MASK, [], undefined],
+        {
+          setAnnotationValue: vi.fn(),
+          setPendingValue: vi.fn(),
+          clearShapeSelectionArgs: vi.fn(),
+          setShowPopOver: vi.fn(),
+          selectAnnotation: vi.fn(),
+        },
+      );
+
+      // Step 3: User starts a new mask — should be clean
+      maskSession.beginSession(undefined, { continuePending: true });
+      expect(maskSession.tileBuffers.size).toBe(0);
+      expect(maskSession.dirty.size).toBe(0);
+    });
+  });
+
+  describe("_tileVersions does not grow unboundedly across sessions", () => {
+    it("stays bounded after multiple begin/reset cycles touching the same tiles", () => {
+      // Perform several cycles of begin → paint → reset, touching the same
+      // tile coordinates each time. The _tileVersions map should never have
+      // more than one entry per unique tile coordinate touched in the current
+      // session — it should be cleared at each boundary.
+      const cycles = 5;
+      for (let i = 0; i < cycles; i++) {
+        maskSession.beginSession(`ann-${i}`);
+        maskSession.ensureTileBuffer(i, 0);
+        maskSession.markDirty(i, 0);
+        maskSession.ensureTileBuffer(0, i);
+        maskSession.markDirty(0, i);
+        // After reset, tileVersions is cleared — so the next cycle starts fresh
+        maskSession.reset();
+      }
+
+      // After all cycles and a final reset, start a new session touching
+      // only one tile — the version map should only have entries for tiles
+      // touched in THIS session (via ensureTileBuffer and markDirty).
+      maskSession.beginSession("final");
+      maskSession.ensureTileBuffer(0, 0);
+      maskSession.markDirty(0, 0);
+
+      // The renderer iterates tileBuffers, so stale versions don't render.
+      // But verify that getTileVersion returns -1 for tiles not touched
+      // in the current session, confirming no stale entries leak.
+      for (let i = 1; i < cycles; i++) {
+        expect(maskSession.getTileVersion(`${i}:0`)).toBe(-1);
+        expect(maskSession.getTileVersion(`0:${i}`)).toBe(-1);
+      }
+      // The tile we did touch in this session should have a version >= 0
+      expect(maskSession.getTileVersion("0:0")).toBeGreaterThanOrEqual(0);
     });
   });
 });

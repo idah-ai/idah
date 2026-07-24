@@ -94,7 +94,16 @@ export function onPointerDown(
   if (!isEditable()) return;
 
   _isPainting = true;
-  maskSession.beginSession(annotationId);
+  // NOTE(continuePending): `continuePending: annotationId === undefined` evaluates
+  // to `true` whenever this is a new-mask attempt (no existing annotation to
+  // target).  That means `beginSession`'s own `continuePending` check does NOT
+  // protect against buffer bleeding between unrelated new-mask attempts — the
+  // real defense is that EVERY abandonment path (popup cancel, sidebar category
+  // switch, mode switch, flush, brush cancel, polygon cancelDraft) must call
+  // `maskSession.reset()` explicitly before the next `beginSession` runs.
+  // `continuePending: true` is kept here because multi-stroke accumulation on
+  // the same still-uncategorized new mask is the common case and must still work.
+  maskSession.beginSession(annotationId, { continuePending: annotationId === undefined });
 
   // Rebuild occupancy grid if overlap prevention is enabled
   if (maskTool.preventOverlap && data.annotations) {

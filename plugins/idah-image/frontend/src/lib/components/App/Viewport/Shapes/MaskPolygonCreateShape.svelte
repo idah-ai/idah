@@ -67,7 +67,15 @@
       const sel = selection.value;
       const existingAnnId = sel && (sel.shape as any)?.type === IMAGE_MASK ? sel.id : undefined;
 
-      maskSession.beginSession(existingAnnId);
+      // NOTE(continuePending): `continuePending: existingAnnId === undefined`
+      // evaluates to `true` whenever this is a new-mask polygon close (no
+      // existing annotation to write to).  As in mask_brush.ts, `beginSession`'s
+      // own `continuePending` check does NOT protect against buffer bleeding
+      // between unrelated new-mask attempts — the real defense is that EVERY
+      // abandonment path calls `maskSession.reset()` explicitly.  `continuePending:
+      // true` is kept here because polygon fill on the same still-uncategorized
+      // new mask must accumulate with any brush strokes already painted.
+      maskSession.beginSession(existingAnnId, { continuePending: existingAnnId === undefined });
 
       // If editing an existing annotation, load its tiles into the session
       if (existingAnnId && data.annotations) {
