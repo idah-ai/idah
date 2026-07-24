@@ -5,6 +5,9 @@ import cursorIcon from "$lib/assets/icons/cursor.svg?raw";
 import ellipseIcon from "$lib/assets/icons/ellipse.svg?raw";
 import lineIcon from "$lib/assets/icons/minimize-2.svg?raw";
 import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
+import brushIcon from "$lib/assets/icons/brush.svg?raw";
+import squareSlashIcon from "$lib/assets/icons/square-slash.svg?raw";
+import maskPolygonIcon from "$lib/assets/icons/mask-polygon.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
@@ -101,7 +104,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   }
   if (hasConfig(driver, IMAGE_MASK)) {
     t.add({
-      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/></svg>`,
+      icon: brushIcon,
       label: "Mask Brush",
       name: "mode.mask_brush",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
@@ -118,7 +121,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       whenToggled: () => driver.mode === IMAGE_MASK && maskTool.active === "brush",
     });
     t.add({
-      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7 7M13 13l7 7M3 21l18-18"/></svg>`,
+      icon: maskPolygonIcon,
       label: "Mask Polygon",
       name: "mode.mask_polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
@@ -165,8 +168,8 @@ export function initToolbar(driver: IIdahDriverV2): void {
 
   // ── Prevent mask overlap toggle (available in mask mode) ────────────
   t.add({
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg>`,
-    label: "Prevent overlap",
+    icon: squareSlashIcon,
+  label: "Prevent overlap",
     name: "mask.prevent_overlap",
     modes: [IMAGE_MASK],
     group: "selection",

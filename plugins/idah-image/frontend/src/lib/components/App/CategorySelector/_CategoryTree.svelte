@@ -19,6 +19,7 @@
   import circleIconSvg from "$lib/assets/icons/circle.svg?raw";
   import ellipseIconSvg from "$lib/assets/icons/ellipse.svg?raw";
   import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
+  import squareDashedIconSvg from "$lib/assets/icons/square-dashed.svg?raw";
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
@@ -45,6 +46,7 @@
     [IDAH_IMAGE_CIRCLE]: circleIconSvg,
     [IDAH_IMAGE_ELLIPSE]: ellipseIconSvg,
     [IDAH_IMAGE_LINE]: lineIconSvg,
+    [IMAGE_MASK]: squareDashedIconSvg,
   };
 
   type CategoryDefinition = IConfigValue & {
