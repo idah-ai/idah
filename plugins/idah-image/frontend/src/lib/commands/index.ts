@@ -43,6 +43,7 @@ import { register as registerAnnotationToggleEditabilityAll } from "./annotation
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
 import { register as registerMaskFlush } from "./annotation/mask_shapes.flush";
+import { register as registerMaskPolygonAddPoint } from "./annotation/mask_polygon.add_point";
 import { register as registerMaskBrushRadiusIncrease } from "./annotation/mask_brush_radius_increase";
 import { register as registerMaskBrushRadiusDecrease } from "./annotation/mask_brush_radius_decrease";
 import { register as registerMaskToggleMode } from "./annotation/mask_toggle_mode";
@@ -96,6 +97,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationUpdate(driver);
   if (hasConfig(driver, IMAGE_MASK)) {
     registerMaskFlush(driver);
+    registerMaskPolygonAddPoint(driver);
     registerMaskBrushRadiusIncrease(driver);
     registerMaskBrushRadiusDecrease(driver);
     registerMaskToggleMode(driver);

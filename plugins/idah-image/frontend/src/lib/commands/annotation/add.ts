@@ -18,6 +18,8 @@ import { uuidv7 } from "uuidv7";
 import { draft as polygonDraft } from "./polygon.add_point.svelte";
 import { lineDraft } from "./line.add_point.svelte";
 import { maskSession } from "$lib/state/mask-session.svelte";
+import { maskTool } from "$lib/state/mask-tool.svelte";
+import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { invalidateAll } from "$lib/mask/tile-cache";
 
@@ -90,6 +92,16 @@ export function register(driver: IIdahDriverV2): void {
           if (props.shape.type !== IMAGE_MASK) {
             driver.setMode(DEFAULT_MODE);
           }
+
+          // Clear the mask polygon draft so the polygon preview disappears.
+          // On redo after undo, the draft was restored by undo — save it to
+          // closedPoints first so the next undo of this close can restore it.
+          if (props.shape.type === IMAGE_MASK) {
+            if (maskPolygonDraft.points.length > 0) {
+              maskPolygonDraft.closedPoints = [...maskPolygonDraft.points];
+            }
+            maskPolygonDraft.points = [];
+          }
         },
         async undo() {
           if (data.annotations) {
@@ -108,6 +120,11 @@ export function register(driver: IIdahDriverV2): void {
           } else if (props.shape.type === IMAGE_LINE) {
             driver.setMode(IMAGE_LINE);
             lineDraft.points = props.shape.points.slice(0, 1);
+          } else if (props.shape.type === IMAGE_MASK && maskPolygonDraft.closedPoints) {
+            driver.setMode(IMAGE_MASK);
+            maskTool.active = "polygon";
+            maskPolygonDraft.points = maskPolygonDraft.closedPoints;
+            maskPolygonDraft.closedPoints = null;
           }
         },
         isCombinable() {

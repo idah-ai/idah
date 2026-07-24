@@ -12,6 +12,7 @@
   import { onMount, onDestroy } from "svelte";
   import { hexToRgba } from "$lib/utils/color";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import { maskPolygonDraft, setOnPointsChanged } from "$lib/commands/mode/mask_polygon";
   import { MASK_TILE_SIZE } from "$lib/mask/constants";
@@ -53,6 +54,9 @@
       nearFirstPolygonPoint(cursor, mediaWidth, mediaHeight, maskPolygonDraft.points, viewport.workspace.transform.scale)
     ) {
       const pts = maskPolygonDraft.points;
+
+      // Save the closed polygon points so undo can restore the drawing preview
+      maskPolygonDraft.closedPoints = pts;
 
       // Convert normalized points back to pixel coordinates, fill the mask and flush
       const pixelPoints: [number, number][] = pts.map((p) => [p[0] * mediaWidth, p[1] * mediaHeight]);
@@ -106,8 +110,8 @@
       return true;
     }
 
-    // Add a new point
-    maskPolygonDraft.pushPoint([normX, normY]);
+    // Add a new point through the command manager (undoable per-vertex)
+    getDriver().command.call("annotation.mask_polygon.add_point", { point: [normX, normY] });
     return true;
   }
 

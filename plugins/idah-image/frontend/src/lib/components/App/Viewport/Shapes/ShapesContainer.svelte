@@ -51,12 +51,7 @@
     onCancel as maskBrushCancel,
   } from "$lib/commands/mode/mask_brush";
   import { hitTestMaskLayer } from "$lib/mask/hit-test";
-  import {
-    addPoint as maskPolygonAddPoint,
-    closePolygon as maskPolygonClose,
-    cancelDraft as maskPolygonCancel,
-    maskPolygonDraft,
-  } from "$lib/commands/mode/mask_polygon";
+  import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
   import {
@@ -333,14 +328,22 @@
 
   // ── Check if cursor is hovering the first polygon draft point ────────
   let hoveringFirstPoint = $derived(
-    isPolygonMode &&
+    (isPolygonMode &&
       nearFirstPolygonPoint(
         snappedCursor,
         media.width,
         media.height,
         polygonDraft.points,
         viewport.workspace.transform.scale,
-      ),
+      )) ||
+    (isMaskPolygonMode &&
+      nearFirstPolygonPoint(
+        snappedCursor,
+        media.width,
+        media.height,
+        maskPolygonDraft.points,
+        viewport.workspace.transform.scale,
+      )),
   );
 
   // ── Cursor class ─────────────────────────────────────────────────────

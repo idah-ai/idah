@@ -9,16 +9,9 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, IMAGE_MASK, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
-import { maskSession } from "$lib/state/mask-session.svelte";
-import { tilesTouchedByPolygon } from "$lib/mask/grid";
-import { fillPolygon } from "$lib/mask/raster";
 import { isEditable } from "$lib/state/editor.svelte";
-import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { noopAction } from "..";
 import { maskTool } from "$lib/state/mask-tool.svelte";
-import { media } from "$lib/state/media.svelte";
-import { rebuildOccupancy, isOccupied } from "$lib/mask/occupancy";
-import { data } from "$lib/state/data.svelte";
 
 export const command = {
   name: "mode.mask_polygon",
@@ -40,6 +33,14 @@ export const command = {
 export let _draftPoints: [number, number][] = [];
 export let _annotationId: string | undefined;
 
+/**
+ * Snapshot of draft points saved just before clearing on polygon close.
+ * Used by undo handlers (add.ts, mask_shapes.flush.ts) to restore the
+ * polygon preview so the user can continue editing or undo individual
+ * add_point commands.
+ */
+export let _closedPoints: [number, number][] | null = null;
+
 // Notification callback — set by MaskPolygonCreateShape on mount so the
 // module-level code can trigger a component re-render when points change.
 let _onPointsChanged: (() => void) | null = null;
@@ -59,6 +60,13 @@ export const maskPolygonDraft = {
   set points(p: [number, number][]) {
     _draftPoints = p;
     notifyPointsChanged();
+  },
+
+  get closedPoints(): [number, number][] | null {
+    return _closedPoints;
+  },
+  set closedPoints(p: [number, number][] | null) {
+    _closedPoints = p;
   },
 
   get annotationId(): string | undefined {
@@ -107,6 +115,7 @@ export function register(driver: IIdahDriverV2): void {
             // Reset draft when entering the mode
             _draftPoints = [];
             _annotationId = undefined;
+            _closedPoints = null;
             driver.setMode(IMAGE_MASK);
           }
         },
@@ -118,73 +127,4 @@ export function register(driver: IIdahDriverV2): void {
   });
 }
 
-// ─── Pointer event handlers (called from the canvas component) ───────────
 
-/**
- * Add a point to the polygon draft.
- * Returns true if the polygon was closed (double-click / near-first-vertex).
- */
-export function addPoint(
-  imgX: number,
-  imgY: number,
-  annotationId: string | undefined,
-  closeThreshold: number = 10,
-): boolean {
-  // Check if the user clicked near the first point to close the polygon
-  if (_draftPoints.length >= 3) {
-    const first = _draftPoints[0];
-    const dx = imgX - first[0];
-    const dy = imgY - first[1];
-    if (dx * dx + dy * dy <= closeThreshold * closeThreshold) {
-      return closePolygon(annotationId);
-    }
-  }
-
-  maskPolygonDraft.pushPoint([imgX, imgY]);
-  maskPolygonDraft.annotationId = annotationId;
-  return false;
-}
-
-/**
- * Close the polygon and flush the fill.
- */
-export function closePolygon(annotationId: string | undefined): boolean {
-  if (_draftPoints.length < 3) return false;
-
-  // Paint the polygon fill into the session buffers
-  maskSession.beginSession(annotationId);
-
-  // Rebuild occupancy grid if overlap prevention is enabled
-  if (maskTool.preventOverlap && data.annotations) {
-    rebuildOccupancy(data.annotations.items);
-  }
-
-  const touchedTiles = tilesTouchedByPolygon(_draftPoints);
-
-  for (const { col, row } of touchedTiles) {
-    const buf = maskSession.ensureTileBuffer(col, row);
-    const tileOriginX = col * MASK_TILE_SIZE;
-    const tileOriginY = row * MASK_TILE_SIZE;
-
-    const checkOccupied = maskTool.preventOverlap
-      ? (localPx: number, localPy: number) => isOccupied(col, row, localPx, localPy)
-      : undefined;
-    const painted = fillPolygon(buf, tileOriginX, tileOriginY, _draftPoints, maskSession.mode, media.width, media.height, checkOccupied);
-    if (painted) {
-      maskSession.markDirty(col, row);
-    }
-  }
-
-  // Reset draft state
-  maskPolygonDraft.clearPoints();
-
-  return true;
-}
-
-/**
- * Cancel the current polygon draft.
- */
-export function cancelDraft(): void {
-  maskPolygonDraft.clearPoints();
-  maskSession.reset();
-}

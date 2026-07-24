@@ -24,6 +24,8 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
 import { writeTileEntries } from "$lib/mask/write-tile-entries";
+import { maskTool } from "$lib/state/mask-tool.svelte";
+import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
 export const command = {
   name: "annotation.mask_shapes.flush",
@@ -114,6 +116,14 @@ export function register(driver: IIdahDriverV2): void {
             (annId, entries) => data.annotations!.setShapes(annId, entries),
           );
           maskSession.reset();
+
+          // Clear the mask polygon draft so the polygon preview disappears.
+          // On redo after undo, the draft was restored by undo — save it to
+          // closedPoints first so the next undo of this close can restore it.
+          if (maskPolygonDraft.points.length > 0) {
+            maskPolygonDraft.closedPoints = [...maskPolygonDraft.points];
+          }
+          maskPolygonDraft.points = [];
         },
 
         async undo() {
@@ -130,6 +140,15 @@ export function register(driver: IIdahDriverV2): void {
             invalidate(annotationId, tileKey);
           }
           await writeTileEntries(data.annotations!, annotationId, entries);
+
+          // If this flush was from a mask polygon close, restore the drawing
+          // preview so the user can continue editing or undo add_point commands.
+          if (maskPolygonDraft.closedPoints) {
+            driver.setMode(IMAGE_MASK);
+            maskTool.active = "polygon";
+            maskPolygonDraft.points = maskPolygonDraft.closedPoints;
+            maskPolygonDraft.closedPoints = null;
+          }
         },
 
         isCombinable() { return false; },
