@@ -49,6 +49,8 @@
   let _sessionTileBitmaps = new Map<string, ImageBitmap>();
   /** Cached version for each session tile bitmap. */
   let _sessionTileVersions = new Map<string, number>();
+  /** Tracks the last preview color to detect color-only changes for cache invalidation. */
+  let _lastPreviewColor: string | undefined = undefined;
   /** Unsubscribe from maskSession.onChange — cleaned up in onDestroy. */
   let _unsubscribeSession: (() => void) | null = null;
 
@@ -302,6 +304,24 @@
   $effect(() => {
     maskSession.mode;
     if (!isDragging && ctx) scheduleRedraw();
+  });
+
+  // Preview color change — invalidate session tile bitmaps so they
+  // re-rasterize with the new color, same way SVG shapes reactively
+  // pick up color changes via Svelte prop reactivity.
+  $effect(() => {
+    const pc = previewColor;
+    if (pc !== _lastPreviewColor) {
+      _lastPreviewColor = pc;
+      // Invalidate all cached session bitmaps so they re-rasterize
+      // with the new color on the next renderSessionLayer call.
+      for (const bmp of _sessionTileBitmaps.values()) {
+        bmp.close();
+      }
+      _sessionTileBitmaps.clear();
+      _sessionTileVersions.clear();
+      scheduleRedraw();
+    }
   });
 
   // Redraw on viewport transform changes (pan/zoom)

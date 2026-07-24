@@ -24,13 +24,14 @@
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
+  import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
   import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
   import { syncStatus } from "$lib/state/driver.svelte";
   import { maskTool } from "$lib/state/mask-tool.svelte";
-    import { maskSession } from "$lib/state/mask-session.svelte";
+  import { maskSession } from "$lib/state/mask-session.svelte";
 
   // Local type aliases for V1-compatible annotation values
   type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
@@ -526,8 +527,18 @@
             lineDraft.points = points;
             viewport.mode = IMAGE_LINE;
           } else if (type === IMAGE_MASK) {
-            // Restore mask mode without resetting the session buffer,
-            // so any in-progress paint stroke is preserved.
+            // Discard the in-progress paint session on cancel, same as every other
+            // shape type discards its in-progress draft — stay in mask mode so the
+            // user can immediately start a fresh stroke/fill.
+            maskSession.reset();
+            // For mask polygon, restore the drawn vertices from closedPoints
+            // so the user can continue editing the polygon instead of starting
+            // from scratch, matching the vector polygon cancel behavior.
+            if (maskPolygonDraft.closedPoints) {
+              maskPolygonDraft.points = maskPolygonDraft.closedPoints;
+              maskPolygonDraft.closedPoints = null;
+              maskTool.active = "polygon";
+            }
             viewport.mode = IMAGE_MASK;
           }
         }
@@ -604,6 +615,14 @@
               } else if (type === IMAGE_LINE) {
                 lineDraft.points = points;
                 viewport.mode = IMAGE_LINE;
+              } else if (type === IMAGE_MASK) {
+                maskSession.reset();
+                if (maskPolygonDraft.closedPoints) {
+                  maskPolygonDraft.points = maskPolygonDraft.closedPoints;
+                  maskPolygonDraft.closedPoints = null;
+                  maskTool.active = "polygon";
+                }
+                viewport.mode = IMAGE_MASK;
               }
             }
             selectAnnotation();
