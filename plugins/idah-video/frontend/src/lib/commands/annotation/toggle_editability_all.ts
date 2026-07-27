@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_editability_all — Toggle editability (lock) of all annotations
+// idah-video:annotation.toggle-editability-all — Toggle editability (lock) of all annotations
 // Undoable: restores the previous locked state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle_editability_all");
+//   driver.command.call("annotation.toggle-editability-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
@@ -12,7 +12,7 @@ import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.toggle_editability_all",
+  name: "idah-video:annotation.toggle-editability-all",
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,

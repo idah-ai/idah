@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.deleteGroup — Delete all annotations in a group
+// idah-video:annotation.group.delete — Delete all annotations in a group
 // Undoable: restores all annotations.
 //
 // Usage:
-//   driver.command.call("annotation.deleteGroup", {
+//   driver.command.call("annotation.group.delete", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
-  name: "annotation.delete_group",
+  name: "idah-video:annotation.group.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

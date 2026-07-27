@@ -190,7 +190,7 @@
     {#if currentMode === "review" || currentMode === "note"}
       <ToolTooltip
         label="All Notes"
-        shortcut={cmdShortcut("core.toggle_note_sidebar")}
+        shortcut={cmdShortcut("ui.toggle-note-sidebar")}
         align="center"
         delayDuration={100}
       >
@@ -210,7 +210,7 @@
       </ToolTooltip>
     {/if}
 
-    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
+    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("ui.palette")} align="center" delayDuration={100}>
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
           <KeyboardIcon />

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.previous_frame — Move one frame backward
+// idah-video:viewport.previous-frame — Move one frame backward
 // Shortcut: ArrowLeft
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.previous_frame",
+  name: "idah-video:viewport.previous-frame",
   group: "Viewport",
   modes: ["editor", "review"],
   shortcut: "ArrowLeft",

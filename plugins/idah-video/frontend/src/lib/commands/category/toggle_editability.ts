@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_category_editability
+// idah-video:annotation.category.toggle-editability
 // Toggle editability (lock) of annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.toggle_category_editability",
+//     "idah-video:annotation.category.toggle-editability",
 //     {
 //       category: "vehicle",
 //     },
@@ -27,7 +27,7 @@ import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.toggle_category_editability",
+  name: "idah-video:annotation.category.toggle-editability",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

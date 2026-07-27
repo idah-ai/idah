@@ -70,7 +70,7 @@
      (Cmd+Arrow jumps it to min/max), which collides with frame-navigation
      shortcuts. Let the driver claim its shortcuts before the slider sees them. -->
 <div id="timeline-controller" class="flex items-center gap-2" onkeydowncapture={claimDriverShortcut}>
-  <ToolTooltip label="Zoom Out" shortcut={cmdShortcut("timeline.zoom_out")}>
+  <ToolTooltip label="Zoom Out" shortcut={cmdShortcut("timeline.zoom-out")}>
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomOut}>
         <ZoomOutIcon />
@@ -88,7 +88,7 @@
     onValueChange={handleSliderZoom}
   />
 
-  <ToolTooltip label="Zoom In" shortcut={cmdShortcut("timeline.zoom_in")}>
+  <ToolTooltip label="Zoom In" shortcut={cmdShortcut("timeline.zoom-in")}>
     {#snippet trigger()}
       <Button variant="outline" size="icon-sm" onclick={zoomIn}>
         <ZoomInIcon />

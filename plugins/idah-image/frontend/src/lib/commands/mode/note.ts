@@ -3,7 +3,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
-  name: "mode.note",
+  name: "idah-image:tool.note",
   group: "Tools",
   modes: [REVIEW_MODE, NOTE_MODE],
   shortcut: "N",

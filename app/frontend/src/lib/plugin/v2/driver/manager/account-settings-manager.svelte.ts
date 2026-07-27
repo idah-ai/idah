@@ -10,6 +10,7 @@
 // -----------------------------------------------------------------------
 import { SvelteMap } from "svelte/reactivity";
 import { accountSettingBackendDataSource, commandShortcutKey } from "@/data/model/setting/account_setting/record";
+import { COMMAND_NAME_RENAMES } from "../command-name-migration";
 
 type SettingValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
@@ -70,7 +71,13 @@ export class AccountSettingsManager {
     const value = this.settings.get(commandShortcutKey)?.value;
     if (value && typeof value === "object" && !Array.isArray(value)) {
       for (const [name, shortcut] of Object.entries(value)) {
-        if (typeof shortcut === "string") this.overrides[name] = shortcut;
+        if (typeof shortcut !== "string") continue;
+        // Migrate legacy command names to their new fully-qualified name(s).
+        // Old names were origin-less, so one may map to several (e.g. the same
+        // command in both the video and image plugins). Unknown/already-migrated
+        // keys pass through unchanged, so this stays idempotent across loads.
+        const targets = COMMAND_NAME_RENAMES[name] ?? [name];
+        for (const target of targets) this.overrides[target] = shortcut;
       }
     }
   }

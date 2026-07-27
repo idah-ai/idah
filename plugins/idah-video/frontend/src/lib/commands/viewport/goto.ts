@@ -1,14 +1,14 @@
 // ---------------------------------------------------------------------------
-// viewport.goto — Jump to a specific frame (non-undoable)
+// idah-video:viewport.go-to — Jump to a specific frame (non-undoable)
 //
 // Usage:
-//   driver.command.call("viewport.goto", { frame: 120 });
+//   driver.command.call("viewport.go-to", { frame: 120 });
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.goto",
+  name: "idah-video:viewport.go-to",
   group: "Viewport",
   modes: [] as string[],
   shortcut: null,

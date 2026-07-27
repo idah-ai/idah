@@ -44,7 +44,7 @@
     }
 
     // Otherwise add the first point
-    getDriver().command.call("annotation.line.add_point", { point: cursor });
+    getDriver().command.call("annotation.line.add-point", { point: cursor });
     return true;
   }
 

@@ -1,11 +1,11 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_category_visibility_solo
+// idah-video:annotation.category.toggle-visibility-solo
 // Toggle visibility solo for a category tree.
 // If the target category is the only visible category → show ALL annotations
 // Otherwise → hide ALL annotations except those in the target category
 //
 // Usage:
-//   driver.command.call("annotation.toggle_category_visibility_solo", {
+//   driver.command.call("annotation.category.toggle-visibility-solo", {
 //     category: "vehicle",
 //   });
 //
@@ -26,7 +26,7 @@ import { noopAction } from "..";
 import { isCategoryMatch } from "$lib/utils/category";
 
 export const command = {
-  name: "annotation.toggle_category_visibility_solo",
+  name: "idah-video:annotation.category.toggle-visibility-solo",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

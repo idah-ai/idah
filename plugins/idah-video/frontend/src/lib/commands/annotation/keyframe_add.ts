@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.keyframe_add — Add a keyframe to an annotation
+// idah-video:annotation.keyframe.add — Add a keyframe to an annotation
 // Undoable: removes the keyframe.
 //
 // Usage:
-//   driver.command.call("annotation.keyframe_add", {
+//   driver.command.call("annotation.keyframe.add", {
 //     annotationId: "...", selection: { frame, angle, points }
 //   });
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
-  name: "annotation.keyframe_add",
+  name: "idah-video:annotation.keyframe.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

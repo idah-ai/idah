@@ -111,9 +111,9 @@
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::FIRST FRAME -->
-    <ToolTooltip label="First frame" shortcut={cmdShortcut("timeline.go_to_first")}>
+    <ToolTooltip label="First frame" shortcut={cmdShortcut("timeline.go-to-first")}>
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go_to_first")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go-to-first")}>
           <ChevronFirstIcon />
         </Button>
       {/snippet}
@@ -122,20 +122,20 @@
     <!-- VIDEO::PREVIOUS FRAME STEP -->
     <ToolTooltip
       label={`Previous ${frameStep} frames`}
-      shortcut={cmdShortcut("viewport.skip_backward")}
+      shortcut={cmdShortcut("viewport.skip-backward")}
       onOpenChange={fetchFrameStepFromLocalStorage}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip_backward")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip-backward")}>
           <ChevronsLeftIcon />
         </Button>
       {/snippet}
     </ToolTooltip>
 
     <!-- VIDEO::PREVIOUS FRAME -->
-    <ToolTooltip label="Previous frame" shortcut={cmdShortcut("viewport.previous_frame")}>
+    <ToolTooltip label="Previous frame" shortcut={cmdShortcut("viewport.previous-frame")}>
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.previous_frame")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.previous-frame")}>
           <ChevronLeftIcon />
         </Button>
       {/snippet}
@@ -155,9 +155,9 @@
     </ToolTooltip>
 
     <!-- VIDEO::NEXT FRAME -->
-    <ToolTooltip label="Next frame" shortcut={cmdShortcut("viewport.next_frame")}>
+    <ToolTooltip label="Next frame" shortcut={cmdShortcut("viewport.next-frame")}>
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.next_frame")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.next-frame")}>
           <ChevronRightIcon />
         </Button>
       {/snippet}
@@ -166,20 +166,20 @@
     <!-- VIDEO::NEXT FRAME STEP -->
     <ToolTooltip
       label={`Next ${frameStep} frames`}
-      shortcut={cmdShortcut("viewport.skip_forward")}
+      shortcut={cmdShortcut("viewport.skip-forward")}
       onOpenChange={fetchFrameStepFromLocalStorage}
     >
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip_forward")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip-forward")}>
           <ChevronsRightIcon />
         </Button>
       {/snippet}
     </ToolTooltip>
 
     <!-- VIDEO::LAST FRAME -->
-    <ToolTooltip label="Last frame" shortcut={cmdShortcut("timeline.go_to_last")}>
+    <ToolTooltip label="Last frame" shortcut={cmdShortcut("timeline.go-to-last")}>
       {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go_to_last")}>
+        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go-to-last")}>
           <ChevronLastIcon />
         </Button>
       {/snippet}

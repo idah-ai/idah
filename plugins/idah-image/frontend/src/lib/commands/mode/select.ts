@@ -12,7 +12,7 @@ import {
 } from "$lib/types";
 
 export const command = {
-  name: "mode.selection",
+  name: "idah-image:tool.selection",
   group: "Tools",
   modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, NOTE_MODE],
   shortcut: "D",

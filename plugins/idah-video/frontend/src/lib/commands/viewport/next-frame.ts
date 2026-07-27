@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.next_frame — Advance one frame forward
+// idah-video:viewport.next-frame — Advance one frame forward
 // Shortcut: ArrowRight
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.next_frame",
+  name: "idah-video:viewport.next-frame",
   group: "Viewport",
   modes: ["editor", "review"],
   shortcut: "ArrowRight",

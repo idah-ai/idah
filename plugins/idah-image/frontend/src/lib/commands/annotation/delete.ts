@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.delete — Delete a specific annotation
+// idah-image:annotation.delete — Delete a specific annotation
 // Undoable: restores the annotation.
 //
 // Usage:
-//   driver.command.call("annotation.delete", {
+//   driver.command.call("idah-image:annotation.delete", {
 //     annotationId: "some-id"
 //   });
 // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.delete",
+  name: "idah-image:annotation.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

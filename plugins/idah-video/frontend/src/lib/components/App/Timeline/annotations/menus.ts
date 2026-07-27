@@ -32,9 +32,9 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           alwaysShow: isSomeHidden,
           onClick: (e: MouseEvent) => {
             if (e.shiftKey) {
-              getDriver().command.call("annotation.toggle_group_visibility_solo", { groupId: track.id });
+              getDriver().command.call("annotation.group.toggle-visibility-solo", { groupId: track.id });
             } else {
-              getDriver().command.call("annotation.toggle_group_visibility", { groupId: track.id });
+              getDriver().command.call("annotation.group.toggle-visibility", { groupId: track.id });
             }
           },
         },
@@ -42,7 +42,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Lock/Unlock Group",
           icon: isSomeLocked ? LockIcon : LockOpenIcon,
           alwaysShow: isSomeLocked,
-          onClick: () => getDriver().command.call("annotation.toggle_group_editability", { groupId: track.id }),
+          onClick: () => getDriver().command.call("annotation.group.toggle-editability", { groupId: track.id }),
         },
         delete: {
           label: "Delete group",

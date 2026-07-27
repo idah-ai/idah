@@ -3,7 +3,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 
 export const command = {
-  name: "mode.ellipse",
+  name: "idah-image:tool.ellipse",
   group: "Tools",
   modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_LINE, IMAGE_POLYGON, IMAGE_CIRCLE, IMAGE_ELLIPSE],
   shortcut: "E",

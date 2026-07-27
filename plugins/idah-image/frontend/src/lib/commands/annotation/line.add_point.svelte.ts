@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.line.add_point — Place a point for the line being drawn
+// idah-image:annotation.line.add-point — Place a point for the line being drawn
 // Undoable: removes the last placed point.
 //
 // Usage:
-//   driver.command.call("annotation.line.add_point", { point: [0.5, 0.3] });
+//   driver.command.call("annotation.line.add-point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { isEditable } from "$lib/state/editor.svelte";
@@ -11,7 +11,7 @@ import { IMAGE_LINE } from "$lib/types";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.line.add_point",
+  name: "idah-image:annotation.line.add-point",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
