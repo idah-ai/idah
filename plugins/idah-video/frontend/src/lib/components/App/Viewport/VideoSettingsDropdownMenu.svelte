@@ -131,33 +131,5 @@
         value={volume.level}
       />
     </section>
-
-    <DropdownMenuSeparator />
-    <DropdownMenuLabel>Video opacity: {ui.videoOpacity}%</DropdownMenuLabel>
-    <section class="flex flex-col gap-2 px-2 pb-2">
-      <Slider
-        type="single"
-        class="py-2"
-        min={0}
-        max={100}
-        step={1}
-        onValueChange={(v) => (ui.videoOpacity = v)}
-        value={ui.videoOpacity}
-      />
-    </section>
-
-    <DropdownMenuSeparator />
-    <DropdownMenuLabel>Annotation opacity: {ui.annotationOpacity}%</DropdownMenuLabel>
-    <section class="flex flex-col gap-2 px-2 pb-2">
-      <Slider
-        type="single"
-        class="py-2"
-        min={0}
-        max={100}
-        step={1}
-        onValueChange={(v) => (ui.annotationOpacity = v)}
-        value={ui.annotationOpacity}
-      />
-    </section>
   </DropdownMenuContent>
 </DropdownMenu>

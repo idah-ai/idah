@@ -4,27 +4,21 @@
     KeyboardIcon,
     MoonIcon,
     Settings2Icon,
+    SlidersHorizontalIcon,
     SquareCheckIcon,
     SquareXIcon,
     SunIcon,
     SunMoonIcon,
     TabletSmartphoneIcon,
   } from "@lucide/svelte";
-  import { mode, resetMode, setMode } from "mode-watcher";
+  import { resetMode, setMode, userPrefersMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Checkbox } from "@/components/ui/checkbox";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
+  import { Slider } from "@/components/ui/slider";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import Text from "@/components/ui/text/Text.svelte";
@@ -40,7 +34,7 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
-  import type { IIdahDriverV2 } from "@/plugin/v2/types";
+  import type { IIdahDriverV2, ISettingGroup, ISettingItem } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -53,6 +47,46 @@
   // Variables
   let loading = $state(false);
   let openSettingsPopover = $state(false);
+
+  // Plugin-contributed settings (e.g. opacity sliders). Collected when the
+  // Settings menu opens — by then the active plugin has registered via
+  // driver.settings.register() during init(). Core just renders the controls;
+  // each item's get/set is owned by the plugin.
+  //
+  // `sliderValues` is a core-owned reactive mirror keyed by "section:key". The
+  // plugin's value is a $state in the plugin bundle; reading it across the
+  // bundle boundary (item.get()) is not tracked by core's render, so the label
+  // and thumb would go stale on drag. We seed this mirror on open and drive the
+  // UI from it, writing through to item.set() (which the plugin renders live).
+  let settingGroups = $state<ISettingGroup[]>([]);
+  let sliderValues = $state<Record<string, number>>({});
+
+  function settingKey(section: string, key: string): string {
+    return `${section}:${key}`;
+  }
+
+  $effect(() => {
+    if (!openSettingsPopover) return;
+    const groups = driver.settings.collect();
+    const seeded: Record<string, number> = {};
+    for (const group of groups) {
+      for (const item of group.items) {
+        seeded[settingKey(group.section, item.key)] = item.get();
+      }
+    }
+    settingGroups = groups;
+    sliderValues = seeded;
+  });
+
+  function setSetting(section: string, item: ISettingItem, value: number): void {
+    sliderValues[settingKey(section, item.key)] = value;
+    item.set(value);
+  }
+
+  // "idah-video" → "Idah Video". The menu appends " Settings".
+  function humanizeSection(section: string): string {
+    return section.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
 
   // Persist auto-select preference in localStorage
   let autoSelectNextEntryStore = writableWithLocal("auto-select-next-entry", false);
@@ -218,47 +252,96 @@
       {/snippet}
     </ToolTooltip>
 
-    <DropdownMenu bind:open={openSettingsPopover}>
-      <DropdownMenuTrigger>
-        <ToolTooltip label="Settings" align="center" delayDuration={100}>
-          {#snippet trigger()}
-            <Button
-              variant={openSettingsPopover ? "default" : "ghost"}
-              size="icon-sm"
-              onclick={() => (openSettingsPopover = true)}
-            >
+    <!--
+      Settings is a Popover (not a DropdownMenu) on purpose: a menu drives its
+      submenus/highlights by pointer hover, which hijacks a slider mid-drag when
+      the cursor sweeps over a sibling. A Popover has no hover-to-activate
+      semantics, so the sliders below drag cleanly. Theme therefore renders as an
+      inline segmented control rather than a hover-expand submenu.
+    -->
+    <Popover bind:open={openSettingsPopover}>
+      <PopoverTrigger>
+        {#snippet child({ props })}
+          {#if openSettingsPopover}
+            <!-- No tooltip while open, or it peeks out from behind the popover -->
+            <Button {...props} variant="default" size="icon-sm">
               <Settings2Icon />
             </Button>
-          {/snippet}
-        </ToolTooltip>
-      </DropdownMenuTrigger>
+          {:else}
+            <ToolTooltip label="Settings" align="center" delayDuration={100}>
+              {#snippet trigger()}
+                <Button {...props} variant="ghost" size="icon-sm">
+                  <Settings2Icon />
+                </Button>
+              {/snippet}
+            </ToolTooltip>
+          {/if}
+        {/snippet}
+      </PopoverTrigger>
 
-      <DropdownMenuContent align="end" side="bottom" class="min-w-64">
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <SunMoonIcon />
+      <PopoverContent align="start" side="bottom" class="w-64">
+        <!-- Theme — inline segmented control -->
+        <div class="flex flex-col gap-1.5">
+          <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+            <SunMoonIcon class="size-3.5" />
             Theme
-          </DropdownMenuSubTrigger>
-
-          <DropdownMenuSubContent>
-            <DropdownMenuItem disabled={mode.current === "light"} onclick={() => setMode("light")}>
-              <SunIcon />
+          </span>
+          <div class="bg-muted grid grid-cols-3 gap-0.5 rounded-lg border p-0.5">
+            <Button
+              variant={userPrefersMode.current === "light" ? "default" : "ghost"}
+              size="sm"
+              onclick={() => setMode("light")}
+            >
+              <SunIcon class="size-3.5" />
               Light
-            </DropdownMenuItem>
-
-            <DropdownMenuItem disabled={mode.current === "dark"} onclick={() => setMode("dark")}>
-              <MoonIcon />
+            </Button>
+            <Button
+              variant={userPrefersMode.current === "dark" ? "default" : "ghost"}
+              size="sm"
+              onclick={() => setMode("dark")}
+            >
+              <MoonIcon class="size-3.5" />
               Dark
-            </DropdownMenuItem>
-
-            <DropdownMenuItem onclick={() => resetMode()}>
-              <TabletSmartphoneIcon />
+            </Button>
+            <Button
+              variant={userPrefersMode.current === "system" ? "default" : "ghost"}
+              size="sm"
+              onclick={() => resetMode()}
+            >
+              <TabletSmartphoneIcon class="size-3.5" />
               System
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            </Button>
+          </div>
+        </div>
+
+        <!-- Plugin-contributed settings (e.g. opacity), one section per plugin -->
+        {#each settingGroups as group (group.section)}
+          <div class="mt-3 flex flex-col gap-2">
+            <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+              <SlidersHorizontalIcon class="size-3.5" />
+              {humanizeSection(group.section)} Settings
+            </span>
+            {#each group.items as item (item.key)}
+              {@const key = settingKey(group.section, item.key)}
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm">{item.label}</span>
+                  <span class="text-muted-foreground text-xs tabular-nums">{sliderValues[key]}</span>
+                </div>
+                <Slider
+                  type="single"
+                  min={item.min}
+                  max={item.max}
+                  step={item.step}
+                  value={sliderValues[key]}
+                  onValueChange={(v) => setSetting(group.section, item, v)}
+                />
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </PopoverContent>
+    </Popover>
 
     <EntryStatsModal {driver} />
   </div>

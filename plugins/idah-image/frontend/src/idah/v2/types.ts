@@ -575,6 +575,54 @@ export interface IToolbarDriverV2 {
   invalidate(): void;
 }
 
+// ─── V2 Driver — Settings submodule ───────────────────────────────────────
+
+/**
+ * A single plugin-defined setting exposed in the core topbar Settings menu.
+ *
+ * The value lives entirely in the plugin (state + persistence + how it's
+ * applied to rendering). Core only reads it via `get`, writes via `set`, and
+ * renders the control using the slider hints (`min`/`max`/`step`/`default`).
+ * Currently slider-only; add other control kinds here when needed.
+ */
+export interface ISettingItem {
+  /** Stable key within the group (e.g. "image-opacity"). */
+  key: string;
+  /** Display label for the control. */
+  label: string;
+  /** Slider bounds — required because core renders the widget. */
+  min: number;
+  max: number;
+  step: number;
+  /** Default value, so core can offer a "Reset" affordance. */
+  default: number;
+  /** Read the current value (plugin-owned). */
+  get(): number;
+  /** Write a new value (plugin-owned). */
+  set(value: number): void;
+}
+
+/**
+ * A group of settings under one section. `section` is a raw key (e.g.
+ * "idah-image") that core humanizes for the menu header.
+ */
+export interface ISettingGroup {
+  section: string;
+  items: ISettingItem[];
+}
+
+/** Contributes setting groups. Registered by plugins via `driver.settings.register`. */
+export interface ISettingProvider {
+  collect(): ISettingGroup[];
+}
+
+export interface ISettingsDriverV2 {
+  /** Register a setting provider (e.g. a plugin's opacity settings). */
+  register(provider: ISettingProvider): void;
+  /** Collect every registered provider's setting groups. */
+  collect(): ISettingGroup[];
+}
+
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
 
 /**
@@ -636,6 +684,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
+  readonly settings: ISettingsDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────

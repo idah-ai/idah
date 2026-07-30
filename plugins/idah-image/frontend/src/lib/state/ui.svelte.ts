@@ -44,6 +44,8 @@ class UIState {
   #colorMode = createLocalStorageStore<ColorMode>("idah-image:settings:color-mode", "category");
   #renderMode = createLocalStorageStore<RenderMode>("idah-image:settings:render-mode", "bilinear");
   #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-image:settings:time-display", "frames");
+  #annotationOpacity = createLocalStorageStore("idah-image:settings:annotation-opacity", 100);
+  #imageOpacity = createLocalStorageStore("idah-image:settings:image-opacity", 100);
 
   isCommandDialogOpen = $state(false);
   isDebugConsoleOpen = $state(false);
@@ -82,6 +84,20 @@ class UIState {
   }
   set timeDisplay(value: TimeDisplay) {
     this.#timeDisplay.value = value;
+  }
+
+  get annotationOpacity() {
+    return this.#annotationOpacity.value;
+  }
+  set annotationOpacity(value: number) {
+    this.#annotationOpacity.value = value;
+  }
+
+  get imageOpacity() {
+    return this.#imageOpacity.value;
+  }
+  set imageOpacity(value: number) {
+    this.#imageOpacity.value = value;
   }
 }
 

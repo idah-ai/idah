@@ -4,6 +4,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { ui } from "$lib/state/ui.svelte";
   import { addVertexOnEdge, hitTestVertex, moveVertex, pointInPolygon } from "./Polygon/utils";
 
   import PolygonHandler from "./Polygon/_PolygonHandler.svelte";
@@ -260,10 +261,11 @@
 
 {#if pathD}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- ui.annotationOpacity scales fill only — stroke stays at full opacity regardless of the slider -->
   <path
     d={pathD}
     fill={color}
-    fill-opacity={selected ? 0.6 : 0.3}
+    fill-opacity={(selected ? 0.7 : 0.4) * (ui.annotationOpacity / 100)}
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 1.5 : 1}
     vector-effect="non-scaling-stroke"
