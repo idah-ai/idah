@@ -150,8 +150,9 @@ describe("annotation.add (mask path)", () => {
       ]),
     );
 
-    // Session should have been reset
-    expect(_mockResetCalled).toBe(true);
+    // Session cleanup is deferred to beginSession on the next gesture,
+    // so reset() should NOT have been called here.
+    expect(_mockResetCalled).toBe(false);
   });
 
   it("undo deletes the annotation (cascade cleans up tiles)", async () => {

@@ -136,7 +136,7 @@
           if (!tileData?.rle) continue;
           // When editing, skip tiles that are in the session buffer —
           // they'll be rendered on top with highlight alpha.
-          if (isEditing && maskSession.tileBuffers.has(`${col}:${row}`)) continue;
+          if (isEditing && maskSession.dirty.has(`${col}:${row}`)) continue;
 
           // Get or create the cached bitmap for this tile, using the
           // annotation's resolved color. Then composite it onto the main
@@ -155,7 +155,7 @@
     }
 
     // ── Render in-progress session tiles on top (highlighted) ────────
-    if (maskSession.tileBuffers.size > 0) {
+    if (maskSession.dirty.size > 0) {
       renderSessionLayer();
     }
   }
@@ -185,7 +185,13 @@
 
     const [r, g, b, a] = sessionColor;
 
-    for (const [key, buffer] of maskSession.tileBuffers) {
+    for (const key of maskSession.dirty) {
+      const buffer = maskSession.getTileBuffer(
+        parseInt(key.split(":")[0], 10),
+        parseInt(key.split(":")[1], 10),
+      );
+      if (!buffer) continue;
+
       const [colStr, rowStr] = key.split(":");
       const col = parseInt(colStr, 10);
       const row = parseInt(rowStr, 10);
@@ -238,7 +244,7 @@
 
     // Clean up bitmaps for tiles that are no longer in the session
     for (const [key, bmp] of _sessionTileBitmaps) {
-      if (!maskSession.tileBuffers.has(key)) {
+      if (!maskSession.dirty.has(key)) {
         bmp.close();
         _sessionTileBitmaps.delete(key);
         _sessionTileVersions.delete(key);

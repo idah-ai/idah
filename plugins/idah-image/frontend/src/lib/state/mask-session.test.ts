@@ -293,6 +293,72 @@ describe("maskSession", () => {
     });
   });
 
+  describe("regression: skip-condition decision (the bug that blanked hydrated-but-untouched tiles)", () => {
+    /**
+     * Replicates the fixed skip decision from MaskCanvasLayer.svelte:
+     * tiles are only skipped from the committed path when they are both
+     * part of the currently-edited annotation AND in the dirty set
+     * (actually painted this gesture).
+     *
+     * The bug was that the code checked `tileBuffers.has(...)` instead
+     * of `dirty.has(...)`, which caused tiles that were merely hydrated
+     * (loaded into memory but never touched by the brush) to be excluded
+     * from the committed render path, rendering them blank.
+     */
+    function isSkippedFromCommittedPath(annId: string | undefined, tileKey: string): boolean {
+      return annId !== undefined && annId === maskSession.annotationId && maskSession.dirty.has(tileKey);
+    }
+
+    it("untouched-but-hydrated tile of the same annotation is NOT skipped", () => {
+      // Simulate the exact sequence from the app:
+      // 1. beginSession (from onPointerDown)
+      maskSession.beginSession("ann-1");
+
+      // 2. Hydrate multiple tiles (from onPointerDown's eager full-tile-set load)
+      maskSession.ensureTileBuffer(0, 0, "");  // col=0, row=0 (empty RLE = all zeros)
+      maskSession.ensureTileBuffer(1, 0, "");  // col=1, row=0
+      maskSession.ensureTileBuffer(0, 1, "");  // col=0, row=1
+
+      // 3. Paint and markDirty on only ONE tile (simulating a dab that
+      //    only touches tile 0:0)
+      maskSession.markDirty(0, 0);
+
+      // The bug: tile 1:0 and 0:1 are in tileBuffers but NOT in dirty.
+      // The old code would skip them (blank). The fix must NOT skip them.
+      expect(maskSession.tileBuffers.has("1:0")).toBe(true);
+      expect(maskSession.dirty.has("1:0")).toBe(false);
+      expect(isSkippedFromCommittedPath("ann-1", "1:0")).toBe(false);
+
+      expect(maskSession.tileBuffers.has("0:1")).toBe(true);
+      expect(maskSession.dirty.has("0:1")).toBe(false);
+      expect(isSkippedFromCommittedPath("ann-1", "0:1")).toBe(false);
+
+      // The actually-painted tile IS skipped (goes through session overlay)
+      expect(maskSession.dirty.has("0:0")).toBe(true);
+      expect(isSkippedFromCommittedPath("ann-1", "0:0")).toBe(true);
+    });
+
+    it("different annotation's tiles are never affected by skip logic", () => {
+      // Session is editing ann-1
+      maskSession.beginSession("ann-1");
+      maskSession.ensureTileBuffer(0, 0, "");
+      maskSession.markDirty(0, 0);
+
+      // A different annotation (ann-2) — isEditing would be false, so
+      // skip logic never applies.  This is a companion sanity check.
+      expect(isSkippedFromCommittedPath("ann-2", "0:0")).toBe(false);
+      expect(isSkippedFromCommittedPath("ann-2", "1:0")).toBe(false);
+    });
+
+    it("no annotation id means no skip", () => {
+      maskSession.beginSession(undefined);
+      maskSession.ensureTileBuffer(0, 0, "");
+      maskSession.markDirty(0, 0);
+
+      expect(isSkippedFromCommittedPath(undefined, "0:0")).toBe(false);
+    });
+  });
+
   describe("_tileVersions does not grow unboundedly across sessions", () => {
     it("stays bounded after multiple begin/reset cycles touching the same tiles", () => {
       // Perform several cycles of begin → paint → reset, touching the same
