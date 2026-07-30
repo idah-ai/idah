@@ -102,6 +102,12 @@
     ctx.imageSmoothingEnabled = ui.renderMode === "bilinear";
     applyViewportTransform(ctx, t.scale, t.translate[0], t.translate[1]);
 
+    // Existing (committed) masks fade with the annotation-opacity setting —
+    // masks are pure fill, so this is their equivalent of the SVG shapes'
+    // fill-opacity multiplier. Reset to 1 before the in-progress session tiles
+    // below so the active brush stroke (creation preview) stays fully opaque.
+    ctx.globalAlpha = ui.annotationOpacity / 100;
+
     // ── Render committed mask tiles from backend annotations ──────────
     if (data.annotations) {
       for (const ann of data.annotations.items) {
@@ -155,6 +161,7 @@
     }
 
     // ── Render in-progress session tiles on top (highlighted) ────────
+    ctx.globalAlpha = 1;
     if (maskSession.dirty.size > 0) {
       renderSessionLayer();
     }
@@ -362,6 +369,8 @@
     // Track render-mode changes so toggling nearest-neighbour / bilinear
     // triggers an immediate redraw.
     const renderMode = ui.renderMode;
+    // Track annotation-opacity so moving the slider re-composites the mask.
+    const annotationOpacity = ui.annotationOpacity;
     // Also trigger when annotation values or shape change (e.g. category assigned,
     // tiles flushed via setShape)
     const items = data.annotations?.items ?? [];
