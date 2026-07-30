@@ -316,6 +316,7 @@
 
   <video
     class={["video-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
+    style="opacity: {ui.videoOpacity / 100};"
     bind:this={videoElement}
   >
     <track kind="captions" />
@@ -342,7 +343,7 @@
 
   .video-wrapper {
     position: relative;
-    background-color: #e5e7eb;
+    background-color: var(--muted);
     display: flex;
     align-items: center;
     justify-content: center;
