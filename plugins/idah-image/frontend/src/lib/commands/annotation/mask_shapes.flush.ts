@@ -157,6 +157,13 @@ export function register(driver: IIdahDriverV2): void {
           }
           await writeTileEntries(data.annotations!, annotationId, entries);
 
+          // Clear the session buffer so the committed render path shows the
+          // restored tile values. Without this, the stale session buffer still
+          // has the painted tiles, and the committed path skips them (because
+          // isEditing && dirty.has(...) is true), leaving the old painted mask
+          // visible instead of the restored state.
+          maskSession.reset();
+
           // If this flush was from a mask polygon close, restore the drawing
           // preview so the user can continue editing or undo add_point commands.
           if (polygonCloseSnapshot) {
