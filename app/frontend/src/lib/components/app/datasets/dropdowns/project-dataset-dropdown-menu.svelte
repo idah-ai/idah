@@ -4,8 +4,8 @@
   import { CopyIcon, DownloadIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
@@ -17,8 +17,8 @@
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { ProjectMemberScope } from "@/security/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -184,7 +184,7 @@
 
   <ConfirmModal
     title="Delete Dataset"
-    description="Are you sure you want to delete this dataset?"
+    description={`Are you sure you want to delete this "${datasetRecord?.name}" dataset? This action cannot be undone.`}
     onConfirm={deleteDataset}
     bind:open={openConfirmDeleteDatasetModal}
   />

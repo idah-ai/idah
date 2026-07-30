@@ -125,7 +125,7 @@
 
   <ConfirmModal
     title="Delete Organization"
-    description="Are you sure you want to delete this organization? This action cannot be undone."
+    description={`Are you sure you want to delete the organization "${organizationRecord?.name}"? This action cannot be undone.`}
     onConfirm={deleteOrganization}
     bind:open={openConfirmDeleteOrganizationModal}
   />
