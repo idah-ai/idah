@@ -281,7 +281,12 @@ RSpec.describe Exports::Upd::Exporter do
             annotation_match = cmd.match(/--annotation '({.*?})' --metadata/)
             if annotation_match
               annotation = JSON.parse(annotation_match[1])
-              annotation_valid = (annotation == { "category" => "vehicles/car", "_entry_id" => "019bba87-9818-7967-8233-35fa9807d8fa" })
+              annotation_valid = (
+                annotation == {
+                  "category" => "vehicles/car",
+                  "_entry_id" => "019bba87-9818-7967-8233-35fa9807d8fa"
+                }
+              )
             end
           end
           true
