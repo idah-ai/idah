@@ -371,9 +371,14 @@
         );
         if (existingMask) {
           selection.selectAnnotation(existingMask as any);
-          // Enter mask mode with brush active so the user can edit
+          // Enter mask mode, preserving the current sub-tool (brush or polygon)
+          // if it's already a valid mask sub-tool. Only default to brush if
+          // the current active tool isn't a mask sub-tool.
           viewport.mode = IMAGE_MASK;
-          maskTool.active = "brush";
+          if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
+            maskTool.active = "brush";
+          }
+          getDriver().toolbar.invalidate();
           return;
         }
       }
@@ -388,9 +393,14 @@
       }
       pendingValue = value;
       viewport.mode = valueMode;
-      // When entering mask mode from sidebar, activate brush by default
+      // When entering mask mode from sidebar, preserve the current sub-tool
+      // (brush or polygon) if already valid. Only default to brush if the
+      // current active tool isn't a mask sub-tool.
       if (valueMode === IMAGE_MASK) {
-        maskTool.active = "brush";
+        if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
+          maskTool.active = "brush";
+        }
+        getDriver().toolbar.invalidate();
       }
     } else if (shapeSelectionArgs && requirementFullfilled) {
       showPopOver = false;
