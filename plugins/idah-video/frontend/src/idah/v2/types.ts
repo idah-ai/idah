@@ -577,50 +577,20 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Settings submodule ───────────────────────────────────────
 
-/**
- * A single plugin-defined setting exposed in the core topbar Settings menu.
- *
- * The value lives entirely in the plugin (state + persistence + how it's
- * applied to rendering). Core only reads it via `get`, writes via `set`, and
- * renders the control using the slider hints (`min`/`max`/`step`/`default`).
- * Currently slider-only; add other control kinds here when needed.
- */
-export interface ISettingItem {
-  /** Stable key within the group (e.g. "video-opacity"). */
-  key: string;
-  /** Display label for the control. */
-  label: string;
-  /** Slider bounds — required because core renders the widget. */
-  min: number;
-  max: number;
-  step: number;
-  /** Default value, so core can offer a "Reset" affordance. */
-  default: number;
-  /** Read the current value (plugin-owned). */
-  get(): number;
-  /** Write a new value (plugin-owned). */
-  set(value: number): void;
-}
-
-/**
- * A group of settings under one section. `section` is a raw key (e.g.
- * "idah-video") that core humanizes for the menu header.
- */
-export interface ISettingGroup {
-  section: string;
-  items: ISettingItem[];
-}
-
-/** Contributes setting groups. Registered by plugins via `driver.settings.register`. */
-export interface ISettingProvider {
-  collect(): ISettingGroup[];
-}
-
+// LEAN BY CHOICE: the full setting descriptor types (ISettingItem /
+// ISliderSetting / IOptionsSetting / ISettingGroup / ISettingProvider) live
+// ONLY in core (app/frontend/src/lib/plugin/v2/types.ts) and are intentionally
+// NOT duplicated here. The plugin passes setting descriptors untyped; core
+// validates and renders them by their `type`. This trades away compile-time
+// safety on what this plugin sends, in exchange for no duplicated contract.
+//
+// To get that safety net back, either:
+//   (a) re-mirror the descriptor block from core into this file, or
+//   (b) extract the shared driver contract into a module both core and
+//       plugins import (removes the duplication for every submodule at once).
 export interface ISettingsDriverV2 {
-  /** Register a setting provider (e.g. a plugin's opacity settings). */
-  register(provider: ISettingProvider): void;
-  /** Collect every registered provider's setting groups. */
-  collect(): ISettingGroup[];
+  /** Register a provider of setting descriptors — untyped here (see note above). */
+  register(provider: unknown): void;
 }
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────

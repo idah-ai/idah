@@ -34,7 +34,7 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
-  import type { IIdahDriverV2, ISettingGroup, ISettingItem } from "@/plugin/v2/types";
+  import type { IIdahDriverV2, ISettingGroup, ISliderSetting, IOptionsSetting } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -53,13 +53,14 @@
   // driver.settings.register() during init(). Core just renders the controls;
   // each item's get/set is owned by the plugin.
   //
-  // `sliderValues` is a core-owned reactive mirror keyed by "section:key". The
+  // `settingValues` is a core-owned reactive mirror keyed by "section:key". The
   // plugin's value is a $state in the plugin bundle; reading it across the
-  // bundle boundary (item.get()) is not tracked by core's render, so the label
-  // and thumb would go stale on drag. We seed this mirror on open and drive the
-  // UI from it, writing through to item.set() (which the plugin renders live).
+  // bundle boundary (item.get()) is not tracked by core's render, so the control
+  // would go stale on interaction. We seed this mirror on open and drive the UI
+  // from it, writing through to item.set() (which the plugin renders live).
+  // Values are number (slider) or string (options), so the map holds both.
   let settingGroups = $state<ISettingGroup[]>([]);
-  let sliderValues = $state<Record<string, number>>({});
+  let settingValues = $state<Record<string, number | string>>({});
 
   function settingKey(section: string, key: string): string {
     return `${section}:${key}`;
@@ -68,18 +69,26 @@
   $effect(() => {
     if (!openSettingsPopover) return;
     const groups = driver.settings.collect();
-    const seeded: Record<string, number> = {};
+    const seeded: Record<string, number | string> = {};
     for (const group of groups) {
       for (const item of group.items) {
         seeded[settingKey(group.section, item.key)] = item.get();
       }
     }
     settingGroups = groups;
-    sliderValues = seeded;
+    settingValues = seeded;
   });
 
-  function setSetting(section: string, item: ISettingItem, value: number): void {
-    sliderValues[settingKey(section, item.key)] = value;
+  // One writer per control type — keeps `item.set()` type-safe without casts
+  // (the union's `set` differs by control). Each mirrors the change locally and
+  // writes through to the plugin.
+  function setSliderValue(section: string, item: ISliderSetting, value: number): void {
+    settingValues[settingKey(section, item.key)] = value;
+    item.set(value);
+  }
+
+  function setOptionValue(section: string, item: IOptionsSetting, value: string): void {
+    settingValues[settingKey(section, item.key)] = value;
     item.set(value);
   }
 
@@ -323,20 +332,48 @@
             </span>
             {#each group.items as item (item.key)}
               {@const key = settingKey(group.section, item.key)}
-              <div class="flex flex-col gap-1.5">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm">{item.label}</span>
-                  <span class="text-muted-foreground text-xs tabular-nums">{sliderValues[key]}</span>
+              <!--
+                Map the plugin-declared control `type` to one of core's own
+                components. TO ADD A NEW CONTROL TYPE: after adding its interface
+                + union member in types.ts (all three copies), add a branch here
+                that narrows on `item.type`, renders the matching core component,
+                reads its value from `settingValues[key]`, and writes back via a
+                per-type setter (like setSliderValue / setOptionValue).
+              -->
+              {#if item.type === "slider"}
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm">{item.label}</span>
+                    <span class="text-muted-foreground text-xs tabular-nums">{settingValues[key]}</span>
+                  </div>
+                  <Slider
+                    type="single"
+                    min={item.min}
+                    max={item.max}
+                    step={item.step}
+                    value={settingValues[key] as number}
+                    onValueChange={(v) => setSliderValue(group.section, item, v)}
+                  />
                 </div>
-                <Slider
-                  type="single"
-                  min={item.min}
-                  max={item.max}
-                  step={item.step}
-                  value={sliderValues[key]}
-                  onValueChange={(v) => setSetting(group.section, item, v)}
-                />
-              </div>
+              {:else if item.type === "options"}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-sm">{item.label}</span>
+                  <div
+                    class="bg-muted grid gap-0.5 rounded-lg border p-0.5"
+                    style="grid-template-columns: repeat({item.options.length}, minmax(0, 1fr));"
+                  >
+                    {#each item.options as opt (opt.value)}
+                      <Button
+                        variant={settingValues[key] === opt.value ? "default" : "ghost"}
+                        size="sm"
+                        onclick={() => setOptionValue(group.section, item, opt.value)}
+                      >
+                        {opt.label}
+                      </Button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
             {/each}
           </div>
         {/each}

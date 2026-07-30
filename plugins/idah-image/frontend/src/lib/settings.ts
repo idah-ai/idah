@@ -8,13 +8,22 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui } from "./state/ui.svelte";
 
+// TODO(remove-after-test): throwaway backing value for the mock "options"
+// setting below — exercises the new segmented-control rendering with no effect.
+let _mockOptionsChoice = "medium";
+
 export function registerSettings(driver: IIdahDriverV2): void {
+  // NOTE: these descriptors are NOT type-checked here — the setting types are
+  // kept only in core (not duplicated into this plugin). The canonical shape
+  // (type/min/max/step/options/get/set) lives in core's plugin/v2/types.ts;
+  // core validates and renders by `type`. See the note in $idah/v2/types.ts.
   driver.settings.register({
     collect: () => [
       {
         section: "idah-image",
         items: [
           {
+            type: "slider",
             key: "image-opacity",
             label: "Image opacity",
             min: 0,
@@ -25,6 +34,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             set: (v) => (ui.imageOpacity = v),
           },
           {
+            type: "slider",
             key: "annotation-opacity",
             label: "Annotation opacity",
             min: 0,
@@ -33,6 +43,22 @@ export function registerSettings(driver: IIdahDriverV2): void {
             default: 100,
             get: () => ui.annotationOpacity,
             set: (v) => (ui.annotationOpacity = v),
+          },
+          // TODO(remove-after-test): mock "options" setting to exercise the
+          // segmented-control rendering. No real action — backed by a throwaway
+          // local var. Delete this item (and _mockOptionsChoice) once verified.
+          {
+            type: "options",
+            key: "mock-options",
+            label: "Mock options (test only)",
+            options: [
+              { value: "low", label: "Low" },
+              { value: "medium", label: "Medium" },
+              { value: "high", label: "High" },
+            ],
+            default: "medium",
+            get: () => _mockOptionsChoice,
+            set: (v) => (_mockOptionsChoice = v),
           },
         ],
       },

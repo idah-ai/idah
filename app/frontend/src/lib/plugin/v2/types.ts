@@ -660,26 +660,63 @@ export interface IAccountSettingsDriverV2 {
  * A single plugin-defined setting exposed in the core topbar Settings menu.
  *
  * The value lives entirely in the plugin (state + persistence + how it's
- * applied to rendering). Core only reads it via `get`, writes via `set`, and
- * renders the control using the slider hints (`min`/`max`/`step`/`default`).
- * Currently slider-only; add other control kinds here when needed.
+ * applied to rendering). Core is a dumb renderer: it maps the declared `type`
+ * to one of the controls it makes available, reads via `get`, writes via
+ * `set` — it never learns what the setting means.
+ *
+ * ── ADDING A NEW CONTROL TYPE ──────────────────────────────────────────────
+ * Core owns the widgets, so a new control is a small, three-step change:
+ *   1. Add a `IXxxSetting extends ISettingItemBase` interface here, with its
+ *      own `type` literal, its render fields, and `get()`/`set()` (the value
+ *      shape is per-control — slider is number, options is string, …).
+ *   2. Add it to the `ISettingItem` union below.
+ *   3. Add a matching `{#if item.type === "xxx"}` branch in the renderer
+ *      (annotation-header-bar-actions.svelte) — see the note there.
+ * Then mirror steps 1–2 into each plugin's `src/idah/v2/types.ts` copy.
+ * Plugins opt in simply by declaring a setting with that `type`.
+ * ───────────────────────────────────────────────────────────────────────────
  */
-export interface ISettingItem {
+
+/** Fields shared by every setting control. */
+export interface ISettingItemBase {
   /** Stable key within the group (e.g. "video-opacity"). */
   key: string;
   /** Display label for the control. */
   label: string;
+}
+
+/** A slider control (continuous numeric value). */
+export interface ISliderSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "slider";
   /** Slider bounds — required because core renders the widget. */
   min: number;
   max: number;
   step: number;
-  /** Default value, so core can offer a "Reset" affordance. */
+  /** Default value (descriptor metadata). */
   default: number;
   /** Read the current value (plugin-owned). */
   get(): number;
   /** Write a new value (plugin-owned). */
   set(value: number): void;
 }
+
+/** A segmented single-choice control (N options, like the Theme switcher). */
+export interface IOptionsSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "options";
+  /** The selectable options, rendered as a segmented button group. */
+  options: { value: string; label: string }[];
+  /** Default option value (descriptor metadata). */
+  default: string;
+  /** Read the currently-selected option value (plugin-owned). */
+  get(): string;
+  /** Write the selected option value (plugin-owned). */
+  set(value: string): void;
+}
+
+/** What consumers hold and the renderer narrows on `type`. Grows per control. */
+export type ISettingItem = ISliderSetting | IOptionsSetting;
 
 /**
  * A group of settings under one section. `section` is a raw key (e.g.

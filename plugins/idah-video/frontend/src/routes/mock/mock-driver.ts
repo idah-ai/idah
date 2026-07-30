@@ -11,6 +11,7 @@ import type {
   ICommandDriverV2,
   IToolbarDriverV2,
   IStatsDriverV2,
+  ISettingsDriverV2,
   IAccountSettingsDriverV2,
   IStatProvider,
   IAnnotationRecord,
@@ -644,6 +645,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   readonly annotations: IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue>;
   readonly notes: INotesDriverV2;
   readonly stats: IStatsDriverV2;
+  // STUB (standalone dev): the real settings driver lives in core; the mock only
+  // needs to accept registrations so the plugin's registerSettings() call in
+  // init() doesn't crash. There's no topbar here, so nothing renders.
+  readonly settings: ISettingsDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
@@ -693,6 +698,12 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     this.stats = {
       register: (provider: IStatProvider) => statProviders.push(provider),
       collect: async () => (await Promise.all(statProviders.map((p) => p.collect()))).flat(),
+    };
+
+    // STUB (standalone dev): accept setting registrations but render nothing —
+    // the topbar that consumes these lives in core, not in this mock harness.
+    this.settings = {
+      register: () => {},
     };
 
     // ── Register default idah commands ────────────────────────────────
