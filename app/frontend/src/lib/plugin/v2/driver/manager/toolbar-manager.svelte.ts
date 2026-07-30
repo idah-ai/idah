@@ -91,7 +91,7 @@ export class ToolbarManagerV2 {
     const roots: IToolbarNode[] = [];
     // Track group nodes already created, keyed by full colon path, so members of the same
     // group (and its ancestors) reuse the same node instead of creating duplicates.
-    const groupsByPath = new Map<string, IToolbarGroupNode>();
+    const groupsByPath = new SvelteMap<string, IToolbarGroupNode>();
 
     for (const item of items) {
       if (!item.group) {
