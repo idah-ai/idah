@@ -13,6 +13,7 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { DEFAULT_MODE, IMAGE_POLYGON, IMAGE_LINE, type IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 import { uuidv7 } from "uuidv7";
 import { draft as polygonDraft } from "./polygon.add_point.svelte";
 import { lineDraft } from "./line.add_point.svelte";
@@ -40,6 +41,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as AnnotationAddProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props || !data.annotations) return noopAction(command);
 
       // Generate the ID once per command action so redo recreates the same

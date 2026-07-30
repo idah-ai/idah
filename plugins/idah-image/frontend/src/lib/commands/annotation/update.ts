@@ -10,6 +10,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import type { IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "annotation.update",
@@ -37,6 +38,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as AnnotationUpdateProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props || !data.annotations) return noopAction(command);
 
       const record = data.annotations.items.find((r) => r.id === props.annotation.id);
