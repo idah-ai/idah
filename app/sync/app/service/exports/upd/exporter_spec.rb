@@ -135,7 +135,7 @@ RSpec.describe Exports::Upd::Exporter do
             entry_created = true
             expect(cmd).to include("--id \"#{entry_id}\"")
             expect(cmd).to include("--dataset_id \"#{dataset_id}\"")
-            expect(cmd).to include("--url \"http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov\"")
+            expect(cmd).to include("--url \"http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov?name=video_1.mov\"")
             expect(cmd).to include("--metadata")
           end
           true
@@ -281,7 +281,7 @@ RSpec.describe Exports::Upd::Exporter do
             annotation_match = cmd.match(/--annotation '({.*?})' --metadata/)
             if annotation_match
               annotation = JSON.parse(annotation_match[1])
-              annotation_valid = (annotation == { "category" => "vehicles/car" })
+              annotation_valid = (annotation == { "category" => "vehicles/car", "_entry_id" => "019bba87-9818-7967-8233-35fa9807d8fa" })
             end
           end
           true

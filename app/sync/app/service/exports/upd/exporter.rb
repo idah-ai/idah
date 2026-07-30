@@ -86,14 +86,17 @@ module Exports
       def append_entry(file_path, dataset_id, entry, include_medias)
         # Use local file URL if original media is included,
         # otherwise use external URL of Media service of IDAH
+        entry_name = entry.record.data[:attributes][:name] || entry.record.id
         media_url =
           if ["original", "all"].include?(include_medias)
-            "local:#{entry.record.resource}"
+            "local:#{entry.record.resource}?name=#{entry_name}"
           else
-            URI.join(
+            uri = URI.join(
               ENV.fetch("IDAH_URL"),
               "api/v1/media/medias/files/#{entry.record.resource}"
             )
+            uri.query = "name=#{entry_name}"
+            uri.to_s
           end
 
         metadata = capitalized_dashed_keys(
@@ -130,11 +133,17 @@ module Exports
 
         metadata = capitalized_dashed_keys(metadata).merge(
           {
+            "entry_id" => entry_id,
             "Created-By" => attributes[:created_by_email],
             "Created-At" => attributes[:created_at],
             "Updated-At" => attributes[:updated_at]
           }
         )
+
+        # Embed entry_id into the annotation field so it's visible via
+        # `annotation show` (which returns annotation but not the top-level entry_id)
+        ann_data = annotation.record.annotation.to_h
+        ann_data["_entry_id"] = entry_id
 
         # Create annotation in UPD
         system(
@@ -143,7 +152,7 @@ module Exports
           "--entry_id \"#{entry_id}\" "\
           "--type \"#{type}\" "\
           "--shape '#{dimensions.to_json}' "\
-          "--annotation '#{annotation.record.annotation.to_json}' "\
+          "--annotation '#{ann_data.to_json}' "\
           "--metadata '#{metadata.to_json}'",
           exception: true
         )
