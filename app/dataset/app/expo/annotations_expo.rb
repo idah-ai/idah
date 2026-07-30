@@ -87,4 +87,19 @@ class AnnotationsExpo < BaseExpo
   def rpc_delete
     service.delete(params[:id])
   end
+
+  expose json_rpc_method(:write_shape) do
+    input do
+      field(:annotation_id, String)
+      field(:key, String)
+      field?(:value) # nil (delete) or Hash (upsert)
+    end
+  end
+  def rpc_write_shape
+    service.write_shape(
+      params[:annotation_id],
+      params[:key],
+      params[:value]
+    )
+  end
 end
