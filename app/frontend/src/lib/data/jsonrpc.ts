@@ -67,7 +67,9 @@ export class JsonRpcDatasource {
   private networkFailureStart: number | null = null;
 
   /** @internal Test-only accessor — allows tests to observe paused state without exposing internals. */
-  get isPaused(): boolean { return this.paused; }
+  get isPaused(): boolean {
+    return this.paused;
+  }
 
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;

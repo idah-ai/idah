@@ -85,10 +85,7 @@ describe("JsonRpcDatasource", () => {
       // Resolve the first batch
       resolveFirstBatch({
         status: 200,
-        json: () =>
-          Promise.resolve([
-            { jsonrpc: "2.0", id: "0", result: {} },
-          ]),
+        json: () => Promise.resolve([{ jsonrpc: "2.0", id: "0", result: {} }]),
       });
       await vi.advanceTimersByTimeAsync(0);
 
@@ -121,7 +118,7 @@ describe("JsonRpcDatasource", () => {
       // Send a call — it will fail with a non-network error, which pauses immediately
       rpc.call({ method: "create", params: { id: "ann-1" } });
       await vi.advanceTimersByTimeAsync(20); // flush
-      await vi.advanceTimersByTimeAsync(0);  // process the failure
+      await vi.advanceTimersByTimeAsync(0); // process the failure
 
       // Confirm we're paused
       expect(rpc.isPaused).toBe(true);

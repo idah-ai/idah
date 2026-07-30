@@ -71,7 +71,6 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
         params: { annotation_id: annotationId, key, value: value ?? null },
       });
     },
-
   };
 }
 
