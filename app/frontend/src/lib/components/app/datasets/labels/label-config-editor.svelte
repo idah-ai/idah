@@ -106,7 +106,6 @@
       shapeDrag.end();
     },
   };
-  let labelConfigIsEmpty: boolean = $derived(Object.keys(labelConfig).length === 0);
   let hasAtLeastOneCategory: boolean = $derived(selectedLabelConfig ? selectedLabelConfig.values.length > 0 : false);
   let hasAtLeastOneProperty: boolean = $derived(
     selectedLabelConfig ? selectedLabelConfig.properties.length > 0 : false,
@@ -203,8 +202,6 @@
   function removeLabelConfig(key: string) {
     if (controller.selectedConfigKey === key) {
       controller.selectedConfigKey = controller.getOrderedConfigKeys().find((k) => k !== key) || "";
-    } else {
-      controller.selectedConfigKey = "";
     }
 
     controller.removeLabelConfig(key);
@@ -389,7 +386,7 @@
       </CardHeader>
 
       <CardContent>
-        {#if !labelConfigIsEmpty}
+        {#if selectedLabelConfig}
           <CategoryTree
             values={selectedLabelConfig.values}
             onAddCategory={addCategory}
@@ -426,7 +423,7 @@
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
-        {#if !labelConfigIsEmpty}
+        {#if selectedLabelConfig}
           {#each Object.values(selectedLabelConfig.properties) as property (property.id)}
             <PropertyCard {property} onSetProperty={setProperty} onRemoveProperty={removeProperty} />
           {:else}
