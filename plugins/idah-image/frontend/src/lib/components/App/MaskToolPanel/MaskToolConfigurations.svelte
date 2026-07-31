@@ -15,21 +15,24 @@
   const MAX_RADIUS = 300;
 </script>
 
-<div class="flex items-center gap-2">
-  <span class="text-muted-foreground text-xs whitespace-nowrap">Brush size</span>
-  <Slider
-    type="single"
-    value={maskTool.brushRadius}
-    min={MIN_RADIUS}
-    max={MAX_RADIUS}
-    step={1}
-    class="w-40"
-    onValueChange={(v: number) => (maskTool.brushRadius = v)}
-  />
-  <span class="text-foreground w-12 text-right text-xs tabular-nums">{maskTool.brushRadius} px</span>
-</div>
+<!-- Brush radius applies to the brush tool only; the polygon tool ignores it. -->
+{#if maskTool.active === "brush"}
+  <div class="flex items-center gap-2">
+    <span class="text-muted-foreground text-xs whitespace-nowrap">Brush size</span>
+    <Slider
+      type="single"
+      value={maskTool.brushRadius}
+      min={MIN_RADIUS}
+      max={MAX_RADIUS}
+      step={1}
+      class="w-40"
+      onValueChange={(v: number) => (maskTool.brushRadius = v)}
+    />
+    <span class="text-foreground w-12 text-right text-xs tabular-nums">{maskTool.brushRadius} px</span>
+  </div>
 
-<div class="bg-border h-6 w-px"></div>
+  <div class="bg-border h-6 w-px"></div>
+{/if}
 
 <label class="flex cursor-pointer items-center gap-2">
   <Switch checked={maskTool.preventOverlap} onCheckedChange={() => maskTool.togglePreventOverlap()} />
