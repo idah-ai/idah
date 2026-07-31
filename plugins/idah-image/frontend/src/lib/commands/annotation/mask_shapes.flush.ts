@@ -124,11 +124,21 @@ export function register(driver: IIdahDriverV2): void {
             (annId, key, value) => data.annotations!.setShape(annId, key, value),
             (annId, entries) => data.annotations!.setShapes(annId, entries),
           );
-          maskSession.reset();
+
+          // Don't reset the session here — let beginSession() handle cleanup
+          // when the next gesture starts. This ensures the pending rAF redraw
+          // (scheduled by markDirty in the paintDab call) can render the
+          // session tiles before they're cleared. Without this, a single click
+          // (pointerdown + pointerup with no move) would wipe the session
+          // buffer before the rAF fires, and the dab would never be visible.
+          //
+          // The session is naturally cleaned up by beginSession() on the next
+          // gesture, or by reset() in the onCancel handler / popover cancel.
 
           // Clear the mask polygon draft so the polygon preview disappears.
-          // The points to restore on undo were captured in polygonCloseSnapshot
-          // at callback creation time, so no need to re-derive them here.
+          // The points to restore on undo were captured in
+          // polygonCloseSnapshot at callback creation time, so no need to
+          // re-derive them here.
           maskPolygonDraft.points = [];
         },
 
@@ -146,6 +156,13 @@ export function register(driver: IIdahDriverV2): void {
             invalidate(annotationId, tileKey);
           }
           await writeTileEntries(data.annotations!, annotationId, entries);
+
+          // Clear the session buffer so the committed render path shows the
+          // restored tile values. Without this, the stale session buffer still
+          // has the painted tiles, and the committed path skips them (because
+          // isEditing && dirty.has(...) is true), leaving the old painted mask
+          // visible instead of the restored state.
+          maskSession.reset();
 
           // If this flush was from a mask polygon close, restore the drawing
           // preview so the user can continue editing or undo add_point commands.
