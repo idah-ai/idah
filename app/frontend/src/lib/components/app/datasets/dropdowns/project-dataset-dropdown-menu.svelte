@@ -184,7 +184,7 @@
 
   <ConfirmModal
     title="Delete Dataset"
-    description={`Are you sure you want to delete this "${datasetRecord?.name}" dataset? This action cannot be undone.`}
+    description={`Are you sure you want to delete this project "${datasetRecord?.name}" dataset? This action cannot be undone.`}
     onConfirm={deleteDataset}
     bind:open={openConfirmDeleteDatasetModal}
   />

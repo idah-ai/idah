@@ -117,7 +117,7 @@
 
   <ConfirmModal
     title="Delete Datasets"
-    description="Are you sure you want to delete {selectedDatasetsCount} dataset{selectedDatasetsCount > 1 ? 's' : ''}?"
+    description="Are you sure you want to delete dataset {selectedDatasetsCount} dataset{selectedDatasetsCount > 1 ? 's' : ''}?"
     onConfirm={deleteDatasets}
     bind:open={openConfirmDeleteDatasetsModal}
   >

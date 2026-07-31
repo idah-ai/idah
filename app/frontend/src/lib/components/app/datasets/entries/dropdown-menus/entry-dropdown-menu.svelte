@@ -7,11 +7,11 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
@@ -177,7 +177,7 @@
   <!-- MODAL::CONFIRM DELETE -->
   <ConfirmModal
     title="Delete entry"
-    description={`Are you sure you want to delete this "${entry.name || entry.id}" entry? This action cannot be undone.`}
+    description={`Are you sure you want to delete this entry "${entry.name || entry.id}" entry? This action cannot be undone.`}
     onConfirm={deleteEntry}
     bind:open={openConfirmDeleteEntryModal}
   />
