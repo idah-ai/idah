@@ -61,7 +61,7 @@
   async function fetchProject(): Promise<ProjectRecord> {
     const projectRes = await projectsBackendDataSource.get(projectId, {
       fields: {
-        [ProjectRecord.type]: ["name", "description"],
+        [ProjectRecord.type]: ["name", "description", "organization_id"],
       },
     });
     Object.assign(project, projectRes.data);

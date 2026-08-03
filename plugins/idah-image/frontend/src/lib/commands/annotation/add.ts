@@ -95,7 +95,10 @@ export function register(driver: IIdahDriverV2): void {
               (annId, key, value) => data.annotations!.setShape(annId, key, value),
               (annId, entries) => data.annotations!.setShapes(annId, entries),
             );
-            maskSession.reset();
+            // Don't reset the session here — let beginSession() handle cleanup
+            // when the next gesture starts. Same timing rationale as the flush
+            // command: the pending rAF redraw must render the session tiles
+            // before they're cleared.
           }
 
           if (props.shape.type !== IMAGE_MASK) {

@@ -15,6 +15,8 @@ class LabelConfigTemplatesExpo < BaseExpo
     index do
       allowed_filters :organization_id,
                       :organization_id__in,
+                      :modality,
+                      :modality__in,
                       :name__match
     end
     create
