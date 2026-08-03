@@ -167,11 +167,11 @@ describe("UIState", () => {
       expect(ui.annotationOpacity).toBe(100);
     });
 
-    it("persists to localStorage on set", () => {
+    it("does not persist to localStorage (session-only)", () => {
       ui.annotationOpacity = 50;
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
         "idah-image:settings:annotation-opacity",
-        "50",
+        expect.anything(),
       );
     });
 
@@ -188,11 +188,11 @@ describe("UIState", () => {
       expect(ui.imageOpacity).toBe(100);
     });
 
-    it("persists to localStorage on set", () => {
+    it("does not persist to localStorage (session-only)", () => {
       ui.imageOpacity = 75;
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
         "idah-image:settings:image-opacity",
-        "75",
+        expect.anything(),
       );
     });
 
