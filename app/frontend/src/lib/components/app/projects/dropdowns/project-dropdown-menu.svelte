@@ -114,7 +114,7 @@
 
   <ConfirmModal
     title="Delete Project"
-    description={`Are you sure you want to delete the project "${projectRecord?.name}"? This action cannot be undone.`}
+    description={`Are you sure you want to delete this project "${projectRecord?.name}"? This action cannot be undone.`}
     onConfirm={deleteProject}
     bind:open={openConfirmDeleteProjectModal}
   />
