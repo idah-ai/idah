@@ -177,7 +177,7 @@
   <!-- MODAL::CONFIRM DELETE -->
   <ConfirmModal
     title="Delete entry"
-    description={`Are you sure you want to delete this entry "${entry.name || entry.id}" entry? This action cannot be undone.`}
+    description={`Are you sure you want to delete this entry "${entry.name || entry.id}"? This action cannot be undone.`}
     onConfirm={deleteEntry}
     bind:open={openConfirmDeleteEntryModal}
   />
