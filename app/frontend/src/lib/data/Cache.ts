@@ -27,9 +27,11 @@ export const clearCache = (cacheKey: string, cacheSignature: string | undefined 
     const key = `${cacheKey}-${cacheSignature}`;
     delete cacheList[key];
   } else {
-    const pattern = new RegExp(`^${cacheKey}-`);
+    // Prefix match without a RegExp: cacheKey may contain regex
+    // metacharacters, which could over-match unrelated entries or ReDoS.
+    const prefix = `${cacheKey}-`;
     for (const key in cacheList) {
-      if (key.match(pattern)) {
+      if (key.startsWith(prefix)) {
         delete cacheList[key];
       }
     }
@@ -50,11 +52,17 @@ function clearExpireCache() {
   }
 }
 
-function runExpireCache() {
-  // Every 10 seconds, cleanup the expired cache
-  setInterval(() => {
-    clearExpireCache();
-  }, 10000);
+let expireTimer: ReturnType<typeof setInterval> | undefined;
+
+// Every 10 seconds, cleanup the expired cache. The handle is stored so the
+// timer can be stopped (tests/SSR/HMR) instead of leaking the event loop.
+export function startExpireCache() {
+  expireTimer ??= setInterval(clearExpireCache, 10_000);
 }
 
-runExpireCache();
+export function stopExpireCache() {
+  if (expireTimer) clearInterval(expireTimer);
+  expireTimer = undefined;
+}
+
+if (typeof window !== "undefined") startExpireCache();

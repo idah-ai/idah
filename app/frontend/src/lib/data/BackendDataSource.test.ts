@@ -3,12 +3,12 @@ import { createBackendDataSource, encodeModel } from "./BackendDataSource";
 import { Record, RecordFactory, field, type } from "./model/Record";
 
 const TransformerTest = {
-  from(value: any) {
+  from(value: string) {
     return value && value + "from";
   },
-  to(value: any) {
+  to(value: string) {
     return value && value + "to";
-  }
+  },
 };
 
 @type("test/backend_data_source")
@@ -25,8 +25,8 @@ describe(encodeModel, () => {
   it("simple", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        foo: "bar"
-      }
+        foo: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"foo":"bar"}}}');
   });
@@ -34,8 +34,8 @@ describe(encodeModel, () => {
   it("with transformer", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        transformed: "bar"
-      }
+        transformed: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"transformed":"barto"}}}');
   });
@@ -43,8 +43,8 @@ describe(encodeModel, () => {
   it("with key", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        camelCase: "bar"
-      }
+        camelCase: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"under_score":"bar"}}}');
   });
@@ -53,8 +53,8 @@ describe(encodeModel, () => {
     const out = encodeModel(TestRecord, {
       attributes: {
         id: "1",
-        foo: "bar"
-      }
+        foo: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","id":"1","attributes":{"foo":"bar"}}}');
   });
@@ -62,7 +62,7 @@ describe(encodeModel, () => {
 
 describe(createBackendDataSource, () => {
   const fetch = vi.fn();
-  global.fetch = <any>fetch;
+  globalThis.fetch = fetch as unknown as typeof globalThis.fetch;
 
   const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records");
 
@@ -70,7 +70,7 @@ describe(createBackendDataSource, () => {
     const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records", {
       customMethod() {
         return "custom";
-      }
+      },
     });
 
     it("simple", () => {
@@ -81,6 +81,8 @@ describe(createBackendDataSource, () => {
   describe("#get", () => {
     const mockGet = () => {
       fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
         body: JSON.stringify({
           data: {
             type: "test/backend_data_source",
@@ -89,13 +91,13 @@ describe(createBackendDataSource, () => {
               foo: "foo1",
               bar: "bar1",
               under_score: "camelCase1",
-              transformed: "transformed1"
-            }
-          }
+              transformed: "transformed1",
+            },
+          },
         }),
         json() {
           return JSON.parse(this.body);
-        }
+        },
       });
     };
 
@@ -114,6 +116,8 @@ describe(createBackendDataSource, () => {
   describe("#list", () => {
     const mockList = () => {
       fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
         body: JSON.stringify({
           data: [
             {
@@ -123,8 +127,8 @@ describe(createBackendDataSource, () => {
                 foo: "foo1",
                 bar: "bar1",
                 under_score: "camelCase1",
-                transformed: "transformed1"
-              }
+                transformed: "transformed1",
+              },
             },
             {
               type: "test/backend_data_source",
@@ -133,14 +137,14 @@ describe(createBackendDataSource, () => {
                 foo: "foo2",
                 bar: "bar2",
                 under_score: "camelCase2",
-                transformed: "transformed2"
-              }
-            }
-          ]
+                transformed: "transformed2",
+              },
+            },
+          ],
         }),
         json() {
           return JSON.parse(this.body);
-        }
+        },
       });
     };
 
@@ -169,8 +173,8 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id: "2"
-        }
+          id: "2",
+        },
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?filter%5Bid%5D=2", { method: "GET" });
@@ -181,8 +185,8 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id: "2"
-        }
+          id: "2",
+        },
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?filter%5Bid%5D=2", { method: "GET" });
@@ -193,13 +197,13 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id__in: ["1", "2"]
-        }
+          id__in: ["1", "2"],
+        },
       });
 
       expect(fetch).toHaveBeenCalledWith(
         "http://example.tld/test_records?filter%5Bid__in%5D%5B%5D=1&filter%5Bid__in%5D%5B%5D=2",
-        { method: "GET" }
+        { method: "GET" },
       );
     });
 
@@ -207,26 +211,42 @@ describe(createBackendDataSource, () => {
       mockList();
 
       await ds.list({
-        sort: ["-id", "foo"]
+        sort: ["-id", "foo"],
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?sort=-id%2Cfoo", {
-        method: "GET"
+        method: "GET",
       });
     });
   });
 
   describe("#delete", () => {
     it("simple", async () => {
-      fetch.mockResolvedValue({ body: "" });
+      fetch.mockResolvedValue({ ok: true, status: 204, body: "" });
       const result = await ds.delete("1");
       expect(result).toBe(true);
+    });
+  });
+
+  describe("non-ok / non-JSON responses", () => {
+    it("rejects with a typed error instead of throwing on a non-JSON body", async () => {
+      fetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json() {
+          throw new SyntaxError("Unexpected token < in JSON");
+        },
+      });
+
+      await expect(ds.get("1", { noCache: true })).rejects.toMatchObject({ status: 500 });
     });
   });
 
   describe("#update", () => {
     it("simple", async () => {
       fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
         body: JSON.stringify({
           data: {
             type: "test/backend_data_source",
@@ -235,19 +255,19 @@ describe(createBackendDataSource, () => {
               foo: "foo1",
               bar: "bar1",
               under_score: "camelCase1",
-              transformed: "transformed1"
-            }
-          }
+              transformed: "transformed1",
+            },
+          },
         }),
         json() {
           return JSON.parse(this.body);
-        }
+        },
       });
 
       const result = await ds.update("1", {
         attributes: {
-          foo: "bar"
-        }
+          foo: "bar",
+        },
       });
       expect(result.data.id).toBe("1");
     });

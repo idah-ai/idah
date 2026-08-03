@@ -31,13 +31,15 @@
   }
 
   async function updateEntryPriority(): Promise<void> {
-    for (const entryId of entryIds) {
-      await entriesBackendDataSource.update(entryId, {
-        attributes: {
-          priority: selectedPriority!,
-        },
-      });
-    }
+    await Promise.all(
+      entryIds.map((entryId) =>
+        entriesBackendDataSource.update(entryId, {
+          attributes: {
+            priority: selectedPriority!,
+          },
+        }),
+      ),
+    );
 
     showToast.success({
       title: `${selectedEntryCount} entries has been set priority successfully!`,

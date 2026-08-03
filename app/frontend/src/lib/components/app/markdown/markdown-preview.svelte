@@ -1,5 +1,6 @@
 <script lang="ts">
   import { marked } from "marked";
+  import DOMPurify from "dompurify";
 
   import { cn } from "@/utils";
 
@@ -25,7 +26,11 @@
 
     // marked.use({renderer})
 
-    return marked.parse(text).toString();
+    const html = marked.parse(text).toString();
+
+    // dompurify needs a DOM; the app is SSR (adapter-node). Sanitise in the
+    // browser only — server render yields "" until hydration re-runs this.
+    return typeof window !== "undefined" ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } }) : "";
   }
 </script>
 

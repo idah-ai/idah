@@ -15,8 +15,6 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
 
       get "/plugins/#{plugin_name}/files/#{filename}"
 
-      puts last_response.body
-
       expect(last_response.status).to eq(200)
       expect(last_response.body).to eq("file content")
     end
@@ -53,8 +51,6 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
       )
 
       get "/plugins/#{plugin_name}/assets/#{filename}"
-
-      puts last_response.body
 
       expect(last_response.status).to eq(200)
       expect(last_response.body).to eq("asset content")
