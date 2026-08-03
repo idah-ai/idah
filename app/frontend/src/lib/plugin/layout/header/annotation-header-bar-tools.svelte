@@ -140,7 +140,7 @@
         class={cn(
           "[&_svg]:!text-inherit",
           isItemToggled(node.item) &&
-            "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+            "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground data-highlighted:bg-primary data-highlighted:text-primary-foreground",
         )}
       >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
