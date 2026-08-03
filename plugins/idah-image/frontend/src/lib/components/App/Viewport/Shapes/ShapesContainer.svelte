@@ -442,6 +442,12 @@
     e.stopPropagation(); // keep shape/selection handlers from reacting
     zoomableElement!.startPan(e.clientX, e.clientY);
   }
+  function onMouseUpCapture(e: MouseEvent) {
+    if (e.button !== 1) return;
+    e.preventDefault(); // suppress the browser's middle-click autoscroll
+    e.stopPropagation(); // keep shape/selection handlers from reacting
+    zoomableElement!.mouseUp(e);
+  }
 
   function onMouseDown(e: MouseEvent) {
     // Sync mousePosition so the cursor prop used by shape components
@@ -752,6 +758,7 @@
     onkeydown={() => {}}
     bind:this={svgEl}
     onmousedowncapture={onMouseDownCapture}
+    onmouseupcapture={onMouseUpCapture}
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
     onmousemove={onMouseMove}
