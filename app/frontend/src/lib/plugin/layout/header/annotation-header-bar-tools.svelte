@@ -6,6 +6,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
+  import * as Kbd from "@/components/ui/kbd";
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import { cn } from "@/utils";
@@ -146,6 +147,16 @@
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html node.item.icon}
         {node.item.label}
+        {#if node.item.name}
+          {@const shortcut = cmdShortcut(node.item.name)}
+          {#if shortcut}
+            <DropdownMenu.Shortcut>
+              <Kbd.Kbd>
+                {shortcut}
+              </Kbd.Kbd>
+            </DropdownMenu.Shortcut>
+          {/if}
+        {/if}
       </DropdownMenu.Item>
     {/if}
   {:else}
