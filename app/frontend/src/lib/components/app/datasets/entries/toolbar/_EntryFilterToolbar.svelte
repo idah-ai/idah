@@ -17,8 +17,9 @@
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { pluralizeUnit } from "@/utils/unit";
 
   import { ArrowDownAZIcon, ArrowDownZAIcon, ArrowUpDownIcon, ChevronsUpDownIcon, FunnelIcon } from "@lucide/svelte";
@@ -45,47 +46,55 @@
   // Modal visibility - owned here
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
-  let openConfirmUnassign = $state(false);
-  let openConfirmDelete = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
       onAssign: () => {
         openAssignEntry = true;
       },
-      onUnassign: () => {
-        openConfirmUnassign = true;
-      },
+      onUnassign: confirmUnassign,
       onSetPriority: () => {
         openSetPriority = true;
       },
-      onDelete: () => {
-        openConfirmDelete = true;
-      },
+      onDelete: confirmDelete,
       isAssigned: sel.checkAnyAssigned(controller.selectedIds),
       isAssignDisabled: sel.assignableEntryIds.length === 0,
       isUnassignDisabled: sel.unAssignableEntryIds.length === 0,
     }),
   );
 
-  async function handleUnassign(): Promise<void> {
-    const updated = await unAssignEntries(sel.unAssignableEntryIds, (id) => sel.getEntryName(id));
-    if (updated) {
-      controller.patchRecords(updated);
-      controller.clearSelection();
-      openConfirmUnassign = false;
-      // Refetch so server-authoritative state is reflected (e.g. wf_step changes)
-      await controller.fetch();
-    }
+  async function confirmUnassign(): Promise<void> {
+    const count = sel.unAssignableEntryIds.length;
+
+    await showConfirmModal({
+      title: "Unassign entry",
+      description: `Are you sure you want to unassign ${count} ${pluralizeUnit(count, "entry", "entries")}?`,
+      onConfirm: async () => {
+        const updated = await unAssignEntries(sel.unAssignableEntryIds, (id) => sel.getEntryName(id));
+        if (!updated) return ConfirmModalResult.KeepOpen;
+
+        controller.patchRecords(updated);
+        controller.clearSelection();
+        // Refetch so server-authoritative state is reflected (e.g. wf_step changes)
+        await controller.fetch();
+      },
+    });
   }
 
-  async function handleDelete(): Promise<void> {
-    const ok = await deleteEntries(controller.selectedIds, (id) => sel.getEntryName(id));
-    if (ok) {
-      controller.clearSelection();
-      openConfirmDelete = false;
-      await controller.fetch();
-    }
+  async function confirmDelete(): Promise<void> {
+    const count = controller.selectedRowsCount;
+
+    await showConfirmModal({
+      title: "Delete entry",
+      description: `Are you sure you want to delete ${count} ${pluralizeUnit(count, "entry", "entries")}? This action cannot be undone.`,
+      onConfirm: async () => {
+        const ok = await deleteEntries(controller.selectedIds, (id) => sel.getEntryName(id));
+        if (!ok) return ConfirmModalResult.KeepOpen;
+
+        controller.clearSelection();
+        await controller.fetch();
+      },
+    });
   }
 </script>
 
@@ -193,17 +202,3 @@
 />
 
 <UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedIds} bind:open={openSetPriority} />
-
-<ConfirmModal
-  title="Unassign entry"
-  description={`Are you sure you want to unassign ${sel.unAssignableEntryIds.length} ${pluralizeUnit(sel.unAssignableEntryIds.length, "entry", "entries")}?`}
-  onConfirm={handleUnassign}
-  bind:open={openConfirmUnassign}
-/>
-
-<ConfirmModal
-  title="Delete entry"
-  description={`Are you sure you want to delete ${controller.selectedRowsCount} ${pluralizeUnit(controller.selectedRowsCount, "entry", "entries")}? This action cannot be undone.`}
-  onConfirm={handleDelete}
-  bind:open={openConfirmDelete}
-/>

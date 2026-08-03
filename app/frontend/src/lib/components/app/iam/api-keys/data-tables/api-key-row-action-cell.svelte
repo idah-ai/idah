@@ -4,8 +4,9 @@
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ApiKeyFormModal from "@/components/app/iam/api-keys/overlays/api-key-form-modal.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
   import { authStatus } from "@/security/AuthContext";
@@ -41,25 +42,19 @@
           label: "Revoke",
           icon: CircleSlashIcon,
           hidden: !canUpdateAPIKey || alreadyRevoked,
-          action: () => {
-            openConfirmRevokeAPIKeyModal = true;
-          },
+          action: confirmRevokeAPIKey,
         },
         {
           label: "Delete",
           icon: Trash2Icon,
           hidden: !canDeleteAPIKey,
-          action: () => {
-            openConfirmDeleteAPIKeyModal = true;
-          },
+          action: confirmRemoveAPIKey,
         },
       ],
     },
   });
   let apiKeyRecord: ApiKeyRecord | undefined = $state(undefined);
   let openEditAPIKeyFormModal: boolean = $state(false);
-  let openConfirmDeleteAPIKeyModal: boolean = $state(false);
-  let openConfirmRevokeAPIKeyModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -83,34 +78,49 @@
     });
   }
 
-  async function removeAPIKey(): Promise<void> {
-    try {
-      await apiKeysBackendDataSource.delete(apiKey.id, { showErrorToast: false });
+  async function confirmRemoveAPIKey(): Promise<void> {
+    await showConfirmModal({
+      title: "Delete API Key",
+      confirmLabel: "Delete API Key",
+      description: `Are you sure you want to delete this API key "${apiKey.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await apiKeysBackendDataSource.delete(apiKey.id, { showErrorToast: false });
 
-      openConfirmDeleteAPIKeyModal = false;
-      $refetches.apiKeys.list = new Date();
-      showToast.success({
-        title: "API Key deleted",
-        description: `The API key "${apiKey.name}" has been deleted.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
+          $refetches.apiKeys.list = new Date();
+          showToast.success({
+            title: "API Key deleted",
+            description: `The API key "${apiKey.name}" has been deleted.`,
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return ConfirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 
-  async function revokeAPIKey(): Promise<void> {
-    try {
-      await apiKeysBackendDataSource.revoke({ id: apiKey.id });
+  async function confirmRevokeAPIKey(): Promise<void> {
+    await showConfirmModal({
+      title: "Revoke API Key",
+      confirmLabel: "Revoke API Key",
+      description: `Are you sure you want to revoke this API key "${apiKey.name}"?
+Revoking this key will immediately block all requests that use it. Any applications, integrations, or services relying on this key will stop working.`,
+      onConfirm: async () => {
+        try {
+          await apiKeysBackendDataSource.revoke({ id: apiKey.id });
 
-      openConfirmRevokeAPIKeyModal = false;
-      $refetches.apiKeys.list = new Date();
-      showToast.success({
-        title: "API Key revoked",
-        description: `The API key "${apiKey.name}" has been revoked.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
+          $refetches.apiKeys.list = new Date();
+          showToast.success({
+            title: "API Key revoked",
+            description: `The API key "${apiKey.name}" has been revoked.`,
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return ConfirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 </script>
 
@@ -118,21 +128,4 @@
   <DropdownMenus {menus} align="center" />
 
   <ApiKeyFormModal title="API Key" action="update" {apiKeyRecord} bind:open={openEditAPIKeyFormModal} />
-
-  <ConfirmModal
-    title="Delete API Key"
-    confirmLabel="Delete API Key"
-    description={`Are you sure you want to delete this API key "${apiKey.name}"? This action cannot be undone.`}
-    onConfirm={removeAPIKey}
-    bind:open={openConfirmDeleteAPIKeyModal}
-  />
-
-  <ConfirmModal
-    title="Revoke API Key"
-    confirmLabel="Revoke API Key"
-    description={`Are you sure you want to revoke this API key "${apiKey.name}"?
-Revoking this key will immediately block all requests that use it. Any applications, integrations, or services relying on this key will stop working.`}
-    onConfirm={revokeAPIKey}
-    bind:open={openConfirmRevokeAPIKeyModal}
-  />
 {/if}

@@ -4,8 +4,9 @@
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
@@ -50,16 +51,13 @@
           label: "Cancel Invitation",
           icon: UserXIcon,
           hidden: canCancelInvitation,
-          action: () => {
-            openConfirmCancelInvitationModal = true;
-          },
+          action: confirmRemoveAccount,
         },
       ],
     },
   });
   let accountRecord: AccountRecord | undefined = $state(undefined);
   let openEditAccountFormModal: boolean = $state(false);
-  let openConfirmCancelInvitationModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -93,22 +91,28 @@
     }
   }
 
-  async function removeAccount(): Promise<void> {
-    try {
-      await accountsBackendDataSource.delete(account.id, { showErrorToast: false });
+  async function confirmRemoveAccount(): Promise<void> {
+    await showConfirmModal({
+      title: "Cancel Invitation",
+      description: `Are you sure you want to cancel invitation for "${account.email}"?`,
+      onConfirm: async () => {
+        try {
+          await accountsBackendDataSource.delete(account.id, { showErrorToast: false });
 
-      // Delete project member cache to force refetch
-      clearCache(resourcePath(projectMembersBasePath, null, undefined));
+          // Delete project member cache to force refetch
+          clearCache(resourcePath(projectMembersBasePath, null, undefined));
 
-      openConfirmCancelInvitationModal = false;
-      $refetches.accounts.list = new Date();
-      showToast.success({
-        title: "Invitation cancelled",
-        description: `The account invitation for "${account.email}" has been cancelled.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
+          $refetches.accounts.list = new Date();
+          showToast.success({
+            title: "Invitation cancelled",
+            description: `The account invitation for "${account.email}" has been cancelled.`,
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return ConfirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 </script>
 
@@ -116,11 +120,4 @@
   <DropdownMenus {menus} align="center" />
 
   <AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
-
-  <ConfirmModal
-    title="Cancel Invitation"
-    description={`Are you sure you want to cancel invitation for "${account.email}"?`}
-    onConfirm={removeAccount}
-    bind:open={openConfirmCancelInvitationModal}
-  />
 {/if}

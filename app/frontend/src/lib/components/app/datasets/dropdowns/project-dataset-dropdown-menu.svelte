@@ -7,9 +7,10 @@
   import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
@@ -75,9 +76,7 @@
           icon: Trash2Icon,
           destructive: true,
           hidden: !canDeleteDataset,
-          action: () => {
-            openConfirmDeleteDatasetModal = true;
-          },
+          action: confirmDeleteDataset,
         },
       ],
     },
@@ -87,7 +86,6 @@
   let datasetEntryRecords: EntryRecord[] = $state([]);
   let openEditDatasetFormModal: boolean = $state(false);
   let openDuplicateDatasetFormModal: boolean = $state(false);
-  let openConfirmDeleteDatasetModal: boolean = $state(false);
   let openExportFormModal: boolean = $state(false);
 
   // Lifecycle
@@ -128,22 +126,32 @@
     });
   }
 
-  async function deleteDataset(): Promise<void> {
-    try {
-      await datasetsBackendDataSource.delete(datasetId, { showErrorToast: false });
-      openConfirmDeleteDatasetModal = false;
-      $refetches.datasets.list = new Date();
-      goto(resolve(`/projects/${projectId}/datasets`));
-      showToast.success({
-        title: "Dataset deleted",
-        description: `The dataset "${datasetRecord?.name}" has been deleted.`,
-      });
-    } catch (error) {
-      showToast.error({
-        title: "Unable to delete dataset",
-        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
-      });
-    }
+  async function confirmDeleteDataset(): Promise<void> {
+    const choice = await showConfirmModal({
+      title: "Delete Dataset",
+      description: `Are you sure you want to delete this dataset "${datasetRecord?.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await datasetsBackendDataSource.delete(datasetId, { showErrorToast: false });
+
+          $refetches.datasets.list = new Date();
+          showToast.success({
+            title: "Dataset deleted",
+            description: `The dataset "${datasetRecord?.name}" has been deleted.`,
+          });
+        } catch (error) {
+          showToast.error({
+            title: "Unable to delete dataset",
+            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+          });
+          return ConfirmModalResult.KeepOpen;
+        }
+      },
+    });
+    if (choice === ConfirmModalChoice.Cancel) return;
+
+    // Navigating inside `onConfirm` would run while the modal is still open.
+    goto(resolve(`/projects/${projectId}/datasets`));
   }
 
   async function fetchDatasetEntries() {
@@ -180,12 +188,5 @@
     action="create"
     datasetRecords={datasetRecord ? [datasetRecord] : []}
     bind:open={openExportFormModal}
-  />
-
-  <ConfirmModal
-    title="Delete Dataset"
-    description={`Are you sure you want to delete this dataset "${datasetRecord?.name}"? This action cannot be undone.`}
-    onConfirm={deleteDataset}
-    bind:open={openConfirmDeleteDatasetModal}
   />
 {/if}
