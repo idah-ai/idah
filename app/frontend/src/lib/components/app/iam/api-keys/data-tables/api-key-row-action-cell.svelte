@@ -122,7 +122,7 @@
   <ConfirmModal
     title="Delete API Key"
     confirmLabel="Delete API Key"
-    description={`Are you sure you want to delete the API key "${apiKey.name}"? This action cannot be undone.`}
+    description={`Are you sure you want to delete this API key "${apiKey.name}"? This action cannot be undone.`}
     onConfirm={removeAPIKey}
     bind:open={openConfirmDeleteAPIKeyModal}
   />
