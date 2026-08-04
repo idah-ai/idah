@@ -9,6 +9,7 @@
   // on deselect. Rendered once by the workspace; it renders nothing when closed.
   // -------------------------------------------------------------------------
   import GripVerticalIcon from "@lucide/svelte/icons/grip-vertical";
+  import { tick } from "svelte";
 
   import { toolPanel } from "$lib/state/tool-panel.svelte";
 
@@ -21,12 +22,13 @@
 
   let { containerEl, storageKey = "idah-image:tool-panel-pos" }: Props = $props();
 
-  const DEFAULT_POS = { x: 16, y: 16 };
+  /** Fraction of the container height the panel's centre sits at when it has no saved position. */
+  const INITIAL_VERTICAL_RATIO = 1 / 3;
 
-  function loadPos(): { x: number; y: number } {
+  function loadPos(): { x: number; y: number } | null {
     try {
       const raw = localStorage.getItem(storageKey);
-      if (!raw) return { ...DEFAULT_POS };
+      if (!raw) return null;
       const parsed = JSON.parse(raw) as { x?: number; y?: number };
       if (typeof parsed.x === "number" && typeof parsed.y === "number") {
         return { x: parsed.x, y: parsed.y };
@@ -34,11 +36,17 @@
     } catch {
       // ignore malformed storage
     }
-    return { ...DEFAULT_POS };
+    return null;
   }
 
-  let pos = $state(loadPos());
+  // The user's last dragged position, or null while they have never moved the panel. A plain `let`,
+  // not `$state`: it is only read from the placement effect, which must not re-run when it changes.
+  let savedPos: { x: number; y: number } | null = loadPos();
+
+  let pos = $state({ x: 0, y: 0 });
   let panelEl = $state<HTMLElement | null>(null);
+  // False until the panel has been measured and placed — it renders invisible until then.
+  let placed = $state(false);
 
   // Per-gesture drag bookkeeping.
   let dragging = false;
@@ -60,6 +68,28 @@
     };
   }
 
+  // Place the panel once it has rendered and can be measured: restore the user's saved position, or
+  // centre it horizontally in the upper third so the popup is noticed. Everything runs inside the
+  // `tick()` callback so those reads are untracked — the effect depends on `toolPanel.open` alone.
+  $effect(() => {
+    if (!toolPanel.open) {
+      placed = false;
+      return;
+    }
+
+    tick().then(() => {
+      if (!panelEl || !containerEl) return;
+      const c = containerEl.getBoundingClientRect();
+      const p = panelEl.getBoundingClientRect();
+      const target = savedPos ?? {
+        x: (c.width - p.width) / 2,
+        y: c.height * INITIAL_VERTICAL_RATIO - p.height / 2,
+      };
+      pos = clamp(target.x, target.y);
+      placed = true;
+    });
+  });
+
   function onGripDown(e: PointerEvent): void {
     dragging = true;
     startX = e.clientX;
@@ -80,6 +110,7 @@
     if (!dragging) return;
     dragging = false;
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    savedPos = { ...pos };
     try {
       localStorage.setItem(storageKey, JSON.stringify(pos));
     } catch {
@@ -93,6 +124,7 @@
   <div
     bind:this={panelEl}
     class="border-border bg-background absolute z-50 flex items-stretch gap-1 rounded-lg border shadow-lg select-none"
+    class:invisible={!placed}
     style:left="{pos.x}px"
     style:top="{pos.y}px"
   >
