@@ -110,14 +110,13 @@ module Exports
             :created_at,
             :updated_at
           )
-        )
-        binding.pry
+
         # Fetch original media metadata to get original width and height
         original_media = entry.medias({ key: "" }).first
         if original_media
           media_meta = original_media.record.data[:attributes][:meta] || {}
-          metadata["Original-Width"] = media_meta[:width]  if media_meta[:width]
-          metadata["Original-Height"] = media_meta[:height]  if media_meta[:height]
+          metadata["Original-Width"] = media_meta[:width] if media_meta[:width]
+          metadata["Original-Height"] = media_meta[:height] if media_meta[:height]
         end
 
         # Create entry in UPD
