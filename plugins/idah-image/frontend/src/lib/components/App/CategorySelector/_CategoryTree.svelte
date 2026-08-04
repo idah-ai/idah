@@ -20,6 +20,7 @@
   import ellipseIconSvg from "$lib/assets/icons/ellipse.svg?raw";
   import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
   import squareDashedIconSvg from "$lib/assets/icons/square-dashed.svg?raw";
+  import facialLandmarkIconSvg from "$lib/assets/icons/facial-landmark.svg?raw";
 
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
@@ -31,6 +32,7 @@
     IMAGE_LINE as IDAH_IMAGE_LINE,
     IMAGE_MASK,
     IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
+    IMAGE_FACIAL_LANDMARK as IDAH_IMAGE_FACIAL_LANDMARK,
   } from "$lib/types";
 
   import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
@@ -41,12 +43,13 @@
 
   /** Map shape types to their icon SVGs — single source of truth. */
   const shapeIconSrc: Record<string, string> = {
-    [IDAH_IMAGE_BOUNDING_BOX]: vectorSquareIconSvg,
-    [IDAH_IMAGE_POLYGON]: polygonIconSvg,
-    [IDAH_IMAGE_CIRCLE]: circleIconSvg,
-    [IDAH_IMAGE_ELLIPSE]: ellipseIconSvg,
-    [IDAH_IMAGE_LINE]: lineIconSvg,
-    [IMAGE_MASK]: squareDashedIconSvg,
+    [IDAH_IMAGE_BOUNDING_BOX]:     vectorSquareIconSvg,
+    [IDAH_IMAGE_POLYGON]:          polygonIconSvg,
+    [IDAH_IMAGE_CIRCLE]:           circleIconSvg,
+    [IDAH_IMAGE_ELLIPSE]:          ellipseIconSvg,
+    [IDAH_IMAGE_LINE]:             lineIconSvg,
+    [IMAGE_MASK]:                  squareDashedIconSvg,
+    [IDAH_IMAGE_FACIAL_LANDMARK]:  facialLandmarkIconSvg,
   };
 
   type CategoryDefinition = IConfigValue & {

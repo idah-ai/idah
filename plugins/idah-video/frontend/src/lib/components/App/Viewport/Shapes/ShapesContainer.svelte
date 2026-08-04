@@ -21,6 +21,7 @@
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
+  import FacialLandmarkCreateShape from "./FacialLandmarkCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
@@ -29,6 +30,7 @@
     EDITOR_MODE,
     NOTE_MODE,
     POLYGON_MODE,
+    FACIAL_LANDMARK_MODE,
     REVIEW_MODE,
     viewport,
   } from "$lib/state/viewport.svelte";
@@ -233,10 +235,12 @@
   // ── Create shape component refs ───────────────────────────────────────
   let bboxCreateComp: BBoxCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
+  let facialLandmarkCreateComp: FacialLandmarkCreateShape | undefined = $state(undefined);
 
-  let isBoundingBoxMode = $derived(viewport.mode === BOUNDING_BOX_MODE);
-  let isPolygonMode = $derived(viewport.mode === POLYGON_MODE);
-  let isNoteMode = $derived(viewport.mode === NOTE_MODE);
+  let isBoundingBoxMode    = $derived(viewport.mode === BOUNDING_BOX_MODE);
+  let isPolygonMode        = $derived(viewport.mode === POLYGON_MODE);
+  let isNoteMode           = $derived(viewport.mode === NOTE_MODE);
+  let isFacialLandmarkMode = $derived(viewport.mode === FACIAL_LANDMARK_MODE);
 
   /** Preview color for create-shape overlays — uses categoryColor or falls back to pendingAnnotation's category. */
   let previewColor = $derived.by<string | undefined>(() => {
@@ -454,6 +458,12 @@
       return;
     }
 
+    // ── Facial landmark creation mode ──────────────────────────────
+    if (isFacialLandmarkMode) {
+      facialLandmarkCreateComp?.handleMouseDown(snappedCursor);
+      return;
+    }
+
     // ── Note mode — defer to mouseup ───────────────────────────────
     if (isNoteMode) {
       return;
@@ -491,6 +501,12 @@
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseUp(snappedCursor);
+      return;
+    }
+
+    // ── Facial landmark creation mode — finalize ───────────────────
+    if (isFacialLandmarkMode) {
+      facialLandmarkCreateComp?.handleMouseUp(snappedCursor);
       return;
     }
 
@@ -681,6 +697,19 @@
       {#if isBoundingBoxMode && !pendingAnnotation}
         <BBoxCreateShape
           bind:this={bboxCreateComp}
+          cursor={snappedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          {frame}
+          {onSelection}
+          color={previewColor}
+        />
+      {/if}
+
+      <!-- Build mode: facial landmark creation preview (drag to define face bbox) -->
+      {#if isFacialLandmarkMode && !pendingAnnotation}
+        <FacialLandmarkCreateShape
+          bind:this={facialLandmarkCreateComp}
           cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}

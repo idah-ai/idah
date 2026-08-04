@@ -16,11 +16,12 @@
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import facialLandmarkIconSvg from "$lib/assets/icons/facial-landmark.svg?raw";
 
   import { groupAnnotations } from "$lib/components/App/VideoAnnotationWorkspace/utils/group-annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { EDITOR_MODE, viewport } from "$lib/state/viewport.svelte";
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON, VIDEO_FACIAL_LANDMARK as IDAH_VIDEO_FACIAL_LANDMARK } from "$lib/types";
 
   import { deleteCategoryAnnotations, getCategoryActions } from "$lib/components/App/CategorySelector/menus";
 
@@ -321,6 +322,14 @@
             {:else if modalityShape === IDAH_VIDEO_POLYGON}
               <Icon
                 src={polygonIconSvg}
+                color={category.data?.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
+              />
+            {:else if modalityShape === IDAH_VIDEO_FACIAL_LANDMARK}
+              <Icon
+                src={facialLandmarkIconSvg}
                 color={category.data?.color}
                 class={cn({
                   hidden: category.requiredNested,

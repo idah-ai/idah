@@ -6,7 +6,7 @@
 // in the template call this function with the real reactive state setters.
 // ---------------------------------------------------------------------------
 
-import { IMAGE_MASK, IMAGE_POLYGON, IMAGE_LINE } from "$lib/types";
+import { IMAGE_MASK, IMAGE_POLYGON, IMAGE_LINE, IMAGE_FACIAL_LANDMARK } from "$lib/types";
 import type { Point } from "$lib/utils/math/point";
 import { maskSession } from "$lib/state/mask-session.svelte";
 import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
@@ -55,6 +55,8 @@ export function handlePopoverCancel(
     } else if (type === IMAGE_LINE) {
       lineDraft.points = points;
       viewport.mode = IMAGE_LINE;
+    } else if (type === IMAGE_FACIAL_LANDMARK) {
+      viewport.mode = IMAGE_FACIAL_LANDMARK;
     } else if (type === IMAGE_MASK) {
       maskSession.reset();
       if (maskPolygonDraft.closedPoints) {

@@ -7,6 +7,7 @@
   import ellipseIconSvg from "$lib/assets/icons/ellipse.svg?raw";
   import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
   import squareDashedIconSvg from "$lib/assets/icons/square-dashed.svg?raw";
+  import facialLandmarkIconSvg from "$lib/assets/icons/facial-landmark.svg?raw";
 
   import {
     IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
@@ -14,6 +15,7 @@
     IMAGE_LINE as IDAH_IMAGE_LINE,
     IMAGE_MASK,
     IMAGE_POLYGON,
+    IMAGE_FACIAL_LANDMARK,
   } from "$lib/types";
 
   type Props = {
@@ -34,6 +36,8 @@
   <Icon src={lineIconSvg} {color} />
 {:else if shapeType === IMAGE_MASK}
   <Icon src={squareDashedIconSvg} {color} />
+{:else if shapeType === IMAGE_FACIAL_LANDMARK}
+  <Icon src={facialLandmarkIconSvg} {color} />
 {:else}
   <Icon src={vectorSquareIconSvg} {color} />
 {/if}

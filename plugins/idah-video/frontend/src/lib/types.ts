@@ -33,8 +33,9 @@ export interface IVideoFrameSelection {
 
 // ─── Shape constants ─────────────────────────────────────────────────────
 
-export const VIDEO_BOUNDING_BOX = "idah-video:bounding-box";
-export const VIDEO_POLYGON = "idah-video:polygon";
+export const VIDEO_BOUNDING_BOX    = "idah-video:bounding-box";
+export const VIDEO_POLYGON         = "idah-video:polygon";
+export const VIDEO_FACIAL_LANDMARK = "idah-video:facial-landmark";
 
 // ─── Video annotation shape ──────────────────────────────────────────────
 

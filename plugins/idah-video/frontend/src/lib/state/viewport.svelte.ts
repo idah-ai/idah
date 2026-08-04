@@ -2,11 +2,12 @@ import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
 
 // List of viewport modes
-export const EDITOR_MODE = "editor";
-export const REVIEW_MODE = "review";
-export const NOTE_MODE = "note";
-export const BOUNDING_BOX_MODE = "idah-video:bounding-box";
-export const POLYGON_MODE = "idah-video:polygon";
+export const EDITOR_MODE          = "editor";
+export const REVIEW_MODE          = "review";
+export const NOTE_MODE            = "note";
+export const BOUNDING_BOX_MODE    = "idah-video:bounding-box";
+export const POLYGON_MODE         = "idah-video:polygon";
+export const FACIAL_LANDMARK_MODE = "idah-video:facial-landmark";
 
 class Viewport {
   // Only mode needs special handling
@@ -16,7 +17,7 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return ["idah-video:polygon", "idah-video:bounding-box", "note"].includes(this.#mode);
+    return ["idah-video:polygon", "idah-video:bounding-box", "idah-video:facial-landmark", "note"].includes(this.#mode);
   }
   get isEditorWorkspace() {
     return this.#mode === EDITOR_MODE;

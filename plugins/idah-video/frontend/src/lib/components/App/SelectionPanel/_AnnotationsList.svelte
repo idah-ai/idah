@@ -19,13 +19,14 @@
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import facialLandmarkIconSvg from "$lib/assets/icons/facial-landmark.svg?raw";
 
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
-  import { VIDEO_POLYGON } from "$lib/types";
+  import { VIDEO_POLYGON, VIDEO_FACIAL_LANDMARK } from "$lib/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
 
   type Props = {
@@ -100,6 +101,8 @@
         >
           {#if annShapeType === VIDEO_POLYGON}
             <Icon src={polygonIconSvg} color={annColor} />
+          {:else if annShapeType === VIDEO_FACIAL_LANDMARK}
+            <Icon src={facialLandmarkIconSvg} color={annColor} />
           {:else}
             <Icon src={vectorSquareIconSvg} color={annColor} />
           {/if}

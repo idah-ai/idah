@@ -16,9 +16,9 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
+  import { BOUNDING_BOX_MODE, POLYGON_MODE, FACIAL_LANDMARK_MODE, viewport } from "$lib/state/viewport.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
-  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON } from "$lib/types";
+  import { VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX, VIDEO_POLYGON as IDAH_VIDEO_POLYGON, VIDEO_FACIAL_LANDMARK as IDAH_VIDEO_FACIAL_LANDMARK } from "$lib/types";
 
   import BottomPanel from "$lib/components/App/BottomPanel/BottomPanel.svelte";
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
@@ -180,7 +180,7 @@
 
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
-    if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE) {
+    if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE && viewportMode !== FACIAL_LANDMARK_MODE) {
       pendingValue = {};
     }
 
@@ -431,6 +431,14 @@
             start: frame,
             end: frame,
             frames: [{ frame, points }],
+          };
+          break;
+        case IDAH_VIDEO_FACIAL_LANDMARK:
+          shape = {
+            ...shape,
+            start: frame,
+            end: frame,
+            frames: [{ frame, angle, points }],
           };
           break;
         default:

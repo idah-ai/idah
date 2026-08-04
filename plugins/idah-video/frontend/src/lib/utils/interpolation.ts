@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
-import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
+import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON, VIDEO_FACIAL_LANDMARK } from "$lib/types";
 import type { Point } from "$lib/utils/math/point";
 import { interpolatePolygon } from "$lib/utils/math/polygon";
 
@@ -82,6 +82,9 @@ export function getInterpolatedFrame(
     case VIDEO_BOUNDING_BOX:
       pts = lerpPoints(before.points!, after.points!, t);
       return { points: pts, angle };
+    case VIDEO_FACIAL_LANDMARK:
+      pts = lerpPoints(before.points!, after.points!, t);
+      return { points: pts, angle: 0 };
     case VIDEO_POLYGON:
       pts = interpolatePolygon(before.points!, after.points!, t);
       return { points: pts, angle: 0 };

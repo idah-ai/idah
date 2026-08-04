@@ -1,6 +1,7 @@
 <script lang="ts">
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import facialLandmarkIconSvg from "$lib/assets/icons/facial-landmark.svg?raw";
 
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
@@ -18,7 +19,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
+  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON, VIDEO_FACIAL_LANDMARK } from "$lib/types";
   import { annotation } from "$lib/state/annotation.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -89,6 +90,8 @@
       <Icon src={vectorSquareIconSvg} {color} />
     {:else if shapeType === VIDEO_POLYGON}
       <Icon src={polygonIconSvg} {color} />
+    {:else if shapeType === VIDEO_FACIAL_LANDMARK}
+      <Icon src={facialLandmarkIconSvg} {color} />
     {/if}
 
     <div class="flex min-w-0 flex-col">
