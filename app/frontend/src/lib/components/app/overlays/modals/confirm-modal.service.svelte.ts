@@ -157,9 +157,13 @@ export async function selectConfirmModalAction(actionId: string): Promise<void> 
   }
 
   /**
-   * The request may have settled while `run` was in flight — the user can still cancel
-   * during pending, because a hung request would otherwise trap them (BackendDataSource has
-   * no timeout). A late result must not resolve or close anything.
+   * The request may have settled while `run` was in flight: Cancel and Escape are both
+   * disabled during pending, but a route change still cancels. A late result must not
+   * resolve or close anything.
+   *
+   * Both clauses are load-bearing. A cancelled request frees `activeResolve`, so a new
+   * request can already be active by the time this runs — the id check is what identifies
+   * the result as stale.
    */
   if (!activeResolve || confirmModalStore.request?.id !== request.id) return;
 

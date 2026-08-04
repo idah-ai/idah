@@ -11,11 +11,11 @@
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
-  
+
   import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import {
-      isConfirmModalActive,
-      showConfirmModal,
+    isConfirmModalActive,
+    showConfirmModal,
   } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
