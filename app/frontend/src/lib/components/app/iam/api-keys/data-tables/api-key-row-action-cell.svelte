@@ -104,8 +104,7 @@
     await showConfirmModal({
       title: "Revoke API Key",
       confirmLabel: "Revoke API Key",
-      description: `Are you sure you want to revoke this API key "${apiKey.name}"?
-Revoking this key will immediately block all requests that use it. Any applications, integrations, or services relying on this key will stop working.`,
+      description: `Are you sure you want to revoke this API key "${apiKey.name}"?\nRevoking this key will immediately block all requests that use it. Any applications, integrations, or services relying on this key will stop working.`,
       onConfirm: async () => {
         try {
           await apiKeysBackendDataSource.revoke({ id: apiKey.id });

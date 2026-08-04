@@ -32,7 +32,7 @@
   // Functions
   async function confirmRemoveProjectMember(): Promise<void> {
     await showConfirmModal({
-      title: "Remove member",
+      title: "Remove Member",
       description: `Are you sure you want to remove "${projectMember.email}" from this project?`,
       content: {
         component: MemberEntriesWarning,
