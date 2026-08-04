@@ -86,7 +86,6 @@ module Exports
       def append_entry(file_path, dataset_id, entry, include_medias)
         # Use local file URL if original media is included,
         # otherwise use external URL of Media service of IDAH
-        entry_name = entry.record.data[:attributes][:name] || entry.record.id
         media_url =
           if ["original", "all"].include?(include_medias)
             "local:#{entry.record.resource}"
@@ -110,13 +109,18 @@ module Exports
             :created_at,
             :updated_at
           )
+        )
 
         # Fetch original media metadata to get original width and height
         original_media = entry.medias({ key: "" }).first
         if original_media
           media_meta = original_media.record.data[:attributes][:meta] || {}
-          metadata["Original-Width"] = media_meta[:width] if media_meta[:width]
-          metadata["Original-Height"] = media_meta[:height] if media_meta[:height]
+          if media_meta[:width]
+            metadata["Original-Width"] = media_meta[:width]
+          end
+          if media_meta[:height]
+            metadata["Original-Height"] = media_meta[:height]
+          end
         end
 
         # Create entry in UPD
@@ -143,7 +147,6 @@ module Exports
             "Updated-At" => attributes[:updated_at]
           }
         )
-
 
         # Create annotation in UPD
         system(
