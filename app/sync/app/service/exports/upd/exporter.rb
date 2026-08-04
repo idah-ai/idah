@@ -89,14 +89,12 @@ module Exports
         entry_name = entry.record.data[:attributes][:name] || entry.record.id
         media_url =
           if ["original", "all"].include?(include_medias)
-            "local:#{entry.record.resource}?name=#{entry_name}"
+            "local:#{entry.record.resource}"
           else
-            uri = URI.join(
+            URI.join(
               ENV.fetch("IDAH_URL"),
               "api/v1/media/medias/files/#{entry.record.resource}"
             )
-            uri.query = "name=#{entry_name}"
-            uri.to_s
           end
 
         metadata = capitalized_dashed_keys(
@@ -113,6 +111,14 @@ module Exports
             :updated_at
           )
         )
+        binding.pry
+        # Fetch original media metadata to get original width and height
+        original_media = entry.medias({ key: "" }).first
+        if original_media
+          media_meta = original_media.record.data[:attributes][:meta] || {}
+          metadata["Original-Width"] = media_meta[:width]  if media_meta[:width]
+          metadata["Original-Height"] = media_meta[:height]  if media_meta[:height]
+        end
 
         # Create entry in UPD
         system(
@@ -133,17 +139,12 @@ module Exports
 
         metadata = capitalized_dashed_keys(metadata).merge(
           {
-            "entry_id" => entry_id,
             "Created-By" => attributes[:created_by_email],
             "Created-At" => attributes[:created_at],
             "Updated-At" => attributes[:updated_at]
           }
         )
 
-        # Embed entry_id into the annotation field so it's visible via
-        # `annotation show` (which returns annotation but not the top-level entry_id)
-        ann_data = annotation.record.annotation.to_h
-        ann_data["_entry_id"] = entry_id
 
         # Create annotation in UPD
         system(
@@ -152,7 +153,7 @@ module Exports
           "--entry_id \"#{entry_id}\" "\
           "--type \"#{type}\" "\
           "--shape '#{dimensions.to_json}' "\
-          "--annotation '#{ann_data.to_json}' "\
+          "--annotation '#{annotation.record.annotation.to_json}' "\
           "--metadata '#{metadata.to_json}'",
           exception: true
         )
