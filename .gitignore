@@ -13,8 +13,8 @@ Thumbs.db
 *.key
 !*dev*.pem
 !*dev*.key
-!dev/nginx/ssl/*.pem
-!dev/nginx/ssl/*.key
+!config/dev/ssl/*.pem
+!config/dev/ssl/*.key
 
 # IDE & Editors
 .vscode/

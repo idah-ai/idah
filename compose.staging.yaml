@@ -1,0 +1,160 @@
+# Staging overlay — prod-faithful.
+#   docker compose -f compose.yaml -f compose.staging.yaml up -d --build
+#
+# Runs the `production` image stage: gems baked in, no source bind-mounts, the
+# image's prod entrypoint (migrate + puma / node build/index.js). `name: staging`
+# pins the Compose project so the existing staging_* volumes are reused, not
+# orphaned. Env, keys and nginx.conf live in config/staging/; the persistent
+# storage bind mounts stay under ./staging/storage/.
+name: staging
+
+x-staging-app: &staging-app
+  build:
+    target: production
+  restart: always
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+    - "localhost:host-gateway"
+  environment:
+    APP_ENVIRONMENT: staging
+    IDAH_URL: ${IDAH_URL:-http://localhost:8080}
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: postgres_db
+    restart: always
+    env_file:
+      - config/staging/envs/.env.postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    container_name: redis_db
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  iam:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.iam
+    cpus: 0.5
+    mem_limit: 2g
+    volumes:
+      - ./config/staging/keys/private.staging.pem:/app/config/keys/private.staging.pem:ro
+
+  media:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.media
+    cpus: 1
+    mem_limit: 4g
+    volumes:
+      - ./config/staging/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+      - ./plugins:/app/plugins
+      - frontend_plugins:/app/plugins
+      - ./staging/storage/media_storage:/app/tmp/storage
+
+  dataset:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.dataset
+    cpus: 0.5
+    mem_limit: 2g
+    volumes:
+      - ./config/staging/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+
+  notification:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.notification
+    cpus: 0.5
+    mem_limit: 2g
+    volumes:
+      - ./config/staging/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+
+  audit:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.audit
+    volumes:
+      - ./config/staging/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+
+  sync:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.sync
+    cpus: 0.5
+    mem_limit: 2g
+    volumes:
+      - ./config/staging/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+      - ./plugins:/app/plugins
+      - ./staging/storage/sync_storage:/app/tmp/storage
+      - ./updcli:/opt/updcli:ro   # shared, optional updcli source
+
+  setting:
+    <<: *staging-app
+    env_file:
+      - config/staging/envs/.env.postgres
+      - config/staging/envs/.env.common
+      - config/staging/envs/.env.setting
+    cpus: 0.5
+    mem_limit: 2g
+    depends_on:
+      - frontend
+    volumes:
+      - ./config/staging/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+      - ./plugins:/app/plugins
+      - frontend_plugins:/app/plugins
+
+  frontend:
+    build:
+      target: production
+      args:
+        VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost:8080}
+    restart: always
+    expose:
+      - "3000"
+    volumes:
+      - frontend_build:/app/frontend/build
+      - frontend_plugins:/app/frontend/plugins
+
+  nginx:
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./config/staging/nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  frontend_build:
+  frontend_plugins:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge

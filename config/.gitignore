@@ -1,0 +1,6 @@
+# Real env files for deployed environments hold secrets — never commit them.
+# Templates (.env.example) and the non-secret dev files stay tracked.
+staging/envs/.env.*
+production/envs/.env.*
+!staging/envs/.env.example
+!production/envs/.env.example

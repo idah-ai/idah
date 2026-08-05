@@ -1,0 +1,162 @@
+# Production overlay — SCAFFOLD (no production environment exists yet).
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+#
+# Mirrors staging (prod-faithful: production image stage, no source mounts) but
+# with production project name, env files, and secrets. Fill in real values under
+# config/production/ and prod/ before first deploy. env_file entries are marked
+# `required: false` so this scaffold still parses (`... config`) before then.
+name: production
+
+x-prod-app: &prod-app
+  build:
+    target: production
+  restart: always
+  environment:
+    APP_ENVIRONMENT: production
+    IDAH_URL: ${IDAH_URL:-http://localhost}   # override for real production
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    restart: always
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  iam:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.iam
+        required: false
+    volumes:
+      - ./config/production/keys/private.prod.pem:/app/config/keys/private.prod.pem:ro
+
+  media:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.media
+        required: false
+    volumes:
+      - ./config/production/keys/public.prod.pem:/app/config/keys/public.prod.pem:ro
+      - ./plugins:/app/plugins
+      - frontend_plugins:/app/plugins
+      - media_storage:/app/tmp/storage
+
+  dataset:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.dataset
+        required: false
+    volumes:
+      - ./config/production/keys/public.prod.pem:/app/config/keys/public.prod.pem:ro
+
+  notification:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.notification
+        required: false
+    volumes:
+      - ./config/production/keys/public.prod.pem:/app/config/keys/public.prod.pem:ro
+
+  audit:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.audit
+        required: false
+    volumes:
+      - ./config/production/keys/public.prod.pem:/app/config/keys/public.prod.pem:ro
+
+  sync:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.sync
+        required: false
+    volumes:
+      - ./config/production/keys/public.prod.pem:/app/config/keys/public.prod.pem:ro
+      - ./plugins:/app/plugins
+      - sync_storage:/app/tmp/storage
+      - ./updcli:/opt/updcli:ro
+
+  setting:
+    <<: *prod-app
+    env_file:
+      - path: config/production/envs/.env.postgres
+        required: false
+      - path: config/production/envs/.env.common
+        required: false
+      - path: config/production/envs/.env.setting
+        required: false
+    depends_on:
+      - frontend
+    volumes:
+      - ./config/production/keys/public.prod.pem:/app/config/keys/public.prod.pem:ro
+      - ./plugins:/app/plugins
+      - frontend_plugins:/app/plugins
+
+  frontend:
+    build:
+      target: production
+      args:
+        VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost}   # override for real production
+    restart: always
+    expose:
+      - "3000"
+    volumes:
+      - frontend_build:/app/frontend/build
+      - frontend_plugins:/app/frontend/plugins
+
+  nginx:
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/production/nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  frontend_build:
+  frontend_plugins:
+  postgres_data:
+  redis_data:
+  media_storage:
+  sync_storage:
+
+networks:
+  app-network:
+    driver: bridge
