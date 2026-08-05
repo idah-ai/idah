@@ -32,6 +32,10 @@
         "line": {
           "label": "Line",
           "icon": "api/v1/plugins/idah-image/assets/line-icon.svg"
+        },
+        "mask": {
+          "label": "Mask",
+          "icon": "api/v1/plugins/idah-image/assets/mask-icon.svg"
         }
       }
     }
