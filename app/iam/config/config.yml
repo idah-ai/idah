@@ -8,14 +8,14 @@ plugins:
     config:
       dsn: <%= ENV["SENTRY_DSN"] %>
       tracing: otel
-      traces_sample_rate: <%= ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", 1.0) %>
+      traces_sample_rate: <%= ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", 0.0) %>
       profiles_sample_rate: <%= ENV.fetch("SENTRY_PROFILES_SAMPLE_RATE", 0.0) %>
       enable_logs: <%= ENV.fetch("SENTRY_ENABLE_LOGS", "false") == "true" %>
   - name: otel
     config:
       enabled: <%= !ENV["SENTRY_DSN"].to_s.empty? %>
       service_name_prefix: "idah-"
-      instrumentations: [rack, sinatra, net_http, pg, concurrent_ruby]
+      instrumentations: [rack, sinatra, net_http, pg]
       db_statement: obfuscate
   - name: http
     config:

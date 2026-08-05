@@ -25,6 +25,14 @@ GIT
     verse-jsonapi (0.1.0)
 
 GIT
+  remote: https://github.com/verse-rb/verse-otel
+  revision: 5a3590336d9acd47725875d8e97200c1a88d2354
+  branch: master
+  specs:
+    verse-otel (0.1.0)
+      opentelemetry-sdk (~> 1.0)
+
+GIT
   remote: https://github.com/verse-rb/verse-redis
   revision: b37e874d12f5ceef240d0afec6139094eba7ac72
   branch: master
@@ -32,6 +40,14 @@ GIT
     verse-redis (0.1.0)
       fugit (~> 1.11)
       redis (~> 5)
+
+GIT
+  remote: https://github.com/verse-rb/verse-sentry
+  revision: 1e952cee33063356a33f8b4e32e85afebf786a30
+  branch: master
+  specs:
+    verse-sentry (0.1.0)
+      sentry-ruby (~> 6)
 
 GIT
   remote: https://github.com/verse-rb/verse-sequel
@@ -48,23 +64,6 @@ GIT
   specs:
     verse-shrine (0.1.0)
       shrine (~> 3.5)
-
-PATH
-  remote: common/gems/verse-otel
-  specs:
-    verse-otel (0.1.0)
-      opentelemetry-instrumentation-concurrent_ruby
-      opentelemetry-instrumentation-net_http
-      opentelemetry-instrumentation-pg
-      opentelemetry-instrumentation-rack
-      opentelemetry-instrumentation-sinatra
-      opentelemetry-sdk (~> 1.0)
-
-PATH
-  remote: common/gems/verse-sentry
-  specs:
-    verse-sentry (0.1.0)
-      sentry-ruby (~> 6)
 
 GEM
   remote: https://rubygems.org/
@@ -125,8 +124,6 @@ GEM
       opentelemetry-api (~> 1.7)
       opentelemetry-common (~> 0.21)
       opentelemetry-registry (~> 0.1)
-    opentelemetry-instrumentation-concurrent_ruby (0.25.0)
-      opentelemetry-instrumentation-base (~> 0.25)
     opentelemetry-instrumentation-net_http (0.29.0)
       opentelemetry-instrumentation-base (~> 0.25)
     opentelemetry-instrumentation-pg (0.36.0)
@@ -273,6 +270,10 @@ DEPENDENCIES
   bootsnap (~> 1.16)
   dotenv
   listen (~> 3.9)
+  opentelemetry-instrumentation-net_http
+  opentelemetry-instrumentation-pg
+  opentelemetry-instrumentation-rack
+  opentelemetry-instrumentation-sinatra
   pg
   pry
   puma (~> 6)
