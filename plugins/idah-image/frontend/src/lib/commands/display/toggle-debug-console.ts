@@ -5,12 +5,11 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui } from "$lib/state/ui.svelte";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
   name: "debug.toggle_console",
   group: "Display",
-  modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE],
+  modes: ["*"],
   shortcut: "Control+Shift+Backquote",
   shortDescription: "Toggle debug console",
   longDescription: "Show/hide the debug information overlay",

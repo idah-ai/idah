@@ -333,6 +333,10 @@
     _localPoints = undefined;
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   // ── Cursor style ──────────────────────────────────────────────────────
   let bodyCursor = $derived(
     mode === "note" ? "cursor-note" :

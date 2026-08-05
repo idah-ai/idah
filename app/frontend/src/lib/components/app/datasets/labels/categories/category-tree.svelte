@@ -9,10 +9,15 @@
   } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
-  import { categoryOrderMap } from "@/components/app/datasets/labels/categories/utils";
+  import { getLabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import { humanize } from "@/utils/string";
 
   import type { IConfigValue } from "@/plugin/v2/types";
+
+  // Per-instance category order map, shared from the editor's controller via
+  // context (replaces the former module-global).  Same object identity, so the
+  // in-place reads/writes below are unchanged.
+  const categoryOrderMap = getLabelConfigController().categoryOrderMap;
 
   // Props
   interface Props {

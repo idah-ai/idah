@@ -25,7 +25,7 @@ import { modKey } from "../utils/browser";
 import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
-import { ToolbarManagerV2 } from "./manager/toolbar-manager";
+import { ToolbarManagerV2 } from "./manager/toolbar-manager.svelte";
 import { AccountSettingsManager } from "./manager/account-settings-manager.svelte";
 
 import type { RecordResponse } from "@/data/model/types";

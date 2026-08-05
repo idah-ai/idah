@@ -355,6 +355,10 @@
     _localPoints = undefined;
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   // ── Cursor style for the shape body ──────────────────────────────────
   //   "cursor-grabbing"  → actively dragging (pan, resize, or rotate in progress)
   //   "cursor-grab"      → editable & selected (ready to start a drag)

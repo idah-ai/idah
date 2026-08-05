@@ -198,6 +198,14 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void {
     this.mgr.orderGroups(mode, groups);
   }
+
+  get revision(): number {
+    return this.mgr.revision;
+  }
+
+  invalidate(): void {
+    this.mgr.invalidate();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -226,6 +234,14 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
 
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
+  }
+
+  async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+    // Mock adapter: no-op for now
+  }
+
+  async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+    // Mock adapter: no-op for now
   }
 }
 

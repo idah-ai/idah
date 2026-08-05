@@ -399,6 +399,18 @@ export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotatio
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
   create(data: IAnnotationRecord<Shape, Annotation>): Promise<IAnnotationRecord<Shape, Annotation>>;
+
+  /**
+   * Write (upsert) or delete a single child-record (annotation_shape) row.
+   *
+   * `value` must be a non-null object (upsert) or `null` (delete).  A null
+   * value is idempotent — deleting a non-existent key succeeds silently.
+   *
+   * This is a generic keyed-child-record capability, not tied to any specific
+   * plugin.  Any plugin may use it (e.g. idah-video for per-frame data).
+   */
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -605,6 +617,12 @@ export interface IToolbarDriverV2 {
 
   /** Define the display order of groups for a given mode. */
   orderGroups(mode: string, groups: string[]): void;
+
+  /** Monotonically increasing counter for toggle state invalidation. */
+  readonly revision: number;
+
+  /** Notify that toggle states may have changed. */
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────

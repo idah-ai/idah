@@ -68,3 +68,16 @@ class UIState {
 }
 
 export const ui = new UIState();
+
+// ── Snap debug info ─────────────────────────────────────────────────────
+class SnapDebug {
+  enabled = $state(false);
+  cursor: [number, number] = $state([0, 0]);
+  snapped: [number, number] | null = $state(null);
+  kind: string | null = $state(null);
+  threshold = $state(0);
+  targetCount = $state(0);
+  candidates = $state(0);
+}
+
+export const snapDebug = new SnapDebug();

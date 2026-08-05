@@ -144,6 +144,10 @@
     _localPoints = undefined;
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   function handleStartResize(endpointIndex: number) {
     dragEndpointIndex = endpointIndex;
     _localPoints = [...points];

@@ -43,20 +43,33 @@ type BatchFailure = {
 
 type JSONRpcConfig = {
   batch_size?: number;
+  /** Max duration (ms) for which network errors are silently retried before
+   *  escalating to a visible sync error (paused + onSyncError). Default: 120_000 (2 min). */
+  network_retry_max_duration?: number;
 };
 
-// ── Datasou`rce ────────────────────────────────────────────────────────────
+// ── Datasource ────────────────────────────────────────────────────────────
 
 export class JsonRpcDatasource {
   private queue: QueueItem[] = [];
   private processing = false;
   private paused = false;
+  private flushScheduled = false;
 
   private failedCount = 0;
   private readonly retry_base_delay = 1000;
   private readonly retry_max_delay = 30000;
   private readonly batch_size: number;
+  private readonly network_retry_max_duration: number;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Timestamp (Date.now()) of the first network failure in the current streak. */
+  private networkFailureStart: number | null = null;
+
+  /** @internal Test-only accessor — allows tests to observe paused state without exposing internals. */
+  get isPaused(): boolean {
+    return this.paused;
+  }
 
   readonly base_url: string;
   private errorObserver?: RpcErrorObserver;
@@ -64,6 +77,7 @@ export class JsonRpcDatasource {
   constructor(base_url: string, config?: JSONRpcConfig) {
     this.base_url = base_url;
     this.batch_size = config?.batch_size ?? 50;
+    this.network_retry_max_duration = config?.network_retry_max_duration ?? 120_000;
   }
 
   setErrorObserver(fn: RpcErrorObserver): void {
@@ -72,6 +86,9 @@ export class JsonRpcDatasource {
 
   resume(): void {
     this.paused = false;
+    // Set networkFailureStart so the next network error immediately exceeds the
+    // max duration cap — Retry means one attempt, escalate if it fails.
+    this.networkFailureStart = Date.now() - this.network_retry_max_duration;
     if (this.retryTimer !== null) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;
@@ -82,17 +99,32 @@ export class JsonRpcDatasource {
   call(method: JsonRpcMethod): Promise<JsonRpcResult> {
     return new Promise<JsonRpcResult>((onResolve) => {
       this.queue.push({ method, onResolve });
-      this.process();
+      this.scheduleFlush();
     });
   }
 
+  private scheduleFlush(): void {
+    if (this.processing || this.paused || this.flushScheduled) return;
+    this.flushScheduled = true;
+    setTimeout(() => {
+      this.flushScheduled = false;
+      this.process();
+    }, 15);
+  }
+
   private process(): void {
-    if (this.processing || this.paused || this.queue.length === 0) return;
+    if (this.processing || this.paused || this.queue.length === 0 || this.flushScheduled) return;
     this.flush();
   }
 
   private async flush(): Promise<void> {
     if (this.queue.length === 0) {
+      this.processing = false;
+      return;
+    }
+
+    // If a retry timer is already pending, don't start another flush.
+    if (this.retryTimer !== null) {
       this.processing = false;
       return;
     }
@@ -109,6 +141,7 @@ export class JsonRpcDatasource {
     this.process_batch(batch)
       .then(() => {
         this.failedCount = 0;
+        this.networkFailureStart = null;
         this.processing = false;
         this.process();
       })
@@ -117,6 +150,24 @@ export class JsonRpcDatasource {
         this.processing = false;
         this.failedCount++;
         if (failure.isNetworkError) {
+          // Track the start of the current network-failure streak.
+          if (this.networkFailureStart === null) {
+            this.networkFailureStart = Date.now();
+          }
+
+          // If we've been failing for longer than the max duration, escalate.
+          const elapsed = Date.now() - this.networkFailureStart;
+          if (elapsed >= this.network_retry_max_duration) {
+            this.paused = true;
+            this.networkFailureStart = null;
+            this.errorObserver?.({
+              message: "We're having trouble reaching the server.",
+              code: "-32001",
+              failedCount: this.failedCount,
+            });
+            return;
+          }
+
           const delay = Math.min(this.retry_base_delay * Math.pow(2, this.failedCount), this.retry_max_delay);
           if (this.retryTimer !== null) {
             clearTimeout(this.retryTimer);

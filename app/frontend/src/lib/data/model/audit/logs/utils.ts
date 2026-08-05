@@ -135,7 +135,7 @@ export function getLogResourceDetails(
     case "entries": {
       const foundEntry = entries.find((entry) => entry.id == String(resource_id));
       resource.url = `/projects/${project_id}/datasets/${dataset_id}/entries`;
-      resource.name = foundEntry?.resource;
+      resource.name = foundEntry?.name;
 
       switch (action) {
         case "deleted": {
@@ -155,7 +155,7 @@ export function getLogResourceDetails(
        * we will use the api endpoint to show the files of medias instead.
        */
       resource.url = `${mediaBasePath}/files/${resource_id}`;
-      resource.name = medias.find((media) => media.id == String(resource_id))?.filename;
+      resource.name = medias.find((media) => media.resource == String(resource_id))?.filename;
       break;
     }
     default: {
