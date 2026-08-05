@@ -8,7 +8,7 @@ import {
   settleConfirmModal,
   showConfirmModal,
 } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
 
 /**
  * The store is a module singleton, so every test must leave it idle. `cancelConfirmModal`
@@ -133,7 +133,7 @@ describe("async mode", () => {
     const settled = vi.fn();
     const choice = showConfirmModal({
       title: "Delete Dataset",
-      onConfirm: async () => ConfirmModalResult.KeepOpen,
+      onConfirm: async () => confirmModalResult.KeepOpen,
     });
     void choice.then(settled);
 

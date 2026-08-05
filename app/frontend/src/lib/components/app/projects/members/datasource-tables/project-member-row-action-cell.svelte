@@ -8,7 +8,7 @@
   import Can from "@/security/can.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -52,7 +52,7 @@
           });
         } catch (error) {
           showActionFailedToast(error);
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

@@ -2,14 +2,14 @@ import { render, screen } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
 
-import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 import {
   cancelConfirmModal,
   selectConfirmModalAction,
   settleConfirmModal,
   showConfirmModal,
 } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
 
 afterEach(() => {
   cancelConfirmModal();
@@ -69,7 +69,7 @@ describe("ConfirmModal", () => {
 
     void showConfirmModal({
       title: "Delete Dataset",
-      onConfirm: async () => ConfirmModalResult.KeepOpen,
+      onConfirm: async () => confirmModalResult.KeepOpen,
     });
 
     await screen.findByRole("alertdialog");
@@ -116,7 +116,7 @@ describe("ConfirmModal", () => {
       void showConfirmModal({
         title: "Delete Dataset",
         cancelLabel: "Cancel",
-        onConfirm: async () => ConfirmModalResult.KeepOpen,
+        onConfirm: async () => confirmModalResult.KeepOpen,
       });
 
       await screen.findByRole("alertdialog");

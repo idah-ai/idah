@@ -10,7 +10,7 @@
   import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
@@ -144,7 +144,7 @@
             title: "Unable to delete dataset",
             description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
           });
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

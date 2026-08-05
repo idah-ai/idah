@@ -12,21 +12,20 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import { cn } from "@/utils";
-
   // Inlined entry modals + actions (mirrors entry-dropdown-menu.svelte)
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { pluralizeUnit } from "@/utils/unit";
 
   import { ArrowDownAZIcon, ArrowDownZAIcon, ArrowUpDownIcon, ChevronsUpDownIcon, FunnelIcon } from "@lucide/svelte";
 
   import type { ListViewController } from "@/components/app/data-view/list-view-controller.svelte";
-  import type { ColumnSettings } from "@/components/app/datasource-table/types";
   import type { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
+  import type { ColumnSettings } from "@/components/app/datasource-table/types";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   let {
@@ -71,7 +70,7 @@
       description: `Are you sure you want to unassign ${count} ${pluralizeUnit(count, "entry", "entries")}?`,
       onConfirm: async () => {
         const updated = await unAssignEntries(sel.unAssignableEntryIds, (id) => sel.getEntryName(id));
-        if (!updated) return ConfirmModalResult.KeepOpen;
+        if (!updated) return confirmModalResult.KeepOpen;
 
         controller.patchRecords(updated);
         controller.clearSelection();
@@ -89,7 +88,7 @@
       description: `Are you sure you want to delete ${count} ${pluralizeUnit(count, "entry", "entries")}? This action cannot be undone.`,
       onConfirm: async () => {
         const ok = await deleteEntries(controller.selectedIds, (id) => sel.getEntryName(id));
-        if (!ok) return ConfirmModalResult.KeepOpen;
+        if (!ok) return confirmModalResult.KeepOpen;
 
         controller.clearSelection();
         await controller.fetch();

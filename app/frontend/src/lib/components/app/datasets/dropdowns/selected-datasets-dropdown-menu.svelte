@@ -11,7 +11,7 @@
 
   import { selectedDatasets } from "@/components/app/datasets/stores";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { authStatus } from "@/security/AuthContext";
@@ -94,7 +94,7 @@
           });
         } catch (error) {
           showActionFailedToast(error);
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

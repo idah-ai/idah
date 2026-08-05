@@ -83,7 +83,7 @@
           await onDelete?.();
         } catch {
           /**
-           * Deliberately does NOT return ConfirmModalResult.KeepOpen: the parent owns error
+           * Deliberately does NOT return confirmModalResult.KeepOpen: the parent owns error
            * reporting and this modal closed on failure before the migration too (it used
            * try/finally). Keeping that behaviour is intentional.
            */

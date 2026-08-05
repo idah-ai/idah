@@ -6,7 +6,7 @@
   import ApiKeyFormModal from "@/components/app/iam/api-keys/overlays/api-key-form-modal.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
   import { authStatus } from "@/security/AuthContext";
@@ -94,7 +94,7 @@
           });
         } catch (error) {
           showActionFailedToast(error);
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });
@@ -116,7 +116,7 @@
           });
         } catch (error) {
           showActionFailedToast(error);
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

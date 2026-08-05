@@ -11,7 +11,7 @@
 
   import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import {
     labelConfigTemplateDataSource,
@@ -148,7 +148,7 @@
           showToast.success({ title: "Template deleted", description: "The template has been deleted." });
         } catch (error) {
           showActionFailedToast(error);
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

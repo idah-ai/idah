@@ -2,10 +2,11 @@ import { browser } from "$app/environment";
 
 import {
   ConfirmModalChoice,
-  ConfirmModalResult,
+  confirmModalResult,
   type ConfirmModalChoiceOf,
   type ConfirmModalOptions,
   type ConfirmModalRequest,
+  type ConfirmModalResult,
   type ResolvedConfirmModalAction,
 } from "@/components/app/overlays/modals/confirm-modal.types";
 
@@ -18,7 +19,7 @@ import {
  * Lifecycle is hybrid and chosen per action by the presence of `run`:
  * - no `run`  → the modal closes as soon as the action is clicked
  * - has `run` → the modal stays open in a pending state and closes only when `run` resolves
- *   without returning `ConfirmModalResult.KeepOpen`
+ *   without returning `confirmModalResult.KeepOpen`
  */
 class ConfirmModalStore {
   /** The active request, or null when idle. Cleared after the exit animation completes. */
@@ -128,7 +129,7 @@ export function showConfirmModal<Id extends string = never>(
  * Run an action on behalf of the host.
  *
  * Sync actions settle immediately. Async actions hold the modal open in a pending state
- * while `run` executes, then close unless `run` returned `ConfirmModalResult.KeepOpen`.
+ * while `run` executes, then close unless `run` returned `confirmModalResult.KeepOpen`.
  */
 export async function selectConfirmModalAction(actionId: string): Promise<void> {
   const request = confirmModalStore.request;
@@ -150,10 +151,10 @@ export async function selectConfirmModalAction(actionId: string): Promise<void> 
   } catch (error) {
     console.error(
       `showConfirmModal: action "${action.id}" of "${request.title}" threw instead of returning ` +
-        `ConfirmModalResult.KeepOpen. Keeping the modal open.`,
+        `confirmModalResult.KeepOpen. Keeping the modal open.`,
       error,
     );
-    result = ConfirmModalResult.KeepOpen;
+    result = confirmModalResult.KeepOpen;
   }
 
   /**
@@ -168,7 +169,7 @@ export async function selectConfirmModalAction(actionId: string): Promise<void> 
   if (!activeResolve || confirmModalStore.request?.id !== request.id) return;
 
   confirmModalStore.pendingActionId = null;
-  if (result === ConfirmModalResult.KeepOpen) return;
+  if (result === confirmModalResult.KeepOpen) return;
 
   finish(action.id);
 }

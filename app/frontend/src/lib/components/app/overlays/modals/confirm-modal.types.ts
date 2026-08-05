@@ -17,15 +17,15 @@ export type ConfirmModalChoice = (typeof ConfirmModalChoice)[keyof typeof Confir
  * already shown"): failures are reported by the caller and signalled by a return value,
  * never by throwing.
  */
-export const ConfirmModalResult = {
+export const confirmModalResult = {
   KeepOpen: "keep-open",
 } as const;
-export type ConfirmModalResult = (typeof ConfirmModalResult)[keyof typeof ConfirmModalResult];
+export type ConfirmModalResult = (typeof confirmModalResult)[keyof typeof confirmModalResult];
 
 /**
  * Async work owned by an action.
  *
- * Runs while the modal stays open in a pending state. Return `ConfirmModalResult.KeepOpen`
+ * Runs while the modal stays open in a pending state. Return `confirmModalResult.KeepOpen`
  * to keep it open (the caller has already shown its own error toast); return nothing to
  * close. Throwing is treated as `KeepOpen` and logged — it is a safety net so an unhandled
  * rejection cannot silently close a destructive modal, not the failure channel.

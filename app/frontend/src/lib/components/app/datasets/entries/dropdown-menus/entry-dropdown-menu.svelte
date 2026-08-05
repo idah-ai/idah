@@ -15,7 +15,7 @@
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
@@ -97,7 +97,7 @@
             title: "Unable to unassign entry",
             description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
           });
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });
@@ -121,7 +121,7 @@
             title: "Unable to delete entry",
             description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
           });
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

@@ -17,7 +17,7 @@
     isConfirmModalActive,
     showConfirmModal,
   } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -135,7 +135,7 @@
           run: async () => {
             await saveLabelConfigChanges();
             // Save failed: keep the prompt up so the user can retry or leave without saving.
-            if (controller.hasUnsavedChanges) return ConfirmModalResult.KeepOpen;
+            if (controller.hasUnsavedChanges) return confirmModalResult.KeepOpen;
           },
         },
       ],

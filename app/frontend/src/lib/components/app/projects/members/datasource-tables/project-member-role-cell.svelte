@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Can from "@/security/can.svelte";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
   import ProjectMemberRoleBadge from "@/components/app/projects/members/badges/project-member-role-badge.svelte";
   import RoleChangeWarning from "@/components/app/projects/members/datasource-tables/role-change-warning.svelte";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+  import Can from "@/security/can.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalChoice, ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import {
     ProjectMemberRecord,
@@ -102,7 +102,7 @@
           });
         } catch (error) {
           showActionFailedToast(error);
-          return ConfirmModalResult.KeepOpen;
+          return confirmModalResult.KeepOpen;
         }
       },
     });

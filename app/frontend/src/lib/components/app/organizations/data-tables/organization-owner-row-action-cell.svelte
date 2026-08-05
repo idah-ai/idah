@@ -7,7 +7,7 @@
   import Can from "@/security/can.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import { ConfirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { refetches } from "@/utils/refetch";
@@ -70,7 +70,7 @@
     } catch (error) {
       console.error(error);
       showToast.error({ title: "Failed to remove organization owner." });
-      return ConfirmModalResult.KeepOpen;
+      return confirmModalResult.KeepOpen;
     }
   }
 </script>
