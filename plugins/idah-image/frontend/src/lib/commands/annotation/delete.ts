@@ -11,6 +11,10 @@ import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
+import { IMAGE_MASK } from "$lib/types";
+import { invalidateAll } from "$lib/mask/tile-cache";
+import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
   name: "annotation.delete",
@@ -34,6 +38,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as AnnotationDeleteProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props || !props.annotationId || !data.annotations) return noopAction(command);
 
       const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
@@ -47,11 +52,17 @@ export function register(driver: IIdahDriverV2): void {
             selection.deselect();
           }
 
+          // Free cached mask bitmaps if this is a mask annotation
+          const shape = record.shape as Record<string, unknown> | undefined;
+          if (shape?.type === IMAGE_MASK) {
+            invalidateAll(props.annotationId);
+          }
+
           await data.annotations!.delete(props.annotationId);
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await recreateAnnotationWithTiles(data.annotations!, record);
         },
         isCombinable() { return false; },
         combine(p) { return p; },

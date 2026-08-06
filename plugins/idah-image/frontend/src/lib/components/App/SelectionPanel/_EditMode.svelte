@@ -25,6 +25,7 @@
     onReSelectCategory: (reselectedCategoryId?: string) => void;
     onValueChange: (property: IConfigProperty, value: string | number | string[] | boolean | undefined) => void;
     disabled: boolean;
+    usedMaskCategories?: Set<string>;
   };
 
   let {
@@ -38,6 +39,7 @@
     onReSelectCategory,
     onValueChange,
     disabled,
+    usedMaskCategories = new Set<string>(),
   }: Props = $props();
 
   let annotation = $derived(selection.value as IImageAnnotationRecord | null);
@@ -81,6 +83,7 @@
     {shapeType}
     onValueChange={onReSelectCategory}
     {disabled}
+    {usedMaskCategories}
     placeholder="Select category"
   />
 
