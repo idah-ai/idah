@@ -181,7 +181,11 @@ export interface IToolbarItem {
   label: string;
   /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
   mode: string;
-  /** Optional group name (items in the same group are rendered together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path render inside
+   * the same dropdown; a deeper path like `"line:trend"` nests a `trend` subgroup under a
+   * top-level `line` group. `null` (or omitted) renders the item as a standalone button.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
@@ -201,6 +205,29 @@ export interface IToolbarItem {
    */
   whenToggled?: () => boolean;
 }
+
+/**
+ * A group of toolbar items rendered as a single collapsed button + chevron that opens a
+ * dropdown. Produced by the manager from item `group` paths — plugins never construct these
+ * directly. Groups may nest (a group's children can themselves be groups).
+ */
+export interface IToolbarGroupNode {
+  kind: "group";
+  /** Full colon path, e.g. "line:trend". */
+  path: string;
+  /** Last path segment, used for the tooltip label. */
+  segment: string;
+  children: IToolbarNode[];
+}
+
+/** A single standalone toolbar item (leaf). */
+export interface IToolbarLeafNode {
+  kind: "item";
+  item: IToolbarItem;
+}
+
+/** Either a standalone item or a nested group, as consumed by the toolbar renderer. */
+export type IToolbarNode = IToolbarLeafNode | IToolbarGroupNode;
 
 // ─── Annotation / Notes ───────────────────────────────────────────────────
 
@@ -538,7 +565,11 @@ export interface ToolbarItemOptions {
    * The item will be visible in any matching mode.
    */
   modes: string | string[];
-  /** Optional group name (items in the same group render together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path collapse into
+   * one dropdown button; a deeper path nests subgroups. `null` (or omitted) renders a
+   * standalone button. See {@link IToolbarItem.group}.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;

@@ -6,7 +6,6 @@ import ellipseIcon from "$lib/assets/icons/ellipse.svg?raw";
 import lineIcon from "$lib/assets/icons/minimize-2.svg?raw";
 import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
 import brushIcon from "$lib/assets/icons/brush.svg?raw";
-import squareSlashIcon from "$lib/assets/icons/square-slash.svg?raw";
 import maskPolygonIcon from "$lib/assets/icons/mask-polygon.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
@@ -14,6 +13,8 @@ import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LI
 import { hasConfig } from "$idah/v2/utils";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 import { maskTool } from "$lib/state/mask-tool.svelte";
+import { toolPanel } from "$lib/state/tool-panel.svelte";
+import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
 
 // ── Magnet icon as inline SVG ──────────────────────────────────────────
 const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 16 19"/><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"/><path d="M5 8 9 12"/></svg>`;
@@ -26,7 +27,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     icon: cursorIcon,
     label: "Selection",
     modes: ["*"],
-    group: "selection",
+    group: null,
     onClick: () => {
       // Return to the parent resting mode of the current workspace
       if (driver.mode === REVIEW_MODE || driver.mode === NOTE_MODE) {
@@ -43,7 +44,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Bounding Box",
       name: "mode.bounding_box",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: null,
       onClick: () =>
         driver.mode === IMAGE_BOUNDING_BOX ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_BOUNDING_BOX),
         whenToggled: () => driver.mode === IMAGE_BOUNDING_BOX,
@@ -56,7 +57,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Polygon",
       name: "mode.polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: null,
       onClick: () =>
         driver.mode === IMAGE_POLYGON ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_POLYGON),
         whenToggled: () => driver.mode === IMAGE_POLYGON,
@@ -69,7 +70,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Circle",
       name: "mode.circle",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: null,
       onClick: () =>
         driver.mode === IMAGE_CIRCLE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_CIRCLE),
         whenToggled: () => driver.mode === IMAGE_CIRCLE,
@@ -82,7 +83,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Ellipse",
       name: "mode.ellipse",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: null,
       onClick: () =>
         driver.mode === IMAGE_ELLIPSE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_ELLIPSE),
         whenToggled: () => driver.mode === IMAGE_ELLIPSE,
@@ -95,7 +96,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Line",
       name: "mode.line",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: null,
       onClick: () =>
         driver.mode === IMAGE_LINE ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_LINE),
         whenToggled: () => driver.mode === IMAGE_LINE,
@@ -108,12 +109,13 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Mask Brush",
       name: "mode.mask_brush",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: "mask",
       onClick: () => {
         if (driver.mode === IMAGE_MASK && maskTool.active === "brush") {
           driver.setMode(DEFAULT_MODE);
         } else {
           maskTool.active = "brush";
+          toolPanel.show(MaskToolConfigurations);
           driver.toolbar.invalidate();
           driver.setMode(IMAGE_MASK);
         }
@@ -125,12 +127,13 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Mask Polygon",
       name: "mode.mask_polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
-      group: "selection",
+      group: "mask",
       onClick: () => {
         if (driver.mode === IMAGE_MASK && maskTool.active === "polygon") {
           driver.setMode(DEFAULT_MODE);
         } else {
           maskTool.active = "polygon";
+          toolPanel.show(MaskToolConfigurations);
           driver.toolbar.invalidate();
           driver.setMode(IMAGE_MASK);
         }
@@ -144,7 +147,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Note",
     name: "mode.note",
     modes: [REVIEW_MODE, NOTE_MODE],
-    group: "selection",
+    group: null,
     onClick: () => driver.setMode(NOTE_MODE),
     whenToggled: () => driver.mode === NOTE_MODE,
   });
@@ -158,7 +161,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Magnetic snap",
     name: "snap.magnetic_toggle",
     modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
-    group: "selection",
+    group: null,
     onClick: () => {
       magneticSnap.toggle();
       driver.toolbar.invalidate();
@@ -166,17 +169,5 @@ export function initToolbar(driver: IIdahDriverV2): void {
     whenToggled: () => magneticSnap.enabled,
   });
 
-  // ── Prevent mask overlap toggle (available in mask mode) ────────────
-  t.add({
-    icon: squareSlashIcon,
-  label: "Prevent overlap",
-    name: "mask.prevent_overlap",
-    modes: [IMAGE_MASK],
-    group: "selection",
-    onClick: () => {
-      maskTool.togglePreventOverlap();
-      driver.toolbar.invalidate();
-    },
-    whenToggled: () => maskTool.preventOverlap,
-  });
+  // Prevent-overlap now lives in the floating mask tool panel (see MaskToolConfigurations).
 }
