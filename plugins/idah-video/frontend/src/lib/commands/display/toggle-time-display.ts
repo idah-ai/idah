@@ -22,10 +22,13 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
+    // opts.value sets an explicit value (settings menu); no opts toggles (shortcut).
+    callback: (opts) => ({
       command: { ...command },
       do() {
-        ui.timeDisplay = (ui.timeDisplay === "frames" ? "time" : "frames") as TimeDisplay;
+        const value = opts?.value as TimeDisplay | undefined;
+        ui.timeDisplay = value ?? ((ui.timeDisplay === "frames" ? "time" : "frames") as TimeDisplay);
+        driver.settings.emitChange();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

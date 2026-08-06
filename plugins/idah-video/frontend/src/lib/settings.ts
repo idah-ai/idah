@@ -1,16 +1,13 @@
 // ---------------------------------------------------------------------------
 // settings.ts — Register video-specific settings with the V2 driver
 //
-// Called once on init(driver). Contributes the opacity sliders shown in the
+// Called once on init(driver). Contributes the sliders/options shown in the
 // core topbar Settings menu. The values live here in the plugin's ui store
-// (localStorage-backed); core only renders the controls and calls get/set.
+// (localStorage-backed, except opacity which is session-only); core only
+// renders the controls and calls get/set.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui } from "./state/ui.svelte";
-
-// TODO(remove-after-test): throwaway backing value for the mock "options"
-// setting below — exercises the new segmented-control rendering with no effect.
-let _mockOptionsChoice = "medium";
 
 export function registerSettings(driver: IIdahDriverV2): void {
   // NOTE: these descriptors are NOT type-checked here — the setting types are
@@ -26,10 +23,10 @@ export function registerSettings(driver: IIdahDriverV2): void {
             type: "slider",
             key: "video-opacity",
             label: "Video opacity",
+            description: "Fade the video image. Resets to 100 each time the plugin loads.",
             min: 0,
             max: 100,
             step: 1,
-            default: 100,
             get: () => ui.videoOpacity,
             set: (v) => (ui.videoOpacity = v),
           },
@@ -37,28 +34,50 @@ export function registerSettings(driver: IIdahDriverV2): void {
             type: "slider",
             key: "annotation-opacity",
             label: "Annotation opacity",
+            description: "Fade the fill of annotations — the border stroke stays fully visible. Resets to 100 each time the plugin loads.",
             min: 0,
             max: 100,
             step: 1,
-            default: 100,
             get: () => ui.annotationOpacity,
             set: (v) => (ui.annotationOpacity = v),
           },
-          // TODO(remove-after-test): mock "options" setting to exercise the
-          // segmented-control rendering. No real action — backed by a throwaway
-          // local var. Delete this item (and _mockOptionsChoice) once verified.
           {
             type: "options",
-            key: "mock-options",
-            label: "Mock options (test only)",
+            key: "render-mode",
+            label: "Video Render Mode",
+            description: "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video.",
             options: [
-              { value: "low", label: "Low" },
-              { value: "medium", label: "Medium" },
-              { value: "high", label: "High" },
+              { value: "bilinear", label: "Smooth" },
+              { value: "nearest-neighbor", label: "Pixelated" },
             ],
-            default: "medium",
-            get: () => _mockOptionsChoice,
-            set: (v) => (_mockOptionsChoice = v),
+            // Route through the command so the shortcut/palette and this menu
+            // share one mutation path; the command fires settings.emitChange().
+            get: () => ui.renderMode,
+            set: (v) => driver.command.call("ui.toggle_render_mode", { value: v }),
+          },
+          {
+            type: "options",
+            key: "color-mode",
+            label: "Annotation Color Mode",
+            description: "Switch between category-based colors and random colors for annotations.",
+            options: [
+              { value: "category", label: "Category" },
+              { value: "random", label: "Random" },
+            ],
+            get: () => ui.colorMode,
+            set: (v) => driver.command.call("ui.toggle_color_mode", { value: v }),
+          },
+          {
+            type: "options",
+            key: "time-display",
+            label: "Timeline Time Display",
+            description: "Switch between showing frame numbers and time (m:ss.ff) on the timeline ruler.",
+            options: [
+              { value: "frames", label: "Frames" },
+              { value: "time", label: "Time" },
+            ],
+            get: () => ui.timeDisplay,
+            set: (v) => driver.command.call("ui.toggle_time_display", { value: v }),
           },
         ],
       },

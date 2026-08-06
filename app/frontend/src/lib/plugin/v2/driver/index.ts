@@ -92,6 +92,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Internal references (have cache/clearCache) ──────────────────────
   private idbAnnotationsDriver: (IAnnotationsDriverV2 & { clearCache(): Promise<void> }) | null = null;
   #notesAdapter: NotesDriverAdapter | null = null;
+  #settingsAdapter: SettingsDriverAdapter | null = null;
 
   constructor(opts: {
     id: string;
@@ -140,8 +141,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     // Build stats driver — core stats from this driver + plugin-registered providers
     this.stats = new StatsDriverAdapter(this);
 
-    // Build settings driver — plugin-registered settings shown in the topbar menu
-    this.settings = new SettingsDriverAdapter();
+    // Build settings driver — plugin-registered settings shown in the topbar menu.
+    // Plugins get the sealed (register/emitChange) view; core keeps the full
+    // adapter (collect/onChange) via `settingsAdapter`, same split as notes.
+    const settingsAdapter = new SettingsDriverAdapter();
+    this.settings = settingsAdapter.sealed();
+    this.#settingsAdapter = settingsAdapter;
 
     // ── Register default commands ─────────────────────────────────────
     registerCommands(this);
@@ -174,6 +179,15 @@ export class IdahDriverV2 implements IIdahDriverV2 {
    */
   get notesAdapter(): NotesDriverAdapter | null {
     return this.#notesAdapter;
+  }
+
+  /**
+   * @internal Used by the core topbar settings menu only.
+   * Returns the concrete SettingsDriverAdapter (not the sealed
+   * ISettingsDriverV2) for access to core-only methods (collect, onChange).
+   */
+  get settingsAdapter(): SettingsDriverAdapter | null {
+    return this.#settingsAdapter;
   }
 
   /**

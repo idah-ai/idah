@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ChevronDownIcon,
+    CircleHelpIcon,
     KeyboardIcon,
     MoonIcon,
     Settings2Icon,
@@ -19,6 +20,13 @@
   import { Checkbox } from "@/components/ui/checkbox";
   import { Slider } from "@/components/ui/slider";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import Text from "@/components/ui/text/Text.svelte";
@@ -34,11 +42,14 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
-  import type { IIdahDriverV2, ISettingGroup, ISliderSetting, IOptionsSetting } from "@/plugin/v2/types";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
+  import type { ISettingGroup, ISliderSetting, IOptionsSetting } from "@/plugin/v2/types";
 
   // Props
   interface Props {
-    driver: IIdahDriverV2;
+    // Concrete driver (not the sealed IIdahDriverV2) — same as this component's
+    // parent — so core-only adapters like `settingsAdapter` are reachable.
+    driver: IdahDriverV2;
     noteSidebarOpen?: boolean;
     onNoteToggle?: () => void;
   }
@@ -47,6 +58,7 @@
   // Variables
   let loading = $state(false);
   let openSettingsPopover = $state(false);
+  let openThemeMenu = $state(false);
 
   // Plugin-contributed settings (e.g. opacity sliders). Collected when the
   // Settings menu opens — by then the active plugin has registered via
@@ -66,17 +78,32 @@
     return `${section}:${key}`;
   }
 
-  $effect(() => {
-    if (!openSettingsPopover) return;
-    const groups = driver.settings.collect();
+  // Re-read every setting's current value into the mirror. Called on open and
+  // again whenever the plugin calls driver.settings.emitChange (which our
+  // onChange subscription below observes) — e.g. a value changed via a keyboard
+  // shortcut or the command palette while the menu is open.
+  function reseedSettingValues(groups: ISettingGroup[]): void {
     const seeded: Record<string, number | string> = {};
     for (const group of groups) {
       for (const item of group.items) {
         seeded[settingKey(group.section, item.key)] = item.get();
       }
     }
-    settingGroups = groups;
     settingValues = seeded;
+  }
+
+  $effect(() => {
+    if (!openSettingsPopover) return;
+    // collect/onChange are core-only, so they live on the concrete adapter
+    // rather than the sealed driver.settings handed to plugins.
+    const settings = driver.settingsAdapter;
+    if (!settings) return;
+    const groups = settings.collect();
+    settingGroups = groups;
+    reseedSettingValues(groups);
+    // While open, keep the mirror in sync with changes from any source
+    // (shortcut / palette / this UI). Unsubscribes when the menu closes.
+    return settings.onChange(() => reseedSettingValues(groups));
   });
 
   // One writer per control type — keeps `item.set()` type-safe without casts
@@ -95,6 +122,23 @@
   // "idah-video" → "Idah Video". The menu appends " Settings".
   function humanizeSection(section: string): string {
     return section.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  // Settings (Popover) and Theme (DropdownMenu) triggers each explicitly close
+  // the OTHER one, composed on `onpointerdown` (not `onclick`). This matters:
+  // bits-ui's Popover trigger toggles on `onclick`, but its DropdownMenu trigger
+  // toggles on `onpointerdown` (its own `onclick` is a no-op for real mouse
+  // clicks — it only handles a synthetic VoiceOver click via `e.detail === 0`).
+  // Composing on `onclick` alone therefore never ran in time for the DropdownMenu
+  // side: pointerdown already flipped its `open` state (and its {#if} branch swap
+  // may have detached the very element the pending click was targeting) before
+  // our onclick handler could fire. Binding on `onpointerdown` — the earliest
+  // possible event, common to both triggers — runs before any of that, and we
+  // explicitly forward to `props.onpointerdown` so each trigger's own open
+  // behavior still fires correctly (Popover simply has no onpointerdown to
+  // forward to, so that call is a harmless no-op there).
+  function forwardPointerDown(props: Record<string, unknown>, e: PointerEvent): void {
+    (props.onpointerdown as ((e: PointerEvent) => void) | undefined)?.(e);
   }
 
   // Persist auto-select preference in localStorage
@@ -265,21 +309,36 @@
       Settings is a Popover (not a DropdownMenu) on purpose: a menu drives its
       submenus/highlights by pointer hover, which hijacks a slider mid-drag when
       the cursor sweeps over a sibling. A Popover has no hover-to-activate
-      semantics, so the sliders below drag cleanly. Theme therefore renders as an
-      inline segmented control rather than a hover-expand submenu.
+      semantics, so the sliders below drag cleanly.
     -->
     <Popover bind:open={openSettingsPopover}>
       <PopoverTrigger>
         {#snippet child({ props })}
           {#if openSettingsPopover}
             <!-- No tooltip while open, or it peeks out from behind the popover -->
-            <Button {...props} variant="default" size="icon-sm">
+            <Button
+              {...props}
+              variant="default"
+              size="icon-sm"
+              onpointerdown={(e) => {
+                openThemeMenu = false;
+                forwardPointerDown(props, e);
+              }}
+            >
               <Settings2Icon />
             </Button>
           {:else}
             <ToolTooltip label="Settings" align="center" delayDuration={100}>
               {#snippet trigger()}
-                <Button {...props} variant="ghost" size="icon-sm">
+                <Button
+                  {...props}
+                  variant="ghost"
+                  size="icon-sm"
+                  onpointerdown={(e) => {
+                    openThemeMenu = false;
+                    forwardPointerDown(props, e);
+                  }}
+                >
                   <Settings2Icon />
                 </Button>
               {/snippet}
@@ -288,44 +347,22 @@
         {/snippet}
       </PopoverTrigger>
 
-      <PopoverContent align="start" side="bottom" class="w-64">
-        <!-- Theme — inline segmented control -->
-        <div class="flex flex-col gap-1.5">
-          <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
-            <SunMoonIcon class="size-3.5" />
-            Theme
-          </span>
-          <div class="bg-muted grid grid-cols-3 gap-0.5 rounded-lg border p-0.5">
-            <Button
-              variant={userPrefersMode.current === "light" ? "default" : "ghost"}
-              size="sm"
-              onclick={() => setMode("light")}
-            >
-              <SunIcon class="size-3.5" />
-              Light
-            </Button>
-            <Button
-              variant={userPrefersMode.current === "dark" ? "default" : "ghost"}
-              size="sm"
-              onclick={() => setMode("dark")}
-            >
-              <MoonIcon class="size-3.5" />
-              Dark
-            </Button>
-            <Button
-              variant={userPrefersMode.current === "system" ? "default" : "ghost"}
-              size="sm"
-              onclick={() => resetMode()}
-            >
-              <TabletSmartphoneIcon class="size-3.5" />
-              System
-            </Button>
-          </div>
-        </div>
-
+      <PopoverContent
+        align="start"
+        side="bottom"
+        class="w-64"
+        onOpenAutoFocus={(e) => {
+          // FocusScope's default behavior focuses the first tabbable element on
+          // open — which is the first item's "?" description icon, not the
+          // actual control (Slider/options). Suppressing it leaves focus where
+          // it naturally is; Tab still works normally for a keyboard user who
+          // explicitly navigates in, this only skips the automatic first jump.
+          e.preventDefault();
+        }}
+      >
         <!-- Plugin-contributed settings (e.g. opacity), one section per plugin -->
-        {#each settingGroups as group (group.section)}
-          <div class="mt-3 flex flex-col gap-2">
+        {#each settingGroups as group, groupIndex (group.section)}
+          <div class={groupIndex === 0 ? "flex flex-col gap-2" : "mt-3 flex flex-col gap-2"}>
             <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
               <SlidersHorizontalIcon class="size-3.5" />
               {humanizeSection(group.section)} Settings
@@ -343,7 +380,30 @@
               {#if item.type === "slider"}
                 <div class="flex flex-col gap-1.5">
                   <div class="flex items-center justify-between gap-2">
-                    <span class="text-sm">{item.label}</span>
+                    <span class="flex items-center gap-2 text-sm">
+                      {item.label}
+                      {#if item.description}
+                        <!--
+                          avoidCollisions={false} forces side="right": the Popover already sits near
+                          the screen's right edge, so collision-flip would otherwise reverse this
+                          to the left. ignoreNonKeyboardFocus prevents this tooltip from popping
+                          open the instant the Settings menu opens — bits-ui's Tooltip opens on ANY
+                          focus by default (including the Popover's auto-focus-on-open landing on
+                          this trigger since it's the first focusable element), and this restricts
+                          opening to genuine keyboard (:focus-visible) navigation.
+                        -->
+                        <TooltipProvider ignoreNonKeyboardFocus>
+                          <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
+                            <TooltipTrigger>
+                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
+                              {item.description}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      {/if}
+                    </span>
                     <span class="text-muted-foreground text-xs tabular-nums">{settingValues[key]}</span>
                   </div>
                   <Slider
@@ -357,7 +417,30 @@
                 </div>
               {:else if item.type === "options"}
                 <div class="flex flex-col gap-1.5">
-                  <span class="text-sm">{item.label}</span>
+                  <span class="flex items-center gap-2 text-sm">
+                    {item.label}
+                    {#if item.description}
+                      <!--
+                        avoidCollisions={false} forces side="right": the Popover already sits near
+                        the screen's right edge, so collision-flip would otherwise reverse this
+                        to the left. ignoreNonKeyboardFocus prevents this tooltip from popping
+                        open the instant the Settings menu opens — bits-ui's Tooltip opens on ANY
+                        focus by default (including the Popover's auto-focus-on-open landing on
+                        this trigger since it's the first focusable element), and this restricts
+                        opening to genuine keyboard (:focus-visible) navigation.
+                      -->
+                      <TooltipProvider ignoreNonKeyboardFocus>
+                        <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
+                          <TooltipTrigger>
+                            <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                          </TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
+                            {item.description}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    {/if}
+                  </span>
                   <div
                     class="bg-muted grid gap-0.5 rounded-lg border p-0.5"
                     style="grid-template-columns: repeat({item.options.length}, minmax(0, 1fr));"
@@ -379,6 +462,86 @@
         {/each}
       </PopoverContent>
     </Popover>
+
+    <!-- Theme — standalone dropdown, discrete choices so plain menu hover is safe here -->
+    <DropdownMenu bind:open={openThemeMenu}>
+      <DropdownMenuTrigger>
+        {#snippet child({ props })}
+          {#if openThemeMenu}
+            <Button
+              {...props}
+              variant="default"
+              size="icon-sm"
+              onpointerdown={(e) => {
+                openSettingsPopover = false;
+                forwardPointerDown(props, e);
+              }}
+            >
+              <SunMoonIcon />
+            </Button>
+          {:else}
+            <ToolTooltip label="Theme" align="center" delayDuration={100}>
+              {#snippet trigger()}
+                <Button
+                  {...props}
+                  variant="ghost"
+                  size="icon-sm"
+                  onpointerdown={(e) => {
+                    openSettingsPopover = false;
+                    forwardPointerDown(props, e);
+                  }}
+                >
+                  <SunMoonIcon />
+                </Button>
+              {/snippet}
+            </ToolTooltip>
+          {/if}
+        {/snippet}
+      </DropdownMenuTrigger>
+
+      <!-- onCloseAutoFocus prevented: FocusScope otherwise returns focus to the
+           trigger when the menu closes, leaving the Theme button visibly focused. -->
+      <DropdownMenuContent align="start" side="bottom" onCloseAutoFocus={(e) => e.preventDefault()}>
+        <!-- closeOnSelect={false}: picking a theme keeps the menu open so the
+             new selection is visible and others can be tried without reopening.
+             Selected option gets the same "active" treatment as a selected
+             tool/mode elsewhere (bg-primary, matching Button's default variant)
+             instead of being disabled/greyed — it stays clickable, same as those.
+             Compared against userPrefersMode (the raw stored preference: "light" |
+             "dark" | "system"), NOT the resolved `mode` — otherwise picking "System"
+             on a dark-OS machine would highlight "Dark" instead of "System". -->
+        <DropdownMenuItem
+          closeOnSelect={false}
+          class={userPrefersMode.current === "light"
+            ? "bg-primary text-primary-foreground data-highlighted:bg-primary/90 data-highlighted:text-primary-foreground"
+            : ""}
+          onclick={() => setMode("light")}
+        >
+          <SunIcon />
+          Light
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          closeOnSelect={false}
+          class={userPrefersMode.current === "dark"
+            ? "bg-primary text-primary-foreground data-highlighted:bg-primary/90 data-highlighted:text-primary-foreground"
+            : ""}
+          onclick={() => setMode("dark")}
+        >
+          <MoonIcon />
+          Dark
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          closeOnSelect={false}
+          class={userPrefersMode.current === "system"
+            ? "bg-primary text-primary-foreground data-highlighted:bg-primary/90 data-highlighted:text-primary-foreground"
+            : ""}
+          onclick={() => resetMode()}
+        >
+          <TabletSmartphoneIcon />
+          System
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
     <EntryStatsModal {driver} />
   </div>

@@ -600,6 +600,9 @@ export interface IToolbarDriverV2 {
 export interface ISettingsDriverV2 {
   /** Register a provider of setting descriptors — untyped here (see note above). */
   register(provider: unknown): void;
+  /** Notify core that a setting value changed (e.g. from a command/shortcut) so
+   *  an open settings menu re-reads it. Core provides the observer side. */
+  emitChange(): void;
 }
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
