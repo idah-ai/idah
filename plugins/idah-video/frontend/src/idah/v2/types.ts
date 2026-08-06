@@ -623,7 +623,10 @@ export interface ISettingsDriverV2 {
   /** Register a provider of setting descriptors — untyped here (see note above). */
   register(provider: unknown): void;
   /** Notify core that a setting value changed (e.g. from a command/shortcut) so
-   *  an open settings menu re-reads it. Core provides the observer side. */
+   *  an open settings menu re-reads it. Core cannot observe this plugin's state
+   *  reactively across the bundle boundary, so this call is the only signal it
+   *  gets: it bumps a revision counter core reads while rendering. Cheap and
+   *  idempotent — call it after every mutation, from any source. */
   emitChange(): void;
 }
 
