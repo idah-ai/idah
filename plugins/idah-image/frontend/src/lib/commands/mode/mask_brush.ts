@@ -20,6 +20,8 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { media } from "$lib/state/media.svelte";
 import { maskTool } from "$lib/state/mask-tool.svelte";
+import { toolPanel } from "$lib/state/tool-panel.svelte";
+import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
 import { data } from "$lib/state/data.svelte";
 import { rebuildOccupancy, isOccupied } from "$lib/mask/occupancy";
 
@@ -67,6 +69,7 @@ export function register(driver: IIdahDriverV2): void {
         command: { ...command },
         do() {
           maskTool.active = "brush";
+          toolPanel.show(MaskToolConfigurations);
           driver.toolbar.invalidate();
           if (driver.mode !== IMAGE_MASK) {
             driver.setMode(IMAGE_MASK);
