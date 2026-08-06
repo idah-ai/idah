@@ -362,7 +362,7 @@
       >
         <!-- Plugin-contributed settings (e.g. opacity), one section per plugin -->
         {#each settingGroups as group, groupIndex (group.section)}
-          <div class={groupIndex === 0 ? "flex flex-col gap-2" : "mt-3 flex flex-col gap-2"}>
+          <div class={groupIndex === 0 ? "flex flex-col gap-3" : "mt-3 flex flex-col gap-3"}>
             <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
               <SlidersHorizontalIcon class="size-3.5" />
               {humanizeSection(group.section)} Settings
