@@ -235,6 +235,14 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
   }
+
+  async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+    // Mock adapter: no-op for now
+  }
+
+  async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+    // Mock adapter: no-op for now
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -276,6 +276,7 @@ services:
       dockerfile: ./staging/Dockerfile.frontend
       args:
         VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost:8080}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     restart: always
     ports:
       - "3000"

@@ -9,6 +9,7 @@ import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import type { IImageAnnotationShape } from "$lib/types";
+import { stripTileKeys } from "$lib/mask/strip-tile-keys";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
@@ -57,6 +58,11 @@ export function register(driver: IIdahDriverV2): void {
           }
           if (props.value) {
             update.value = { ...(snapshot.value ?? {}), ...props.value };
+          }
+          // Strip tile keys from shape — they belong in annotation_shape,
+          // not in the parent annotations.dimensions jsonb column
+          if (update.shape) {
+            update.shape = stripTileKeys(update.shape as Record<string, unknown>) as IImageAnnotationShape;
           }
           await data.annotations!.update(update);
         },

@@ -31,6 +31,9 @@
   let { trackId, startRange, endRange, rawData } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
   let isKeyframe = $derived(rawData.shape.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
+  // When this is the annotation's only keyframe, deleting it would empty the annotation.
+  // Hide the "Delete keyframe" action and steer the user to "Delete annotation" instead.
+  let isLastKeyframe = $derived(isKeyframe && rawData.shape.frames.length <= 1);
   let annotationIsLocked = $derived(annotation.isLocked(rawData));
 
   let menus = $derived<Menus>({
@@ -49,7 +52,9 @@
     },
     edit: {
       items: {
-        ...(isKeyframe
+        ...(isLastKeyframe
+          ? {}
+          : isKeyframe
           ? {
               deleteKeyframe: {
                 label: `Delete keyframe`,
