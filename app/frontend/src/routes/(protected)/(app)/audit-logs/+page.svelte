@@ -12,7 +12,7 @@
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
-  import { MediaRecord } from "@/data/model/media/medias/medias-record";
+  import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
   import { Record } from "@/data/model/Record";
   import { refetches } from "@/utils/refetch";
 
@@ -41,7 +41,7 @@
         [AccountRecord.type]: ["name", "email", "pciture_url"],
       },
       filters: {
-        actor_account_id__in: actorAccountIds,
+        id__in: actorAccountIds,
       },
     });
     accounts.push(...accountsRes.data);
@@ -72,7 +72,6 @@
               break;
           }
 
-          ids["account_ids"].push(log.resource_id);
           break;
         }
         case "account_sessions":
@@ -122,7 +121,7 @@
         if (_ids.length === 0) return;
 
         switch (resource) {
-          case "accounts_ids": {
+          case "account_ids": {
             const accountsRes = await accountsBackendDataSource.list({
               fields: {
                 [AccountRecord.type]: ["id", "email"],
@@ -200,13 +199,30 @@
           case "entries": {
             const entriesRes = await entriesBackendDataSource.list({
               fields: {
-                [EntryRecord.type]: ["id", "resource"],
+                [EntryRecord.type]: ["id", "resource", "name"],
               },
               filters: {
                 id: Array.from(new Set(_ids)),
               },
             });
             entries.push(...entriesRes.data);
+            break;
+          }
+          case "medias": {
+            /**
+             * A `resource` can have multiple rows (transcoded variants, thumbnails, ...)
+             * each with an artifact-derived filename. Only the `key: ""` row is the
+             * canonical upload with the real filename, so fetch each one individually
+             * via `info` rather than a bulk `.list()`, which would return every variant.
+             */
+            const mediaResults = await Promise.allSettled(
+              Array.from(new Set(_ids)).map((id) =>
+                mediaBackendDataSource.getInfo({ resource: String(id), showErrorToast: false }),
+              ),
+            );
+            mediaResults.forEach((result) => {
+              if (result.status === "fulfilled" && "data" in result.value) medias.push(result.value.data);
+            });
             break;
           }
           default: {

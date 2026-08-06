@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // V2 Toolbar Manager — items, groups, ordering
 // ---------------------------------------------------------------------------
-import type { IToolbarItem, ToolbarItemOptions } from "$idah/v2/types";
+import type { IToolbarGroupNode, IToolbarItem, IToolbarNode, ToolbarItemOptions } from "$idah/v2/types";
 
 export class ToolbarManagerV2 {
   /** All registered items. */
@@ -74,6 +74,42 @@ export class ToolbarManagerV2 {
       const bIdx = orderIndex.get(b.group!) ?? Infinity;
       return aIdx - bIdx;
     });
+  }
+
+  /**
+   * Return the toolbar as a node tree for the given mode. Standalone items (`group == null`)
+   * become leaf nodes; items with a colon path are folded into nested group nodes.
+   */
+  getNodesForMode(mode: string): IToolbarNode[] {
+    const items = this.getItemsForMode(mode);
+    const roots: IToolbarNode[] = [];
+    const groupsByPath = new Map<string, IToolbarGroupNode>();
+
+    for (const item of items) {
+      if (!item.group) {
+        roots.push({ kind: "item", item });
+        continue;
+      }
+
+      const segments = item.group.split(":");
+      let currentChildren = roots;
+      let currentPath = "";
+
+      for (const segment of segments) {
+        currentPath = currentPath ? `${currentPath}:${segment}` : segment;
+        let node = groupsByPath.get(currentPath);
+        if (!node) {
+          node = { kind: "group", path: currentPath, segment, children: [] };
+          groupsByPath.set(currentPath, node);
+          currentChildren.push(node);
+        }
+        currentChildren = node.children;
+      }
+
+      currentChildren.push({ kind: "item", item });
+    }
+
+    return roots;
   }
 
   /** Get all registered items (for debugging). */
