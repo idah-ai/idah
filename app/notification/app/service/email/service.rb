@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 
 require "mail"
+require "uri"
 
 module Email
   class Service < Verse::Service::Base
     def send_email(to_email, notification)
+      unless to_email.is_a?(String) && to_email.match?(URI::MailTo::EMAIL_REGEXP)
+        raise Verse::Error::ValidationFailed, "Invalid to_email: #{to_email.inspect}"
+      end
+
       account = Api[:idah].iam.accounts.index(
         {
           filter: { email: to_email }
@@ -29,7 +34,7 @@ module Email
       return unless send_email
 
       mail = Mail.new do
-        from    "Idah Notification <no-reply@idah.ingedata.ai>"
+        from    ENV.fetch("MAIL_FROM", "Idah Notification <no-reply@idah.ingedata.ai>")
         to      to_email
         subject notification.title
       end
@@ -45,7 +50,15 @@ module Email
         body renderer.render_html
       end
 
-      Mail.deliver(mail)
+      begin
+        Mail.deliver(mail)
+      rescue StandardError => e
+        Verse.logger&.error do
+          "email delivery failed: [#{e.class}] #{e.message} " \
+            "(to=#{to_email}, category=#{notification.category})"
+        end
+        raise
+      end
     end
   end
 end

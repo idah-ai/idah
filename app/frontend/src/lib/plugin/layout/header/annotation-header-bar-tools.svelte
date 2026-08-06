@@ -82,6 +82,7 @@
             onclick={onClick}
             disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
           >
+            <!-- `icon` is a first-party SVG string from driver.toolbar.mgr.getItemsForMode() (see toolbarItems above): trusted source, not user input. If plugin authorship ever opens to third parties, sanitize before injecting. -->
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html icon}
           </Button>

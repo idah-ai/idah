@@ -10,7 +10,9 @@ when "production", "staging"
       user_name: ENV.fetch("MAIL_SMTP_USER"),
       password: ENV.fetch("MAIL_SMTP_PASSWORD"),
       authentication: "login",
-      enable_starttls_auto: true
+      enable_starttls_auto: true,
+      open_timeout: 5,
+      read_timeout: 10
     )
   end
 when "development"
@@ -19,6 +21,8 @@ when "development"
       :smtp,
       address: ENV.fetch("MAIL_SMTP_HOST"),
       port: ENV.fetch("MAIL_SMTP_PORT"),
+      open_timeout: 5,
+      read_timeout: 10
     )
   end
 end

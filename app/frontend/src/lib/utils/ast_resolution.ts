@@ -75,13 +75,6 @@ export class AstProcessor {
 
         const [val1, val2] = props;
 
-        console.debug({
-          op: "match",
-          val1,
-          val2,
-          result: wildcard_match(val1?.toString() || "", val2?.toString() || ""),
-        });
-
         return wildcard_match(val1?.toString() || "", val2?.toString() || "");
       },
     ],
@@ -95,7 +88,6 @@ export class AstProcessor {
           console.warn(`Variable not found: ${key}`);
           return false;
         }
-        console.debug({ op: "get", val, result: this.variables.get(key) });
         return this.variables.get(key)!;
       },
     ],
@@ -105,16 +97,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-
-        console.debug({
-          op: "eq",
-          val1,
-          val2,
-          result:
-            Array.isArray(val1) && Array.isArray(val2)
-              ? val1.length === val2.length && val1.every((v) => val2.includes(v))
-              : val1 === val2,
-        });
 
         if (Array.isArray(val1) && Array.isArray(val2)) {
           return val1.length === val2.length && val1.every((v) => val2.includes(v));
@@ -129,16 +111,6 @@ export class AstProcessor {
 
         const [val1, val2] = props;
 
-        console.debug({
-          op: "neq",
-          val1,
-          val2,
-          result:
-            Array.isArray(val1) && Array.isArray(val2)
-              ? val1.length != val2.length || val1.some((v) => !val2.includes(v))
-              : val1 !== val2,
-        });
-
         if (Array.isArray(val1) && Array.isArray(val2)) {
           return val1.length != val2.length || val1.some((v) => !val2.includes(v));
         }
@@ -152,13 +124,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-        console.debug({
-          op: "gt",
-          val1,
-          val2,
-          result: val1 != null && val2 != null ? val1 > val2 : false,
-        });
-
         return val1 != null && val2 != null ? val1 > val2 : false;
       },
     ],
@@ -168,12 +133,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-        console.debug({
-          op: "lt",
-          val1,
-          val2,
-          result: val1 != null && val2 != null ? val1 < val2 : false,
-        });
         return val1 != null && val2 != null ? val1 < val2 : false;
       },
     ],
@@ -183,13 +142,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-        console.debug({
-          op: "lte",
-          val1,
-          val2,
-          result: val1 != null && val2 != null ? val1 <= val2 : false,
-        });
-
         return val1 != null && val2 != null ? val1 <= val2 : false;
       },
     ],
@@ -199,12 +151,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-        console.debug({
-          op: "lte",
-          val1,
-          val2,
-          result: val1 != null && val2 != null ? val1 >= val2 : false,
-        });
         return val1 != null && val2 != null ? val1 >= val2 : false;
       },
     ],
@@ -214,12 +160,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-        console.debug({
-          op: "and",
-          val1,
-          val2,
-          result: val1 === true && val2 === true,
-        });
         return val1 === true && val2 === true;
       },
     ],
@@ -229,12 +169,6 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
-        console.debug({
-          op: "and",
-          val1,
-          val2,
-          result: val1 === true || val2 === true,
-        });
         return val1 === true || val2 === true;
       },
     ],
@@ -242,7 +176,6 @@ export class AstProcessor {
 
   processAST(node: ASTNode): boolean {
     const result = this.processOperator(node) === true;
-    console.debug(ASTNodeToFunctionString(node), { result });
     return result;
   }
 
@@ -289,7 +222,6 @@ export class AstProcessor {
 
 export function objectVariables(obj: object, root?: string) {
   return Object.entries(obj).reduce((acc: [string, ASTValue][], [k, v]) => {
-    console.log({ k, v, type: typeof v });
     if (typeof v === "object" && !Array.isArray(v)) {
       acc = acc.concat(objectVariables(v, root ? [root, k].join(".") : k));
     } else {

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "erubi"
+
 module Email
   class Renderer
     TEMPLATE_PATH = "#{__dir__}/templates".freeze
@@ -12,6 +14,10 @@ module Email
     end
 
     def render(type)
+      # HTML output is auto-escaped to prevent stored XSS from user-controlled fields
+      # (e.g. project/organization names flowing into notification.title). Text parts are
+      # left unescaped so plaintext URLs are not mangled.
+      escape = type == "html"
       pattern_list = ["default", notification.category.to_s]
 
       while pattern = pattern_list.pop
@@ -21,9 +27,9 @@ module Email
 
         next unless ::File.exist?(content)
 
-        content_template = ERB.new(::File.read(content)).result(binding)
-        header_template = ERB.new(::File.read(header)).result(binding)
-        footer_template = ERB.new(::File.read(footer)).result(binding)
+        header_template = render_template(header, escape)
+        content_template = render_template(content, escape)
+        footer_template = render_template(footer, escape)
 
         return "#{header_template}#{content_template}#{footer_template}"
       end
@@ -37,6 +43,13 @@ module Email
 
     def render_html
       render("html")
+    end
+
+    private
+
+    def render_template(path, escape)
+      src = ::Erubi::Engine.new(::File.read(path), escape: escape, trim: false).src
+      eval(src, binding, path) # rubocop:disable Security/Eval
     end
   end
 end
