@@ -891,7 +891,7 @@
               : undefined;
             if (existingId) {
               // Edit existing mask — just flush the session tiles
-              getDriver().command.call("annotation.mask_shapes.flush");
+              getDriver().command.call("annotation.mask-shapes.flush");
             } else {
               // New mask — trigger creation via onSelection
               onSelection(IMAGE_MASK, []);
