@@ -28,7 +28,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             max: 100,
             step: 1,
             get: () => ui.videoOpacity,
-            set: (v) => (ui.videoOpacity = v),
+            set: (v: number) => (ui.videoOpacity = v),
           },
           {
             type: "slider",
@@ -39,7 +39,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             max: 100,
             step: 1,
             get: () => ui.annotationOpacity,
-            set: (v) => (ui.annotationOpacity = v),
+            set: (v: number) => (ui.annotationOpacity = v),
           },
           {
             type: "options",
@@ -53,7 +53,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             // Route through the command so the shortcut/palette and this menu
             // share one mutation path; the command fires settings.emitChange().
             get: () => ui.renderMode,
-            set: (v) => driver.command.call("ui.toggle_render_mode", { value: v }),
+            set: (v: string) => driver.command.call("ui.toggle_render_mode", { value: v }),
           },
           {
             type: "options",
@@ -65,7 +65,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "random", label: "Random" },
             ],
             get: () => ui.colorMode,
-            set: (v) => driver.command.call("ui.toggle_color_mode", { value: v }),
+            set: (v: string) => driver.command.call("ui.toggle_color_mode", { value: v }),
           },
           {
             type: "options",
@@ -77,7 +77,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "time", label: "Time" },
             ],
             get: () => ui.timeDisplay,
-            set: (v) => driver.command.call("ui.toggle_time_display", { value: v }),
+            set: (v: string) => driver.command.call("ui.toggle_time_display", { value: v }),
           },
         ],
       },
