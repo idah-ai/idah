@@ -31,6 +31,10 @@ module Jobs
 
       synchronize{ @running = true }
 
+      # Recover stale jobs from previous runs
+      stale_count = jobs.requeue_stale
+      Verse.logger&.info "Requeued #{stale_count} stale jobs"
+
       @thread_pool = ThreadPool.new(
         size: Verse.config.extra_fields.dig(:idah, :jobs, :concurrency) || 4
       )
@@ -111,8 +115,8 @@ module Jobs
                 end
 
               if job.retry_count < (klass.max_retries || 0)
-                # Exponential backoff
-                retry_delay = 5 * (2 ** (job.retry_count * 1.5)).to_i
+                # Exponential backoff — quick retry: 5s, 14s, 40s, 113s, ...
+                retry_delay = (5 * (2 ** (job.retry_count * 1.5))).round
 
                 Verse.logger&.warn{
                   "Job #{job.id} failed with error: #{error_message}. " \
