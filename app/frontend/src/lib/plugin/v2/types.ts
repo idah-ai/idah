@@ -774,7 +774,7 @@ export interface ISettingProvider {
  * The PLUGIN-FACING settings contract — exactly what `driver.settings` exposes
  * to a plugin, and nothing more.
  *
- * Core-only capabilities (`collect`, `onChange` — used by the topbar renderer)
+ * Core-only capabilities (`collect`, `revision` — used by the topbar renderer)
  * deliberately live on the concrete `SettingsDriverAdapter` instead, reached by
  * core via `driver.settingsAdapter`. This mirrors how `notes` splits the narrow
  * `INotesDriverV2` (handed to plugins via `sealed()`) from the full
@@ -789,7 +789,8 @@ export interface ISettingsDriverV2 {
    * this after mutating a setting; core — which cannot reactively read the
    * plugin's own reactive state across the bundle boundary — re-reads the
    * affected values while its settings menu is open.
-   * Mirrors the observer pattern used by `notes.onNotesChange`.
+   * Bumps the adapter's `revision` counter, the same invalidation mechanism
+   * `toolbar.invalidate()` uses for toggle state.
    */
   emitChange(): void;
 }

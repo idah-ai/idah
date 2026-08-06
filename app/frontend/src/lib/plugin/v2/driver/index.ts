@@ -143,7 +143,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
     // Build settings driver — plugin-registered settings shown in the topbar menu.
     // Plugins get the sealed (register/emitChange) view; core keeps the full
-    // adapter (collect/onChange) via `settingsAdapter`, same split as notes.
+    // adapter (collect/revision) via `settingsAdapter`, same split as notes.
     const settingsAdapter = new SettingsDriverAdapter();
     this.settings = settingsAdapter.sealed();
     this.#settingsAdapter = settingsAdapter;
@@ -402,7 +402,7 @@ import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
-import { SettingsDriverAdapter } from "./adapter/settings";
+import { SettingsDriverAdapter } from "./adapter/settings.svelte";
 
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {

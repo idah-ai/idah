@@ -43,7 +43,6 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
-  import type { ISettingGroup, ISliderSetting, IOptionsSetting } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -65,58 +64,44 @@
   // driver.settings.register() during init(). Core just renders the controls;
   // each item's get/set is owned by the plugin.
   //
-  // `settingValues` is a core-owned reactive mirror keyed by "section:key". The
-  // plugin's value is a $state in the plugin bundle; reading it across the
-  // bundle boundary (item.get()) is not tracked by core's render, so the control
-  // would go stale on interaction. We seed this mirror on open and drive the UI
-  // from it, writing through to item.set() (which the plugin renders live).
-  // Values are number (slider) or string (options), so the map holds both.
-  let settingGroups = $state<ISettingGroup[]>([]);
-  let settingValues = $state<Record<string, number | string>>({});
+  // `collect`/`revision` are core-only, so they live on the concrete adapter
+  // rather than the sealed driver.settings handed to plugins. Both deriveds are
+  // lazy: nothing evaluates until the markup below reads them, which only
+  // happens once the popover is open — so `collect()` still runs after the
+  // plugin's init() has registered its providers, never before.
+  let settingGroups = $derived(openSettingsPopover ? (driver.settingsAdapter?.collect() ?? []) : []);
 
   function settingKey(section: string, key: string): string {
     return `${section}:${key}`;
   }
 
-  // Re-read every setting's current value into the mirror. Called on open and
-  // again whenever the plugin calls driver.settings.emitChange (which our
-  // onChange subscription below observes) — e.g. a value changed via a keyboard
-  // shortcut or the command palette while the menu is open.
-  function reseedSettingValues(groups: ISettingGroup[]): void {
-    const seeded: Record<string, number | string> = {};
-    for (const group of groups) {
+  // Core-owned value mirror keyed by "section:key". The plugin's value is a
+  // $state inside the plugin bundle, so reading it across the bundle boundary
+  // (item.get()) registers no dependency here and the control would go stale.
+  // Reading the adapter's `revision` does register one: any mutation — this UI,
+  // a keyboard shortcut, or the command palette — calls emitChange(), which
+  // bumps revision and re-runs this, re-reading every value. Same mechanism as
+  // `driver.toolbar.revision` in annotation-header-bar-tools.svelte.
+  let settingValues = $derived.by(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    driver.settingsAdapter?.revision; // track revision so values re-read on emitChange()
+    const values: Record<string, number | string> = {};
+    for (const group of settingGroups) {
       for (const item of group.items) {
-        seeded[settingKey(group.section, item.key)] = item.get();
+        values[settingKey(group.section, item.key)] = item.get();
       }
     }
-    settingValues = seeded;
-  }
-
-  $effect(() => {
-    if (!openSettingsPopover) return;
-    // collect/onChange are core-only, so they live on the concrete adapter
-    // rather than the sealed driver.settings handed to plugins.
-    const settings = driver.settingsAdapter;
-    if (!settings) return;
-    const groups = settings.collect();
-    settingGroups = groups;
-    reseedSettingValues(groups);
-    // While open, keep the mirror in sync with changes from any source
-    // (shortcut / palette / this UI). Unsubscribes when the menu closes.
-    return settings.onChange(() => reseedSettingValues(groups));
+    return values;
   });
 
-  // One writer per control type — keeps `item.set()` type-safe without casts
-  // (the union's `set` differs by control). Each mirrors the change locally and
-  // writes through to the plugin.
-  function setSliderValue(section: string, item: ISliderSetting, value: number): void {
-    settingValues[settingKey(section, item.key)] = value;
-    item.set(value);
-  }
-
-  function setOptionValue(section: string, item: IOptionsSetting, value: string): void {
-    settingValues[settingKey(section, item.key)] = value;
-    item.set(value);
+  // Single write path for EVERY control type. The caller passes its own already
+  // narrowed `item.set(value)` call, so no casts are needed and the union stays
+  // type-safe; the notify half is type-agnostic, so a new control type needs a
+  // render branch only — no new sync code. `item.set()` is synchronous, so by
+  // the time revision bumps, item.get() already returns the new value.
+  function commitSetting(write: () => void): void {
+    write();
+    driver.settingsAdapter?.emitChange();
   }
 
   // "idah-video" → "Idah Video". The menu appends " Settings".
@@ -372,10 +357,11 @@
               <!--
                 Map the plugin-declared control `type` to one of core's own
                 components. TO ADD A NEW CONTROL TYPE: after adding its interface
-                + union member in types.ts (all three copies), add a branch here
-                that narrows on `item.type`, renders the matching core component,
-                reads its value from `settingValues[key]`, and writes back via a
-                per-type setter (like setSliderValue / setOptionValue).
+                + union member in types.ts (core only), add a branch here that
+                narrows on `item.type`, renders the matching core component,
+                reads its value from `settingValues[key]`, and writes back via
+                `commitSetting(() => item.set(v))`. No sync wiring is needed —
+                commitSetting and the settingValues mirror are type-agnostic.
               -->
               {#if item.type === "slider"}
                 <div class="flex flex-col gap-1.5">
@@ -412,7 +398,7 @@
                     max={item.max}
                     step={item.step}
                     value={settingValues[key] as number}
-                    onValueChange={(v) => setSliderValue(group.section, item, v)}
+                    onValueChange={(v) => commitSetting(() => item.set(v))}
                   />
                 </div>
               {:else if item.type === "options"}
@@ -449,7 +435,7 @@
                       <Button
                         variant={settingValues[key] === opt.value ? "default" : "ghost"}
                         size="sm"
-                        onclick={() => setOptionValue(group.section, item, opt.value)}
+                        onclick={() => commitSetting(() => item.set(opt.value))}
                       >
                         {opt.label}
                       </Button>
