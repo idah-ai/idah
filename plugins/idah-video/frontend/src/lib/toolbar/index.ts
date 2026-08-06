@@ -6,7 +6,8 @@ import cursorIcon from "$lib/assets/icons/cursor.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
-import { BOUNDING_BOX_MODE, POLYGON_MODE } from "$lib/state/viewport.svelte";
+import facialLandmarkIcon from "$lib/assets/icons/facial-landmark.svg?raw";
+import { BOUNDING_BOX_MODE, POLYGON_MODE, FACIAL_LANDMARK_MODE } from "$lib/state/viewport.svelte";
 import { hasConfig } from "$idah/v2/utils";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 
@@ -66,6 +67,23 @@ export function initToolbar(driver: IIdahDriverV2): void {
       whenToggled: () => driver.mode === "idah-video:polygon",
     });
     t.orderGroups("idah-video:polygon", ["selection"]);
+  }
+  if (hasConfig(driver, FACIAL_LANDMARK_MODE)) {
+    t.add({
+      icon: facialLandmarkIcon,
+      label: "Facial Landmark",
+      name: "mode.idah-video:facial_landmark",
+      modes: ["editor", "idah-video:bounding-box", "idah-video:polygon", "idah-video:facial-landmark"],
+      group: "selection",
+      visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
+      onClick: () => {
+        if (!isEditable()) return;
+        if (driver.mode === "idah-video:facial-landmark") driver.setMode("editor");
+        else driver.setMode("idah-video:facial-landmark");
+      },
+      whenToggled: () => driver.mode === "idah-video:facial-landmark",
+    });
+    t.orderGroups("idah-video:facial-landmark", ["selection"]);
   }
   t.add({
     icon: noteIcon,

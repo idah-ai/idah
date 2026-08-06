@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Face oval -->
+  <ellipse cx="12" cy="12" rx="8" ry="9.5"/>
+  <!-- Eyes -->
+  <circle cx="9" cy="10" r="0.8" fill="currentColor" stroke="none"/>
+  <circle cx="15" cy="10" r="0.8" fill="currentColor" stroke="none"/>
+  <!-- Nose tip -->
+  <circle cx="12" cy="13.5" r="0.6" fill="currentColor" stroke="none"/>
+  <!-- Mouth corners -->
+  <circle cx="9.5" cy="15.5" r="0.6" fill="currentColor" stroke="none"/>
+  <circle cx="14.5" cy="15.5" r="0.6" fill="currentColor" stroke="none"/>
+  <!-- Mouth arc -->
+  <path d="M9.5 15.5 Q12 17.2 14.5 15.5" stroke-width="1.2"/>
+  <!-- Eyebrow dots -->
+  <circle cx="8.5" cy="8.2" r="0.5" fill="currentColor" stroke="none"/>
+  <circle cx="15.5" cy="8.2" r="0.5" fill="currentColor" stroke="none"/>
+</svg>

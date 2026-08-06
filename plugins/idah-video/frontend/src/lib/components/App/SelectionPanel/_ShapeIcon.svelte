@@ -3,8 +3,9 @@
 
   import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import facialLandmarkIconSvg from "$lib/assets/icons/facial-landmark.svg?raw";
 
-  import { VIDEO_POLYGON } from "$lib/types";
+  import { VIDEO_POLYGON, VIDEO_FACIAL_LANDMARK } from "$lib/types";
 
   type Props = {
     shapeType: string | undefined;
@@ -16,6 +17,8 @@
 
 {#if shapeType === VIDEO_POLYGON}
   <Icon src={polygonIconSvg} {color} />
+{:else if shapeType === VIDEO_FACIAL_LANDMARK}
+  <Icon src={facialLandmarkIconSvg} {color} />
 {:else}
   <Icon src={vectorSquareIconSvg} {color} />
 {/if}

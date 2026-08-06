@@ -8,6 +8,7 @@ import {
   NOTE_MODE,
   REVIEW_MODE,
   IMAGE_MASK,
+  IMAGE_FACIAL_LANDMARK,
 } from "$lib/types";
 import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
@@ -25,7 +26,7 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_MASK].includes(this.#mode);
+    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_MASK, IMAGE_FACIAL_LANDMARK].includes(this.#mode);
   }
   get isEditorWorkspace() {
     return this.#mode === DEFAULT_MODE;

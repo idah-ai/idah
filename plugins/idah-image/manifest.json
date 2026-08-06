@@ -36,6 +36,10 @@
         "mask": {
           "label": "Mask",
           "icon": "api/v1/plugins/idah-image/assets/mask-icon.svg"
+        },
+        "facial-landmark": {
+          "label": "Facial Landmark",
+          "icon": "api/v1/plugins/idah-image/assets/facial-landmark-icon.svg"
         }
       }
     }

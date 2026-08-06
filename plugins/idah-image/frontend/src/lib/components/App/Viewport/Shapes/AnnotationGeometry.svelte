@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_FACIAL_LANDMARK as IDAH_IMAGE_FACIAL_LANDMARK } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import BBoxShape from "./BBoxShape.svelte";
   import CircleShape from "./CircleShape.svelte";
   import EllipseShape from "./EllipseShape.svelte";
   import LineShape from "./LineShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
+  import FacialLandmarkShape from "./FacialLandmarkShape.svelte";
 
   type Props = {
     annotation: any;
@@ -33,16 +34,18 @@
   let _ellipseComp: any = $state();
   let _lineComp: any = $state();
   let _polyComp: any = $state();
+  let _facialLandmarkComp: any = $state();
 
   /** Expose the active tool selection to parents. */
   let _toolSelection = $derived.by<
     { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined
   >(() => {
     const comp =
-      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
-      annotation?.shape?.type === IDAH_IMAGE_CIRCLE ? _circleComp :
-      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
-      annotation?.shape?.type === IDAH_IMAGE_LINE ? _lineComp :
+      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX      ? _bboxComp :
+      annotation?.shape?.type === IDAH_IMAGE_CIRCLE             ? _circleComp :
+      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE            ? _ellipseComp :
+      annotation?.shape?.type === IDAH_IMAGE_LINE               ? _lineComp :
+      annotation?.shape?.type === IDAH_IMAGE_FACIAL_LANDMARK    ? _facialLandmarkComp :
       _polyComp;
     if (comp?.startSelection && comp?.endSelection) {
       return {
@@ -62,10 +65,11 @@
   /** Expose whether the user is actively editing (dragging/resizing) this annotation. */
   let _isEditing = $derived.by((): boolean => {
     const comp =
-      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
-      annotation?.shape?.type === IDAH_IMAGE_CIRCLE ? _circleComp :
-      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
-      annotation?.shape?.type === IDAH_IMAGE_LINE ? _lineComp :
+      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX      ? _bboxComp :
+      annotation?.shape?.type === IDAH_IMAGE_CIRCLE             ? _circleComp :
+      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE            ? _ellipseComp :
+      annotation?.shape?.type === IDAH_IMAGE_LINE               ? _lineComp :
+      annotation?.shape?.type === IDAH_IMAGE_FACIAL_LANDMARK    ? _facialLandmarkComp :
       _polyComp;
     return comp?.getIsEditing?.() ?? false;
   });
@@ -83,6 +87,8 @@
   <EllipseShape bind:this={_ellipseComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
 {:else if annotation?.shape?.type === IDAH_IMAGE_LINE}
   <LineShape bind:this={_lineComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
+{:else if annotation?.shape?.type === IDAH_IMAGE_FACIAL_LANDMARK}
+  <FacialLandmarkShape bind:this={_facialLandmarkComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
 {:else if annotation?.shape?.type === IDAH_IMAGE_POLYGON}
   <PolygonShape bind:this={_polyComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
 {/if}

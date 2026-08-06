@@ -26,6 +26,7 @@
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import MaskPolygonCreateShape from "./MaskPolygonCreateShape.svelte";
   import MaskCanvasLayer from "./MaskCanvasLayer.svelte";
+  import FacialLandmarkCreateShape from "./FacialLandmarkCreateShape.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
   import { viewport } from "$lib/state/viewport.svelte";
@@ -64,6 +65,7 @@
     IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
+    IMAGE_FACIAL_LANDMARK,
     type IImageAnnotationShape,
     type IImageAnnotationRecord,
   } from "$lib/types";
@@ -239,15 +241,17 @@
   let lineCreateComp: LineCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
   let maskPolygonCreateComp: MaskPolygonCreateShape | undefined = $state(undefined);
+  let facialLandmarkCreateComp: FacialLandmarkCreateShape | undefined = $state(undefined);
 
-  let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
-  let isCircleMode = $derived(viewport.mode === IMAGE_CIRCLE);
-  let isEllipseMode = $derived(viewport.mode === IMAGE_ELLIPSE);
-  let isLineMode = $derived(viewport.mode === IMAGE_LINE);
-  let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
-  let isNoteMode = $derived(viewport.mode === NOTE_MODE);
-  let isMaskBrushMode = $derived(viewport.mode === IMAGE_MASK && maskTool.active === "brush");
-  let isMaskPolygonMode = $derived(viewport.mode === IMAGE_MASK && maskTool.active === "polygon");
+  let isBoundingBoxMode      = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
+  let isCircleMode           = $derived(viewport.mode === IMAGE_CIRCLE);
+  let isEllipseMode          = $derived(viewport.mode === IMAGE_ELLIPSE);
+  let isLineMode             = $derived(viewport.mode === IMAGE_LINE);
+  let isPolygonMode          = $derived(viewport.mode === IMAGE_POLYGON);
+  let isNoteMode             = $derived(viewport.mode === NOTE_MODE);
+  let isMaskBrushMode        = $derived(viewport.mode === IMAGE_MASK && maskTool.active === "brush");
+  let isMaskPolygonMode      = $derived(viewport.mode === IMAGE_MASK && maskTool.active === "polygon");
+  let isFacialLandmarkMode   = $derived(viewport.mode === IMAGE_FACIAL_LANDMARK);
 
   /** Preview color for create-shape overlays — uses categoryColor (from toolbar or pendingValue) or falls back to pendingAnnotation's category. */
   let previewColor = $derived.by<string | undefined>(() => {
@@ -485,6 +489,12 @@
       return;
     }
 
+    // ── Facial landmark creation mode ──────────────────────────────
+    if (isFacialLandmarkMode) {
+      facialLandmarkCreateComp?.handleMouseDown(snappedCursor);
+      return;
+    }
+
     // ── Circle creation mode — delegate to CircleCreateShape ─────
     if (isCircleMode) {
       circleCreateComp?.handleMouseDown(snappedCursor);
@@ -554,6 +564,12 @@
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseUp(snappedCursor);
+      return;
+    }
+
+    // ── Facial landmark creation mode — finalize ───────────────────
+    if (isFacialLandmarkMode) {
+      facialLandmarkCreateComp?.handleMouseUp(snappedCursor);
       return;
     }
 
@@ -821,6 +837,16 @@
           cursor={snappedCursor}
           mediaWidth={media.width}
           mediaHeight={media.height}
+          {onSelection}
+          color={previewColor}
+        />
+      {/if}
+
+      <!-- Build mode: facial landmark creation preview (drag to define face bbox) -->
+      {#if isFacialLandmarkMode && !pendingAnnotation}
+        <FacialLandmarkCreateShape
+          bind:this={facialLandmarkCreateComp}
+          cursor={snappedCursor}
           {onSelection}
           color={previewColor}
         />

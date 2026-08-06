@@ -10,7 +10,8 @@ import squareSlashIcon from "$lib/assets/icons/square-slash.svg?raw";
 import maskPolygonIcon from "$lib/assets/icons/mask-polygon.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+import facialLandmarkIcon from "$lib/assets/icons/facial-landmark.svg?raw";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, IMAGE_FACIAL_LANDMARK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 import { maskTool } from "$lib/state/mask-tool.svelte";
@@ -101,6 +102,19 @@ export function initToolbar(driver: IIdahDriverV2): void {
         whenToggled: () => driver.mode === IMAGE_LINE,
     });
     t.orderGroups(IMAGE_LINE, ["selection"]);
+  }
+  if (hasConfig(driver, IMAGE_FACIAL_LANDMARK)) {
+    t.add({
+      icon: facialLandmarkIcon,
+      label: "Facial Landmark",
+      name: "mode.facial_landmark",
+      modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK, IMAGE_FACIAL_LANDMARK],
+      group: "selection",
+      onClick: () =>
+        driver.mode === IMAGE_FACIAL_LANDMARK ? driver.setMode(DEFAULT_MODE) : driver.setMode(IMAGE_FACIAL_LANDMARK),
+        whenToggled: () => driver.mode === IMAGE_FACIAL_LANDMARK,
+    });
+    t.orderGroups(IMAGE_FACIAL_LANDMARK, ["selection"]);
   }
   if (hasConfig(driver, IMAGE_MASK)) {
     t.add({

@@ -12,7 +12,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, IMAGE_FACIAL_LANDMARK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -161,7 +161,7 @@
 
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
-    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_CIRCLE && viewportMode !== IMAGE_ELLIPSE && viewportMode !== IMAGE_LINE && viewportMode !== IMAGE_POLYGON && viewportMode !== IMAGE_MASK) {
+    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_CIRCLE && viewportMode !== IMAGE_ELLIPSE && viewportMode !== IMAGE_LINE && viewportMode !== IMAGE_POLYGON && viewportMode !== IMAGE_MASK && viewportMode !== IMAGE_FACIAL_LANDMARK) {
       pendingValue = {};
     }
 
@@ -248,6 +248,14 @@
         command: "tools.line",
       },
       {
+        name: "tools.facial_landmark",
+        label: "Facial Landmark",
+        type: IMAGE_FACIAL_LANDMARK,
+        iconName: "facial-landmark",
+        disabled: !editable,
+        command: "tools.facial_landmark",
+      },
+      {
         name: "tools.note",
         label: "Add Note",
         type: NOTE_MODE,
@@ -258,7 +266,7 @@
     ];
 
     const toolConfig = toolListConfig.filter((tool) => {
-      if ([IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_ELLIPSE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON].includes(tool.type)) {
+      if ([IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_ELLIPSE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON, IMAGE_FACIAL_LANDMARK].includes(tool.type)) {
         const cfg = getDriver().config[tool.type];
         return cfg && cfg.values && cfg.values.length > 0;
       }
