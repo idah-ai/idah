@@ -12,6 +12,8 @@ import { hasConfig } from "$idah/v2/utils";
 import { isEditable } from "$lib/state/editor.svelte";
 import { noopAction } from "..";
 import { maskTool } from "$lib/state/mask-tool.svelte";
+import { toolPanel } from "$lib/state/tool-panel.svelte";
+import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
 
 export const command = {
   name: "mode.mask_polygon",
@@ -110,6 +112,7 @@ export function register(driver: IIdahDriverV2): void {
         command: { ...command },
         do() {
           maskTool.active = "polygon";
+          toolPanel.show(MaskToolConfigurations);
           driver.toolbar.invalidate();
           if (driver.mode !== IMAGE_MASK) {
             // Reset draft when entering the mode
