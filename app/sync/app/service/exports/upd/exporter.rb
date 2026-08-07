@@ -11,7 +11,7 @@ module Exports
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
         # Init UPD file
-        system("updcli-static --input #{file_path} init", exception: true)
+        system("updcli-static", "--input", file_path, "init", exception: true)
 
         context.datasets.each do |dataset|
           append_dataset(file_path, dataset)
@@ -74,11 +74,19 @@ module Exports
 
         # Create dataset in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "dataset create --id \"#{dataset.record.id}\" "\
-          "--name \"#{dataset.record.name}\" "\
-          "--modality #{dataset.record.modality} "\
-          "--metadata '#{metadata.to_json}'",
+          "updcli-static",
+          "--input",
+          file_path,
+          "dataset",
+          "create",
+          "--id",
+          dataset.record.id,
+          "--name",
+          dataset.record.name,
+          "--modality",
+          dataset.record.modality,
+          "--metadata",
+          metadata.to_json,
           exception: true
         )
       end
@@ -111,13 +119,29 @@ module Exports
           )
         )
 
+        # Fetch original media metadata to get original width and height
+        original_media = entry.medias({ key: "" }).first
+        if original_media
+          media_meta = original_media.record.data[:attributes][:meta] || {}
+          normalized_meta = capitalized_dashed_keys(media_meta)
+          normalized_meta.each{ |meta_key, meta_value| metadata[meta_key] = meta_value }
+        end
+
         # Create entry in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "entry create --id \"#{entry.record.id}\" "\
-          "--dataset_id \"#{dataset_id}\" "\
-          "--url \"#{media_url}\" "\
-          "--metadata '#{metadata.to_json}'",
+          "updcli-static",
+          "--input",
+          file_path,
+          "entry",
+          "create",
+          "--id",
+          entry.record.id,
+          "--dataset_id",
+          dataset_id,
+          "--url",
+          media_url,
+          "--metadata",
+          metadata.to_json,
           exception: true
         )
       end
@@ -136,17 +160,35 @@ module Exports
           }
         )
 
-        # Create annotation in UPD
-        system(
-          "updcli-static --input #{file_path} " \
-          "annotation create --id \"#{annotation.record.id}\" "\
-          "--entry_id \"#{entry_id}\" "\
-          "--type \"#{type}\" "\
-          "--shape '#{dimensions.to_json}' "\
-          "--annotation '#{annotation.record.annotation.to_json}' "\
-          "--metadata '#{metadata.to_json}'",
-          exception: true
-        )
+        # Write dimensions to a temporary file and pass it via --shape @file
+        # to avoid "Argument list too long" errors when the shape JSON is large.
+        # The @filename prefix convention is the same as curl's -d @file.
+        Tempfile.create(["shape", ".json"]) do |file|
+          file.write(dimensions.to_json)
+          file.close
+
+          # Create annotation in UPD
+          system(
+            "updcli-static",
+            "--input",
+            file_path,
+            "annotation",
+            "create",
+            "--id",
+            annotation.record.id,
+            "--entry_id",
+            entry_id,
+            "--type",
+            type,
+            "--shape",
+            "@#{file.path}",
+            "--annotation",
+            annotation.record.annotation.to_json,
+            "--metadata",
+            metadata.to_json,
+            exception: true
+          )
+        end
       end
 
       def append_media(file_path, media)
@@ -163,11 +205,19 @@ module Exports
 
         # Create media in UPD
         system(
-          "updcli-static --input #{file_path} " \
-          "media create --id \"#{media.record.resource}\" "\
-          "--file \"#{tempfile.path}\" "\
-          "--key \"#{media.record.key}\" "\
-          "--mimetype \"#{media.record.mime_type}\"",
+          "updcli-static",
+          "--input",
+          file_path,
+          "media",
+          "create",
+          "--id",
+          media.record.resource,
+          "--file",
+          tempfile.path,
+          "--key",
+          media.record.key,
+          "--mimetype",
+          media.record.mime_type,
           exception: true
         )
       end
