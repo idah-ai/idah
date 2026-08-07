@@ -100,7 +100,7 @@
           class="mx-1 w-full justify-start"
           {disabled}
           onclick={() => {
-            getDriver().command.call("annotation.extend_prev", {
+            getDriver().command.call("annotation.extend-prev", {
               annotationId: prevAnnotation.rawData.id,
               frame,
             });
@@ -126,7 +126,7 @@
           class="mx-1 w-full justify-start"
           {disabled}
           onclick={() => {
-            getDriver().command.call("annotation.extend_next", {
+            getDriver().command.call("annotation.extend-next", {
               annotationId: nextAnnotation.rawData.id,
               frame,
             });

@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.add — Create a new annotation (bounding box or polygon)
+// idah-video:annotation.add — Create a new annotation (bounding box or polygon)
 // Undoable: deletes the created annotation.
 //
 // Usage:
-//   driver.command.call("annotation.add", {
+//   driver.command.call("idah-video:annotation.add", {
 //     shape: { type: "idah-video:bounding-box", start: 1, end: 100, frames: [...] },
 //     value: { category: "car" }
 //   });
@@ -19,7 +19,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { uuidv7 } from "uuidv7";
 
 export const command = {
-  name: "annotation.add",
+  name: "idah-video:annotation.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -59,7 +59,7 @@ export function register(driver: IIdahDriverV2): void {
           // Seek to the frame the annotation was created on
           const firstFrame = (props.shape as any).frames?.[0];
           if (firstFrame) viewport.video.currentFrame.value = firstFrame.frame;
-          driver.command.call("timeline.scroll_to_annotation");
+          driver.command.call("timeline.scroll-to-annotation");
           // Exit drawing mode after successful creation
           driver.setMode("editor");
         },

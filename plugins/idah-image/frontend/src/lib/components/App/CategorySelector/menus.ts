@@ -20,7 +20,7 @@ export interface CategoryAction {
 export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: string }, e?: MouseEvent) {
   const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.toggle_category_visibility", {
+  getDriver().command.call("annotation.category.toggle-visibility", {
     category: categoryId,
     shapeType,
   });
@@ -29,7 +29,7 @@ export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: 
 export function toggleCategoryEditability(opts: { categoryId: string; shapeType: string }) {
   const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.toggle_category_editability", {
+  getDriver().command.call("annotation.category.toggle-editability", {
     category: categoryId,
     shapeType,
   });
@@ -38,7 +38,7 @@ export function toggleCategoryEditability(opts: { categoryId: string; shapeType:
 export function deleteCategoryAnnotations(opts: { categoryId: string; shapeType: string }) {
   const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.delete_category", { category: categoryId, shapeType });
+  getDriver().command.call("annotation.category.delete", { category: categoryId, shapeType });
 }
 
 export function getCategoryVisibilityAction(opts: {

@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.add — Create a new annotation (bounding box or polygon)
+// idah-image:annotation.add — Create a new annotation (bounding box or polygon)
 // Undoable: deletes the created annotation.
 //
 // Usage:
-//   driver.command.call("annotation.add", {
+//   driver.command.call("idah-image:annotation.add", {
 //     shape: { type: "idah-image:bounding-box", start: 1, end: 100, frames: [...] },
 //     value: { category: "car" }
 //   });
@@ -24,7 +24,7 @@ import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { invalidateAll } from "$lib/mask/tile-cache";
 
 export const command = {
-  name: "annotation.add",
+  name: "idah-image:annotation.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

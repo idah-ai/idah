@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type TimeDisplay } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "ui.toggle_time_display",
+  name: "idah-video:ui.toggle-time-display",
   group: "Display",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,

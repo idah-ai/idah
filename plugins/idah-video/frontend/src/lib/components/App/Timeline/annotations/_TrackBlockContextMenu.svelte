@@ -62,7 +62,7 @@
                 disabled: annotationIsLocked || !isEditable(),
                 destructive: true,
                 onClick: () => {
-                  getDriver().command.call("annotation.keyframe_delete", {
+                  getDriver().command.call("annotation.keyframe.delete", {
                     annotationId: rawData.id,
                     frame,
                   });
@@ -75,7 +75,7 @@
                 icon: FramerIcon,
                 disabled: annotationIsLocked || !isEditable(),
                 onClick: () => {
-                  getDriver().command.call("annotation.keyframe_add", {
+                  getDriver().command.call("annotation.keyframe.add", {
                     annotationId: rawData.id,
                     selection: {
                       frame,

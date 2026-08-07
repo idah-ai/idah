@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.polygon.add_point — Add a vertex to the polygon being drawn
+// idah-video:annotation.polygon.add-point — Add a vertex to the polygon being drawn
 // Undoable: removes the last vertex.
 // Combinable: multiple point adds in a short window merge into one step.
 //
 // Usage:
-//   driver.command.call("annotation.polygon.add_point", { point: [0.5, 0.3] });
+//   driver.command.call("annotation.polygon.add-point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { isEditable } from "$lib/state/editor.svelte";
@@ -13,7 +13,7 @@ import { noopAction } from "..";
 import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
-  name: "annotation.polygon.add_point",
+  name: "idah-video:annotation.polygon.add-point",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

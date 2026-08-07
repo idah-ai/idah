@@ -149,7 +149,7 @@ export function onPointerUp(driver: IIdahDriverV2): void {
   if (!_isPainting) return;
   _isPainting = false;
 
-  driver.command.call("annotation.mask_shapes.flush");
+  driver.command.call("annotation.mask-shapes.flush");
 }
 
 /**

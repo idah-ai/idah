@@ -3,7 +3,7 @@
 // Undoable: restores the previous hidden state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle_group_visibility", {
+//   driver.command.call("annotation.group.toggle-visibility", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ import { selection } from "$lib/state/selection.svelte";
 import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state/selection.svelte";
 
 export const command = {
-  name: "annotation.toggle_group_visibility",
+  name: "idah-video:annotation.group.toggle-visibility",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "H",

@@ -1,0 +1,95 @@
+// ---------------------------------------------------------------------------
+// Command-name migration map (CU-869dehrv7).
+//
+// Commands were renamed to the `ORIGIN:CATEGORY[.SUBJECT].ACTION` convention.
+// Users' custom keyboard shortcuts are persisted per account keyed by command
+// name, so on load we remap any stored old key to its new fully-qualified
+// name(s). Old names were origin-less, so a single old key can map to several
+// new names (e.g. the same command in both the video and image plugins).
+// ---------------------------------------------------------------------------
+
+/** Old command name → new fully-qualified name(s). */
+export const COMMAND_NAME_RENAMES: Record<string, string[]> = {
+  "annotation.add": ["idah-video:annotation.add", "idah-image:annotation.add"],
+  "annotation.delete": ["idah-video:annotation.delete", "idah-image:annotation.delete"],
+  "annotation.delete_all": ["idah-video:annotation.delete-all", "idah-image:annotation.delete-all"],
+  "annotation.delete_category": ["idah-video:annotation.category.delete", "idah-image:annotation.category.delete"],
+  "annotation.delete_group": ["idah-video:annotation.group.delete"],
+  "annotation.extend_next": ["idah-video:annotation.extend-next"],
+  "annotation.extend_prev": ["idah-video:annotation.extend-prev"],
+  "annotation.go_to_next_group": ["idah-video:annotation.go-to-next-group"],
+  "annotation.go_to_next_keyframe": ["idah-video:annotation.go-to-next-keyframe"],
+  "annotation.go_to_prev_group": ["idah-video:annotation.go-to-prev-group"],
+  "annotation.go_to_prev_keyframe": ["idah-video:annotation.go-to-prev-keyframe"],
+  "annotation.keyframe_add": ["idah-video:annotation.keyframe.add"],
+  "annotation.keyframe_delete": ["idah-video:annotation.keyframe.delete"],
+  "annotation.line.add_point": ["idah-image:annotation.line.add-point"],
+  "annotation.polygon.add_point": [
+    "idah-video:annotation.polygon.add-point",
+    "idah-image:annotation.polygon.add-point",
+  ],
+  "annotation.split": ["idah-video:annotation.split"],
+  "annotation.toggle_category_editability": [
+    "idah-video:annotation.category.toggle-editability",
+    "idah-image:annotation.category.toggle-editability",
+  ],
+  "annotation.toggle_category_visibility": [
+    "idah-video:annotation.category.toggle-visibility",
+    "idah-image:annotation.category.toggle-visibility",
+  ],
+  "annotation.toggle_category_visibility_solo": ["idah-video:annotation.category.toggle-visibility-solo"],
+  "annotation.toggle_editability_all": [
+    "idah-video:annotation.toggle-editability-all",
+    "idah-image:annotation.toggle-editability-all",
+  ],
+  "annotation.toggle_group_editability": ["idah-video:annotation.group.toggle-editability"],
+  "annotation.toggle_group_visibility": ["idah-video:annotation.group.toggle-visibility"],
+  "annotation.toggle_group_visibility_solo": ["idah-video:annotation.group.toggle-visibility-solo"],
+  "annotation.toggle_visibility_all": [
+    "idah-video:annotation.toggle-visibility-all",
+    "idah-image:annotation.toggle-visibility-all",
+  ],
+  "annotation.update": ["idah-video:annotation.update", "idah-image:annotation.update"],
+  "annotation.updateGroupCategory": ["idah-video:annotation.update-group-category"],
+  "core.exit_mode": ["core:mode.exit"],
+  "core.palette": ["core:ui.palette"],
+  "core.redo": ["core:history.redo"],
+  "core.reset": ["core:sync.reset"],
+  "core.retry": ["core:sync.retry"],
+  "core.toggle_editor_review": ["core:mode.toggle-editor-review"],
+  "core.toggle_note_sidebar": ["core:ui.toggle-note-sidebar"],
+  "core.undo": ["core:history.undo"],
+  "debug.toggle_console": ["idah-video:ui.toggle-debug-console", "idah-image:ui.toggle-debug-console"],
+  "mode.bounding_box": ["idah-image:tool.bounding-box"],
+  "mode.circle": ["idah-image:tool.circle"],
+  "mode.ellipse": ["idah-image:tool.ellipse"],
+  "mode.idah-video:bounding_box": ["idah-video:tool.bounding-box"],
+  "mode.idah-video:polygon": ["idah-video:tool.polygon"],
+  "mode.line": ["idah-image:tool.line"],
+  "mode.note": ["core:tool.note", "idah-image:tool.note"],
+  "mode.polygon": ["idah-image:tool.polygon"],
+  "mode.selection": ["idah-video:tool.selection", "idah-image:tool.selection"],
+  "note.add": ["idah-image:note.add"],
+  "selection.center": ["idah-video:selection.center", "idah-image:selection.center"],
+  "selection.delete": ["idah-video:selection.delete", "idah-image:selection.delete"],
+  "selection.goto": ["idah-video:selection.go-to"],
+  "snap.magnetic_toggle": ["idah-video:snap.toggle-magnetic", "idah-image:snap.toggle-magnetic"],
+  "timeline.focus": ["idah-video:timeline.focus"],
+  "timeline.go_to_first": ["idah-video:timeline.go-to-first"],
+  "timeline.go_to_last": ["idah-video:timeline.go-to-last"],
+  "timeline.scroll_to_annotation": ["idah-video:timeline.scroll-to-annotation"],
+  "timeline.zoom_in": ["idah-video:timeline.zoom-in"],
+  "timeline.zoom_out": ["idah-video:timeline.zoom-out"],
+  "ui.toggle_color_mode": ["idah-video:ui.toggle-color-mode", "idah-image:ui.toggle-color-mode"],
+  "ui.toggle_render_mode": ["idah-video:ui.toggle-render-mode", "idah-image:ui.toggle-render-mode"],
+  "ui.toggle_time_display": ["idah-video:ui.toggle-time-display"],
+  "viewport.goto": ["idah-video:viewport.go-to"],
+  "viewport.next_frame": ["idah-video:viewport.next-frame"],
+  "viewport.play": ["idah-video:viewport.play"],
+  "viewport.previous_frame": ["idah-video:viewport.previous-frame"],
+  "viewport.reset": ["idah-video:viewport.reset", "idah-image:viewport.reset"],
+  "viewport.skip_backward": ["idah-video:viewport.skip-backward"],
+  "viewport.skip_forward": ["idah-video:viewport.skip-forward"],
+  "viewport.zoom_in": ["idah-video:viewport.zoom-in", "idah-image:viewport.zoom-in"],
+  "viewport.zoom_out": ["idah-video:viewport.zoom-out", "idah-image:viewport.zoom-out"],
+};

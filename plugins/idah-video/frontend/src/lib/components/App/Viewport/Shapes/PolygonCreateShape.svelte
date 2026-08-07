@@ -57,7 +57,7 @@
     }
 
     // ── Add a new point ────────────────────────────────────────────────
-    getDriver().command.call("annotation.polygon.add_point", { point: cursor });
+    getDriver().command.call("annotation.polygon.add-point", { point: cursor });
     return true;
   }
 

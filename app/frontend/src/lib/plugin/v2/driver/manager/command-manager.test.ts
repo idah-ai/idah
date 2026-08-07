@@ -106,3 +106,46 @@ describe("CommandManagerV2.getKeyMapForMode — effective shortcuts", () => {
     expect(map["B"]).toBeUndefined();
   });
 });
+
+describe("CommandManagerV2 — short-name resolution", () => {
+  // Resolution is exercised through getCommand(), which is routed through the
+  // same private resolve() as call() but returns synchronously (call() defers
+  // dispatch onto a promise chain).
+
+  it("resolves a fully-qualified name via exact match", () => {
+    const mgr = new CommandManagerV2();
+    registerCmd(mgr, "core:history.undo", null);
+
+    expect(mgr.getCommand("core:history.undo")?.name).toBe("core:history.undo");
+  });
+
+  it("expands a short core name when only core defines it", () => {
+    const mgr = new CommandManagerV2();
+    registerCmd(mgr, "core:history.undo", null);
+
+    expect(mgr.getCommand("history.undo")?.name).toBe("core:history.undo");
+  });
+
+  it("expands a short plugin name when only the plugin defines it", () => {
+    const mgr = new CommandManagerV2();
+    registerCmd(mgr, "core:history.undo", null);
+    registerCmd(mgr, "idah-video:annotation.add", null); // sets pluginOrigin
+
+    expect(mgr.getCommand("annotation.add")?.name).toBe("idah-video:annotation.add");
+  });
+
+  it("fails closed when a short name is ambiguous across origins", () => {
+    const mgr = new CommandManagerV2();
+    registerCmd(mgr, "core:tool.note", null);
+    registerCmd(mgr, "idah-video:tool.note", null); // same short name under two origins
+
+    expect(mgr.getCommand("tool.note")).toBeUndefined();
+  });
+
+  it("returns undefined for an unknown name", () => {
+    const mgr = new CommandManagerV2();
+    registerCmd(mgr, "core:history.undo", null);
+
+    expect(mgr.getCommand("does.not.exist")).toBeUndefined();
+  });
+});

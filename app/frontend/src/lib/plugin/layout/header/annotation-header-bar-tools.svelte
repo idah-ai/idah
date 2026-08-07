@@ -92,14 +92,14 @@
 
   const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
-      name: "core.undo",
+      name: "history.undo",
       label: "Undo",
       icon: UndoIcon,
       disabled: !canUndo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
       handleClick: () => driver.command.undo(),
     },
     {
-      name: "core.redo",
+      name: "history.redo",
       label: "Redo",
       icon: RedoIcon,
       disabled: !canRedo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),

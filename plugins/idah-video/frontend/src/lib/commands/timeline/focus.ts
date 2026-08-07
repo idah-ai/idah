@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timeline.focus — Zoom the timeline to the selected group or annotation's
+// idah-video:timeline.focus — Zoom the timeline to the selected group or annotation's
 // frame range.
 //
 // When a group is selected, focuses on the full group range.
@@ -16,7 +16,7 @@ import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
 export const command = {
-  name: "timeline.focus",
+  name: "idah-video:timeline.focus",
   group: "Timeline",
   modes: ["editor", "review"],
   shortcut: "Control+F",

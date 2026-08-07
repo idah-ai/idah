@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 
 export const command = {
-  name: "snap.magnetic_toggle",
+  name: "idah-video:snap.toggle-magnetic",
   group: "Tools",
   modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
   shortcut: "Shift+S",

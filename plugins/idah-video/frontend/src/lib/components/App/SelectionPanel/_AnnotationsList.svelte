@@ -95,7 +95,7 @@
           class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
           onclick={() => {
             selection.selectAnnotation(ann);
-            getDriver().command.call("timeline.scroll_to_annotation");
+            getDriver().command.call("timeline.scroll-to-annotation");
           }}
         >
           {#if annShapeType === VIDEO_POLYGON}

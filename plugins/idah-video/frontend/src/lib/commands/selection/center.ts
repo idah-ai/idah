@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.center — Center viewport on the selected annotation's AABB
+// idah-video:selection.center — Center viewport on the selected annotation's AABB
 // Undoable: restores the previous viewport transform.
 // ---------------------------------------------------------------------------
 import { selection } from "$lib/state/selection.svelte";
@@ -19,7 +19,7 @@ function hasAnnotationAtCurrentFrame(): boolean {
 }
 
 export const command = {
-  name: "selection.center",
+  name: "idah-video:selection.center",
   group: "Selection",
   modes: ["editor", "review"],
   shortcut: "Control+Shift+C",
