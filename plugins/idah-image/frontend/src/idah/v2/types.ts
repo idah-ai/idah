@@ -181,7 +181,13 @@ export interface IToolbarItem {
   label: string;
   /** The mode this item belongs to (e.g. DEFAULT_MODE, "idah-image:bounding-box"). */
   mode: string;
-  /** Optional group name (items in the same group are rendered together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path render inside
+   * the same dropdown — e.g. `mode.mask_brush` and `mode.mask_polygon` both use `"mask"` to
+   * collapse under one brush button. A deeper path like `"mask:brush"` nests a `brush`
+   * subgroup under a top-level `mask` group. `null` (or omitted) renders the item as a
+   * standalone button.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
@@ -201,6 +207,29 @@ export interface IToolbarItem {
    */
   whenToggled?: () => boolean;
 }
+
+/**
+ * A group of toolbar items rendered as a single collapsed button + chevron that opens a
+ * dropdown. Produced by the manager from item `group` paths — plugins never construct these
+ * directly. Groups may nest (a group's children can themselves be groups).
+ */
+export interface IToolbarGroupNode {
+  kind: "group";
+  /** Full colon path, e.g. "mask". */
+  path: string;
+  /** Last path segment, used for the tooltip label. */
+  segment: string;
+  children: IToolbarNode[];
+}
+
+/** A single standalone toolbar item (leaf). */
+export interface IToolbarLeafNode {
+  kind: "item";
+  item: IToolbarItem;
+}
+
+/** Either a standalone item or a nested group, as consumed by the toolbar renderer. */
+export type IToolbarNode = IToolbarLeafNode | IToolbarGroupNode;
 
 // ─── Annotation / Notes ───────────────────────────────────────────────────
 
@@ -364,6 +393,15 @@ export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotatio
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
   create(data: IAnnotationRecord<Shape, Annotation>): Promise<IAnnotationRecord<Shape, Annotation>>;
+
+  /**
+   * Write (upsert) or delete a single child-record (annotation_shape) row.
+   *
+   * `value` must be a non-null object (upsert) or `null` (delete).  A null
+   * value is idempotent — deleting a non-existent key succeeds silently.
+   */
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -538,7 +576,11 @@ export interface ToolbarItemOptions {
    * The item will be visible in any matching mode.
    */
   modes: string | string[];
-  /** Optional group name (items in the same group render together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path collapse into
+   * one dropdown button; a deeper path nests subgroups. `null` (or omitted) renders a
+   * standalone button. See {@link IToolbarItem.group}.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;

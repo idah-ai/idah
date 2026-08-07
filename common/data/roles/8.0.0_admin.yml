@@ -26,6 +26,7 @@ admin:
     - "dataset:note_feeds.*.*"
     - "dataset:note_comments.*.*"
     - "dataset:entry_stats.read.*"
+    - "dataset:label_config_templates.*.*"
 
     # Media Service
     - "media:medias.*.*"
@@ -38,3 +39,6 @@ admin:
     - "sync:jobs.read.*"
     - "sync:exports.read.*"
     - "sync:exports.create.*"
+
+    # Audit Service
+    - "audit:logs.read.*"
