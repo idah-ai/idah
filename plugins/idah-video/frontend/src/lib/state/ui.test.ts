@@ -3,7 +3,7 @@
 //
 // Tests the UIState store which includes:
 //   - Dialog toggles (command dialog, debug console)
-//   - localStorage-backed preferences (frameStep, colorMode, renderMode, timeDisplay)
+//   - localStorage-backed preferences (frameStep, colorMode, renderMode, timeDisplay, annotationOpacity, videoOpacity)
 // ---------------------------------------------------------------------------
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ui } from "./ui.svelte";
@@ -162,6 +162,48 @@ describe("UIState", () => {
     });
   });
 
+  // ── annotationOpacity ───────────────────────────────────────────────
+
+  describe("annotationOpacity", () => {
+    it("defaults to 100", () => {
+      expect(ui.annotationOpacity).toBe(100);
+    });
+
+    it("does not persist to localStorage (session-only)", () => {
+      ui.annotationOpacity = 50;
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
+        "idah-video:settings:annotation-opacity",
+        expect.anything(),
+      );
+    });
+
+    it("returns the set value", () => {
+      ui.annotationOpacity = 0;
+      expect(ui.annotationOpacity).toBe(0);
+    });
+  });
+
+  // ── videoOpacity ────────────────────────────────────────────────────
+
+  describe("videoOpacity", () => {
+    it("defaults to 100", () => {
+      expect(ui.videoOpacity).toBe(100);
+    });
+
+    it("does not persist to localStorage (session-only)", () => {
+      ui.videoOpacity = 75;
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
+        "idah-video:settings:video-opacity",
+        expect.anything(),
+      );
+    });
+
+    it("returns the set value", () => {
+      ui.videoOpacity = 0;
+      expect(ui.videoOpacity).toBe(0);
+    });
+  });
+
   // ── Independent state ───────────────────────────────────────────────
 
   it("maintains independent state for each preference", () => {
@@ -169,10 +211,14 @@ describe("UIState", () => {
     ui.colorMode = "random";
     ui.renderMode = "nearest-neighbor";
     ui.timeDisplay = "time";
+    ui.annotationOpacity = 42;
+    ui.videoOpacity = 17;
 
     expect(ui.frameStep).toBe(3);
     expect(ui.colorMode).toBe("random");
     expect(ui.renderMode).toBe("nearest-neighbor");
     expect(ui.timeDisplay).toBe("time");
+    expect(ui.annotationOpacity).toBe(42);
+    expect(ui.videoOpacity).toBe(17);
   });
 });

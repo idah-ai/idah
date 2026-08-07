@@ -693,6 +693,108 @@ export interface IAccountSettingsDriverV2 {
   resetAll(): Promise<void>;
 }
 
+// ─── V2 Driver — Settings submodule ───────────────────────────────────────
+
+/**
+ * A single plugin-defined setting exposed in the core topbar Settings menu.
+ *
+ * The value lives entirely in the plugin (state + persistence + how it's
+ * applied to rendering). Core is a dumb renderer: it maps the declared `type`
+ * to one of the controls it makes available, reads via `get`, writes via
+ * `set` — it never learns what the setting means.
+ *
+ * ── ADDING A NEW CONTROL TYPE ──────────────────────────────────────────────
+ * Core owns the widgets, so a new control is a small, three-step change:
+ *   1. Add a `IXxxSetting extends ISettingItemBase` interface here, with its
+ *      own `type` literal, its render fields, and `get()`/`set()` (the value
+ *      shape is per-control — slider is number, options is string, …).
+ *   2. Add it to the `ISettingItem` union below.
+ *   3. Add a matching `{#if item.type === "xxx"}` branch in the renderer
+ *      (annotation-header-bar-actions.svelte) — see the note there.
+ * Plugins do NOT keep a typed copy of these descriptor types (see the "lean
+ * by choice" note in each plugin's `src/idah/v2/types.ts`) — they pass plain
+ * objects and opt in to a control simply by declaring that `type`.
+ * ───────────────────────────────────────────────────────────────────────────
+ */
+
+/** Fields shared by every setting control. */
+export interface ISettingItemBase {
+  /** Stable key within the group (e.g. "video-opacity"). */
+  key: string;
+  /** Display label for the control. */
+  label: string;
+  /** Optional description shown behind a hover "?" icon next to the label. */
+  description?: string;
+}
+
+/** A slider control (continuous numeric value). */
+export interface ISliderSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "slider";
+  /** Slider bounds — required because core renders the widget. */
+  min: number;
+  max: number;
+  step: number;
+  /** Read the current value (plugin-owned). */
+  get(): number;
+  /** Write a new value (plugin-owned). */
+  set(value: number): void;
+}
+
+/** A segmented single-choice control (N options rendered as buttons). */
+export interface IOptionsSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "options";
+  /** The selectable options, rendered as a segmented button group. */
+  options: { value: string; label: string }[];
+  /** Read the currently-selected option value (plugin-owned). */
+  get(): string;
+  /** Write the selected option value (plugin-owned). */
+  set(value: string): void;
+}
+
+/** What consumers hold and the renderer narrows on `type`. Grows per control. */
+export type ISettingItem = ISliderSetting | IOptionsSetting;
+
+/**
+ * A group of settings under one section. `section` is a raw key (e.g.
+ * "idah-video") that core humanizes for the menu header.
+ */
+export interface ISettingGroup {
+  section: string;
+  items: ISettingItem[];
+}
+
+/** Contributes setting groups. Registered by plugins via `driver.settings.register`. */
+export interface ISettingProvider {
+  collect(): ISettingGroup[];
+}
+
+/**
+ * The PLUGIN-FACING settings contract — exactly what `driver.settings` exposes
+ * to a plugin, and nothing more.
+ *
+ * Core-only capabilities (`collect`, `revision` — used by the topbar renderer)
+ * deliberately live on the concrete `SettingsDriverAdapter` instead, reached by
+ * core via `driver.settingsAdapter`. This mirrors how `notes` splits the narrow
+ * `INotesDriverV2` (handed to plugins via `sealed()`) from the full
+ * `NotesDriverAdapter` (kept for core).
+ */
+export interface ISettingsDriverV2 {
+  /** Register a setting provider (e.g. a plugin's opacity settings). */
+  register(provider: ISettingProvider): void;
+  /**
+   * Notify core that a setting value changed from ANY source (a keyboard
+   * shortcut, the command palette, or the settings UI itself). The plugin calls
+   * this after mutating a setting; core — which cannot reactively read the
+   * plugin's own reactive state across the bundle boundary — re-reads the
+   * affected values while its settings menu is open.
+   * Bumps the adapter's `revision` counter, the same invalidation mechanism
+   * `toolbar.invalidate()` uses for toggle state.
+   */
+  emitChange(): void;
+}
+
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
 /**
@@ -766,6 +868,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly notes: INotesDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
   readonly stats: IStatsDriverV2;
+  readonly settings: ISettingsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 

@@ -633,7 +633,12 @@
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
-    <!-- Rendered annotations -->
+    <!--
+      Rendered annotations — ui.annotationOpacity is applied inside BBoxShape/PolygonShape
+      as a fill-opacity multiplier only, so the border stroke always stays at full opacity
+      regardless of the slider. Scoped to existing annotations only: creation previews, the
+      pending annotation, and note markers below are unaffected.
+    -->
     {#each visibleAnnotations as ann, i (ann.id)}
       <AnnotationGeometry
         bind:this={_compRefs[i]}

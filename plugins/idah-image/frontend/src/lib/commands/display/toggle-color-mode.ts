@@ -23,10 +23,13 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
+    // opts.value sets an explicit mode (settings menu); no opts toggles (shortcut).
+    callback: (opts) => ({
       command: { ...command },
       do() {
-        ui.colorMode = (ui.colorMode === "category" ? "random" : "category") as ColorMode;
+        const value = opts?.value as ColorMode | undefined;
+        ui.colorMode = value ?? ((ui.colorMode === "category" ? "random" : "category") as ColorMode);
+        driver.settings.emitChange();
       },
       isCombinable() {
         return false;

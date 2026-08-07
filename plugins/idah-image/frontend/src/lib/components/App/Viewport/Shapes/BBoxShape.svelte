@@ -5,6 +5,7 @@
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { ui } from "$lib/state/ui.svelte";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
   import {
     boundingBoxHandle,
@@ -377,10 +378,11 @@
 
 {#if pathD}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- ui.annotationOpacity scales fill only — stroke stays at full opacity regardless of the slider -->
   <path
     d={pathD}
     fill={color}
-    fill-opacity={selected ? 0.6 : 0.3}
+    fill-opacity={(selected ? 0.7 : 0.4) * (ui.annotationOpacity / 100)}
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 1.5 : 1}
     style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"

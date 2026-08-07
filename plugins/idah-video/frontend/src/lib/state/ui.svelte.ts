@@ -43,6 +43,12 @@ class UIState {
   #renderMode = createLocalStorageStore<RenderMode>("idah-video:settings:render-mode", "bilinear");
   #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-video:settings:time-display", "frames");
 
+  // Opacity is intentionally session-only (in-memory): it resets to the default
+  // on every plugin load/registration instead of persisting to localStorage.
+  // Plain reactive fields — no getter/setter needed since nothing is saved.
+  annotationOpacity = $state(100);
+  videoOpacity = $state(100);
+
   isCommandDialogOpen = $state(false);
   isDebugConsoleOpen = $state(false);
 
