@@ -20,7 +20,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Selection",
     name: "mode.selection",
     modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
-    group: "selection",
+    group: null,
     visibleWhen: () => true,
     onClick: () => {
       // Return to the parent resting mode of the current workspace
@@ -39,7 +39,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Bounding Box",
       name: "mode.idah-video:bounding_box",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
-      group: "selection",
+      group: null,
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
       onClick: () => {
         if (!isEditable()) return;
@@ -56,7 +56,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       label: "Polygon",
       name: "mode.idah-video:polygon",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
-      group: "selection",
+      group: null,
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
       onClick: () => {
         if (!isEditable()) return;
@@ -72,7 +72,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Note",
     name: "mode.note",
     modes: ["review", "note"],
-    group: "selection",
+    group: null,
     visibleWhen: () => driver.mode === "review" || driver.mode === "note",
     onClick: () => driver.setMode("note"),
     whenToggled: () => driver.mode === "note",
@@ -88,7 +88,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Magnetic snap",
     name: "snap.magnetic_toggle",
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
-    group: "selection",
+    group: null,
     visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
     onClick: () => {
       magneticSnap.toggle();

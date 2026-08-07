@@ -3,7 +3,7 @@ FROM node:24-alpine AS external-website
 RUN npm install -g pnpm@10.15.1
 
 ENV NODE_ENV production
-ENV NODE_ENV_ALIAS production
+ENV NODE_ENV_ALIAS staging
 
 ENV APP_PATH /app/frontend
 ENV LOCAL_APP_PATH ./app/frontend
@@ -27,7 +27,17 @@ RUN pnpm run build:parser
 # Build SvelteKit app
 # Accept VITE_IDAH_HOST as a build argument with a default value
 ARG VITE_IDAH_HOST=http://localhost:8080
-RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} pnpm run build --mode $NODE_ENV_ALIAS
+# Sentry is compiled in at build time; an empty DSN disables it.
+ARG VITE_SENTRY_DSN=
+ARG VITE_SENTRY_TRACES_SAMPLE_RATE=1.0
+ARG VITE_SENTRY_REPLAY_SAMPLE_RATE=0.1
+ARG VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1.0
+RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} \
+    VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
+    VITE_SENTRY_TRACES_SAMPLE_RATE=${VITE_SENTRY_TRACES_SAMPLE_RATE} \
+    VITE_SENTRY_REPLAY_SAMPLE_RATE=${VITE_SENTRY_REPLAY_SAMPLE_RATE} \
+    VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=${VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE} \
+    pnpm run build --mode $NODE_ENV_ALIAS
 
 COPY $LOCAL_PLUGINS_PATH $APP_PATH/plugins
 WORKDIR $APP_PATH/plugins/idah-video/frontend
