@@ -157,21 +157,32 @@ docker compose up -d --build
 The stack is defined once in **`compose.yaml`** (base) and specialized per environment
 by small overlays that only hold the differences:
 
+Use the **`bin/compose <env>`** wrapper — it picks the right overlay files and
+auto-loads that environment's interpolation env-file, then passes through any
+`docker compose` arguments:
+
 | Environment | Command | Notes |
 |-------------|---------|-------|
-| **dev**     | `docker compose up -d --build` | `compose.override.yaml` is applied automatically: `development` image stage, source bind-mounted for hot reload, MailHog, host DBs. |
-| **staging** | `docker compose -f compose.yaml -f compose.staging.yaml up -d --build` | Prod-faithful: `production` image stage, no source mounts, bundled Postgres/Redis. Pinned to the `staging` Compose project so `staging_*` volumes are reused. |
-| **prod**    | `docker compose -f compose.yaml -f compose.prod.yaml up -d --build` | Scaffold — fill in `config/production/envs/*` and `prod/*` before deploying. |
+| **dev**     | `docker compose up -d --build` (or `bin/compose dev up -d`) | `compose.override.yaml` is applied automatically: `development` image stage, source bind-mounted for hot reload, MailHog, host DBs. |
+| **staging** | `bin/compose staging up -d --build` | Prod-faithful: `production` image stage, no source mounts, bundled Postgres/Redis. Pinned to the `staging` Compose project so `staging_*` volumes are reused. |
+| **prod**    | `bin/compose prod up -d --build` | Scaffold — fill in `config/production/*` before deploying. |
 
 Each service selects its stage via `build.target` (`development` or `production`) in
 its overlay; the multi-stage `Dockerfile`s live next to each service.
 
 ### Environment variables
 
-Env files live under **`config/<env>/envs/`** and are loaded via `env_file:` in each
-overlay. Real values for `staging`/`prod` are git-ignored; copy the committed
-`.env.example` templates and fill them in. Dev defaults are committed
-(`config/dev/envs/.env.common`).
+Two kinds of env config, both under **`config/<env>/`**:
+
+- **`config/<env>/envs/.env.*`** — per-service **runtime** env, loaded via `env_file:`
+  in each overlay (this is where backend `SENTRY_DSN` lives).
+- **`config/<env>/.env`** — values **interpolated** into the compose file (`${...}`),
+  including the frontend **build args** (`VITE_IDAH_HOST`, `VITE_SENTRY_DSN`). These
+  are compiled into the JS bundle at build time, so they can't come from a service
+  `env_file`; `bin/compose` loads this file via `--env-file` automatically.
+
+Real values for `staging`/`prod` are git-ignored; copy the committed `.env.example`
+templates and fill them in. Dev defaults are committed (`config/dev/envs/.env.common`).
 
 ### Database migrations
 

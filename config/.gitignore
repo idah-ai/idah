@@ -4,3 +4,6 @@ staging/envs/.env.*
 production/envs/.env.*
 !staging/envs/.env.example
 !production/envs/.env.example
+
+# Interpolation env files (real values / secrets)
+*/.env
