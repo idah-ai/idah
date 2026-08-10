@@ -15,7 +15,12 @@ WORKDIR $APP_PATH
 
 # ---- development ----
 FROM base AS development
-COPY app/frontend/package.json app/frontend/pnpm-lock.yaml ./
+# Pin the pnpm store (equals its default path, so a build-time no-op). At runtime
+# node_modules is a named volume on a different fs device; without this pin pnpm
+# picks a project-local store, sees a path mismatch, and wipes node_modules on
+# every start.
+ENV npm_config_store_dir=/root/.local/share/pnpm/store
+COPY app/frontend/package.json app/frontend/pnpm-lock.yaml app/frontend/.npmrc ./
 RUN pnpm install --frozen-lockfile
 COPY app/frontend/ ./
 RUN pnpm svelte-kit sync
@@ -25,7 +30,7 @@ CMD ["pnpm", "run", "dev"]
 # ---- production (mirrors the previous staging/Dockerfile.frontend) ----
 FROM base AS production
 ENV NODE_ENV=production
-COPY app/frontend/package.json app/frontend/pnpm-lock.yaml ./
+COPY app/frontend/package.json app/frontend/pnpm-lock.yaml app/frontend/.npmrc ./
 RUN pnpm install --frozen-lockfile
 COPY app/frontend/ ./
 RUN pnpm svelte-kit sync && pnpm run build:parser
