@@ -1,16 +1,14 @@
 // ---------------------------------------------------------------------------
 // settings.ts — Register video-specific settings with the V2 driver
 //
-// Called once on init(driver). Contributes the opacity sliders shown in the
-// core topbar Settings menu. The values live here in the plugin's ui store
-// (localStorage-backed); core only renders the controls and calls get/set.
+// Called once on init(driver). Contributes the controls shown in the core
+// topbar Settings menu. The values live here in the plugin's ui store; core
+// only renders the controls and calls get/set. Note the ui store has two
+// tiers — these particular settings are session-only, not localStorage-backed.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { LabelVisibility } from "./state/ui.svelte";
 import { ui } from "./state/ui.svelte";
-
-// TODO(remove-after-test): throwaway backing value for the mock "options"
-// setting below — exercises the new segmented-control rendering with no effect.
-let _mockOptionsChoice = "medium";
 
 export function registerSettings(driver: IIdahDriverV2): void {
   // NOTE: these descriptors are NOT type-checked here — the setting types are
@@ -31,7 +29,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             step: 1,
             default: 100,
             get: () => ui.videoOpacity,
-            set: (v) => (ui.videoOpacity = v),
+            set: (v: number) => (ui.videoOpacity = v),
           },
           {
             type: "slider",
@@ -42,23 +40,22 @@ export function registerSettings(driver: IIdahDriverV2): void {
             step: 1,
             default: 100,
             get: () => ui.annotationOpacity,
-            set: (v) => (ui.annotationOpacity = v),
+            set: (v: number) => (ui.annotationOpacity = v),
           },
-          // TODO(remove-after-test): mock "options" setting to exercise the
-          // segmented-control rendering. No real action — backed by a throwaway
-          // local var. Delete this item (and _mockOptionsChoice) once verified.
+          // Category label visibility. Defaults to "never" so a dense canvas
+          // stays uncluttered until the user opts in.
           {
             type: "options",
-            key: "mock-options",
-            label: "Mock options (test only)",
+            key: "label-visibility",
+            label: "Category label",
             options: [
-              { value: "low", label: "Low" },
-              { value: "medium", label: "Medium" },
-              { value: "high", label: "High" },
+              { value: "always", label: "On" },
+              { value: "hover", label: "On hover" },
+              { value: "never", label: "Off" },
             ],
-            default: "medium",
-            get: () => _mockOptionsChoice,
-            set: (v) => (_mockOptionsChoice = v),
+            default: "never",
+            get: () => ui.labelVisibility,
+            set: (v: string) => (ui.labelVisibility = v as LabelVisibility),
           },
         ],
       },

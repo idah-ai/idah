@@ -206,6 +206,29 @@ describe("UIState", () => {
 
   // ── Independent state ───────────────────────────────────────────────
 
+  // ── labelVisibility ─────────────────────────────────────────────────
+
+  describe("labelVisibility", () => {
+    it("defaults to never", () => {
+      expect(ui.labelVisibility).toBe("never");
+    });
+
+    it("does not persist to localStorage (session-only)", () => {
+      ui.labelVisibility = "always";
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
+        "idah-video:settings:label-visibility",
+        expect.anything(),
+      );
+    });
+
+    it("returns the set value", () => {
+      ui.labelVisibility = "hover";
+      expect(ui.labelVisibility).toBe("hover");
+    });
+  });
+
+  // ── Independent state ───────────────────────────────────────────────
+
   it("maintains independent state for each preference", () => {
     ui.frameStep = 3;
     ui.colorMode = "random";
@@ -213,6 +236,7 @@ describe("UIState", () => {
     ui.timeDisplay = "time";
     ui.annotationOpacity = 42;
     ui.videoOpacity = 17;
+    ui.labelVisibility = "always";
 
     expect(ui.frameStep).toBe(3);
     expect(ui.colorMode).toBe("random");
@@ -220,5 +244,6 @@ describe("UIState", () => {
     expect(ui.timeDisplay).toBe("time");
     expect(ui.annotationOpacity).toBe(42);
     expect(ui.videoOpacity).toBe(17);
+    expect(ui.labelVisibility).toBe("always");
   });
 });
