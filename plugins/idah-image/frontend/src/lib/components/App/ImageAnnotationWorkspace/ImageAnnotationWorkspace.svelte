@@ -12,7 +12,22 @@
   import { selection } from "$lib/state/selection.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX, IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE, IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE, IMAGE_LINE as IDAH_IMAGE_LINE, IMAGE_POLYGON as IDAH_IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
+    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
+    IMAGE_LINE as IDAH_IMAGE_LINE,
+    IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_CIRCLE,
+    IMAGE_ELLIPSE,
+    IMAGE_LINE,
+    IMAGE_POLYGON,
+    IMAGE_MASK,
+    NOTE_MODE,
+    REVIEW_MODE,
+  } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
@@ -32,6 +47,8 @@
   import { syncStatus } from "$lib/state/driver.svelte";
   import { maskTool } from "$lib/state/mask-tool.svelte";
   import { maskSession } from "$lib/state/mask-session.svelte";
+  import { toolPanel } from "$lib/state/tool-panel.svelte";
+  import FloatingToolPanel from "$lib/components/App/FloatingToolPanel/FloatingToolPanel.svelte";
   import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
@@ -40,6 +57,18 @@
   // Local derived aliases for V2 state
   let mode = $derived(viewport.mode);
   let selAnnotation = $derived(selection.value);
+
+  // Positioned ancestor the floating tool panel is placed within and clamped to.
+  let workspaceEl = $state<HTMLElement | null>(null);
+
+  // Single deselect guard for the floating tool panel: leaving mask mode by any path —
+  // Escape, picking another tool, entering review, a workflow-step change — dismisses it.
+  // Tools opt the panel in by calling toolPanel.show() when they become active.
+  onMount(() =>
+    getDriver().onModeChange((e) => {
+      if (e.newValue !== IMAGE_MASK) toolPanel.hide();
+    }),
+  );
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -161,7 +190,14 @@
 
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
-    if (viewportMode !== IMAGE_BOUNDING_BOX && viewportMode !== IMAGE_CIRCLE && viewportMode !== IMAGE_ELLIPSE && viewportMode !== IMAGE_LINE && viewportMode !== IMAGE_POLYGON && viewportMode !== IMAGE_MASK) {
+    if (
+      viewportMode !== IMAGE_BOUNDING_BOX &&
+      viewportMode !== IMAGE_CIRCLE &&
+      viewportMode !== IMAGE_ELLIPSE &&
+      viewportMode !== IMAGE_LINE &&
+      viewportMode !== IMAGE_POLYGON &&
+      viewportMode !== IMAGE_MASK
+    ) {
       pendingValue = {};
     }
 
@@ -258,7 +294,11 @@
     ];
 
     const toolConfig = toolListConfig.filter((tool) => {
-      if ([IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_ELLIPSE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON].includes(tool.type)) {
+      if (
+        [IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_ELLIPSE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON].includes(
+          tool.type,
+        )
+      ) {
         const cfg = getDriver().config[tool.type];
         return cfg && cfg.values && cfg.values.length > 0;
       }
@@ -311,7 +351,7 @@
   }
 
   let shapeSelectionArgs:
-    | [type: string, _points: Point[], extraProps: Record<string, unknown>|undefined]
+    | [type: string, _points: Point[], extraProps: Record<string, unknown> | undefined]
     | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
@@ -342,7 +382,11 @@
         addAnnotation({ type: valueMode } as IImageAnnotationShape, $state.snapshot(value));
     } else if (selAnnotation) {
       selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
-      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord, $state.snapshot(value));
+      if (requirementFullfilled)
+        updateAnnotationValue(
+          $state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord,
+          $state.snapshot(value),
+        );
     } else if (valueMode !== "entry:root") {
       // ── Resolve the actual shape type from config ────────────────────
       // The valueMode may be DEFAULT_MODE (popover/right sidebar flow), but
@@ -365,9 +409,7 @@
       // so the user can continue editing. Only one mask per category.
       if (effectiveShapeType === IMAGE_MASK && value.category) {
         const existingMask = data.annotations?.items.find(
-          (a) =>
-            (a.shape as any)?.type === IMAGE_MASK &&
-            (a.value as any)?.category === value.category,
+          (a) => (a.shape as any)?.type === IMAGE_MASK && (a.value as any)?.category === value.category,
         );
         if (existingMask) {
           selection.selectAnnotation(existingMask as any);
@@ -410,11 +452,7 @@
 
   /** Called by the Confirm button / Enter key in the popover.
    *  Creates the annotation with the value the user picked (category + any properties). */
-  function confirmCreateAnnotation(
-    type: string,
-    _points: Point[] = [],
-    _extraProps: Record<string, unknown> = {},
-  ) {
+  function confirmCreateAnnotation(type: string, _points: Point[] = [], _extraProps: Record<string, unknown> = {}) {
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
@@ -526,17 +564,27 @@
   }
 </script>
 
-<div class="relative flex h-full w-full flex-col">
+<div bind:this={workspaceEl} class="relative flex h-full w-full flex-col">
   <Popover
     open={showPopOver}
     onOpenChange={(open: boolean) => {
       if (!open && showPopOver) {
         handlePopoverCancel(shapeSelectionArgs, {
-          setAnnotationValue: (v) => { annotationValue = v; },
-          setPendingValue: (v) => { pendingValue = v; },
-          clearShapeSelectionArgs: () => { shapeSelectionArgs = undefined; },
-          setShowPopOver: (v) => { showPopOver = v; },
-          selectAnnotation: () => { selectAnnotation(); },
+          setAnnotationValue: (v) => {
+            annotationValue = v;
+          },
+          setPendingValue: (v) => {
+            pendingValue = v;
+          },
+          clearShapeSelectionArgs: () => {
+            shapeSelectionArgs = undefined;
+          },
+          setShowPopOver: (v) => {
+            showPopOver = v;
+          },
+          selectAnnotation: () => {
+            selectAnnotation();
+          },
         });
       }
       showPopOver = open;
@@ -598,11 +646,21 @@
           onclick={() => {
             showPopOver = false;
             handlePopoverCancel(shapeSelectionArgs, {
-              setAnnotationValue: (v) => { annotationValue = v; },
-              setPendingValue: (v) => { pendingValue = v; },
-              clearShapeSelectionArgs: () => { shapeSelectionArgs = undefined; },
-              setShowPopOver: (v) => { showPopOver = v; },
-              selectAnnotation: () => { selectAnnotation(); },
+              setAnnotationValue: (v) => {
+                annotationValue = v;
+              },
+              setPendingValue: (v) => {
+                pendingValue = v;
+              },
+              clearShapeSelectionArgs: () => {
+                shapeSelectionArgs = undefined;
+              },
+              setShowPopOver: (v) => {
+                showPopOver = v;
+              },
+              selectAnnotation: () => {
+                selectAnnotation();
+              },
             });
           }}
         >
@@ -675,6 +733,9 @@
       </ResizablePane>
     </ResizablePaneGroup>
   </div>
+
+  <!-- Floating tool panel: shell owns the chrome + visibility; tools inject contents via toolPanel -->
+  <FloatingToolPanel containerEl={workspaceEl} />
 </div>
 
 <DebugConsole />

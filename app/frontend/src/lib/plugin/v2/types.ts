@@ -202,7 +202,13 @@ export interface IToolbarItem {
   label: string;
   /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
   mode: string;
-  /** Optional group name (items in the same group are rendered together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path render inside
+   * the same dropdown — e.g. `mode.mask_brush` and `mode.mask_polygon` both use `"mask"` to
+   * collapse under one brush button. A deeper path like `"mask:brush"` nests a `brush`
+   * subgroup under a top-level `mask` group. `null` (or omitted) renders the item as a
+   * standalone button.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
@@ -222,6 +228,29 @@ export interface IToolbarItem {
    */
   whenToggled?: () => boolean;
 }
+
+/**
+ * A group of toolbar items rendered as a single collapsed button + chevron that opens a
+ * dropdown. Produced by the manager from item `group` paths — plugins never construct these
+ * directly. Groups may nest (a group's children can themselves be groups).
+ */
+export interface IToolbarGroupNode {
+  kind: "group";
+  /** Full colon path, e.g. "mask". */
+  path: string;
+  /** Last path segment, used for the tooltip label. */
+  segment: string;
+  children: IToolbarNode[];
+}
+
+/** A single standalone toolbar item (leaf). */
+export interface IToolbarLeafNode {
+  kind: "item";
+  item: IToolbarItem;
+}
+
+/** Either a standalone item or a nested group, as consumed by the toolbar renderer. */
+export type IToolbarNode = IToolbarLeafNode | IToolbarGroupNode;
 
 // ─── Annotation / Notes ───────────────────────────────────────────────────
 
@@ -588,7 +617,11 @@ export interface ToolbarItemOptions {
    * The item will be visible in any matching mode.
    */
   modes: string | string[];
-  /** Optional group name (items in the same group render together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path collapse into
+   * one dropdown button; a deeper path nests subgroups. `null` (or omitted) renders a
+   * standalone button. See {@link IToolbarItem.group}.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
@@ -617,6 +650,12 @@ export interface IToolbarDriverV2 {
 
   /** Define the display order of groups for a given mode. */
   orderGroups(mode: string, groups: string[]): void;
+
+  /**
+   * Return the toolbar as a node tree for the given mode — standalone items as leaves,
+   * colon-path items folded into nested group nodes. Consumed by the header renderer.
+   */
+  getNodesForMode(mode: string): IToolbarNode[];
 
   /** Monotonically increasing counter for toggle state invalidation. */
   readonly revision: number;
@@ -672,8 +711,9 @@ export interface IAccountSettingsDriverV2 {
  *   2. Add it to the `ISettingItem` union below.
  *   3. Add a matching `{#if item.type === "xxx"}` branch in the renderer
  *      (annotation-header-bar-actions.svelte) — see the note there.
- * Then mirror steps 1–2 into each plugin's `src/idah/v2/types.ts` copy.
- * Plugins opt in simply by declaring a setting with that `type`.
+ * Plugins do NOT keep a typed copy of these descriptor types (see the "lean
+ * by choice" note in each plugin's `src/idah/v2/types.ts`) — they pass plain
+ * objects and opt in to a control simply by declaring that `type`.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
@@ -683,6 +723,8 @@ export interface ISettingItemBase {
   key: string;
   /** Display label for the control. */
   label: string;
+  /** Optional description shown behind a hover "?" icon next to the label. */
+  description?: string;
 }
 
 /** A slider control (continuous numeric value). */
@@ -693,22 +735,18 @@ export interface ISliderSetting extends ISettingItemBase {
   min: number;
   max: number;
   step: number;
-  /** Default value (descriptor metadata). */
-  default: number;
   /** Read the current value (plugin-owned). */
   get(): number;
   /** Write a new value (plugin-owned). */
   set(value: number): void;
 }
 
-/** A segmented single-choice control (N options, like the Theme switcher). */
+/** A segmented single-choice control (N options rendered as buttons). */
 export interface IOptionsSetting extends ISettingItemBase {
   /** Discriminant — the control the plugin wants core to render. */
   type: "options";
   /** The selectable options, rendered as a segmented button group. */
   options: { value: string; label: string }[];
-  /** Default option value (descriptor metadata). */
-  default: string;
   /** Read the currently-selected option value (plugin-owned). */
   get(): string;
   /** Write the selected option value (plugin-owned). */
@@ -732,11 +770,29 @@ export interface ISettingProvider {
   collect(): ISettingGroup[];
 }
 
+/**
+ * The PLUGIN-FACING settings contract — exactly what `driver.settings` exposes
+ * to a plugin, and nothing more.
+ *
+ * Core-only capabilities (`collect`, `revision` — used by the topbar renderer)
+ * deliberately live on the concrete `SettingsDriverAdapter` instead, reached by
+ * core via `driver.settingsAdapter`. This mirrors how `notes` splits the narrow
+ * `INotesDriverV2` (handed to plugins via `sealed()`) from the full
+ * `NotesDriverAdapter` (kept for core).
+ */
 export interface ISettingsDriverV2 {
   /** Register a setting provider (e.g. a plugin's opacity settings). */
   register(provider: ISettingProvider): void;
-  /** Collect every registered provider's setting groups. */
-  collect(): ISettingGroup[];
+  /**
+   * Notify core that a setting value changed from ANY source (a keyboard
+   * shortcut, the command palette, or the settings UI itself). The plugin calls
+   * this after mutating a setting; core — which cannot reactively read the
+   * plugin's own reactive state across the bundle boundary — re-reads the
+   * affected values while its settings menu is open.
+   * Bumps the adapter's `revision` counter, the same invalidation mechanism
+   * `toolbar.invalidate()` uses for toggle state.
+   */
+  emitChange(): void;
 }
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────

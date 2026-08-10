@@ -12,7 +12,7 @@ export const command = {
   modes: [IMAGE_MASK],
   shortcut: "BracketLeft",
   shortDescription: "Decrease brush radius",
-  longDescription: "Decrease the mask brush radius by 5 pixels.",
+  longDescription: "Decrease the mask brush radius by 1 pixel.",
 };
 
 export function register(driver: IIdahDriverV2): void {
