@@ -9,7 +9,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
 
   import type { ButtonProps } from "$lib/components/ui/Button/button-variants";
-  import type { TooltipPositionProps } from "$lib/components/ui/Tooltips/Tooltips.svelte";
+  import type { TooltipPositionProps } from "$lib/components/ui/Tooltips/types";
 
   // Props
   interface Props extends ButtonProps, TooltipPositionProps {

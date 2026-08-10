@@ -5,7 +5,7 @@
   import Button from "$lib/components/ui/button/button.svelte";
 
   import type { ButtonProps } from "$lib/components/ui/button/button.svelte";
-  import type { TooltipPositionProps } from "$lib/components/app/tooltips/tooltips.svelte";
+  import type { TooltipPositionProps } from "$lib/components/app/tooltips/types";
 
   // Props
   interface Props extends ButtonProps, TooltipPositionProps {

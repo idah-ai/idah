@@ -1,18 +1,11 @@
-<script lang="ts" module>
-  export interface TooltipPositionProps {
-    delayDuration?: number;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
-    onOpenChange?: (open: boolean) => void;
-  }
-</script>
-
 <script lang="ts">
   import type { Snippet } from "svelte";
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "$lib/components/ui/Tooltip";
 
   import { cn } from "$lib/utils";
+
+  import type { TooltipPositionProps } from "$lib/components/ui/Tooltips/types";
 
   // Props
   interface Props extends TooltipPositionProps {
