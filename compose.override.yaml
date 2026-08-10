@@ -18,6 +18,8 @@ x-ruby-dev: &ruby-dev
 services:
   iam:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_IAM:-}
     volumes:
       - ./app/iam:/app
       - ./app/iam/common:/app/common
@@ -26,6 +28,8 @@ services:
 
   media:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
     volumes:
       - ./app/media:/app
       - ./app/media/common:/app/common
@@ -35,6 +39,8 @@ services:
 
   dataset:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_DATASET:-}
     volumes:
       - ./app/dataset:/app
       - ./app/dataset/common:/app/common
@@ -45,6 +51,8 @@ services:
 
   setting:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
     volumes:
       - ./app/setting:/app
       - ./app/setting/common:/app/common
@@ -54,6 +62,8 @@ services:
 
   audit:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_AUDIT:-}
     volumes:
       - ./app/audit:/app
       - ./app/audit/common:/app/common
@@ -62,6 +72,8 @@ services:
 
   sync:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
     volumes:
       - ./app/sync:/app
       - ./app/sync/common:/app/common
@@ -73,6 +85,8 @@ services:
 
   notification:
     <<: *ruby-dev
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_NOTIFICATION:-}
     volumes:
       - ./app/notification:/app
       - ./app/notification/common:/app/common
@@ -84,6 +98,7 @@ services:
       target: development
     environment:
       VITE_IDAH_HOST: https://idah.localhost:8443
+      VITE_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     expose:
       - "5173"
     volumes:

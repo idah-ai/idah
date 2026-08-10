@@ -1,23 +1,24 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { ArrowDownIcon, ChevronsUpDownIcon, FileIcon, FilePlusIcon, SaveIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
-  import Button from "@/components/ui/button/button.svelte";
-  import Can from "@/security/can.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import LabelConfigTemplateSaveModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateSaveModal.svelte";
   import LabelConfigTemplateManagementSheet from "@/components/app/datasets/labels/overlays/LabelConfigTemplateManagementSheet.svelte";
+  import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import {
     LabelConfigTemplateRecord,
     labelConfigTemplateDataSource,
   } from "@/data/model/dataset/label-config-template/record";
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
-  import type { IDropdownMenus, IDropdownMenuItem } from "@/components/app/dropdown-menus/types";
+  import type { IDropdownMenuItem, IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IConfig } from "@/plugin/v2/types";
 
   interface Props {
@@ -32,8 +33,6 @@
   let labelConfigTemplateManagementDialogOpen = $state(false);
   let labelConfigTemplateSaveModalOpen = $state(false);
   let templates = $state<LabelConfigTemplateRecord[]>([]);
-  let pendingReplaceTemplate = $state<LabelConfigTemplateRecord | null>(null);
-  let openConfirmReplaceModal = $state(false);
 
   async function loadTemplates() {
     try {
@@ -73,11 +72,15 @@
     }
   }
 
-  function confirmReplaceTemplate() {
-    if (!pendingReplaceTemplate) return;
-    replaceTemplate(pendingReplaceTemplate);
-    pendingReplaceTemplate = null;
-    openConfirmReplaceModal = false;
+  async function confirmReplaceTemplate(template: LabelConfigTemplateRecord): Promise<void> {
+    const choice = await showConfirmModal({
+      title: "Overwrite template",
+      description: `Are you sure you want to overwrite this template "${template.name}"? This action cannot be undone.`,
+      confirmLabel: "Yes, Overwrite",
+    });
+    if (choice === ConfirmModalChoice.Cancel) return;
+
+    replaceTemplate(template);
   }
 
   const replaceItems = $derived<IDropdownMenuItem[]>(
@@ -86,10 +89,7 @@
       : templates.map((template) => ({
           label: template.name,
           icon: FileIcon,
-          action: () => {
-            pendingReplaceTemplate = template;
-            openConfirmReplaceModal = true;
-          },
+          action: () => confirmReplaceTemplate(template),
         })),
   );
 
@@ -159,15 +159,4 @@
   {organizationId}
   onSaved={handleSaved}
   bind:open={labelConfigTemplateSaveModalOpen}
-/>
-
-<ConfirmModal
-  title="Overwrite template"
-  description={`Are you sure you want to overwrite this template "${pendingReplaceTemplate?.name}"? This action cannot be undone.`}
-  confirmLabel="Yes, Overwrite"
-  onCancel={() => {
-    pendingReplaceTemplate = null;
-  }}
-  onConfirm={confirmReplaceTemplate}
-  bind:open={openConfirmReplaceModal}
 />

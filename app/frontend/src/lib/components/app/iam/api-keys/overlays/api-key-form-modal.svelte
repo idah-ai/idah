@@ -2,6 +2,8 @@
   import ApiKeyForm from "@/components/app/iam/api-keys/forms/api-key-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { refetches } from "@/utils/refetch";
 
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
@@ -30,6 +32,7 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Read-only seed for <ApiKeyForm>; never mutated here.
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
       ? apiKeyRecord
@@ -44,6 +47,20 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
+
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // snapshot and the current-value snapshot. Only name/expires_at are editable
+  // on update (see updateApiKey payload).
+  function serializeEditableFields(source: Hash): Hash {
+    return {
+      name: source.name,
+      expires_at: source.expires_at,
+    };
+  }
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => apiKeyRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -52,36 +69,24 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    apiKey = new ApiKeyRecord({
-      type: ApiKeyRecord.type,
-      attributes: {
-        name: null,
-        scope_type: "",
-        scope_value: [],
-        permissions: [],
-        expires_at: null,
-      },
-    });
+    changeTracker.reset();
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    apiKey.name = value.name;
-    apiKey.scope_type = value.scope_type;
-    apiKey.scope_value = value.scope_value;
-    apiKey.permissions = value.permissions;
-    apiKey.expires_at = value.expires_at;
-    apiKey.key = value.key;
+    draft = { ...value };
+    changeTracker.update(value);
   }
 
   async function createApiKey(): Promise<void> {
     const createdApiKeyRes = await apiKeysBackendDataSource.create(
       {
         attributes: {
-          name: apiKey.name,
-          scope_type: apiKey.scope_type,
-          scope_value: apiKey.scope_value || [],
-          permissions: apiKey.permissions || [],
-          expires_at: apiKey.expires_at,
+          name: draft.name,
+          scope_type: draft.scope_type,
+          scope_value: draft.scope_value || [],
+          permissions: draft.permissions || [],
+          expires_at: draft.expires_at,
         },
       },
       {
@@ -94,7 +99,7 @@
     $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key created",
-      description: `The API Key "${apiKey.name}" has been created.`,
+      description: `The API Key "${draft.name}" has been created.`,
     });
 
     onCreatedApiKey(createdApiKeyRes.data.key);
@@ -102,11 +107,11 @@
 
   async function updateApiKey(): Promise<void> {
     await apiKeysBackendDataSource.update(
-      apiKey.id,
+      apiKeyRecord!.id,
       {
         attributes: {
-          name: apiKey.name,
-          expires_at: apiKey.expires_at,
+          name: draft.name,
+          expires_at: draft.expires_at,
         },
       },
       {
@@ -124,7 +129,7 @@
     $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key updated",
-      description: `The API Key "${apiKey.name}" has been updated.`,
+      description: `The API Key "${draft.name}" has been updated.`,
     });
   }
 
@@ -135,11 +140,11 @@
 
     try {
       const validated = validateData(schema, {
-        name: apiKey.name,
-        scope_type: apiKey.scope_type,
-        scope_value: apiKey.scope_value,
-        permissions: apiKey.permissions,
-        expires_at: apiKey.expires_at,
+        name: draft.name,
+        scope_type: draft.scope_type,
+        scope_value: draft.scope_value,
+        permissions: draft.permissions,
+        expires_at: draft.expires_at,
       });
 
       if (!validated.success) {
@@ -161,6 +166,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <ApiKeyForm {apiKey} {fieldErrors} {newRecord} onValueChange={setValue} />
 </FormModal>

@@ -135,6 +135,7 @@ services:
       target: production
       args:
         VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost}   # override for real production
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     restart: always
     expose:
       - "3000"

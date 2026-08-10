@@ -30,7 +30,19 @@ RUN pnpm install --frozen-lockfile
 COPY app/frontend/ ./
 RUN pnpm svelte-kit sync && pnpm run build:parser
 ARG VITE_IDAH_HOST=http://localhost:8080
-RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} pnpm run build --mode production
+# Sentry is compiled in at build time; an empty DSN disables it.
+ARG VITE_SENTRY_DSN=
+ARG VITE_SENTRY_TRACES_SAMPLE_RATE=1.0
+ARG VITE_SENTRY_REPLAY_SAMPLE_RATE=0.1
+ARG VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1.0
+# Vite build mode: `production` by default, overridden to `staging` by that overlay.
+ARG BUILD_MODE=production
+RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} \
+    VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
+    VITE_SENTRY_TRACES_SAMPLE_RATE=${VITE_SENTRY_TRACES_SAMPLE_RATE} \
+    VITE_SENTRY_REPLAY_SAMPLE_RATE=${VITE_SENTRY_REPLAY_SAMPLE_RATE} \
+    VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=${VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE} \
+    pnpm run build --mode ${BUILD_MODE}
 # Build the plugin frontends that ship with the app (served via the frontend_plugins volume)
 COPY plugins ./plugins
 RUN cd plugins/idah-video/frontend && pnpm install --frozen-lockfile && pnpm run build

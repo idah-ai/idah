@@ -4,7 +4,6 @@
   import { onMount } from "svelte";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -15,6 +14,8 @@
   } from "@/components/ui/dropdown-menu";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
@@ -38,13 +39,9 @@
   let menus = $derived(
     getEntryDropdownMenuActions({
       onAssign: openAssignEntryModal,
-      onUnassign: () => {
-        openConfirmUnassignEntryModal = true;
-      },
+      onUnassign: confirmUnAssignEntry,
       onSetPriority: () => {},
-      onDelete: () => {
-        openConfirmDeleteEntryModal = true;
-      },
+      onDelete: confirmDeleteEntry,
       isAssigned: !!entry.assigned_to_id,
       isAssignDisabled: entry.wf_step === "done",
       isUnassignDisabled: entry.wf_step === "done",
@@ -55,8 +52,6 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
-  let openConfirmUnassignEntryModal: boolean = $state(false);
-  let openConfirmDeleteEntryModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -83,41 +78,53 @@
     openAssignEntryFormModal = true;
   }
 
-  async function unAssignEntry(): Promise<void> {
-    try {
-      const entryRes = await entriesBackendDataSource.unassign(entry.id);
+  async function confirmUnAssignEntry(): Promise<void> {
+    await showConfirmModal({
+      title: "Unassign entry",
+      description: "Are you sure you want to unassign this entry?",
+      onConfirm: async () => {
+        try {
+          const entryRes = await entriesBackendDataSource.unassign(entry.id);
 
-      onUnAssigned?.(entryRes.data);
+          onUnAssigned?.(entryRes.data);
 
-      openConfirmUnassignEntryModal = false;
-      showToast.success({
-        title: "Entry unassigned",
-        description: `The entry "${entry.name || entry.id}" has been unassigned.`,
-      });
-    } catch (error) {
-      showToast.error({
-        title: "Unable to unassign entry",
-        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
-      });
-    }
+          showToast.success({
+            title: "Entry unassigned",
+            description: `The entry "${entry.name || entry.id}" has been unassigned.`,
+          });
+        } catch (error) {
+          showToast.error({
+            title: "Unable to unassign entry",
+            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+          });
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 
-  async function deleteEntry(): Promise<void> {
-    try {
-      await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
+  async function confirmDeleteEntry(): Promise<void> {
+    await showConfirmModal({
+      title: "Delete Entry",
+      description: `Are you sure you want to delete this entry "${entry.name || entry.id}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 
-      openConfirmDeleteEntryModal = false;
-      $refetches.entries.list = new Date();
-      showToast.success({
-        title: "Entry deleted",
-        description: `The entry "${entry.name || entry.id}" has been deleted.`,
-      });
-    } catch (error) {
-      showToast.error({
-        title: "Unable to delete entry",
-        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
-      });
-    }
+          $refetches.entries.list = new Date();
+          showToast.success({
+            title: "Entry deleted",
+            description: `The entry "${entry.name || entry.id}" has been deleted.`,
+          });
+        } catch (error) {
+          showToast.error({
+            title: "Unable to delete entry",
+            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+          });
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 
   async function onEntryAssigned(): Promise<void> {
@@ -164,21 +171,5 @@
     onAssigned={onEntryAssigned}
     entryIds={[entry.id]}
     bind:open={openAssignEntryFormModal}
-  />
-
-  <!-- MODAL::CONFIRM UNASSIGN -->
-  <ConfirmModal
-    title="Unassign entry"
-    description="Are you sure you want to unassign this entry?"
-    onConfirm={unAssignEntry}
-    bind:open={openConfirmUnassignEntryModal}
-  />
-
-  <!-- MODAL::CONFIRM DELETE -->
-  <ConfirmModal
-    title="Delete entry"
-    description="Are you sure you want to delete this entry? This action cannot be undone."
-    onConfirm={deleteEntry}
-    bind:open={openConfirmDeleteEntryModal}
   />
 {/if}

@@ -135,6 +135,8 @@ services:
       target: production
       args:
         VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost:8080}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        BUILD_MODE: staging
     restart: always
     expose:
       - "3000"
