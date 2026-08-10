@@ -5,6 +5,7 @@
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
   import {
@@ -371,9 +372,6 @@
     editable && selected ? "cursor-grab" :
     "cursor-pointer"
   );
-
-  // ── Hover state for body cursor ───────────────────────────────────────
-  let over = $state(false);
 </script>
 
 {#if pathD}
@@ -389,8 +387,8 @@
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
     style={shapeStyleString}
-    onmouseenter={() => (over = true)}
-    onmouseleave={() => (over = false)}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     style:outline="none"
     role="button"

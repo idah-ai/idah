@@ -4,6 +4,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { addVertexOnEdge, hitTestVertex, moveVertex, pointInPolygon } from "./Polygon/utils";
 
@@ -245,8 +246,6 @@
     editable && selected ? "cursor-grab" :
     "cursor-pointer"
   );
-
-  let over = $state(false);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -271,8 +270,8 @@
     vector-effect="non-scaling-stroke"
     style={shapeStyleString}
     style:outline="none"
-    onmouseenter={() => (over = true)}
-    onmouseleave={() => (over = false)}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     role="button"
     tabindex="-1"
