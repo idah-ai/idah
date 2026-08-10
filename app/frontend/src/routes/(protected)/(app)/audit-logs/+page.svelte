@@ -14,6 +14,7 @@
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
   import { Record } from "@/data/model/Record";
+  import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { refetches } from "@/utils/refetch";
 
   import type { CollectionResponse } from "@/data/model/types";
@@ -41,7 +42,7 @@
         [AccountRecord.type]: ["name", "email", "pciture_url"],
       },
       filters: {
-        actor_account_id__in: actorAccountIds,
+        id__in: actorAccountIds,
       },
     });
     accounts.push(...accountsRes.data);
@@ -57,6 +58,7 @@
       datasets: [],
       entries: [],
       medias: [],
+      exports: [],
     };
     response.data.forEach((log) => {
       switch (log.resource_type) {
@@ -72,7 +74,6 @@
               break;
           }
 
-          ids["account_ids"].push(log.resource_id);
           break;
         }
         case "account_sessions":
@@ -104,6 +105,10 @@
           ids["medias"].push(log.resource_id);
           break;
         }
+        case "exports": {
+          ids["exports"].push(log.resource_id);
+          break;
+        }
         default: {
           break;
         }
@@ -116,6 +121,7 @@
     const datasets: DatasetRecord[] = [];
     const entries: EntryRecord[] = [];
     const medias: MediaRecord[] = [];
+    const exports: ExportRecord[] = [];
     /** Fetch each resource by ids */
     await Promise.all(
       Object.entries(ids).map(async ([resource, _ids]) => {
@@ -226,6 +232,18 @@
             });
             break;
           }
+          case "exports": {
+            const exportsRes = await ExportsBackendDataSource.list({
+              fields: {
+                [ExportRecord.type]: ["id", "filename"],
+              },
+              filters: {
+                id__in: Array.from(new Set(_ids)),
+              },
+            });
+            exports.push(...exportsRes.data);
+            break;
+          }
           default: {
             break;
           }
@@ -233,7 +251,7 @@
       }),
     );
 
-    return { accounts, organizations, projects, projectMembers, datasets, entries, medias };
+    return { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports };
   }
 </script>
 

@@ -5,6 +5,8 @@
   import OrganizationForm from "@/components/app/organizations/forms/organization-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { refetches } from "@/utils/refetch";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -27,6 +29,7 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Read-only seed for <OrganizationForm>; never mutated here.
   let organization: OrganizationRecord = $derived(
     organizationRecord
       ? organizationRecord
@@ -37,6 +40,18 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
+
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // snapshot and the current-value snapshot.
+  function serializeEditableFields(source: Hash): Hash {
+    return {
+      name: source.name,
+    };
+  }
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => organizationRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -45,23 +60,20 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    organization = new OrganizationRecord({
-      type: OrganizationRecord.type,
-      attributes: {
-        name: null,
-      },
-    });
+    changeTracker.reset();
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    organization.name = value.name;
+    draft = { ...value };
+    changeTracker.update(value);
   }
 
   async function createOrganization(): Promise<void> {
     const createdOrganizationRes = await organizationsBackendDataSource.create(
       {
         attributes: {
-          name: organization.name,
+          name: draft.name,
         },
       },
       {
@@ -74,16 +86,16 @@
     goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
     showToast.success({
       title: "Organization created",
-      description: `The organization "${organization.name}" has been created.`,
+      description: `The organization "${draft.name}" has been created.`,
     });
   }
 
   async function updateOrganization(): Promise<void> {
     await organizationsBackendDataSource.update(
-      organization.id,
+      organizationRecord!.id,
       {
         attributes: {
-          name: organization.name,
+          name: draft.name,
         },
       },
       {
@@ -95,7 +107,7 @@
     $refetches.organizations.list = new Date();
     showToast.success({
       title: "Organization updated",
-      description: `The organization "${organization.name}" has been updated.`,
+      description: `The organization "${draft.name}" has been updated.`,
     });
   }
 
@@ -106,7 +118,7 @@
 
     try {
       const validated = validateData(schema, {
-        name: organization.name,
+        name: draft.name,
       });
 
       if (!validated.success) {
@@ -128,6 +140,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <OrganizationForm {organization} {fieldErrors} onValueChange={setValue} />
 </FormModal>

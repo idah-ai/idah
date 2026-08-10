@@ -6,6 +6,7 @@
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
+  import { IMAGE_MASK } from "$lib/types";
   import type { IConfigValue } from "$idah/v2/types";
 
   type Props = {
@@ -16,9 +17,10 @@
     onValueChange: (value?: string) => void;
     disabled: boolean;
     placeholder?: string;
+    usedMaskCategories?: Set<string>;
   };
 
-  let { configValues, category, selectedCategory, shapeType, onValueChange, disabled, placeholder }: Props = $props();
+  let { configValues, category, selectedCategory, shapeType, onValueChange, disabled, placeholder, usedMaskCategories = new Set<string>() }: Props = $props();
 </script>
 
 <div class="flex flex-col gap-1">
@@ -46,14 +48,22 @@
       <SelectGroup>
         {#each configValues as { id: value, label, color }, index (`${value}-${index}`)}
           {@const valueLabel = categoryValueToLabel(value, label)}
+          {@const isMaskCategoryBlocked = shapeType === IMAGE_MASK && usedMaskCategories.has(value) && value !== selectedCategory}
+          {@const isDisabled = disabled || isMaskCategoryBlocked}
           <SelectItem
             {value}
             label={valueLabel}
             class={"text-xs " + (selectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
-            disabled={selectedCategory == value}
+            disabled={isDisabled}
+            title={isMaskCategoryBlocked ? "Already used by another mask on this entry" : undefined}
           >
             <ShapeIcon {shapeType} {color} />
             {valueLabel}
+            {#if isMaskCategoryBlocked}
+              <span class="text-[0.625rem] text-red-400 dark:text-red-500">
+                Category already in use
+              </span>
+            {/if}
           </SelectItem>
         {/each}
       </SelectGroup>
