@@ -1,9 +1,11 @@
 // ---------------------------------------------------------------------------
 // ui.test.ts — Unit tests for UI state
 //
-// Tests the UIState store which includes:
+// Tests the UIState store, which keeps preferences in two tiers:
 //   - Dialog toggles (command dialog, debug console)
-//   - localStorage-backed preferences (frameStep, colorMode, renderMode, timeDisplay, annotationOpacity, videoOpacity)
+//   - localStorage-backed (frameStep, colorMode, renderMode, timeDisplay)
+//   - session-only, reset on every plugin load (annotationOpacity,
+//     videoOpacity, labelVisibility)
 // ---------------------------------------------------------------------------
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ui } from "./ui.svelte";
