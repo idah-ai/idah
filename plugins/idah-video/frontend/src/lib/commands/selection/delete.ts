@@ -28,53 +28,52 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: () => {
-      const sel = selection.value;
       if (!isEditable() || viewport.isReviewWorkspace) return noopAction(command);
-      if (!sel || !data.annotations) return noopAction(command);
+      if (!data.annotations) return noopAction(command);
 
-      if (sel.type === "annotation") {
-        const record = sel.annotation as AnnotationItem;
-        // Locked annotations (or those belonging to a locked group) must not be deletable.
-        if (annotation.isLocked(record)) return noopAction(command);
-        return {
-          command: { ...command },
-          async do() {
-            selection.deselect();
-            await data.annotations!.delete(record.id);
-          },
-          async undo() {
-            if (!data.annotations) return;
-            await data.annotations!.create({ ...record, id: record.id });
-          },
-          isCombinable() {
-            return false;
-          },
-          combine(p) {
-            return p;
-          },
-        };
+      // ── Resolve records to delete ──────────────────────────────────
+      // Collect all selected annotation IDs + all annotations from selected groups.
+      const allItems = data.annotations.items;
+      const records: AnnotationItem[] = [];
+
+      // From selected annotation IDs
+      for (const annId of selection.selectedAnnotationIds) {
+        const rec = allItems.find((a) => a.id === annId);
+        if (rec) records.push(rec as AnnotationItem);
       }
 
-      // Resolve annotations for the group from the data store
-      const groupId = (sel as any).groupId as string;
-      const records = data.annotations.items.filter(
-        (ann) => (ann as any).metadata?.group_id === groupId || ann.id === groupId,
-      );
-      if (records.length === 0) return noopAction(command);
-      // Block group deletion if any member annotation belongs to a locked group.
-      if (records.some((r) => annotation.isLocked(r))) return noopAction(command);
+      // From selected group IDs
+      for (const gid of selection.selectedGroupIds) {
+        const groupRecords = allItems.filter(
+          (ann) => (ann as any).metadata?.group_id === gid || ann.id === gid,
+        );
+        for (const r of groupRecords) {
+          if (!records.some((existing) => existing.id === r.id)) {
+            records.push(r as AnnotationItem);
+          }
+        }
+      }
+
+      // Deduplicate
+      const uniqueRecords = Array.from(new Map(records.map((r) => [r.id, r])).values());
+      if (uniqueRecords.length === 0) return noopAction(command);
+
+      // Block deletion if any member annotation belongs to a locked group.
+      if (uniqueRecords.some((r) => annotation.isLocked(r))) return noopAction(command);
+
+      const recordsSnapshot = uniqueRecords;
 
       return {
         command: { ...command },
         async do() {
           selection.deselect();
-          for (const r of records) {
+          for (const r of recordsSnapshot) {
             await data.annotations!.delete(r.id);
           }
         },
         async undo() {
           if (!data.annotations) return;
-          for (const r of records) {
+          for (const r of recordsSnapshot) {
             await data.annotations!.create({ ...r, id: r.id });
           }
         },

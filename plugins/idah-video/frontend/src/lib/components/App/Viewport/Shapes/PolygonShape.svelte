@@ -57,8 +57,8 @@
   let boxEnd: Point | undefined = $state();
   let multiDragOrigin: Point | undefined = $state();
 
-  // Track Shift key for cursor changes
-  let shiftHeld = $state(false);
+  // Track Alt key for cursor changes (vertex multi-selection)
+  let altHeld = $state(false);
 
   let isEditing = $derived(
     dragVertexIndex !== undefined ||
@@ -131,14 +131,15 @@
     onEditComplete?.(pts, 0);
   }
 
-  export function startSelection(start: Point, shiftKey = false): boolean {
+  export function startSelection(start: Point, altKey = false): boolean {
     if (!editable || baseVertices.length < 3) return false;
+    console.log("atooooooooooo");
 
     // Check if clicking on a vertex
     const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
     if (vi >= 0) {
-      if (shiftKey) {
-        // Shift+click on a vertex: delete it (but keep minimum 3 points)
+      if (altKey) {
+        // Alt+click on a vertex: delete it (but keep minimum 3 points)
         if (baseVertices.length <= 3) return true;
         const next = [...baseVertices];
         next.splice(vi, 1);
@@ -160,8 +161,10 @@
       return true;
     }
 
-    if (shiftKey) {
-      // Shift+drag anywhere: start box selection (no need to be inside polygon)
+    if (altKey) {
+      console.log("dqjskljfkdsjlkdsj");
+
+      // Alt+drag anywhere: start box selection (no need to be inside polygon)
       boxStart = start;
       boxEnd = start;
       _localVertices = [...baseVertices];
@@ -242,10 +245,13 @@
   //   "cursor-pointer"   → otherwise
   //   "cursor-note"       → hovering in note mode
   let bodyCursor = $derived(
-    mode === "note" ? "cursor-note" :
-    isEditing ? "cursor-grabbing" :
-    editable && selected ? "cursor-grab" :
-    "cursor-pointer"
+    mode === "note"
+      ? "cursor-note"
+      : isEditing
+        ? "cursor-grabbing"
+        : editable && selected
+          ? "cursor-grab"
+          : "cursor-pointer",
   );
 
   let over = $state(false);
@@ -254,10 +260,10 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <svelte:window
   onkeydown={(e) => {
-    if (e.key === "Shift") shiftHeld = true;
+    if (e.key === "Alt") altHeld = true;
   }}
   onkeyup={(e) => {
-    if (e.key === "Shift") shiftHeld = false;
+    if (e.key === "Alt") altHeld = false;
   }}
 />
 
@@ -300,7 +306,7 @@
               media.width > 0 ? svgPt.x / media.width : 0,
               media.height > 0 ? svgPt.y / media.height : 0,
             ];
-            startSelection(norm, e.shiftKey);
+            startSelection(norm, e.altKey);
           }
         }
       }
@@ -316,7 +322,7 @@
       selectedIndices={_selectedIndices}
       {boxStart}
       {boxEnd}
-      {shiftHeld}
+      {altHeld}
       onStartVertexDrag={(i) => {
         if (_selectedIndices.size > 0 && _selectedIndices.has(i)) {
           // Vertex is part of multi-selection — start multi-drag

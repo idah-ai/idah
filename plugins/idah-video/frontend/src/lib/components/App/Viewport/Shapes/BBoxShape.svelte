@@ -260,7 +260,7 @@
   const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX * HANDLE_RADIUS_PX;
   const ROTATE_RADIUS_PX_SQR = ROTATE_RADIUS_PX * ROTATE_RADIUS_PX;
 
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
 
     // Inverse-rotate the cursor so we can test against the unrotated AABB.
@@ -371,10 +371,13 @@
   //   "cursor-pointer"   → otherwise
   //   "cursor-note"       → hovering in note mode
   let bodyCursor = $derived(
-    mode === "note" ? "cursor-note" :
-    isEditing ? "cursor-grabbing" :
-    editable && selected ? "cursor-grab" :
-    "cursor-pointer"
+    mode === "note"
+      ? "cursor-note"
+      : isEditing
+        ? "cursor-grabbing"
+        : editable && selected
+          ? "cursor-grab"
+          : "cursor-pointer",
   );
 
   // ── Hover state for body cursor ───────────────────────────────────────
