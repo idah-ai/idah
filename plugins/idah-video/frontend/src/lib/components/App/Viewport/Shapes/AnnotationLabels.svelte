@@ -7,8 +7,13 @@
   // shapes' fills — worst exactly in the dense overlapping case where labels
   // are most useful.
   //
+  // Each label is centred horizontally on its shape's centre and sits just below
+  // it (see labelCenterPx). Centring on the shape keeps the label attached to
+  // irregular polygons, where the old bbox-corner anchor floated off into empty
+  // space.
+  //
   // NOTE: Keep in sync with the idah-image copy. The video variant resolves its
-  // anchor per frame, so scrubbing moves labels with the interpolated shapes.
+  // centre per frame, so scrubbing moves labels with the interpolated shapes.
   // ---------------------------------------------------------------------------
   import type { IAnnotationRecord } from "$idah/v2/types";
   import { hover } from "$lib/state/hover.svelte";
@@ -16,7 +21,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { labelAnchorPx, resolveAnnotationLabel } from "$lib/utils/label";
+  import { labelCenterPx, resolveAnnotationLabel } from "$lib/utils/label";
   import { LABEL_FONT, wrapText } from "$lib/utils/text-wrap";
 
   type Props = { annotations: IAnnotationRecord[] };
@@ -27,8 +32,7 @@
   const FONT_SIZE = 12;
   const LINE_HEIGHT = 14;
   const MAX_WIDTH = 200;
-  const PAD_X = 8; // clears the corner resize handle
-  const PAD_Y = 14;
+  const OFFSET_Y = 20; // gap below the shape centre; clears the centre resize handle
 
   let w = $derived(media.width);
   let h = $derived(media.height);
@@ -54,8 +58,8 @@
     for (const ann of annotations) {
       if (!isVisible(ann.id)) continue;
 
-      const anchor = labelAnchorPx(ann, w, h, frame);
-      if (!anchor) continue;
+      const center = labelCenterPx(ann, w, h, frame);
+      if (!center) continue;
 
       const label = resolveAnnotationLabel(ann);
       if (!label) continue;
@@ -65,7 +69,7 @@
       // rather than hiding behind a blank label.
       const text = label.unresolved ? `${label.text} ⚠️` : label.text;
 
-      out.push({ id: ann.id, x: anchor[0], y: anchor[1], lines: wrapText(text, MAX_WIDTH, LABEL_FONT) });
+      out.push({ id: ann.id, x: center[0], y: center[1], lines: wrapText(text, MAX_WIDTH, LABEL_FONT) });
     }
     return out;
   });
@@ -74,8 +78,9 @@
 {#each labels as label (label.id)}
   <!--
     Counter-scale the whole group rather than multiplying each dimension by
-    invScale: font size, line height and padding then all stay screen-constant
-    from a single place.
+    invScale: font size, line height and offset then all stay screen-constant
+    from a single place. The group is translated to the shape centre; the text
+    below is centred on and offset down from that origin.
   -->
   <g transform="translate({label.x} {label.y}) scale({invScale})">
     <!--
@@ -86,11 +91,12 @@
       meant for the shape beneath it.
     -->
     <text
-      x={PAD_X}
-      y={PAD_Y}
+      x={0}
+      y={OFFSET_Y}
       style:font-size="{FONT_SIZE}px"
       style:font-weight="bold"
       style:fill="#fff"
+      style:text-anchor="middle"
       style:paint-order="stroke"
       style:stroke="rgba(0, 0, 0, 0.85)"
       style:stroke-width="3px"
@@ -100,7 +106,7 @@
       style:user-select="none"
     >
       {#each label.lines as line, i (i)}
-        <tspan x={PAD_X} dy={i === 0 ? 0 : LINE_HEIGHT}>{line}</tspan>
+        <tspan x={0} dy={i === 0 ? 0 : LINE_HEIGHT}>{line}</tspan>
       {/each}
     </text>
   </g>

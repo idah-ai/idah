@@ -14,7 +14,8 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
 import { categoryValueToLabel } from "$lib/utils/annotation";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
-import { centroid, rotatePoint, type Point } from "$lib/utils/math/point";
+import { centroid, type Point } from "$lib/utils/math/point";
+import { polygonVisualCenter } from "$lib/utils/math/polylabel";
 
 /** Minimal structural view of an annotation — avoids coupling to the full record type. */
 type LabelAnnotation = {
@@ -81,17 +82,21 @@ export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationL
 }
 
 /**
- * Top-left corner of the annotation's axis-aligned bounding box, in media pixels,
- * for the given frame.
+ * Centre point of the annotation, in media pixels, for the given frame. The
+ * label is rendered horizontally centred and just below this point.
+ *
+ * A polygon uses its visual centre (pole of inaccessibility) rather than the
+ * vertex average, so the label sits inside even concave shapes (star, L). A
+ * bounding box uses the centre of its (rotated) corners.
  *
  * Video geometry lives in keyframes, so points come from getInterpolatedFrame
- * rather than shape.points — the anchor has to follow the interpolated position
+ * rather than shape.points — the centre has to follow the interpolated position
  * as the user scrubs, not sit at some stored keyframe.
  *
  * Returns null when the annotation has no geometry at this frame (outside its
  * start/end range, or a keyframe with no points), and for unrecognised shapes.
  */
-export function labelAnchorPx(
+export function labelCenterPx(
   annotation: { shape?: unknown },
   w: number,
   h: number,
@@ -106,41 +111,19 @@ export function labelAnchorPx(
 
   switch (shape.type) {
     case VIDEO_BOUNDING_BOX: {
-      // 4 unrotated AABB corners per keyframe, plus a per-frame angle.
+      // 4 unrotated AABB corners per keyframe, plus a per-frame angle. Rotation
+      // is about the pixel centroid, which leaves the centroid fixed — so the
+      // box centre is the corner centroid whether or not it is rotated.
       if (points.length < 4) return null;
-      const angle = frameData?.angle ?? 0;
-      if (!angle) return minCornerPx(points, w, h);
-      // Rotate in pixel space: the shape's on-screen rotation is about its
-      // pixel centroid, so normalized coords must be converted first or the
-      // result skews on any non-square video.
-      const cornersPx = points.map(([x, y]): Point => [x * w, y * h]);
-      const cPx = centroid(cornersPx);
-      return minPx(cornersPx.map((p) => rotatePoint(p, cPx, angle)));
+      return centroid(points.map(([x, y]): Point => [x * w, y * h]));
     }
 
     case VIDEO_POLYGON: {
       if (points.length < 2) return null;
-      return minCornerPx(points, w, h);
+      return polygonVisualCenter(points.map(([x, y]): Point => [x * w, y * h]));
     }
 
     default:
       return null;
   }
-}
-
-/** (min x, min y) of normalized points, converted to media pixels. */
-function minCornerPx(points: Point[], w: number, h: number): Point {
-  const [minX, minY] = minPx(points);
-  return [minX * w, minY * h];
-}
-
-/** (min x, min y) of points, in whatever space they were given. */
-function minPx(points: Point[]): Point {
-  let minX = Infinity;
-  let minY = Infinity;
-  for (const [x, y] of points) {
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-  }
-  return [minX, minY];
 }

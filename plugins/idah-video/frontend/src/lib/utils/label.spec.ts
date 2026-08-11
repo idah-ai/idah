@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
-// label.spec.ts — Unit tests for category label text and anchor geometry
+// label.spec.ts — Unit tests for category label text and centre geometry
 // ---------------------------------------------------------------------------
 import { describe, it, expect } from "vitest";
-import { annotationLabel, labelAnchorPx } from "./label";
+import { annotationLabel, labelCenterPx } from "./label";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 
 const W = 1000;
@@ -24,20 +24,20 @@ const shape = (type: string, frames: { frame: number; points: number[][]; angle?
   frames,
 });
 
-describe("labelAnchorPx", () => {
+describe("labelCenterPx", () => {
   describe("bounding box", () => {
-    it("returns the top-left corner at an exact keyframe", () => {
+    it("returns the box centre at an exact keyframe", () => {
       const ann = { shape: shape(VIDEO_BOUNDING_BOX, [{ frame: 0, points: box(0.2, 0.4, 0.6, 0.8) }]) };
-      expect(labelAnchorPx(ann, W, H, 0)).toEqual([200, 200]);
+      expect(labelCenterPx(ann, W, H, 0)).toEqual([400, 300]);
     });
 
     it("is unaffected by corner ordering", () => {
       const pts = [[0.6, 0.8], [0.2, 0.8], [0.2, 0.4], [0.6, 0.4]];
       const ann = { shape: shape(VIDEO_BOUNDING_BOX, [{ frame: 0, points: pts }]) };
-      expect(labelAnchorPx(ann, W, H, 0)).toEqual([200, 200]);
+      expect(labelCenterPx(ann, W, H, 0)).toEqual([400, 300]);
     });
 
-    // The whole reason video needs its own variant: the anchor must track the
+    // The whole reason video needs its own variant: the centre must track the
     // interpolated position while scrubbing, not sit at a stored keyframe.
     it("follows the interpolated position between keyframes", () => {
       const ann = {
@@ -46,15 +46,16 @@ describe("labelAnchorPx", () => {
           { frame: 10, points: box(0.4, 0.4, 0.6, 0.6) },
         ]),
       };
-      const start = labelAnchorPx(ann, W, H, 0)!;
-      const mid = labelAnchorPx(ann, W, H, 5)!;
-      const end = labelAnchorPx(ann, W, H, 10)!;
+      const start = labelCenterPx(ann, W, H, 0)!;
+      const mid = labelCenterPx(ann, W, H, 5)!;
+      const end = labelCenterPx(ann, W, H, 10)!;
 
-      expect(start).toEqual([0, 0]);
-      expect(end).toEqual([400, 200]);
+      // Centres of the two keyframe boxes: (100, 50) and (500, 250).
+      expect(start).toEqual([100, 50]);
+      expect(end).toEqual([500, 250]);
       // Halfway between the two keyframes.
-      expect(mid[0]).toBeCloseTo(200, 6);
-      expect(mid[1]).toBeCloseTo(100, 6);
+      expect(mid[0]).toBeCloseTo(300, 6);
+      expect(mid[1]).toBeCloseTo(150, 6);
       expect(mid[0]).toBeGreaterThan(start[0]);
       expect(mid[0]).toBeLessThan(end[0]);
     });
@@ -66,67 +67,60 @@ describe("labelAnchorPx", () => {
           { frame: 20, points: box(0.2, 0.2, 0.4, 0.4) },
         ]),
       };
-      expect(labelAnchorPx(ann, W, H, 5)).toBeNull();
-      expect(labelAnchorPx(ann, W, H, 25)).toBeNull();
-      expect(labelAnchorPx(ann, W, H, 15)).not.toBeNull();
+      expect(labelCenterPx(ann, W, H, 5)).toBeNull();
+      expect(labelCenterPx(ann, W, H, 25)).toBeNull();
+      expect(labelCenterPx(ann, W, H, 15)).not.toBeNull();
     });
 
-    // A 200px x 200px square in pixel space, centred at (400px, 250px).
+    // A 200px x 200px square in pixel space, centred at (400px, 250px). The
+    // centre is the rotation pivot, so it stays put at any angle.
     const squareFrame = { frame: 0, points: box(0.3, 0.3, 0.5, 0.7) };
 
-    it("rotating 90° gives the same AABB for a square", () => {
-      const ann = { shape: shape(VIDEO_BOUNDING_BOX, [{ ...squareFrame, angle: Math.PI / 2 }]) };
-      const rotated = labelAnchorPx(ann, W, H, 0)!;
-      expect(rotated[0]).toBeCloseTo(300, 6);
-      expect(rotated[1]).toBeCloseTo(150, 6);
-    });
-
-    it("rotating 45° expands the AABB by a factor of sqrt(2)", () => {
-      const ann = { shape: shape(VIDEO_BOUNDING_BOX, [{ ...squareFrame, angle: Math.PI / 4 }]) };
-      const rotated = labelAnchorPx(ann, W, H, 0)!;
-      const half = 100 * Math.SQRT2;
-      expect(rotated[0]).toBeCloseTo(400 - half, 6);
-      expect(rotated[1]).toBeCloseTo(250 - half, 6);
-    });
-
-    it("treats angle 0 the same as no angle", () => {
-      const withZero = { shape: shape(VIDEO_BOUNDING_BOX, [{ ...squareFrame, angle: 0 }]) };
+    it("keeps the same centre at any angle", () => {
       const without = { shape: shape(VIDEO_BOUNDING_BOX, [squareFrame]) };
-      expect(labelAnchorPx(withZero, W, H, 0)).toEqual(labelAnchorPx(without, W, H, 0));
+      expect(labelCenterPx(without, W, H, 0)!).toEqual([400, 250]);
+      for (const angle of [0, Math.PI / 4, Math.PI / 2, Math.PI]) {
+        const ann = { shape: shape(VIDEO_BOUNDING_BOX, [{ ...squareFrame, angle }]) };
+        const rotated = labelCenterPx(ann, W, H, 0)!;
+        expect(rotated[0]).toBeCloseTo(400, 6);
+        expect(rotated[1]).toBeCloseTo(250, 6);
+      }
     });
 
     it("returns null for an incomplete corner set", () => {
       const ann = { shape: shape(VIDEO_BOUNDING_BOX, [{ frame: 0, points: [[0.1, 0.1]] }]) };
-      expect(labelAnchorPx(ann, W, H, 0)).toBeNull();
+      expect(labelCenterPx(ann, W, H, 0)).toBeNull();
     });
   });
 
   describe("polygon", () => {
-    it("takes the minimum x and y across points", () => {
+    it("returns the polygon's visual centre", () => {
+      // A square polygon — its visual centre is its geometric centre (400, 250).
       const ann = {
-        shape: shape(VIDEO_POLYGON, [{ frame: 0, points: [[0.5, 0.9], [0.2, 0.5], [0.8, 0.3]] }]),
+        shape: shape(VIDEO_POLYGON, [{ frame: 0, points: [[0.3, 0.3], [0.5, 0.3], [0.5, 0.7], [0.3, 0.7]] }]),
       };
-      expect(labelAnchorPx(ann, W, H, 0)).toEqual([200, 150]);
+      const center = labelCenterPx(ann, W, H, 0)!;
+      expect(Math.hypot(center[0] - 400, center[1] - 250)).toBeLessThan(2);
     });
 
     it("returns null for a degenerate polygon", () => {
       const ann = { shape: shape(VIDEO_POLYGON, [{ frame: 0, points: [[0.1, 0.1]] }]) };
-      expect(labelAnchorPx(ann, W, H, 0)).toBeNull();
+      expect(labelCenterPx(ann, W, H, 0)).toBeNull();
     });
   });
 
   describe("missing geometry and unknown shapes", () => {
     it("returns null when there are no keyframes", () => {
-      expect(labelAnchorPx({ shape: { type: VIDEO_BOUNDING_BOX, start: 0, end: 10, frames: [] } }, W, H, 0)).toBeNull();
+      expect(labelCenterPx({ shape: { type: VIDEO_BOUNDING_BOX, start: 0, end: 10, frames: [] } }, W, H, 0)).toBeNull();
     });
 
     it("returns null when there is no shape at all", () => {
-      expect(labelAnchorPx({}, W, H, 0)).toBeNull();
+      expect(labelCenterPx({}, W, H, 0)).toBeNull();
     });
 
     it("returns null for an unrecognised shape type", () => {
       const ann = { shape: shape("idah-video:something-new", [{ frame: 0, points: box(0.1, 0.1, 0.2, 0.2) }]) };
-      expect(labelAnchorPx(ann, W, H, 0)).toBeNull();
+      expect(labelCenterPx(ann, W, H, 0)).toBeNull();
     });
   });
 });
