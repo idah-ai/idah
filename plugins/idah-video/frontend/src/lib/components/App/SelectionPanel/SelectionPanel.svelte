@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnnotationsList from "$lib/components/App/SelectionPanel/_AnnotationsList.svelte";
+  import SelectedAnnotationsList from "$lib/components/App/SelectionPanel/_SelectedAnnotationsList.svelte";
   import CreateMode from "$lib/components/App/SelectionPanel/_CreateMode.svelte";
   import EditMode from "$lib/components/App/SelectionPanel/_EditMode.svelte";
   import GroupEditMode from "$lib/components/App/SelectionPanel/_GroupEditMode.svelte";
@@ -184,6 +185,9 @@
       disabled={effectiveDisabled}
     />
   {/if}
+{:else if selection.selectedAnnotationIds.size > 1}
+  <!-- Multiple annotations selected: show a compact list of selected items -->
+  <SelectedAnnotationsList />
 {:else if sel.type === "group"}
   <!-- Group edit mode -->
   <GroupEditMode
@@ -197,7 +201,7 @@
     disabled={effectiveDisabled}
   />
 {:else if sel.type === "annotation"}
-  <!-- Edit mode: edit the currently selected annotation -->
+  <!-- Edit mode: edit a single selected annotation -->
   <EditMode
     {modeTitle}
     {shapeType}
