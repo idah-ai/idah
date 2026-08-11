@@ -251,6 +251,22 @@
     ];
   });
 
+  // ── Multi-drag state (Feature 2 — Move Selected Shapes) ────────────────
+  /** Normalized cursor position when the multi-drag started. */
+  let _multiDragOrigin: Point | null = $state(null);
+  /** Current shared drag delta in normalized coords. */
+  let _multiDragDelta: Point | null = $state(null);
+
+  /** Whether any selected annotation component is currently being edited (dragged). */
+  let _anySelectedEditing = $derived.by((): boolean => {
+    for (let i = 0; i < visibleAnnotations.length; i++) {
+      if (selection.isAnnotationSelected(visibleAnnotations[i].id) && _compRefs[i]?.getIsEditing?.()) {
+        return true;
+      }
+    }
+    return false;
+  });
+
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
   let isDragging = $state(false);
@@ -460,6 +476,20 @@
       snapDebug.candidates = 0;
     }
 
+    // ── Multi-drag: track shared delta for batch move ─────────────────
+    // When multiple annotations are selected and one is being dragged,
+    // compute the delta and pass it to all selected shapes so they move
+    // together visually.
+    if (selection.selectedAnnotations.length > 1 && _anySelectedEditing) {
+      if (!_multiDragOrigin) {
+        _multiDragOrigin = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+      }
+      _multiDragDelta = [
+        sceneNormalizedCursor[0] - _multiDragOrigin[0],
+        sceneNormalizedCursor[1] - _multiDragOrigin[1],
+      ];
+    }
+
     // Only pan in editor mode
     if (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE) {
       zoomableElement!.mouseMove(e);
@@ -593,9 +623,38 @@
     // Iterating all refs guarantees every stale drag is cleaned up.
     // Note: _compRefs holds AnnotationGeometry instances; they expose endSelection
     // through getToolSelection(), not directly.
+
+    // Capture which annotation was being dragged BEFORE clearing drag state.
+    let _draggedId: string | null = null;
+    if (_multiDragDelta) {
+      for (let i = 0; i < visibleAnnotations.length; i++) {
+        if (_compRefs[i]?.getIsEditing?.()) {
+          _draggedId = visibleAnnotations[i].id;
+          break;
+        }
+      }
+    }
+
     for (let i = 0; i < _compRefs.length; i++) {
       _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
     }
+
+    // ── Multi-drag: commit delta to all other selected annotations ──
+    if (_multiDragDelta && (_multiDragDelta[0] !== 0 || _multiDragDelta[1] !== 0)) {
+      for (let i = 0; i < visibleAnnotations.length; i++) {
+        const ann = visibleAnnotations[i];
+        if (!selection.isAnnotationSelected(ann.id)) continue;
+        if (ann.id === _draggedId) continue; // already committed by endSelection
+        const shape = (ann as any).shape as IVideoAnnotationShape | undefined;
+        if (!shape?.frames?.length) continue;
+        const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
+        if (!interp?.points?.length) continue;
+        const movedPoints = interp.points.map((p) => [p[0] + _multiDragDelta[0], p[1] + _multiDragDelta[1]] as Point);
+        handleEditComplete(ann.id, movedPoints, interp.angle ?? 0);
+      }
+    }
+    _multiDragOrigin = null;
+    _multiDragDelta = null;
 
     // Only pan on mouseup if we were panning
     zoomableElement!.mouseUp(e);
@@ -749,6 +808,7 @@
           !annotation.isLocked(ann) &&
           !["errored", "completed"].includes(getDriver().entryStatus)}
         cursor={snappedCursor}
+        multiDragDelta={_multiDragDelta}
         mode={viewport.mode}
         onClick={(e: MouseEvent) => handleClick(ann, e)}
         onEditComplete={(aabb: Point[], angle: number) => handleEditComplete(ann.id, aabb, angle)}

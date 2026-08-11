@@ -22,6 +22,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], angle: number) => void;
@@ -32,6 +33,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = "editor",
     onClick,
     onEditComplete,
@@ -116,7 +118,13 @@
   // ── Display points ────────────────────────────────────────────────────
   let displayPoints = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return points.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
     }
     return points;
   });

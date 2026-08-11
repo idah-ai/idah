@@ -9,6 +9,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], angle: number) => void;
@@ -19,6 +20,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = "editor",
     onClick,
     onEditComplete,
@@ -60,7 +62,27 @@
 </script>
 
 {#if annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX}
-  <BBoxShape bind:this={_bboxComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
+  <BBoxShape
+    bind:this={_bboxComp}
+    {annotation}
+    {selected}
+    {editable}
+    {cursor}
+    {multiDragDelta}
+    {mode}
+    {onClick}
+    {onEditComplete}
+  />
 {:else if annotation?.shape?.type === IDAH_VIDEO_POLYGON}
-  <PolygonShape bind:this={_polyComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
+  <PolygonShape
+    bind:this={_polyComp}
+    {annotation}
+    {selected}
+    {editable}
+    {cursor}
+    {multiDragDelta}
+    {mode}
+    {onClick}
+    {onEditComplete}
+  />
 {/if}

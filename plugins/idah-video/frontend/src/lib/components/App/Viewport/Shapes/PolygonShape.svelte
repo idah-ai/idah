@@ -16,6 +16,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = "editor",
     onClick,
     onEditComplete,
@@ -24,6 +25,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], angle: number) => void;
@@ -82,7 +84,13 @@
 
   let displayVertices = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return vertices.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
     }
     return vertices;
   });
@@ -133,7 +141,6 @@
 
   export function startSelection(start: Point, altKey = false): boolean {
     if (!editable || baseVertices.length < 3) return false;
-    console.log("atooooooooooo");
 
     // Check if clicking on a vertex
     const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
@@ -162,8 +169,6 @@
     }
 
     if (altKey) {
-      console.log("dqjskljfkdsjlkdsj");
-
       // Alt+drag anywhere: start box selection (no need to be inside polygon)
       boxStart = start;
       boxEnd = start;
