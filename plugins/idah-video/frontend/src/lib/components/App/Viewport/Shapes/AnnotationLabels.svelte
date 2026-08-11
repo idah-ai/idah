@@ -32,7 +32,7 @@
   const FONT_SIZE = 12;
   const LINE_HEIGHT = 14;
   const MAX_WIDTH = 200;
-  const OFFSET_Y = 20; // gap below the shape centre; clears the centre resize handle
+  const OFFSET_Y = 0; // vertical gap below the shape centre
 
   let w = $derived(media.width);
   let h = $derived(media.height);
