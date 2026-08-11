@@ -9,7 +9,8 @@
 import { getDriver } from "$lib/state/driver.svelte";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 import { categoryValueToLabel } from "$lib/utils/annotation";
-import { centroid, rotatePoint, type Point } from "$lib/utils/math/point";
+import { centroid, type Point } from "$lib/utils/math/point";
+import { polygonVisualCenter } from "$lib/utils/math/polylabel";
 
 /** Minimal structural view of an annotation — avoids coupling to the full record type. */
 type LabelAnnotation = {
@@ -76,92 +77,57 @@ export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationL
 }
 
 /**
- * Top-left corner of the annotation's axis-aligned bounding box, in media pixels.
+ * Centre point of the annotation, in media pixels. The label is rendered
+ * horizontally centred and just below this point.
  *
- * One rule for every shape at every angle. For rotated bbox/ellipse this is the
- * AABB of the ROTATED corners: the label renders in a separate layer that does
- * not inherit the shape's CSS `transform: rotate()`, so the rotation has to be
- * applied to the anchor explicitly or the label drifts off the shape.
+ * The centre is rotation-invariant for every shape here — a box/ellipse rotates
+ * about its own centre — so, unlike the old corner anchor, no explicit rotation
+ * is needed. A polygon uses its visual centre (pole of inaccessibility) rather
+ * than the vertex average, so the label sits inside even concave shapes.
  *
  * Returns null for masks (drawn to canvas, excluded from labelling) and for any
  * shape whose points are missing or malformed.
  */
-export function labelAnchorPx(annotation: LabelAnnotation, w: number, h: number): Point | null {
+export function labelCenterPx(annotation: LabelAnnotation, w: number, h: number): Point | null {
   const shape = annotation?.shape;
   const points = (shape?.points ?? []) as Point[];
 
   switch (shape?.type) {
     case IMAGE_BOUNDING_BOX: {
-      // Stored as 4 unrotated AABB corners plus a separate `angle`.
+      // Stored as 4 unrotated AABB corners plus a separate `angle`. Rotation is
+      // about the centroid, so the box centre is the corner centroid either way.
       if (points.length < 4) return null;
-      const angle = shape.angle ?? 0;
-      if (!angle) return minCornerPx(points, w, h);
-      // Rotate in pixel space: the shape's on-screen rotation is about its
-      // pixel centroid, so normalized coords must be converted first or the
-      // result skews on any non-square image. (The Shapes/ helper rotatePointN
-      // does the same round-trip; working in px directly keeps this module
-      // free of a dependency on the component tree.)
-      const cornersPx = points.map(([x, y]): Point => [x * w, y * h]);
-      const cPx = centroid(cornersPx);
-      return minPx(cornersPx.map((p) => rotatePoint(p, cPx, angle)));
+      return centroid(points.map(([x, y]): Point => [x * w, y * h]));
     }
 
     case IMAGE_ELLIPSE: {
-      // Stored as [[cx, cy], [rx, ry]] + angle — centroid and radii, NOT the
-      // 4 AABB corners. EllipseShape derives the corner form at runtime for
-      // editing only (ellipseAABB), and converts back before persisting.
+      // Stored as [[cx, cy], [rx, ry]] + angle — centroid and radii. The centre
+      // is (cx, cy); a rotation of the ellipse leaves it unchanged.
       if (points.length < 2) return null;
       const [cx, cy] = points[0];
-      const [rx, ry] = points[1];
-      const angle = shape.angle ?? 0;
-      if (!angle) return [(cx - rx) * w, (cy - ry) * h];
-
-      // Rotate the same corner set ellipseAABB() produces, about the centroid
-      // in pixel space, so a rotated ellipse anchors consistently with a
-      // rotated bounding box.
-      const cPx: Point = [cx * w, cy * h];
-      const cornersPx: Point[] = [
-        [(cx - rx) * w, (cy - ry) * h],
-        [(cx + rx) * w, (cy - ry) * h],
-        [(cx + rx) * w, (cy + ry) * h],
-        [(cx - rx) * w, (cy + ry) * h],
-      ];
-      return minPx(cornersPx.map((p) => rotatePoint(p, cPx, angle)));
+      return [cx * w, cy * h];
     }
 
     case IMAGE_CIRCLE: {
-      // points = [[cx, cy]]; radius is normalized against min(w, h).
+      // points = [[cx, cy]]; the centre is the point itself.
       if (points.length < 1) return null;
       const [cx, cy] = points[0];
-      const rPx = (shape.radius ?? 0) * Math.min(w, h);
-      return [cx * w - rPx, cy * h - rPx];
+      return [cx * w, cy * h];
     }
 
-    case IMAGE_POLYGON:
-    case IMAGE_LINE: {
+    case IMAGE_POLYGON: {
       if (points.length < 2) return null;
-      return minCornerPx(points, w, h);
+      return polygonVisualCenter(points.map(([x, y]): Point => [x * w, y * h]));
+    }
+
+    case IMAGE_LINE: {
+      // A line has no interior; its centre is the midpoint of the endpoints.
+      if (points.length < 2) return null;
+      return centroid(points.map(([x, y]): Point => [x * w, y * h]));
     }
 
     // IMAGE_MASK and anything unrecognised are not labelled.
     default:
       return null;
   }
-}
-
-/** (min x, min y) of normalized points, converted to media pixels. */
-function minCornerPx(points: Point[], w: number, h: number): Point {
-  const [minX, minY] = minPx(points);
-  return [minX * w, minY * h];
-}
-
-/** (min x, min y) of points, in whatever space they were given. */
-function minPx(points: Point[]): Point {
-  let minX = Infinity;
-  let minY = Infinity;
-  for (const [x, y] of points) {
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-  }
-  return [minX, minY];
 }

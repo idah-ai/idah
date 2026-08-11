@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
-// label.spec.ts — Unit tests for category label text and anchor geometry
+// label.spec.ts — Unit tests for category label text and centre geometry
 // ---------------------------------------------------------------------------
 import { describe, it, expect } from "vitest";
-import { annotationLabel, labelAnchorPx } from "./label";
+import { annotationLabel, labelCenterPx } from "./label";
 import {
   IMAGE_BOUNDING_BOX,
   IMAGE_CIRCLE,
@@ -23,164 +23,113 @@ const box = (x1: number, y1: number, x2: number, y2: number) => [
   [x1, y2],
 ];
 
-describe("labelAnchorPx", () => {
+describe("labelCenterPx", () => {
   describe("bounding box", () => {
-    it("returns the top-left corner in media pixels", () => {
+    it("returns the centre of the box in media pixels", () => {
       const ann = { shape: { type: IMAGE_BOUNDING_BOX, points: box(0.2, 0.4, 0.6, 0.8) } };
-      expect(labelAnchorPx(ann, W, H)).toEqual([200, 200]);
+      expect(labelCenterPx(ann, W, H)).toEqual([400, 300]);
     });
 
     it("is unaffected by corner ordering", () => {
       const ann = { shape: { type: IMAGE_BOUNDING_BOX, points: [[0.6, 0.8], [0.2, 0.8], [0.2, 0.4], [0.6, 0.4]] } };
-      expect(labelAnchorPx(ann, W, H)).toEqual([200, 200]);
+      expect(labelCenterPx(ann, W, H)).toEqual([400, 300]);
     });
 
-    it("treats angle 0 the same as no angle", () => {
-      const pts = box(0.2, 0.4, 0.6, 0.8);
-      expect(labelAnchorPx({ shape: { type: IMAGE_BOUNDING_BOX, points: pts, angle: 0 } }, W, H)).toEqual(
-        labelAnchorPx({ shape: { type: IMAGE_BOUNDING_BOX, points: pts } }, W, H),
-      );
-    });
-
-    // A square in PIXEL space, so rotation is easy to reason about: 0.2 of the
-    // 1000px width and 0.4 of the 500px height are both 200px.
+    // The centre is the rotation pivot, so a rotated box keeps the same centre —
+    // unlike the old corner anchor, which swept outward with the rotation.
     const squarePts = box(0.3, 0.3, 0.5, 0.7); // 200px x 200px, centre (400px, 250px)
 
-    it("rotating 90° gives the same AABB for a square", () => {
-      const rotated = labelAnchorPx(
-        { shape: { type: IMAGE_BOUNDING_BOX, points: squarePts, angle: Math.PI / 2 } },
-        W,
-        H,
-      )!;
-      expect(rotated[0]).toBeCloseTo(300, 6);
-      expect(rotated[1]).toBeCloseTo(150, 6);
-    });
-
-    it("rotating 180° gives the same AABB for a square", () => {
-      const rotated = labelAnchorPx({ shape: { type: IMAGE_BOUNDING_BOX, points: squarePts, angle: Math.PI } }, W, H)!;
-      expect(rotated[0]).toBeCloseTo(300, 6);
-      expect(rotated[1]).toBeCloseTo(150, 6);
-    });
-
-    it("rotating 45° expands the AABB by a factor of sqrt(2)", () => {
-      const rotated = labelAnchorPx(
-        { shape: { type: IMAGE_BOUNDING_BOX, points: squarePts, angle: Math.PI / 4 } },
-        W,
-        H,
-      )!;
-      // Half-diagonal of a 200px square is 100*sqrt(2) ≈ 141.42 from the centre.
-      const half = 100 * Math.SQRT2;
-      expect(rotated[0]).toBeCloseTo(400 - half, 6);
-      expect(rotated[1]).toBeCloseTo(250 - half, 6);
-    });
-
-    it("moves the anchor away from the stored top-left when rotated", () => {
-      const unrotated = labelAnchorPx({ shape: { type: IMAGE_BOUNDING_BOX, points: squarePts } }, W, H)!;
-      const rotated = labelAnchorPx(
-        { shape: { type: IMAGE_BOUNDING_BOX, points: squarePts, angle: Math.PI / 4 } },
-        W,
-        H,
-      )!;
-      expect(rotated).not.toEqual(unrotated);
+    it("keeps the same centre at any angle", () => {
+      const unrotated = labelCenterPx({ shape: { type: IMAGE_BOUNDING_BOX, points: squarePts } }, W, H)!;
+      expect(unrotated[0]).toBeCloseTo(400, 6);
+      expect(unrotated[1]).toBeCloseTo(250, 6);
+      for (const angle of [0, Math.PI / 4, Math.PI / 2, Math.PI]) {
+        const rotated = labelCenterPx({ shape: { type: IMAGE_BOUNDING_BOX, points: squarePts, angle } }, W, H)!;
+        expect(rotated[0]).toBeCloseTo(400, 6);
+        expect(rotated[1]).toBeCloseTo(250, 6);
+      }
     });
 
     it("returns null when points are missing or incomplete", () => {
-      expect(labelAnchorPx({ shape: { type: IMAGE_BOUNDING_BOX } }, W, H)).toBeNull();
-      expect(labelAnchorPx({ shape: { type: IMAGE_BOUNDING_BOX, points: [[0.1, 0.1]] } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_BOUNDING_BOX } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_BOUNDING_BOX, points: [[0.1, 0.1]] } }, W, H)).toBeNull();
     });
   });
 
-  // REGRESSION: an ellipse is stored as [[cx, cy], [rx, ry]] + angle — centroid
-  // and radii, NOT the 4 AABB corners that BBox uses. Requiring 4 points here
-  // silently returned null for every ellipse, so no ellipse ever got a label.
+  // An ellipse is stored as [[cx, cy], [rx, ry]] + angle — centroid and radii,
+  // NOT 4 AABB corners. The label centre is simply (cx, cy).
   describe("ellipse", () => {
-    it("derives the top-left from centroid and radii", () => {
+    it("returns the centroid (cx, cy) in media pixels", () => {
       const ann = { shape: { type: IMAGE_ELLIPSE, points: [[0.3, 0.4], [0.2, 0.1]] } };
-      const anchor = labelAnchorPx(ann, W, H)!;
-      // (0.3 - 0.2) * 1000 = 100, (0.4 - 0.1) * 500 = 150 — compared loosely
-      // because subtracting normalized floats leaves the usual binary residue.
-      expect(anchor[0]).toBeCloseTo(100, 6);
-      expect(anchor[1]).toBeCloseTo(150, 6);
+      const center = labelCenterPx(ann, W, H)!;
+      expect(center[0]).toBeCloseTo(300, 6);
+      expect(center[1]).toBeCloseTo(200, 6);
     });
 
-    it("returns an anchor for the 2-point stored form", () => {
+    it("ignores the radii — the centre is the first point", () => {
       const ann = { shape: { type: IMAGE_ELLIPSE, points: [[0.5, 0.5], [0.1, 0.1]] } };
-      expect(labelAnchorPx(ann, W, H)).not.toBeNull();
+      const center = labelCenterPx(ann, W, H)!;
+      expect(center[0]).toBeCloseTo(500, 6);
+      expect(center[1]).toBeCloseTo(250, 6);
     });
 
-    it("does NOT require the 4-corner AABB form", () => {
-      const twoPoint = { shape: { type: IMAGE_ELLIPSE, points: [[0.5, 0.5], [0.1, 0.1]] } };
-      const anchor = labelAnchorPx(twoPoint, W, H)!;
-      expect(anchor[0]).toBeCloseTo(400, 6);
-      expect(anchor[1]).toBeCloseTo(200, 6);
-    });
-
-    it("accounts for rotation about the centroid", () => {
-      // 200px x 200px in pixel space: rx = 0.1*1000 = 100, ry = 0.2*500 = 100.
-      const ann = { shape: { type: IMAGE_ELLIPSE, points: [[0.4, 0.5], [0.1, 0.2]], angle: Math.PI / 4 } };
-      const rotated = labelAnchorPx(ann, W, H)!;
-      const half = 100 * Math.SQRT2;
-      expect(rotated[0]).toBeCloseTo(400 - half, 6);
-      expect(rotated[1]).toBeCloseTo(250 - half, 6);
-    });
-
-    it("treats angle 0 the same as no angle", () => {
+    it("is unchanged by rotation", () => {
       const pts = [[0.4, 0.5], [0.1, 0.2]];
-      expect(labelAnchorPx({ shape: { type: IMAGE_ELLIPSE, points: pts, angle: 0 } }, W, H)).toEqual(
-        labelAnchorPx({ shape: { type: IMAGE_ELLIPSE, points: pts } }, W, H),
-      );
+      const unrotated = labelCenterPx({ shape: { type: IMAGE_ELLIPSE, points: pts } }, W, H)!;
+      const rotated = labelCenterPx({ shape: { type: IMAGE_ELLIPSE, points: pts, angle: Math.PI / 4 } }, W, H)!;
+      expect(rotated).toEqual(unrotated);
+      expect(unrotated[0]).toBeCloseTo(400, 6);
+      expect(unrotated[1]).toBeCloseTo(250, 6);
     });
 
     it("returns null when the radii point is missing", () => {
-      expect(labelAnchorPx({ shape: { type: IMAGE_ELLIPSE, points: [[0.5, 0.5]] } }, W, H)).toBeNull();
-      expect(labelAnchorPx({ shape: { type: IMAGE_ELLIPSE } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_ELLIPSE, points: [[0.5, 0.5]] } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_ELLIPSE } }, W, H)).toBeNull();
     });
   });
 
   describe("circle", () => {
-    it("subtracts the radius, normalized against min(w, h)", () => {
+    it("returns the centre point, ignoring the radius", () => {
       const ann = { shape: { type: IMAGE_CIRCLE, points: [[0.5, 0.5]], radius: 0.1 } };
-      // min(1000, 500) = 500, so r = 50px. Centre is (500, 250).
-      expect(labelAnchorPx(ann, W, H)).toEqual([450, 200]);
-    });
-
-    it("treats a missing radius as zero", () => {
-      const ann = { shape: { type: IMAGE_CIRCLE, points: [[0.5, 0.5]] } };
-      expect(labelAnchorPx(ann, W, H)).toEqual([500, 250]);
+      expect(labelCenterPx(ann, W, H)).toEqual([500, 250]);
     });
 
     it("returns null with no centre point", () => {
-      expect(labelAnchorPx({ shape: { type: IMAGE_CIRCLE, points: [] } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_CIRCLE, points: [] } }, W, H)).toBeNull();
     });
   });
 
   describe("polygon and line", () => {
-    it("takes the minimum x and y across polygon points", () => {
-      const ann = { shape: { type: IMAGE_POLYGON, points: [[0.5, 0.9], [0.2, 0.5], [0.8, 0.3]] } };
-      expect(labelAnchorPx(ann, W, H)).toEqual([200, 150]);
+    it("returns the polygon's visual centre", () => {
+      // A square polygon — its visual centre is its geometric centre (400, 250).
+      const ann = { shape: { type: IMAGE_POLYGON, points: [[0.3, 0.3], [0.5, 0.3], [0.5, 0.7], [0.3, 0.7]] } };
+      const center = labelCenterPx(ann, W, H)!;
+      expect(Math.hypot(center[0] - 400, center[1] - 250)).toBeLessThan(2);
     });
 
-    it("takes the upper-left of the two line endpoints", () => {
+    it("returns the midpoint of the two line endpoints", () => {
       const ann = { shape: { type: IMAGE_LINE, points: [[0.8, 0.2], [0.3, 0.9]] } };
-      expect(labelAnchorPx(ann, W, H)).toEqual([300, 100]);
+      const center = labelCenterPx(ann, W, H)!;
+      expect(center[0]).toBeCloseTo(550, 6);
+      expect(center[1]).toBeCloseTo(275, 6);
     });
 
     it("returns null for a degenerate line", () => {
-      expect(labelAnchorPx({ shape: { type: IMAGE_LINE, points: [[0.1, 0.1]] } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_LINE, points: [[0.1, 0.1]] } }, W, H)).toBeNull();
     });
   });
 
   describe("excluded and unknown shapes", () => {
     it("returns null for masks", () => {
-      expect(labelAnchorPx({ shape: { type: IMAGE_MASK, points: [[0.1, 0.1], [0.5, 0.5]] } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: IMAGE_MASK, points: [[0.1, 0.1], [0.5, 0.5]] } }, W, H)).toBeNull();
     });
 
     it("returns null for an unrecognised shape type", () => {
-      expect(labelAnchorPx({ shape: { type: "idah-image:something-new", points: [[0.1, 0.1]] } }, W, H)).toBeNull();
+      expect(labelCenterPx({ shape: { type: "idah-image:something-new", points: [[0.1, 0.1]] } }, W, H)).toBeNull();
     });
 
     it("returns null when there is no shape at all", () => {
-      expect(labelAnchorPx({}, W, H)).toBeNull();
+      expect(labelCenterPx({}, W, H)).toBeNull();
     });
   });
 });
