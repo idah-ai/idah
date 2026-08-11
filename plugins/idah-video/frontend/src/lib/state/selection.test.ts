@@ -5,10 +5,14 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { selection } from "./selection.svelte";
 
 // Mock the data module — selection.svelte.ts imports data for derived values
+// Use a shared mutable array so tests can populate it for resolveAnnotations().
+// vi.hoisted() ensures the array exists before the hoisted vi.mock factory runs.
+const mockItems = vi.hoisted(() => [] as any[]);
+
 vi.mock("$lib/state/data.svelte", () => ({
   data: {
     annotations: {
-      items: [],
+      items: mockItems,
     },
   },
 }));
@@ -16,7 +20,10 @@ vi.mock("$lib/state/data.svelte", () => ({
 const mockAnn = (id: string) => ({ id, shape: {}, value: {} });
 
 describe("selection state", () => {
-  beforeEach(() => selection.deselect());
+  beforeEach(() => {
+    selection.deselect();
+    mockItems.splice(0, mockItems.length);
+  });
 
   describe("initial state", () => {
     it("has no selection", () => {
@@ -31,6 +38,7 @@ describe("selection state", () => {
   describe("selectAnnotation", () => {
     it("selects a single annotation", () => {
       const ann = mockAnn("ann-001");
+      mockItems.push(ann);
       selection.selectAnnotation(ann);
       expect(selection.hasSelection()).toBe(true);
       expect(selection.isAnnotationSelected("ann-001")).toBe(true);
