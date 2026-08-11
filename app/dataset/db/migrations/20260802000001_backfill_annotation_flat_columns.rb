@@ -16,6 +16,8 @@ Sequel.migration do
   BATCH_SIZE = 1000
 
   up do
+    extension :pg_json
+
     loop do
       # Select a batch of ids that still need backfilling.
       ids = from(:annotations)
@@ -45,6 +47,8 @@ Sequel.migration do
   end
 
   down do
+    extension :pg_json
+
     # Reverse the backfill: reconstruct the legacy `dimensions`/`annotation`
     # JSON columns from the new columns, then NULL the new columns out so the
     # pre-backfill state is fully restored.
@@ -67,6 +71,10 @@ Sequel.migration do
         category: nil,
         properties: nil,
       )
+    end
+    alter_table(:annotations) do
+      set_column_not_null :dimensions
+      set_column_not_null :annotation
     end
   end
 end

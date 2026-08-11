@@ -30,8 +30,8 @@ Sequel.migration do
     # and relax the new columns back to nullable so the pre-contract state is
     # fully restored for testers switching branches.
     alter_table(:annotations) do
-      add_column :dimensions, :jsonb, null: false
-      add_column :annotation, :jsonb, null: false
+      add_column :dimensions, :jsonb
+      add_column :annotation, :jsonb
       set_column_allow_null :shape_type
       set_column_allow_null :shape_args
       set_column_allow_null :category
