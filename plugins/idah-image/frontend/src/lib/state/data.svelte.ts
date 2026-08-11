@@ -72,6 +72,7 @@ export function computeMissingRanges(loaded: [number, number] | null, request: [
 // ---------------------------------------------------------------------------
 
 export interface AnnotationDataStore extends DataStore<AnnotationItem> {
+  restore(id: string): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -116,8 +117,10 @@ export interface DataStore<T extends DataItem> {
 
 export type AnnotationItem = {
   id: string;
-  shape: { type: string } & Record<string, unknown>;
-  value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
+  shape_type: string;
+  shape_args: Record<string, unknown>;
+  category: string;
+  properties?: Record<string, unknown>;
   metadata?: {
     id: string;
     createdAt: Date;
@@ -144,6 +147,7 @@ export interface AnnotationDriver {
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
+  restore(id: string): Promise<{ id: string } & Record<string, unknown>>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -246,13 +250,40 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       }
     },
 
+    async restore(id: string): Promise<void> {
+      // No optimistic local insert — rely on the backend's restore response
+      // (which carries the full record, including annotation_shape tiles) to
+      // repopulate. If it fails, nothing was changed locally.
+      try {
+        const restored = await driver.restore(id);
+        originalUpsert(restored as AnnotationItem);
+        markOccupancyDirty();
+      } catch {
+        throw new Error("Failed to restore annotation");
+      }
+    },
+
     async update(item: AnnotationItem): Promise<void> {
       const old = store.items.find((i) => i.id === item.id);
       // Optimistic: update locally first + refresh selection reference
-      originalUpsert(item);
+      // Preserve any mask tile keys (tile-*) already present in the local
+      // record's shape_args. The update command strips these before sending to
+      // the backend (they live in annotation_shape), but the local merged view
+      // must keep them or the mask disappears until the next reload.
+      const merged: AnnotationItem = { ...item };
+      if (old && old.shape_args && merged.shape_args) {
+        const oldShape = old.shape_args as Record<string, unknown>;
+        const newShape = merged.shape_args as Record<string, unknown>;
+        for (const key of Object.keys(oldShape)) {
+          if (key.startsWith("tile-") && !(key in newShape)) {
+            newShape[key] = oldShape[key];
+          }
+        }
+      }
+      originalUpsert(merged);
       syncSelectionOnUpdate(item.id);
       try {
-        await driver.update(item.id, $state.snapshot(item));
+        await driver.update(item.id, $state.snapshot(merged));
       } catch {
         // Rollback
         if (old) originalUpsert(old);
@@ -261,11 +292,11 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
     },
 
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
-      // Optimistic local update: merge tile data into the annotation's shape
+      // Optimistic local update: merge tile data into the annotation's shape_args
       const record = store.items.find((i) => i.id === annotationId);
-      const originalShape = record ? { ...(record.shape as Record<string, unknown>) } : null;
+      const originalShape = record ? { ...(record.shape_args as Record<string, unknown>) } : null;
       if (record) {
-        const shape = { ...(record.shape as Record<string, unknown>) };
+        const shape = { ...(record.shape_args as Record<string, unknown>) };
         if (value === null) {
           delete shape[key];
         } else {
@@ -274,7 +305,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
         // Use store.upsert to update the local record, then force reactivity
         // by replacing the entire items array (store.upsert mutates in-place
         // which Svelte 5 $state doesn't track).
-        originalUpsert({ ...record, shape: shape as any });
+        originalUpsert({ ...record, shape_args: shape as any });
         // Force a new array reference for Svelte 5 reactivity
         const all = [...store.items];
         store.reset(all, store.loadedRange ?? [0, 0]);
@@ -286,7 +317,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       } catch (e) {
         // Rollback optimistic update on failure
         if (record && originalShape) {
-          originalUpsert({ ...record, shape: originalShape as any });
+          originalUpsert({ ...record, shape_args: originalShape as any });
           const all = [...store.items];
           store.reset(all, store.loadedRange ?? [0, 0]);
         }
@@ -300,9 +331,9 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
 
       // Optimistic local update: apply all tile mutations in a single pass
       const record = store.items.find((i) => i.id === annotationId);
-      const originalShape = record ? { ...(record.shape as Record<string, unknown>) } : null;
+      const originalShape = record ? { ...(record.shape_args as Record<string, unknown>) } : null;
       if (record) {
-        const shape = { ...(record.shape as Record<string, unknown>) };
+        const shape = { ...(record.shape_args as Record<string, unknown>) };
         for (const { key, value } of entries) {
           if (value === null) {
             delete shape[key];
@@ -310,7 +341,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
             shape[key] = value;
           }
         }
-        originalUpsert({ ...record, shape: shape as any });
+        originalUpsert({ ...record, shape_args: shape as any });
         // Single store reset for the entire batch, not one per tile
         const all = [...store.items];
         store.reset(all, store.loadedRange ?? [0, 0]);
@@ -322,7 +353,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       } catch (e) {
         // Rollback all tile mutations on failure
         if (record && originalShape) {
-          originalUpsert({ ...record, shape: originalShape as any });
+          originalUpsert({ ...record, shape_args: originalShape as any });
           const all = [...store.items];
           store.reset(all, store.loadedRange ?? [0, 0]);
         }

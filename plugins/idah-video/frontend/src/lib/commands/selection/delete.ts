@@ -44,7 +44,7 @@ export function register(driver: IIdahDriverV2): void {
           },
           async undo() {
             if (!data.annotations) return;
-            await data.annotations!.create({ ...record, id: record.id });
+            await data.annotations!.restore(record.id);
           },
           isCombinable() {
             return false;
@@ -75,7 +75,7 @@ export function register(driver: IIdahDriverV2): void {
         async undo() {
           if (!data.annotations) return;
           for (const r of records) {
-            await data.annotations!.create({ ...r, id: r.id });
+            await data.annotations!.restore(r.id);
           }
         },
         isCombinable() {

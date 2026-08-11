@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // entry-root.svelte.ts — Shared entry root annotation state
 //
-// An annotation with shape.type === "entry:root" holds entry-level
+// An annotation with shape_type === "entry:root" holds entry-level
 // category/properties (scene-level classification).
 //
 // Exposed as a Svelte 5 rune-based object so components can use

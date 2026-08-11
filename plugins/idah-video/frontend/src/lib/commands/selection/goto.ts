@@ -37,7 +37,7 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (sel?.type === "annotation") {
             const record = sel.annotation as any;
-            const startFrame = record.shape?.start ?? 1;
+            const startFrame = record.shape_args?.start ?? 1;
             _previousFrame = previousFrame;
             viewport.video.goToFrame(startFrame);
           }

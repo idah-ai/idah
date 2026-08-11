@@ -33,10 +33,10 @@ describe("objectVariables", () => {
       attributes: { color: "red", size: "large" },
       category: "my-cat",
     };
-    const result = objectVariables(obj, "value");
-    expect(result).toContainEqual(["value.attributes.color", "red"]);
-    expect(result).toContainEqual(["value.attributes.size", "large"]);
-    expect(result).toContainEqual(["value.category", "my-cat"]);
+    const result = objectVariables(obj);
+    expect(result).toContainEqual(["attributes.color", "red"]);
+    expect(result).toContainEqual(["attributes.size", "large"]);
+    expect(result).toContainEqual(["category", "my-cat"]);
   });
 
   it("handles null values (not recursing into null)", () => {
@@ -55,7 +55,7 @@ describe("AstProcessor", () => {
 
   describe("get", () => {
     it("returns the value of an existing variable via eq", () => {
-      expect(proc({ "value.properties.number": 42 }).processAST(["eq", [["get", ["value.properties.number"]], 42]])).toBe(true);
+      expect(proc({ "properties.number": 42 }).processAST(["eq", [["get", ["properties.number"]], 42]])).toBe(true);
     });
 
     it("causes eq to fail when variable is missing", () => {
@@ -197,21 +197,21 @@ describe("AstProcessor", () => {
     const defaultVisibility: ASTNode = [
       "eq",
       [
-        ["get", ["value.properties.number"]],
+        ["get", ["properties.number"]],
         42,
       ],
     ];
 
     it("evaluates the example from the config (eq + get)", () => {
       const vars = {
-        "value.properties.number": 42,
+        "properties.number": 42,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(defaultVisibility)).toBe(true);
     });
 
     it("rejects when the variable doesn't match", () => {
       const vars = {
-        "value.properties.number": 0,
+        "properties.number": 0,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(defaultVisibility)).toBe(false);
     });
@@ -220,13 +220,13 @@ describe("AstProcessor", () => {
       const ast: ASTNode = [
         "and",
         [
-          ["eq", [["get", ["value.properties.color"]], "red"]],
-          ["gt", [["get", ["value.properties.size"]], 10]],
+          ["eq", [["get", ["properties.color"]], "red"]],
+          ["gt", [["get", ["properties.size"]], 10]],
         ],
       ];
       const vars = {
-        "value.properties.color": "red",
-        "value.properties.size": 42,
+        "properties.color": "red",
+        "properties.size": 42,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(ast)).toBe(true);
     });
@@ -235,13 +235,13 @@ describe("AstProcessor", () => {
       const ast: ASTNode = [
         "and",
         [
-          ["eq", [["get", ["value.properties.color"]], "red"]],
-          ["gt", [["get", ["value.properties.size"]], 10]],
+          ["eq", [["get", ["properties.color"]], "red"]],
+          ["gt", [["get", ["properties.size"]], 10]],
         ],
       ];
       const vars = {
-        "value.properties.color": "blue",
-        "value.properties.size": 42,
+        "properties.color": "blue",
+        "properties.size": 42,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(ast)).toBe(false);
     });
@@ -254,17 +254,17 @@ describe("AstProcessor", () => {
           [
             "or",
             [
-              ["eq", [["get", ["value.properties.number"]], 42]],
-              ["eq", [["get", ["value.properties.color"]], "red"]],
+              ["eq", [["get", ["properties.number"]], 42]],
+              ["eq", [["get", ["properties.color"]], "red"]],
             ],
           ],
-          ["gte", [["get", ["value.properties.size"]], 10]],
+          ["gte", [["get", ["properties.size"]], 10]],
         ],
       ];
       const vars = {
-        "value.properties.number": 0,
-        "value.properties.color": "red",
-        "value.properties.size": 10,
+        "properties.number": 0,
+        "properties.color": "red",
+        "properties.size": 10,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(ast)).toBe(true);
     });

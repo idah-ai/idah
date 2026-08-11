@@ -154,7 +154,8 @@ RSpec.describe Exports::Upd::Exporter do
             expect(cmd).to include("--entry_id \"#{entry_id}\"")
             expect(cmd).to include("--type \"idah-video:bounding-box\"")
             expect(cmd).to include("--shape")
-            expect(cmd).to include("--annotation")
+            expect(cmd).to include("--category")
+            expect(cmd).to include("--properties")
             expect(cmd).to include("--metadata")
           end
           true
@@ -256,12 +257,12 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     context "annotation dimensions handling" do
-      it "extracts type from dimensions and passes shape separately" do
+      it "passes shape_args without type and category/properties separately" do
         shape_valid = false
         allow(exporter).to receive(:system) do |cmd, _options|
           if cmd.include?("annotation create") && cmd.include?("--type \"idah-video:bounding-box\"")
             # Shape should not contain type
-            shape_match = cmd.match(/--shape '({.*?})' --annotation/)
+            shape_match = cmd.match(/--shape '({.*?})' --category/)
             if shape_match
               shape = JSON.parse(shape_match[1])
               shape_valid = !shape.key?("type") && shape.key?("end") && shape.key?("start")
@@ -274,21 +275,45 @@ RSpec.describe Exports::Upd::Exporter do
         expect(shape_valid).to be(true)
       end
 
-      it "passes annotation data as JSON" do
-        annotation_valid = false
+      it "passes category and properties as their own flags" do
+        category_valid = false
+        properties_valid = false
         allow(exporter).to receive(:system) do |cmd, _options|
           if cmd.include?("annotation create")
-            annotation_match = cmd.match(/--annotation '({.*?})' --metadata/)
-            if annotation_match
-              annotation = JSON.parse(annotation_match[1])
-              annotation_valid = (annotation == { "category" => "vehicles/car" })
+            category_match = cmd.match(/--category "([^"]*)"/)
+            category_valid = category_match && category_match[1] == "vehicles/car"
+            properties_match = cmd.match(/--properties '({.*?})' --metadata/)
+            if properties_match
+              properties = JSON.parse(properties_match[1])
+              properties_valid = properties == {}
             end
           end
           true
         end
 
         exporter.export(context)
-        expect(annotation_valid).to be(true)
+        expect(category_valid).to be(true)
+        expect(properties_valid).to be(true)
+      end
+
+      it "skips soft-deleted annotations entirely" do
+        # Build a tombstoned annotation response (deleted_at set) and ensure no
+        # `annotation create` command is issued for it.
+        deleted_data = annotation_data[:data][0].dup
+        deleted_data[:attributes] = deleted_data[:attributes].dup
+        deleted_data[:attributes][:deleted_at] = "2026-08-10 08:00:00 +0000"
+        deleted_response = Verse::JsonApi::Struct.new deleted_data
+
+        allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([deleted_response])
+
+        annotation_created = false
+        allow(exporter).to receive(:system) do |cmd, _options|
+          annotation_created = true if cmd.include?("annotation create")
+          true
+        end
+
+        exporter.export(context)
+        expect(annotation_created).to be(false)
       end
     end
 

@@ -46,8 +46,8 @@ type SampleAnnotation = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotatio
 const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
   {
     id: uuidv7(),
-    shape: {
-      type: "idah-video:bounding-box",
+    shape_type: "idah-video:bounding-box",
+    shape_args: {
       start: 0,
       end: 120,
       frames: [
@@ -84,12 +84,12 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
         },
       ],
     } as IVideoAnnotationShape,
-    value: { category: "person", label: "person" },
+    category: "person",
   },
   {
     id: uuidv7(),
-    shape: {
-      type: "idah-video:bounding-box",
+    shape_type: "idah-video:bounding-box",
+    shape_args: {
       start: 0,
       end: 120,
       frames: [
@@ -125,12 +125,12 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
         },
       ],
     } as IVideoAnnotationShape,
-    value: { category: "vehicles/car", label: "car" },
+    category: "vehicles/car",
   },
   {
     id: uuidv7(),
-    shape: {
-      type: "idah-video:bounding-box",
+    shape_type: "idah-video:bounding-box",
+    shape_args: {
       start: 50,
       end: 300,
       frames: [
@@ -166,12 +166,12 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
         },
       ],
     } as IVideoAnnotationShape,
-    value: { category: "vehicles/bus", label: "bus" },
+    category: "vehicles/bus",
   },
   {
     id: uuidv7(),
-    shape: {
-      type: "idah-video:polygon",
+    shape_type: "idah-video:polygon",
+    shape_args: {
       start: 30,
       end: 190,
       frames: [
@@ -232,12 +232,12 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
         },
       ],
     } as IVideoAnnotationShape,
-    value: { category: "road-sign", label: "road sign" },
+    category: "road-sign",
   },
   {
     id: uuidv7(),
-    shape: {
-      type: "idah-video:polygon",
+    shape_type: "idah-video:polygon",
+    shape_args: {
       start: 0,
       end: 200,
       frames: [
@@ -286,7 +286,7 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
         },
       ],
     } as IVideoAnnotationShape,
-    value: { category: "person", label: "person" },
+    category: "person",
   },
 ];
 
@@ -448,6 +448,10 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
     return this.store.delete(id);
   }
 
+  async restore(id: string): Promise<Annot> {
+    return this.store.restore(id);
+  }
+
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
   }
@@ -547,7 +551,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           required: true,
           visibility: [
             "in",
-            [["get", ["annotation.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
+            [["get", ["category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
           ] as any,
           description: "How many wheels does the object have?",
         },
@@ -820,7 +824,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   getFilteredConfig(
     shapeType: string,
     value: Record<string, unknown>,
-    objectName: string = "annotation"
+    objectName: string = ""
   ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;

@@ -47,14 +47,14 @@ export function register(driver: IIdahDriverV2): void {
 
       const snapshot: AnnotationItem = {
         ...record,
-        shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] },
+        shape_args: { ...record.shape_args, frames: [...((record.shape_args.frames as any[]) ?? [])] },
       };
 
       // If points are empty, interpolate from surrounding keyframes
       let selection = { ...props.selection };
       if (!selection.points || selection.points.length === 0) {
-        const existingShape = snapshot.shape as IVideoAnnotationShape;
-        const result = getInterpolatedFrame(existingShape, selection.frame);
+        const existingShape = snapshot.shape_args as IVideoAnnotationShape;
+        const result = getInterpolatedFrame(existingShape, selection.frame, true, snapshot.shape_type);
         if (result) {
           selection = { ...selection, angle: result.angle, points: result.points ?? [] };
         }
@@ -63,7 +63,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          const frames = [...((snapshot.shape.frames as IVideoFrameSelection[]) ?? [])];
+          const frames = [...((snapshot.shape_args.frames as IVideoFrameSelection[]) ?? [])];
           const existing = frames.findIndex((f) => f.frame === selection.frame);
           if (existing >= 0) frames[existing] = selection;
           else frames.push(selection);
@@ -74,7 +74,7 @@ export function register(driver: IIdahDriverV2): void {
 
           await data.annotations!.update({
             ...snapshot,
-            shape: { ...snapshot.shape, start: min, end: max, frames },
+            shape_args: { ...snapshot.shape_args, start: min, end: max, frames },
           });
           viewport.video.currentFrame.value = selection.frame;
         },

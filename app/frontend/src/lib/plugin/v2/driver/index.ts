@@ -239,7 +239,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   getFilteredConfig(
     shapeType: string,
     value: Record<string, unknown>,
-    objectName: string = "annotation",
+    objectName: string = "",
   ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;

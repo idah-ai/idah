@@ -39,10 +39,10 @@
     { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined
   >(() => {
     const comp =
-      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
-      annotation?.shape?.type === IDAH_IMAGE_CIRCLE ? _circleComp :
-      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
-      annotation?.shape?.type === IDAH_IMAGE_LINE ? _lineComp :
+      annotation?.shape_type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
+      annotation?.shape_type === IDAH_IMAGE_CIRCLE ? _circleComp :
+      annotation?.shape_type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
+      annotation?.shape_type === IDAH_IMAGE_LINE ? _lineComp :
       _polyComp;
     if (comp?.startSelection && comp?.endSelection) {
       return {
@@ -62,10 +62,10 @@
   /** Expose whether the user is actively editing (dragging/resizing) this annotation. */
   let _isEditing = $derived.by((): boolean => {
     const comp =
-      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
-      annotation?.shape?.type === IDAH_IMAGE_CIRCLE ? _circleComp :
-      annotation?.shape?.type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
-      annotation?.shape?.type === IDAH_IMAGE_LINE ? _lineComp :
+      annotation?.shape_type === IDAH_IMAGE_BOUNDING_BOX ? _bboxComp :
+      annotation?.shape_type === IDAH_IMAGE_CIRCLE ? _circleComp :
+      annotation?.shape_type === IDAH_IMAGE_ELLIPSE ? _ellipseComp :
+      annotation?.shape_type === IDAH_IMAGE_LINE ? _lineComp :
       _polyComp;
     return comp?.getIsEditing?.() ?? false;
   });
@@ -75,14 +75,14 @@
   }
 </script>
 
-{#if annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX}
+{#if annotation?.shape_type === IDAH_IMAGE_BOUNDING_BOX}
   <BBoxShape bind:this={_bboxComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
-{:else if annotation?.shape?.type === IDAH_IMAGE_CIRCLE}
+{:else if annotation?.shape_type === IDAH_IMAGE_CIRCLE}
   <CircleShape bind:this={_circleComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
-{:else if annotation?.shape?.type === IDAH_IMAGE_ELLIPSE}
+{:else if annotation?.shape_type === IDAH_IMAGE_ELLIPSE}
   <EllipseShape bind:this={_ellipseComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
-{:else if annotation?.shape?.type === IDAH_IMAGE_LINE}
+{:else if annotation?.shape_type === IDAH_IMAGE_LINE}
   <LineShape bind:this={_lineComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
-{:else if annotation?.shape?.type === IDAH_IMAGE_POLYGON}
+{:else if annotation?.shape_type === IDAH_IMAGE_POLYGON}
   <PolygonShape bind:this={_polyComp} {annotation} {selected} {editable} {cursor} {mode} {onClick} {onEditComplete} />
 {/if}

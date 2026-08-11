@@ -54,7 +54,7 @@ export function register(driver: IIdahDriverV2): void {
           // Resolve group annotations
           let groupAnnotations: {
             id: string;
-            shape: { frames: { frame: number; angle: number; points: [number, number][] }[] };
+            shape_args: { frames: { frame: number; angle: number; points: [number, number][] }[] };
           }[];
           if (opts?.annotationId) {
             const annotationId = opts.annotationId as string;
@@ -67,7 +67,7 @@ export function register(driver: IIdahDriverV2): void {
             const gid = (target.metadata as any)?.group_id ?? annotationId;
             groupAnnotations = all
               .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
-              .map((a) => ({ id: a.id, shape: a.shape as any }));
+              .map((a) => ({ id: a.id, shape_args: a.shape_args as any }));
           } else {
             const sel = selection.value;
 
@@ -88,38 +88,38 @@ export function register(driver: IIdahDriverV2): void {
 
             groupAnnotations = (data.annotations?.items ?? [])
               .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
-              .map((a) => ({ id: a.id, shape: a.shape as any }));
+              .map((a) => ({ id: a.id, shape_args: a.shape_args as any }));
           }
 
           // Find the annotation whose start is closest to but after `frame`
           const nextAnn = groupAnnotations
             .filter((a) => {
-              const firstFrame = a.shape.frames?.[0]?.frame ?? Infinity;
+              const firstFrame = a.shape_args.frames?.[0]?.frame ?? Infinity;
               return firstFrame > frame;
             })
-            .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
+            .sort((a, b) => (a.shape_args.frames?.[0]?.frame ?? Infinity) - (b.shape_args.frames?.[0]?.frame ?? Infinity))[0];
 
           if (!nextAnn) return;
 
           // Overlap protection: don't go below the previous annotation's end
           const prevAnn = groupAnnotations
             .filter((a) => {
-              const lastFrame = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
+              const lastFrame = a.shape_args.frames?.[a.shape_args.frames.length - 1]?.frame ?? -1;
               return lastFrame < frame && a.id !== nextAnn.id;
             })
             .sort((a, b) => {
-              const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-              const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
+              const aEnd = a.shape_args.frames?.[a.shape_args.frames.length - 1]?.frame ?? -1;
+              const bEnd = b.shape_args.frames?.[b.shape_args.frames.length - 1]?.frame ?? -1;
               return bEnd - aEnd;
             })[0];
 
           let cappedFrame = frame;
           if (prevAnn) {
-            const prevEnd = prevAnn.shape.frames?.[prevAnn.shape.frames.length - 1]?.frame ?? -Infinity;
+            const prevEnd = prevAnn.shape_args.frames?.[prevAnn.shape_args.frames.length - 1]?.frame ?? -Infinity;
             if (frame <= prevEnd) cappedFrame = prevEnd + 1;
           }
 
-          const nearest = nearestKeyframe(nextAnn.shape, cappedFrame);
+          const nearest = nearestKeyframe(nextAnn.shape_args, cappedFrame);
           if (!nearest) return;
 
           driver.command.call("annotation.keyframe_add", {

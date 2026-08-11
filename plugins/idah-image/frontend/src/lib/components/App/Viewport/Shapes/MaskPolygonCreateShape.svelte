@@ -65,7 +65,7 @@
       // If editing an existing mask annotation, use its ID so the flush
       // writes to the existing annotation instead of creating a new one.
       const sel = selection.value;
-      const existingAnnId = sel && (sel.shape as any)?.type === IMAGE_MASK ? sel.id : undefined;
+      const existingAnnId = sel && sel.shape_type === IMAGE_MASK ? sel.id : undefined;
 
       // NOTE(continuePending): `continuePending: existingAnnId === undefined`
       // evaluates to `true` whenever this is a new-mask polygon close (no
@@ -81,7 +81,7 @@
       if (existingAnnId && data.annotations) {
         const record = data.annotations.items.find((a) => a.id === existingAnnId);
         if (record) {
-          const shape = record.shape as Record<string, unknown>;
+          const shape = record.shape_args as Record<string, unknown>;
           for (const [key, val] of Object.entries(shape)) {
             if (!key.startsWith("tile-")) continue;
             const match = key.match(/^tile-(\d+)x(\d+)$/);

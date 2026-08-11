@@ -85,8 +85,8 @@
   let usedMaskCategories = $derived(
     new Set(
       items
-        .filter((a) => a.shape.type === IMAGE_MASK)
-        .map((a) => a.value?.category)
+        .filter((a) => a.shape_type === IMAGE_MASK)
+        .map((a) => a.category)
         .filter(Boolean),
     ),
   );
@@ -241,7 +241,7 @@
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
       {@const annotations = items.filter(
-        (a) => a.value?.category?.startsWith(category.id) && a.shape.type === modalityShape,
+        (a) => a.category?.startsWith(category.id) && a.shape_type === modalityShape,
       )}
       {@const isDisabledMaskInPopover = view === "popover" && modalityShape === IMAGE_MASK && !category.nestedCategories && usedMaskCategories.has(category.id)}
 

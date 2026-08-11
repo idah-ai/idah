@@ -27,7 +27,6 @@ import { noopAction } from "..";
 
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
-import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
   name: "annotation.delete_category",
@@ -68,12 +67,12 @@ export function register(driver: IIdahDriverV2): void {
 
         if (props.category) {
           categoryAnnotations = categoryAnnotations.filter((ann) =>
-            isCategoryMatch(ann.value?.category, props.category),
+            isCategoryMatch(ann.category, props.category),
           );
         }
 
         if (props.shapeType) {
-          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape_type === props.shapeType);
         }
       } else {
         return noopAction(command);
@@ -103,7 +102,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Restore deleted annotations
           for (const ann of snapshot) {
-            await recreateAnnotationWithTiles(data.annotations!, ann);
+            await data.annotations!.restore(ann.id);
           }
         },
 

@@ -278,8 +278,8 @@ describe("maskSession", () => {
       handlePopoverCancel(
         [IMAGE_MASK, [], undefined],
         {
-          setAnnotationValue: vi.fn(),
           setPendingValue: vi.fn(),
+          setPendingCategory: vi.fn(),
           clearShapeSelectionArgs: vi.fn(),
           setShowPopOver: vi.fn(),
           selectAnnotation: vi.fn(),

@@ -1,12 +1,17 @@
-import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 @type("dataset:annotations")
 export class AnnotationRecord extends Record {
-  @field() public dimensions!: AnnotationShape;
-  @field() public annotation!: AnnotationValue;
+  @field() public shape_type!: string;
+  @field() public shape_args!: { [key: string]: unknown };
+  @field() public category!: string;
+  @field() public properties!: { [key: string]: unknown };
+
+  @field() public deleted_at!: Date | null;
+  @field() public deleted_by_id!: string | null;
+  @field() public deleted_by_email!: string | null;
 
   @field() public created_by_id!: string;
   @field() public created_at!: Date;

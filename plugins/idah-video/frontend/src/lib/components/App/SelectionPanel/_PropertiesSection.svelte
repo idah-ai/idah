@@ -29,35 +29,35 @@
       {#if property.type === "text"}
         <TextProperty
           {property}
-          value={annotationValue.attributes?.[property.id] as any}
+          value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {disabled}
         />
       {:else if property.type === "integer"}
         <IntegerProperty
           {property}
-          value={annotationValue.attributes?.[property.id] as any}
+          value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {disabled}
         />
       {:else if property.type === "boolean"}
         <BooleanProperty
           {property}
-          value={annotationValue.attributes?.[property.id] as any}
+          value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {disabled}
         />
       {:else if property.type === "single-select"}
         <SingleSelectProperty
           {property}
-          value={annotationValue.attributes?.[property.id] as any}
+          value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {disabled}
         />
       {:else if property.type === "multi-select"}
         <MultipleSelectProperty
           {property}
-          value={annotationValue.attributes?.[property.id] as any}
+          value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {disabled}
         />

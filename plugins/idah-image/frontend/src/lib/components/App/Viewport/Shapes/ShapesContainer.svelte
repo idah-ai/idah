@@ -287,8 +287,8 @@
     snapEngine.setTargets(
       anns.map((ann) => ({
         id: ann.id,
-        kind: (ann.shape as Record<string, unknown>)?.type as string ?? "",
-        data: ann.shape,
+        kind: ann.shape_type as string ?? "",
+        data: ann.shape_args,
       })),
       media.width,
       media.height,
@@ -465,7 +465,7 @@
     if (isMaskBrushMode) {
       e.preventDefault();
       e.stopPropagation();
-      const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
+      const maskAnnId = selAnnotation?.shape_type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
         ? selAnnotation.id
         : undefined;
       maskBrushPointerDown(scenePixelCursor[0], scenePixelCursor[1], maskAnnId);
@@ -517,8 +517,9 @@
       scenePixelCursor[1],
       (data.annotations?.items ?? []).map((a) => ({
         id: a.id,
-        shape: a.shape as Record<string, unknown>,
-        value: a.value as Record<string, unknown> | undefined,
+        shape_type: a.shape_type,
+        shape_args: a.shape_args as Record<string, unknown>,
+        properties: a.properties as Record<string, unknown> | undefined,
       })),
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
@@ -621,7 +622,7 @@
     } else {
       // Annotation note: position is normalized offset from annotation centroid,
       // so the note tracks the annotation when it moves.
-      const shape = annotation.shape as IImageAnnotationShape | undefined;
+      const shape = annotation.shape_args as IImageAnnotationShape | undefined;
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.points?.length) {
         const pts = shape.points;
@@ -669,8 +670,9 @@
       scenePixelCursor[1],
       (data.annotations?.items ?? []).map((a) => ({
         id: a.id,
-        shape: a.shape as Record<string, unknown>,
-        value: a.value as Record<string, unknown> | undefined,
+        shape_type: a.shape_type,
+        shape_args: a.shape_args as Record<string, unknown>,
+        properties: a.properties as Record<string, unknown> | undefined,
       })),
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
@@ -710,8 +712,9 @@
         scenePixelCursor[1],
         (data.annotations?.items ?? []).map((a) => ({
           id: a.id,
-          shape: a.shape as Record<string, unknown>,
-          value: a.value as Record<string, unknown> | undefined,
+          shape_type: a.shape_type,
+          shape_args: a.shape_args as Record<string, unknown>,
+          properties: a.properties as Record<string, unknown> | undefined,
         })),
         (ann) => annotation.isHidden({ id: ann.id } as any),
         resolveColorForAnnotation,
@@ -886,7 +889,7 @@
             // onShapeSelection which would strip existing tiles from the
             // local shape. For new annotations, use onSelection to create.
             const sel = selection.value;
-            const existingId = sel && (sel.shape as any)?.type === IMAGE_MASK
+            const existingId = sel && sel.shape_type === IMAGE_MASK
               ? sel.id
               : undefined;
             if (existingId) {

@@ -50,9 +50,9 @@
   // Use displayedFrame (not currentFrame) so shape positions stay in sync
   // with the actual video pixels on screen during rapid frame navigation.
   let baseAngle = $derived.by((): number => {
-    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return 0;
-    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value, true, annotation?.shape_type);
     return result?.angle ?? 0;
   });
 
@@ -71,9 +71,9 @@
   let isEditing = $derived(editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined));
 
   let basePoints = $derived.by((): Point[] => {
-    const shape = annotation?.shape as IVideoAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IVideoAnnotationShape | undefined;
     if (!shape?.frames) return [];
-    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
+    const result = getInterpolatedFrame(shape, viewport.video.displayedFrame.value, true, annotation?.shape_type);
     return result?.points ?? [];
   });
 

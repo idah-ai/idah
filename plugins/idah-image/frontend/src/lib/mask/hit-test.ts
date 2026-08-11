@@ -74,11 +74,12 @@ export function hitTestMaskLayer(
   imgY: number,
   maskAnnotations: Array<{
     id: string;
-    shape: Record<string, unknown>;
-    value?: Record<string, unknown>;
+    shape_type: string;
+    shape_args: Record<string, unknown>;
+    properties?: Record<string, unknown>;
   }>,
   isHiddenFn: (ann: { id: string }) => boolean,
-  resolveColorFn: (ann: { id: string; value?: Record<string, unknown> }) => [number, number, number, number],
+  resolveColorFn: (ann: { id: string; properties?: Record<string, unknown> }) => [number, number, number, number],
 ): { annotationId: string | null; annotation: unknown | null } {
   const col = Math.floor(imgX / MASK_TILE_SIZE);
   const row = Math.floor(imgY / MASK_TILE_SIZE);
@@ -88,9 +89,10 @@ export function hitTestMaskLayer(
     // Skip hidden annotations — hidden masks should not be selectable
     if (isHiddenFn(ann)) continue;
 
-    const shape = ann.shape;
-    if (shape?.type !== IMAGE_MASK) continue;
+    // Only mask annotations are hit-testable
+    if (ann.shape_type !== IMAGE_MASK) continue;
 
+    const shape = ann.shape_args;
     const shapeTileKey = `tile-${col}x${row}`;
     const tileData = shape[shapeTileKey] as { rle?: string } | undefined;
     if (!tileData?.rle) continue;

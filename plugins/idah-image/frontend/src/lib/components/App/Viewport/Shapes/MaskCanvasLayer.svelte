@@ -105,8 +105,7 @@
     // ── Render committed mask tiles from backend annotations ──────────
     if (data.annotations) {
       for (const ann of data.annotations.items) {
-        const shape = ann.shape as Record<string, unknown>;
-        if (shape?.type !== IMAGE_MASK) continue;
+        if (ann.shape_type !== IMAGE_MASK) continue;
 
         // Skip hidden annotations
         if (annotation.isHidden(ann)) continue;
@@ -118,7 +117,7 @@
         const isEditing = ann.id === maskSession.annotationId;
 
         // Resolve color from the annotation's category
-        const catId = (ann.value as Record<string, unknown>)?.category as string | undefined;
+        const catId = ann.category as string | undefined;
         const isSelected = ann.id === selection.value?.id;
         const baseColor = catId ? resolveCategoryColor(catId) : MASK_COLORS[0];
         const color = isSelected
@@ -126,7 +125,7 @@
           : withAlpha(baseColor, COMMIT_ALPHA);
 
         // Render each committed tile using the shared cache (drawImage)
-        for (const [key, val] of Object.entries(shape)) {
+        for (const [key, val] of Object.entries(ann.shape_args)) {
           if (!key.startsWith("tile-")) continue;
           const match = key.match(/^tile-(\d+)x(\d+)$/);
           if (!match) continue;
@@ -174,8 +173,8 @@
       sessionColor = parseHexColor(previewColor);
     } else {
       const sel = selection.value;
-      const catId = sel && (sel.shape as any)?.type === IMAGE_MASK
-        ? (sel.value as any)?.category as string | undefined
+      const catId = sel && sel.shape_type === IMAGE_MASK
+        ? sel.category as string | undefined
         : undefined;
       if (catId) {
         sessionColor = resolveCategoryColor(catId);
@@ -369,9 +368,9 @@
     // Track shape data (tile keys + RLE content) for mask annotations so
     // that flush/undo/redo of tiles triggers a redraw.
     const shapeKeys = items
-      .filter((a) => (a.shape as any)?.type === IMAGE_MASK)
+      .filter((a) => a.shape_type === IMAGE_MASK)
       .map((a) => {
-        const shape = a.shape as Record<string, unknown>;
+        const shape = a.shape_args as Record<string, unknown>;
         const tileEntries = Object.entries(shape)
           .filter(([k]) => k.startsWith("tile-"))
           .map(([k, v]) => `${k}:${JSON.stringify(v)}`)
@@ -383,7 +382,7 @@
     // Track hidden/locked state for each mask annotation so toggling visibility
     // triggers a redraw even without canvas interaction.
     const hiddenKeys = items
-      .filter((a) => (a.shape as any)?.type === IMAGE_MASK)
+      .filter((a) => a.shape_type === IMAGE_MASK)
       .map((a) => `${a.id}:h=${annotation.isHidden(a)}:l=${annotation.isLocked(a)}`)
       .join(",");
     if (ctx) scheduleRedraw();

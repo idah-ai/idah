@@ -14,7 +14,6 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { IMAGE_MASK } from "$lib/types";
 import { invalidateAll } from "$lib/mask/tile-cache";
-import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
   name: "annotation.delete",
@@ -53,8 +52,8 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           // Free cached mask bitmaps if this is a mask annotation
-          const shape = record.shape as Record<string, unknown> | undefined;
-          if (shape?.type === IMAGE_MASK) {
+          const shape = record.shape_args as Record<string, unknown> | undefined;
+          if (record.shape_type === IMAGE_MASK) {
             invalidateAll(props.annotationId);
           }
 
@@ -62,7 +61,7 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          await recreateAnnotationWithTiles(data.annotations!, record);
+          await data.annotations!.restore(record.id);
         },
         isCombinable() { return false; },
         combine(p) { return p; },
