@@ -32,7 +32,6 @@
   const FONT_SIZE = 12;
   const LINE_HEIGHT = 14;
   const MAX_WIDTH = 200;
-  const OFFSET_Y = 0; // vertical gap below the shape centre
 
   let w = $derived(media.width);
   let h = $derived(media.height);
@@ -78,9 +77,12 @@
 {#each labels as label (label.id)}
   <!--
     Counter-scale the whole group rather than multiplying each dimension by
-    invScale: font size, line height and offset then all stay screen-constant
-    from a single place. The group is translated to the shape centre; the text
-    below is centred on and offset down from that origin.
+    invScale: font size and line height then all stay screen-constant from a
+    single place. The group is translated to the shape centre; the text hangs
+    just below that origin — horizontally centred, top edge at the centre. The
+    only positioning is the media-space centre, so the label holds the same spot
+    on the shape at every zoom (a screen-space y offset would drift off small
+    shapes when zoomed out).
   -->
   <g transform="translate({label.x} {label.y}) scale({invScale})">
     <!--
@@ -92,11 +94,12 @@
     -->
     <text
       x={0}
-      y={OFFSET_Y}
+      y={0}
       style:font-size="{FONT_SIZE}px"
       style:font-weight="bold"
       style:fill="#fff"
       style:text-anchor="middle"
+      style:dominant-baseline="hanging"
       style:paint-order="stroke"
       style:stroke="rgba(0, 0, 0, 0.85)"
       style:stroke-width="3px"
