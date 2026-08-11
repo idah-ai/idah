@@ -59,6 +59,9 @@
   );
   let configValues = $derived(config?.values ?? []);
 
+  // Flatten all annotations from selected groups (for displaying multi-group selection)
+  let groupAnnotations = $derived(selection.selectedGroupAnnotations);
+
   // Annotation from the selected group (for group edit mode display)
   let groupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
     if (sel?.type !== "group" || !data.annotations) return undefined;
@@ -188,6 +191,9 @@
 {:else if selection.selectedAnnotationIds.size > 1}
   <!-- Multiple annotations selected: show a compact list of selected items -->
   <SelectedAnnotationsList />
+{:else if selection.selectedGroupIds.size > 1}
+  <!-- Multiple groups selected: show the annotations belonging to those groups -->
+  <SelectedAnnotationsList items={groupAnnotations} />
 {:else if sel.type === "group"}
   <!-- Group edit mode -->
   <GroupEditMode

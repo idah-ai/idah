@@ -70,7 +70,12 @@
     // Only for clicks directly on the track div (not on TrackItem children)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
     if (trackId) {
-      selection.selectGroup(trackId);
+      // Shift+Click toggles the group in/out of the timeline group selection
+      if (e.shiftKey) {
+        selection.toggleGroup(trackId);
+      } else {
+        selection.selectGroup(trackId);
+      }
     }
   }
 </script>

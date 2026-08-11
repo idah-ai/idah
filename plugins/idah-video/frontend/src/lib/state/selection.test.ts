@@ -146,6 +146,39 @@ describe("selection state", () => {
     });
   });
 
+  describe("toggleGroup", () => {
+    it("adds a group to an empty selection", () => {
+      selection.toggleGroup("group-1");
+      expect(selection.isGroupSelected("group-1")).toBe(true);
+      expect(selection.selectedCount).toBe(1);
+    });
+
+    it("adds multiple groups", () => {
+      selection.toggleGroup("group-1");
+      selection.toggleGroup("group-2");
+      expect(selection.isGroupSelected("group-1")).toBe(true);
+      expect(selection.isGroupSelected("group-2")).toBe(true);
+      expect(selection.selectedCount).toBe(2);
+    });
+
+    it("removes a group that was already selected", () => {
+      selection.toggleGroup("group-1");
+      selection.toggleGroup("group-2");
+      selection.toggleGroup("group-1");
+      expect(selection.isGroupSelected("group-1")).toBe(false);
+      expect(selection.isGroupSelected("group-2")).toBe(true);
+      expect(selection.selectedCount).toBe(1);
+    });
+
+    it("does NOT clear annotation selection", () => {
+      selection.toggleAnnotation("ann-001");
+      selection.toggleGroup("group-1");
+      expect(selection.isAnnotationSelected("ann-001")).toBe(true);
+      expect(selection.isGroupSelected("group-1")).toBe(true);
+      expect(selection.selectedCount).toBe(2);
+    });
+  });
+
   describe("deselect", () => {
     it("clears annotations and groups", () => {
       selection.selectAnnotations(["ann-001", "ann-002"]);

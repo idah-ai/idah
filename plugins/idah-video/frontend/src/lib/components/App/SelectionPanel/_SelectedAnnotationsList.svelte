@@ -21,13 +21,24 @@
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
   import { VIDEO_POLYGON } from "$lib/types";
+  import type { IAnnotationRecord } from "$idah/v2/types";
+
+  // Optional — when provided, show these items instead of selection.selectedAnnotations.
+  // This lets the component be reused for group-selection annotations.
+  interface Props {
+    items?: IAnnotationRecord[];
+  }
+  let { items }: Props = $props();
+
+  // Source of truth: explicit items prop, or fall back to the selection model.
+  let sourceItems = $derived(items ?? selection.selectedAnnotations);
 
   const PAGE_SIZE = 10;
   let page = $state(1);
 
-  const totalPages = $derived(Math.max(1, Math.ceil(selection.selectedAnnotations.length / PAGE_SIZE)));
-  const pagedAnnotations = $derived(selection.selectedAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  const showPagination = $derived(selection.selectedAnnotations.length > PAGE_SIZE);
+  const totalPages = $derived(Math.max(1, Math.ceil(sourceItems.length / PAGE_SIZE)));
+  const pagedAnnotations = $derived(sourceItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  const showPagination = $derived(sourceItems.length > PAGE_SIZE);
   const placeholderCount = $derived(showPagination ? PAGE_SIZE - pagedAnnotations.length : 0);
 
   $effect(() => {
@@ -38,7 +49,7 @@
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <Text weight="semibold">Selected</Text>
-    <span class="text-muted-foreground text-xs">{selection.selectedAnnotationIds.size} annotations</span>
+    <span class="text-muted-foreground text-xs">{sourceItems.length} annotations</span>
   </div>
 
   <div class="flex flex-col gap-1">
@@ -69,7 +80,7 @@
       </div>
     {/each}
 
-    {#if selection.selectedAnnotations.length === 0}
+    {#if sourceItems.length === 0}
       <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations selected</div>
     {/if}
 
@@ -79,7 +90,7 @@
   </div>
 
   {#if showPagination}
-    <Pagination count={selection.selectedAnnotations.length} perPage={PAGE_SIZE} bind:page>
+    <Pagination count={sourceItems.length} perPage={PAGE_SIZE} bind:page>
       {#snippet children({ pages, currentPage })}
         <PaginationContent class="flex-wrap gap-0.5">
           <PaginationItem>

@@ -80,6 +80,14 @@ export const selection = {
     return resolveGroups();
   },
 
+  /**
+   * All individual annotations that belong to the currently selected groups.
+   * Useful for displaying group annotations in the selection panel.
+   */
+  get selectedGroupAnnotations(): IAnnotationRecord[] {
+    return resolveGroups().flatMap((g) => g.annotations);
+  },
+
   get selectedCount(): number {
     return _selectedAnnotationIds.size + _selectedGroupIds.size;
   },
@@ -176,6 +184,21 @@ export const selection = {
   selectGroup(groupId: string): void {
     _selectedGroupIds = new Set([groupId]);
     _selectedAnnotationIds = new Set();
+  },
+
+  /**
+   * Toggle a group in/out of the timeline group selection.
+   * Unlike selectGroup, this does NOT clear annotation selection —
+   * timeline group multi-selection is independent of viewport shapes.
+   */
+  toggleGroup(groupId: string): void {
+    const next = new Set(_selectedGroupIds);
+    if (next.has(groupId)) {
+      next.delete(groupId);
+    } else {
+      next.add(groupId);
+    }
+    _selectedGroupIds = next;
   },
 
   deselect(): void {
