@@ -640,16 +640,17 @@
     }
 
     // ── Multi-drag: commit delta to all other selected annotations ──
-    if (_multiDragDelta && (_multiDragDelta[0] !== 0 || _multiDragDelta[1] !== 0)) {
+    const dragDelta = _multiDragDelta; // local const for TS narrowing
+    if (dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0)) {
       for (let i = 0; i < visibleAnnotations.length; i++) {
         const ann = visibleAnnotations[i];
         if (!selection.isAnnotationSelected(ann.id)) continue;
-        if (ann.id === _draggedId) continue; // already committed by endSelection
+        if (ann.id === _draggedId) continue;
         const shape = (ann as any).shape as IVideoAnnotationShape | undefined;
         if (!shape?.frames?.length) continue;
         const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
         if (!interp?.points?.length) continue;
-        const movedPoints = interp.points.map((p) => [p[0] + _multiDragDelta[0], p[1] + _multiDragDelta[1]] as Point);
+        const movedPoints = interp.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
         handleEditComplete(ann.id, movedPoints, interp.angle ?? 0);
       }
     }
