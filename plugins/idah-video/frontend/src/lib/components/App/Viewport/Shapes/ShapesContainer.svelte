@@ -444,6 +444,10 @@
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
 
+    // Track the last known cursor position in normalized coords so commands
+    // (e.g. selection.paste) can target where the user's cursor currently is.
+    viewport.cursor = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+
     // ── Rectangle selection tracking ───────────────────────────────
     if (isRectSelecting) {
       rectEnd = sceneNormalizedCursor;

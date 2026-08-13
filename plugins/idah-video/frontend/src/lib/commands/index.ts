@@ -36,8 +36,10 @@ import { register as registerViewportZoomIn } from "./viewport/zoom-in";
 import { register as registerViewportZoomOut } from "./viewport/zoom-out";
 
 import { register as registerSelectionCenter } from "./selection/center";
+import { register as registerSelectionCopy } from "./selection/copy";
 import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
+import { register as registerSelectionPaste } from "./selection/paste";
 
 import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
 import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
@@ -106,6 +108,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerSelectionDelete(driver);
   registerSelectionGoto(driver);
   registerSelectionCenter(driver);
+  registerSelectionCopy(driver);
+  registerSelectionPaste(driver);
 
   // ── Keyframe ──────────────────────────────────────────────────────────
   registerKeyframeAdd(driver);
