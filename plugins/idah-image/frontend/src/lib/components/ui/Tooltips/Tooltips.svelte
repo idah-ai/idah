@@ -5,13 +5,11 @@
 
   import { cn } from "$lib/utils";
 
+  import type { TooltipPositionProps } from "$lib/components/ui/Tooltips/types";
+
   // Props
-  interface Props {
-    delayDuration?: number;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
+  interface Props extends TooltipPositionProps {
     ignoreNonKeyboardFocus?: boolean;
-    onOpenChange?: (open: boolean) => void;
     class?: string | null;
     trigger: Snippet;
     content: Snippet;

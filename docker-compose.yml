@@ -29,6 +29,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_IAM:-}
     ports:
       - "3000"
     volumes:
@@ -54,6 +56,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
     ports:
       - "3000"
     volumes:
@@ -82,6 +86,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_DATASET:-}
     ports:
       - "3000"
     volumes:
@@ -109,6 +115,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
     ports:
       - "3000"
     volumes:
@@ -135,6 +143,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_AUDIT:-}
     ports:
       - "3000"
     volumes:
@@ -160,6 +170,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
     ports:
       - "3000"
     volumes:
@@ -187,6 +199,8 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - .env.docker
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_NOTIFICATION:-}
     ports:
       - "3000"
     volumes:
@@ -221,6 +235,7 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       VITE_IDAH_HOST: https://idah.localhost:8443
+      VITE_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     ports:
       - "5173"
     volumes:

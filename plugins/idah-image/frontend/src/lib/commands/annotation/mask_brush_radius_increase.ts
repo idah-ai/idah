@@ -12,7 +12,7 @@ export const command = {
   modes: [IMAGE_MASK],
   shortcut: "BracketRight",
   shortDescription: "Increase brush radius",
-  longDescription: "Increase the mask brush radius by 5 pixels.",
+  longDescription: "Increase the mask brush radius by 1 pixel.",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -24,7 +24,7 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: () => ({
       command: { ...command },
-      do() { maskTool.brushRadius = maskTool.brushRadius + 1},
+      do() { maskTool.brushRadius = maskTool.brushRadius + 1; },
       isCombinable() { return false; },
       combine(p) { return p; },
     }),
