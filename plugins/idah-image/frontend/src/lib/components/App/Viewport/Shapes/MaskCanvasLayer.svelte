@@ -155,7 +155,13 @@
     }
 
     // ── Render in-progress session tiles on top (highlighted) ────────
-    if (maskSession.dirty.size > 0) {
+    // Skip the session overlay when the annotation being edited is hidden,
+    // so a mid-edit (dirty tiles pending) hidden mask doesn't keep showing
+    // its in-progress paint. `isHidden` accepts a record or a plain id.
+    if (
+      maskSession.dirty.size > 0 &&
+      !(maskSession.annotationId && annotation.isHidden(maskSession.annotationId))
+    ) {
       renderSessionLayer();
     }
   }
@@ -357,6 +363,10 @@
   $effect(() => {
     data.annotations?.items.length;
     data.annotations?.items;
+    // Track the session's target annotation so toggling hidden/locked on the
+    // annotation currently being edited triggers an immediate redraw even if
+    // it isn't (yet) present in data.annotations.items.
+    maskSession.annotationId;
     // Track selection changes (affects alpha for selected vs unselected masks)
     const selId = selection.value?.id;
     // Track render-mode changes so toggling nearest-neighbour / bilinear
