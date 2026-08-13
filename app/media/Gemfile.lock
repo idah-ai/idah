@@ -25,6 +25,14 @@ GIT
     verse-jsonapi (0.1.0)
 
 GIT
+  remote: https://github.com/verse-rb/verse-otel
+  revision: 5a3590336d9acd47725875d8e97200c1a88d2354
+  branch: master
+  specs:
+    verse-otel (0.1.0)
+      opentelemetry-sdk (~> 1.0)
+
+GIT
   remote: https://github.com/verse-rb/verse-redis
   revision: b37e874d12f5ceef240d0afec6139094eba7ac72
   branch: master
@@ -32,6 +40,14 @@ GIT
     verse-redis (0.1.0)
       fugit (~> 1.11)
       redis (~> 5)
+
+GIT
+  remote: https://github.com/verse-rb/verse-sentry
+  revision: 1e952cee33063356a33f8b4e32e85afebf786a30
+  branch: master
+  specs:
+    verse-sentry (0.1.0)
+      sentry-ruby (~> 6)
 
 GIT
   remote: https://github.com/verse-rb/verse-sequel
@@ -95,6 +111,39 @@ GEM
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
     observer (0.1.2)
+    opentelemetry-api (1.10.1)
+      logger
+    opentelemetry-common (0.25.1)
+      opentelemetry-api (~> 1.0)
+    opentelemetry-helpers-sql (0.4.0)
+      opentelemetry-api (~> 1.7)
+    opentelemetry-helpers-sql-processor (0.5.0)
+      opentelemetry-api (~> 1.0)
+      opentelemetry-common (~> 0.21)
+    opentelemetry-instrumentation-base (0.26.1)
+      opentelemetry-api (~> 1.7)
+      opentelemetry-common (~> 0.21)
+      opentelemetry-registry (~> 0.1)
+    opentelemetry-instrumentation-net_http (0.29.0)
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-pg (0.36.0)
+      opentelemetry-helpers-sql
+      opentelemetry-helpers-sql-processor
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-rack (0.31.1)
+      opentelemetry-instrumentation-base (~> 0.25)
+    opentelemetry-instrumentation-sinatra (0.30.0)
+      opentelemetry-instrumentation-rack (~> 0.29)
+    opentelemetry-registry (0.6.1)
+      opentelemetry-api (~> 1.1)
+    opentelemetry-sdk (1.12.1)
+      logger
+      opentelemetry-api (~> 1.1)
+      opentelemetry-common (~> 0.20)
+      opentelemetry-registry (~> 0.2)
+      opentelemetry-semantic_conventions
+    opentelemetry-semantic_conventions (1.43.0)
+      opentelemetry-api (~> 1.0)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -166,6 +215,13 @@ GEM
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
     rubyzip (3.2.2)
+    sentry-opentelemetry (6.6.2)
+      opentelemetry-sdk (~> 1.0)
+      sentry-ruby (~> 6.6.2)
+    sentry-ruby (6.6.2)
+      bigdecimal
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      logger
     sequel (5.94.0)
       bigdecimal
     shrine (3.6.0)
@@ -190,6 +246,7 @@ GEM
       rack-protection (= 4.1.1)
       sinatra (= 4.1.1)
       tilt (~> 2.0)
+    stackprof (0.2.28)
     tilt (2.6.1)
     tsort (0.2.0)
     tzinfo (2.0.6)
@@ -213,6 +270,10 @@ DEPENDENCIES
   bootsnap (~> 1.16)
   dotenv
   listen (~> 3.9)
+  opentelemetry-instrumentation-net_http
+  opentelemetry-instrumentation-pg
+  opentelemetry-instrumentation-rack
+  opentelemetry-instrumentation-sinatra
   pg
   pry
   puma (~> 6)
@@ -223,17 +284,21 @@ DEPENDENCIES
   rspec (~> 3.0)
   rubocop
   rubyzip (~> 3.2)
+  sentry-opentelemetry
   simplecov
   sinatra-contrib
+  stackprof
   verse-core!
   verse-http!
   verse-jsonapi!
+  verse-otel!
   verse-redis!
   verse-schema (~> 1.2.4)
+  verse-sentry!
   verse-sequel!
   verse-shrine!
   webmock
   zeitwerk
 
 BUNDLED WITH
-   2.6.7
+   2.6.9

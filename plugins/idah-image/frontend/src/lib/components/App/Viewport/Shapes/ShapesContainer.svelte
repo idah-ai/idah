@@ -25,6 +25,8 @@
   import EllipseCreateShape from "./EllipseCreateShape.svelte";
   import LineCreateShape from "./LineCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
+  import MaskPolygonCreateShape from "./MaskPolygonCreateShape.svelte";
+  import MaskCanvasLayer from "./MaskCanvasLayer.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
   import { viewport } from "$lib/state/viewport.svelte";
@@ -36,10 +38,21 @@
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data, setPendingNoteScene } from "$lib/state/data.svelte";
+  import { maskSession } from "$lib/state/mask-session.svelte";
+  import { maskTool } from "$lib/state/mask-tool.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { snapDebug } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
+
+  import {
+    onPointerDown as maskBrushPointerDown,
+    onPointerMove as maskBrushPointerMove,
+    onPointerUp as maskBrushPointerUp,
+    onCancel as maskBrushCancel,
+  } from "$lib/commands/mode/mask_brush";
+  import { hitTestMaskLayer } from "$lib/mask/hit-test";
+  import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
   import {
@@ -49,6 +62,7 @@
     IMAGE_ELLIPSE,
     IMAGE_LINE,
     IMAGE_POLYGON,
+    IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
     type IImageAnnotationShape,
@@ -223,6 +237,7 @@
   let ellipseCreateComp: EllipseCreateShape | undefined = $state(undefined);
   let lineCreateComp: LineCreateShape | undefined = $state(undefined);
   let polygonCreateComp: PolygonCreateShape | undefined = $state(undefined);
+  let maskPolygonCreateComp: MaskPolygonCreateShape | undefined = $state(undefined);
 
   let isBoundingBoxMode = $derived(viewport.mode === IMAGE_BOUNDING_BOX);
   let isCircleMode = $derived(viewport.mode === IMAGE_CIRCLE);
@@ -230,6 +245,8 @@
   let isLineMode = $derived(viewport.mode === IMAGE_LINE);
   let isPolygonMode = $derived(viewport.mode === IMAGE_POLYGON);
   let isNoteMode = $derived(viewport.mode === NOTE_MODE);
+  let isMaskBrushMode = $derived(viewport.mode === IMAGE_MASK && maskTool.active === "brush");
+  let isMaskPolygonMode = $derived(viewport.mode === IMAGE_MASK && maskTool.active === "polygon");
 
   /** Preview color for create-shape overlays — uses categoryColor (from toolbar or pendingValue) or falls back to pendingAnnotation's category. */
   let previewColor = $derived.by<string | undefined>(() => {
@@ -308,14 +325,22 @@
 
   // ── Check if cursor is hovering the first polygon draft point ────────
   let hoveringFirstPoint = $derived(
-    isPolygonMode &&
+    (isPolygonMode &&
       nearFirstPolygonPoint(
         snappedCursor,
         media.width,
         media.height,
         polygonDraft.points,
         viewport.workspace.transform.scale,
-      ),
+      )) ||
+    (isMaskPolygonMode &&
+      nearFirstPolygonPoint(
+        snappedCursor,
+        media.width,
+        media.height,
+        maskPolygonDraft.points,
+        viewport.workspace.transform.scale,
+      )),
   );
 
   // ── Cursor class ─────────────────────────────────────────────────────
@@ -326,6 +351,7 @@
     if (viewport.isCreationMode) return "cursor-crosshair";
     if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
+    if (_hoveringMask) return "cursor-pointer";
 
     return "cursor-grab";
   });
@@ -340,8 +366,26 @@
   });
 
   // ── Event handlers ───────────────────────────────────────────────────
+  /**
+   * Hit-test the mask canvas layer at the given image-pixel coordinates.
+   * Checks all committed mask annotations for a painted pixel at (imgX, imgY).
+   * Returns the first mask annotation that has a painted pixel at this position.
+   *
+   * Uses the canonical implementation from hit-test.ts which sources tile buffers
+   * from the shared decode cache rather than decoding RLE inline.
+   */
+  function resolveColorForAnnotation(ann: { id: string; value?: Record<string, unknown> }): [number, number, number, number] {
+    // Default color — callers can override via the driver config
+    return [255, 0, 0, 100];
+  }
+
   function onMouseMove(e: MouseEvent) {
     mousePosition = [e.offsetX, e.offsetY];
+
+    // ── Mask brush painting (no early return — let viewport tracking below proceed) ─
+    if (isMaskBrushMode) {
+      maskBrushPointerMove(scenePixelCursor[0], scenePixelCursor[1]);
+    }
 
     // ── Magnetic snap query ────────────────────────────────────────
     // Only snap while creating a shape OR actively editing (dragging/resizing) an existing shape.
@@ -369,6 +413,11 @@
       snapDebug.candidates = 0;
     }
 
+    // Check if hovering over a mask pixel — update cursor accordingly (throttled via RAF)
+    if (viewport.mode === DEFAULT_MODE) {
+      scheduleHoverHitTest();
+    }
+
     // Only pan in default mode
     if (viewport.mode === DEFAULT_MODE) {
       zoomableElement!.mouseMove(e);
@@ -390,6 +439,12 @@
     e.stopPropagation(); // keep shape/selection handlers from reacting
     zoomableElement!.startPan(e.clientX, e.clientY);
   }
+  function onMouseUpCapture(e: MouseEvent) {
+    if (e.button !== 1) return;
+    e.preventDefault(); // suppress the browser's middle-click autoscroll
+    e.stopPropagation(); // keep shape/selection handlers from reacting
+    zoomableElement!.mouseUp(e);
+  }
 
   function onMouseDown(e: MouseEvent) {
     // Sync mousePosition so the cursor prop used by shape components
@@ -400,6 +455,32 @@
     if (isPolygonMode) {
       e.stopPropagation();
       polygonCreateComp?.handleMouseDown(snappedCursor);
+      return;
+    }
+
+    // ── Mask brush mode — start painting ────────────────────────────
+    if (isMaskBrushMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      // If the selected annotation is a locked mask, refuse to paint at all
+      // (no new mask, no edit) — mirroring the vector-shape lock guard.
+      const isLockedSelectedMask =
+        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      if (isLockedSelectedMask) return;
+      const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK ? selAnnotation.id : undefined;
+      maskBrushPointerDown(scenePixelCursor[0], scenePixelCursor[1], maskAnnId);
+      return;
+    }
+
+    // ── Mask polygon mode — delegate to PolygonCreateShape (rendered below) ─
+    if (isMaskPolygonMode) {
+      e.stopPropagation();
+      // If the selected annotation is a locked mask, refuse to draw at all
+      // (no new mask, no edit) — mirroring the vector-shape lock guard.
+      const isLockedSelectedMask =
+        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      if (isLockedSelectedMask) return;
+      maskPolygonCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
 
@@ -432,7 +513,28 @@
       return;
     }
 
-    // ── Default mode: try editing selected annotation ──────────────
+    // ── Default mode: hit-test mask canvas layer FIRST ────────────
+    // Check if the click landed on a mask pixel BEFORE the SVG shape
+    // tool selection check, so mask annotations are selectable even
+    // when a vector annotation is currently selected.
+    const maskHit = hitTestMaskLayer(
+      scenePixelCursor[0],
+      scenePixelCursor[1],
+      (data.annotations?.items ?? []).map((a) => ({
+        id: a.id,
+        shape: a.shape as Record<string, unknown>,
+        value: a.value as Record<string, unknown> | undefined,
+      })),
+      (ann) => annotation.isHidden({ id: ann.id } as any),
+      resolveColorForAnnotation,
+    );
+    if (maskHit.annotationId) {
+      e.stopPropagation();
+      selection.selectAnnotation(maskHit.annotation as any);
+      return;
+    }
+
+    // ── Default mode: try editing selected annotation (SVG shapes) ─
     if (toolSelection) {
       const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
       if (consumed) {
@@ -469,6 +571,27 @@
     // ── Ellipse creation mode — finalize on EllipseCreateShape ──
     if (isEllipseMode) {
       ellipseCreateComp?.handleMouseUp(snappedCursor);
+      return;
+    }
+
+    // ── Mask brush mode — flush on pointer up ─────────────────────
+    if (isMaskBrushMode) {
+      // If the selected annotation is a locked mask, don't flush or open the
+      // category popover — the mouse-down guard already refused to paint, so
+      // there is no session to flush and no new mask to create.
+      const isLockedSelectedMask =
+        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      if (isLockedSelectedMask) return;
+      // Save the annotationId BEFORE the flush resets it
+      const hadAnnotation = !!maskSession.annotationId;
+      maskBrushPointerUp(getDriver());
+      // If no annotation was targeted, the flush was a noop.
+      // Trigger the category selection popover via onSelection.
+      // The parent workspace will create the annotation, and addAnnotation
+      // will then call mask_shapes.flush to write the tiles.
+      if (!hadAnnotation) {
+        onSelection(IMAGE_MASK, []);
+      }
       return;
     }
 
@@ -538,6 +661,37 @@
     getDriver().setMode("review");
   }
 
+  /**
+   * Handle clicks on the container level — catches clicks on the mask canvas
+   * layer (which has pointer-events: none and passes through to SVG, but we
+   * also handle directly here for robustness).
+   */
+  function onContainerMouseDown(e: MouseEvent) {
+    // Only handle in DEFAULT_MODE — other modes are handled by the SVG handler
+    if (viewport.mode !== DEFAULT_MODE) return;
+    if (isMaskBrushMode || isMaskPolygonMode) return;
+
+    // Sync mouse position
+    mousePosition = [e.offsetX, e.offsetY];
+
+    // Hit-test mask canvas layer
+    const maskHit = hitTestMaskLayer(
+      scenePixelCursor[0],
+      scenePixelCursor[1],
+      (data.annotations?.items ?? []).map((a) => ({
+        id: a.id,
+        shape: a.shape as Record<string, unknown>,
+        value: a.value as Record<string, unknown> | undefined,
+      })),
+      (ann) => annotation.isHidden({ id: ann.id } as any),
+      resolveColorForAnnotation,
+    );
+    if (maskHit.annotationId) {
+      e.stopPropagation();
+      selection.selectAnnotation(maskHit.annotation as any);
+    }
+  }
+
   function onSvgClick(e: MouseEvent) {
     // Note mode: if the click wasn't already handled by an annotation's onclick,
     // create an entry-level note at the click position.
@@ -552,7 +706,30 @@
     onSelection(viewport.mode, points, extraProps, annId);
   }
 
+  let _hoveringMask = $state(false);
   let _noteHandledByClick = $state(false);
+  let _hoverHitTestPending = false;
+
+  function scheduleHoverHitTest(): void {
+    if (_hoverHitTestPending) return;
+    _hoverHitTestPending = true;
+    requestAnimationFrame(() => {
+      _hoverHitTestPending = false;
+      if (!data.annotations) return;
+      const hit = hitTestMaskLayer(
+        scenePixelCursor[0],
+        scenePixelCursor[1],
+        (data.annotations?.items ?? []).map((a) => ({
+          id: a.id,
+          shape: a.shape as Record<string, unknown>,
+          value: a.value as Record<string, unknown> | undefined,
+        })),
+        (ann) => annotation.isHidden({ id: ann.id } as any),
+        resolveColorForAnnotation,
+      );
+      _hoveringMask = hit.annotationId !== null;
+    });
+  }
 
   function handleClick(ann: IAnnotationRecord) {
     // Note mode: create an annotation-anchored note
@@ -572,7 +749,7 @@
   }
 </script>
 
-<div class={cn("shapes-container flex-1", pointer)}>
+<div class={cn("shapes-container flex-1", pointer)} onmousedown={onContainerMouseDown}>
   <!-- Layer 0: Viewport with image content -->
   <div class="viewport-layer">
     <Viewport bind:this={zoomableElement} onPanStart={() => (isPanning = true)} onPanStop={() => (isPanning = false)}>
@@ -580,7 +757,10 @@
     </Viewport>
   </div>
 
-  <!-- Layer 1: SVG overlay for shapes -->
+  <!-- Layer 1: Mask canvas overlay -->
+  <MaskCanvasLayer previewColor={previewColor} />
+
+  <!-- Layer 2: SVG overlay for shapes -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <svg
     width="100%"
@@ -589,6 +769,7 @@
     onkeydown={() => {}}
     bind:this={svgEl}
     onmousedowncapture={onMouseDownCapture}
+    onmouseupcapture={onMouseUpCapture}
     onmousedown={onMouseDown}
     onmouseup={onMouseUp}
     onmousemove={onMouseMove}
@@ -692,7 +873,7 @@
         />
       {/if}
 
-      <!-- Build mode: polygon creation preview -->
+      <!-- Build mode: polygon creation preview (vector + mask) -->
       {#if isPolygonMode && !pendingAnnotation}
         <PolygonCreateShape
           bind:this={polygonCreateComp}
@@ -702,6 +883,55 @@
           {onSelection}
           color={previewColor}
         />
+      {/if}
+
+      {#if isMaskPolygonMode && !pendingAnnotation}
+        <MaskPolygonCreateShape
+          bind:this={maskPolygonCreateComp}
+          cursor={snappedCursor}
+          mediaWidth={media.width}
+          mediaHeight={media.height}
+          onFlush={() => {
+            // If a mask annotation is currently selected, flush directly
+            // to its tiles (same as brush tool). Don't go through
+            // onShapeSelection which would strip existing tiles from the
+            // local shape. For new annotations, use onSelection to create.
+            const sel = selection.value;
+            // Defense-in-depth: never commit onto (or spin off a new mask
+            // against) a locked mask annotation.
+            if (sel && (sel.shape as any)?.type === IMAGE_MASK && annotation.isLocked(sel)) {
+              return;
+            }
+            const existingId = sel && (sel.shape as any)?.type === IMAGE_MASK
+              ? sel.id
+              : undefined;
+            if (existingId) {
+              // Edit existing mask — just flush the session tiles
+              getDriver().command.call("annotation.mask_shapes.flush");
+            } else {
+              // New mask — trigger creation via onSelection
+              onSelection(IMAGE_MASK, []);
+            }
+          }}
+          color={previewColor}
+        />
+      {/if}
+
+      <!-- Add/remove mode indicator for mask polygon tool (near cursor) -->
+      {#if isMaskPolygonMode && !pendingAnnotation}
+        {@const invScale = 1 / viewport.workspace.transform.scale}
+        {@const px = scenePixelCursor[0]}
+        {@const py = scenePixelCursor[1]}
+        <text
+          x={px}
+          y={py - 16 * invScale}
+          fill={maskSession.mode === "add" ? "rgba(100,255,100,0.9)" : "rgba(255,100,100,0.9)"}
+          font-size={14 * invScale}
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-weight="bold"
+          style:pointer-events="none"
+        >{maskSession.mode === "add" ? "+" : "−"}</text>
       {/if}
 
       <!-- Pending annotation (waiting for category in popover) -->
@@ -721,6 +951,50 @@
       {/if}
     </g>
   </svg>
+
+  <!-- Layer 3: Brush cursor overlay (above everything) -->
+  {#if isMaskBrushMode}
+    {@const invScale = 1 / viewport.workspace.transform.scale}
+    {@const px = Math.floor(scenePixelCursor[0]) + 0.5}
+    {@const py = Math.floor(scenePixelCursor[1]) + 0.5}
+    <svg
+      class="brush-cursor-overlay"
+      width="100%"
+      height="100%"
+      {viewBox}
+      style:position="absolute"
+      style:top="0"
+      style:left="0"
+      style:pointer-events="none"
+      style:z-index="10"
+    >
+      <circle
+        cx={px}
+        cy={py}
+        r={maskTool.brushRadius}
+        fill="none"
+        stroke="rgba(255,255,255,0.6)"
+        stroke-width={1}
+        vector-effect="non-scaling-stroke"
+      />
+      <circle
+        cx={px}
+        cy={py}
+        r={2 * invScale}
+        fill="rgba(255,255,255,0.8)"
+        vector-effect="non-scaling-stroke"
+      />
+      <text
+        x={px}
+        y={py - maskTool.brushRadius - 12 * invScale}
+        fill={maskSession.mode === "add" ? "rgba(100,255,100,0.9)" : "rgba(255,100,100,0.9)"}
+        font-size={14 * invScale}
+        text-anchor="middle"
+        dominant-baseline="middle"
+        font-weight="bold"
+      >{maskSession.mode === "add" ? "+" : "-"}</text>
+    </svg>
+  {/if}
 </div>
 
 <style>
@@ -739,5 +1013,7 @@
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
   }
 </style>
