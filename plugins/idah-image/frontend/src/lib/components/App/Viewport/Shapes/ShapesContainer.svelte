@@ -468,7 +468,7 @@
       // If the selected annotation is a locked mask, refuse to paint at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
       const isLockedSelectedMask =
-        selAnnotation.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
 
       const maskAnnId = selAnnotation?.shape_type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
@@ -484,7 +484,7 @@
       // If the selected annotation is a locked mask, refuse to draw at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
       const isLockedSelectedMask =
-        selAnnotation.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
 
       maskPolygonCreateComp?.handleMouseDown(snappedCursor);
@@ -588,7 +588,7 @@
       // category popover — the mouse-down guard already refused to paint, so
       // there is no session to flush and no new mask to create.
       const isLockedSelectedMask =
-        selAnnotation.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
       // Save the annotationId BEFORE the flush resets it
       const hadAnnotation = !!maskSession.annotationId;
