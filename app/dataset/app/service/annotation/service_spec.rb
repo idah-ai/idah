@@ -311,7 +311,7 @@ RSpec.describe Annotation::Service, database: true do
         # The row still exists — it is tombstoned, not removed.
         tombstoned = repo.find!(annotation_id)
         expect(tombstoned.deleted_at).not_to be_nil
-        expect(tombstoned.deleted_by_email).to eq("user@example.com")
+        expect(tombstoned.deleted_by_email).to eq("admin@example.com")
       end
 
       it "raises error when annotation belongs to a completed entry" do

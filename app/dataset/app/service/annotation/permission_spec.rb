@@ -489,7 +489,7 @@ RSpec.describe Annotation::Service, database: true do
 
         expect(record.deleted_at).not_to be nil
         expect(record.deleted_by_email).not_to be nil
-     end
+      end
     end
 
     describe "with assigned project and disabled project member" do
