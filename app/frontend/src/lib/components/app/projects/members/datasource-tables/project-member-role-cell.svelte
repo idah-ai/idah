@@ -1,13 +1,11 @@
 <script lang="ts">
-  import { TriangleAlertIcon } from "@lucide/svelte";
-
-  import Can from "@/security/can.svelte";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
-  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
   import ProjectMemberRoleBadge from "@/components/app/projects/members/badges/project-member-role-badge.svelte";
+  import RoleChangeWarning from "@/components/app/projects/members/datasource-tables/role-change-warning.svelte";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+  import Can from "@/security/can.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import {
     ProjectMemberRecord,
@@ -56,48 +54,61 @@
   // Variables
   let selectedRole: ProjectMemberRole = $state(projectMember.role);
   let selectResetKey: number = $state(0);
-  let pendingRole: ProjectMemberRole | null = $state(null);
-  let openConfirmModal: boolean = $state(false);
 
   let selectedRoleLabel = $derived(projectMemberRoles.find((r) => r.value === selectedRole)?.label ?? selectedRole);
-  let pendingRoleLabel = $derived(projectMemberRoles.find((r) => r.value === pendingRole)?.label ?? pendingRole);
-  let warningMessage = $derived(pendingRole ? (warningMessages[selectedRole]?.[pendingRole] ?? null) : null);
-  let needsDatasets = $derived(pendingRole ? scenariosNeedingDatasets.has(`${selectedRole}→${pendingRole}`) : false);
+
+  function roleLabel(role: ProjectMemberRole) {
+    return projectMemberRoles.find((r) => r.value === role)?.label ?? role;
+  }
 
   // Functions
   function onRoleChange(value: string): void {
     if (value === selectedRole) return;
-    pendingRole = value as ProjectMemberRole;
-    openConfirmModal = true;
+    void confirmRoleChange(value as ProjectMemberRole);
   }
 
-  async function confirmRoleChange(): Promise<void> {
-    if (!pendingRole) return;
+  async function confirmRoleChange(newRole: ProjectMemberRole): Promise<void> {
+    const fromRole = selectedRole;
 
-    const newRole = pendingRole;
-    pendingRole = null;
+    const choice = await showConfirmModal({
+      title: "Role Change",
+      confirmLabel: "Confirm",
+      destructive: false,
+      content: {
+        component: RoleChangeWarning,
+        props: {
+          email: projectMember.email,
+          fromRoleLabel: roleLabel(fromRole),
+          toRoleLabel: roleLabel(newRole),
+          warningMessage: warningMessages[fromRole]?.[newRole] ?? null,
+          needsDatasets: scenariosNeedingDatasets.has(`${fromRole}→${newRole}`),
+          accountId: projectMember.account_id,
+          projectId: projectMember.project_id,
+        },
+      },
+      onConfirm: async () => {
+        try {
+          await projectMembersBackendDataSource.update(
+            projectMember.id,
+            { attributes: { role: newRole } },
+            { showErrorToast: false },
+          );
 
-    try {
-      await projectMembersBackendDataSource.update(
-        projectMember.id,
-        { attributes: { role: newRole } },
-        { showErrorToast: false },
-      );
+          selectedRole = newRole;
+          $refetches.projectMembers.list = new Date();
+          showToast.success({
+            title: "Member role updated",
+            description: `"${projectMember.email}" is now a ${roleLabel(newRole)}.`,
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
 
-      selectedRole = newRole;
-      $refetches.projectMembers.list = new Date();
-      showToast.success({
-        title: "Member role updated",
-        description: `"${projectMember.email}" is now a ${projectMemberRoles.find((r) => r.value === newRole)?.label}.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
-  }
-
-  function cancelRoleChange(): void {
-    pendingRole = null;
-    selectResetKey++;
+    // Cancel, Escape or a route change: put the <Select> back on the current role.
+    if (choice === ConfirmModalChoice.Cancel) selectResetKey++;
   }
 </script>
 
@@ -135,43 +146,4 @@
       </SelectContent>
     </Select>
   {/key}
-
-  <ConfirmModal
-    title="Role Change"
-    description=""
-    bind:open={openConfirmModal}
-    onConfirm={confirmRoleChange}
-    onCancel={cancelRoleChange}
-  >
-    {#snippet confirm()}
-      <Button onclick={confirmRoleChange}>Confirm</Button>
-    {/snippet}
-
-    {#snippet modalDescription()}
-      <p class="text-muted-foreground text-sm">
-        Are you sure you want to change <strong>{projectMember.email}</strong>'s role from
-        <strong>{selectedRoleLabel}</strong> to <strong>{pendingRoleLabel}</strong>?
-      </p>
-
-      {#if warningMessage}
-        <div
-          class="mt-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400"
-        >
-          <TriangleAlertIcon class="mt-0.5 size-4 shrink-0" />
-          <div>
-            <span><strong>{projectMember.email}</strong> {warningMessage}</span>
-
-            {#if needsDatasets}
-              <div class="hidden has-[+div:not(:empty)]:block">
-                <hr class="my-2 border-amber-300 dark:border-amber-500/40" />
-              </div>
-              <div class="[&>div]:!text-current">
-                <AccountEntries accountId={projectMember.account_id} projectId={projectMember.project_id} />
-              </div>
-            {/if}
-          </div>
-        </div>
-      {/if}
-    {/snippet}
-  </ConfirmModal>
 </Can>
