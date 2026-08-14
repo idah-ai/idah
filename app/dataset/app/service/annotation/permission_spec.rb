@@ -135,8 +135,10 @@ RSpec.describe Annotation::Service, database: true do
       project_id: first_project_id,
       dataset_id: first_dataset_id,
       entry_id: first_entry_id,
-      dimensions: { x: 10, y: 20, width: 30, height: 40 },
-      annotation: { label: "cat" },
+      shape_type: 'bb'
+      shape_args: { x: 10, y: 20, width: 30, height: 40 },
+      category: "cat",
+      properties: {},
       created_by_email: "reviewer@example.com"
     )
   }
@@ -145,8 +147,10 @@ RSpec.describe Annotation::Service, database: true do
       project_id: second_project_id,
       dataset_id: second_dataset_id,
       entry_id: second_entry_id,
-      dimensions: { x: 50, y: 60, width: 70, height: 80 },
-      annotation: { label: "dog" },
+      shape_type: 'bb'
+      shape_args: { x: 50, y: 60, width: 70, height: 80 },
+      category: "dog",
+      properties: {},
       created_by_email: "reviewer@example.com"
     )
   }
@@ -155,8 +159,10 @@ RSpec.describe Annotation::Service, database: true do
       project_id: third_project_id,
       dataset_id: third_dataset_id,
       entry_id: third_entry_id,
-      dimensions: { x: 90, y: 100, width: 110, height: 120 },
-      annotation: { label: "mouse" },
+      shape_type: 'bb',
+      shape_args: { x: 90, y: 100, width: 110, height: 120 },
+      category: "mouse",
+      properties: {},
       created_by_email: "annnotator2@example.com"
     )
   }
@@ -167,8 +173,8 @@ RSpec.describe Annotation::Service, database: true do
         type: "dataset:annotations",
         id: first_annotation_id,
         attributes: {
-          dimensions: { x: 11, y: 21, width: 31, height: 41 },
-          annotation: { label: "mouse" },
+          shape_args: { x: 11, y: 21, width: 31, height: 41 },
+          category: "mouse",
         }
       }
     }
@@ -179,8 +185,10 @@ RSpec.describe Annotation::Service, database: true do
       data: {
         type: "dataset:annotations",
         attributes: {
-          dimensions: { x: 10, y: 20, width: 30, height: 40 },
-          annotation: { label: "cat" },
+          shape_type: 'bb'
+          shape_args: { x: 10, y: 20, width: 30, height: 40 },
+          category: "cat",
+          properties: {},
           created_by_email: "annotator@example.com"
         },
         relationships: {
@@ -233,8 +241,10 @@ RSpec.describe Annotation::Service, database: true do
         project_id: @not_owned_org_project,
         dataset_id: @not_owned_org_dataset,
         entry_id: @not_owned_org_entry,
-        dimensions: { x: 10, y: 20, width: 30, height: 40 },
-        annotation: { label: "cat" },
+        shape_type: 'bb'
+        shape_args: { x: 10, y: 20, width: 30, height: 40 },
+        category: "cat",
+        properties: {}
         created_by_email: "reviewer@example.com"
       )
     end
@@ -256,8 +266,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
-        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
-        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.shape_args).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.category).to eq("cat")
         expect(record.created_by_email).to eq "org_owner@example.com"
       end
 
@@ -267,8 +277,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
-        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
-        expect(record.annotation).to eq({ label: "mouse" })
+        expect(record.shape_args).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.category).to eq("mouse")
       end
 
       it "can delete" do
@@ -342,8 +352,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
-        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
-        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.shape_args).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.category).to eq("cat")
         expect(record.created_by_email).to eq "project_owner@example.com"
       end
 
@@ -353,8 +363,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
-        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
-        expect(record.annotation).to eq({ label: "mouse" })
+        expect(record.shape_args).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.category).to eq("mouse")
       end
 
       it "can delete" do
@@ -453,8 +463,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
-        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
-        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.shape_args).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.category).to eq("cat")
         expect(record.created_by_email).to eq "annotator@example.com"
       end
 
@@ -464,8 +474,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
-        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
-        expect(record.annotation).to eq({ label: "mouse" })
+        expect(record.shape_args).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.category).to eq("mouse")
       end
 
       it "can delete" do
@@ -620,8 +630,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq second_project_id
         expect(record.dataset_id).to eq second_dataset_id
         expect(record.entry_id).to eq second_entry_id
-        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
-        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.shape_args).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.category).to eq("cat")
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
@@ -633,8 +643,8 @@ RSpec.describe Annotation::Service, database: true do
         expect(record.project_id).to eq second_project_id
         expect(record.dataset_id).to eq second_dataset_id
         expect(record.entry_id).to eq second_entry_id
-        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
-        expect(record.annotation).to eq({ label: "mouse" })
+        expect(record.shape_args).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.category).to eq("mouse")
       end
 
       it "can delete" do

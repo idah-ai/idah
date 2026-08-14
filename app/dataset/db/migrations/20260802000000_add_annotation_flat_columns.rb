@@ -11,7 +11,7 @@ Sequel.migration do
       add_column :shape_type, :text
       add_column :shape_args, :jsonb
       add_column :category, :text # NOT NULL added in Migration C — do not add it here, the column
-                                  # starts empty for every existing row.
+      # starts empty for every existing row.
       add_column :properties, :jsonb
       add_column :deleted_at, :timestamp
       add_column :deleted_by_email, :text

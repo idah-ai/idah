@@ -11,9 +11,10 @@
 # does NOT invent a value for rows that have no category set — the audit
 # query from Part 0.3 must be run first and any null-category rows resolved
 # deliberately before Migration C ships.
+BATCH_SIZE = 1000
+
 Sequel.migration do
   Sequel.extension :pg_json
-  BATCH_SIZE = 1000
 
   up do
     extension :pg_json

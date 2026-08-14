@@ -400,7 +400,11 @@ export const IdbBackedAnnotationsDriverAdapter = <
           // than upserting them as tombstones).
           const [toUpsert, toRemove] = partition(response.data, (a) => !a.deleted_at);
           await idbUpsertBatch(db, entryId, toUpsert);
-          await idbDeleteBatch(db, entryId, toRemove.map((r) => r.id));
+          await idbDeleteBatch(
+            db,
+            entryId,
+            toRemove.map((r) => r.id),
+          );
           hasMore = response.data.length === SYNC_PAGE_SIZE;
           page++;
         }

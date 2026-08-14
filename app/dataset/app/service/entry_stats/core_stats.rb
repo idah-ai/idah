@@ -53,7 +53,7 @@ module EntryStats
       end
 
       annotations = entry.annotations || []
-      live_annotations = annotations.reject { |a| a.deleted_at }
+      live_annotations = annotations.reject(&:deleted_at)
       live_annotations.each do |annotation|
         category = annotation.category
         label_counts[category] += 1 if category

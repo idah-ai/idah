@@ -47,7 +47,7 @@ Sequel.migration do
     config.delete("category_field")
     config.delete(:category_field)
 
-    config.each do |_key, tool_config|
+    config.each_value do |tool_config|
       next unless tool_config.is_a?(Hash)
 
       properties = tool_config["properties"] || tool_config[:properties]
@@ -76,7 +76,7 @@ Sequel.migration do
 
     config = config.dup
 
-    config.each do |_key, tool_config|
+    config.each_value do |tool_config|
       next unless tool_config.is_a?(Hash)
 
       properties = tool_config["properties"] || tool_config[:properties]

@@ -130,10 +130,13 @@ module Annotation
 
         check_entry_not_completed!(annotation.entry, :delete)
 
-        annotations.update!(id, {
-          deleted_at: Time.now.utc,
-          deleted_by_email: auth_context.metadata[:email],
-        })
+        annotations.update!(
+          id,
+          {
+            deleted_at: Time.now.utc,
+            deleted_by_email: auth_context.metadata[:email],
+          }
+        )
         annotations.find!(id)   # return the tombstoned record, not nil
       end
     end
