@@ -284,7 +284,10 @@ RSpec.describe Annotation::Service, database: true do
       it "can delete" do
         subject.delete(first_annotation_id)
 
-        expect { annotation_repo.find!(first_annotation_id) }.to raise_error(Verse::Error::RecordNotFound)
+        record = annotation_repo.find!(first_annotation_id)
+
+        expect(record.deleted_at).not_to be nil
+        expect(record.deleted_by_email).not_to be nil
       end
     end
 
@@ -370,9 +373,10 @@ RSpec.describe Annotation::Service, database: true do
       it "can delete" do
         subject.delete(first_annotation_id)
 
-        expect {
-          subject.show(first_annotation_id)
-        }.to raise_error(Verse::Error::RecordNotFound)
+        record = annotation_repo.find!(first_annotation_id)
+
+        expect(record.deleted_at).not_to be nil
+        expect(record.deleted_by_email).not_to be nil
       end
     end
 
@@ -481,10 +485,11 @@ RSpec.describe Annotation::Service, database: true do
       it "can delete" do
         subject.delete(first_annotation_id)
 
-        expect {
-          subject.show(first_annotation_id)
-        }.to raise_error(Verse::Error::RecordNotFound)
-      end
+        record = annotation_repo.find!(first_annotation_id)
+
+        expect(record.deleted_at).not_to be nil
+        expect(record.deleted_by_email).not_to be nil
+     end
     end
 
     describe "with assigned project and disabled project member" do
@@ -650,9 +655,10 @@ RSpec.describe Annotation::Service, database: true do
       it "can delete" do
         subject.delete(second_annotation_id)
 
-        expect {
-          subject.show(second_annotation_id)
-        }.to raise_error(Verse::Error::RecordNotFound)
+        record = annotation_repo.find!(second_annotation_id)
+
+        expect(record.deleted_at).not_to be nil
+        expect(record.deleted_by_email).not_to be nil
       end
     end
 
