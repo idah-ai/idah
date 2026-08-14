@@ -135,7 +135,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: first_project_id,
       dataset_id: first_dataset_id,
       entry_id: first_entry_id,
-      shape_type: 'bb'
+      shape_type: 'bb',
       shape_args: { x: 10, y: 20, width: 30, height: 40 },
       category: "cat",
       properties: {},
@@ -147,7 +147,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: second_project_id,
       dataset_id: second_dataset_id,
       entry_id: second_entry_id,
-      shape_type: 'bb'
+      shape_type: 'bb',
       shape_args: { x: 50, y: 60, width: 70, height: 80 },
       category: "dog",
       properties: {},
@@ -174,7 +174,7 @@ RSpec.describe Annotation::Service, database: true do
         id: first_annotation_id,
         attributes: {
           shape_args: { x: 11, y: 21, width: 31, height: 41 },
-          category: "mouse",
+          category: "mouse"
         }
       }
     }
@@ -185,7 +185,7 @@ RSpec.describe Annotation::Service, database: true do
       data: {
         type: "dataset:annotations",
         attributes: {
-          shape_type: 'bb'
+          shape_type: 'bb',
           shape_args: { x: 10, y: 20, width: 30, height: 40 },
           category: "cat",
           properties: {},
@@ -241,10 +241,10 @@ RSpec.describe Annotation::Service, database: true do
         project_id: @not_owned_org_project,
         dataset_id: @not_owned_org_dataset,
         entry_id: @not_owned_org_entry,
-        shape_type: 'bb'
+        shape_type: 'bb',
         shape_args: { x: 10, y: 20, width: 30, height: 40 },
         category: "cat",
-        properties: {}
+        properties: {},
         created_by_email: "reviewer@example.com"
       )
     end
