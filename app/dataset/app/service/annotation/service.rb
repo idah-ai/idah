@@ -137,7 +137,7 @@ module Annotation
             deleted_by_email: auth_context.metadata[:email],
           }
         )
-        annotations.find!(id)   # return the tombstoned record, not nil
+        annotations.find!(id) # return the tombstoned record, not nil
       end
     end
 
