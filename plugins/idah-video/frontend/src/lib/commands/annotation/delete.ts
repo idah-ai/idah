@@ -60,7 +60,11 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await data.annotations!.create({
+            ...record,
+            id: record.id,
+            metadata: (record as any).metadata ?? {},
+          });
           // Seek to the annotation's start frame
           const restoredFrame = (record.shape as any)?.start;
           if (restoredFrame !== undefined) viewport.video.currentFrame.value = restoredFrame;

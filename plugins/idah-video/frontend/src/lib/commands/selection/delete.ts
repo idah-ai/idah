@@ -74,7 +74,10 @@ export function register(driver: IIdahDriverV2): void {
         async undo() {
           if (!data.annotations) return;
           for (const r of recordsSnapshot) {
-            await data.annotations!.create({ ...r, id: r.id });
+            // Ensure metadata is always a proper hash — the backend rejects
+            // null/undefined metadata.
+            const sanitized = { ...r, metadata: (r as any).metadata ?? {} };
+            await data.annotations!.create(sanitized);
           }
         },
         isCombinable() {

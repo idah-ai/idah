@@ -75,7 +75,13 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          const creations = snapshot.map((ann) => data.annotations!.create({ ...ann, id: ann.id }));
+          const creations = snapshot.map((ann) =>
+            data.annotations!.create({
+              ...ann,
+              id: ann.id,
+              metadata: (ann as any).metadata ?? {},
+            }),
+          );
           await Promise.all(creations);
         },
         isCombinable() {

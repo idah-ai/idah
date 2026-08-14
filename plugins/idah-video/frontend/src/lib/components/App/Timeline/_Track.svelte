@@ -57,8 +57,10 @@
         items: items as any,
       };
 
-      /** Select annotation group */
-      selection.selectGroup(trackId);
+      /** Select annotation group — but only if not already part of a multi-selection */
+      if (!selection.isGroupSelected(trackId)) {
+        selection.selectGroup(trackId);
+      }
 
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }

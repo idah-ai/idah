@@ -53,6 +53,8 @@ import { register as registerAnnotationAdd } from "./annotation/add";
 import { register as registerAnnotationDelete } from "./annotation/delete";
 import { register as registerAnnotationDeleteAll } from "./annotation/delete_all";
 import { register as registerAnnotationExtendNext } from "./annotation/extend_next";
+import { register as registerAnnotationExtendAllNext } from "./annotation/extend_all_next";
+import { register as registerAnnotationExtendAllPrev } from "./annotation/extend_all_prev";
 import { register as registerAnnotationExtendPrev } from "./annotation/extend_prev";
 import { register as registerAnnotationGoToNextGroup } from "./annotation/go_to_next_group";
 import { register as registerAnnotationGoToNextKeyframe } from "./annotation/go_to_next_keyframe";
@@ -132,6 +134,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationSplit(driver);
   registerAnnotationExtendPrev(driver);
   registerAnnotationExtendNext(driver);
+  registerAnnotationExtendAllPrev(driver);
+  registerAnnotationExtendAllNext(driver);
   registerAnnotationGoToNextKeyframe(driver);
   registerAnnotationGoToPrevKeyframe(driver);
   registerAnnotationGoToNextGroup(driver);

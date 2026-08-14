@@ -53,7 +53,11 @@
 
     if (viewport.isReviewWorkspace) return;
 
-    selectAnnotationGroup();
+    // If this group is not already selected, select it (replacing current selection).
+    // If it IS already selected, preserve the multi-selection.
+    if (!selection.isGroupSelected(id)) {
+      selectAnnotationGroup();
+    }
 
     const contextMenuProps: ContextMenuComponentProps = {
       track,
