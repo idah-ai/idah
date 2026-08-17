@@ -10,6 +10,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "selection.delete",
@@ -59,7 +60,13 @@ export function register(driver: IIdahDriverV2): void {
       if (uniqueRecords.length === 0) return noopAction(command);
 
       // Block deletion if any member annotation belongs to a locked group.
-      if (uniqueRecords.some((r) => annotation.isLocked(r))) return noopAction(command);
+      if (uniqueRecords.some((r) => annotation.isLocked(r))) {
+        showToast.warning({
+          title: "Cannot delete annotation",
+          description: "One or more selected annotations are locked.",
+        });
+        return noopAction(command);
+      }
 
       const recordsSnapshot = uniqueRecords;
 
