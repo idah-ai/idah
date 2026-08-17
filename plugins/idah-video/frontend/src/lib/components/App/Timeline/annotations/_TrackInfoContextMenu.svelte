@@ -28,6 +28,21 @@
   let annotationIsLocked = $derived(trackId && items ? items.some((item) => annotation.isLocked(item.rawData)) : false);
   let disabled = $derived(annotationIsLocked || !isEditable());
 
+  // ── Extend All buttons: disabled if ANY selected annotation/group is locked ──
+  let extendAllDisabled = $derived.by(() => {
+    if (!isEditable()) return true;
+    const all = data.annotations?.items ?? [];
+    const selectedIds = new Set(selection.selectedAnnotationIds);
+    const selectedGids = new Set(selection.selectedGroupIds);
+    for (const ann of all) {
+      const gid = (ann.metadata as any)?.group_id ?? ann.id;
+      if (selectedIds.has(ann.id) || selectedGids.has(gid)) {
+        if (annotation.isLocked(ann) || annotation.isLocked(gid)) return true;
+      }
+    }
+    return false;
+  });
+
   // ── Empty-area extend menus (new) ─────────────────────────────────────
   let prevAnnotation = $derived.by<TimelineItem | undefined>(() => {
     if (!items || frame === undefined) return undefined;
@@ -147,14 +162,14 @@
         <div
           role="none"
           onclick={(e) => {
-            if (disabled) e.stopPropagation();
+            if (extendAllDisabled) e.stopPropagation();
           }}
         >
           <Button
             variant="ghost"
             size="sm"
             class="mx-1 w-full justify-start"
-            {disabled}
+            disabled={extendAllDisabled}
             onclick={() => {
               getDriver().command.call("annotation.extend_all_prev", { frame });
             }}
@@ -169,14 +184,14 @@
         <div
           role="none"
           onclick={(e) => {
-            if (disabled) e.stopPropagation();
+            if (extendAllDisabled) e.stopPropagation();
           }}
         >
           <Button
             variant="ghost"
             size="sm"
             class="mx-1 w-full justify-start"
-            {disabled}
+            disabled={extendAllDisabled}
             onclick={() => {
               getDriver().command.call("annotation.extend_all_next", { frame });
             }}
