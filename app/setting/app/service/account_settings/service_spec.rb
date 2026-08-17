@@ -18,6 +18,14 @@ RSpec.describe AccountSettings::Service, database: true do
       expect(created_settings.length).to be > 0
       expect(created_settings.all? { |s| s.account_id == account_id }).to be true
     end
+
+    it "seeds the per-plugin category label visibility rows" do
+      created_settings = subject.create(account_id)
+
+      label_rows = created_settings.select { |s| s.key == "annotation:category.label-visibility" }
+      expect(label_rows.map(&:plugin)).to contain_exactly("idah-image", "idah-video")
+      expect(label_rows.all? { |s| s.value == "never" }).to be true
+    end
   end
 
   describe "#index" do

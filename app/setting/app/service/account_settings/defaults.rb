@@ -2,13 +2,18 @@
 
 module AccountSettings
   module Defaults
-    # keep string keys to put in db
-    DEFAULT_ACCOUNT_SETTINGS = {
+    # Each entry becomes one account_settings row, addressed by (key, plugin).
+    # Keep string keys/plugins to put in db. plugin "" means a core setting.
+    DEFAULT_ACCOUNT_SETTINGS = [
       # notifications
-      "notification:organization:activities" => true,
-      "notification:project:activities" => true,
+      { key: "notification:organization:activities", plugin: "", value: true },
+      { key: "notification:project:activities", plugin: "", value: true },
       # command palette shortcut overrides — { "<command-name>" => "<shortcut>" }
-      "command:shortcut" => {},
-    }.freeze
+      { key: "command:shortcut", plugin: "", value: {} },
+      # annotation category label visibility — "always" | "hover" | "never".
+      # Stored per plugin so image and video preferences stay independent.
+      { key: "annotation:category.label-visibility", plugin: "idah-image", value: "never" },
+      { key: "annotation:category.label-visibility", plugin: "idah-video", value: "never" },
+    ].freeze
   end
 end

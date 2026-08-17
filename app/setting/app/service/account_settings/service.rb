@@ -20,12 +20,13 @@ module AccountSettings
     end
 
     def create(account_id)
-      Defaults::DEFAULT_ACCOUNT_SETTINGS.each do |key, value|
+      Defaults::DEFAULT_ACCOUNT_SETTINGS.each do |setting|
         account_settings.transaction do
           attributes = {
             account_id:,
-            key: key,
-            value: value,
+            key: setting[:key],
+            plugin: setting[:plugin],
+            value: setting[:value],
           }
           account_settings.create(attributes)
         end
