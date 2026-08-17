@@ -28,6 +28,7 @@
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
+  import VideoCanvas from "$lib/components/App/Viewport/VideoCanvas.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
 
@@ -63,6 +64,7 @@
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
+  let canvasElement: HTMLCanvasElement | undefined = $state();
 
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
@@ -689,8 +691,26 @@
           -->
 
           <ResizablePane defaultSize={75}>
-            <section id="video-section" class="flex h-full w-full flex-1">
+            <section id="video-section" class="relative flex h-full w-full flex-1">
               {#if mediaInfo}
+                <!-- Hidden decode source outside the zoom transform; frames land on VideoCanvas below. -->
+                <Video
+                  bind:this={player}
+                  canvas={canvasElement}
+                  src={mediaUrl}
+                  fps={mediaInfo.meta.fps as number}
+                  onTogglePlay={(_isPlaying: boolean) => {}}
+                  onResize={() => {
+                    // video resized
+                  }}
+                  onFrameUpdate={(currentFrame: number) => {
+                    setAnnotationFrame(currentFrame);
+                  }}
+                  onVolumeChange={(level: number, muted: boolean) => {
+                    viewport.video.sound = { level: level, muted };
+                  }}
+                />
+
                 <ShapesContainer
                   bind:this={overlay}
                   {annotations_promise}
@@ -703,23 +723,7 @@
                   onChangeFrame={seekToFrame}
                   isPlaying={viewport.video.status === "play"}
                 >
-                  <!-- container context ?-->
-                  <Video
-                    bind:this={player}
-                    bind:element={player_container}
-                    src={mediaUrl}
-                    fps={mediaInfo.meta.fps as number}
-                    onTogglePlay={(_isPlaying: boolean) => {}}
-                    onResize={() => {
-                      // video resized
-                    }}
-                    onFrameUpdate={(currentFrame: number) => {
-                      setAnnotationFrame(currentFrame);
-                    }}
-                    onVolumeChange={(level: number, muted: boolean) => {
-                      viewport.video.sound = { level: level, muted };
-                    }}
-                  />
+                  <VideoCanvas bind:canvas={canvasElement} bind:element={player_container} />
                 </ShapesContainer>
               {/if}
 

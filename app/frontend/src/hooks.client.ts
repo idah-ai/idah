@@ -2,19 +2,39 @@ import * as Sentry from "@sentry/sveltekit";
 
 import { authStatus } from "@/security/AuthContext";
 
+// Resource spans (asset loads) below this duration are dropped as noise; set
+// above the normal worst-case load so only slow outliers surface. Env-tunable.
+const SLOW_RESOURCE_THRESHOLD_MS = Number(import.meta.env.VITE_SENTRY_SLOW_RESOURCE_MS || 3000);
+
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.MODE,
-  tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? 1.0),
-  integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+  tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || 1.0),
+  integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration(), Sentry.browserProfilingIntegration()],
   // Backend calls go to `${VITE_IDAH_HOST}/api/v1/<service>` through nginx;
   // matching them attaches sentry-trace/baggage headers so backend traces
   // continue the browser trace.
   tracePropagationTargets: [/^\/api\//, import.meta.env.VITE_IDAH_HOST].filter(Boolean),
 
   // Session replay: sample a slice of normal sessions, keep every errored one.
-  replaysSessionSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE ?? 0.1),
-  replaysOnErrorSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE ?? 1.0),
+  replaysSessionSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE || 0.1),
+  replaysOnErrorSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE || 1.0),
+
+  // Relative to tracesSampleRate (effective rate = traces × profiles).
+  profilesSampleRate: Number(import.meta.env.VITE_SENTRY_PROFILE_SAMPLE_RATE || 0.1),
+
+  // Drop fast resource spans (see SLOW_RESOURCE_THRESHOLD_MS); keep the slow ones.
+  beforeSendTransaction(event) {
+    if (event.spans) {
+      event.spans = event.spans.filter((span) => {
+        if (!span.op?.startsWith("resource.")) return true;
+
+        const durationMs = ((span.timestamp || span.start_timestamp) - span.start_timestamp) * 1000;
+        return durationMs >= SLOW_RESOURCE_THRESHOLD_MS;
+      });
+    }
+    return event;
+  },
 });
 
 // Attach the signed-in account to every event and replay; clear it on logout.
