@@ -29,7 +29,6 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import Text from "@/components/ui/text/Text.svelte";
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
