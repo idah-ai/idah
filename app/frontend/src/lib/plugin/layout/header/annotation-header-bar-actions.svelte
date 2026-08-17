@@ -305,21 +305,20 @@
               <Settings2Icon />
             </Button>
           {:else}
-            <ToolTooltip label="Settings" align="center" delayDuration={100}>
-              {#snippet trigger()}
-                <Button
-                  {...props}
-                  variant="ghost"
-                  size="icon-sm"
-                  onpointerdown={(e) => {
-                    openThemeMenu = false;
-                    forwardPointerDown(props, e);
-                  }}
-                >
-                  <Settings2Icon />
-                </Button>
-              {/snippet}
-            </ToolTooltip>
+            <KbdTooltipButton
+              {...props}
+              label="Settings"
+              {driver}
+              icon={Settings2Icon}
+              align="center"
+              delayDuration={100}
+              variant="ghost"
+              size="icon-sm"
+              onpointerdown={(e) => {
+                openThemeMenu = false;
+                forwardPointerDown(props, e);
+              }}
+            />
           {/if}
         {/snippet}
       </PopoverTrigger>
@@ -458,21 +457,20 @@
               <SunMoonIcon />
             </Button>
           {:else}
-            <ToolTooltip label="Theme" align="center" delayDuration={100}>
-              {#snippet trigger()}
-                <Button
-                  {...props}
-                  variant="ghost"
-                  size="icon-sm"
-                  onpointerdown={(e) => {
-                    openSettingsPopover = false;
-                    forwardPointerDown(props, e);
-                  }}
-                >
-                  <SunMoonIcon />
-                </Button>
-              {/snippet}
-            </ToolTooltip>
+            <KbdTooltipButton
+              {...props}
+              label="Theme"
+              {driver}
+              icon={SunMoonIcon}
+              align="center"
+              delayDuration={100}
+              variant="ghost"
+              size="icon-sm"
+              onpointerdown={(e) => {
+                openSettingsPopover = false;
+                forwardPointerDown(props, e);
+              }}
+            />
           {/if}
         {/snippet}
       </DropdownMenuTrigger>
@@ -495,7 +493,7 @@
             : ""}
           onclick={() => setMode("light")}
         >
-          <SunIcon />
+          <SunIcon class="text-current" />
           Light
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -505,7 +503,7 @@
             : ""}
           onclick={() => setMode("dark")}
         >
-          <MoonIcon />
+          <MoonIcon class="text-current" />
           Dark
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -515,7 +513,7 @@
             : ""}
           onclick={() => resetMode()}
         >
-          <TabletSmartphoneIcon />
+          <TabletSmartphoneIcon class="text-current" />
           System
         </DropdownMenuItem>
       </DropdownMenuContent>

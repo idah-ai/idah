@@ -53,7 +53,7 @@
 
   .video-wrapper {
     position: relative;
-    background-color: #e5e7eb;
+    background-color: var(--muted);
     display: flex;
     align-items: center;
     justify-content: center;
