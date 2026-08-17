@@ -3,7 +3,7 @@
 // Undoable: restores the previous locked state.
 //
 // Usage:
-//   driver.command.call("annotation.group.toggle-editability", {
+//   driver.command.call("idah-video:annotation.group.toggle-editability", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------

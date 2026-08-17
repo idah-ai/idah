@@ -30,14 +30,14 @@
           label: "Show/Hide All",
           icon: isAllHidden ? EyeOffIcon : EyeIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggle-visibility-all");
+            getDriver().command.call("idah-video:annotation.toggle-visibility-all");
           },
         },
         "editability-all": {
           label: "Lock/Unlock All",
           icon: isAllLocked ? LockIcon : LockOpenIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggle-editability-all");
+            getDriver().command.call("idah-video:annotation.toggle-editability-all");
           },
         },
         "delete-all": {
@@ -48,7 +48,7 @@
             showConfirmDialog({
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations?",
-              onConfirm: () => getDriver().command.call("annotation.delete-all"),
+              onConfirm: () => getDriver().command.call("idah-video:annotation.delete-all"),
             });
           },
         },

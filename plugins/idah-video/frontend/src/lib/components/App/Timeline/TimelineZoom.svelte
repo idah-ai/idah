@@ -64,7 +64,7 @@
      (Cmd+Arrow jumps it to min/max), which collides with frame-navigation
      shortcuts. Let the driver claim its shortcuts before the slider sees them. -->
 <div id="timeline-controller" class="flex items-center gap-2" onkeydowncapture={claimDriverShortcut}>
-  <KbdTooltipButton label="Zoom Out" commandName="timeline.zoom-out" icon={ZoomOutIcon} variant="outline" size="icon-sm" onclick={zoomOut} />
+  <KbdTooltipButton label="Zoom Out" commandName="idah-video:timeline.zoom-out" icon={ZoomOutIcon} variant="outline" size="icon-sm" onclick={zoomOut} />
 
   <Slider
     type="single"
@@ -76,5 +76,5 @@
     onValueChange={handleSliderZoom}
   />
 
-  <KbdTooltipButton label="Zoom In" commandName="timeline.zoom-in" icon={ZoomInIcon} variant="outline" size="icon-sm" onclick={zoomIn} />
+  <KbdTooltipButton label="Zoom In" commandName="idah-video:timeline.zoom-in" icon={ZoomInIcon} variant="outline" size="icon-sm" onclick={zoomIn} />
 </div>

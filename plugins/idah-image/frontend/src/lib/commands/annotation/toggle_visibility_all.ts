@@ -3,7 +3,7 @@
 // Undoable: restores the previous hidden state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle-visibility-all");
+//   driver.command.call("idah-image:annotation.toggle-visibility-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";

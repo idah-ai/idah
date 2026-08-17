@@ -3,7 +3,7 @@
 // Undoable: restores the keyframe.
 //
 // Usage:
-//   driver.command.call("annotation.keyframe.delete", { annotationId: "...", frame: 42 });
+//   driver.command.call("idah-video:annotation.keyframe.delete", { annotationId: "...", frame: 42 });
 //
 // Shortcut: Delete
 // Active only when there's a selected annotation and the current frame

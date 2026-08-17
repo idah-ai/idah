@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// mode.mask_brush — Brush mask paint tool
+// idah-image:tool.mask-brush — Brush mask paint tool
 //
 // Pointer interaction:
 //   - Pointer down: begin painting at current position
@@ -26,7 +26,7 @@ import { data } from "$lib/state/data.svelte";
 import { rebuildOccupancy, isOccupied } from "$lib/mask/occupancy";
 
 export const command = {
-  name: "mode.mask_brush",
+  name: "idah-image:tool.mask-brush",
   group: "Tools",
   modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK],
   shortcut: "Q",
@@ -149,7 +149,7 @@ export function onPointerUp(driver: IIdahDriverV2): void {
   if (!_isPainting) return;
   _isPainting = false;
 
-  driver.command.call("annotation.mask-shapes.flush");
+  driver.command.call("idah-image:annotation.mask-shapes.flush");
 }
 
 /**

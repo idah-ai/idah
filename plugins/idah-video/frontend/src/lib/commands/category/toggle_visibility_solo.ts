@@ -5,7 +5,7 @@
 // Otherwise → hide ALL annotations except those in the target category
 //
 // Usage:
-//   driver.command.call("annotation.category.toggle-visibility-solo", {
+//   driver.command.call("idah-video:annotation.category.toggle-visibility-solo", {
 //     category: "vehicle",
 //   });
 //

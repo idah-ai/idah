@@ -3,7 +3,7 @@
 // Undoable: removes the last placed point.
 //
 // Usage:
-//   driver.command.call("annotation.line.add-point", { point: [0.5, 0.3] });
+//   driver.command.call("idah-image:annotation.line.add-point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { isEditable } from "$lib/state/editor.svelte";

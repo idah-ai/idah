@@ -3,7 +3,7 @@
 // Undoable: restores all annotations.
 //
 // Usage:
-//   driver.command.call("annotation.group.delete", {
+//   driver.command.call("idah-video:annotation.group.delete", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------

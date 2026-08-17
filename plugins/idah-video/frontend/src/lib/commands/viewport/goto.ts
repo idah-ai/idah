@@ -2,7 +2,7 @@
 // idah-video:viewport.go-to — Jump to a specific frame (non-undoable)
 //
 // Usage:
-//   driver.command.call("viewport.go-to", { frame: 120 });
+//   driver.command.call("idah-video:viewport.go-to", { frame: 120 });
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";

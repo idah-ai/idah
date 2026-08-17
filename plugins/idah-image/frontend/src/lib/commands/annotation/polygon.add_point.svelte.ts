@@ -4,7 +4,7 @@
 // Combinable: multiple point adds in a short window merge into one step.
 //
 // Usage:
-//   driver.command.call("annotation.polygon.add-point", { point: [0.5, 0.3] });
+//   driver.command.call("idah-image:annotation.polygon.add-point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { isEditable } from "$lib/state/editor.svelte";

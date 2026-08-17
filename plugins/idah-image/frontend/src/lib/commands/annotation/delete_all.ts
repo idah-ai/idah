@@ -3,7 +3,7 @@
 // Undoable: restores all deleted annotations.
 //
 // Usage:
-//   driver.command.call("annotation.delete-all");
+//   driver.command.call("idah-image:annotation.delete-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";

@@ -3,7 +3,7 @@
 // Undoable: removes the keyframe.
 //
 // Usage:
-//   driver.command.call("annotation.keyframe.add", {
+//   driver.command.call("idah-video:annotation.keyframe.add", {
 //     annotationId: "...", selection: { frame, angle, points }
 //   });
 // ---------------------------------------------------------------------------

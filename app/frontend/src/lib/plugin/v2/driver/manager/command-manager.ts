@@ -15,14 +15,6 @@ export class CommandManagerV2 {
   /** Registered commands keyed by fully-qualified name (`origin:category.action`). */
   private registry = new Map<string, RegistryEntry>();
 
-  /**
-   * First non-`core` origin seen during register() (e.g. "idah-video").
-   * Used by resolve() to expand short, origin-less names at call sites. Derived
-   * from registration — deliberately NOT the hardcoded PLUGIN_ID (which also
-   * names the IndexedDB database).
-   */
-  private pluginOrigin: string | null = null;
-
   /** Undo stack (most recent at end). */
   private undoStack: ICommandStackEntry[] = [];
   /** Redo stack (most recent at end). */
@@ -107,59 +99,12 @@ export class CommandManagerV2 {
       activeWhen,
       callback,
     });
-
-    // Record the active plugin origin (first non-core origin registered) so
-    // resolve() can expand short names.
-    const origin = name.split(":")[0];
-    if (origin !== "core" && this.pluginOrigin === null) {
-      this.pluginOrigin = origin;
-    }
-
-    // Warn if this registration makes a short name ambiguous — i.e. it now
-    // exists under BOTH core: and the plugin origin. Such a short name fails
-    // closed in resolve(), silently breaking any call site using the short form.
-    const shortName = name.includes(":") ? name.slice(name.indexOf(":") + 1) : name;
-    if (
-      this.pluginOrigin &&
-      this.registry.has(`core:${shortName}`) &&
-      this.registry.has(`${this.pluginOrigin}:${shortName}`)
-    ) {
-      console.warn(
-        `[command] short name "${shortName}" is now ambiguous (core + ${this.pluginOrigin}); ` +
-          "call sites using the short form will fail closed",
-      );
-    }
-  }
-
-  // ── Resolution ─────────────────────────────────────────────────────────
-
-  /**
-   * Resolve a command name to its registry entry:
-   *   1. exact match (fully-qualified, or an already-short single-origin name)
-   *   2. else probe `core:<name>` and `<pluginOrigin>:<name>`
-   *   3. if BOTH exist the short name is ambiguous — fail closed (no-op + error)
-   * O(1): at most three Map lookups.
-   */
-  private resolve(name: string): RegistryEntry | undefined {
-    const exact = this.registry.get(name);
-    if (exact) return exact;
-
-    const core = this.registry.get(`core:${name}`);
-    const plugin = this.pluginOrigin ? this.registry.get(`${this.pluginOrigin}:${name}`) : undefined;
-    if (core && plugin) {
-      console.error(
-        `[command] ambiguous short name "${name}" — matches core:${name} and ` +
-          `${this.pluginOrigin}:${name}; call with an explicit origin`,
-      );
-      return undefined;
-    }
-    return core ?? plugin;
   }
 
   // ── Execution ──────────────────────────────────────────────────────────
 
   call(name: string, ...opts: Record<string, unknown>[]): void {
-    const entry = this.resolve(name);
+    const entry = this.registry.get(name);
     if (!entry) {
       console.error(`[command] unknown command: "${name}"`);
       return;
@@ -338,14 +283,14 @@ export class CommandManagerV2 {
    * if the command has no shortcut or doesn't exist.
    */
   getShortcut(name: string): string | undefined {
-    const entry = this.resolve(name);
+    const entry = this.registry.get(name);
     if (!entry || !entry.shortcut) return undefined;
     return entry.shortcut;
   }
 
   /** Return a single command descriptor by name. */
   getCommand(name: string): ICommandDescriptor | undefined {
-    const entry = this.resolve(name);
+    const entry = this.registry.get(name);
     if (!entry) return undefined;
     return this._toDescriptor(entry);
   }

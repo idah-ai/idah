@@ -45,7 +45,7 @@
           onClick: () => {
             /** Select an annotation before focus it */
             selection.selectAnnotation(rawData);
-            getDriver().command.call("timeline.focus");
+            getDriver().command.call("idah-video:timeline.focus");
           },
         },
       },
@@ -62,7 +62,7 @@
                 disabled: annotationIsLocked || !isEditable(),
                 destructive: true,
                 onClick: () => {
-                  getDriver().command.call("annotation.keyframe.delete", {
+                  getDriver().command.call("idah-video:annotation.keyframe.delete", {
                     annotationId: rawData.id,
                     frame,
                   });
@@ -75,7 +75,7 @@
                 icon: FramerIcon,
                 disabled: annotationIsLocked || !isEditable(),
                 onClick: () => {
-                  getDriver().command.call("annotation.keyframe.add", {
+                  getDriver().command.call("idah-video:annotation.keyframe.add", {
                     annotationId: rawData.id,
                     selection: {
                       frame,
@@ -91,7 +91,7 @@
           icon: SquareSplitHorizontalIcon,
           disabled: annotationIsLocked || !isEditable(),
           onClick: () => {
-            getDriver().command.call("annotation.split", {
+            getDriver().command.call("idah-video:annotation.split", {
               annotationId: rawData.id,
               at: frame,
             });
@@ -108,7 +108,7 @@
           destructive: true,
           onClick: () => {
             selection.selectAnnotation(rawData);
-            getDriver().command.call("selection.delete", {});
+            getDriver().command.call("idah-video:selection.delete", {});
           },
         },
       },

@@ -100,7 +100,7 @@
           class="mx-1 w-full justify-start"
           {disabled}
           onclick={() => {
-            getDriver().command.call("annotation.extend-prev", {
+            getDriver().command.call("idah-video:annotation.extend-prev", {
               annotationId: prevAnnotation.rawData.id,
               frame,
             });
@@ -126,7 +126,7 @@
           class="mx-1 w-full justify-start"
           {disabled}
           onclick={() => {
-            getDriver().command.call("annotation.extend-next", {
+            getDriver().command.call("idah-video:annotation.extend-next", {
               annotationId: nextAnnotation.rawData.id,
               frame,
             });

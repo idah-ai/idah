@@ -5,7 +5,7 @@
 //            frame in the selected group.
 //
 // Can also be called with explicit props from the context menu:
-//   driver.command.call("annotation.extend-next", { annotationId, frame, items });
+//   driver.command.call("idah-video:annotation.extend-next", { annotationId, frame, items });
 //
 // Prevents overlapping with the previous annotation in the group.
 // ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ export function register(driver: IIdahDriverV2): void {
           const nearest = nearestKeyframe(nextAnn.shape, cappedFrame);
           if (!nearest) return;
 
-          driver.command.call("annotation.keyframe.add", {
+          driver.command.call("idah-video:annotation.keyframe.add", {
             annotationId: nextAnn.id,
             selection: {
               frame: cappedFrame,

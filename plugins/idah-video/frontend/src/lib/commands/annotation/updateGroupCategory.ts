@@ -3,7 +3,7 @@
 // Undoable: restores previous categories.
 //
 // Usage:
-//   driver.command.call("annotation.update-group-category", {
+//   driver.command.call("idah-video:annotation.update-group-category", {
 //     groupId: "...",
 //     categoryIdToBeUpdate: "new-category-id"
 //   });

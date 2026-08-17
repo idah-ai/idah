@@ -21,12 +21,12 @@ export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: 
   const { categoryId, shapeType } = opts;
 
   if (e?.shiftKey) {
-    getDriver().command.call("annotation.category.toggle-visibility-solo", {
+    getDriver().command.call("idah-video:annotation.category.toggle-visibility-solo", {
       category: categoryId,
       shapeType,
     });
   } else {
-    getDriver().command.call("annotation.category.toggle-visibility", {
+    getDriver().command.call("idah-video:annotation.category.toggle-visibility", {
       category: categoryId,
       shapeType,
     });
@@ -36,7 +36,7 @@ export function toggleCategoryVisibility(opts: { categoryId: string; shapeType: 
 export function toggleCategoryEditability(opts: { categoryId: string; shapeType: string }) {
   const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.category.toggle-editability", {
+  getDriver().command.call("idah-video:annotation.category.toggle-editability", {
     category: categoryId,
     shapeType,
   });
@@ -45,7 +45,7 @@ export function toggleCategoryEditability(opts: { categoryId: string; shapeType:
 export function deleteCategoryAnnotations(opts: { categoryId: string; shapeType: string }) {
   const { categoryId, shapeType } = opts;
 
-  getDriver().command.call("annotation.category.delete", { category: categoryId, shapeType });
+  getDriver().command.call("idah-video:annotation.category.delete", { category: categoryId, shapeType });
 }
 
 export function getCategoryVisibilityAction(opts: {

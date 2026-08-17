@@ -57,7 +57,7 @@
     }
 
     // ── Add a new point ────────────────────────────────────────────────
-    getDriver().command.call("annotation.polygon.add-point", { point: cursor });
+    getDriver().command.call("idah-video:annotation.polygon.add-point", { point: cursor });
     return true;
   }
 

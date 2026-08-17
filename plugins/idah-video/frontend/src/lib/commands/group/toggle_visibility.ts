@@ -3,7 +3,7 @@
 // Undoable: restores the previous hidden state.
 //
 // Usage:
-//   driver.command.call("annotation.group.toggle-visibility", {
+//   driver.command.call("idah-video:annotation.group.toggle-visibility", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------

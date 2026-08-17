@@ -59,7 +59,7 @@ export function register(driver: IIdahDriverV2): void {
           // Seek to the frame the annotation was created on
           const firstFrame = (props.shape as any).frames?.[0];
           if (firstFrame) viewport.video.currentFrame.value = firstFrame.frame;
-          driver.command.call("timeline.scroll-to-annotation");
+          driver.command.call("idah-video:timeline.scroll-to-annotation");
           // Exit drawing mode after successful creation
           driver.setMode("editor");
         },

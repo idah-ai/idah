@@ -3,7 +3,7 @@
 // Undoable: restores the previous locked state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle-editability-all");
+//   driver.command.call("idah-image:annotation.toggle-editability-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";

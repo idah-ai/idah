@@ -4,7 +4,7 @@
 // Otherwise → hide ALL groups except the target one
 //
 // Usage:
-//   driver.command.call("annotation.group.toggle-visibility-solo", {
+//   driver.command.call("idah-video:annotation.group.toggle-visibility-solo", {
 //     groupId: "..."
 //   });
 // ---------------------------------------------------------------------------

@@ -18,7 +18,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: cursorIcon,
     label: "Selection",
-    name: "tool.selection",
+    name: "idah-video:tool.selection",
     modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: null,
     visibleWhen: () => true,
@@ -37,7 +37,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: rectIcon,
       label: "Bounding Box",
-      name: "tool.bounding-box",
+      name: "idah-video:tool.bounding-box",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
@@ -54,7 +54,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: polyIcon,
       label: "Polygon",
-      name: "tool.polygon",
+      name: "idah-video:tool.polygon",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
@@ -70,7 +70,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: noteIcon,
     label: "Note",
-    name: "tool.note",
+    name: "idah-video:tool.note",
     modes: ["review", "note"],
     group: null,
     visibleWhen: () => driver.mode === "review" || driver.mode === "note",
@@ -86,7 +86,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: magnetIcon,
     label: "Magnetic snap",
-    name: "snap.toggle-magnetic",
+    name: "idah-video:snap.toggle-magnetic",
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: null,
     visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
