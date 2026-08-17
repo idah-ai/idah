@@ -13,6 +13,7 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { uuidv7 } from "uuidv7";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
@@ -68,24 +69,54 @@ export function register(driver: IIdahDriverV2): void {
             const newId = uuidv7();
 
             // Compute offset: shift ALL annotations by the same (pastePos - centroid).
-            // Relative positions between annotations are preserved because each
-            // annotation's points already encode their position relative to the
-            // group centroid — adding centroidOffset here would double the gap.
             const dx = pastePos[0] - centroid[0];
             const dy = pastePos[1] - centroid[1];
 
-            // Clone the shape and offset all frame points
+            // Truncate the pasted annotation's start to the current frame if
+            // its original start is before the playhead — so the pasted shape
+            // does not extend backward in time before the current frame.
+            // Annotations that naturally start after the playhead are kept
+            // at their original start position.
+            const currentFrame = viewport.video.currentFrame.value;
+            const originalStart = (entry.shape as any).start as number | undefined;
+            const originalEnd = (entry.shape as any).end as number | undefined;
+            const shouldTruncate = originalStart !== undefined && originalStart < currentFrame;
+            const newStart = shouldTruncate ? currentFrame : (originalStart ?? 0);
+            const newEnd = originalEnd ?? (originalStart ?? 0) + 1;
+
+            // Clone the shape, offset all frame points, and drop keyframes
+            // before the new start (outside the truncated range).
             const originalFrames = (entry.shape?.frames as any[]) ?? [];
-            const newFrames = originalFrames.map((frame: any) => {
-              if (!frame?.points) return { ...frame };
-              return {
-                ...frame,
-                points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-              };
-            });
+            const newFrames = originalFrames
+              .filter((f: any) => f.frame >= newStart)
+              .map((frame: any) => {
+                if (!frame?.points) return { ...frame };
+                return {
+                  ...frame,
+                  points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
+                };
+              });
+
+            // If no keyframe exists at the exact new start frame, create one
+            // by interpolating from the original shape's surrounding keyframes.
+            // This ensures the pasted annotation always has a shape definition
+            // at its first frame, even when the original didn't have a keyframe
+            // at that exact position.
+            if (originalFrames.length > 0 && !newFrames.some((f: any) => f.frame === newStart)) {
+              const interp = getInterpolatedFrame(entry.shape as any, newStart);
+              if (interp?.points?.length) {
+                newFrames.push({
+                  frame: newStart,
+                  angle: interp.angle ?? 0,
+                  points: interp.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
+                });
+              }
+            }
 
             const newShape = {
               ...entry.shape,
+              start: newStart,
+              end: newEnd,
               frames: newFrames,
             };
 
