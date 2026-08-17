@@ -10,6 +10,10 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { LabelVisibility } from "./state/ui.svelte";
 import { ui } from "./state/ui.svelte";
 
+// Account-settings key + plugin id for the persisted category label visibility.
+const CATEGORY_LABEL_VISIBILITY_KEY = "annotation:category.label-visibility";
+const PLUGIN = "idah-video";
+
 export function registerSettings(driver: IIdahDriverV2): void {
   // NOTE: these descriptors are NOT type-checked here — the setting types are
   // kept only in core (not duplicated into this plugin). The canonical shape
@@ -94,11 +98,27 @@ export function registerSettings(driver: IIdahDriverV2): void {
             // Set directly rather than through a command: unlike the other
             // options this has no shortcut or palette entry, so the popover is
             // the only mutation path and core emits the change after set().
+            // Persist to account settings (per plugin) so it survives reloads;
+            // hydrateSettings() seeds ui.labelVisibility from it on init.
             get: () => ui.labelVisibility,
-            set: (v: string) => (ui.labelVisibility = v as LabelVisibility),
+            set: (v: string) => {
+              ui.labelVisibility = v as LabelVisibility;
+              void driver.accountSettings.set(CATEGORY_LABEL_VISIBILITY_KEY, v, PLUGIN);
+            },
           },
         ],
       },
     ],
   });
+}
+
+// Seed ui.labelVisibility from the persisted account setting. Called once from
+// init(), after core has awaited accountSettings.load(), so the value is present.
+// Plugin and core live in separate Svelte runtimes, so this is a one-time read
+// rather than a reactive subscription.
+export function hydrateSettings(driver: IIdahDriverV2): void {
+  const v = driver.accountSettings.get(CATEGORY_LABEL_VISIBILITY_KEY, PLUGIN);
+  if (v === "always" || v === "hover" || v === "never") {
+    ui.labelVisibility = v;
+  }
 }

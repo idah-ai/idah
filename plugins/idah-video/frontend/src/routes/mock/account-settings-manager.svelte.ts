@@ -22,10 +22,13 @@ export class AccountSettingsManager implements IAccountSettingsDriverV2 {
     return this.overrides;
   }
 
-  get(_key: string): unknown {
+  get(_key: string, _plugin = ""): unknown {
     // Mock: no generic settings store.
     return undefined;
   }
+
+  // Mock: no backend, so nothing is persisted.
+  async set(_key: string, _value: unknown, _plugin = ""): Promise<void> {}
 
   // Mock: nothing to load — overrides start empty and live only in memory.
   async load(_accountId: string): Promise<void> {}
