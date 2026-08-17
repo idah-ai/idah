@@ -60,14 +60,28 @@
       notesReady = true;
     }
 
-    p.then((_plugin) => {
-      plugin = _plugin;
-      plugin.init(driver.sealed());
-      initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
-    });
-    // Load the user's saved shortcut overrides into the live map that
-    // CommandManagerV2 already references, so remaps apply immediately.
-    void driver.accountSettings.load($authStatus.authContext?.id ?? "");
+    /**
+     * Load the user's saved account settings BEFORE initialising the plugin.
+     * Two reasons:
+     * (1) it loads shortcut overrides into the live map that
+     * CommandManagerV2 already references, so remaps apply immediately;
+     *
+     * (2) the plugin reads its persisted settings (e.g. category label visibility)
+     * synchronously in init(), and reactivity does not cross the plugin/core
+     * bundle boundary — so the value must already be present.
+     *
+     * Guarded so a settings failure never blocks plugin startup.
+     */
+    driver.accountSettings
+      .load($authStatus.authContext?.id ?? "")
+      .catch(() => {})
+      .then(() => {
+        p.then((_plugin) => {
+          plugin = _plugin;
+          plugin.init(driver.sealed());
+          initialized = true; // quick fix for now to ensure plugin initialization before rendering toolbar(Items)
+        });
+      });
     const unsub = driver.command.onPaletteChange((open: boolean) => {
       paletteOpen = open;
     });
