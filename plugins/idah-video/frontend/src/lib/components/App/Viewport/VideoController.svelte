@@ -12,9 +12,8 @@
   } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import Button from "$lib/components/ui/Button/Button.svelte";
   import NumberField from "$lib/components/ui/Forms/fields/input/NumberField.svelte";
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
   import VideoSettingsDropdownMenu from "$lib/components/App/Viewport/VideoSettingsDropdownMenu.svelte";
 
@@ -24,13 +23,6 @@
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-
-  import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
-
-  function cmdShortcut(name: string): string | undefined {
-    const s = getDriver().command.getShortcut(name);
-    return s ? getShortcutLabel(s) : undefined;
-  }
 
   // Props
   interface Props {
@@ -111,79 +103,81 @@
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::FIRST FRAME -->
-    <ToolTooltip label="First frame" shortcut={cmdShortcut("timeline.go-to-first")}>
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go-to-first")}>
-          <ChevronFirstIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label="First frame"
+      commandName="timeline.go-to-first"
+      icon={ChevronFirstIcon}
+      variant="outline"
+      size="icon-sm"
+      onclick={() => getDriver().command.call("timeline.go_to_first")}
+    />
 
     <!-- VIDEO::PREVIOUS FRAME STEP -->
-    <ToolTooltip
+    <KbdTooltipButton
       label={`Previous ${frameStep} frames`}
-      shortcut={cmdShortcut("viewport.skip-backward")}
+      commandName="viewport.skip-backward"
+      icon={ChevronsLeftIcon}
+      variant="outline"
+      size="icon-sm"
       onOpenChange={fetchFrameStepFromLocalStorage}
-    >
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip-backward")}>
-          <ChevronsLeftIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+      onclick={() => getDriver().command.call("viewport.skip-backward")}
+    />
 
     <!-- VIDEO::PREVIOUS FRAME -->
-    <ToolTooltip label="Previous frame" shortcut={cmdShortcut("viewport.previous-frame")}>
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.previous-frame")}>
-          <ChevronLeftIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label="Previous frame"
+      commandName="viewport.previous-frame"
+      icon={ChevronLeftIcon}
+      variant="outline"
+      size="icon-sm"
+      onclick={() => getDriver().command.call("viewport.previous-frame")}
+    />
 
     <!-- VIDEO::PLAY / PAUSE -->
-    <ToolTooltip label={viewport.video.status === "play" ? "Pause" : "Play"} shortcut={cmdShortcut("viewport.play")}>
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.play")}>
-          {#if viewport.video.status === "play"}
-            <PauseIcon />
-          {:else}
-            <PlayIcon />
-          {/if}
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label={viewport.video.status === "play" ? "Pause" : "Play"}
+      commandName="viewport.play"
+      variant="outline"
+      size="icon-sm"
+      onclick={() => getDriver().command.call("viewport.play")}
+    >
+      {#if viewport.video.status === "play"}
+        <PauseIcon />
+      {:else}
+        <PlayIcon />
+      {/if}
+    </KbdTooltipButton>
 
     <!-- VIDEO::NEXT FRAME -->
-    <ToolTooltip label="Next frame" shortcut={cmdShortcut("viewport.next-frame")}>
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.next-frame")}>
-          <ChevronRightIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label="Next frame"
+      commandName="viewport.next-frame"
+      icon={ChevronRightIcon}
+      variant="outline"
+      size="icon-sm"
+      onclick={() => getDriver().command.call("viewport.next-frame")}
+    />
 
     <!-- VIDEO::NEXT FRAME STEP -->
-    <ToolTooltip
+    <KbdTooltipButton
       label={`Next ${frameStep} frames`}
-      shortcut={cmdShortcut("viewport.skip-forward")}
+      commandName="viewport.skip-forward"
+      icon={ChevronsRightIcon}
+      variant="outline"
+      size="icon-sm"
       onOpenChange={fetchFrameStepFromLocalStorage}
-    >
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("viewport.skip-forward")}>
-          <ChevronsRightIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+      onclick={() => getDriver().command.call("viewport.skip-forward")}
+    />
 
     <!-- VIDEO::LAST FRAME -->
-    <ToolTooltip label="Last frame" shortcut={cmdShortcut("timeline.go-to-last")}>
-      {#snippet trigger()}
-        <Button variant="outline" size="icon-sm" onclick={() => getDriver().command.call("timeline.go-to-last")}>
-          <ChevronLastIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label="Last frame"
+      commandName="timeline.go-to-last"
+      icon={ChevronLastIcon}
+      variant="outline"
+      size="icon-sm"
+      onclick={() => getDriver().command.call("timeline.go-to-last")}
+    />
 
     <VideoSettingsDropdownMenu bind:video {volume} />
 
@@ -204,25 +198,22 @@
 
     <!-- ANNOTATION::SPLIT -->
     {#if !viewport.isReviewWorkspace}
-      <ToolTooltip label="Split annotation" shortcut={cmdShortcut("annotation.split")}>
-        {#snippet trigger()}
-          <Button
-            variant="outline"
-            size="icon-sm"
-            disabled={disabledSplitButton}
-            onclick={() => {
-              const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
-              if (ann)
-                getDriver().command.call("annotation.split", {
-                  annotationId: ann.metadata?.id ?? ann.id,
-                  at: viewport.video.currentFrame.value,
-                });
-            }}
-          >
-            <SquareSplitHorizontalIcon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
+      <KbdTooltipButton
+        label="Split annotation"
+        commandName="annotation.split"
+        icon={SquareSplitHorizontalIcon}
+        variant="outline"
+        size="icon-sm"
+        disabled={disabledSplitButton}
+        onclick={() => {
+          const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
+          if (ann)
+            getDriver().command.call("annotation.split", {
+              annotationId: ann.metadata?.id ?? ann.id,
+              at: viewport.video.currentFrame.value,
+            });
+        }}
+      />
     {/if}
   </div>
 </div>

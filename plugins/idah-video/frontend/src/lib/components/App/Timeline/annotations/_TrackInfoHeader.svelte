@@ -1,18 +1,17 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
-  import Button from "$lib/components/ui/Button/Button.svelte";
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
+  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { isEditable } from "$lib/state/editor.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
-  import { isEditable } from "$lib/state/editor.svelte";
 
   // Props
   interface Props {
@@ -68,22 +67,18 @@
   <p class="text-xs font-medium">Annotations</p>
 
   <div class="ml-auto flex items-center">
-    {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, disabled, onClick }] (key)}
-      <ToolTooltip {label}>
-        {#snippet trigger()}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            {disabled}
-            onclick={(e: MouseEvent) => {
-              e.stopPropagation();
-              onClick(e);
-            }}
-          >
-            <Icon />
-          </Button>
-        {/snippet}
-      </ToolTooltip>
+    {#each Object.entries(menus.actions.items) as [key, { label, icon, disabled, onClick }] (key)}
+      <KbdTooltipButton
+        {label}
+        {icon}
+        variant="ghost"
+        size="icon-sm"
+        {disabled}
+        onclick={(e: MouseEvent) => {
+          e.stopPropagation();
+          onClick(e);
+        }}
+      />
     {/each}
   </div>
 </div>
