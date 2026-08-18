@@ -359,6 +359,58 @@ describe("maskSession", () => {
     });
   });
 
+  describe("regression: hidden-annotation session overlay gating (Bug 1)", () => {
+    /**
+     * Replicates the fixed session-layer gate from MaskCanvasLayer.svelte:
+     * the in-progress session overlay is only rendered when there are dirty
+     * tiles AND the annotation being edited is not hidden.  This prevents a
+     * hidden mask that still has pending (un-flushed) dirty tiles from
+     * showing its edit overlay.
+     */
+    function shouldRenderSessionLayer(
+      dirtySize: number,
+      annotationId: string | undefined,
+      isHidden: (id: string) => boolean,
+    ): boolean {
+      return dirtySize > 0 && !(annotationId && isHidden(annotationId));
+    }
+
+    it("renders the session overlay when editing a visible annotation with dirty tiles", () => {
+      maskSession.beginSession("ann-1");
+      maskSession.markDirty(0, 0);
+      expect(
+        shouldRenderSessionLayer(maskSession.dirty.size, maskSession.annotationId, () => false),
+      ).toBe(true);
+    });
+
+    it("skips the session overlay when the edited annotation is hidden", () => {
+      maskSession.beginSession("ann-1");
+      maskSession.markDirty(0, 0);
+      expect(
+        shouldRenderSessionLayer(maskSession.dirty.size, maskSession.annotationId, (id) => id === "ann-1"),
+      ).toBe(false);
+    });
+
+    it("still renders the session overlay for a hidden annotation when there are no dirty tiles", () => {
+      // No dirty tiles -> the overlay wouldn't render anyway; the gate must
+      // not accidentally render it, and the hidden check is irrelevant.
+      maskSession.beginSession("ann-1");
+      expect(
+        shouldRenderSessionLayer(maskSession.dirty.size, maskSession.annotationId, (id) => id === "ann-1"),
+      ).toBe(false);
+    });
+
+    it("renders the session overlay for a new (id-less) mask even when nothing is selected", () => {
+      // A brand-new mask has no annotationId yet, so the hidden check never
+      // applies — the overlay must still render.
+      maskSession.beginSession(undefined, { continuePending: true });
+      maskSession.markDirty(0, 0);
+      expect(
+        shouldRenderSessionLayer(maskSession.dirty.size, maskSession.annotationId, () => true),
+      ).toBe(true);
+    });
+  });
+
   describe("_tileVersions does not grow unboundedly across sessions", () => {
     it("stays bounded after multiple begin/reset cycles touching the same tiles", () => {
       // Perform several cycles of begin → paint → reset, touching the same
