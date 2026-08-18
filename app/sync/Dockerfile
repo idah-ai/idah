@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 
 # Build arguments
 ARG TARGETARCH
-ARG UPDCLI_VERSION=v0.1.0
+ARG UPDCLI_VERSION=v1.0.0
 ARG BUNDLE_WITHOUT="development test"
 ARG APP_ENVIRONMENT
 
@@ -40,16 +40,15 @@ RUN bundle install --jobs 20 --retry 5
 
 COPY app/sync/ .
 
-# Copy updcli tar files
-COPY updcli/${UPDCLI_VERSION}/ /tmp/updcli-tars/
-
-# Extract updcli binary based on architecture
+# Download and extract updcli binary based on architecture from the GitHub release
 RUN ARCH=${TARGETARCH} && \
     if [ "$ARCH" = "amd64" ]; then ARCH_SUFFIX="amd64"; \
     elif [ "$ARCH" = "arm64" ]; then ARCH_SUFFIX="arm64"; \
     else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
-    echo "Extracting updcli-linux-${ARCH_SUFFIX}.tar.gz..." && \
-    mkdir -p /usr/local/bin && \
+    echo "Downloading updcli-linux-${ARCH_SUFFIX}.tar.gz (${UPDCLI_VERSION})..." && \
+    mkdir -p /usr/local/bin /tmp/updcli-tars && \
+    curl -fsSL -o /tmp/updcli-tars/updcli-linux-${ARCH_SUFFIX}.tar.gz \
+        "https://github.com/idah-ai/updcli/releases/download/${UPDCLI_VERSION}/updcli-linux-${ARCH_SUFFIX}.tar.gz" && \
     tar -xf /tmp/updcli-tars/updcli-linux-${ARCH_SUFFIX}.tar.gz -C /usr/local/bin && \
     mv /usr/local/bin/updcli-linux-${ARCH_SUFFIX} /usr/local/bin/updcli-static && \
     chmod +x /usr/local/bin/updcli-static && \

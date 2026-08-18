@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     ChevronDownIcon,
+    FileTextIcon,
     KeyboardIcon,
     MoonIcon,
     Settings2Icon,
@@ -13,7 +14,8 @@
   import { mode, resetMode, setMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
+  import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Checkbox } from "@/components/ui/checkbox";
   import {
@@ -25,7 +27,6 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { getShortcutLabel } from "@/components/ui/kbd/utils";
 
   import Text from "@/components/ui/text/Text.svelte";
   import EntryStatsModal from "@/plugin/v2/components/entry-stats-modal.svelte";
@@ -178,59 +179,48 @@
   function toggleCommand() {
     driver.command.openPalette();
   }
-
-  function cmdShortcut(name: string): string | undefined {
-    const s = driver.command.getShortcut(name);
-    return s ? getShortcutLabel(s) : undefined;
-  }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
     {#if currentMode === "review" || currentMode === "note"}
-      <ToolTooltip
+      <KbdTooltipButton
         label="All Notes"
-        shortcut={cmdShortcut("core.toggle_note_sidebar")}
+        {driver}
+        commandName="core.toggle_note_sidebar"
         align="center"
         delayDuration={100}
-      >
-        {#snippet trigger()}
-          <Button variant={noteSidebarOpen ? "default" : "ghost"} size="icon-sm" onclick={onNoteToggle}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M11.6666 1.66699V6.66699H16.6666M13.3333 10.8337H6.66665M13.3333 14.167H6.66665M8.33331 7.50033H6.66665M12.0833 1.66699H4.99998C4.55795 1.66699 4.13403 1.84259 3.82147 2.15515C3.50891 2.46771 3.33331 2.89163 3.33331 3.33366V16.667C3.33331 17.109 3.50891 17.5329 3.82147 17.8455C4.13403 18.1581 4.55795 18.3337 4.99998 18.3337H15C15.442 18.3337 15.8659 18.1581 16.1785 17.8455C16.4911 18.1581 16.6666 17.109 16.6666 16.667V6.25033L12.0833 1.66699Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </Button>
-        {/snippet}
-      </ToolTooltip>
+        variant={noteSidebarOpen ? "default" : "ghost"}
+        size="icon-sm"
+        icon={FileTextIcon}
+        onclick={onNoteToggle}
+      />
     {/if}
 
-    <ToolTooltip label="Shortcuts" shortcut={cmdShortcut("core.palette")} align="center" delayDuration={100}>
-      {#snippet trigger()}
-        <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
-          <KeyboardIcon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+    <KbdTooltipButton
+      label="Shortcuts"
+      {driver}
+      commandName="core.palette"
+      icon={KeyboardIcon}
+      align="center"
+      delayDuration={100}
+      variant="ghost"
+      size="icon-sm"
+      onclick={toggleCommand}
+    />
 
     <DropdownMenu bind:open={openSettingsPopover}>
       <DropdownMenuTrigger>
-        <ToolTooltip label="Settings" align="center" delayDuration={100}>
-          {#snippet trigger()}
-            <Button
-              variant={openSettingsPopover ? "default" : "ghost"}
-              size="icon-sm"
-              onclick={() => (openSettingsPopover = true)}
-            >
-              <Settings2Icon />
-            </Button>
-          {/snippet}
-        </ToolTooltip>
+        <KbdTooltipButton
+          label="Settings"
+          {driver}
+          icon={Settings2Icon}
+          align="center"
+          delayDuration={100}
+          variant={openSettingsPopover ? "default" : "ghost"}
+          size="icon-sm"
+          onclick={() => (openSettingsPopover = true)}
+        />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" side="bottom" class="min-w-64">
@@ -291,11 +281,7 @@
 
   <!-- Auto-select next entry checkbox (hidden when entry is done or errored) -->
   {#if showAutoSelect}
-    <ToolTooltip
-      label="Automatically opens the next available entry after you submit the current one."
-      align="center"
-      delayDuration={100}
-    >
+    <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
         <label class="flex cursor-pointer whitespace-nowrap" for="auto-select-next">
           <div class="flex items-center gap-1.5 p-1.5">
@@ -304,7 +290,10 @@
           </div>
         </label>
       {/snippet}
-    </ToolTooltip>
+      {#snippet content()}
+        Automatically opens the next available entry after you submit the current one.
+      {/snippet}
+    </Tooltips>
   {/if}
 
   {#if ["done", "error"].includes(driver.workflowStep)}

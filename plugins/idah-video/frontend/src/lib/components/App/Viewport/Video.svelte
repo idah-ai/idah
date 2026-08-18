@@ -10,11 +10,21 @@
     fps,
     initialFragments = 3,
     bind: videoRef = undefined,
-    element = $bindable(),
+    canvas = undefined,
     onFrameUpdate = (_currentFrame: number) => {},
     onTogglePlay = (_playing: boolean) => {},
     onResize = () => {},
     onVolumeChange = (_level: number, _muted: boolean) => {},
+  }: {
+    src?: string;
+    fps: number;
+    initialFragments?: number;
+    bind?: { value: HTMLVideoElement };
+    canvas?: HTMLCanvasElement;
+    onFrameUpdate?: (currentFrame: number) => void;
+    onTogglePlay?: (playing: boolean) => void;
+    onResize?: () => void;
+    onVolumeChange?: (level: number, muted: boolean) => void;
   } = $props();
 
   let videoElement: HTMLVideoElement;
@@ -52,6 +62,36 @@
     return startOffset + (f + 0.001) / fps;
   }
 
+  // ── Canvas presentation ───────────────────────────────────────────
+  // The <video> is a hidden decode source outside the zoom transform; each
+  // presented frame is copied to the VideoCanvas surface inside it. drawImage
+  // stretches to media dimensions (the old object-fit: fill) so the current
+  // HLS level's intrinsic size doesn't matter.
+  let ctx: CanvasRenderingContext2D | null = null;
+  let presentLoopId: number | null = null;
+
+  function drawFrame() {
+    if (!ctx || !videoElement || videoElement.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+    ctx.drawImage(videoElement, 0, 0, media.width, media.height);
+    // Tells VideoCanvas to drop its loading placeholder.
+    if (!viewport.video.hasRenderedFrame) viewport.video.hasRenderedFrame = true;
+  }
+
+  // Reacts to the prop, not onMount: the canvas binds later (VideoCanvas mounts
+  // inside ShapesContainer). Reading ui.renderMode also repaints on mode toggle
+  // — imageSmoothing scales decode→backing store, the .nearest class handles
+  // backing store→screen.
+  $effect(() => {
+    if (!canvas) return;
+    // Alpha on: an { alpha: false } context is opaque black from creation,
+    // hiding the placeholder for the whole startup buffer. Video frames are
+    // opaque anyway.
+    if (!ctx) ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = ui.renderMode !== "nearest-neighbor";
+    drawFrame();
+  });
+
   // ── RAF loop (playback only) ──────────────────────────────────────
   // While playing, syncs currentFrame/displayedFrame to the on-screen frame.
   // Prefers rVFC (one callback per decoded frame, compositor-synced); falls back
@@ -70,6 +110,7 @@
     } else {
       const tick = () => {
         if (!videoElement) return;
+        drawFrame();
         const frame = timeToFrame(videoElement.currentTime);
         viewport.video.currentFrame.value = frame;
         viewport.video.displayedFrame.value = frame;
@@ -215,6 +256,19 @@
     videoElement.muted = true;
     hasRVFC = "requestVideoFrameCallback" in videoElement;
 
+    // Always-on presentation chain: one draw per presented frame — playback,
+    // paused seeks, and the HQ same-frame re-seek the seek $effect ignores
+    // (lastSeekedFrame unchanged), which nothing else would repaint. Runs
+    // alongside the playback tick loop; both fire for the same presented frame,
+    // so pixels and displayedFrame stay in step.
+    if (hasRVFC) {
+      const present = () => {
+        drawFrame();
+        presentLoopId = (videoElement as any).requestVideoFrameCallback(present);
+      };
+      presentLoopId = (videoElement as any).requestVideoFrameCallback(present);
+    }
+
     // play/pause fire for both programmatic and native (incl. natural end) cases.
     // Only set status; the $effect runs the side effects (startRAF, syncPausedFrame…).
     const handlePlay = () => {
@@ -233,7 +287,14 @@
     // lastSeekedFrame is unchanged so it's idempotent.
     const handleSeeked = () => {
       if (isPlaying) return;
+      // Repaint on every paused seek, rVFC or not: at startup the presentation
+      // chain can fire before the canvas context exists, and a hidden paused
+      // video may never present again — so the chain alone can miss the initial
+      // frame and the HQ flush re-seek. If pixels race the event, the chain
+      // corrects on its next callback.
+      drawFrame();
       if (hasRVFC) return;
+      // Paint before confirming, so overlays never lead the pixels.
       viewport.video.displayedFrame.value =
         lastSeekedFrame >= 0 ? lastSeekedFrame : timeToFrame(videoElement.currentTime);
     };
@@ -250,10 +311,21 @@
       viewport.video.loading.buffering = false;
     };
 
+    // Repaint when the element becomes renderable again while paused. Initial
+    // load and HQ flushes end in a readyState climb that can land after
+    // `seeked`, whose draw would then have no-oped. Playback draws via the loops.
+    const handleCanPlay = () => {
+      if (!isPlaying) drawFrame();
+    };
+
     // Anchor the frame↔time helpers to the real media start (see startOffset).
     // `loadeddata` guarantees the first frame's data is appended, so buffered
     // holds the true frame-0 time; detach once captured (it never changes).
     const handleLoadedData = () => {
+      // Initial-frame paint: the presentation chain may have already fired (and
+      // no-oped) before the context existed. Ahead of the buffered guard, which
+      // is about startOffset capture, not drawing.
+      drawFrame();
       if (videoElement.buffered.length === 0) return;
       startOffset = videoElement.buffered.start(0);
       videoElement.removeEventListener("loadeddata", handleLoadedData);
@@ -265,6 +337,7 @@
     videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("waiting", handleWaiting);
     videoElement.addEventListener("playing", handlePlaying);
+    videoElement.addEventListener("canplay", handleCanPlay);
     videoElement.addEventListener("loadeddata", handleLoadedData);
     videoElement.addEventListener("resize", handleResize);
 
@@ -285,7 +358,7 @@
           viewport.video.setFragmentInFlight(inFlight);
         },
       });
-    } else {
+    } else if (src) {
       videoElement.src = src;
     }
 
@@ -297,13 +370,20 @@
         (videoElement as any).cancelVideoFrameCallback(pendingFrameCallbackId);
         pendingFrameCallbackId = null;
       }
+      if (presentLoopId !== null && hasRVFC) {
+        (videoElement as any).cancelVideoFrameCallback(presentLoopId);
+        presentLoopId = null;
+      }
       // Clear buffering so a stale true can't keep the pill up on the next video.
       viewport.video.loading.buffering = false;
+      // Re-arm the loading placeholder for the next video.
+      viewport.video.hasRenderedFrame = false;
       videoElement.removeEventListener("seeked", handleSeeked);
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);
       videoElement.removeEventListener("waiting", handleWaiting);
       videoElement.removeEventListener("playing", handlePlaying);
+      videoElement.removeEventListener("canplay", handleCanPlay);
       videoElement.removeEventListener("loadeddata", handleLoadedData);
       videoElement.removeEventListener("resize", handleResize);
       streamHandler?.destroy();
@@ -311,58 +391,26 @@
   });
 </script>
 
-<div class="video-wrapper" style="width: {media.width}px; height: {media.height}px;" bind:this={element}>
-  <div class="video-placeholder"></div>
-
-  <video
-    class={["video-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-    bind:this={videoElement}
-  >
-    <track kind="captions" />
-    Your browser does not support the video tag.
-  </video>
-</div>
+<!--
+  Hidden decode/audio source, rendered OUTSIDE the zoomable Viewport target so
+  the compositor never scales it. Frames are presented on VideoCanvas instead.
+-->
+<video class="video-source" bind:this={videoElement}>
+  <track kind="captions" />
+  Your browser does not support the video tag.
+</video>
 
 <style>
-  .video-element {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    position: relative;
-    z-index: 1;
-    object-fit: fill;
-  }
-
-  .video-element.nearest,
-  .placeholder-image.nearest {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-
-  .video-wrapper {
-    position: relative;
-    background-color: #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 2px;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .video-placeholder {
+  /* opacity: 0, never display:none or visibility:hidden — those drop the
+     element from the paint pipeline and can stall requestVideoFrameCallback.
+     Sized to the section (not media pixels): drawImage samples the decoded
+     frame at intrinsic resolution, so the CSS box has no effect on output. */
+  .video-source {
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 0;
-  }
-
-  .placeholder-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
   }
 </style>
