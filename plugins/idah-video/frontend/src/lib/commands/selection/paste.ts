@@ -73,10 +73,7 @@ export function register(driver: IIdahDriverV2): void {
             const dy = pastePos[1] - centroid[1];
 
             // Truncate the pasted annotation's start to the current frame if
-            // its original start is before the playhead — so the pasted shape
-            // does not extend backward in time before the current frame.
-            // Annotations that naturally start after the playhead are kept
-            // at their original start position.
+            // its original start is before the playhead
             const currentFrame = viewport.video.currentFrame.value;
             const originalStart = (entry.shape as any).start as number | undefined;
             const originalEnd = (entry.shape as any).end as number | undefined;
@@ -99,9 +96,6 @@ export function register(driver: IIdahDriverV2): void {
 
             // If no keyframe exists at the exact new start frame, create one
             // by interpolating from the original shape's surrounding keyframes.
-            // This ensures the pasted annotation always has a shape definition
-            // at its first frame, even when the original didn't have a keyframe
-            // at that exact position.
             if (originalFrames.length > 0 && !newFrames.some((f: any) => f.frame === newStart)) {
               const interp = getInterpolatedFrame(entry.shape as any, newStart);
               if (interp?.points?.length) {

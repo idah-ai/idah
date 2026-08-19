@@ -50,107 +50,90 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           // ── Resolve target frame ────────────────────────────────────
           const frame = (opts?.frame as number | undefined) ?? viewport.video.currentFrame.value;
-          const all = data.annotations?.items ?? [];
+          let groupAnnotations: {
+            id: string;
+            shape: {
+              type: string;
+              start: number;
+              end: number;
+              frames: { frame: number; angle: number; points: [number, number][] }[];
+            };
+          }[];
 
-          // ── Determine which annotations to process ──────────────────
-          let groupIds = new Set<string>();
-          let explicitTargets: { id: string; shape: any }[] | null = null;
-
+          // // ── Determine which annotations to process ──────────────────
           if (opts?.annotationId) {
             // Context menu: process that annotation only
             const annotationId = opts.annotationId as string;
+            const all = data.annotations?.items ?? [];
             const target = all.find((a) => a.id === annotationId);
             if (!target || annotation.isLocked(target)) return;
             const gid = (target.metadata as any)?.group_id ?? annotationId;
-            explicitTargets = all
+
+            groupAnnotations = all
               .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
               .map((a) => ({ id: a.id, shape: a.shape as any }));
           } else {
             // Shortcut path: use selected annotations/groups
-            // Collect all selected annotation IDs + all annotations from selected groups
-            const selectedIds = new Set<string>(selection.selectedAnnotationIds);
-            const selectedGids = new Set<string>(selection.selectedGroupIds);
 
-            // If no selection but a single group, fallback to group selection behavior
-            if (selectedIds.size === 0 && selectedGids.size === 0) {
-              const sel = selection.value;
-              if (!sel) return;
-              if (sel.type === "group") {
-                selectedGids.add(sel.groupId);
-              } else if (sel.type === "annotation") {
-                selectedIds.add(sel.annotation.id);
-              } else {
-                return;
-              }
+            const sel = selection.value;
+            if (!sel) return;
+
+            let gid: string;
+            if (sel.type === "group") {
+              gid = sel.groupId;
+            } else if (sel.type === "annotation") {
+              gid = (sel.annotation.metadata as any)?.group_id ?? sel.annotation.id;
+            } else {
+              return;
             }
 
-            // Resolve group IDs from selected annotations
-            for (const ann of all) {
-              if (selectedIds.has(ann.id)) {
-                groupIds.add((ann.metadata as any)?.group_id ?? ann.id);
-              }
-            }
-            // Add selected groups directly
-            for (const gid of selectedGids) groupIds.add(gid);
 
-            // If any selected group is locked, abort
-            for (const gid of groupIds) {
-              if (annotation.isLocked(gid)) return;
-            }
+            // If the current group is locked, abort.
+            if (annotation.isLocked(gid)) return;
+
+            groupAnnotations = (data.annotations?.items ?? [])
+              .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
+              .map((a) => ({ id: a.id, shape: a.shape as any }));
           }
 
-          // ── For each group (or explicit target), find previous annotation and extend ──
-          const groupsToProcess: { id: string; shape: any }[][] =
-            explicitTargets !== null
-              ? [explicitTargets]
-              : Array.from(groupIds).map((gid) =>
-                  all
-                    .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
-                    .map((a) => ({ id: a.id, shape: a.shape as any })),
-                );
+          // Find the annotation whose end is closest to but before `frame`
+          const prevAnn = groupAnnotations
+            .filter((a) => {
+              const lastFrame = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
+              return lastFrame < frame;
+            })
+            .sort((a, b) => {
+              const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
+              const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
+              return bEnd - aEnd;
+            })[0];
 
-          for (const groupAnnotations of groupsToProcess) {
-            if (groupAnnotations.length === 0) continue;
+          if (!prevAnn) return;
 
-            // Find the annotation whose end is closest to but before `frame`
-            const prevAnn = groupAnnotations
-              .filter((a) => {
-                const lastFrame = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-                return lastFrame < frame;
-              })
-              .sort((a, b) => {
-                const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-                const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
-                return bEnd - aEnd;
-              })[0];
+          // Overlap protection: don't exceed the next annotation's start
+          const nextAnn = groupAnnotations
+            .filter((a) => {
+              const firstFrame = a.shape.frames?.[0]?.frame ?? Infinity;
+              return firstFrame > frame && a.id !== prevAnn.id;
+            })
+            .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
 
-            if (!prevAnn) continue;
-
-            // Overlap protection: don't exceed the next annotation's start
-            const nextAnn = groupAnnotations
-              .filter((a) => {
-                const firstFrame = a.shape.frames?.[0]?.frame ?? Infinity;
-                return firstFrame > frame && a.id !== prevAnn.id;
-              })
-              .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
-
-            let cappedFrame = frame;
-            if (nextAnn) {
-              const nextStart = nextAnn.shape.frames?.[0]?.frame ?? Infinity;
-              if (frame >= nextStart) cappedFrame = nextStart - 1;
-            }
-
-            const nearest = nearestKeyframe(prevAnn.shape, cappedFrame);
-            if (!nearest) continue;
-
-            driver.command.call("annotation.keyframe_add", {
-              annotationId: prevAnn.id,
-              selection: {
-                frame: cappedFrame,
-                ...nearest,
-              },
-            });
+          let cappedFrame = frame;
+          if (nextAnn) {
+            const nextStart = nextAnn.shape.frames?.[0]?.frame ?? Infinity;
+            if (frame >= nextStart) cappedFrame = nextStart - 1;
           }
+
+          const nearest = nearestKeyframe(prevAnn.shape, cappedFrame);
+          if (!nearest) return;
+
+          driver.command.call("annotation.keyframe_add", {
+            annotationId: prevAnn.id,
+            selection: {
+              frame: cappedFrame,
+              ...nearest,
+            },
+          });
         },
         // No undo — the nested keyframe_add handles its own undo.
         isCombinable() {

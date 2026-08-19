@@ -52,9 +52,7 @@
   let color = $derived.by(() => resolveAnnotationColor(annotation));
 
   // Check if this specific annotation is selected.
-  // Uses the set-based API so that every selected annotation is highlighted on the
-  // timeline, not just the "primary" (first) selection.
-  let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
+   let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
 
   // Functions
   function handleOnContextMenu(e: MouseEvent) {

@@ -105,16 +105,6 @@
     return best;
   });
 
-  // Context-menu logic per the spec:
-  //   • clicked group's last end < playhead → only "Extend All Prev"
-  //   • clicked group's first start > playhead → only "Extend All Next"
-  //   • playhead is between (some annotations before, some after, or covering) → both
-  //
-  // Check if there is at least one annotation that can be extended:
-  //   • Extend All Prev makes sense when the group starts before the playhead
-  //     (there is at least one annotation whose end could be extended to the frame)
-  //   • Extend All Next makes sense when the group ends after the playhead
-  //     (there is at least one annotation whose start could be extended to the frame)
   let showExtendAllPrev = $derived(clickedGroupFirstStart < extendFrame);
   let showExtendAllNext = $derived(clickedGroupLastEnd > extendFrame);
 </script>
@@ -155,8 +145,6 @@
   {:else if trackId && frame !== undefined}
     <!-- Empty track area context menu — extend actions -->
     {#if isMultiSelection}
-      <!-- Batch extend for multi-selection (per spec: only show the relevant
-           action based on where the annotations sit relative to the playhead) -->
       {#if showExtendAllPrev}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
