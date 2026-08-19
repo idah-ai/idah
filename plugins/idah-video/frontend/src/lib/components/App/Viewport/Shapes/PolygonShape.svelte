@@ -1,5 +1,6 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -319,7 +320,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayVertices.length >= 3}
+  {#if editable && selected && !isEditing && displayVertices.length >= 3 && selection.selectedAnnotationIds.size <= 1}
     <PolygonHandler
       vertices={displayVertices}
       {color}

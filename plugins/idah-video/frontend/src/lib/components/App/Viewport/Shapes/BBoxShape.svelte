@@ -1,5 +1,6 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
@@ -426,7 +427,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4}
+  {#if editable && selected && !isEditing && displayPoints.length === 4 && selection.selectedAnnotationIds.size <= 1}
     <BBoxHandler
       {displayPoints}
       {centroidN}
