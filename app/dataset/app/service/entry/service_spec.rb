@@ -848,8 +848,10 @@ RSpec.describe Entry::Service, database: true do
           project_id: project_id,
           dataset_id: dataset_id,
           entry_id: entry_processed,
-          dimensions: { x: 10, y: 20, width: 30, height: 40 },
-          annotation: { label: "cat" },
+          shape_type: "bounding-box",
+          shape_args: { x: 10, y: 20, width: 30, height: 40 },
+          category: "cat",
+          properties: { label: "cat" },
           created_by_email: "user@example.com"
         )
       end

@@ -346,7 +346,7 @@ RSpec.describe Annotation::Service, database: true do
         completed_entry_id = entry_repo.create(
           priority: 1,
           wf_step: "done",
-          status: "completed",
+          status: "pending",
           assigned_to_id: 1,
           project_id:,
           dataset_id:
@@ -354,6 +354,7 @@ RSpec.describe Annotation::Service, database: true do
 
         annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
         subject.delete(annotation_id)
+        entry_repo.update!(completed_entry_id, { status: "completed" })
 
         expect {
           subject.restore(annotation_id)
@@ -583,9 +584,20 @@ RSpec.describe Annotation::Service, database: true do
           results = subject.index
           expect(results.size).to eq(3)
 
-          results.each_with_index do |r, idx|
-            expect(r.shape_args["tile-0x0"]).to eq({ "rle" => "VAL#{idx}" })
-            expect(r.shape_args["tile-0x1"]).to eq({ "rle" => "VAL#{idx}b" })
+          # index returns annotations ordered by id ASC; UUIDv7 ids generated in
+          # the same millisecond have no guaranteed creation order, so look each
+          # result up by id instead of relying on positional order.
+          expected = {}
+          ids.each_with_index do |id, idx|
+            expected[id] = {
+              "tile-0x0" => { "rle" => "VAL#{idx}" },
+              "tile-0x1" => { "rle" => "VAL#{idx}b" },
+            }
+          end
+
+          results.each do |r|
+            expect(r.shape_args["tile-0x0"]).to eq(expected[r.id]["tile-0x0"])
+            expect(r.shape_args["tile-0x1"]).to eq(expected[r.id]["tile-0x1"])
           end
 
           # merge_annotation_shapes should have fired exactly one query
@@ -637,7 +649,9 @@ RSpec.describe Annotation::Service, database: true do
           project_id: other_project_id,
           dataset_id: other_dataset_id,
           entry_id: other_entry_id,
+          shape_type: "bounding-box",
           shape_args: { x: 1, y: 2, width: 3, height: 4 },
+          category: "other",
           properties: { label: "other" },
           created_by_email: "other@example.com"
         )

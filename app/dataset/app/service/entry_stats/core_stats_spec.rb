@@ -141,9 +141,11 @@ RSpec.describe EntryStats::CoreStats do
 
         expect(result["annotation.count"]).to eq("1")
         expect(result["category.cat.count"]).to eq("1")
-        expect(result["category.dog.count"]).to eq("0")
+        # dog was only present on the deleted annotation, so it is neither
+        # counted nor emitted (no config zero-fill for it).
+        expect(result["category.dog.count"]).to be_nil
         expect(result["shape.bounding-box.count"]).to eq("1")
-        expect(result["shape.polygon.count"]).to eq("0")
+        expect(result["shape.polygon.count"]).to be_nil
       end
     end
   end
