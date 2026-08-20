@@ -21,7 +21,7 @@ import type { AnnotationItem } from "$lib/state/data.svelte";
 import { data } from "$lib/state/data.svelte";
 import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
-import { viewport } from "$lib/state/viewport.svelte";
+
 import type { IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { noopAction } from "..";
@@ -41,7 +41,7 @@ export interface AnnotationSplitProps {
   at: number;
 }
 
-export function register(driver: IIdahDriverV2): void {
+export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number): void {
   driver.command.register({
     name: command.name,
     modes: command.modes,
@@ -66,7 +66,6 @@ export function register(driver: IIdahDriverV2): void {
 
       const targets: SplitTarget[] = [];
       const all = data.annotations?.items ?? [];
-      console.log("sdd",opts);
 
       if (opts?.annotationId) {
         // Context menu / programmatic: single annotation
@@ -84,8 +83,8 @@ export function register(driver: IIdahDriverV2): void {
         targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
       } else {
 
-        // Shortcut / batch: only from selected annotation IDs (not groups)
-        let at = viewport.video.currentFrame.value;
+        // Batch: use opts.at if provided, otherwise fall back to injected getter
+        const at = (opts?.at != null ? (opts.at as number) : (getCurrentFrame?.() ?? 0));
         if (at <= 0) return noopAction(command);
 
         const selectedIds = new Set(selection.selectedAnnotationIds);
@@ -153,8 +152,6 @@ export function register(driver: IIdahDriverV2): void {
               metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
             });
           }
-          const lastAt = targets[targets.length - 1].at;
-          viewport.video.currentFrame.value = lastAt;
         },
         async undo() {
           if (!data.annotations) return;
@@ -162,8 +159,6 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.update(t.record);
             await data.annotations.delete(t.rightId);
           }
-          const lastAt = targets[targets.length - 1].at;
-          viewport.video.currentFrame.value = lastAt;
         },
         isCombinable() { return false; },
         combine(p) { return p; },
