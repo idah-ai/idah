@@ -7,7 +7,7 @@ import { registerAllCommands } from "./commands";
 import { initDataStores } from "./state/data.svelte";
 import { initDriver } from "./state/driver.svelte";
 import { initToolbar } from "./toolbar";
-import { registerSettings, hydrateSettings } from "./settings";
+import { registerSettings } from "./settings";
 import { snapEngine } from "./snap-engine/instance";
 import { registerImageAdapters } from "./snap-engine/adapters/image";
 
@@ -37,7 +37,6 @@ const idahImagePlugin: IPluginDriver = {
     registerAllCommands(driver);
     initToolbar(driver);
     registerSettings(driver);
-    hydrateSettings(driver);
 
     // Register shape adapters for magnetic snap
     registerImageAdapters(snapEngine);

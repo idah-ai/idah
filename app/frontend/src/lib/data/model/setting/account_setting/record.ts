@@ -17,12 +17,6 @@ export const organizationActivitiesKey = "notification:organization:activities";
 export const projectActivitiesKey = "notification:project:activities";
 export const commandShortcutKey = "command:shortcut";
 
-/**
- * Annotation category label visibility ("always" | "hover" | "never").
- * Stored per plugin — addressed by (key, plugin) where plugin is the plugin id.
- */
-export const categoryLabelVisibilityKey = "annotation:category.label-visibility";
-
 export const accountSettingBackendDataSource = createBackendDataSource(
   AccountSettingRecord,
   `${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/account_settings`,
