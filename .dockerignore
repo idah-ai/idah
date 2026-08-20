@@ -1,0 +1,12 @@
+# Baseline safety net for any build whose context is the repo ROOT.
+# Per-service builds use their own ./app/<svc> context + ./app/<svc>/.dockerignore;
+# this file only affects repo-root-context builds (currently the frontend prod
+# image, which additionally uses app/frontend/Dockerfile.dockerignore).
+
+.git
+.DS_Store
+**/node_modules
+**/.pnpm-store
+**/tmp/storage
+**/tmp/cache
+**/*.log

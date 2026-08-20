@@ -1,0 +1,21 @@
+# Dockerfile-specific ignore for app/frontend/Dockerfile (BuildKit; Compose v2 default).
+#
+# The frontend build context is the repo ROOT (its production build needs the
+# shared plugins/ dir), so patterns here are relative to the repo root. The build
+# only needs app/frontend/ and plugins/, so we exclude everything else, then drop
+# the heavy/regenerated bits inside the kept paths.
+
+# Exclude everything by default...
+*
+
+# ...re-include only what the build needs
+!app/frontend
+!plugins
+
+# ...and drop heavy / regenerated content inside those
+**/node_modules
+**/.pnpm-store
+app/frontend/build
+app/frontend/.svelte-kit
+plugins/*/frontend/build
+plugins/*/frontend/.svelte-kit

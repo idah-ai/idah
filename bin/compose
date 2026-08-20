@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Thin wrapper around `docker compose` that selects the right overlay files and
+# the environment's interpolation env-file, so ${...} values (including frontend
+# build args like VITE_SENTRY_DSN / VITE_IDAH_HOST) resolve automatically from
+# config/<env>/.env — no need to pass --env-file by hand.
+#
+#   bin/compose dev     up -d
+#   bin/compose staging up -d --build
+#   bin/compose prod    build frontend
+
+set -e
+
+env="$1"
+[ -n "$env" ] || { echo "Usage: $0 {dev|staging|prod} <docker compose args...>"; exit 1; }
+shift
+
+case "$env" in
+  dev)
+    exec docker compose "$@"
+    ;;
+  staging)
+    files="-f compose.yaml -f compose.staging.yaml"
+    envfile="config/staging/.env"
+    ;;
+  prod | production)
+    files="-f compose.yaml -f compose.prod.yaml"
+    envfile="config/production/.env"
+    ;;
+  *)
+    echo "Usage: $0 {dev|staging|prod} <docker compose args...>"
+    exit 1
+    ;;
+esac
+
+if [ -f "$envfile" ]; then
+  exec docker compose --env-file "$envfile" $files "$@"
+else
+  echo "note: $envfile not found; using compose defaults" >&2
+  exec docker compose $files "$@"
+fi

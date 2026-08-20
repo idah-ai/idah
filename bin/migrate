@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Run database migrations for every service against a deployed environment.
+# Each service owns its own database, so they are migrated one by one.
+#
+#   bin/migrate staging
+#   bin/migrate prod
+#
+# Use this when RUN_MIGRATIONS_ON_BOOT is not in play (migrations as an explicit
+# deploy step). Run after the images are built (e.g. once `... up -d --build` has
+# run). For local development use `bin/dev migrate` instead.
+
+set -e
+
+SERVICES="audit dataset iam media notification setting sync"
+compose="$(dirname "$0")/compose"
+
+case "$1" in
+  staging | prod | production) env="$1" ;;
+  *)
+    echo "Usage: $0 {staging|prod}"
+    exit 1
+    ;;
+esac
+
+echo "==> ensuring database is up ($env)"
+"$compose" "$env" up -d postgres redis
+
+for service in $SERVICES; do
+  echo "==> migrating $service ($env)"
+  "$compose" "$env" run --rm --no-deps "$service" bundle exec rake db:migrate
+done
+
+echo "==> migrations complete ($env)"
