@@ -159,7 +159,7 @@
             class="mx-1 w-full justify-start"
             disabled={extendAllDisabled}
             onclick={() => {
-              getDriver().command.call("annotation.extend_all_prev", { frame });
+              getDriver().command.call("annotation.extend_prev", { frame });
             }}
           >
             <ArrowRightToLineIcon />
@@ -181,7 +181,7 @@
             class="mx-1 w-full justify-start"
             disabled={extendAllDisabled}
             onclick={() => {
-              getDriver().command.call("annotation.extend_all_next", { frame });
+              getDriver().command.call("annotation.extend_next", { frame });
             }}
           >
             <ArrowLeftToLineIcon />

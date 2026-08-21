@@ -119,7 +119,6 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
           const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
           targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
         }
-        console.log("targets", targets);
       }
 
       if (targets.length === 0) return noopAction(command);

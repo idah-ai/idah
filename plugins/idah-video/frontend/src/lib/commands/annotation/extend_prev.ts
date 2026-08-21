@@ -1,22 +1,28 @@
 // ---------------------------------------------------------------------------
 // annotation.extend_prev — Extend the previous annotation's end to a frame
 //
-// Shortcut:  [  (default mode) — extends the annotation before the current
-//            frame in the selected group.
+// Single-selection: extends the annotation before the current frame in the
+// selected group (original behaviour).
+// Multi-selection: extends every selected group's closest annotation before
+// the current frame.
+// Undoable: restores snapshots of all modified annotations.
 //
-// Can also be called with explicit props from the context menu:
-//   driver.command.call("annotation.extend_prev", { annotationId, frame, items });
-//
-// Prevents overlapping with the next annotation in the group.
+// Shortcut:  [  (default mode)
+// Context menu: driver.command.call("annotation.extend_prev", { annotationId, frame });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
-import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { nearestKeyframe } from "$lib/utils/interpolation";
 import { noopAction } from "..";
 import { annotation } from "$lib/state/annotation.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
+import { selection } from "$lib/state/selection.svelte";
+import {
+  EXTEND_PREV_CONFIG,
+  resolveTargets,
+  planExtendSingleGroup,
+  planBatchExtendGroups,
+} from "./_extend_utils";
 
 export const command = {
   name: "annotation.extend_prev",
@@ -38,110 +44,63 @@ export function register(driver: IIdahDriverV2): void {
     callback: (opts?: Record<string, unknown>) => {
       if (!isEditable()) return noopAction(command);
 
+      // ── Plan changes at command creation time (capture snapshots) ──
+      const frame = (opts?.frame as number | undefined) ?? viewport.video.currentFrame.value;
+      const all = data.annotations?.items ?? [];
+      if (all.length === 0) return noopAction(command);
+
+      const isMulti = selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 1;
+
+      let plans: { annotationId: string; snapshot: any; updated: any }[] = [];
+
+      if (opts?.annotationId) {
+        const target = all.find((a) => a.id === opts.annotationId as string);
+        if (!target || annotation.isLocked(target)) return noopAction(command);
+        const gid = (target.metadata as any)?.group_id ?? opts.annotationId;
+        const result = planExtendSingleGroup(
+          all.filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid),
+          frame, EXTEND_PREV_CONFIG,
+        );
+        if (result) plans.push(result);
+      } else if (!isMulti) {
+        const sel = selection.value;
+        if (!sel) return noopAction(command);
+        const gid = sel.type === "group" ? sel.groupId : sel.type === "annotation" ? (sel.annotation.metadata as any)?.group_id ?? sel.annotation.id : undefined;
+        if (!gid || annotation.isLocked(gid)) return noopAction(command);
+        const result = planExtendSingleGroup(
+          all.filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid),
+          frame, EXTEND_PREV_CONFIG,
+        );
+        if (result) plans.push(result);
+      } else {
+        const targets = resolveTargets();
+        if (targets.length === 0) return noopAction(command);
+        const allGids = new Set(targets.map((t) => (t.metadata as any)?.group_id ?? t.id));
+
+        for (const gid of allGids) {
+          if (gid == null) continue;
+          if (annotation.isLocked(gid)) return noopAction(command);
+        }
+        plans = planBatchExtendGroups(targets, frame, EXTEND_PREV_CONFIG);
+      }
+
+      if (plans.length === 0) return noopAction(command);
+
       return {
-        command: {
-          name: "annotation.extend_prev",
-          group: "Annotation",
-          modes: [],
-          shortcut: null,
-          shortDescription: null,
-          longDescription: null,
-        },
-        do() {
-          // ── Resolve target frame ────────────────────────────────────
-          const frame = (opts?.frame as number | undefined) ?? viewport.video.currentFrame.value;
-          let groupAnnotations: {
-            id: string;
-            shape: {
-              type: string;
-              start: number;
-              end: number;
-              frames: { frame: number; angle: number; points: [number, number][] }[];
-            };
-          }[];
-
-          // // ── Determine which annotations to process ──────────────────
-          if (opts?.annotationId) {
-            // Context menu: process that annotation only
-            const annotationId = opts.annotationId as string;
-            const all = data.annotations?.items ?? [];
-            const target = all.find((a) => a.id === annotationId);
-            if (!target || annotation.isLocked(target)) return;
-            const gid = (target.metadata as any)?.group_id ?? annotationId;
-
-            groupAnnotations = all
-              .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
-              .map((a) => ({ id: a.id, shape: a.shape as any }));
-          } else {
-            // Shortcut path: use selected annotations/groups
-
-            const sel = selection.value;
-            if (!sel) return;
-
-            let gid: string;
-            if (sel.type === "group") {
-              gid = sel.groupId;
-            } else if (sel.type === "annotation") {
-              gid = (sel.annotation.metadata as any)?.group_id ?? sel.annotation.id;
-            } else {
-              return;
-            }
-
-
-            // If the current group is locked, abort.
-            if (annotation.isLocked(gid)) return;
-
-            groupAnnotations = (data.annotations?.items ?? [])
-              .filter((a) => ((a.metadata as any)?.group_id ?? a.id) === gid)
-              .map((a) => ({ id: a.id, shape: a.shape as any }));
+        command: { ...command },
+        async do() {
+          for (const { updated } of plans) {
+            await data.annotations!.update(updated);
           }
-
-          // Find the annotation whose end is closest to but before `frame`
-          const prevAnn = groupAnnotations
-            .filter((a) => {
-              const lastFrame = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-              return lastFrame < frame;
-            })
-            .sort((a, b) => {
-              const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-              const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
-              return bEnd - aEnd;
-            })[0];
-
-          if (!prevAnn) return;
-
-          // Overlap protection: don't exceed the next annotation's start
-          const nextAnn = groupAnnotations
-            .filter((a) => {
-              const firstFrame = a.shape.frames?.[0]?.frame ?? Infinity;
-              return firstFrame > frame && a.id !== prevAnn.id;
-            })
-            .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
-
-          let cappedFrame = frame;
-          if (nextAnn) {
-            const nextStart = nextAnn.shape.frames?.[0]?.frame ?? Infinity;
-            if (frame >= nextStart) cappedFrame = nextStart - 1;
+        },
+        async undo() {
+          if (!data.annotations) return;
+          for (const { snapshot } of plans) {
+            await data.annotations.update(snapshot);
           }
-
-          const nearest = nearestKeyframe(prevAnn.shape, cappedFrame);
-          if (!nearest) return;
-
-          driver.command.call("annotation.keyframe_add", {
-            annotationId: prevAnn.id,
-            selection: {
-              frame: cappedFrame,
-              ...nearest,
-            },
-          });
         },
-        // No undo — the nested keyframe_add handles its own undo.
-        isCombinable() {
-          return false;
-        },
-        combine(p: never) {
-          return p;
-        },
+        isCombinable() { return false; },
+        combine(p: never) { return p; },
       };
     },
   });
