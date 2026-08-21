@@ -76,11 +76,13 @@ export function register(driver: IIdahDriverV2): void {
         const targets = resolveTargets();
         if (targets.length === 0) return noopAction(command);
         const allGids = new Set(targets.map((t) => (t.metadata as any)?.group_id ?? t.id));
-        for (const gid of allGids) {
-          if (gid == null) continue;
-          if (annotation.isLocked(gid)) return noopAction(command);
-        }
-        plans = planBatchExtendGroups(targets, frame, EXTEND_NEXT_CONFIG);
+        // Filter out locked groups — extend only unlocked ones
+        const unlockedTargets = targets.filter((t) => {
+          const gid = (t.metadata as any)?.group_id ?? t.id;
+          return gid != null && !annotation.isLocked(gid);
+        });
+        if (unlockedTargets.length === 0) return noopAction(command);
+        plans = planBatchExtendGroups(unlockedTargets, frame, EXTEND_NEXT_CONFIG);
       }
 
       if (plans.length === 0) return noopAction(command);
