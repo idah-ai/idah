@@ -66,17 +66,34 @@ RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do
     expect(record.value).to eq "dark"
   end
 
-  it "update an account setting" do
-    expect(service).to receive(:update) do |args|
-      expect(args.id).to eq 1
-      expect(args.attributes[:account_id]).to eq 1
-      expect(args.attributes[:key]).to eq nil # key is readonly
-      expect(args.attributes[:plugin]).to eq nil # plugin is readonly
-      expect(args.attributes[:value]).to eq "dark"
-      account_setting_record
-    end
+  it "upserts an account setting by natural key" do
+    expect(service).to receive(:upsert).with("theme", "dark", plugin: "").and_return(account_setting_record)
 
-    patch "/account_settings/1", account_setting_data
+    post "/account_settings/upsert", {
+      data: {
+        type: Resource::Setting::AccountSettings,
+        attributes: {
+          key: "theme",
+          value: "dark"
+        }
+      }
+    }
+    expect(last_response.status).to eq 200
+  end
+
+  it "passes the plugin through to the service" do
+    expect(service).to receive(:upsert).with("label", "never", plugin: "idah-image").and_return(account_setting_record)
+
+    post "/account_settings/upsert", {
+      data: {
+        type: Resource::Setting::AccountSettings,
+        attributes: {
+          key: "label",
+          plugin: "idah-image",
+          value: "never"
+        }
+      }
+    }
     expect(last_response.status).to eq 200
   end
 
