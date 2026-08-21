@@ -10,10 +10,37 @@ they stop on a frame (to see details for marking).
 
 | File                                | Role                                                            |
 | ----------------------------------- | --------------------------------------------------------------- |
-| `Video.svelte`                      | Wraps the HTML `<video>` element, manages its lifecycle, and converts between frame numbers (what the app uses) and time in seconds (what the browser uses). |
+| `Video.svelte`                      | Wraps the HTML `<video>` element (a hidden decode source), manages its lifecycle, converts between frame numbers (what the app uses) and time in seconds (what the browser uses), and copies every presented frame onto the canvas. |
+| `VideoCanvas.svelte`                | The visible presentation surface: a `<canvas>` sized to the media dimensions, living inside the zoomable viewport so it pans/scales with annotations. |
 | `video-stream-handler.ts`           | Manages the HLS video stream, decides what quality level to fetch, and handles the switching between low and high quality based on network speed. |
 | `LoadingIndicator.svelte`           | Shows the user what's happening: displays a badge when upgrading to high quality, or a "Loading Frame" pill when waiting for a frame to appear. |
 | `../../../state/viewport.svelte.ts` | Central state store that all other components read from and write to. All position changes, loading states, and playback status flow through here. |
+
+## Presentation: hidden video, visible canvas
+
+The `<video>` element is **not** what the user sees. It renders outside the
+zoomable viewport target, stretched to the video section at `opacity: 0`
+(never `display: none` or `visibility: hidden` — those drop it from the paint
+pipeline and can stall `requestVideoFrameCallback`). Because it sits outside
+the pan/zoom CSS transform, the compositor never scales it, no matter the
+zoom level.
+
+What the user sees is `VideoCanvas.svelte`: a `<canvas>` whose backing store
+matches the media dimensions, placed inside the zoomable target where the
+`<video>` used to be. An always-on `requestVideoFrameCallback` chain in
+`Video.svelte` copies every presented frame onto it via `drawImage`. That one
+chain covers all repaint sources uniformly — playback frames, paused seeks,
+and the stream handler's same-frame high-quality re-seek (which no other hook
+observes, since the seek logic sees the same frame index and stays silent).
+Browsers without `requestVideoFrameCallback` fall back to drawing in the
+playback animation loop, on `seeked`, and once on `loadeddata`.
+
+The state loops (frame tracking, seek confirmation) are unchanged: they own
+*state*, the presentation chain owns *pixels*, and both fire for the same
+presented frame, so overlays and pixels update together. Nearest-neighbor
+rendering happens in two stages now: `imageSmoothingEnabled` on the 2D context
+(decode → backing store, replacing the old `object-fit: fill` stretch) and
+`image-rendering: pixelated` on the canvas (backing store → screen zoom).
 
 ## Design philosophy
 

@@ -110,9 +110,11 @@ export class ListViewController<T extends Record> {
     const urlFilters = parseUrlFilters(page.url);
 
     if (Object.keys(urlFilters).length > 0) {
-      // URL carries explicit filters — they win over any stale session state
+      // URL carries explicit filters — they win over any stale session state, but apply to
+      // this view only. Do not persist: writing them to sessionStorage would make them
+      // resurrect in the URL (via the `goto` below) on every future visit, with no UI control
+      // to clear filter keys that have no matching column.
       this.filters = urlFilters;
-      this._persist();
     } else {
       // No URL filters — restore saved session prefs and sync them into the URL
       const savedPrefs = get(this.preferences);

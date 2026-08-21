@@ -3,6 +3,7 @@
   import { ModeWatcher } from "mode-watcher";
 
   import favicon from "@/components/app/brand/idah-logo-favicon.svg";
+  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
   import { Toaster } from "@/components/ui/sonner";
 
@@ -37,6 +38,8 @@
       <TriangleAlertIcon class="size-4" />
     {/snippet}
   </Toaster>
+
+  <ConfirmModal />
 
   {@render children?.()}
 </main>

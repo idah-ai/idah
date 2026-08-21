@@ -59,6 +59,9 @@ class Viewport {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
     },
     status: "pause" as "play" | "pause",
+    // Set on the first frame drawn to the presentation canvas; VideoCanvas then
+    // drops its loading placeholder. Reset by Video.svelte on unmount.
+    hasRenderedFrame: false,
     // Set when navigation pauses active playback. Tells Video.svelte's play/pause $effect to skip syncPausedFrame() and let seek $effect drive to target.
     pauseForSeek: false,
     sound: { level: 0.0, muted: true },

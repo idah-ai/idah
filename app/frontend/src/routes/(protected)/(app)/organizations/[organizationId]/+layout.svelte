@@ -10,6 +10,7 @@
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import AddNewProjectButton from "@/components/app/projects/buttons/add-new-project-button.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
@@ -61,9 +62,12 @@
     <PageLoading />
   {:then organization}
     <PageProvider name="organization-detail" roles={["admin", "org_owner"]} action="read" resource="iam:organizations">
-      <PageHeader title={organization.name}>
-        {#snippet actions()}
-          <OrganizationDropdownMenu {organizationId} align="end" />
+      <PageHeader>
+        {#snippet slotTitle()}
+          <div class="flex items-center gap-2">
+            <Text size="h2" weight="semibold">{organization.name}</Text>
+            <OrganizationDropdownMenu {organizationId} align="center" />
+          </div>
         {/snippet}
       </PageHeader>
 

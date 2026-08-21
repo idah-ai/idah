@@ -1,13 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { TriangleAlertIcon, UserRoundXIcon } from "@lucide/svelte";
+  import { UserRoundXIcon } from "@lucide/svelte";
 
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
+  import MemberEntriesWarning from "@/components/app/projects/members/datasource-tables/member-entries-warning.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -27,26 +28,34 @@
 
   // Variables
   let projectId = page.params.projectId as string;
-  let openConfirmRemoveMemberModal: boolean = $state(false);
 
   // Functions
-  async function removeProjectMember(): Promise<void> {
-    try {
-      await projectMembersBackendDataSource.delete(projectMember.id, { showErrorToast: false });
+  async function confirmRemoveProjectMember(): Promise<void> {
+    await showConfirmModal({
+      title: "Remove Member",
+      description: `Are you sure you want to remove "${projectMember.email}" from this project?`,
+      content: {
+        component: MemberEntriesWarning,
+        props: { accountId: projectMember.account_id, projectId },
+      },
+      onConfirm: async () => {
+        try {
+          await projectMembersBackendDataSource.delete(projectMember.id, { showErrorToast: false });
 
-      openConfirmRemoveMemberModal = false;
+          // Delete entries cache
+          clearCache(resourcePath(entriesBasePath, null, undefined));
 
-      // Delete entries cache
-      clearCache(resourcePath(entriesBasePath, null, undefined));
-
-      $refetches.projectMembers.list = new Date();
-      showToast.success({
-        title: "Project member removed",
-        description: `"${projectMember.email}" has been removed from the project.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
+          $refetches.projectMembers.list = new Date();
+          showToast.success({
+            title: "Project member removed",
+            description: `"${projectMember.email}" has been removed from the project.`,
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 </script>
 
@@ -65,7 +74,7 @@
 >
   <Tooltips align="center">
     {#snippet trigger()}
-      <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveMemberModal = true)}>
+      <Button variant="ghost" size="icon-sm" onclick={confirmRemoveProjectMember}>
         <UserRoundXIcon />
       </Button>
     {/snippet}
@@ -74,24 +83,4 @@
       Remove "{projectMember.email}" <br /> from project membership
     {/snippet}
   </Tooltips>
-
-  <ConfirmModal
-    title="Remove member"
-    description={`Are you sure you want to remove "${projectMember.email}" from this project?`}
-    onConfirm={removeProjectMember}
-    bind:open={openConfirmRemoveMemberModal}
-  >
-    <div
-      class="hidden gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400 [&:has(div>div)]:!flex"
-    >
-      <TriangleAlertIcon class="mt-0.5 size-4 shrink-0" />
-      <div class="[&>div]:!text-current">
-        <AccountEntries
-          accountId={projectMember.account_id}
-          {projectId}
-          labelText="Entries on these datasets will be unassigned from this account:"
-        />
-      </div>
-    </div>
-  </ConfirmModal>
 </Can>
