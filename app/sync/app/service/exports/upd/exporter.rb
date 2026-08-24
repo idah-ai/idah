@@ -14,13 +14,17 @@ module Exports
         # unique in a UPD file: keep track of the resources already appended.
         exported_resources = Set.new
 
+        # Export only the completed entries unless explicitly told otherwise.
+        entries_filter =
+          context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
+
         # Init UPD file
         system("updcli-static --input #{file_path} init", exception: true)
 
         context.datasets.each do |dataset|
           append_dataset(file_path, dataset)
 
-          dataset.entries.each do |entry|
+          dataset.entries(entries_filter).each do |entry|
             include_medias = context.options[:include_medias]
 
             append_entry(file_path, dataset.record.id, entry, include_medias)
