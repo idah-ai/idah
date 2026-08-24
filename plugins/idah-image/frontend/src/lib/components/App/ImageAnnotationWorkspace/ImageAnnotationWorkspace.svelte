@@ -49,6 +49,7 @@
   import { maskSession } from "$lib/state/mask-session.svelte";
   import { toolPanel } from "$lib/state/tool-panel.svelte";
   import FloatingToolPanel from "$lib/components/App/FloatingToolPanel/FloatingToolPanel.svelte";
+  import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
   import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
@@ -435,6 +436,7 @@
           if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
             maskTool.active = "brush";
           }
+          toolPanel.show(MaskToolConfigurations);
           getDriver().toolbar.invalidate();
           return;
         }
@@ -458,6 +460,7 @@
         if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
           maskTool.active = "brush";
         }
+        toolPanel.show(MaskToolConfigurations);
         getDriver().toolbar.invalidate();
       }
     } else if (shapeSelectionArgs && requirementFullfilled) {
