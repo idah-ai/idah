@@ -651,8 +651,18 @@ export interface IAccountSettingsDriverV2 {
   /** Load all of the current user's account settings into memory. */
   load(accountId: string): Promise<void>;
 
-  /** Read a raw setting value by key, or undefined if not loaded. */
-  get(key: string): unknown;
+  /**
+   * Read a raw setting value by (key, plugin), or undefined if not loaded.
+   * plugin defaults to "" for core (non-plugin) settings.
+   */
+  get(key: string, plugin?: string): unknown;
+
+  /**
+   * Create-or-update a setting by (key, plugin) and persist it (upsert). The
+   * generic write path for plugin and core settings — the row is created on
+   * first write and updated afterward.
+   */
+  upsert(key: string, value: unknown, plugin?: string): Promise<void>;
 
   /**
    * The live command-name → shortcut override map. Stable reference, mutated
