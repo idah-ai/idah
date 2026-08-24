@@ -420,7 +420,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     // the topbar that consumes these lives in core, not in this mock harness.
     this.settings = {
       register: () => {},
-      emitChange: () => {},
+      invalidate: () => {},
     };
 
     // Hand the live override map to the dispatcher. AccountSettingsManager

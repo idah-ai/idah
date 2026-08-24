@@ -704,7 +704,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     // the topbar that consumes these lives in core, not in this mock harness.
     this.settings = {
       register: () => {},
-      emitChange: () => {},
+      invalidate: () => {},
     };
 
     // ── Register default idah commands ────────────────────────────────

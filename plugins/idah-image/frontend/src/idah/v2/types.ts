@@ -638,7 +638,7 @@ export interface ISettingsDriverV2 {
    *  reactively across the bundle boundary, so this call is the only signal it
    *  gets: it bumps a revision counter core reads while rendering. Cheap and
    *  idempotent — call it after every mutation, from any source. */
-  emitChange(): void;
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────

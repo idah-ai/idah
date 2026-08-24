@@ -80,12 +80,12 @@
   // $state inside the plugin bundle, so reading it across the bundle boundary
   // (item.get()) registers no dependency here and the control would go stale.
   // Reading the adapter's `revision` does register one: any mutation — this UI,
-  // a keyboard shortcut, or the command palette — calls emitChange(), which
+  // a keyboard shortcut, or the command palette — calls invalidate(), which
   // bumps revision and re-runs this, re-reading every value. Same mechanism as
   // `driver.toolbar.revision` in annotation-header-bar-tools.svelte.
   let settingValues = $derived.by(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    driver.settingsAdapter?.revision; // track revision so values re-read on emitChange()
+    driver.settingsAdapter?.revision; // track revision so values re-read on invalidate()
     const values: Record<string, number | string> = {};
     for (const group of settingGroups) {
       for (const item of group.items) {
@@ -102,7 +102,7 @@
   // the time revision bumps, item.get() already returns the new value.
   function commitSetting(write: () => void): void {
     write();
-    driver.settingsAdapter?.emitChange();
+    driver.settingsAdapter?.invalidate();
   }
 
   // "idah-video" → "Idah Video". The menu appends " Settings".
