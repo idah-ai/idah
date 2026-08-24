@@ -10,6 +10,10 @@ module Exports
       def export(context)
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
+        # Duplicated entries share the same media resource, but medias are
+        # unique in a UPD file: keep track of the resources already appended.
+        exported_resources = Set.new
+
         # Export only the completed entries unless explicitly told otherwise.
         entries_filter =
           context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
@@ -29,21 +33,7 @@ module Exports
               append_annotation(file_path, entry.record.id, annotation)
             end
 
-            # Determine which medias to include based on the option:
-            # - "original": only include original media (key: "")
-            # - "all": include all medias (original and processed)
-            # - otherwise: do not include any media
-            medias =
-              case include_medias
-              when "original"
-                entry.medias({ key: "" })
-              when "all"
-                entry.medias
-              else
-                []
-              end
-
-            medias.each do |media|
+            entry_medias(entry, include_medias, exported_resources).each do |media|
               append_media(file_path, media)
             end
           end
@@ -53,6 +43,25 @@ module Exports
       end
 
       private
+
+      def include_medias?(include_medias)
+        ["original", "all"].include?(include_medias)
+      end
+
+      # Determine which medias to include based on the option:
+      # - "original": only include original media (key: "")
+      # - "all": include all medias (original and processed)
+      # - otherwise: do not include any media
+      #
+      # Entries can be duplicated and then point to the same media resource.
+      # Since a media can only be added once to a UPD file, the medias of a
+      # resource are returned only for the first entry using it.
+      def entry_medias(entry, include_medias, exported_resources)
+        return [] unless include_medias?(include_medias)
+        return [] unless exported_resources.add?(entry.record.resource)
+
+        include_medias == "original" ? entry.medias({ key: "" }) : entry.medias
+      end
 
       def capitalized_dashed_keys(hash)
         hash.transform_keys do |key|
@@ -91,7 +100,7 @@ module Exports
         # Use local file URL if original media is included,
         # otherwise use external URL of Media service of IDAH
         media_url =
-          if ["original", "all"].include?(include_medias)
+          if include_medias?(include_medias)
             "local:#{entry.record.resource}"
           else
             URI.join(

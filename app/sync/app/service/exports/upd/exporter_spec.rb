@@ -376,6 +376,44 @@ RSpec.describe Exports::Upd::Exporter do
         end
       end
 
+      context "when several entries share the same media resource" do
+        let(:options) { { include_medias: "all" } }
+
+        let(:duplicated_entry_id) { "019bba87-9818-7967-8233-35fa9807d8fb" }
+
+        let(:duplicated_entry_response) do
+          Verse::JsonApi::Struct.new entry_data[:data][0].merge(id: duplicated_entry_id)
+        end
+
+        before do
+          allow(Api[:idah].dataset.entries).to receive(:index_all).and_return(
+            [entry_response, duplicated_entry_response]
+          )
+        end
+
+        it "creates every entry but appends the shared medias only once" do
+          entry_create_count = 0
+          media_create_count = 0
+          allow(exporter).to receive(:system) do |cmd, _options|
+            entry_create_count += 1 if cmd.include?("entry create")
+            media_create_count += 1 if cmd.include?("media create")
+            true
+          end
+
+          exporter.export(context)
+
+          expect(entry_create_count).to eq(2)
+          expect(media_create_count).to eq(1)
+        end
+
+        it "lists and downloads the medias of the resource only once" do
+          expect(Api[:idah].media.medias).to receive(:index_all).once.and_return([media_response])
+          expect(Api[:idah].media.medias).to receive(:files).once.and_return(media_binary_data)
+
+          exporter.export(context)
+        end
+      end
+
       context "media creation" do
         let(:options) { { include_medias: "all" } }
 
