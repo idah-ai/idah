@@ -76,11 +76,11 @@ export class AccountSettingsManager {
   }
 
   async #persist(): Promise<void> {
-    const row = this.settings.get(commandShortcutKey);
-    if (!row) return; // seeded by account-creation defaults / backfill migration
-
     const value = { ...this.overrides }; // plain snapshot for serialization
-    row.value = value;
-    await accountSettingBackendDataSource.update(row.id, { attributes: { value } });
+
+    // Upsert by natural key — creates the row on first write, updates it after,
+    // so no account-creation seed is required. Cache the returned record.
+    const { data } = await accountSettingBackendDataSource.upsert(commandShortcutKey, value);
+    this.settings.set(commandShortcutKey, { id: data.id, value: data.value as SettingValue });
   }
 }
