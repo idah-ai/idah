@@ -14,7 +14,8 @@ import { accountSettingBackendDataSource, commandShortcutKey } from "@/data/mode
 type SettingValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
 export class AccountSettingsManager {
-  // All loaded settings, keyed by setting key → { id (for updates), value }.
+  // All loaded settings, keyed by (plugin, key) → { id, value }. A composite key
+  // is required because the same key can appear under several plugins.
   private settings = new SvelteMap<string, { id: string; value: SettingValue }>();
 
   // Live command-name → shortcut map. SAME reactive object handed to
@@ -25,8 +26,20 @@ export class AccountSettingsManager {
     return this.overrides;
   }
 
-  get(key: string): SettingValue | undefined {
-    return this.settings.get(key)?.value;
+  // Composite map key. plugin defaults to "" for core (non-plugin) settings.
+  #mapKey(key: string, plugin = ""): string {
+    return `${plugin} ${key}`;
+  }
+
+  get(key: string, plugin = ""): SettingValue | undefined {
+    return this.settings.get(this.#mapKey(key, plugin))?.value;
+  }
+
+  // Create-or-update a setting by (key, plugin) and cache the returned record.
+  // The single generic write path exposed to plugins and core UI.
+  async upsert(key: string, value: SettingValue, plugin = ""): Promise<void> {
+    const { data } = await accountSettingBackendDataSource.upsert(key, value, plugin);
+    this.settings.set(this.#mapKey(key, plugin), { id: data.id, value: data.value as SettingValue });
   }
 
   async load(accountId: string): Promise<void> {
@@ -38,7 +51,7 @@ export class AccountSettingsManager {
 
     this.settings.clear();
     for (const rec of res.data) {
-      this.settings.set(rec.key, { id: rec.id, value: rec.value as SettingValue });
+      this.settings.set(this.#mapKey(rec.key, rec.plugin), { id: rec.id, value: rec.value as SettingValue });
     }
 
     this.#syncOverridesFromStore();
@@ -67,7 +80,7 @@ export class AccountSettingsManager {
   #syncOverridesFromStore(): void {
     this.#clearOverrides();
 
-    const value = this.settings.get(commandShortcutKey)?.value;
+    const value = this.settings.get(this.#mapKey(commandShortcutKey))?.value;
     if (value && typeof value === "object" && !Array.isArray(value)) {
       for (const [name, shortcut] of Object.entries(value)) {
         if (typeof shortcut === "string") this.overrides[name] = shortcut;
@@ -76,11 +89,8 @@ export class AccountSettingsManager {
   }
 
   async #persist(): Promise<void> {
-    const value = { ...this.overrides }; // plain snapshot for serialization
-
-    // Upsert by natural key — creates the row on first write, updates it after,
-    // so no account-creation seed is required. Cache the returned record.
-    const { data } = await accountSettingBackendDataSource.upsert(commandShortcutKey, value);
-    this.settings.set(commandShortcutKey, { id: data.id, value: data.value as SettingValue });
+    // Reuse the generic upsert path (plugin "" for this core setting). Creates
+    // the row on first write, updates it after — no account-creation seed needed.
+    await this.upsert(commandShortcutKey, { ...this.overrides });
   }
 }
