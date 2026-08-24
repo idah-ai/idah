@@ -29,7 +29,10 @@ export const command = {
 
 export interface AnnotationAddProps {
   shape: IVideoAnnotationShape;
-  value?: { category?: string; label?: string; [key: string]: unknown };
+  shape_type?: string;
+  category?: string;
+  properties?: Record<string, unknown>;
+  id?: string;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -45,14 +48,17 @@ export function register(driver: IIdahDriverV2): void {
       if (!props || !data.annotations) return noopAction(command);
 
       const createdId = uuidv7();
+      const shapeType = props.shape_type ?? (props.shape as any).type;
 
       return {
         command: { ...command },
         async do() {
           const created = await data.annotations!.create({
             id: createdId,
-            shape: props.shape,
-            value: props.value,
+            shape_type: shapeType,
+            shape_args: props.shape,
+            category: props.category ?? "",
+            properties: props.properties,
           });
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
@@ -68,7 +74,7 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.delete(createdId);
           }
           // Restore draft and mode for multi-step shapes
-          if (props.shape.type === VIDEO_POLYGON) {
+          if (shapeType === VIDEO_POLYGON) {
             const firstFrame = (props.shape as any).frames?.[0];
             if (firstFrame?.points?.length) {
               viewport.video.currentFrame.value = firstFrame.frame;

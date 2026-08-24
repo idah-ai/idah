@@ -266,9 +266,9 @@ export interface IAnnotationMetadata {
 // ─── Annotation value ──────────────────────────────────────────────────
 
 /**
- * Base annotation value payload (maps to DB `annotation` JSONB column).
+ * Base annotation properties payload (maps to DB `properties` JSONB column).
  * This is a generic base; specific modalities extend it
- * (e.g. IImageAnnotationValue for image).
+ * (e.g. IVideoAnnotationValue for video).
  */
 export interface IAnnotationValue {
   [key: string]: unknown;
@@ -280,28 +280,42 @@ export interface IAnnotationValue {
  * A raw annotation record as stored and returned by the driver.
  *
  * Generic over two type parameters to mirror the DB structure:
- * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
- * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
+ * - `ShapeArgs`  – the `shape_args` JSONB column (polygon, bbox, …)
+ * - `Properties` – the `properties` JSONB column (property values, …)
  */
-export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IAnnotationRecord<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   id: string;
 
   /**
-   * Shape geometry — corresponds to the DB `dimensions` JSONB column.
+   * Shape type — corresponds to the DB `shape_type` text column.
    * Type-specific (e.g. IImageAnnotationShape for image).
    */
-  shape: Shape;
+  shape_type: string;
 
   /**
-   * The annotation payload — corresponds to the DB `annotation` JSONB column.
-   * Contains category, label, attributes, etc.
+   * Shape geometry — corresponds to the DB `shape_args` JSONB column.
+   * Type-specific (e.g. IImageAnnotationShape for image).
    */
-  value?: Annotation;
+  shape_args: ShapeArgs;
+
+  /**
+   * The annotation category — corresponds to the DB `category` text column.
+   */
+  category: string;
+
+  /**
+   * The annotation properties — corresponds to the DB `properties` JSONB column.
+   * Contains property values, etc.
+   */
+  properties?: Properties;
 
   /**
    * Annotation metadata — corresponds to the DB `metadata` JSONB column.
    */
   metadata?: IAnnotationMetadata;
+
+  deleted_at?: Date | null;
+  deleted_by_id?: string | null;
 
   created_by_id?: string;
   created_at?: string;
@@ -375,24 +389,27 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
    */
-  registerField(name: string, fn: (ann: IAnnotationRecord<Shape, Annotation>) => unknown): void;
+  registerField(name: string, fn: (ann: IAnnotationRecord<ShapeArgs, Properties>) => unknown): void;
 
   /** Fetch annotations, optionally filtered. */
-  fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]>;
+  fetch(filter?: IFilter): Promise<IAnnotationRecord<ShapeArgs, Properties>[]>;
 
   /** Update a single annotation. */
-  update(id: string, data: Partial<IAnnotationRecord<Shape, Annotation>>): Promise<void>;
+  update(id: string, data: Partial<IAnnotationRecord<ShapeArgs, Properties>>): Promise<void>;
 
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
+  /** Restore a soft-deleted annotation; resolves with the restored record. */
+  restore(id: string): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+
   /** Create a new annotation (id is auto-generated via uuidv7). */
-  create(data: IAnnotationRecord<Shape, Annotation>): Promise<IAnnotationRecord<Shape, Annotation>>;
+  create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
 
   /**
    * Write (upsert) or delete a single child-record (annotation_shape) row.
@@ -648,7 +665,7 @@ export interface IAccountSettingsDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly media: IMediaInfo;
@@ -676,7 +693,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
   readonly toolbar: IToolbarDriverV2;
-  readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
+  readonly annotations: IAnnotationsDriverV2<ShapeArgs, Properties>;
   readonly notes: INotesDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 

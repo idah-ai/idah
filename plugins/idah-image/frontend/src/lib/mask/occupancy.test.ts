@@ -15,11 +15,13 @@ function makeMaskAnn(
   id: string,
   tiles: Record<string, { rle: string }>,
   hidden: boolean = false,
-): { id: string; shape: { type: string } & Record<string, unknown>; value?: Record<string, unknown>; isHidden?: boolean } {
+): { id: string; shape_type: string; shape_args: Record<string, unknown>; category: string; properties?: Record<string, unknown>; isHidden?: boolean } {
   return {
     id,
-    shape: { type: "idah-image:mask", ...tiles },
-    value: { category: "cat" },
+    shape_type: "idah-image:mask",
+    shape_args: { ...tiles },
+    category: "cat",
+    properties: {},
   };
 }
 

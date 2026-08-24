@@ -186,7 +186,7 @@
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
         // Skip annotations outside the current frame range
-        const { start, end } = (ann.shape ?? {}) as { start?: number; end?: number };
+        const { start, end } = (ann.shape_args ?? {}) as { start?: number; end?: number };
         if (start == null || end == null || frame < start || frame > end) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {
@@ -283,7 +283,7 @@
 
     snapEngine.setTargets(
       anns.map((ann) => {
-        const shape = ann.shape as IVideoAnnotationShape | undefined;
+        const shape = ann.shape_args as IVideoAnnotationShape | undefined;
         if (!shape) {
           return { id: ann.id, kind: "", data: null };
         }
@@ -291,6 +291,8 @@
         const interpolated = getInterpolatedFrame(
           shape,
           viewport.video.displayedFrame.value,
+          true,
+          ann.shape_type,
         );
         if (!interpolated || !interpolated.points) {
           // Shape has no keyframe data for this frame — skip by returning unknown kind
@@ -298,7 +300,7 @@
         }
         return {
           id: ann.id,
-          kind: shape.type,
+          kind: ann.shape_type,
           data: { points: interpolated.points, angle: interpolated.angle },
         };
       }),
@@ -559,10 +561,10 @@
       _noteHandledByClick = true;
 
       // Compute annotation centroid at current frame for offset
-      const shape = (ann as any).shape as IVideoAnnotationShape | undefined;
+      const shape = (ann as any).shape_args as IVideoAnnotationShape | undefined;
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.frames?.length) {
-        const interp = getInterpolatedFrame(shape, frame);
+        const interp = getInterpolatedFrame(shape, frame, true, (ann as any).shape_type);
         if (interp?.points?.length) centroidN = centroidUtil(interp.points);
       }
 

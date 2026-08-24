@@ -10,9 +10,13 @@ import type { ICrudDriver } from "./idb-driver";
 function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
   return {
     id: rec.id,
-    shape: rec.dimensions as Record<string, unknown>,
-    value: rec.annotation as Record<string, unknown>,
+    shape_type: rec.shape_type,
+    shape_args: rec.shape_args as Record<string, unknown>,
+    category: rec.category,
+    properties: rec.properties as Record<string, unknown>,
     metadata: rec.metadata,
+    deleted_at: rec.deleted_at,
+    deleted_by_id: rec.deleted_by_id,
     created_by_id: rec.created_by_id,
     created_at: rec.created_at,
     updated_at: rec.updated_at,
@@ -38,8 +42,10 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
         params: {
           id: record.id,
           entry_id: entryId,
-          dimensions: record.shape,
-          annotation: record.value,
+          shape_type: record.shape_type,
+          shape_args: record.shape_args,
+          category: record.category,
+          properties: record.properties,
           metadata: record.metadata,
         },
       });
@@ -48,8 +54,10 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
 
     async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
       const payload: Record<string, unknown> = {};
-      if (data.shape) payload["dimensions"] = data.shape;
-      if (data.value) payload["annotation"] = data.value;
+      if (data.shape_type) payload["shape_type"] = data.shape_type;
+      if (data.shape_args) payload["shape_args"] = data.shape_args;
+      if (data.category) payload["category"] = data.category;
+      if (data.properties) payload["properties"] = data.properties;
       if (data.metadata) payload["metadata"] = data.metadata;
 
       await rpc.call({
@@ -65,11 +73,30 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       });
     },
 
+    async restore(id: string): Promise<IAnnotationRecord> {
+      const result = await rpc.call({
+        method: "restore",
+        params: { id, entry_id: entryId },
+      });
+      return result as unknown as IAnnotationRecord;
+    },
+
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
       await rpc.call({
         method: "write_shape",
         params: { annotation_id: annotationId, key, value: value ?? null },
       });
+    },
+
+    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+      await Promise.all(
+        entries.map(({ key, value }) =>
+          rpc.call({
+            method: "write_shape",
+            params: { annotation_id: annotationId, key, value: value ?? null },
+          }),
+        ),
+      );
     },
   };
 }
@@ -94,7 +121,7 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   }
 
   async fetch(filter?: IFilter): Promise<IAnnotationRecord[]> {
-    const filters: Record<string, unknown> = {};
+    const filters: Record<string, unknown> = { deleted: "false" };
     if (filter) {
       for (const [key, val] of Object.entries(filter)) {
         if (key === "entry_id") {
@@ -119,8 +146,10 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
 
   async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
     const payload: Record<string, unknown> = {};
-    if (data.shape) payload["dimensions"] = data.shape;
-    if (data.value) payload["annotation"] = data.value;
+    if (data.shape_type) payload["shape_type"] = data.shape_type;
+    if (data.shape_args) payload["shape_args"] = data.shape_args;
+    if (data.category) payload["category"] = data.category;
+    if (data.properties) payload["properties"] = data.properties;
     if (data.metadata) payload["metadata"] = data.metadata;
 
     await this.rpc.call({ method: "update", params: { id, entry_id: this.entryId, ...payload } });
@@ -130,14 +159,21 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
     await this.rpc.call({ method: "delete", params: { id, entry_id: this.entryId } });
   }
 
+  async restore(id: string): Promise<IAnnotationRecord> {
+    const result = await this.rpc.call({ method: "restore", params: { id, entry_id: this.entryId } });
+    return result as unknown as IAnnotationRecord;
+  }
+
   async create(data: IAnnotationRecord): Promise<IAnnotationRecord> {
     const result = await this.rpc.call({
       method: "create",
       params: {
         id: data.id,
         entry_id: this.entryId,
-        dimensions: data.shape,
-        annotation: data.value,
+        shape_type: data.shape_type,
+        shape_args: data.shape_args,
+        category: data.category,
+        properties: data.properties,
         metadata: data.metadata,
       },
     });

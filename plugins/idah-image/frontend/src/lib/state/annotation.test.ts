@@ -9,7 +9,9 @@ import type { IAnnotationRecord } from "$idah/v2/types";
 function mockRecord(id: string, group_id?: string): IAnnotationRecord {
   return {
     id,
-    shape: {},
+    shape_type: "idah-image:bounding-box",
+    shape_args: {},
+    category: "person",
     metadata: group_id != null ? { group_id } : undefined,
   };
 }

@@ -32,7 +32,7 @@
 
   // The active shape type: from annotation or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
-    if (sel) return sel.shape.type as string;
+    if (sel) return sel.shape_type as string;
     return viewport.mode;
   });
 
@@ -71,8 +71,8 @@
   let usedMaskCategories = $derived(
     new Set(
       currentFrameAnnotations
-        .filter((a) => a.shape?.type === IMAGE_MASK)
-        .map((a) => a.value?.category)
+        .filter((a) => a.shape_type === IMAGE_MASK)
+        .map((a) => a.category)
         .filter((c): c is string => Boolean(c)),
     ),
   );
@@ -83,8 +83,8 @@
   function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     const newValue = {
       ...annotationValue,
-      attributes: {
-        ...(annotationValue.attributes || {}),
+      properties: {
+        ...(annotationValue.properties || {}),
         [property.id]: v,
       },
     };

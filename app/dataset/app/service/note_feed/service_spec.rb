@@ -56,8 +56,10 @@ RSpec.describe NoteFeed::Service, database: true do
       project_id:,
       dataset_id:,
       entry_id:,
-      dimensions: { "x" => 10, "y" => 20, "width" => 100, "height" => 50 },
-      annotation: { "label" => "cat" },
+      shape_type: "bounding-box",
+      shape_args: { "x" => 10, "y" => 20, "width" => 100, "height" => 50 },
+      category: "cat",
+      properties: { "label" => "cat" },
       created_by_email: "user@example.com"
     )
   end

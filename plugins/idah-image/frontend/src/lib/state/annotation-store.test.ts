@@ -21,6 +21,7 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
+    restore: ReturnType<typeof vi.fn>;
     setShape: ReturnType<typeof vi.fn>;
     setShapes: ReturnType<typeof vi.fn>;
   };
@@ -33,6 +34,7 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       create: vi.fn().mockResolvedValue({ id: "ann-1" }),
       update: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
+      restore: vi.fn().mockResolvedValue(undefined),
       setShape: vi.fn().mockResolvedValue(undefined),
       setShapes: vi.fn().mockResolvedValue(undefined),
     };
@@ -41,8 +43,10 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
     // Seed the store with a mask annotation that has a tile key
     const existing: AnnotationItem = {
       id: "ann-1",
-      shape: { type: "idah-image:mask", "tile-0x0": { rle: "ABC" } } as any,
-      value: { category: "cat" },
+      shape_type: "idah-image:mask",
+      shape_args: { "tile-0x0": { rle: "ABC" } } as any,
+      category: "cat",
+      properties: {},
     };
     // Use the internal store's upsert via the wrapper
     store.upsert(existing);
@@ -53,7 +57,7 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       driver.setShape.mockRejectedValue(new Error("Network error"));
 
       // The shape before the call should have tile-0x0
-      expect(store.items[0].shape).toHaveProperty("tile-0x0");
+      expect(store.items[0].shape_args).toHaveProperty("tile-0x0");
 
       // Attempt to write a new tile — this should fail
       await expect(
@@ -61,9 +65,9 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       ).rejects.toThrow("Network error");
 
       // The shape should be restored to its original state
-      expect(store.items[0].shape).toHaveProperty("tile-0x0");
-      expect(store.items[0].shape).not.toHaveProperty("tile-0x1");
-      expect((store.items[0].shape as any)["tile-0x0"]).toEqual({ rle: "ABC" });
+      expect(store.items[0].shape_args).toHaveProperty("tile-0x0");
+      expect(store.items[0].shape_args).not.toHaveProperty("tile-0x1");
+      expect((store.items[0].shape_args as any)["tile-0x0"]).toEqual({ rle: "ABC" });
     });
 
     it("applies optimistic update on driver success", async () => {
@@ -72,9 +76,9 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       await store.setShape("ann-1", "tile-0x1", { rle: "DEF" });
 
       // The new tile should be present in the local store
-      expect((store.items[0].shape as any)["tile-0x1"]).toEqual({ rle: "DEF" });
+      expect((store.items[0].shape_args as any)["tile-0x1"]).toEqual({ rle: "DEF" });
       // The original tile should still be there
-      expect((store.items[0].shape as any)["tile-0x0"]).toEqual({ rle: "ABC" });
+      expect((store.items[0].shape_args as any)["tile-0x0"]).toEqual({ rle: "ABC" });
     });
 
     it("does nothing when annotation is not found in local store", async () => {
@@ -90,7 +94,7 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       driver.setShapes.mockRejectedValue(new Error("Network error"));
 
       // The shape before the call should have tile-0x0
-      expect(store.items[0].shape).toHaveProperty("tile-0x0");
+      expect(store.items[0].shape_args).toHaveProperty("tile-0x0");
 
       // Attempt to write multiple tiles — this should fail
       await expect(
@@ -101,10 +105,10 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       ).rejects.toThrow("Network error");
 
       // The shape should be restored to its original state
-      expect(store.items[0].shape).toHaveProperty("tile-0x0");
-      expect(store.items[0].shape).not.toHaveProperty("tile-0x1");
-      expect(store.items[0].shape).not.toHaveProperty("tile-0x2");
-      expect((store.items[0].shape as any)["tile-0x0"]).toEqual({ rle: "ABC" });
+      expect(store.items[0].shape_args).toHaveProperty("tile-0x0");
+      expect(store.items[0].shape_args).not.toHaveProperty("tile-0x1");
+      expect(store.items[0].shape_args).not.toHaveProperty("tile-0x2");
+      expect((store.items[0].shape_args as any)["tile-0x0"]).toEqual({ rle: "ABC" });
     });
 
     it("applies all optimistic updates on driver success", async () => {
@@ -116,10 +120,10 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       ]);
 
       // Both new tiles should be present in the local store
-      expect((store.items[0].shape as any)["tile-0x1"]).toEqual({ rle: "DEF" });
-      expect((store.items[0].shape as any)["tile-0x2"]).toEqual({ rle: "GHI" });
+      expect((store.items[0].shape_args as any)["tile-0x1"]).toEqual({ rle: "DEF" });
+      expect((store.items[0].shape_args as any)["tile-0x2"]).toEqual({ rle: "GHI" });
       // The original tile should still be there
-      expect((store.items[0].shape as any)["tile-0x0"]).toEqual({ rle: "ABC" });
+      expect((store.items[0].shape_args as any)["tile-0x0"]).toEqual({ rle: "ABC" });
     });
 
     it("handles delete operations (null value) correctly", async () => {
@@ -132,9 +136,9 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       ]);
 
       // The old tile should be removed
-      expect(store.items[0].shape).not.toHaveProperty("tile-0x0");
+      expect(store.items[0].shape_args).not.toHaveProperty("tile-0x0");
       // The new tile should be added
-      expect((store.items[0].shape as any)["tile-0x1"]).toEqual({ rle: "NEW" });
+      expect((store.items[0].shape_args as any)["tile-0x1"]).toEqual({ rle: "NEW" });
     });
 
     it("does nothing for empty entries array", async () => {
@@ -152,7 +156,7 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
       ).rejects.toThrow("Network error");
 
       // The original tile should be restored
-      expect((store.items[0].shape as any)["tile-0x0"]).toEqual({ rle: "ABC" });
+      expect((store.items[0].shape_args as any)["tile-0x0"]).toEqual({ rle: "ABC" });
     });
   });
 });
@@ -163,6 +167,7 @@ describe("createAnnotationStore occupancy dirty flag", () => {
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
+    restore: ReturnType<typeof vi.fn>;
     setShape: ReturnType<typeof vi.fn>;
     setShapes: ReturnType<typeof vi.fn>;
   };
@@ -175,11 +180,12 @@ describe("createAnnotationStore occupancy dirty flag", () => {
       create: vi.fn().mockResolvedValue({ id: "ann-1" }),
       update: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
+      restore: vi.fn().mockResolvedValue(undefined),
       setShape: vi.fn().mockResolvedValue(undefined),
       setShapes: vi.fn().mockResolvedValue(undefined),
     };
     store = createAnnotationStore(driver);
-    store.upsert({ id: "ann-1", shape: { type: "idah-image:mask" }, value: { category: "cat" } } as any);
+    store.upsert({ id: "ann-1", shape_type: "idah-image:mask", shape_args: {}, properties: {} } as any);
   });
 
   it("delete() calls markOccupancyDirty once on success", async () => {
@@ -216,12 +222,12 @@ describe("createAnnotationStore occupancy dirty flag", () => {
   });
 
   it("create() does not call markOccupancyDirty", async () => {
-    await store.create({ id: "ann-2", shape: { type: "idah-image:mask" }, value: { category: "cat" } } as any);
+    await store.create({ id: "ann-2", shape_type: "idah-image:mask", shape_args: {}, properties: {} } as any);
     expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
   });
 
   it("update() does not call markOccupancyDirty", async () => {
-    await store.update({ id: "ann-1", shape: { type: "idah-image:mask", x: 10 }, value: { category: "cat" } } as any);
+    await store.update({ id: "ann-1", shape_type: "idah-image:mask", shape_args: { x: 10 }, properties: {} } as any);
     expect(mockMarkOccupancyDirty).not.toHaveBeenCalled();
   });
 });

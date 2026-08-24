@@ -52,7 +52,7 @@
 
   // ── Base points from annotation ───────────────────────────────────────
   let basePoints = $derived.by((): Point[] => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     return shape?.points ?? [];
   });
 

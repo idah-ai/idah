@@ -287,8 +287,8 @@
     snapEngine.setTargets(
       anns.map((ann) => ({
         id: ann.id,
-        kind: (ann.shape as Record<string, unknown>)?.type as string ?? "",
-        data: ann.shape,
+        kind: ann.shape_type as string ?? "",
+        data: ann.shape_args,
       })),
       media.width,
       media.height,
@@ -468,9 +468,12 @@
       // If the selected annotation is a locked mask, refuse to paint at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
       const isLockedSelectedMask =
-        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
-      const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK ? selAnnotation.id : undefined;
+
+      const maskAnnId = selAnnotation?.shape_type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
+        ? selAnnotation.id
+        : undefined;
       maskBrushPointerDown(scenePixelCursor[0], scenePixelCursor[1], maskAnnId);
       return;
     }
@@ -481,8 +484,9 @@
       // If the selected annotation is a locked mask, refuse to draw at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
       const isLockedSelectedMask =
-        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
+
       maskPolygonCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
@@ -525,8 +529,9 @@
       scenePixelCursor[1],
       (data.annotations?.items ?? []).map((a) => ({
         id: a.id,
-        shape: a.shape as Record<string, unknown>,
-        value: a.value as Record<string, unknown> | undefined,
+        shape_type: a.shape_type,
+        shape_args: a.shape_args as Record<string, unknown>,
+        properties: a.properties as Record<string, unknown> | undefined,
       })),
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
@@ -583,7 +588,7 @@
       // category popover — the mouse-down guard already refused to paint, so
       // there is no session to flush and no new mask to create.
       const isLockedSelectedMask =
-        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
       // Save the annotationId BEFORE the flush resets it
       const hadAnnotation = !!maskSession.annotationId;
@@ -635,7 +640,7 @@
     } else {
       // Annotation note: position is normalized offset from annotation centroid,
       // so the note tracks the annotation when it moves.
-      const shape = annotation.shape as IImageAnnotationShape | undefined;
+      const shape = annotation.shape_args as IImageAnnotationShape | undefined;
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.points?.length) {
         const pts = shape.points;
@@ -683,8 +688,9 @@
       scenePixelCursor[1],
       (data.annotations?.items ?? []).map((a) => ({
         id: a.id,
-        shape: a.shape as Record<string, unknown>,
-        value: a.value as Record<string, unknown> | undefined,
+        shape_type: a.shape_type,
+        shape_args: a.shape_args as Record<string, unknown>,
+        properties: a.properties as Record<string, unknown> | undefined,
       })),
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
@@ -724,8 +730,9 @@
         scenePixelCursor[1],
         (data.annotations?.items ?? []).map((a) => ({
           id: a.id,
-          shape: a.shape as Record<string, unknown>,
-          value: a.value as Record<string, unknown> | undefined,
+          shape_type: a.shape_type,
+          shape_args: a.shape_args as Record<string, unknown>,
+          properties: a.properties as Record<string, unknown> | undefined,
         })),
         (ann) => annotation.isHidden({ id: ann.id } as any),
         resolveColorForAnnotation,
@@ -902,10 +909,9 @@
             const sel = selection.value;
             // Defense-in-depth: never commit onto (or spin off a new mask
             // against) a locked mask annotation.
-            if (sel && (sel.shape as any)?.type === IMAGE_MASK && annotation.isLocked(sel)) {
-              return;
-            }
-            const existingId = sel && (sel.shape as any)?.type === IMAGE_MASK
+            if (sel && sel.shape_type === IMAGE_MASK && annotation.isLocked(sel)) return;
+
+            const existingId = sel && sel.shape_type === IMAGE_MASK
               ? sel.id
               : undefined;
             if (existingId) {

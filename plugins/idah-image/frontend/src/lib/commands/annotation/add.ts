@@ -34,7 +34,9 @@ export const command = {
 
 export interface AnnotationAddProps {
   shape: IImageAnnotationShape;
-  value?: { category?: string; label?: string; [key: string]: unknown };
+  shape_type?: string;
+  category?: string;
+  properties?: Record<string, unknown>;
   /** Optional pre-generated ID. If omitted, one is generated. */
   id?: string;
 }
@@ -52,6 +54,7 @@ export function register(driver: IIdahDriverV2): void {
       if (!props || !data.annotations) return noopAction(command);
 
       const createdId = props.id ?? uuidv7();
+      const shapeType = props.shape_type ?? (props.shape as any).type;
 
       // Capture the session's painted tiles NOW, not inside do(). do() runs
       // again on redo against the same action object, but maskSession.reset()
@@ -59,7 +62,7 @@ export function register(driver: IIdahDriverV2): void {
       // would see nothing on redo. Cloning here means every do() call, first
       // run or any later redo, replays the exact same originally-painted tiles.
       const maskBufferSnapshot = new Map<string, Uint8Array>();
-      if (props.shape.type === IMAGE_MASK) {
+      if (shapeType === IMAGE_MASK) {
         for (const tileKey of maskSession.getDirtyTiles()) {
           const [colStr, rowStr] = tileKey.split(":");
           const buf = maskSession.getTileBuffer(parseInt(colStr, 10), parseInt(rowStr, 10));
@@ -72,7 +75,7 @@ export function register(driver: IIdahDriverV2): void {
       // creation time, and clear the shared draft immediately — so only this
       // specific command instance can ever apply it, not whichever undo() happens
       // to run next and find it still set.
-      const polygonCloseSnapshot = props.shape.type === IMAGE_MASK ? maskPolygonDraft.closedPoints : null;
+      const polygonCloseSnapshot = shapeType === IMAGE_MASK ? maskPolygonDraft.closedPoints : null;
       if (polygonCloseSnapshot) {
         maskPolygonDraft.closedPoints = null;
       }
@@ -82,12 +85,14 @@ export function register(driver: IIdahDriverV2): void {
         async do() {
           const created = await data.annotations!.create({
             id: createdId,
-            shape: props.shape,
-            value: props.value,
+            shape_type: shapeType,
+            shape_args: props.shape,
+            category: props.category ?? "",
+            properties: props.properties,
           });
           selection.selectAnnotation(created as any);
 
-          if (props.shape.type === IMAGE_MASK && dirtyTileKeys.length > 0) {
+          if (shapeType === IMAGE_MASK && dirtyTileKeys.length > 0) {
             await flushDirtyTiles(
               createdId,
               dirtyTileKeys,
@@ -101,21 +106,21 @@ export function register(driver: IIdahDriverV2): void {
             // before they're cleared.
           }
 
-          if (props.shape.type !== IMAGE_MASK) {
+          if (shapeType !== IMAGE_MASK) {
             driver.setMode(DEFAULT_MODE);
           }
 
           // Clear the mask polygon draft so the polygon preview disappears.
           // The points to restore on undo were captured in polygonCloseSnapshot
           // at callback creation time, so no need to re-derive them here.
-          if (props.shape.type === IMAGE_MASK) {
+          if (shapeType === IMAGE_MASK) {
             maskPolygonDraft.points = [];
           }
         },
         async undo() {
           if (data.annotations) {
             // Free cached mask bitmaps before the annotation is deleted
-            if (props.shape.type === IMAGE_MASK) {
+            if (shapeType === IMAGE_MASK) {
               invalidateAll(createdId);
             }
             await data.annotations.delete(createdId);
@@ -123,13 +128,13 @@ export function register(driver: IIdahDriverV2): void {
             // Restore drawing mode for multi-step shapes so the user can
           // continue editing or individually undo add_point commands.
           // For line, restore the first point so the preview is visible.
-          if (props.shape.type === IMAGE_POLYGON) {
+          if (shapeType === IMAGE_POLYGON) {
             driver.setMode(IMAGE_POLYGON);
             polygonDraft.points = props.shape.points
-          } else if (props.shape.type === IMAGE_LINE) {
+          } else if (shapeType === IMAGE_LINE) {
             driver.setMode(IMAGE_LINE);
             lineDraft.points = props.shape.points.slice(0, 1);
-          } else if (props.shape.type === IMAGE_MASK && polygonCloseSnapshot) {
+          } else if (shapeType === IMAGE_MASK && polygonCloseSnapshot) {
             driver.setMode(IMAGE_MASK);
             maskTool.active = "polygon";
             maskPolygonDraft.points = polygonCloseSnapshot;

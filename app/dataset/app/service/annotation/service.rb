@@ -34,6 +34,14 @@ module Annotation
               "entry relationship is required to create an annotation"
       end
 
+      # Validate required category — mirror the entry-relationship check above.
+      # Do not rely on the plugin UI's gating alone; this is exactly the gap
+      # that let historical null rows exist in the first place.
+      if record.category.nil? || record.category.to_s.strip.empty?
+        raise Verse::Error::ValidationFailed,
+              "category is required to create an annotation"
+      end
+
       # Organization Owner can find the entry in their scope
       # Project Owner can find the entry in their projects
       # Annotator and Reviewer can find the entry only if assigned to them
@@ -82,16 +90,22 @@ module Annotation
         # (guards against tile keys being persisted into the parent
         #  annotations.dimensions jsonb column)
         attrs = record.attributes
-        if attrs[:dimensions].is_a?(Hash)
+        if attrs[:shape_args].is_a?(Hash)
           annotations.client do |db|
             shape_keys = db[:annotation_shape]
                          .where(annotation_id: record.id)
                          .select_map(:key)
                          .map(&:to_s)
             unless shape_keys.empty?
-              attrs[:dimensions] = attrs[:dimensions].reject { |k, _| shape_keys.include?(k.to_s) }
+              attrs[:shape_args] = attrs[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
             end
           end
+        end
+
+        # Reject attempts to set category to nil/blank the same way create does.
+        if attrs.key?(:category) && (attrs[:category].nil? || attrs[:category].to_s.strip.empty?)
+          raise Verse::Error::ValidationFailed,
+                "category is required to update an annotation"
         end
 
         annotations.update!(record.id, attrs)
@@ -116,7 +130,25 @@ module Annotation
 
         check_entry_not_completed!(annotation.entry, :delete)
 
-        annotations.delete!(id)
+        annotations.update!(
+          id,
+          {
+            deleted_at: Time.now.utc,
+            deleted_by_email: auth_context.metadata[:email],
+          }
+        )
+        annotations.find!(id) # return the tombstoned record, not nil
+      end
+    end
+
+    def restore(id)
+      annotations.transaction do
+        annotation = annotations.find!(id, included: [:entry])
+        check_entry_not_completed!(annotation.entry, :update)
+        annotations.update!(id, { deleted_at: nil, deleted_by_email: nil })
+        record = annotations.find!(id)
+        merge_annotation_shapes([record])
+        record
       end
     end
 
@@ -143,6 +175,14 @@ module Annotation
         annotation = annotations.find!(annotation_id, included: [:entry])
 
         check_entry_not_completed!(annotation.entry, :update)
+
+        # Guard against writing shape tiles to a soft-deleted annotation — a
+        # stale client could otherwise resurrect data on a tombstoned annotation
+        # via the tile-sync path.
+        if annotation.deleted_at
+          raise Verse::Error::ValidationFailed,
+                "Cannot write shape to a deleted annotation"
+        end
 
         now = Time.now.utc
 
@@ -200,7 +240,7 @@ module Annotation
           key = shape[:key].to_s
           val = shape[:value].respond_to?(:to_h) ? shape[:value].to_h : shape[:value]
 
-          record.dimensions[key] = val
+          record.shape_args[key] = val
         end
       end
     end

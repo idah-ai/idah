@@ -23,7 +23,7 @@
     sidebarWidthRem?: number;
     annotationId?: string;
     annotationValue: IVideoAnnotationValue;
-    onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
+    onEditValue: (category: string | undefined, mode: string, properties?: Record<string, unknown>) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
   } = $props();
 
@@ -52,7 +52,7 @@
 
   // Functions
   function categorySelection(shape_type: string, categoryId?: string) {
-    if (categoryId) onEditValue({ category: categoryId }, shape_type);
+    if (categoryId) onEditValue(categoryId, shape_type);
   }
 </script>
 
@@ -74,7 +74,13 @@
             onSelectCategory={(selectedCategoryId) =>
               categorySelection(defaultMode ? "entry:root" : mode, selectedCategoryId)}
             onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
-            onEditValue={(value) => value && onEditValue(value, defaultMode ? "entry:root" : mode)}
+            onEditValue={(value) =>
+              value &&
+              onEditValue(
+                value.category as string | undefined,
+                defaultMode ? "entry:root" : mode,
+                value.properties as Record<string, unknown> | undefined,
+              )}
             {disabled}
           />
         {/key}

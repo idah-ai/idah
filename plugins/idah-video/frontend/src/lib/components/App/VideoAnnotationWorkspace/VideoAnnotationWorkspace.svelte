@@ -37,7 +37,7 @@
 
   // Local type aliases for V1-compatible annotation shapes/values
   type AnnotationShape = Record<string, unknown> & { type: string; start?: number; end?: number };
-  type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
+  type AnnotationAttributes = Record<string, unknown>;
   interface AnnotationGroup<T> {
     groupId: string;
     annotations: T[];
@@ -71,28 +71,38 @@
 
   let annotationId = $derived<string | undefined>(selAnnotation?.id);
 
-  /** Mutable value used during annotation creation (popover category/property selection).
-   *  Once confirmed, this is merged into the final annotation. */
-  let pendingValue: AnnotationValue = $state({});
-  let annotationValue: AnnotationValue = $derived.by(() => selAnnotation?.value || pendingValue || {});
+  /** Mutable category used during annotation creation/edit (popover category selection). */
+  let pendingCategory: string | undefined = $state(undefined);
+  /** Mutable open-ended properties used during annotation creation/edit. */
+  let pendingValue: AnnotationAttributes = $state({}); // this IS attributes now, nothing else
+
+  let annotationValue = $derived.by(() => ({
+    category: selAnnotation?.category ?? pendingCategory,
+    properties: selAnnotation?.properties ?? pendingValue ?? {},
+  }));
+
+  function resetPending() {
+    pendingCategory = undefined;
+    pendingValue = {};
+  }
 
   /** Whether the user can confirm the current annotation creation (has category + all required properties filled). */
   let canConfirm = $derived.by(() => {
     if (!editable || isNoteMode) return false;
 
     if (mode === "entry:root") {
-      if (!pendingValue.category || pendingValue.category === "") return false;
+      if (!pendingCategory || pendingCategory === "") return false;
 
       const properties =
-        getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+        getDriver().getFilteredConfig(mode, { category: pendingCategory, properties: pendingValue })?.properties ?? [];
 
       return requiredFullfilled(pendingValue, properties);
     }
 
     if (!shapeSelectionArgs) return false;
-    if (!pendingValue.category || pendingValue.category === "") return false;
+    if (!pendingCategory || pendingCategory === "") return false;
     const properties =
-      getDriver().getFilteredConfig(shapeSelectionArgs[0], pendingValue as unknown as Record<string, unknown>)
+      getDriver().getFilteredConfig(shapeSelectionArgs[0], { category: pendingCategory, properties: pendingValue })
         ?.properties ?? [];
 
     return requiredFullfilled(pendingValue, properties);
@@ -126,10 +136,13 @@
       default:
         return undefined;
     }
+    const { type: _t, ...shapeArgs } = shape;
     return {
       id: "pending",
-      shape: shape as IVideoAnnotationShape,
-      value: { ...pendingValue },
+      shape_type: type,
+      shape_args: shapeArgs as IVideoAnnotationShape,
+      category: pendingCategory,
+      properties: { ...pendingValue },
       metadata: {},
       synced: true,
     } as unknown as IVideoAnnotationRecord;
@@ -137,10 +150,10 @@
 
   /** Category color for the create-shape previews. */
   let categoryColor = $derived.by<string | undefined>(() => {
-    if (!pendingValue.category) return undefined;
+    if (!pendingCategory) return undefined;
     const shapeType = shapeSelectionArgs?.[0] ?? viewport.mode;
     const config = getDriver().config[shapeType];
-    const cat = config?.values?.find((v) => v.id === pendingValue.category);
+    const cat = config?.values?.find((v) => v.id === pendingCategory);
     return cat?.color ?? undefined;
   });
   $effect(() => {
@@ -183,7 +196,7 @@
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
     if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE) {
-      pendingValue = {};
+      resetPending();
     }
 
     // Deselect group or annotation when switching to drawing modes
@@ -205,7 +218,7 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => ann.shape_type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
     /** TOOLS CONFIGURATION */
@@ -270,18 +283,17 @@
     player?.seekToFrame(frame);
   }
 
-  async function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+  async function addAnnotation(shape: AnnotationShape, category?: string, properties: AnnotationAttributes = {}) {
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
     const videoShape: IVideoAnnotationShape = {
-      type,
       start: start!,
       end: end!,
       frames: frames as IVideoFrameSelection[],
     };
 
-    getDriver().command.call("annotation.add", { shape: videoShape, value });
+    getDriver().command.call("annotation.add", { shape: videoShape, shape_type: type, category, properties });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -329,12 +341,13 @@
     | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
     | undefined = $state();
 
-  function onEditValue(value: AnnotationValue, valueMode: string) {
+  function onEditValue(category: string | undefined, valueMode: string, properties?: AnnotationAttributes) {
     if (!editable) return;
 
+    const effectiveProperties = properties ?? annotationValue.properties;
     let requirementFullfilled = requiredFullfilled(
-      value,
-      getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
+      effectiveProperties,
+      getDriver().getFilteredConfig(valueMode, { category, properties: effectiveProperties })?.properties,
     );
 
     if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id)
@@ -345,28 +358,31 @@
       // During creation (no selected annotation), store the value in pendingValue so
       // the SelectionPanel can display it and the Confirm button can read it.
       if (!selAnnotation) {
-        pendingValue = value;
+        pendingCategory = category;
+        if (properties) pendingValue = properties;
       } else {
-        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+        selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       }
       return;
     }
 
     if (valueMode == "entry:root" && !selAnnotation) {
-      if (value.category && value.category != "" && requirementFullfilled)
-        addAnnotation({ type: valueMode }, $state.snapshot(value));
+      if (category && category != "" && requirementFullfilled)
+        addAnnotation({ type: valueMode }, category, $state.snapshot(effectiveProperties));
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
-      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
+      selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
+      if (requirementFullfilled)
+        updateAnnotationValue($state.snapshot(selAnnotation), category, $state.snapshot(effectiveProperties));
     } else if (selGroup) {
       // Update category for all annotations in the group
       getDriver().command.call("annotation.updateGroupCategory", {
         groupId: selGroup.groupId,
-        categoryIdToBeUpdate: value.category,
+        categoryIdToBeUpdate: category,
       });
     } else if (valueMode !== "entry:root") {
       // Sidebar category click: store category and enter drawing mode
-      pendingValue = value;
+      pendingCategory = category;
+      if (properties) pendingValue = properties;
       viewport.mode = valueMode;
     } else if (shapeSelectionArgs && requirementFullfilled) {
       showPopOver = false;
@@ -386,7 +402,8 @@
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
-    let value = $state.snapshot(pendingValue) as AnnotationValue;
+    let attributes = $state.snapshot(pendingValue) as AnnotationAttributes;
+    let category = pendingCategory;
 
     let shape: AnnotationShape = { type };
     shape = {
@@ -397,8 +414,8 @@
     };
 
     shapeSelectionArgs = undefined;
-    pendingValue = {};
-    addAnnotation(shape, value);
+    resetPending();
+    addAnnotation(shape, category, attributes);
   }
 
   function onShapeSelection(
@@ -412,7 +429,8 @@
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
-      let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
+      let annotation_category_from = $state.snapshot(pendingCategory);
+      let annotation_properties_from = $state.snapshot(pendingValue) as AnnotationAttributes;
 
       // todo proper validation
       let shape: AnnotationShape = { type };
@@ -440,15 +458,18 @@
       }
 
       if (
-        getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
+        getDriver().config[type]?.values.some((v) => v.id == annotation_category_from) &&
         requiredFullfilled(
-          annotation_value_from,
-          getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
+          annotation_properties_from,
+          getDriver().getFilteredConfig(type, {
+            category: annotation_category_from,
+            properties: annotation_properties_from,
+          })?.properties,
         )
       ) {
         shapeSelectionArgs = undefined;
-        pendingValue = {};
-        addAnnotation(shape, annotation_value_from);
+        resetPending();
+        addAnnotation(shape, annotation_category_from, annotation_properties_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, angle, selectedId];
         // Keep pendingValue so the popover shows the selected category
@@ -459,11 +480,11 @@
     }
   }
 
-  function updateAnnotationValue(ann: IVideoAnnotationRecord, value: AnnotationValue) {
+  function updateAnnotationValue(ann: IVideoAnnotationRecord, category?: string, properties?: AnnotationAttributes) {
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("annotation.update", { annotation: ann, category, properties });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
@@ -512,11 +533,10 @@
     const raw = data.annotations?.items ?? [];
     return raw.map((ann) => ({
       id: ann.id,
-      shape: ann.shape as IVideoAnnotationShape,
-      value: {
-        category: ann.value?.category || "null",
-        attributes: ann.value?.attributes ?? {},
-      },
+      shape_type: ann.shape_type,
+      shape_args: ann.shape_args as IVideoAnnotationShape,
+      category: ann.category || "null",
+      properties: ann.properties ?? {},
       metadata: ann.metadata ?? {},
       synced: ann.synced ?? true,
     })) as IVideoAnnotationRecord[];
@@ -547,7 +567,7 @@
 
   async function reSelectCategory(reselectedCategoryId: string) {
     // onEditValue handles the update for both selAnnotation and selGroup cases
-    onEditValue({ category: reselectedCategoryId }, mode);
+    onEditValue(reselectedCategoryId, mode);
   }
 </script>
 
@@ -557,8 +577,7 @@
     onOpenChange={(open: boolean) => {
       if (!open && showPopOver) {
         // Popover closed via Escape/click-outside — restore drawing state
-        annotationValue = {};
-        pendingValue = {};
+        resetPending();
         const args = shapeSelectionArgs;
         shapeSelectionArgs = undefined;
         if (args) {
@@ -592,19 +611,17 @@
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if pendingValue.category}
+        {#if pendingCategory}
           <SelectionPanel
-            selectedCategory={pendingValue.category}
-            annotationValue={pendingValue}
+            selectedCategory={pendingCategory}
+            annotationValue={annotationValue}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
-              pendingValue = {
-                ...pendingValue,
-                category: selectedCategory,
-              };
-              onEditValue({ category: pendingValue.category }, mode);
+              pendingCategory = selectedCategory;
+              onEditValue(pendingCategory, mode);
             }}
-            onEditValue={(value) => value && onEditValue(value, mode)}
+            onEditValue={(value) =>
+              value && onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
             disabled={false}
           />
         {:else}
@@ -629,8 +646,7 @@
           variant="outline"
           onclick={() => {
             showPopOver = false;
-            annotationValue = {};
-            pendingValue = {};
+            resetPending();
             const args = shapeSelectionArgs;
             shapeSelectionArgs = undefined;
             if (args) {
@@ -654,7 +670,7 @@
                 onShapeSelection("entry:root", viewport.video.currentFrame.value);
                 break;
               default:
-                if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
+                if (shapeSelectionArgs && pendingCategory) confirmCreateAnnotation(...shapeSelectionArgs);
             }
           }}
           disabled={!canConfirm}

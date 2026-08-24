@@ -30,10 +30,11 @@ let _mockResetCalled = false;
 vi.mock("$lib/state/data.svelte", () => ({
   data: {
     annotations: {
-      items: [] as Array<{ id: string; shape: Record<string, unknown>; value?: Record<string, unknown> }>,
+      items: [] as Array<{ id: string; shape_type: string; shape_args: Record<string, unknown>; category: string; properties?: Record<string, unknown> }>,
       create: mockCreate,
       delete: mockDelete,
       update: mockUpdate,
+      restore: vi.fn().mockResolvedValue(undefined),
       setShape: mockSetShape,
       setShapes: mockSetShapes,
     },
@@ -164,8 +165,9 @@ describe("mask tile integrity — full undo/redo cycle", () => {
 
     const addCmd = getRegistered("annotation.add");
     const addAction = addCmd.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {},
+      shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await addAction.do();
@@ -186,8 +188,8 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     const dataModule = await import("$lib/state/data.svelte");
     (dataModule.data.annotations as any).items = [{
       id: "generated-uuid-123",
-      shape: {
-        type: "idah-image:mask",
+      shape_type: "idah-image:mask",
+      shape_args: {
         "tile-0x0": { rle: "FULL_TILE" },
         "tile-0x1": null,
       },
@@ -232,7 +234,7 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     // No tile keys in any create/update
     expectNoTileKeysInAnyCreateOrUpdate();
 
-    // ── Step 4: Undo the delete (recreate via recreateAnnotationWithTiles) ──
+    // ── Step 4: Undo the delete (restore via soft-delete restore) ──
     mockDelete.mockClear();
     mockCreate.mockClear();
     mockSetShape.mockClear();
@@ -240,20 +242,12 @@ describe("mask tile integrity — full undo/redo cycle", () => {
 
     await deleteAction.undo();
 
-    // The recreate must call create() WITHOUT tile keys in shape
-    expect(mockCreate).toHaveBeenCalled();
-    const createCall = mockCreate.mock.calls[0][0] as Record<string, unknown>;
-    expectNoTileKeysInShape(createCall.shape);
-    // The create call must have the id preserved
-    expect(createCall.id).toBe("generated-uuid-123");
-    // Non-tile shape fields must be preserved
-    expect((createCall.shape as any)?.type).toBe("idah-image:mask");
-    // Tiles must be restored via setShape/setShapes
-    expect(mockSetShape).toHaveBeenCalledWith(
-      "generated-uuid-123",
-      "tile-0x0",
-      { rle: "FULL_TILE" },
-    );
+    // Soft-delete undo calls restore() — NOT create(). The row still exists
+    // (tombstoned) and annotation_shape tiles are untouched by soft delete, so
+    // no recreate/create is needed and no tile keys are re-written.
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockSetShape).not.toHaveBeenCalled();
+    expect(mockSetShapes).not.toHaveBeenCalled();
 
     // ── Step 5: Redo the delete ──
     mockDelete.mockClear();
@@ -275,12 +269,10 @@ describe("mask tile integrity — full undo/redo cycle", () => {
 
     await deleteAction.undo();
 
-    // Second undo: same assertions as first undo
-    expect(mockCreate).toHaveBeenCalled();
-    const createCall2 = mockCreate.mock.calls[0][0] as Record<string, unknown>;
-    expectNoTileKeysInShape(createCall2.shape);
-    expect(createCall2.id).toBe("generated-uuid-123");
-    expect(mockSetShape).toHaveBeenCalled();
+    // Second undo: same assertions as first undo — restore(), not create()
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockSetShape).not.toHaveBeenCalled();
+    expect(mockSetShapes).not.toHaveBeenCalled();
 
     // Final sanity: no tile keys ever leaked at any point
     expectNoTileKeysInAnyCreateOrUpdate();

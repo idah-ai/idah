@@ -60,18 +60,18 @@
 
   // ── Interpolated values ──────────────────────────────────────────────
   let baseAngle = $derived.by((): number => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     return (shape?.angle as number) ?? 0;
   });
 
   let baseCentroid = $derived.by((): Point => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     const pts = shape?.points ?? [];
     return pts.length > 0 ? (pts[0] as Point) : [0.5, 0.5];
   });
 
   let baseRadii = $derived.by((): [number, number] => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     const pts = shape?.points ?? [];
     if (pts.length >= 2) return [pts[1][0] as number, pts[1][1] as number];
     return [0.1, 0.05];

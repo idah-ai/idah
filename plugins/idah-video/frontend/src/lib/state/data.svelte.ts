@@ -108,12 +108,19 @@ export interface DataStore<T extends DataItem> {
   getItemRange: GetItemRange<T>;
 }
 
+/** Annotation store — adds soft-delete restore (annotations only, not notes). */
+export interface AnnotationDataStore extends DataStore<AnnotationItem> {
+  restore(id: string): Promise<void>;
+}
+
 // ─── Annotation store factory ──────────────────────────────────────────
 
 export type AnnotationItem = {
   id: string;
-  shape: { type: string; start: number; end: number } & Record<string, unknown>;
-  value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
+  shape_type: string;
+  shape_args: { start: number; end: number } & Record<string, unknown>;
+  category: string;
+  properties?: Record<string, unknown>;
   metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
   synced?: boolean;
   [key: string]: unknown;
@@ -134,6 +141,7 @@ export interface AnnotationDriver {
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
+  restore(id: string): Promise<{ id: string } & Record<string, unknown>>;
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
@@ -151,7 +159,7 @@ function syncSelectionOnDelete(deletedId: string): void {
   }
 }
 
-export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
+export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataStore {
   const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
       "shape.start": { lte: rangeEnd },
@@ -161,7 +169,7 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
   });
 
   store.getItemRange = (item) => {
-    const frame = item.shape as { start?: number; end?: number } | undefined;
+    const frame = item.shape_args as { start?: number; end?: number } | undefined;
     if (frame && typeof frame.start === "number" && typeof frame.end === "number") {
       return [frame.start, frame.end];
     }
@@ -214,6 +222,18 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
         // Rollback
         if (item) originalUpsert(item);
         throw new Error("Failed to delete annotation");
+      }
+    },
+
+    async restore(id: string): Promise<void> {
+      // No optimistic local insert — rely on the backend's restore response
+      // (which carries the full record, including annotation_shape tiles) to
+      // repopulate. If it fails, nothing was changed locally.
+      try {
+        const restored = await driver.restore(id);
+        originalUpsert(restored as AnnotationItem);
+      } catch {
+        throw new Error("Failed to restore annotation");
       }
     },
 
@@ -501,7 +521,7 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { selection } from "$lib/state/selection.svelte";
 
-let _annotations: DataStore<AnnotationItem> | null = $state(null);
+let _annotations: AnnotationDataStore | null = $state(null);
 
 let _noteList: INoteRecord[] = $state([]);
 let _unsubNotes: (() => void) | null = null;
@@ -636,7 +656,7 @@ export function focusNote(note: INoteRecord): void {
 }
 
 export const data: {
-  annotations: DataStore<AnnotationItem> | null;
+  annotations: AnnotationDataStore | null;
 } = {
   get annotations() { return _annotations; },
 };

@@ -46,7 +46,8 @@ describe("hitTestMaskLayer", () => {
   it("returns null when the pixel is not painted", () => {
     const anns = [{
       id: "ann-1",
-      shape: { type: "idah-image:mask" },
+      shape_type: "idah-image:mask",
+      shape_args: {},
     }];
     const result = hitTestMaskLayer(
       10, 10,
@@ -60,7 +61,8 @@ describe("hitTestMaskLayer", () => {
   it("skips hidden annotations", () => {
     const anns = [{
       id: "ann-1",
-      shape: { type: "idah-image:mask", "tile-0x0": { rle: "" } },
+      shape_type: "idah-image:mask",
+      shape_args: { "tile-0x0": { rle: "" } },
     }];
     const result = hitTestMaskLayer(
       0, 0,

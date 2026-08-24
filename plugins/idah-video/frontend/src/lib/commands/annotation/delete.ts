@@ -55,14 +55,14 @@ export function register(driver: IIdahDriverV2): void {
 
           await data.annotations!.delete(props.annotationId);
           // Seek to the annotation's start frame
-          const deletedFrame = (record.shape as any)?.start;
+          const deletedFrame = (record.shape_args as any)?.start;
           if (deletedFrame !== undefined) viewport.video.currentFrame.value = deletedFrame;
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await data.annotations!.restore(record.id);
           // Seek to the annotation's start frame
-          const restoredFrame = (record.shape as any)?.start;
+          const restoredFrame = (record.shape_args as any)?.start;
           if (restoredFrame !== undefined) viewport.video.currentFrame.value = restoredFrame;
         },
         isCombinable() {

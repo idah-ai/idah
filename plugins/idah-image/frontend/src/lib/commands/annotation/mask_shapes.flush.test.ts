@@ -159,8 +159,8 @@ describe("annotation.mask_shapes.flush", () => {
       // Set up an existing annotation with prior tile data
       const existingData = {
         id: "ann-123",
-        shape: {
-          type: "idah-image:mask",
+        shape_type: "idah-image:mask",
+        shape_args: {
           "tile-0x0": { rle: "AA==" }, // prior: fully filled
           "tile-0x1": { rle: "" }, // prior: empty
         },

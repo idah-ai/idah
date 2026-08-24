@@ -35,7 +35,7 @@
     view: "sidebar" | "popover";
     sidebarWidthRem: number;
     annotationValue: IImageAnnotationValue;
-    onEditValue: (annotationValue: IImageAnnotationValue, mode: string) => void;
+    onEditValue: (category: string | undefined, mode: string) => void;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
     onDeleteAnnotation: (annotation: IImageAnnotationRecord) => void;
     db?: DataStore<AnnotationItem> | null;
@@ -79,7 +79,7 @@
     if (category) {
       selection.deselect();
       onSelectAnnotation();
-      onEditValue({ category }, shape_type);
+      onEditValue(category, shape_type);
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),

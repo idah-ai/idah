@@ -74,7 +74,7 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
-      const shape = record.shape as IVideoAnnotationShape;
+      const shape = record.shape_args as IVideoAnnotationShape;
       const frames = (shape.frames ?? []) as IVideoFrameSelection[];
 
       // Splitting at frame zero is not possible — nothing to split off.
@@ -86,7 +86,7 @@ export function register(driver: IIdahDriverV2): void {
       // If none exists, interpolate one from the surrounding keyframes.
       let splitFrame: IVideoFrameSelection | undefined = frames.find((f) => f.frame === splitAt);
       if (!splitFrame) {
-        const interpolated = getInterpolatedFrame(shape, splitAt);
+        const interpolated = getInterpolatedFrame(shape, splitAt, true, record.shape_type);
         if (interpolated) {
           splitFrame = { frame: splitAt, angle: interpolated.angle, points: interpolated.points ?? [] };
         }
@@ -129,7 +129,7 @@ export function register(driver: IIdahDriverV2): void {
           // Update original annotation to left part (start → at)
           await data.annotations!.update({
             ...record,
-            shape: {
+            shape_args: {
               ...shape,
               start: leftMin,
               end: leftMax,
@@ -141,13 +141,15 @@ export function register(driver: IIdahDriverV2): void {
           // Pass rightId explicitly so every redo reuses the same ID.
           await data.annotations!.create({
             id: rightId,
-            shape: {
+            shape_type: record.shape_type,
+            shape_args: {
               ...shape,
               start: rightMin,
               end: rightMax,
               frames: rightFrames,
             },
-            value: record.value ? { ...record.value } : undefined,
+            category: record.category,
+            properties: record.properties ? { ...record.properties } : undefined,
             // group_id is annotation-level custom metadata; system fields (id,
             // createdAt, updatedAt) are added by the server on create.
             metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],

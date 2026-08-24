@@ -66,12 +66,12 @@ export function register(driver: IIdahDriverV2): void {
 
         if (props.category) {
           categoryAnnotations = categoryAnnotations.filter((ann) =>
-            isCategoryMatch(ann.value?.category, props.category),
+            isCategoryMatch(ann.category, props.category),
           );
         }
 
         if (props.shapeType) {
-          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape_type === props.shapeType);
         }
       } else {
         return noopAction(command);

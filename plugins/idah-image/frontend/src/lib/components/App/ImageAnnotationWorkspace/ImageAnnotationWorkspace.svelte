@@ -53,7 +53,7 @@
   import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
-  type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
+  type AnnotationAttributes = Record<string, unknown>;
 
   // Local derived aliases for V2 state
   let mode = $derived(viewport.mode);
@@ -92,28 +92,38 @@
 
   let annotationId = $derived<string | undefined>(selAnnotation?.id);
 
-  /** Mutable value used during annotation creation (popover category/property selection).
-   *  Once confirmed, this is merged into the final annotation. */
-  let pendingValue: AnnotationValue = $state({});
-  let annotationValue: AnnotationValue = $derived.by(() => selAnnotation?.value || pendingValue || {});
+  /** Mutable category used during annotation creation/edit (popover category selection). */
+  let pendingCategory: string | undefined = $state(undefined);
+  /** Mutable open-ended properties used during annotation creation/edit. */
+  let pendingValue: AnnotationAttributes = $state({}); // this IS attributes now, nothing else
+
+  let annotationValue = $derived.by(() => ({
+    category: selAnnotation?.category ?? pendingCategory,
+    properties: selAnnotation?.properties ?? pendingValue ?? {},
+  }));
+
+  function resetPending() {
+    pendingCategory = undefined;
+    pendingValue = {};
+  }
 
   /** Whether the user can confirm the current annotation creation (has category + all required properties filled). */
   let canConfirm = $derived.by(() => {
     if (!editable || isNoteMode) return false;
 
     if (mode === "entry:root") {
-      if (!pendingValue.category || pendingValue.category === "") return false;
+      if (!pendingCategory || pendingCategory === "") return false;
 
       const properties =
-        getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
+        getDriver().getFilteredConfig(mode, { category: pendingCategory, properties: pendingValue })?.properties ?? [];
 
       return requiredFullfilled(pendingValue, properties);
     }
 
     if (!shapeSelectionArgs) return false;
-    if (!pendingValue.category || pendingValue.category === "") return false;
+    if (!pendingCategory || pendingCategory === "") return false;
     const properties =
-      getDriver().getFilteredConfig(shapeSelectionArgs[0], pendingValue as unknown as Record<string, unknown>)
+      getDriver().getFilteredConfig(shapeSelectionArgs[0], { category: pendingCategory, properties: pendingValue })
         ?.properties ?? [];
 
     return requiredFullfilled(pendingValue, properties);
@@ -138,8 +148,10 @@
     const [type, points, extraProps] = shapeSelectionArgs;
     return {
       id: "pending",
-      shape: { type, points, ...extraProps } as IImageAnnotationShape,
-      value: { ...pendingValue },
+      shape_type: type,
+      shape_args: { points, ...extraProps } as IImageAnnotationShape,
+      category: pendingCategory,
+      properties: { ...pendingValue },
       metadata: {},
       synced: true,
     } as IImageAnnotationRecord;
@@ -147,11 +159,11 @@
 
   /** Category color for the create-shape previews — uses the selected category from the toolbar or popover. */
   let categoryColor = $derived.by<string | undefined>(() => {
-    if (!pendingValue.category) return undefined;
+    if (!pendingCategory) return undefined;
     // Determine the active shape type — during drawing it's viewport.mode, during popover it's from shapeSelectionArgs
     const shapeType = shapeSelectionArgs?.[0] ?? viewport.mode;
     const config = getDriver().config[shapeType];
-    const cat = config?.values?.find((v) => v.id === pendingValue.category);
+    const cat = config?.values?.find((v) => v.id === pendingCategory);
     return cat?.color ?? undefined;
   });
   $effect(() => {
@@ -199,7 +211,7 @@
       viewportMode !== IMAGE_POLYGON &&
       viewportMode !== IMAGE_MASK
     ) {
-      pendingValue = {};
+      resetPending();
     }
 
     // When leaving mask mode (e.g. returning to DEFAULT_MODE), clear the
@@ -212,7 +224,7 @@
     // but keep the selection if it's a mask annotation (so we can edit it).
     if (viewport.isCreationMode) {
       const sel = selection.value;
-      if (!sel || (sel.shape as any)?.type !== IMAGE_MASK) {
+      if (!sel || sel.shape_type !== IMAGE_MASK) {
         selection.deselect();
       }
     }
@@ -232,7 +244,7 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => ann.shape_type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
     /** TOOLS CONFIGURATION */
@@ -321,10 +333,10 @@
     // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
-  async function addAnnotation(shape: IImageAnnotationShape, value: AnnotationValue = {}) {
+  async function addAnnotation(shape: IImageAnnotationShape, category?: string, properties: AnnotationAttributes = {}, shapeType?: string) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.add", { shape, value });
+    getDriver().command.call("annotation.add", { shape, shape_type: shapeType, category, properties });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -355,12 +367,13 @@
     | [type: string, _points: Point[], extraProps: Record<string, unknown> | undefined]
     | undefined = $state();
 
-  function onEditValue(value: AnnotationValue, valueMode: string) {
+  function onEditValue(category: string | undefined, valueMode: string, properties?: AnnotationAttributes) {
     if (!editable) return;
 
+    const effectiveProperties = properties ?? annotationValue.properties;
     let requirementFullfilled = requiredFullfilled(
-      value,
-      getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
+      effectiveProperties,
+      getDriver().getFilteredConfig(valueMode, { category, properties: effectiveProperties })?.properties,
     );
 
     if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id)
@@ -371,22 +384,24 @@
       // During creation (no selected annotation), store the value in pendingValue so
       // the SelectionPanel can display it and the Confirm button can read it.
       if (!selAnnotation) {
-        pendingValue = value;
+        pendingCategory = category;
+        if (properties) pendingValue = properties;
       } else {
-        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+        selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       }
       return;
     }
 
     if (valueMode == "entry:root" && !selAnnotation) {
-      if (value.category && value.category != "" && requirementFullfilled)
-        addAnnotation({ type: valueMode } as IImageAnnotationShape, $state.snapshot(value));
+      if (category && category != "" && requirementFullfilled)
+        addAnnotation({} as IImageAnnotationShape, category, $state.snapshot(effectiveProperties), valueMode);
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+      selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       if (requirementFullfilled)
         updateAnnotationValue(
           $state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord,
-          $state.snapshot(value),
+          category,
+          $state.snapshot(effectiveProperties),
         );
     } else if (valueMode !== "entry:root") {
       // ── Resolve the actual shape type from config ────────────────────
@@ -395,9 +410,9 @@
       // the category ID exists in the IMAGE_MASK config values.
       const effectiveShapeType = (() => {
         if (valueMode === IMAGE_MASK) return IMAGE_MASK;
-        if (value.category) {
+        if (category) {
           const maskConfig = getDriver().config[IMAGE_MASK];
-          if (maskConfig?.values?.some((v: any) => v.id === value.category)) {
+          if (maskConfig?.values?.some((v: any) => v.id === category)) {
             return IMAGE_MASK;
           }
         }
@@ -408,9 +423,9 @@
       // If a mask annotation with this category already exists, select it
       // instead of entering drawing mode, and enter mask mode with brush
       // so the user can continue editing. Only one mask per category.
-      if (effectiveShapeType === IMAGE_MASK && value.category) {
+      if (effectiveShapeType === IMAGE_MASK && category) {
         const existingMask = data.annotations?.items.find(
-          (a) => (a.shape as any)?.type === IMAGE_MASK && (a.value as any)?.category === value.category,
+          (a) => a.shape_type === IMAGE_MASK && a.category === category,
         );
         if (existingMask) {
           selection.selectAnnotation(existingMask as any);
@@ -432,10 +447,11 @@
       // in-progress paint session that targets a different category than the
       // one being selected now.  This prevents pixels from an abandoned
       // new-mask attempt bleeding into the new one (Trigger 2).
-      if (valueMode === IMAGE_MASK && maskSession.dirty.size > 0 && value.category !== pendingValue.category) {
+      if (valueMode === IMAGE_MASK && maskSession.dirty.size > 0 && category !== pendingCategory) {
         maskSession.reset();
       }
-      pendingValue = value;
+      pendingCategory = category;
+      if (properties) pendingValue = properties;
       viewport.mode = valueMode;
       // When entering mask mode from sidebar, preserve the current sub-tool
       // (brush or polygon) if already valid. Only default to brush if the
@@ -459,13 +475,14 @@
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
-    let value = $state.snapshot(pendingValue) as AnnotationValue;
+    let properties = $state.snapshot(pendingValue) as AnnotationAttributes;
+    let category = pendingCategory;
 
     const shape: IImageAnnotationShape = { type, points, ..._extraProps };
 
     shapeSelectionArgs = undefined;
-    pendingValue = {};
-    addAnnotation(shape, value);
+    resetPending();
+    addAnnotation(shape, category, properties);
   }
 
   function onShapeSelection(
@@ -483,30 +500,35 @@
       const ann = data.annotations?.items.find((a) => a.id === selectedId);
       if (!ann || annotation.isLocked(ann)) return;
 
-      const shapeData = ann.shape as IImageAnnotationShape;
-      const shapeType = shapeData?.type ?? type;
-      const updatedShape: IImageAnnotationShape = { type: shapeType, points, ...extraProps };
+      const shapeData = ann.shape_args as IImageAnnotationShape;
+      const shapeType = ann.shape_type ?? type;
+      const updatedShape: IImageAnnotationShape = { points, ...extraProps };
       getDriver().command.call("annotation.update", {
         annotation: ann,
-        shape: updatedShape,
+        shape_type: shapeType,
+        shape_args: updatedShape,
       });
       return;
     }
 
-    let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
+    let annotation_category_from = $state.snapshot(pendingCategory);
+    let annotation_properties_from = $state.snapshot(pendingValue) as AnnotationAttributes;
 
-    const shape: IImageAnnotationShape = { type, points, ...extraProps };
+    const shape: IImageAnnotationShape = { points, ...extraProps };
 
     if (
-      getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
+      getDriver().config[type]?.values.some((v) => v.id == annotation_category_from) &&
       requiredFullfilled(
-        annotation_value_from,
-        getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
+        annotation_properties_from,
+        getDriver().getFilteredConfig(type, {
+          category: annotation_category_from,
+          properties: annotation_properties_from,
+        })?.properties,
       )
     ) {
       shapeSelectionArgs = undefined;
-      pendingValue = {};
-      addAnnotation(shape, annotation_value_from);
+      resetPending();
+      addAnnotation(shape, annotation_category_from, annotation_properties_from, type);
     } else {
       shapeSelectionArgs = [type, _points, extraProps];
       // Keep pendingValue so the popover shows the selected category
@@ -514,11 +536,11 @@
     }
   }
 
-  function updateAnnotationValue(ann: IImageAnnotationRecord, value: AnnotationValue) {
+  function updateAnnotationValue(ann: IImageAnnotationRecord, category?: string, properties?: AnnotationAttributes) {
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("annotation.update", { annotation: ann, category, properties });
   }
 
   function selectAnnotation(annotation?: IImageAnnotationRecord) {
@@ -534,11 +556,10 @@
     const raw = data.annotations?.items ?? [];
     return raw.map((ann) => ({
       id: ann.id,
-      shape: ann.shape as IImageAnnotationShape,
-      value: {
-        category: ann.value?.category || "null",
-        attributes: ann.value?.attributes ?? {},
-      },
+      shape_type: ann.shape_type,
+      shape_args: ann.shape_args as IImageAnnotationShape,
+      category: ann.category || "null",
+      properties: ann.properties ?? {},
       metadata: ann.metadata ?? {},
       synced: ann.synced ?? true,
     })) as IImageAnnotationRecord[];
@@ -563,7 +584,7 @@
 
   async function reSelectCategory(reselectedCategoryId: string) {
     // onEditValue handles the update for both selAnnotation and selGroup cases
-    onEditValue({ category: reselectedCategoryId }, mode);
+    onEditValue(reselectedCategoryId, mode);
   }
 </script>
 
@@ -573,11 +594,11 @@
     onOpenChange={(open: boolean) => {
       if (!open && showPopOver) {
         handlePopoverCancel(shapeSelectionArgs, {
-          setAnnotationValue: (v) => {
-            annotationValue = v;
-          },
           setPendingValue: (v) => {
             pendingValue = v;
+          },
+          setPendingCategory: (v) => {
+            pendingCategory = v;
           },
           clearShapeSelectionArgs: () => {
             shapeSelectionArgs = undefined;
@@ -604,7 +625,7 @@
           if (!canConfirm) return;
           showPopOver = false;
           if (mode === "entry:root") {
-            addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
+            addAnnotation({} as IImageAnnotationShape, pendingCategory, $state.snapshot(pendingValue), "entry:root");
           } else if (shapeSelectionArgs) {
             confirmCreateAnnotation(...shapeSelectionArgs);
           }
@@ -612,19 +633,17 @@
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if pendingValue.category}
+        {#if pendingCategory}
           <SelectionPanel
-            selectedCategory={pendingValue.category}
-            annotationValue={pendingValue}
+            selectedCategory={pendingCategory}
+            annotationValue={annotationValue}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
-              pendingValue = {
-                ...pendingValue,
-                category: selectedCategory,
-              };
-              onEditValue({ category: pendingValue.category }, mode);
+              pendingCategory = selectedCategory;
+              onEditValue(pendingCategory, mode);
             }}
-            onEditValue={(value) => value && onEditValue(value, mode)}
+            onEditValue={(value) =>
+              value && onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
             disabled={false}
           />
         {:else}
@@ -649,11 +668,11 @@
           onclick={() => {
             showPopOver = false;
             handlePopoverCancel(shapeSelectionArgs, {
-              setAnnotationValue: (v) => {
-                annotationValue = v;
-              },
               setPendingValue: (v) => {
                 pendingValue = v;
+              },
+              setPendingCategory: (v) => {
+                pendingCategory = v;
               },
               clearShapeSelectionArgs: () => {
                 shapeSelectionArgs = undefined;
@@ -675,10 +694,10 @@
             showPopOver = false;
             switch (mode) {
               case "entry:root":
-                addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
+                addAnnotation({} as IImageAnnotationShape, pendingCategory, $state.snapshot(pendingValue), "entry:root");
                 break;
               default:
-                if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
+                if (shapeSelectionArgs && pendingCategory) confirmCreateAnnotation(...shapeSelectionArgs);
             }
           }}
           disabled={!canConfirm}

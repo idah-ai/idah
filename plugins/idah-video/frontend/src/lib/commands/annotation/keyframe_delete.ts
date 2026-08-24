@@ -35,7 +35,7 @@ export interface KeyframeDeleteProps {
 function isCurrentFrameKeyframe(): boolean {
   const sel = selection.value;
   if (!sel || sel.type !== "annotation") return false;
-  const frames = (sel.annotation.shape?.frames as IVideoFrameSelection[]) ?? [];
+  const frames = (sel.annotation.shape_args?.frames as IVideoFrameSelection[]) ?? [];
   const currentFrame = viewport.video.currentFrame.value;
   return frames.some((f) => f.frame === currentFrame);
 }
@@ -72,11 +72,11 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
-      const frames = (record.shape.frames as IVideoFrameSelection[]) ?? [];
+      const frames = (record.shape_args.frames as IVideoFrameSelection[]) ?? [];
       const idx = frames.findIndex((f) => f.frame === frame);
       if (idx === -1) return noopAction(command);
 
-      const snapshot: AnnotationItem = { ...record, shape: { ...record.shape, frames: [...frames] } };
+      const snapshot: AnnotationItem = { ...record, shape_args: { ...record.shape_args, frames: [...frames] } };
       // Removing the last remaining keyframe must delete the whole annotation —
       // an annotation with zero keyframes is invalid and must never persist.
       const isLastKeyframe = frames.length === 1;
@@ -100,15 +100,15 @@ export function register(driver: IIdahDriverV2): void {
 
           await data.annotations!.update({
             ...snapshot,
-            shape: { ...snapshot.shape, start: min, end: max, frames: newFrames },
+            shape_args: { ...snapshot.shape_args, start: min, end: max, frames: newFrames },
           });
           viewport.video.currentFrame.value = frame;
         },
         async undo() {
           if (!data.annotations) return;
           if (isLastKeyframe) {
-            // Recreate the annotation that `do()` deleted (mirrors annotation.delete's undo).
-            await data.annotations.create({ ...snapshot, id: snapshot.id });
+            // Restore the annotation that `do()` soft-deleted (mirrors annotation.delete's undo).
+            await data.annotations.restore(snapshot.id);
           } else {
             await data.annotations.update(snapshot);
           }

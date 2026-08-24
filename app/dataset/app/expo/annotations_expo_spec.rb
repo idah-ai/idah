@@ -34,8 +34,10 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
           attributes: {
             # type: "bounding_box",
             entry_id: 1,
-            dimensions: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
-            annotation: { "label" => "cat" },
+            shape_type: "bounding-box",
+            shape_args: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
+            category: "cat",
+            properties: { "label" => "cat" },
             created_at: now.iso8601,
             updated_at: now.iso8601
           }
@@ -79,7 +81,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
   it "update" do
     expect(service).to receive(:update) do |args|
       expect(args.id).to eq uuid
-      expect(args.attributes[:annotation]).to eq({ label: "cat" })
+      expect(args.attributes[:properties]).to eq({ label: "cat" })
       annotation_record
     end
 

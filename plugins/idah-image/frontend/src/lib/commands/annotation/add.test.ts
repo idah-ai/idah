@@ -128,8 +128,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await action.do();
@@ -137,8 +137,10 @@ describe("annotation.add (mask path)", () => {
     // Should have created the annotation
     expect(mockCreate).toHaveBeenCalledWith({
       id: "generated-uuid-123",
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape_type: "idah-image:mask",
+      shape_args: {},
+      category: "cat",
+      properties: undefined,
     });
 
     // Should have flushed tiles via setShapes (batched, since 2 dirty tiles)
@@ -162,8 +164,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     // Do the creation
@@ -184,8 +186,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await action.do();
@@ -205,8 +207,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await action.do();
@@ -229,8 +231,8 @@ describe("annotation.add (mask path)", () => {
 
       // Act: create the command while closedPoints is still set
       const action = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // Assert: the shared global was cleared at callback time
@@ -251,8 +253,8 @@ describe("annotation.add (mask path)", () => {
       register(mockDriver);
       const registered = mockDriver.command.register.mock.calls[0][0];
       const action = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // Act: do then undo
@@ -280,16 +282,16 @@ describe("annotation.add (mask path)", () => {
 
       // First command captures the close
       const firstAction = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
       // closedPoints should be null now
       expect(_mockClosedPoints).toBeNull();
 
       // Second command (created after the close — e.g. a later brush stroke)
       const secondAction = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // Undo the second command — it should NOT restore polygon preview
@@ -312,8 +314,8 @@ describe("annotation.add (mask path)", () => {
       register(mockDriver);
       const registered = mockDriver.command.register.mock.calls[0][0];
       const action = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // First undo — should restore polygon preview

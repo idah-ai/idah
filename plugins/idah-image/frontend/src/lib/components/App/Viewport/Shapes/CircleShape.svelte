@@ -58,13 +58,13 @@
 
   // ── Base shape data from annotation ───────────────────────────────────
   let baseCenter = $derived.by((): Point => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     const pts = shape?.points ?? [];
     return pts.length > 0 ? (pts[0] as Point) : [0.5, 0.5];
   });
 
   let baseRadius = $derived.by((): number => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     return (shape?.radius as number) ?? 0.1;
   });
 
