@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.delete — Delete a specific annotation
+// idah-video:annotation.delete — Delete a specific annotation
 // Undoable: restores the annotation.
 //
 // Usage:
-//   driver.command.call("annotation.delete", {
+//   driver.command.call("idah-video:annotation.delete", {
 //     annotationId: "some-id"
 //   });
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
-  name: "annotation.delete",
+  name: "idah-video:annotation.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

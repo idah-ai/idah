@@ -421,7 +421,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     const driver = this;
 
     this.command.register({
-      name: "core.undo",
+      name: "core:history.undo",
       group: "General",
       modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Control+Z",
@@ -429,7 +429,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
       longDescription: "Undo the last action",
       callback: () => ({
         command: {
-          name: "core.undo",
+          name: "core:history.undo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -449,7 +449,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     });
 
     this.command.register({
-      name: "core.redo",
+      name: "core:history.redo",
       group: "General",
       modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Control+Shift+Z",
@@ -457,7 +457,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
       longDescription: "Redo the last undone action",
       callback: () => ({
         command: {
-          name: "core.redo",
+          name: "core:history.redo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -477,7 +477,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     });
 
     this.command.register({
-      name: "core.exit_mode",
+      name: "core:mode.exit",
       group: "General",
       modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Escape",
@@ -485,7 +485,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
       longDescription: "Return to the default selection mode",
       callback: () => ({
         command: {
-          name: "core.exit_mode",
+          name: "core:mode.exit",
           group: "General",
           modes: [],
           shortcut: null,

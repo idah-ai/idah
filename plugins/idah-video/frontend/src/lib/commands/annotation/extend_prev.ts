@@ -1,11 +1,11 @@
 // ---------------------------------------------------------------------------
-// annotation.extend_prev — Extend the previous annotation's end to a frame
+// idah-video:annotation.extend-prev — Extend the previous annotation's end to a frame
 //
 // Shortcut:  [  (default mode) — extends the annotation before the current
 //            frame in the selected group.
 //
 // Can also be called with explicit props from the context menu:
-//   driver.command.call("annotation.extend_prev", { annotationId, frame, items });
+//   driver.command.call("idah-video:annotation.extend-prev", { annotationId, frame, items });
 //
 // Prevents overlapping with the next annotation in the group.
 // ---------------------------------------------------------------------------
@@ -19,7 +19,7 @@ import { annotation } from "$lib/state/annotation.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.extend_prev",
+  name: "idah-video:annotation.extend-prev",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "BracketRight",
@@ -40,7 +40,7 @@ export function register(driver: IIdahDriverV2): void {
 
       return {
         command: {
-          name: "annotation.extend_prev",
+          name: "idah-video:annotation.extend-prev",
           group: "Annotation",
           modes: [],
           shortcut: null,
@@ -131,7 +131,7 @@ export function register(driver: IIdahDriverV2): void {
           const nearest = nearestKeyframe(prevAnn.shape, cappedFrame);
           if (!nearest) return;
 
-          driver.command.call("annotation.keyframe_add", {
+          driver.command.call("idah-video:annotation.keyframe.add", {
             annotationId: prevAnn.id,
             selection: {
               frame: cappedFrame,

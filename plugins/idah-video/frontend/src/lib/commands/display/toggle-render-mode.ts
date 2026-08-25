@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type RenderMode } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "ui.toggle_render_mode",
+  name: "idah-video:ui.toggle-render-mode",
   group: "Display",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,

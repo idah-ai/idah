@@ -63,7 +63,7 @@ describe("annotation.mask_polygon.add_point", () => {
     register(mockDriver);
     expect(mockDriver.command.register).toHaveBeenCalledOnce();
     const registered = mockDriver.command.register.mock.calls[0][0];
-    expect(registered.name).toBe("annotation.mask_polygon.add_point");
+    expect(registered.name).toBe("idah-image:annotation.mask-polygon.add-point");
   });
 
   describe("do() appends the point", () => {

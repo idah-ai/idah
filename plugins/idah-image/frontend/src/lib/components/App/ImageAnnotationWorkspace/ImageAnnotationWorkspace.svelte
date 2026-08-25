@@ -324,7 +324,7 @@
   async function addAnnotation(shape: IImageAnnotationShape, value: AnnotationValue = {}) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.add", { shape, value });
+    getDriver().command.call("idah-image:annotation.add", { shape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -343,7 +343,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("idah-image:annotation.delete", { annotationId });
   }
 
   function deleteAnnotation(annotation: IImageAnnotationRecord) {
@@ -486,7 +486,7 @@
       const shapeData = ann.shape as IImageAnnotationShape;
       const shapeType = shapeData?.type ?? type;
       const updatedShape: IImageAnnotationShape = { type: shapeType, points, ...extraProps };
-      getDriver().command.call("annotation.update", {
+      getDriver().command.call("idah-image:annotation.update", {
         annotation: ann,
         shape: updatedShape,
       });
@@ -518,7 +518,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("idah-image:annotation.update", { annotation: ann, value });
   }
 
   function selectAnnotation(annotation?: IImageAnnotationRecord) {

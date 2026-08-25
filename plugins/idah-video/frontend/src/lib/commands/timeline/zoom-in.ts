@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timeline.zoom_in — Zoom into the timeline view
+// idah-video:timeline.zoom-in — Zoom into the timeline view
 //
 // Shortcut: Control+Equal (Cmd+= on Mac, Ctrl+= on Windows)
 // Not undoable.
@@ -9,7 +9,7 @@ import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "timeline.zoom_in",
+  name: "idah-video:timeline.zoom-in",
   group: "Timeline",
   modes: ["editor", "review"] as string[],
   shortcut: "Control+Equal",

@@ -602,7 +602,7 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
-    getDriver().command.call("timeline.scroll_to_annotation");
+    getDriver().command.call("idah-video:timeline.scroll-to-annotation");
   }
 </script>
 
