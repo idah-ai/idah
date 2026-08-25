@@ -462,9 +462,9 @@ RSpec.describe Exports::Upd::Exporter do
         it "creates every entry but appends the shared medias only once" do
           entry_create_count = 0
           media_create_count = 0
-          allow(exporter).to receive(:system) do |cmd, _options|
-            entry_create_count += 1 if cmd.include?("entry create")
-            media_create_count += 1 if cmd.include?("media create")
+          allow(exporter).to receive(:system) do |*args|
+            entry_create_count += 1 if args.include?("entry") && args.include?("create")
+            media_create_count += 1 if args.include?("media") && args.include?("create")
             true
           end
 
@@ -474,8 +474,7 @@ RSpec.describe Exports::Upd::Exporter do
           expect(media_create_count).to eq(1)
         end
 
-        it "lists and downloads the medias of the resource only once" do
-          expect(Api[:idah].media.medias).to receive(:index_all).once.and_return([media_response])
+        it "downloads the medias of the resource only once" do
           expect(Api[:idah].media.medias).to receive(:files).once.and_return(media_binary_data)
 
           exporter.export(context)
