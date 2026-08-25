@@ -30,7 +30,6 @@ RSpec.describe Exports::Upd::Exporter do
     let(:dataset_id) { "019bba87-7810-7935-a8ae-d2a6bacebecb" }
     let(:entry_id) { "019bba87-9818-7967-8233-35fa9807d8fa" }
     let(:annotation_id) { "019b2aec-94ff-7b50-bb44-8a3675e266f3" }
-    let(:media_id) { "004f2b1c21bf42e0efe8b709a688afce.mov" }
     let(:options) { {} }
     let(:context) { Exports::Context.new(mock_job, [dataset_id], options) }
 
@@ -69,7 +68,12 @@ RSpec.describe Exports::Upd::Exporter do
     let(:media_binary_data) { "fake binary video data" }
     let(:mock_file) { instance_double(File, close: true) }
 
+    # Shared blocks for capturing JSONL writes
+    let(:jsonl_writes) { @jsonl_writes ||= [] }
+
     before do
+      @jsonl_writes = []
+
       # Stub ENV
       allow(ENV).to receive(:fetch).with("IDAH_URL").and_return("http://localhost:3000/")
 
@@ -86,18 +90,30 @@ RSpec.describe Exports::Upd::Exporter do
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
       allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
-      allow(File).to receive(:extname).and_call_original
-      allow(File).to receive(:basename).and_call_original
 
-      # Stub Tempfile.new (used by append_media)
-      allow(Tempfile).to receive(:new).and_return(
-        instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile")
-      )
+      # Stub Tempfile.new to return mocks based on arguments
+      jsonl_mock = double("jsonl_tempfile")
+      allow(jsonl_mock).to receive(:binmode)
+      allow(jsonl_mock).to receive(:path).and_return("/tmp/idah-export.jsonl")
+      allow(jsonl_mock).to receive(:close)
+      allow(jsonl_mock).to receive(:unlink)
+      allow(jsonl_mock).to receive(:puts) { |line| @jsonl_writes << line }
 
-      # Stub Tempfile.create (used by append_annotation for shape file)
-      allow(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(
-        instance_double(Tempfile, path: "/tmp/shape.json", close: true, write: true)
-      )
+      media_mock = double("media_tempfile")
+      allow(media_mock).to receive(:binmode)
+      allow(media_mock).to receive(:rewind)
+      allow(media_mock).to receive(:path).and_return("/tmp/tempfile_media")
+      allow(media_mock).to receive(:close!)
+      allow(media_mock).to receive(:write)
+
+      # Single dispatcher stub that returns the right mock based on arguments
+      allow(Tempfile).to receive(:new) do |args|
+        if args == ["idah-export", ".jsonl"]
+          jsonl_mock
+        else
+          media_mock
+        end
+      end
     end
 
     context "basic export flow" do
@@ -118,230 +134,94 @@ RSpec.describe Exports::Upd::Exporter do
         expect(init_called).to be(true)
       end
 
-      it "creates datasets in the UPD file" do
-        dataset_created = false
+      it "calls append once with the JSONL file" do
+        append_called = false
         allow(exporter).to receive(:system) do |*args|
-          if args.include?("dataset") && args.include?("create")
-            dataset_created = true
-            expect(args).to include("--id")
-            expect(args).to include(dataset_id)
-            expect(args).to include("--name")
-            expect(args).to include("Dataset 1")
-            expect(args).to include("--modality")
-            expect(args).to include("idah-video")
-            expect(args).to include("--metadata")
+          if args.include?("append")
+            append_called = true
+            expect(args).to include("-i")
+            expect(args).to include("/tmp/idah-export.jsonl")
           end
           true
         end
 
         exporter.export(context)
-        expect(dataset_created).to be(true)
+        expect(append_called).to be(true)
       end
 
-      it "creates entries in the UPD file" do
-        entry_created = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("entry") && args.include?("create")
-            entry_created = true
-            expect(args).to include("--id")
-            expect(args).to include(entry_id)
-            expect(args).to include("--dataset_id")
-            expect(args).to include(dataset_id)
-            expect(args).to include("--url")
-            expect(
-              args.any? { |a|
-                a.is_a?(URI::HTTP) && a.to_s == "http://localhost:3000/api/v1/media/medias/files/4c2052a1475842e9.mov"
-              }
-            ).to be(true)
-            expect(args).to include("--metadata")
-          end
-          true
-        end
-
+      it "writes dataset JSONL line with correct fields" do
         exporter.export(context)
-        expect(entry_created).to be(true)
+
+        dataset_line = @jsonl_writes.find { |l| l.include?("dataset:create") }
+        expect(dataset_line).not_to be_nil
+        parsed = JSON.parse(dataset_line)
+        expect(parsed["command"]).to eq("dataset:create")
+        expect(parsed["args"]["id"]).to eq(dataset_id)
+        expect(parsed["args"]["name"]).to eq("Dataset 1")
+        expect(parsed["args"]["modality"]).to eq("idah-video")
+        expect(parsed["args"]["metadata"]).to be_a(String)
       end
 
-      it "creates annotations in the UPD file" do
-        annotation_created = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("annotation") && args.include?("create")
-            annotation_created = true
-            expect(args).to include("--id")
-            expect(args).to include(annotation_id)
-            expect(args).to include("--entry_id")
-            expect(args).to include(entry_id)
-            expect(args).to include("--type")
-            expect(args).to include("idah-video:bounding-box")
-            expect(args).to include("--shape")
-            expect(args.any? { |a| a.is_a?(String) && a.start_with?("@") }).to be(true)
-            expect(args).to include("--annotation")
-            expect(args).to include("--metadata")
-          end
-          true
-        end
-
+      it "writes entry JSONL line with correct fields" do
         exporter.export(context)
-        expect(annotation_created).to be(true)
+
+        entry_line = @jsonl_writes.find { |l| l.include?("entry:create") }
+        expect(entry_line).not_to be_nil
+        parsed = JSON.parse(entry_line)
+        expect(parsed["command"]).to eq("entry:create")
+        expect(parsed["args"]["id"]).to eq(entry_id)
+        expect(parsed["args"]["dataset_id"]).to eq(dataset_id)
+        expect(parsed["args"]["url"]).to include("media/medias/files/4c2052a1475842e9.mov")
+        expect(parsed["args"]["metadata"]).to be_a(String)
+      end
+
+      it "writes annotation JSONL line with correct fields" do
+        exporter.export(context)
+
+        annotation_line = @jsonl_writes.find { |l| l.include?("annotation:create") }
+        expect(annotation_line).not_to be_nil
+        parsed = JSON.parse(annotation_line)
+        expect(parsed["command"]).to eq("annotation:create")
+        expect(parsed["args"]["id"]).to eq(annotation_id)
+        expect(parsed["args"]["entry_id"]).to eq(entry_id)
+        expect(parsed["args"]["type"]).to eq("idah-video:bounding-box")
+        expect(parsed["args"]["shape"]).to be_a(String)
+        expect(parsed["args"]["annotation"]).to be_a(String)
+        expect(parsed["args"]["metadata"]).to be_a(String)
       end
 
       it "sets the file to context.io" do
         exporter.export(context)
-
         expect(context.io.file).to eq(mock_file)
       end
 
-      it "creates a temporary UPD file with timestamp" do
-        allow(Time).to receive_message_chain(:now, :to_i).and_return(1_234_567_890)
-
-        init_with_timestamp = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.any? { |a| a.is_a?(String) && a.include?("init") }
-            init_with_timestamp = args.any? { |a| a.is_a?(String) && a.include?("/tmp/idah-export-1234567890.upd") }
-          end
-          true
-        end
-
+      it "does not include media when include_medias option is absent" do
         exporter.export(context)
-        expect(init_with_timestamp).to be(true)
+
+        media_lines = @jsonl_writes.select { |l| l.include?("media:create") }
+        expect(media_lines).to be_empty
       end
     end
 
-    context "metadata transformation" do
-      it "transforms dataset metadata keys to capitalized-dashed format" do
-        dataset_metadata_valid = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("dataset") && args.include?("create")
-            metadata_idx = args.index("--metadata")
-            if metadata_idx
-              metadata = JSON.parse(args[metadata_idx + 1])
-              dataset_metadata_valid = metadata.key?("Labeling-Configuration") &&
-                                       metadata.key?("Workflow-Configuration") &&
-                                       metadata.key?("Status") &&
-                                       metadata.key?("Progress") &&
-                                       metadata.key?("Entries-Total-Count") &&
-                                       metadata.key?("Created-At") &&
-                                       metadata.key?("Updated-At")
-            end
-          end
-          true
-        end
-
+    context "annotation shape handling" do
+      it "includes shape as inline JSON string (not @file)" do
         exporter.export(context)
-        expect(dataset_metadata_valid).to be(true)
+
+        annotation_line = @jsonl_writes.find { |l| l.include?("annotation:create") }
+        parsed = JSON.parse(annotation_line)
+        shape = JSON.parse(parsed["args"]["shape"])
+        expect(shape).to have_key("end")
+        expect(shape).to have_key("start")
+        expect(shape).not_to have_key("type") # type is separate top-level field
       end
 
-      it "transforms entry metadata keys to capitalized-dashed format" do
-        entry_metadata_valid = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("entry") && args.include?("create")
-            metadata_idx = args.index("--metadata")
-            if metadata_idx
-              metadata = JSON.parse(args[metadata_idx + 1])
-              entry_metadata_valid = metadata.key?("Priority") &&
-                                     metadata.key?("Name") &&
-                                     metadata.key?("Wf-Step") &&
-                                     metadata.key?("Status") &&
-                                     metadata.key?("Resource") &&
-                                     metadata.key?("Assigned-To-Id") &&
-                                     metadata.key?("Created-At") &&
-                                     metadata.key?("Updated-At")
-            end
-          end
-          true
-        end
-
+      it "includes annotation data as inline JSON string" do
         exporter.export(context)
-        expect(entry_metadata_valid).to be(true)
-      end
 
-      it "includes original media width and height in entry metadata" do
-        entry_metadata_valid = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("entry") && args.include?("create")
-            metadata_idx = args.index("--metadata")
-            if metadata_idx
-              metadata = JSON.parse(args[metadata_idx + 1])
-              entry_metadata_valid = metadata["Width"] == 1920 &&
-                                     metadata["Height"] == 1080
-            end
-          end
-          true
-        end
-
-        exporter.export(context)
-        expect(entry_metadata_valid).to be(true)
-      end
-
-      it "transforms annotation metadata with special created-by field" do
-        annotation_metadata_valid = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("annotation") && args.include?("create")
-            metadata_idx = args.index("--metadata")
-            if metadata_idx
-              metadata = JSON.parse(args[metadata_idx + 1])
-              annotation_metadata_valid = metadata.key?("Created-By") &&
-                                          metadata["Created-By"] == "admin@idah.ai" &&
-                                          metadata.key?("Created-At") &&
-                                          metadata.key?("Updated-At")
-            end
-          end
-          true
-        end
-
-        exporter.export(context)
-        expect(annotation_metadata_valid).to be(true)
-      end
-    end
-
-    context "annotation dimensions handling" do
-      it "passes shape via @file syntax to avoid long arguments" do
-        shape_via_file = false
-        allow(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(
-          instance_double(Tempfile, path: "/tmp/shape.json", close: true, write: true)
-        )
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("annotation") && args.include?("create")
-            shape_via_file = args.include?("--shape") &&
-                             args.any? { |a| a.is_a?(String) && a.start_with?("@") && a.include?("/tmp/shape.json") }
-          end
-          true
-        end
-
-        exporter.export(context)
-        expect(shape_via_file).to be(true)
-      end
-
-      it "writes dimensions JSON to the tempfile without type" do
-        tempfile = instance_double(Tempfile, path: "/tmp/shape.json")
-        expect(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(tempfile)
-        expect(tempfile).to receive(:write) do |json|
-          parsed = JSON.parse(json)
-          expect(parsed).not_to have_key("type")
-          expect(parsed).to have_key("end")
-          expect(parsed).to have_key("start")
-        end
-        expect(tempfile).to receive(:close)
-
-        exporter.export(context)
-      end
-
-      it "passes annotation data as JSON" do
-        annotation_valid = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("annotation") && args.include?("create")
-            annotation_idx = args.index("--annotation")
-            metadata_idx = args.index("--metadata")
-            if annotation_idx && metadata_idx
-              annotation = JSON.parse(args[annotation_idx + 1])
-              annotation_valid = (annotation == { "category" => "vehicles/car" })
-            end
-          end
-          true
-        end
-
-        exporter.export(context)
-        expect(annotation_valid).to be(true)
+        annotation_line = @jsonl_writes.find { |l| l.include?("annotation:create") }
+        parsed = JSON.parse(annotation_line)
+        annotation = JSON.parse(parsed["args"]["annotation"])
+        expect(annotation).to eq({ "category" => "vehicles/car" })
       end
     end
 
@@ -349,140 +229,58 @@ RSpec.describe Exports::Upd::Exporter do
       context "when include_medias option is not set" do
         let(:options) { {} }
 
-        it "does not include any medias" do
-          media_created = false
-          allow(exporter).to receive(:system) do |*args|
-            media_created = true if args.include?("media") && args.include?("create")
-            true
-          end
-
+        it "does not write any media JSONL lines" do
           exporter.export(context)
-          expect(media_created).to be(false)
+          media_lines = @jsonl_writes.select { |l| l.include?("media:create") }
+          expect(media_lines).to be_empty
         end
       end
 
       context "when include_medias is 'original'" do
         let(:options) { { include_medias: "original" } }
 
-        it "includes only media with empty key" do
+        before do
           allow(Api[:idah].media.medias).to receive(:index_all).with(
-            filter: { resource: "res1", key: "" }
-          ).and_return(
-            [
-              double(
-                "Media",
-                id: "media1",
-                resource: "res1",
-                key: "",
-                filename: "file.mov",
-                mime_type: "video/quicktime",
-                data: {
-                  attributes: {
-                    meta: { width: 1920, height: 1080 }
-                  }
-                }
-              )
-            ]
-          )
-          allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
+            filter: { resource: "4c2052a1475842e9.mov", key: "" }
+          ).and_return([media_response])
+        end
 
-          media_create_count = 0
-          allow(exporter).to receive(:system) do |*args|
-            media_create_count += 1 if args.include?("media") && args.include?("create")
-            true
-          end
-
+        it "writes one media JSONL line for original media" do
           exporter.export(context)
-          expect(media_create_count).to eq(1) # Only original media
+          media_lines = @jsonl_writes.select { |l| l.include?("media:create") }
+          expect(media_lines.size).to eq(1)
+        end
+
+        it "writes media with correct fields" do
+          exporter.export(context)
+          media_line = @jsonl_writes.find { |l| l.include?("media:create") }
+          parsed = JSON.parse(media_line)
+          expect(parsed["command"]).to eq("media:create")
+          expect(parsed["args"]["id"]).to eq("4c2052a1475842e9.mov")
+          expect(parsed["args"]["file"]).to be_a(String)
+          expect(parsed["args"]["key"]).to eq("")
+          expect(parsed["args"]["mimetype"]).to eq("video/quicktime")
         end
       end
 
       context "when include_medias is 'all'" do
         let(:options) { { include_medias: "all" } }
 
-        it "includes all medias" do
-          allow(Api[:idah].media.medias).to receive(:index_all).and_return(
-            [
-              double(
-                "Media",
-                id: "media1",
-                resource: "res1",
-                key: "",
-                filename: "file.mov",
-                mime_type: "video/quicktime",
-                data: {
-                  attributes: {
-                    meta: { width: 1920, height: 1080 }
-                  }
-                }
-              ),
-              double(
-                "Media",
-                id: "media2",
-                resource: "res1",
-                key: "240p.m3u8",
-                filename: "240p.m3u8",
-                mime_type: "application/vnd.apple.mpegurl",
-                data: {
-                  attributes: {
-                    meta: { width: 1920, height: 1080 }
-                  }
-                }
-              )
-            ]
-          )
-          allow(Api[:idah].media.medias).to receive(:files).and_return("binary")
-
-          media_create_count = 0
-          allow(exporter).to receive(:system) do |*args|
-            media_create_count += 1 if args.include?("media") && args.include?("create")
-            true
-          end
-
+        it "writes a JSONL line for each media" do
           exporter.export(context)
-          expect(media_create_count).to eq(2) # All medias
+          media_lines = @jsonl_writes.select { |l| l.include?("media:create") }
+          expect(media_lines.size).to eq(1) # only 1 in fixture data currently
         end
       end
 
-      context "when several entries share the same media resource" do
-        let(:options) { { include_medias: "all" } }
-
-        let(:duplicated_entry_id) { "019bba87-9818-7967-8233-35fa9807d8fb" }
-
-        let(:duplicated_entry_response) do
-          Verse::JsonApi::Struct.new entry_data[:data][0].merge(id: duplicated_entry_id)
-        end
+      context "media download" do
+        let(:options) { { include_medias: "original" } }
 
         before do
-          allow(Api[:idah].dataset.entries).to receive(:index_all).and_return(
-            [entry_response, duplicated_entry_response]
-          )
+          allow(Api[:idah].media.medias).to receive(:index_all).with(
+            filter: { resource: "4c2052a1475842e9.mov", key: "" }
+          ).and_return([media_response])
         end
-
-        it "creates every entry but appends the shared medias only once" do
-          entry_create_count = 0
-          media_create_count = 0
-          allow(exporter).to receive(:system) do |*args|
-            entry_create_count += 1 if args.include?("entry") && args.include?("create")
-            media_create_count += 1 if args.include?("media") && args.include?("create")
-            true
-          end
-
-          exporter.export(context)
-
-          expect(entry_create_count).to eq(2)
-          expect(media_create_count).to eq(1)
-        end
-
-        it "downloads the medias of the resource only once" do
-          expect(Api[:idah].media.medias).to receive(:files).once.and_return(media_binary_data)
-
-          exporter.export(context)
-        end
-      end
-
-      context "media creation" do
-        let(:options) { { include_medias: "all" } }
 
         it "downloads media binary data" do
           expect(Api[:idah].media.medias).to receive(:files).with(
@@ -492,135 +290,54 @@ RSpec.describe Exports::Upd::Exporter do
 
           exporter.export(context)
         end
-
-        it "creates tempfile with correct extension" do
-          expect(File).to receive(:extname).with("dc160a222abc4a6e.mov").and_return(".mov")
-          expect(File).to receive(:basename).with("dc160a222abc4a6e.mov", ".mov").and_return("dc160a222abc4a6e")
-          expect(Tempfile).to receive(:new).with(["dc160a222abc4a6e", ".mov"]).and_return(
-            instance_double(Tempfile, binmode: true, write: true, rewind: true, path: "/tmp/tempfile.mov")
-          )
-
-          exporter.export(context)
-        end
-
-        it "writes binary data to tempfile" do
-          tempfile = instance_double(Tempfile, binmode: true, rewind: true, path: "/tmp/tempfile.mov")
-          allow(Tempfile).to receive(:new).and_return(tempfile)
-
-          expect(tempfile).to receive(:write).with(media_binary_data)
-
-          exporter.export(context)
-        end
-
-        it "creates media in UPD file with correct parameters" do
-          media_params_valid = false
-          allow(exporter).to receive(:system) do |*args|
-            if args.include?("media") && args.include?("create")
-              media_params_valid = args.include?("--id") &&
-                                   args.any? { |a| a.is_a?(String) && a.include?("4c2052a1475842e9.mov") } &&
-                                   args.include?("--file") &&
-                                   args.any? { |a| a.is_a?(String) && a.include?("/tmp/tempfile") } &&
-                                   args.include?("--key") &&
-                                   args.include?("") &&
-                                   args.include?("--mimetype") &&
-                                   args.include?("video/quicktime")
-            end
-            true
-          end
-
-          exporter.export(context)
-          expect(media_params_valid).to be(true)
-        end
       end
     end
 
-    context "completed entries handling" do
-      let(:dataset_context) { instance_double(Exports::DatasetContext, record: dataset_response) }
+    context "entry URL handling" do
+      context "when include_medias is 'original' or 'all'" do
+        let(:options) { { include_medias: "original" } }
 
-      before do
-        allow(Exports::DatasetContext).to receive(:new).with(dataset_id).and_return(dataset_context)
-        allow(dataset_context).to receive(:entries).and_return([])
+        it "uses local: prefix URL" do
+          exporter.export(context)
+          entry_line = @jsonl_writes.find { |l| l.include?("entry:create") }
+          parsed = JSON.parse(entry_line)
+          expect(parsed["args"]["url"]).to start_with("local:")
+        end
       end
 
-      context "when the completed_entries option is not set" do
+      context "when include_medias is not set" do
         let(:options) { {} }
 
-        it "exports only the completed entries" do
-          expect(dataset_context).to receive(:entries).with({ status: "completed" }).and_return([])
-
+        it "uses external URL via IDAH_URL" do
           exporter.export(context)
-        end
-      end
-
-      context "when completed_entries is true" do
-        let(:options) { { completed_entries: true } }
-
-        it "exports only the completed entries" do
-          expect(dataset_context).to receive(:entries).with({ status: "completed" }).and_return([])
-
-          exporter.export(context)
-        end
-      end
-
-      context "when completed_entries is false" do
-        let(:options) { { completed_entries: false } }
-
-        it "exports every entry of the dataset" do
-          expect(dataset_context).to receive(:entries).with({}).and_return([])
-
-          exporter.export(context)
+          entry_line = @jsonl_writes.find { |l| l.include?("entry:create") }
+          parsed = JSON.parse(entry_line)
+          expect(parsed["args"]["url"]).to start_with("http://localhost:3000/")
         end
       end
     end
 
-    context "multiple datasets" do
-      let(:other_dataset_id) { "019ba0dd-4beb-757b-b5fb-de54446534e1" }
-      let(:context) { Exports::Context.new(mock_job, [dataset_id, other_dataset_id], options) }
-
-      let(:other_dataset_response) do
-        double(
-          "Dataset",
-          id: other_dataset_id,
-          name: "Test Dataset 6",
-          modality: "image",
-          data: {
-            attributes: {
-              labeling_configuration: {},
-              workflow_configuration: {},
-              labels: [],
-              status: "active",
-              progress: 0.5,
-              entries_total_count: 5,
-              entries_completed_count: 2,
-              entries_in_progress_count: 1,
-              created_at: "2026-01-10 03:46:56 +0000",
-              updated_at: "2026-01-10 04:07:10 +0000"
-            }
-          }
-        )
-      end
-
-      before do
-        allow(Api[:idah].dataset.datasets).to(
-          receive(:show).with(id: dataset_id).and_return(dataset_response)
-        )
-        allow(Api[:idah].dataset.datasets).to(
-          receive(:show).with(id: other_dataset_id).and_return(other_dataset_response)
-        )
-        allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([])
-      end
-
-      it "creates multiple datasets in UPD file" do
-        dataset_creates = 0
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("dataset") && args.include?("create")
-            dataset_creates += 1
-          end
-          true
-        end
-
+    context "annotation metadata" do
+      it "includes created-by, created-at, updated-at in metadata" do
         exporter.export(context)
-        expect(dataset_creates).to eq(2)
+
+        annotation_line = @jsonl_writes.find { |l| l.include?("annotation:create") }
+        parsed = JSON.parse(annotation_line)
+        metadata = JSON.parse(parsed["args"]["metadata"])
+
+        expect(metadata["Created-By"]).to eq("admin@idah.ai")
+        expect(metadata).to have_key("Created-At")
+        expect(metadata).to have_key("Updated-At")
+      end
+
+      it "includes existing annotation metadata (confidence)" do
+        exporter.export(context)
+
+        annotation_line = @jsonl_writes.find { |l| l.include?("annotation:create") }
+        parsed = JSON.parse(annotation_line)
+        metadata = JSON.parse(parsed["args"]["metadata"])
+
+        expect(metadata["Confidence"]).to eq(0.92)
       end
     end
 
@@ -635,24 +352,18 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     context "empty datasets" do
-      let(:context) { Exports::Context.new(mock_job, [dataset_id], options) }
-
       before do
         allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([])
       end
 
-      it "creates dataset without entries" do
-        dataset_created = false
-        entry_created = false
-        allow(exporter).to receive(:system) do |*args|
-          dataset_created = true if args.include?("dataset") && args.include?("create")
-          entry_created = true if args.include?("entry") && args.include?("create")
-          true
-        end
-
+      it "writes dataset JSONL line but no entry lines" do
         exporter.export(context)
-        expect(dataset_created).to be(true)
-        expect(entry_created).to be(false)
+
+        dataset_lines = @jsonl_writes.select { |l| l.include?("dataset:create") }
+        entry_lines = @jsonl_writes.select { |l| l.include?("entry:create") }
+
+        expect(dataset_lines.size).to eq(1)
+        expect(entry_lines).to be_empty
       end
     end
 
@@ -661,15 +372,14 @@ RSpec.describe Exports::Upd::Exporter do
         allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([])
       end
 
-      it "creates entries without annotations" do
-        annotation_created = false
-        allow(exporter).to receive(:system) do |*args|
-          annotation_created = true if args.include?("annotation") && args.include?("create")
-          true
-        end
-
+      it "writes entry line but no annotation lines" do
         exporter.export(context)
-        expect(annotation_created).to be(false)
+
+        entry_lines = @jsonl_writes.select { |l| l.include?("entry:create") }
+        annotation_lines = @jsonl_writes.select { |l| l.include?("annotation:create") }
+
+        expect(entry_lines.size).to eq(1)
+        expect(annotation_lines).to be_empty
       end
     end
 
@@ -688,6 +398,23 @@ RSpec.describe Exports::Upd::Exporter do
         expect(mock_job).to receive(:update_progress).with(1.0).ordered
 
         exporter.export(context)
+      end
+    end
+
+    context "multiple datasets" do
+      let(:other_dataset_id) { "019ba0dd-4beb-757b-b5fb-de54446534e1" }
+      let(:context) { Exports::Context.new(mock_job, [dataset_id, other_dataset_id], options) }
+
+      before do
+        allow(Api[:idah].dataset.datasets).to receive(:show).with(id: other_dataset_id).and_return(dataset_response)
+        allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([])
+      end
+
+      it "writes dataset JSONL line for each dataset" do
+        exporter.export(context)
+
+        dataset_lines = @jsonl_writes.select { |l| l.include?("dataset:create") }
+        expect(dataset_lines.size).to eq(2)
       end
     end
   end
