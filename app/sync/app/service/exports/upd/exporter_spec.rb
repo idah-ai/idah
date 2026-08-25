@@ -426,6 +426,45 @@ RSpec.describe Exports::Upd::Exporter do
       end
     end
 
+    context "completed entries handling" do
+      let(:dataset_context) { instance_double(Exports::DatasetContext, record: dataset_response) }
+
+      before do
+        allow(Exports::DatasetContext).to receive(:new).with(dataset_id).and_return(dataset_context)
+        allow(dataset_context).to receive(:entries).and_return([])
+      end
+
+      context "when the completed_entries option is not set" do
+        let(:options) { {} }
+
+        it "exports only the completed entries" do
+          expect(dataset_context).to receive(:entries).with({ status: "completed" }).and_return([])
+
+          exporter.export(context)
+        end
+      end
+
+      context "when completed_entries is true" do
+        let(:options) { { completed_entries: true } }
+
+        it "exports only the completed entries" do
+          expect(dataset_context).to receive(:entries).with({ status: "completed" }).and_return([])
+
+          exporter.export(context)
+        end
+      end
+
+      context "when completed_entries is false" do
+        let(:options) { { completed_entries: false } }
+
+        it "exports every entry of the dataset" do
+          expect(dataset_context).to receive(:entries).with({}).and_return([])
+
+          exporter.export(context)
+        end
+      end
+    end
+
     context "multiple datasets" do
       let(:other_dataset_id) { "019ba0dd-4beb-757b-b5fb-de54446534e1" }
       let(:context) { Exports::Context.new(mock_job, [dataset_id, other_dataset_id], options) }

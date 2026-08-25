@@ -11,11 +11,11 @@ import type { ISettingGroup, ISettingProvider, ISettingsDriverV2 } from "../../t
 // A plugin is a separately-loaded bundle (UMD global) running its own Svelte
 // runtime, so core cannot reactively observe the plugin's setting state: values
 // live in the plugin's own `$state`, and core reading them through `item.get()`
-// registers no dependency. The plugin therefore PUSHES a signal — `emitChange()`
+// registers no dependency. The plugin therefore PUSHES a signal — `invalidate()`
 // — after any mutation, and core re-reads.
 //
-// That signal is the `revision` counter below, the same mechanism the toolbar
-// submodule uses (see ToolbarManagerV2.invalidate / `driver.toolbar.revision`).
+// That signal is the `revision` counter below, the same mechanism (and name)
+// the toolbar submodule uses (see ToolbarManagerV2.invalidate / `driver.toolbar.revision`).
 // `revision` is a core-owned `$state`, so the bump happens entirely inside
 // core's own runtime — nothing reactive crosses the bundle boundary, only a
 // plain method call. Core's renderer reads `revision` inside a `$derived`,
@@ -26,7 +26,7 @@ export class SettingsDriverAdapter implements ISettingsDriverV2 {
   private providers: ISettingProvider[] = [];
 
   /**
-   * Monotonically increasing counter, bumped by `emitChange()` whenever a
+   * Monotonically increasing counter, bumped by `invalidate()` whenever a
    * setting value may have changed. CORE-ONLY: the topbar settings renderer
    * reads this inside a `$derived` so its value mirror re-evaluates.
    */
@@ -46,7 +46,7 @@ export class SettingsDriverAdapter implements ISettingsDriverV2 {
     const adapter = this;
     return {
       register: adapter.register.bind(adapter),
-      emitChange: adapter.emitChange.bind(adapter),
+      invalidate: adapter.invalidate.bind(adapter),
     };
   }
 
@@ -68,7 +68,7 @@ export class SettingsDriverAdapter implements ISettingsDriverV2 {
     return [...bySection.values()];
   }
 
-  emitChange(): void {
+  invalidate(): void {
     this.revision++;
   }
 }

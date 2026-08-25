@@ -62,8 +62,10 @@
         required
         errors={fieldErrors["organization_id"]}
         value={organization_id}
-        onSelected={(value: string | number) => {
-          organization_id = value as number;
+        onSelected={(value: string | number | null) => {
+          // the select emits the id as a string; the record stores a number.
+          // Coerce so dirty-state comparison and the payload use a real number
+          organization_id = (value == null ? null : Number(value)) as number;
         }}
         searchKeyWithOperation="name__match"
       />

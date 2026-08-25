@@ -1,14 +1,12 @@
 <script lang="ts">
   import { ZoomInIcon, ZoomOutIcon } from "@lucide/svelte";
 
-  import ToolTooltip from "$lib/components/ui/Tooltips/ToolTooltip.svelte";
-  import Button from "$lib/components/ui/Button/Button.svelte";
+  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
   import Slider from "$lib/components/ui/Slider/Slider.svelte";
 
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { getDriver, claimDriverShortcut } from "$lib/state/driver.svelte";
-  import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
+  import { claimDriverShortcut } from "$lib/state/driver.svelte";
 
   // Props
   interface Props {
@@ -60,23 +58,13 @@
     zoomFn?.(v, viewport.video.currentFrame.value);
   }
 
-  function cmdShortcut(name: string): string | undefined {
-    const s = getDriver().command.getShortcut(name);
-    return s ? getShortcutLabel(s) : undefined;
-  }
 </script>
 
 <!-- onkeydowncapture: the bits-ui zoom slider handles arrow keys natively
      (Cmd+Arrow jumps it to min/max), which collides with frame-navigation
      shortcuts. Let the driver claim its shortcuts before the slider sees them. -->
 <div id="timeline-controller" class="flex items-center gap-2" onkeydowncapture={claimDriverShortcut}>
-  <ToolTooltip label="Zoom Out" shortcut={cmdShortcut("timeline.zoom_out")}>
-    {#snippet trigger()}
-      <Button variant="outline" size="icon-sm" onclick={zoomOut}>
-        <ZoomOutIcon />
-      </Button>
-    {/snippet}
-  </ToolTooltip>
+  <KbdTooltipButton label="Zoom Out" commandName="timeline.zoom_out" icon={ZoomOutIcon} variant="outline" size="icon-sm" onclick={zoomOut} />
 
   <Slider
     type="single"
@@ -88,11 +76,5 @@
     onValueChange={handleSliderZoom}
   />
 
-  <ToolTooltip label="Zoom In" shortcut={cmdShortcut("timeline.zoom_in")}>
-    {#snippet trigger()}
-      <Button variant="outline" size="icon-sm" onclick={zoomIn}>
-        <ZoomInIcon />
-      </Button>
-    {/snippet}
-  </ToolTooltip>
+  <KbdTooltipButton label="Zoom In" commandName="timeline.zoom_in" icon={ZoomInIcon} variant="outline" size="icon-sm" onclick={zoomIn} />
 </div>

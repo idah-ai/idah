@@ -42,13 +42,30 @@ RSpec.describe Exports::DatasetContext do
         ),
         headers: { 'Content-Type': "application/json" }
       )
+
+    # The context loads its dataset on initialization
+    stub_request(:get, "http://idah.test/dataset/datasets/#{dataset_id}").
+      to_return(
+        status: 200,
+        body: JSON.generate(
+          data: {
+            type: "dataset:datasets",
+            id: dataset_id,
+            attributes: {
+              name: "Dataset 1",
+              modality: "idah-video"
+            }
+          }
+        ),
+        headers: { 'Content-Type': "application/json" }
+      )
   end
 
   describe "#entries" do
     it "returns an array of EntryContext objects" do
       stub_request(
         :get,
-        "http://idah.test/dataset/entries?filter%5Bdataset_id%5D=019b4e62-ab2f-71aa-af3d-0f6e06bc1126&page%5Bnumber%5D=1&page%5Bsize%5D=1000"
+        "http://idah.test/dataset/entries?filter%5Bdataset_id%5D=#{dataset_id}&page%5Bnumber%5D=1&page%5Bsize%5D=1000"
       ).
         to_return(
           status: 200,
@@ -58,9 +75,43 @@ RSpec.describe Exports::DatasetContext do
 
       entries = subject.entries
       expect(entries).to be_an(Array)
-      expect(entries.size).to eq(1)
+      expect(entries.size).to eq(3)
       expect(entries.first).to be_a(Exports::EntryContext)
-      expect(entries.first.id).to eq("019bc0fa-025e-7a8c-a3f4-82b276508315")
+      expect(entries.first.record.id).to eq("019bba87-9818-7967-8233-35fa9807d8fa")
+    end
+
+    it "does not filter on the status when no filter is given" do
+      expect(Api[:idah].dataset.entries).to receive(:index_all).with(
+        filter: { dataset_id: },
+        included: []
+      ).and_return([])
+
+      expect(subject.entries).to eq([])
+    end
+
+    it "merges the given filter with the dataset id" do
+      expect(Api[:idah].dataset.entries).to receive(:index_all).with(
+        filter: { status: "completed", dataset_id: },
+        included: []
+      ).and_return([])
+
+      expect(subject.entries({ status: "completed" })).to eq([])
+    end
+
+    it "requests only the completed entries when filtering on the completed status" do
+      url = "http://idah.test/dataset/entries?filter%5Bdataset_id%5D=#{dataset_id}" \
+            "&filter%5Bstatus%5D=completed&page%5Bnumber%5D=1&page%5Bsize%5D=1000"
+
+      stub = stub_request(:get, url).to_return(
+        status: 200,
+        body: entries_json,
+        headers: { 'Content-Type': "application/json" }
+      )
+
+      entries = subject.entries({ status: "completed" })
+
+      assert_requested(stub)
+      expect(entries.size).to eq(3)
     end
   end
 end

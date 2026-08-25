@@ -16,7 +16,8 @@ class ExportsExpo < BaseExpo
     show
 
     index do
-      allowed_filters :created_at__gte,
+      allowed_filters :id__in,
+                      :created_at__gte,
                       :created_at__lte
     end
     # delete
@@ -45,7 +46,10 @@ class ExportsExpo < BaseExpo
       field :project_id, type: Integer, required: true
       field :dataset_ids, type: Array, required: true
       field :exporter, type: String, required: true
-      field :options, type: Hash, required: false, default: { include_medias: "original" }
+      field :options, Hash, default: {} do
+        field :include_medias, String, default: "original"
+        field :completed_entries, TrueClass, default: true
+      end
     end
   end
   def export

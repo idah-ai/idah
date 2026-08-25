@@ -28,7 +28,7 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         const value = opts?.value as TimeDisplay | undefined;
         ui.timeDisplay = value ?? ((ui.timeDisplay === "frames" ? "time" : "frames") as TimeDisplay);
-        driver.settings.emitChange();
+        driver.settings.invalidate();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

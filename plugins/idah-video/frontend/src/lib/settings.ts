@@ -52,7 +52,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "nearest-neighbor", label: "Pixelated" },
             ],
             // Route through the command so the shortcut/palette and this menu
-            // share one mutation path; the command fires settings.emitChange().
+            // share one mutation path; the command fires settings.invalidate().
             get: () => ui.renderMode,
             set: (v: string) => driver.command.call("ui.toggle_render_mode", { value: v }),
           },

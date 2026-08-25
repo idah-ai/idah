@@ -30,7 +30,7 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         const value = opts?.value as RenderMode | undefined;
         ui.renderMode = value ?? ((ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode);
-        driver.settings.emitChange();
+        driver.settings.invalidate();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

@@ -5,9 +5,10 @@
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import OrganizationFormModal from "@/components/app/organizations/overlays/organization-form-modal.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
@@ -36,7 +37,6 @@
   let organizationRecord: OrganizationRecord | undefined = $state(undefined);
   let relatedProjectRecords: ProjectRecord[] = $state([]);
   let openEditOrganizationFormModal: boolean = $state(false);
-  let openConfirmDeleteOrganizationModal: boolean = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -57,9 +57,7 @@
           description:
             relatedProjectRecords.length > 0 ? "Cannot delete organization when projects are associated." : undefined,
           disabled: relatedProjectRecords.length > 0,
-          action: () => {
-            openConfirmDeleteOrganizationModal = true;
-          },
+          action: confirmDeleteOrganization,
         },
       ],
     },
@@ -95,21 +93,30 @@
     return projectsRes.data;
   }
 
-  async function deleteOrganization() {
-    try {
-      await organizationsBackendDataSource.delete(organizationId, { showErrorToast: false });
-      openConfirmDeleteOrganizationModal = false;
-      $refetches.organizations.list = new Date();
-      goto(resolve("/organizations"));
-      showToast.success({
-        title: "Organization deleted",
-        description: organizationRecord
-          ? `The organization "${organizationRecord?.name}" has been deleted.`
-          : "The organization has been deleted.",
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
+  async function confirmDeleteOrganization(): Promise<void> {
+    const choice = await showConfirmModal({
+      title: "Delete Organization",
+      description: `Are you sure you want to delete this organization "${organizationRecord?.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await organizationsBackendDataSource.delete(organizationId, { showErrorToast: false });
+          $refetches.organizations.list = new Date();
+          showToast.success({
+            title: "Organization deleted",
+            description: organizationRecord
+              ? `The organization "${organizationRecord?.name}" has been deleted.`
+              : "The organization has been deleted.",
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
+    if (choice === ConfirmModalChoice.Cancel) return;
+
+    // Navigating inside `onConfirm` would run while the modal is still open.
+    goto(resolve("/organizations"));
   }
 </script>
 
@@ -121,12 +128,5 @@
     action="update"
     {organizationRecord}
     bind:open={openEditOrganizationFormModal}
-  />
-
-  <ConfirmModal
-    title="Delete Organization"
-    description="Are you sure you want to delete this organization? This action cannot be undone."
-    onConfirm={deleteOrganization}
-    bind:open={openConfirmDeleteOrganizationModal}
   />
 {/if}

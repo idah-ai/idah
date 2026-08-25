@@ -29,7 +29,7 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         const value = opts?.value as ColorMode | undefined;
         ui.colorMode = value ?? ((ui.colorMode === "category" ? "random" : "category") as ColorMode);
-        driver.settings.emitChange();
+        driver.settings.invalidate();
       },
       isCombinable() {
         return false;
