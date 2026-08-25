@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type ColorMode } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "ui.toggle_color_mode",
+  name: "idah-video:ui.toggle-color-mode",
   group: "Display",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,

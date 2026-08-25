@@ -8,7 +8,7 @@ import { ui, type RenderMode } from "$lib/state/ui.svelte";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
-  name: "ui.toggle_render_mode",
+  name: "idah-image:ui.toggle-render-mode",
   group: "Display",
   modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE],
   shortcut: null,

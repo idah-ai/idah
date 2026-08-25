@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.keyframe_delete — Remove a keyframe from an annotation
+// idah-video:annotation.keyframe.delete — Remove a keyframe from an annotation
 // Undoable: restores the keyframe.
 //
 // Usage:
-//   driver.command.call("annotation.keyframe_delete", { annotationId: "...", frame: 42 });
+//   driver.command.call("idah-video:annotation.keyframe.delete", { annotationId: "...", frame: 42 });
 //
 // Shortcut: Delete
 // Active only when there's a selected annotation and the current frame
@@ -19,7 +19,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.keyframe_delete",
+  name: "idah-video:annotation.keyframe.delete",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "Control+Delete",

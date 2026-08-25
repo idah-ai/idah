@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.delete_all — Delete all annotations
+// idah-video:annotation.delete-all — Delete all annotations
 // Undoable: restores all deleted annotations.
 //
 // Usage:
-//   driver.command.call("annotation.delete_all");
+//   driver.command.call("idah-video:annotation.delete-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
@@ -13,7 +13,7 @@ import { noopAction } from "..";
 import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
-  name: "annotation.delete_all",
+  name: "idah-video:annotation.delete-all",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

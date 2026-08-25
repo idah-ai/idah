@@ -713,7 +713,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     const driver = this;
 
     this.command.register({
-      name: "core.undo",
+      name: "core:history.undo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
       shortcut: "Control+Z",
@@ -721,7 +721,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       longDescription: "Undo the last action",
       callback: () => ({
         command: {
-          name: "core.undo",
+          name: "core:history.undo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -741,7 +741,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     });
 
     this.command.register({
-      name: "core.redo",
+      name: "core:history.redo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
       shortcut: "Control+Shift+Z",
@@ -749,7 +749,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       longDescription: "Redo the last undone action",
       callback: () => ({
         command: {
-          name: "core.redo",
+          name: "core:history.redo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -769,7 +769,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     });
 
     this.command.register({
-      name: "core.exit_mode",
+      name: "core:mode.exit",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
       shortcut: "Escape",
@@ -777,7 +777,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       longDescription: "Return to the default selection mode",
       callback: () => ({
         command: {
-          name: "core.exit_mode",
+          name: "core:mode.exit",
           group: "General",
           modes: [],
           shortcut: null,

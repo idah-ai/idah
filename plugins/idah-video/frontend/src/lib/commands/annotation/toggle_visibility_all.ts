@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_visibility_all — Toggle visibility of all annotations
+// idah-video:annotation.toggle-visibility-all — Toggle visibility of all annotations
 // Undoable: restores the previous hidden state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle_visibility_all");
+//   driver.command.call("idah-video:annotation.toggle-visibility-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
@@ -12,7 +12,7 @@ import { data } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.toggle_visibility_all",
+  name: "idah-video:annotation.toggle-visibility-all",
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,

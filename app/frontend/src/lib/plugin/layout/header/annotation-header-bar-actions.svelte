@@ -259,7 +259,7 @@
       <KbdTooltipButton
         label="All Notes"
         {driver}
-        commandName="core.toggle_note_sidebar"
+        commandName="core:ui.toggle-note-sidebar"
         align="center"
         delayDuration={100}
         variant={noteSidebarOpen ? "default" : "ghost"}
@@ -272,7 +272,7 @@
     <KbdTooltipButton
       label="Shortcuts"
       {driver}
-      commandName="core.palette"
+      commandName="core:ui.palette"
       icon={KeyboardIcon}
       align="center"
       delayDuration={100}

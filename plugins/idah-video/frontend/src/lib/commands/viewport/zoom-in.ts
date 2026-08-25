@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.zoom_in — Zoom into the viewport
+// idah-video:viewport.zoom-in — Zoom into the viewport
 // Shortcut: Equal (+/= key)
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.zoom_in",
+  name: "idah-video:viewport.zoom-in",
   group: "Viewport",
   modes: ["editor", "review"] as string[],
   shortcut: "Equal",
