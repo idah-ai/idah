@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.goto — Jump to the first frame of the selected annotation
+// idah-video:selection.go-to — Jump to the first frame of the selected annotation
 // Undoable: returns to the previous frame.
 // ---------------------------------------------------------------------------
 import { selection } from "$lib/state/selection.svelte";
@@ -11,7 +11,7 @@ function hasAnnotationSelection(): boolean {
 }
 
 export const command = {
-  name: "selection.goto",
+  name: "idah-video:selection.go-to",
   group: "Selection",
   modes: ["editor"],
   shortcut: null,

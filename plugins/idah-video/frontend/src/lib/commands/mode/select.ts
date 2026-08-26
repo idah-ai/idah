@@ -2,7 +2,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "mode.selection",
+  name: "idah-video:tool.selection",
   group: "Tools",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: "D",

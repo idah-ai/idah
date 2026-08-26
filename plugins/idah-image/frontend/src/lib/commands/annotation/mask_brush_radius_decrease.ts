@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// mask.brush_radius_decrease — Decrease mask brush radius
+// idah-image:annotation.mask-brush.decrease-radius — Decrease mask brush radius
 // Shortcut: - (only in mask brush mode)
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
@@ -7,7 +7,7 @@ import { IMAGE_MASK } from "$lib/types";
 import { maskTool } from "$lib/state/mask-tool.svelte";
 
 export const command = {
-  name: "mask.brush_radius_decrease",
+  name: "idah-image:annotation.mask-brush.decrease-radius",
   group: "Annotation",
   modes: [IMAGE_MASK],
   shortcut: "BracketLeft",

@@ -20,6 +20,7 @@
   import { tilesTouchedByPolygon } from "$lib/mask/grid";
   import { fillPolygon } from "$lib/mask/raster";
   import { selection } from "$lib/state/selection.svelte";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { IMAGE_MASK } from "$lib/types";
   import { maskTool } from "$lib/state/mask-tool.svelte";
@@ -65,6 +66,14 @@
       // If editing an existing mask annotation, use its ID so the flush
       // writes to the existing annotation instead of creating a new one.
       const sel = selection.value;
+      // Defense-in-depth: if the selected annotation is a locked mask, bail
+      // out entirely — the ShapesContainer mouse-down guard should already
+      // have stopped the gesture, but this keeps the close path safe on its
+      // own (e.g. if the annotation got locked mid-gesture).
+      if (sel && (sel.shape as any)?.type === IMAGE_MASK && annotation.isLocked(sel)) {
+        maskPolygonDraft.clearPoints();
+        return false;
+      }
       const existingAnnId = sel && (sel.shape as any)?.type === IMAGE_MASK ? sel.id : undefined;
 
       // NOTE(continuePending): `continuePending: existingAnnId === undefined`
@@ -119,7 +128,7 @@
     }
 
     // Add a new point through the command manager (undoable per-vertex)
-    getDriver().command.call("annotation.mask_polygon.add_point", { point: [normX, normY] });
+    getDriver().command.call("idah-image:annotation.mask-polygon.add-point", { point: [normX, normY] });
     return true;
   }
 

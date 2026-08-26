@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.exit_mode",
+    name: "core:mode.exit",
     group: "General",
     // TODO modes ['*'] ?
     modes: ["*"],
@@ -11,7 +11,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: "Return to the default selection mode",
     callback: () => ({
       command: {
-        name: "core.exit_mode",
+        name: "core:mode.exit",
         group: "General",
         modes: [],
         shortcut: null,

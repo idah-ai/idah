@@ -143,7 +143,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this.stats = new StatsDriverAdapter(this);
 
     // Build settings driver — plugin-registered settings shown in the topbar menu.
-    // Plugins get the sealed (register/emitChange) view; core keeps the full
+    // Plugins get the sealed (register/invalidate) view; core keeps the full
     // adapter (collect/revision) via `settingsAdapter`, same split as notes.
     const settingsAdapter = new SettingsDriverAdapter();
     this.settings = settingsAdapter.sealed();
@@ -185,7 +185,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   /**
    * @internal Used by the core topbar settings menu only.
    * Returns the concrete SettingsDriverAdapter (not the sealed
-   * ISettingsDriverV2) for access to core-only methods (collect, onChange).
+   * ISettingsDriverV2) for access to core-only methods (collect, revision).
    */
   get settingsAdapter(): SettingsDriverAdapter | null {
     return this.#settingsAdapter;

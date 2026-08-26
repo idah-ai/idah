@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.skip_forward — Skip forward by the configured frame step
+// idah-video:viewport.skip-forward — Skip forward by the configured frame step
 // Shortcut: Shift+ArrowRight
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ import { ui } from "$lib/state/ui.svelte";
 function makeAction(): ICommandAction {
   const step = ui.frameStep;
   return {
-    command: { name: "viewport.skip_forward", group: "Viewport", modes: ["editor", "review"], shortcut: null, shortDescription: "Skip forward", longDescription: "Jump forward by the configured number of frames" },
+    command: { name: "idah-video:viewport.skip-forward", group: "Viewport", modes: ["editor", "review"], shortcut: null, shortDescription: "Skip forward", longDescription: "Jump forward by the configured number of frames" },
     do() {
       // stepBy gates on framePending (and clamps), so scrubbing can never
       // run ahead of what is painted on screen.
@@ -22,7 +22,7 @@ function makeAction(): ICommandAction {
 }
 
 export const command = {
-  name: "viewport.skip_forward",
+  name: "idah-video:viewport.skip-forward",
   group: "Viewport",
   modes: ["editor", "review"] as string[],
   shortcut: "Shift+ArrowRight",

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.center — Center viewport on the selected annotation's AABB
+// idah-image:selection.center — Center viewport on the selected annotation's AABB
 // Undoable: restores the previous viewport transform.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
@@ -16,7 +16,7 @@ function hasAnnotationAtCurrentFrame(): boolean {
 }
 
 export const command = {
-  name: "selection.center",
+  name: "idah-image:selection.center",
   group: "Selection",
   modes: [DEFAULT_MODE, REVIEW_MODE],
   shortcut: "Control+Shift+C",

@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type RenderMode } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "ui.toggle_render_mode",
+  name: "idah-video:ui.toggle-render-mode",
   group: "Display",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,
@@ -30,7 +30,7 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         const value = opts?.value as RenderMode | undefined;
         ui.renderMode = value ?? ((ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode);
-        driver.settings.emitChange();
+        driver.settings.invalidate();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

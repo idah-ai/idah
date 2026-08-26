@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.delete_category
+// idah-video:annotation.category.delete
 // Delete all annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.delete_category",
+//     "idah-video:annotation.category.delete",
 //     {
 //       category: "vehicle",
 //     },
@@ -28,7 +28,7 @@ import { noopAction } from "..";
 import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
-  name: "annotation.delete_category",
+  name: "idah-video:annotation.category.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.retry",
+    name: "core:sync.retry",
     group: "General",
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     shortcut: null,
@@ -12,7 +12,7 @@ export function register(driver: IdahDriverV2) {
       "If the error persists, use Reset cache to discard local changes and reload from the server.",
     callback: () => ({
       command: {
-        name: "core.retry",
+        name: "core:sync.retry",
         group: "General",
         modes: [],
         shortcut: null,

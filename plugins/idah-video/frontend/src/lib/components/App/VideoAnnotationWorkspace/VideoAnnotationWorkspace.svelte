@@ -28,6 +28,7 @@
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
+  import VideoCanvas from "$lib/components/App/Viewport/VideoCanvas.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
 
@@ -63,6 +64,7 @@
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
+  let canvasElement: HTMLCanvasElement | undefined = $state();
 
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
@@ -279,7 +281,7 @@
       frames: frames as IVideoFrameSelection[],
     };
 
-    getDriver().command.call("annotation.add", { shape: videoShape, value });
+    getDriver().command.call("idah-video:annotation.add", { shape: videoShape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -298,19 +300,19 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("idah-video:annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.keyframe_add", { annotationId: id, selection });
+    getDriver().command.call("idah-video:annotation.keyframe.add", { annotationId: id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.keyframe_delete", { annotationId, frame });
+    getDriver().command.call("idah-video:annotation.keyframe.delete", { annotationId, frame });
   }
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
@@ -358,7 +360,7 @@
       if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
     } else if (selGroup) {
       // Update category for all annotations in the group
-      getDriver().command.call("annotation.updateGroupCategory", {
+      getDriver().command.call("idah-video:annotation.update-group-category", {
         groupId: selGroup.groupId,
         categoryIdToBeUpdate: value.category,
       });
@@ -461,7 +463,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("idah-video:annotation.update", { annotation: ann, value });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
@@ -689,8 +691,26 @@
           -->
 
           <ResizablePane defaultSize={75}>
-            <section id="video-section" class="flex h-full w-full flex-1">
+            <section id="video-section" class="relative flex h-full w-full flex-1">
               {#if mediaInfo}
+                <!-- Hidden decode source outside the zoom transform; frames land on VideoCanvas below. -->
+                <Video
+                  bind:this={player}
+                  canvas={canvasElement}
+                  src={mediaUrl}
+                  fps={mediaInfo.meta.fps as number}
+                  onTogglePlay={(_isPlaying: boolean) => {}}
+                  onResize={() => {
+                    // video resized
+                  }}
+                  onFrameUpdate={(currentFrame: number) => {
+                    setAnnotationFrame(currentFrame);
+                  }}
+                  onVolumeChange={(level: number, muted: boolean) => {
+                    viewport.video.sound = { level: level, muted };
+                  }}
+                />
+
                 <ShapesContainer
                   bind:this={overlay}
                   {annotations_promise}
@@ -703,23 +723,7 @@
                   onChangeFrame={seekToFrame}
                   isPlaying={viewport.video.status === "play"}
                 >
-                  <!-- container context ?-->
-                  <Video
-                    bind:this={player}
-                    bind:element={player_container}
-                    src={mediaUrl}
-                    fps={mediaInfo.meta.fps as number}
-                    onTogglePlay={(_isPlaying: boolean) => {}}
-                    onResize={() => {
-                      // video resized
-                    }}
-                    onFrameUpdate={(currentFrame: number) => {
-                      setAnnotationFrame(currentFrame);
-                    }}
-                    onVolumeChange={(level: number, muted: boolean) => {
-                      viewport.video.sound = { level: level, muted };
-                    }}
-                  />
+                  <VideoCanvas bind:canvas={canvasElement} bind:element={player_container} />
                 </ShapesContainer>
               {/if}
 
