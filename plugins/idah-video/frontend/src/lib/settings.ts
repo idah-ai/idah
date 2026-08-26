@@ -10,9 +10,8 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { LabelVisibility } from "./state/ui.svelte";
 import { ui } from "./state/ui.svelte";
 
-// Account-settings key + plugin id for the persisted category label visibility.
+// Account-settings key for the persisted category label visibility.
 const CATEGORY_LABEL_VISIBILITY_KEY = "annotation:category.label-visibility";
-const PLUGIN = "idah-video";
 
 export function registerSettings(driver: IIdahDriverV2): void {
   // NOTE: these descriptors are NOT type-checked here — the setting types are
@@ -39,7 +38,8 @@ export function registerSettings(driver: IIdahDriverV2): void {
             type: "slider",
             key: "annotation-opacity",
             label: "Annotation opacity",
-            description: "Fade the fill of annotations — the border stroke stays fully visible. Resets to 100 each time the plugin loads.",
+            description:
+              "Fade the fill of annotations — the border stroke stays fully visible. Resets to 100 each time the plugin loads.",
             min: 0,
             max: 100,
             step: 1,
@@ -98,11 +98,11 @@ export function registerSettings(driver: IIdahDriverV2): void {
             // Set directly rather than through a command: unlike the other
             // options this has no shortcut or palette entry, so the popover is
             // the only mutation path and core emits the change after set().
-            // Persist per plugin via upsert; hydrateSettings() seeds it on init.
+            // Persist in the active plugin namespace; hydrateSettings() seeds it on init.
             get: () => ui.labelVisibility,
             set: (v: string) => {
               ui.labelVisibility = v as LabelVisibility;
-              void driver.accountSettings.upsert(CATEGORY_LABEL_VISIBILITY_KEY, v, PLUGIN);
+              void driver.accountSettings.upsert(CATEGORY_LABEL_VISIBILITY_KEY, v);
             },
           },
         ],
@@ -116,7 +116,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
 // Plugin and core live in separate Svelte runtimes, so this is a one-time read
 // rather than a reactive subscription.
 export function hydrateSettings(driver: IIdahDriverV2): void {
-  const v = driver.accountSettings.get(CATEGORY_LABEL_VISIBILITY_KEY, PLUGIN);
+  const v = driver.accountSettings.get(CATEGORY_LABEL_VISIBILITY_KEY);
   if (v === "always" || v === "hover" || v === "never") {
     ui.labelVisibility = v;
   }

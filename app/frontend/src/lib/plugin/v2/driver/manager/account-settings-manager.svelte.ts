@@ -9,37 +9,37 @@
 // components reading it re-render automatically.
 // -----------------------------------------------------------------------
 import { SvelteMap } from "svelte/reactivity";
+import type { AccountSettingValue } from "../../types";
 import { accountSettingBackendDataSource, commandShortcutKey } from "@/data/model/setting/account_setting/record";
-
-type SettingValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
 export class AccountSettingsManager {
   // All loaded settings, keyed by (plugin, key) → { id, value }. A composite key
   // is required because the same key can appear under several plugins.
-  private settings = new SvelteMap<string, { id: string; value: SettingValue }>();
+  private settings = new SvelteMap<string, { id: string; value: AccountSettingValue }>();
 
   // Live command-name → shortcut map. SAME reactive object handed to
   // CommandManagerV2. Mutated in place so the reference never changes.
   private overrides = $state<Record<string, string>>({});
 
+  constructor(private readonly plugin: string) {}
+
   getShortcutOverrides(): Record<string, string> {
     return this.overrides;
   }
 
-  // Composite map key. plugin defaults to "" for core (non-plugin) settings.
-  #mapKey(key: string, plugin = ""): string {
-    return `${plugin} ${key}`;
+  // Composite map key bound to this manager's active plugin namespace.
+  #mapKey(key: string): string {
+    return `${this.plugin} ${key}`;
   }
 
-  get(key: string, plugin = ""): SettingValue | undefined {
-    return this.settings.get(this.#mapKey(key, plugin))?.value;
+  get(key: string): AccountSettingValue | undefined {
+    return this.settings.get(this.#mapKey(key))?.value;
   }
 
-  // Create-or-update a setting by (key, plugin) and cache the returned record.
-  // The single generic write path exposed to plugins and core UI.
-  async upsert(key: string, value: SettingValue, plugin = ""): Promise<void> {
-    const { data } = await accountSettingBackendDataSource.upsert(key, value, plugin);
-    this.settings.set(this.#mapKey(key, plugin), { id: data.id, value: data.value as SettingValue });
+  // Create-or-update a setting in this manager's plugin namespace.
+  async upsert(key: string, value: AccountSettingValue): Promise<void> {
+    const { data } = await accountSettingBackendDataSource.upsert(key, value, this.plugin);
+    this.settings.set(this.#mapKey(key), { id: data.id, value: data.value as AccountSettingValue });
   }
 
   async load(accountId: string): Promise<void> {
@@ -51,7 +51,8 @@ export class AccountSettingsManager {
 
     this.settings.clear();
     for (const rec of res.data) {
-      this.settings.set(this.#mapKey(rec.key, rec.plugin), { id: rec.id, value: rec.value as SettingValue });
+      if (rec.plugin !== this.plugin) continue;
+      this.settings.set(this.#mapKey(rec.key), { id: rec.id, value: rec.value as AccountSettingValue });
     }
 
     this.#syncOverridesFromStore();
@@ -89,8 +90,8 @@ export class AccountSettingsManager {
   }
 
   async #persist(): Promise<void> {
-    // Reuse the generic upsert path (plugin "" for this core setting). Creates
-    // the row on first write, updates it after — no account-creation seed needed.
+    // Reuse the generic upsert path. Creates the row on first write, updates it
+    // after — no account-creation seed needed.
     await this.upsert(commandShortcutKey, { ...this.overrides });
   }
 }

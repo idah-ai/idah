@@ -666,6 +666,8 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
 
+export type AccountSettingValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
+
 /**
  * Loads & persists the current user's account settings. A generic store
  * (themes / prefs later); today it backs command-palette shortcut overrides.
@@ -675,17 +677,16 @@ export interface IAccountSettingsDriverV2 {
   load(accountId: string): Promise<void>;
 
   /**
-   * Read a raw setting value by (key, plugin), or undefined if not loaded.
-   * plugin defaults to "" for core (non-plugin) settings.
+   * Read a setting in the active plugin's namespace, or undefined if not
+   * loaded.
    */
-  get(key: string, plugin?: string): unknown;
+  get(key: string): AccountSettingValue | undefined;
 
   /**
-   * Create-or-update a setting by (key, plugin) and persist it (upsert). The
-   * generic write path for plugin and core settings — the row is created on
-   * first write and updated afterward.
+   * Create-or-update a setting in the active plugin's namespace. The row is
+   * created on first write and updated afterward.
    */
-  upsert(key: string, value: unknown, plugin?: string): Promise<void>;
+  upsert(key: string, value: AccountSettingValue): Promise<void>;
 
   /**
    * The live command-name → shortcut override map. Stable reference, mutated
