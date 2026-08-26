@@ -19,6 +19,7 @@
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
   import FramePendingOverlay from "$lib/components/App/Viewport/FramePendingOverlay.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
+  import AnnotationLabels from "./AnnotationLabels.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
@@ -604,7 +605,7 @@
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
-    getDriver().command.call("timeline.scroll_to_annotation");
+    getDriver().command.call("idah-video:timeline.scroll-to-annotation");
   }
 </script>
 
@@ -635,7 +636,12 @@
     <!-- Crosshair (for build modes) -->
     <Crosshair cursor={sceneMousePosition} visible={showCrosshair} />
 
-    <!-- Rendered annotations -->
+    <!--
+      Rendered annotations — ui.annotationOpacity is applied inside BBoxShape/PolygonShape
+      as a fill-opacity multiplier only, so the border stroke always stays at full opacity
+      regardless of the slider. Scoped to existing annotations only: creation previews, the
+      pending annotation, and note markers below are unaffected.
+    -->
     {#each visibleAnnotations as ann, i (ann.id)}
       <AnnotationGeometry
         bind:this={_compRefs[i]}
@@ -721,6 +727,13 @@
         <NoteMarkers />
       {/if}
     </g>
+
+    <!--
+      Category labels last, so they sit above every shape. `visibleAnnotations`
+      already excludes hidden annotations and those outside the current frame
+      range, so their labels disappear with them.
+    -->
+    <AnnotationLabels annotations={visibleAnnotations} />
   </svg>
 
   <!-- Layer 2: Frame-pending blocking overlay -->

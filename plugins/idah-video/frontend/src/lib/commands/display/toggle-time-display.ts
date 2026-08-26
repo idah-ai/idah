@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type TimeDisplay } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "ui.toggle_time_display",
+  name: "idah-video:ui.toggle-time-display",
   group: "Display",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,
@@ -22,10 +22,13 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
+    // opts.value sets an explicit value (settings menu); no opts toggles (shortcut).
+    callback: (opts) => ({
       command: { ...command },
       do() {
-        ui.timeDisplay = (ui.timeDisplay === "frames" ? "time" : "frames") as TimeDisplay;
+        const value = opts?.value as TimeDisplay | undefined;
+        ui.timeDisplay = value ?? ((ui.timeDisplay === "frames" ? "time" : "frames") as TimeDisplay);
+        driver.settings.invalidate();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

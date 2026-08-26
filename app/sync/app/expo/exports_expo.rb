@@ -46,7 +46,10 @@ class ExportsExpo < BaseExpo
       field :project_id, type: Integer, required: true
       field :dataset_ids, type: Array, required: true
       field :exporter, type: String, required: true
-      field :options, type: Hash, required: false, default: { include_medias: "original" }
+      field :options, Hash, default: {} do
+        field :include_medias, String, default: "original"
+        field :completed_entries, TrueClass, default: true
+      end
     end
   end
   def export

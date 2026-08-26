@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.delete — Delete a specific annotation
+// idah-image:annotation.delete — Delete a specific annotation
 // Undoable: restores the annotation.
 //
 // Usage:
-//   driver.command.call("annotation.delete", {
+//   driver.command.call("idah-image:annotation.delete", {
 //     annotationId: "some-id"
 //   });
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ import { IMAGE_MASK } from "$lib/types";
 import { invalidateAll } from "$lib/mask/tile-cache";
 
 export const command = {
-  name: "annotation.delete",
+  name: "idah-image:annotation.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

@@ -128,7 +128,7 @@
     }
 
     // Add a new point through the command manager (undoable per-vertex)
-    getDriver().command.call("annotation.mask_polygon.add_point", { point: [normX, normY] });
+    getDriver().command.call("idah-image:annotation.mask-polygon.add-point", { point: [normX, normY] });
     return true;
   }
 

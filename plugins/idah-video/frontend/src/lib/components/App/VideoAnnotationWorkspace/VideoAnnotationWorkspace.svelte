@@ -293,7 +293,7 @@
       frames: frames as IVideoFrameSelection[],
     };
 
-    getDriver().command.call("annotation.add", { shape: videoShape, shape_type: type, category, properties });
+    getDriver().command.call("idah-video:annotation.add", { shape: videoShape, shape_type: type, category, properties });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -312,19 +312,19 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("idah-video:annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.keyframe_add", { annotationId: id, selection });
+    getDriver().command.call("idah-video:annotation.keyframe.add", { annotationId: id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.keyframe_delete", { annotationId, frame });
+    getDriver().command.call("idah-video:annotation.keyframe.delete", { annotationId, frame });
   }
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
@@ -375,7 +375,7 @@
         updateAnnotationValue($state.snapshot(selAnnotation), category, $state.snapshot(effectiveProperties));
     } else if (selGroup) {
       // Update category for all annotations in the group
-      getDriver().command.call("annotation.updateGroupCategory", {
+      getDriver().command.call("idah-video:annotation.update-group-category", {
         groupId: selGroup.groupId,
         categoryIdToBeUpdate: category,
       });
@@ -484,7 +484,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, category, properties });
+    getDriver().command.call("idah-video:annotation.update", { annotation: ann, category, properties });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {

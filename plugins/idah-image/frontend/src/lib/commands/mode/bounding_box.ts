@@ -3,7 +3,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK } from "$lib/types";
 
 export const command = {
-  name: "mode.bounding_box",
+  name: "idah-image:tool.bounding-box",
   group: "Tools",
   modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_LINE, IMAGE_POLYGON, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_MASK],
   shortcut: "B",

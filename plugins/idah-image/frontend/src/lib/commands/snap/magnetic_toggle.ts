@@ -8,7 +8,7 @@ import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 
 export const command = {
-  name: "snap.magnetic_toggle",
+  name: "idah-image:snap.toggle-magnetic",
   group: "Tools",
   modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON],
   shortcut: "Shift+S",

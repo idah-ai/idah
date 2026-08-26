@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// mode.mask_polygon — Polygon mask fill tool
+// idah-image:tool.mask-polygon — Polygon mask fill tool
 //
 // Click to add polygon vertices. Double-click or click near the first
 // vertex to close the polygon and flush the fill to the backend.
@@ -16,7 +16,7 @@ import { toolPanel } from "$lib/state/tool-panel.svelte";
 import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
 
 export const command = {
-  name: "mode.mask_polygon",
+  name: "idah-image:tool.mask-polygon",
   group: "Tools",
   modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK],
   shortcut: "W",

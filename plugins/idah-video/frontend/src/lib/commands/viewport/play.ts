@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.play — Toggle video play / pause
+// idah-video:viewport.play — Toggle video play / pause
 // Shortcut: Space
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.play",
+  name: "idah-video:viewport.play",
   group: "Viewport",
   modes: ["editor", "review"],
   shortcut: "Space",

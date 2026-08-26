@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.zoom_out — Zoom out of the viewport
+// idah-video:viewport.zoom-out — Zoom out of the viewport
 // Shortcut: Minus (-/_ key)
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { viewport, VIEWPORT_MIN_ZOOM } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.zoom_out",
+  name: "idah-video:viewport.zoom-out",
   group: "Viewport",
   modes: ["editor", "review"] as string[],
   shortcut: "Minus",

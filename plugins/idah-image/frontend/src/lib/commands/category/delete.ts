@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.delete_category
+// idah-image:annotation.category.delete
 // Delete all annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.delete_category",
+//     "idah-image:annotation.category.delete",
 //     {
 //       category: "vehicle",
 //     },
@@ -29,7 +29,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 
 export const command = {
-  name: "annotation.delete_category",
+  name: "idah-image:annotation.category.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

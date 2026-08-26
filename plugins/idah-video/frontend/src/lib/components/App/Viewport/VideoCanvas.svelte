@@ -29,6 +29,7 @@
 
   <canvas
     class={["video-canvas", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
+    style="opacity: {ui.videoOpacity / 100};"
     width={media.width}
     height={media.height}
     bind:this={canvas}
@@ -52,7 +53,7 @@
 
   .video-wrapper {
     position: relative;
-    background-color: #e5e7eb;
+    background-color: var(--muted);
     display: flex;
     align-items: center;
     justify-content: center;

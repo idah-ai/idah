@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_category_visibility
+// idah-video:annotation.category.toggle-visibility
 // Toggle visibility of annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.toggle_category_visibility",
+//     "idah-video:annotation.category.toggle-visibility",
 //     {
 //       category: "vehicle",
 //     },
@@ -27,7 +27,7 @@ import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.toggle_category_visibility",
+  name: "idah-video:annotation.category.toggle-visibility",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

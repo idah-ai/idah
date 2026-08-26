@@ -11,6 +11,7 @@ import type {
   ICommandDriverV2,
   IToolbarDriverV2,
   IStatsDriverV2,
+  ISettingsDriverV2,
   IAccountSettingsDriverV2,
   IStatProvider,
   IAnnotationRecord,
@@ -648,6 +649,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
   readonly annotations: IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue>;
   readonly notes: INotesDriverV2;
   readonly stats: IStatsDriverV2;
+  // STUB (standalone dev): the real settings driver lives in core; the mock only
+  // needs to accept registrations so the plugin's registerSettings() call in
+  // init() doesn't crash. There's no topbar here, so nothing renders.
+  readonly settings: ISettingsDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
@@ -699,13 +704,20 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       collect: async () => (await Promise.all(statProviders.map((p) => p.collect()))).flat(),
     };
 
+    // STUB (standalone dev): accept setting registrations but render nothing —
+    // the topbar that consumes these lives in core, not in this mock harness.
+    this.settings = {
+      register: () => {},
+      invalidate: () => {},
+    };
+
     // ── Register default idah commands ────────────────────────────────
 
     const cmdMgr = this.commandMgr;
     const driver = this;
 
     this.command.register({
-      name: "core.undo",
+      name: "core:history.undo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
       shortcut: "Control+Z",
@@ -713,7 +725,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       longDescription: "Undo the last action",
       callback: () => ({
         command: {
-          name: "core.undo",
+          name: "core:history.undo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -733,7 +745,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     });
 
     this.command.register({
-      name: "core.redo",
+      name: "core:history.redo",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
       shortcut: "Control+Shift+Z",
@@ -741,7 +753,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       longDescription: "Redo the last undone action",
       callback: () => ({
         command: {
-          name: "core.redo",
+          name: "core:history.redo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -761,7 +773,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     });
 
     this.command.register({
-      name: "core.exit_mode",
+      name: "core:mode.exit",
       group: "General",
       modes: ["default", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
       shortcut: "Escape",
@@ -769,7 +781,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
       longDescription: "Return to the default selection mode",
       callback: () => ({
         command: {
-          name: "core.exit_mode",
+          name: "core:mode.exit",
           group: "General",
           modes: [],
           shortcut: null,

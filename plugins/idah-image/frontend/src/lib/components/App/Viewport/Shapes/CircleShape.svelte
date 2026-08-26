@@ -19,6 +19,8 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import { type Point } from "$lib/utils/math/point";
   import CircleHandler from "./Circle/_CircleHandler.svelte";
   import CircleScaleHandler from "./Circle/_CircleScaleHandler.svelte";
@@ -203,6 +205,8 @@
     stroke-width={12}
     vector-effect="non-scaling-stroke"
     style:outline="none"
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     role="button"
     tabindex="-1"
@@ -232,12 +236,13 @@
   />
 
   <!-- Visible filled circle -->
+  <!-- ui.annotationOpacity scales fill only — stroke stays at full opacity regardless of the slider -->
   <circle
     cx={displayCenter[0] * w}
     cy={displayCenter[1] * h}
     r={displayRadiusPx}
     fill={color}
-    fill-opacity={selected ? 0.4 : 0.2}
+    fill-opacity={(selected ? 0.7 : 0.4) * (ui.annotationOpacity / 100)}
     stroke={color}
     stroke-width={selected ? 2 : 1.5}
     vector-effect="non-scaling-stroke"

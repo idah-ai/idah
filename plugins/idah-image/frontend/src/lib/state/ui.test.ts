@@ -1,9 +1,11 @@
 // ---------------------------------------------------------------------------
 // ui.test.ts — Unit tests for UI state
 //
-// Tests the UIState store which includes:
+// Tests the UIState store, which keeps preferences in two tiers:
 //   - Dialog toggles (command dialog, debug console)
-//   - localStorage-backed preferences (frameStep, colorMode, renderMode, timeDisplay)
+//   - localStorage-backed (frameStep, colorMode, renderMode, timeDisplay)
+//   - session-only, reset on every plugin load (annotationOpacity,
+//     imageOpacity, labelVisibility)
 // ---------------------------------------------------------------------------
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ui } from "./ui.svelte";
@@ -160,6 +162,69 @@ describe("UIState", () => {
     });
   });
 
+  // ── annotationOpacity ───────────────────────────────────────────────
+
+  describe("annotationOpacity", () => {
+    it("defaults to 100", () => {
+      expect(ui.annotationOpacity).toBe(100);
+    });
+
+    it("does not persist to localStorage (session-only)", () => {
+      ui.annotationOpacity = 50;
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
+        "idah-image:settings:annotation-opacity",
+        expect.anything(),
+      );
+    });
+
+    it("returns the set value", () => {
+      ui.annotationOpacity = 0;
+      expect(ui.annotationOpacity).toBe(0);
+    });
+  });
+
+  // ── imageOpacity ────────────────────────────────────────────────────
+
+  describe("imageOpacity", () => {
+    it("defaults to 100", () => {
+      expect(ui.imageOpacity).toBe(100);
+    });
+
+    it("does not persist to localStorage (session-only)", () => {
+      ui.imageOpacity = 75;
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
+        "idah-image:settings:image-opacity",
+        expect.anything(),
+      );
+    });
+
+    it("returns the set value", () => {
+      ui.imageOpacity = 0;
+      expect(ui.imageOpacity).toBe(0);
+    });
+  });
+
+  // ── labelVisibility ─────────────────────────────────────────────────
+
+  describe("labelVisibility", () => {
+    it("defaults to never", () => {
+      expect(ui.labelVisibility).toBe("never");
+    });
+
+    it("does not persist to localStorage (session-only)", () => {
+      ui.labelVisibility = "always";
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith(
+        "idah-image:settings:label-visibility",
+        expect.anything(),
+      );
+    });
+
+    it("returns the set value", () => {
+      ui.labelVisibility = "hover";
+      expect(ui.labelVisibility).toBe("hover");
+    });
+  });
+
   // ── Independent state ───────────────────────────────────────────────
 
   it("maintains independent state for each preference", () => {
@@ -167,10 +232,16 @@ describe("UIState", () => {
     ui.colorMode = "random";
     ui.renderMode = "nearest-neighbor";
     ui.timeDisplay = "time";
+    ui.annotationOpacity = 42;
+    ui.imageOpacity = 17;
+    ui.labelVisibility = "always";
 
     expect(ui.frameStep).toBe(3);
     expect(ui.colorMode).toBe("random");
     expect(ui.renderMode).toBe("nearest-neighbor");
     expect(ui.timeDisplay).toBe("time");
+    expect(ui.annotationOpacity).toBe(42);
+    expect(ui.imageOpacity).toBe(17);
+    expect(ui.labelVisibility).toBe("always");
   });
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hover } from "$lib/state/hover.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
@@ -7,6 +8,7 @@
   import type { IVideoAnnotationShape } from "$lib/types";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { ui } from "$lib/state/ui.svelte";
   import {
     boundingBoxHandle,
     rotatePointN,
@@ -377,24 +379,23 @@
     "cursor-pointer"
   );
 
-  // ── Hover state for body cursor ───────────────────────────────────────
-  let over = $state(false);
 </script>
 
 {#if pathD}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- ui.annotationOpacity scales fill only — stroke stays at full opacity regardless of the slider -->
   <path
     d={pathD}
     fill={color}
-    fill-opacity={selected ? 0.6 : 0.3}
+    fill-opacity={(selected ? 0.7 : 0.4) * (ui.annotationOpacity / 100)}
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 1.5 : 1}
     style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
     style={shapeStyleString}
-    onmouseenter={() => (over = true)}
-    onmouseleave={() => (over = false)}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     style:outline="none"
     role="button"

@@ -23,7 +23,7 @@ export function getAnnotationActions(ann: IVideoAnnotationRecord): AnnotationAct
       onclick: (e: MouseEvent) => {
         e.stopPropagation();
         selection.selectAnnotation(ann);
-        getDriver().command.call("timeline.focus");
+        getDriver().command.call("idah-video:timeline.focus");
       },
     },
     ...(isEditable()
@@ -34,7 +34,7 @@ export function getAnnotationActions(ann: IVideoAnnotationRecord): AnnotationAct
             disabled: annotation.isLocked(ann) || viewport.isReviewWorkspace,
             onclick: (e: MouseEvent) => {
               e.stopPropagation();
-              getDriver().command.call("annotation.delete", { annotationId: ann.id });
+              getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
             },
           },
         ]

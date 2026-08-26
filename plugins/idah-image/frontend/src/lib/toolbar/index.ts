@@ -23,7 +23,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
 
   t.add({
-    name: "mode.selection",
+    name: "idah-image:tool.selection",
     icon: cursorIcon,
     label: "Selection",
     modes: ["*"],
@@ -42,7 +42,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: rectIcon,
       label: "Bounding Box",
-      name: "mode.bounding_box",
+      name: "idah-image:tool.bounding-box",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: null,
       onClick: () =>
@@ -55,7 +55,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: polyIcon,
       label: "Polygon",
-      name: "mode.polygon",
+      name: "idah-image:tool.polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: null,
       onClick: () =>
@@ -68,7 +68,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: circleIcon,
       label: "Circle",
-      name: "mode.circle",
+      name: "idah-image:tool.circle",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: null,
       onClick: () =>
@@ -81,7 +81,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: ellipseIcon,
       label: "Ellipse",
-      name: "mode.ellipse",
+      name: "idah-image:tool.ellipse",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: null,
       onClick: () =>
@@ -94,7 +94,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: lineIcon,
       label: "Line",
-      name: "mode.line",
+      name: "idah-image:tool.line",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: null,
       onClick: () =>
@@ -107,7 +107,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: brushIcon,
       label: "Mask Brush",
-      name: "mode.mask_brush",
+      name: "idah-image:tool.mask-brush",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: "mask",
       onClick: () => {
@@ -125,7 +125,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     t.add({
       icon: maskPolygonIcon,
       label: "Mask Polygon",
-      name: "mode.mask_polygon",
+      name: "idah-image:tool.mask-polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: "mask",
       onClick: () => {
@@ -145,7 +145,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: noteIcon,
     label: "Note",
-    name: "mode.note",
+    name: "idah-image:tool.note",
     modes: [REVIEW_MODE, NOTE_MODE],
     group: null,
     onClick: () => driver.setMode(NOTE_MODE),
@@ -159,7 +159,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.add({
     icon: magnetIcon,
     label: "Magnetic snap",
-    name: "snap.magnetic_toggle",
+    name: "idah-image:snap.toggle-magnetic",
     modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
     group: null,
     onClick: () => {

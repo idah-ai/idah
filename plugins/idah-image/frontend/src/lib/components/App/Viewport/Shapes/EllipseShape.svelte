@@ -20,6 +20,8 @@
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import EllipseHandler from "./Ellipse/_EllipseHandler.svelte";
   import {
     ellipseAABB,
@@ -348,19 +350,22 @@
 
 {#if points.length >= 4}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- ui.annotationOpacity scales fill only — stroke stays at full opacity regardless of the slider -->
   <ellipse
     cx={displayCentroid[0] * w}
     cy={displayCentroid[1] * h}
     rx={displayRadii[0] * w}
     ry={displayRadii[1] * h}
     fill={color}
-    fill-opacity={selected ? 0.6 : 0.3}
+    fill-opacity={(selected ? 0.7 : 0.4) * (ui.annotationOpacity / 100)}
     stroke={color.replace("0.5", "1")}
     stroke-width={selected ? 1.5 : 1}
     style:transform-origin="{displayCentroid[0] * w}px {displayCentroid[1] * h}px"
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
     style={shapeStyleString}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     style:outline="none"
     role="button"

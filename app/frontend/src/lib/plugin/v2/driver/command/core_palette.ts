@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.palette",
+    name: "core:ui.palette",
     group: "General",
     // TODO modes ['*'] ?
     modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
@@ -11,7 +11,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: null,
     callback: () => ({
       command: {
-        name: "core.palette",
+        name: "core:ui.palette",
         group: "General",
         modes: [],
         shortcut: null,

@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.mask_polygon.add_point — Add a vertex to the mask polygon being drawn
+// idah-image:annotation.mask-polygon.add-point — Add a vertex to the mask polygon being drawn
 // Undoable: removes the last vertex.
 // Combinable: multiple point adds in a short window merge into one step.
 //
 // Usage:
-//   driver.command.call("annotation.mask_polygon.add_point", { point: [0.5, 0.3] });
+//   driver.command.call("idah-image:annotation.mask-polygon.add-point", { point: [0.5, 0.3] });
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { isEditable } from "$lib/state/editor.svelte";
@@ -15,7 +15,7 @@ import { maskTool } from "$lib/state/mask-tool.svelte";
 import { maskSession } from "$lib/state/mask-session.svelte";
 
 export const command = {
-  name: "annotation.mask_polygon.add_point",
+  name: "idah-image:annotation.mask-polygon.add-point",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

@@ -70,7 +70,8 @@ export class AccountSettingsManager {
     const value = this.settings.get(commandShortcutKey)?.value;
     if (value && typeof value === "object" && !Array.isArray(value)) {
       for (const [name, shortcut] of Object.entries(value)) {
-        if (typeof shortcut === "string") this.overrides[name] = shortcut;
+        if (typeof shortcut !== "string") continue;
+        this.overrides[name] = shortcut;
       }
     }
   }

@@ -1,5 +1,5 @@
 // -------------------------------------------------------------------------------
-// annotation.mask_shapes.flush — Flush mask session buffer to backend
+// idah-image:annotation.mask-shapes.flush — Flush mask session buffer to backend
 //
 // Only writes tiles to an existing annotation.  The annotation must already
 // exist (created via the standard annotation.add flow through onSelection).
@@ -28,7 +28,7 @@ import { maskTool } from "$lib/state/mask-tool.svelte";
 import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
 export const command = {
-  name: "annotation.mask_shapes.flush",
+  name: "idah-image:annotation.mask-shapes.flush",
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,

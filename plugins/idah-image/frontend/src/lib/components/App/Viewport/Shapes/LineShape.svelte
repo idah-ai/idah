@@ -10,6 +10,7 @@
   //   • startSelection(point) → returns true if point is on the line/invisible area
   //   • endSelection(point) → finalises the edit
   // ---------------------------------------------------------------------------
+  import { hover } from "$lib/state/hover.svelte";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
@@ -160,8 +161,6 @@
     editable && selected ? "cursor-grab" :
     "cursor-pointer"
   );
-
-  let over = $state(false);
 </script>
 
 {#if displayPoints.length >= 2}
@@ -176,8 +175,8 @@
     stroke-width={24}
     vector-effect="non-scaling-stroke"
     style:outline="none"
-    onmouseenter={() => (over = true)}
-    onmouseleave={() => (over = false)}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     role="button"
     tabindex="-1"

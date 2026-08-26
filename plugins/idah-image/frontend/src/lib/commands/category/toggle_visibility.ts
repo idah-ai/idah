@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_category_visibility
+// idah-image:annotation.category.toggle-visibility
 // Toggle visibility of annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.toggle_category_visibility",
+//     "idah-image:annotation.category.toggle-visibility",
 //     {
 //       category: "vehicle",
 //     },
@@ -28,7 +28,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 
 export const command = {
-  name: "annotation.toggle_category_visibility",
+  name: "idah-image:annotation.category.toggle-visibility",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
