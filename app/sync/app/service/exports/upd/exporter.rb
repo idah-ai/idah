@@ -3,6 +3,7 @@
 require "json"
 require "tempfile"
 require "open3"
+require "set"
 
 module Exports
   module Upd
@@ -13,6 +14,10 @@ module Exports
 
       def export(context)
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
+
+        # Duplicated entries share the same media resource, but medias are
+        # unique in a UPD file: keep track of the resources already appended.
+        exported_resources = Set.new
 
         # Init UPD file
         system("updcli-static", "--input", file_path, "init", exception: true)
@@ -42,17 +47,7 @@ module Exports
                   stdin.puts(build_annotation_jsonl(entry.record.id, annotation))
                 end
 
-                medias =
-                  case include_medias
-                  when "original"
-                    entry.medias({ key: "" })
-                  when "all"
-                    entry.medias
-                  else
-                    []
-                  end
-
-                medias.each do |media|
+                entry_medias(entry, include_medias, exported_resources).each do |media|
                   tempfile = download_media(media)
                   media_tempfiles << tempfile
                   stdin.puts(build_media_jsonl(media, tempfile.path))
@@ -79,6 +74,25 @@ module Exports
       end
 
       private
+
+      def include_medias?(include_medias)
+        ["original", "all"].include?(include_medias)
+      end
+
+      # Determine which medias to include based on the option:
+      # - "original": only include original media (key: "")
+      # - "all": include all medias (original and processed)
+      # - otherwise: do not include any media
+      #
+      # Entries can be duplicated and then point to the same media resource.
+      # Since a media can only be added once to a UPD file, the medias of a
+      # resource are returned only for the first entry using it.
+      def entry_medias(entry, include_medias, exported_resources)
+        return [] unless include_medias?(include_medias)
+        return [] unless exported_resources.add?(entry.record.resource)
+
+        include_medias == "original" ? entry.medias({ key: "" }) : entry.medias
+      end
 
       def capitalized_dashed_keys(hash)
         hash.transform_keys do |key|
@@ -115,7 +129,7 @@ module Exports
 
       def build_entry_jsonl(dataset_id, entry, include_medias)
         media_url =
-          if ["original", "all"].include?(include_medias)
+          if include_medias?(include_medias)
             "local:#{entry.record.resource}"
           else
             URI.join(
