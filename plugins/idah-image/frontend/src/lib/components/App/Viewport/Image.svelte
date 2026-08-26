@@ -22,6 +22,7 @@
     {src}
     alt=""
     class={["image-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
+    style="opacity: {ui.imageOpacity / 100};"
     onload={() => {
       // Image loaded — container layout is now final. Re-fit.
       requestAnimationFrame(() => {
@@ -52,7 +53,7 @@
 
   .image-wrapper {
     position: relative;
-    background-color: #e5e7eb;
+    background-color: var(--muted);
     display: flex;
     align-items: center;
     justify-content: center;
