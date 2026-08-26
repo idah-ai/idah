@@ -8,6 +8,7 @@ import { initDataStores, destroyDataStores } from "./state/data.svelte";
 import { registerAllCommands } from "./commands";
 import { initToolbar } from "./toolbar";
 import { registerStats } from "./stats";
+import { registerSettings } from "./settings";
 import { snapEngine } from "./snap-engine/instance";
 import { registerVideoAdapters } from "./snap-engine/adapters/video";
 
@@ -37,6 +38,7 @@ const idahVideoPlugin: IPluginDriver = {
     registerAllCommands(driver);
     initToolbar(driver);
     registerStats(driver);
+    registerSettings(driver);
 
     // Register shape adapters for magnetic snap
     registerVideoAdapters(snapEngine);

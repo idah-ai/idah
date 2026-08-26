@@ -76,7 +76,7 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
         title: "Delete annotation",
         description: "Are you sure you want to delete this annotation?",
         onConfirm: () => {
-          getDriver().command.call("annotation.delete", { annotationId });
+          getDriver().command.call("idah-image:annotation.delete", { annotationId });
         },
       });
     },

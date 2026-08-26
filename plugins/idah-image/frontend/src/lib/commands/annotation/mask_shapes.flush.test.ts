@@ -103,7 +103,7 @@ function createSinglePixelBuffer(px: number, py: number): Uint8Array {
 
 import { register } from "./mask_shapes.flush";
 
-describe("annotation.mask_shapes.flush", () => {
+describe("idah-image:annotation.mask-shapes.flush", () => {
   let mockDriver: any;
 
   beforeEach(() => {
@@ -128,7 +128,7 @@ describe("annotation.mask_shapes.flush", () => {
     register(mockDriver);
     expect(mockDriver.command.register).toHaveBeenCalledOnce();
     const registered = mockDriver.command.register.mock.calls[0][0];
-    expect(registered.name).toBe("annotation.mask_shapes.flush");
+    expect(registered.name).toBe("idah-image:annotation.mask-shapes.flush");
   });
 
   describe("callback with dirty tiles", () => {

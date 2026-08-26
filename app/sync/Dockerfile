@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 
 # Build arguments
 ARG TARGETARCH
-ARG UPDCLI_VERSION=v1.0.0
+ARG UPDCLI_VERSION=v1.0.1
 ARG BUNDLE_WITHOUT="development test"
 ARG APP_ENVIRONMENT
 
