@@ -24,10 +24,13 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
+    // opts.value sets an explicit mode (settings menu); no opts toggles (shortcut).
+    callback: (opts) => ({
       command: { ...command },
       do() {
-        ui.renderMode = (ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode;
+        const value = opts?.value as RenderMode | undefined;
+        ui.renderMode = value ?? ((ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode);
+        driver.settings.invalidate();
       },
       isCombinable() {
         return false;

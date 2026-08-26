@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 import type {
   IAccountSettingsDriverV2,
+  ISettingsDriverV2,
   IAnnotationRecord,
   IAnnotationsDriverV2,
   ICommandAction,
@@ -371,6 +372,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<IImageAnnotationShape, IImageAnnotationValue>;
   readonly notes: INotesDriverV2;
+  // STUB (standalone dev): the real settings driver lives in core; the mock only
+  // needs to accept registrations so the plugin's registerSettings() call in
+  // init() doesn't crash. There's no topbar here, so nothing renders.
+  readonly settings: ISettingsDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
@@ -410,6 +415,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
     // Account settings — the manager implements IAccountSettingsDriverV2 directly.
     this.accountSettings = this.accountSettingsMgr;
+
+    // STUB (standalone dev): accept setting registrations but render nothing —
+    // the topbar that consumes these lives in core, not in this mock harness.
+    this.settings = {
+      register: () => {},
+      invalidate: () => {},
+    };
 
     // Hand the live override map to the dispatcher. AccountSettingsManager
     // mutates it in place, so the dispatcher sees overrides without re-wiring.
