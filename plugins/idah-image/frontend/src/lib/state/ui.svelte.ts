@@ -37,6 +37,14 @@ export type RenderMode = "bilinear" | "nearest-neighbor";
 export type TimeDisplay = "frames" | "time";
 
 /**
+ * When the category label is drawn on an annotation.
+ *   "always" — always shown
+ *   "hover"  — shown only while the annotation is hovered or selected
+ *   "never"  — never shown (default)
+ */
+export type LabelVisibility = "always" | "hover" | "never";
+
+/**
  * UI state — dialogs, panels, etc.
  */
 class UIState {
@@ -50,6 +58,11 @@ class UIState {
   // Plain reactive fields — no getter/setter needed since nothing is saved.
   annotationOpacity = $state(100);
   imageOpacity = $state(100);
+
+  // Session-only for the same reason as opacity above — kept symmetrical with
+  // the other toolbar settings rather than joining the localStorage tier.
+  // Account-level persistence is a deliberate follow-up (see CU-869ef2pj0).
+  labelVisibility = $state<LabelVisibility>("never");
 
   isCommandDialogOpen = $state(false);
   isDebugConsoleOpen = $state(false);

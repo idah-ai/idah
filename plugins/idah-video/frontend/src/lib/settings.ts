@@ -3,10 +3,11 @@
 //
 // Called once on init(driver). Contributes the sliders/options shown in the
 // core topbar Settings menu. The values live here in the plugin's ui store
-// (localStorage-backed, except opacity which is session-only); core only
-// renders the controls and calls get/set.
+// (localStorage-backed, except opacity and label visibility which are
+// session-only); core only renders the controls and calls get/set.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { LabelVisibility } from "./state/ui.svelte";
 import { ui } from "./state/ui.svelte";
 
 export function registerSettings(driver: IIdahDriverV2): void {
@@ -78,6 +79,23 @@ export function registerSettings(driver: IIdahDriverV2): void {
             ],
             get: () => ui.timeDisplay,
             set: (v: string) => driver.command.call("ui.toggle_time_display", { value: v }),
+          },
+          {
+            type: "options",
+            key: "label-visibility",
+            label: "Category label",
+            description:
+              "Show each annotation's category name on the canvas — always, only while hovered or selected, or never. Resets to Off each time the plugin loads.",
+            options: [
+              { value: "always", label: "On" },
+              { value: "hover", label: "On hover" },
+              { value: "never", label: "Off" },
+            ],
+            // Set directly rather than through a command: unlike the other
+            // options this has no shortcut or palette entry, so the popover is
+            // the only mutation path and core emits the change after set().
+            get: () => ui.labelVisibility,
+            set: (v: string) => (ui.labelVisibility = v as LabelVisibility),
           },
         ],
       },

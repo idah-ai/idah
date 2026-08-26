@@ -19,6 +19,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { type Point } from "$lib/utils/math/point";
   import CircleHandler from "./Circle/_CircleHandler.svelte";
@@ -204,6 +205,8 @@
     stroke-width={12}
     vector-effect="non-scaling-stroke"
     style:outline="none"
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     role="button"
     tabindex="-1"

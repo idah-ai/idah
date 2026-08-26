@@ -18,6 +18,7 @@
 
   import Viewport from "$lib/components/App/Viewport/Viewport.svelte";
   import AnnotationGeometry from "./AnnotationGeometry.svelte";
+  import AnnotationLabels from "./AnnotationLabels.svelte";
   import BBoxCreateShape from "./BBoxCreateShape.svelte";
   import CircleCreateShape from "./CircleCreateShape.svelte";
   import Crosshair from "./Crosshair.svelte";
@@ -953,6 +954,12 @@
         <NoteMarkers />
       {/if}
     </g>
+
+    <!--
+      Category labels last, so they sit above every shape. `visibleAnnotations`
+      already excludes hidden annotations, so their labels disappear with them.
+    -->
+    <AnnotationLabels annotations={visibleAnnotations} />
   </svg>
 
   <!-- Layer 3: Brush cursor overlay (above everything) -->

@@ -20,6 +20,7 @@
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import EllipseHandler from "./Ellipse/_EllipseHandler.svelte";
   import {
@@ -363,6 +364,8 @@
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
     style={shapeStyleString}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     style:outline="none"
     role="button"

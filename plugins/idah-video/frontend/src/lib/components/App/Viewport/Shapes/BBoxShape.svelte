@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hover } from "$lib/state/hover.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
@@ -378,8 +379,6 @@
     "cursor-pointer"
   );
 
-  // ── Hover state for body cursor ───────────────────────────────────────
-  let over = $state(false);
 </script>
 
 {#if pathD}
@@ -395,8 +394,8 @@
     style:transform="rotate({currentAngle()}rad)"
     vector-effect="non-scaling-stroke"
     style={shapeStyleString}
-    onmouseenter={() => (over = true)}
-    onmouseleave={() => (over = false)}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     style:outline="none"
     role="button"
