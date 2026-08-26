@@ -2,6 +2,7 @@
 
 require "json"
 require "tempfile"
+require "open3"
 
 module Exports
   module Upd
@@ -16,51 +17,60 @@ module Exports
         # Init UPD file
         system("updcli-static", "--input", file_path, "init", exception: true)
 
-        jsonl_file = Tempfile.new(["idah-export", ".jsonl"])
-        jsonl_file.binmode
-
         # Keep references to media tempfiles so they are not garbage collected
         # before updcli-static reads them during the append call.
         media_tempfiles = []
 
-        begin
-          context.datasets.each do |dataset|
-            jsonl_file.puts(build_dataset_jsonl(dataset))
+        # Stream JSONL lines directly to updcli-static's stdin
+        # (no -i flag means it reads from /dev/stdin)
+        Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
+          # Drain stdout/stderr in background threads to avoid pipe-buffer deadlocks
+          # when updcli-static writes a lot of progress/error output.
+          stdout_reader = Thread.new { stdout.read }
+          stderr_reader = Thread.new { stderr.read }
 
-            dataset.entries.each do |entry|
-              include_medias = context.options[:include_medias]
+          begin
+            context.datasets.each do |dataset|
+              stdin.puts(build_dataset_jsonl(dataset))
 
-              jsonl_file.puts(build_entry_jsonl(dataset.record.id, entry, include_medias))
+              dataset.entries.each do |entry|
+                include_medias = context.options[:include_medias]
 
-              entry.annotations.each do |annotation|
-                jsonl_file.puts(build_annotation_jsonl(entry.record.id, annotation))
-              end
+                stdin.puts(build_entry_jsonl(dataset.record.id, entry, include_medias))
 
-              medias =
-                case include_medias
-                when "original"
-                  entry.medias({ key: "" })
-                when "all"
-                  entry.medias
-                else
-                  []
+                entry.annotations.each do |annotation|
+                  stdin.puts(build_annotation_jsonl(entry.record.id, annotation))
                 end
 
-              medias.each do |media|
-                tempfile = download_media(media)
-                media_tempfiles << tempfile
-                jsonl_file.puts(build_media_jsonl(media, tempfile.path))
+                medias =
+                  case include_medias
+                  when "original"
+                    entry.medias({ key: "" })
+                  when "all"
+                    entry.medias
+                  else
+                    []
+                  end
+
+                medias.each do |media|
+                  tempfile = download_media(media)
+                  media_tempfiles << tempfile
+                  stdin.puts(build_media_jsonl(media, tempfile.path))
+                end
               end
             end
+          ensure
+            stdin.close
           end
 
-          jsonl_file.close
+          exit_status = wait_thr.value
+          err_output = stderr_reader.value
+          stdout_reader.value
 
-          # Bulk-append all commands via JSONL
-          system("updcli-static", "--input", file_path, "append", "-i", jsonl_file.path, exception: true)
+          unless exit_status.success?
+            raise "updcli-static append failed: #{err_output}"
+          end
         ensure
-          jsonl_file.close
-          jsonl_file.unlink
           # Clean up media tempfiles
           media_tempfiles.each(&:close!)
         end

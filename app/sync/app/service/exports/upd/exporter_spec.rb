@@ -91,14 +91,21 @@ RSpec.describe Exports::Upd::Exporter do
       allow(File).to receive(:open).and_call_original
       allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
 
-      # Stub Tempfile.new to return mocks based on arguments
-      jsonl_mock = double("jsonl_tempfile")
-      allow(jsonl_mock).to receive(:binmode)
-      allow(jsonl_mock).to receive(:path).and_return("/tmp/idah-export.jsonl")
-      allow(jsonl_mock).to receive(:close)
-      allow(jsonl_mock).to receive(:unlink)
-      allow(jsonl_mock).to receive(:puts) { |line| @jsonl_writes << line }
+      # Stub Open3.popen3 to capture JSONL lines written to stdin
+      stdin_mock = double("stdin")
+      allow(stdin_mock).to receive(:puts) { |line| @jsonl_writes << line }
+      allow(stdin_mock).to receive(:close)
 
+      stderr_mock = double("stderr", read: "")
+      stdout_mock = double("stdout", read: "")
+      exit_status_mock = double("exit_status", success?: true)
+      wait_thr_mock = double("wait_thread", value: exit_status_mock)
+
+      allow(Open3).to receive(:popen3)
+        .with("updcli-static", "--input", anything, "append")
+        .and_yield(stdin_mock, stdout_mock, stderr_mock, wait_thr_mock)
+
+      # Media tempfile stub – used when include_medias triggers download_media
       media_mock = double("media_tempfile")
       allow(media_mock).to receive(:binmode)
       allow(media_mock).to receive(:rewind)
@@ -106,14 +113,7 @@ RSpec.describe Exports::Upd::Exporter do
       allow(media_mock).to receive(:close!)
       allow(media_mock).to receive(:write)
 
-      # Single dispatcher stub that returns the right mock based on arguments
-      allow(Tempfile).to receive(:new) do |args|
-        if args == ["idah-export", ".jsonl"]
-          jsonl_mock
-        else
-          media_mock
-        end
-      end
+      allow(Tempfile).to receive(:new).and_return(media_mock)
     end
 
     context "basic export flow" do
@@ -134,19 +134,21 @@ RSpec.describe Exports::Upd::Exporter do
         expect(init_called).to be(true)
       end
 
-      it "calls append once with the JSONL file" do
-        append_called = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.include?("append")
-            append_called = true
-            expect(args).to include("-i")
-            expect(args).to include("/tmp/idah-export.jsonl")
-          end
-          true
-        end
+      it "streams JSONL to updcli-static's stdin via Open3" do
+        stdin_mock = double("stdin")
+        allow(stdin_mock).to receive(:puts)
+        allow(stdin_mock).to receive(:close)
+        stdout_mock = double("stdout", read: "")
+        stderr_mock = double("stderr", read: "")
+        exit_status_mock = double("exit_status", success?: true)
+        wait_thr_mock = double("wait_thread", value: exit_status_mock)
+
+        expect(Open3).to receive(:popen3)
+          .with("updcli-static", "--input", anything, "append")
+          .and_yield(stdin_mock, stdout_mock, stderr_mock, wait_thr_mock)
+          .once
 
         exporter.export(context)
-        expect(append_called).to be(true)
       end
 
       it "writes dataset JSONL line with correct fields" do
@@ -348,6 +350,26 @@ RSpec.describe Exports::Upd::Exporter do
         expect {
           exporter.export(context)
         }.to raise_error(RuntimeError, "Command failed")
+      end
+    end
+
+    context "when append command fails" do
+      it "raises an exception with stderr output" do
+        stdin_mock = double("stdin")
+        allow(stdin_mock).to receive(:puts)
+        allow(stdin_mock).to receive(:close)
+        stdout_mock = double("stdout", read: "")
+        stderr_mock = double("stderr", read: "boom error")
+        exit_status_mock = double("exit_status", success?: false)
+        wait_thr_mock = double("wait_thread", value: exit_status_mock)
+
+        allow(Open3).to receive(:popen3)
+          .with("updcli-static", "--input", anything, "append")
+          .and_yield(stdin_mock, stdout_mock, stderr_mock, wait_thr_mock)
+
+        expect {
+          exporter.export(context)
+        }.to raise_error(RuntimeError, /updcli-static append failed: boom error/)
       end
     end
 
