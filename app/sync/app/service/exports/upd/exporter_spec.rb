@@ -108,9 +108,6 @@ RSpec.describe Exports::Upd::Exporter do
       allow(Api[:idah].media.medias).to receive(:index_all).and_return([media_response])
       allow(Api[:idah].media.medias).to receive(:files).and_return(media_binary_data)
 
-      # Stub system calls by default
-      allow(exporter).to receive(:system).and_return(true)
-
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
       allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
@@ -135,21 +132,14 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     context "basic export flow" do
-      it "initializes a UPD file with updcli-static" do
-        init_called = false
-        allow(exporter).to receive(:system) do |*args|
-          if args.any? { |a| a.is_a?(String) && a.include?("init") }
-            init_called = true
-            expect(args.first).to eq("updcli-static")
-            expect(args).to include("--input")
-            expect(args).to include("init")
-            expect(args.last).to eq({ exception: true })
-          end
-          true
-        end
-
+      it "sends init command as the first JSONL line via stdin" do
         exporter.export(context)
-        expect(init_called).to be(true)
+
+        first_line = @jsonl_writes.first
+        expect(first_line).not_to be_nil
+        parsed = JSON.parse(first_line)
+        expect(parsed["command"]).to eq("init")
+        expect(parsed["args"]).to eq({})
       end
 
       it "streams JSONL to updcli-static's stdin via Open3" do
@@ -350,16 +340,6 @@ RSpec.describe Exports::Upd::Exporter do
         metadata = JSON.parse(parsed["args"]["metadata"])
 
         expect(metadata["Confidence"]).to eq(0.92)
-      end
-    end
-
-    context "when system command fails" do
-      it "raises an exception" do
-        allow(exporter).to receive(:system).and_raise(RuntimeError.new("Command failed"))
-
-        expect {
-          exporter.export(context)
-        }.to raise_error(RuntimeError, "Command failed")
       end
     end
 

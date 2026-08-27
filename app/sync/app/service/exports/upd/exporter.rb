@@ -22,9 +22,6 @@ module Exports
         # unique in a UPD file: keep track of the resources already appended.
         exported_resources = Set.new
 
-        # Init UPD file
-        system("updcli-static", "--input", file_path, "init", exception: true)
-
         # Keep references to media tempfiles so they are not garbage collected
         # before updcli-static reads them during the append call.
         media_tempfiles = []
@@ -33,6 +30,16 @@ module Exports
           err_lines = []
 
           begin
+            # Initialise UPD file via stdin — avoids a separate system("... init") call
+            write_stdin(
+              stdin,
+              stdout,
+              stderr,
+              err_lines,
+              build_init_jsonl,
+              on_output: on_output
+            )
+
             context.datasets.each do |dataset|
               write_stdin(
                 stdin,
@@ -207,6 +214,10 @@ module Exports
         hash.transform_keys do |key|
           key.to_s.split("_").map(&:capitalize).join("-")
         end
+      end
+
+      def build_init_jsonl
+        { command: "init", args: {} }.to_json
       end
 
       def build_dataset_jsonl(dataset)
