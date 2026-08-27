@@ -71,6 +71,30 @@ RSpec.describe Exports::Upd::Exporter do
     # Shared blocks for capturing JSONL writes
     let(:jsonl_writes) { @jsonl_writes ||= [] }
 
+    let(:stdin_mock) do
+      double("stdin").tap do |mock|
+        allow(mock).to receive(:puts) { |line| @jsonl_writes << line }
+        allow(mock).to receive(:close)
+      end
+    end
+
+    # Simulate an updcli-static that produces no output: both pipes are
+    # immediately at EOF.
+    let(:stdout_mock) do
+      double("stdout").tap do |mock|
+        allow(mock).to receive(:read_nonblock).with(4096, exception: false).and_return(nil)
+      end
+    end
+
+    let(:stderr_mock) do
+      double("stderr").tap do |mock|
+        allow(mock).to receive(:read_nonblock).with(4096, exception: false).and_return(nil)
+      end
+    end
+
+    let(:exit_status_mock) { double("exit_status", success?: true) }
+    let(:wait_thr_mock) { double("wait_thread", value: exit_status_mock) }
+
     before do
       @jsonl_writes = []
 
@@ -91,16 +115,10 @@ RSpec.describe Exports::Upd::Exporter do
       allow(File).to receive(:open).and_call_original
       allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
 
+      # No subprocess output is pending by default.
+      allow(IO).to receive(:select).and_return(nil)
+
       # Stub Open3.popen3 to capture JSONL lines written to stdin
-      stdin_mock = double("stdin")
-      allow(stdin_mock).to receive(:puts) { |line| @jsonl_writes << line }
-      allow(stdin_mock).to receive(:close)
-
-      stderr_mock = double("stderr", read: "")
-      stdout_mock = double("stdout", read: "")
-      exit_status_mock = double("exit_status", success?: true)
-      wait_thr_mock = double("wait_thread", value: exit_status_mock)
-
       allow(Open3).to receive(:popen3)
         .with("updcli-static", "--input", anything, "append")
         .and_yield(stdin_mock, stdout_mock, stderr_mock, wait_thr_mock)
@@ -135,14 +153,6 @@ RSpec.describe Exports::Upd::Exporter do
       end
 
       it "streams JSONL to updcli-static's stdin via Open3" do
-        stdin_mock = double("stdin")
-        allow(stdin_mock).to receive(:puts)
-        allow(stdin_mock).to receive(:close)
-        stdout_mock = double("stdout", read: "")
-        stderr_mock = double("stderr", read: "")
-        exit_status_mock = double("exit_status", success?: true)
-        wait_thr_mock = double("wait_thread", value: exit_status_mock)
-
         expect(Open3).to receive(:popen3)
           .with("updcli-static", "--input", anything, "append")
           .and_yield(stdin_mock, stdout_mock, stderr_mock, wait_thr_mock)
@@ -354,22 +364,30 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     context "when append command fails" do
-      it "raises an exception with stderr output" do
-        stdin_mock = double("stdin")
-        allow(stdin_mock).to receive(:puts)
-        allow(stdin_mock).to receive(:close)
-        stdout_mock = double("stdout", read: "")
-        stderr_mock = double("stderr", read: "boom error")
-        exit_status_mock = double("exit_status", success?: false)
-        wait_thr_mock = double("wait_thread", value: exit_status_mock)
+      let(:exit_status_mock) { double("exit_status", success?: false) }
 
-        allow(Open3).to receive(:popen3)
-          .with("updcli-static", "--input", anything, "append")
-          .and_yield(stdin_mock, stdout_mock, stderr_mock, wait_thr_mock)
+      it "raises an exception with stderr output" do
+        allow(stderr_mock).to receive(:read_nonblock)
+          .with(4096, exception: false)
+          .and_return("boom error\n", nil)
+
+        allow(IO).to receive(:select).and_return([[stderr_mock]], nil)
 
         expect {
           exporter.export(context)
         }.to raise_error(RuntimeError, /updcli-static append failed: boom error/)
+      end
+    end
+
+    context "when updcli-static closes stdin (EPIPE)" do
+      let(:exit_status_mock) { double("exit_status", success?: false) }
+
+      it "surfaces the append failure instead of Errno::EPIPE" do
+        allow(stdin_mock).to receive(:puts).and_raise(Errno::EPIPE, "Broken pipe")
+
+        expect {
+          exporter.export(context)
+        }.to raise_error(RuntimeError, /updcli-static append failed:/)
       end
     end
 
