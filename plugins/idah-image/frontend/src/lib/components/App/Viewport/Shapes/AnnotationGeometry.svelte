@@ -7,6 +7,11 @@
   import LineShape from "./LineShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
 
+  type AnnotationApi = {
+    getToolSelection: () => { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined;
+    getIsEditing: () => boolean;
+  };
+
   type Props = {
     annotation: any;
     selected?: boolean;
@@ -15,6 +20,10 @@
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps?: Record<string, unknown>) => void;
+    /** Registers this component's API with the parent by annotation id.
+     *  Used instead of `bind:this` to avoid parent teardown recursion —
+     *  see ShapesContainer. */
+    register?: (id: string, api: AnnotationApi | null) => void;
   };
 
   let {
@@ -25,7 +34,16 @@
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
+    register,
   }: Props = $props();
+
+  // Register on mount, unregister on teardown (runs flat, unlike bind:this).
+  $effect(() => {
+    const id = annotation?.id;
+    if (id == null) return;
+    register?.(id, { getToolSelection, getIsEditing });
+    return () => register?.(id, null);
+  });
 
   /** Component refs (any type because Svelte5 component instances). */
   let _bboxComp: any = $state();

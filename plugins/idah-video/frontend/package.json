@@ -8,6 +8,8 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"//build:dev": "Unminified build for tracing errors that only reproduce in the compiled (prod) env",
+		"build:dev": "vite build --mode unminified",
 		"build:watch": "vite build --watch",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

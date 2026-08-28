@@ -13,7 +13,6 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { media } from "$lib/state/media.svelte";
   import {
-    DEFAULT_MODE,
     IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
     IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
     IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
@@ -26,7 +25,6 @@
     IMAGE_POLYGON,
     IMAGE_MASK,
     NOTE_MODE,
-    REVIEW_MODE,
   } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
@@ -225,8 +223,6 @@
 
     const totalFrames = Math.round((meta.duration as number) * (meta.fps as number));
     length = totalFrames;
-
-    viewport.image.currentFrame.value = 0;
 
     // annotations are now derived from the global data store
     // The store is already preloaded in initDataStores()
