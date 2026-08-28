@@ -157,7 +157,7 @@
             class="mx-1 w-full justify-start"
             disabled={extendAllDisabled}
             onclick={() => {
-              getDriver().command.call("annotation.extend_prev", { frame });
+              getDriver().command.call("idah-video:annotation.extend-prev", { frame });
             }}
           >
             <ArrowRightToLineIcon />
@@ -179,7 +179,7 @@
             class="mx-1 w-full justify-start"
             disabled={extendAllDisabled}
             onclick={() => {
-              getDriver().command.call("annotation.extend_next", { frame });
+              getDriver().command.call("idah-video:annotation.extend-next", { frame });
             }}
           >
             <ArrowLeftToLineIcon />
@@ -206,7 +206,7 @@
             class="mx-1 w-full justify-start"
             {disabled}
             onclick={() => {
-              getDriver().command.call("annotation.extend_prev", {
+              getDriver().command.call("idah-video:annotation.extend-prev", {
                 annotationId: prevAnnotation.rawData.id,
                 frame,
               });
@@ -232,7 +232,7 @@
             class="mx-1 w-full justify-start"
             {disabled}
             onclick={() => {
-              getDriver().command.call("annotation.extend_next", {
+              getDriver().command.call("idah-video:annotation.extend-next", {
                 annotationId: nextAnnotation.rawData.id,
                 frame,
               });
