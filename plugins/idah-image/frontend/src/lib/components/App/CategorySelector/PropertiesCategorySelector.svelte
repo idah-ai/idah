@@ -123,9 +123,9 @@
         {#if showTabs}
           <Tabs bind:value={activeRightTab}>
             <TabsList class="w-full">
-              <Tooltips class="contents">
+              <Tooltips class="flex-1 flex">
                 {#snippet trigger()}
-                  <TabsTrigger value="annotations" class="text-xs" onclick={() => handleOuterTabClick("annotations")}>
+                  <TabsTrigger value="annotations" class="w-full text-xs" onclick={() => handleOuterTabClick("annotations")}>
                     Annotations
                   </TabsTrigger>
                 {/snippet}
@@ -140,9 +140,9 @@
                   </div>
                 {/snippet}
               </Tooltips>
-              <Tooltips class="contents">
+              <Tooltips class="flex-1 flex">
                 {#snippet trigger()}
-                  <TabsTrigger value="meta" class="text-xs" onclick={() => handleOuterTabClick("meta")}>
+                  <TabsTrigger value="meta" class="w-full text-xs" onclick={() => handleOuterTabClick("meta")}>
                     Meta
                   </TabsTrigger>
                 {/snippet}
