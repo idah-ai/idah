@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.paste — Paste copied annotations from clipboard
+// idah-video:selection.paste — Paste copied annotations from clipboard
 //
 // Creates new annotations with the same shape data, category, and frame timing
 // as the copied ones, but with new IDs and new group IDs.
@@ -20,7 +20,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "selection.paste",
+  name: "idah-video:selection.paste",
   group: "Selection",
   modes: ["editor"],
   shortcut: "Control+V",

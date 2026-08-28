@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// annotation.go_to_prev_group — Select the previous group in the timeline
+// idah-video:annotation.go-to-prev-group — Select the previous group in the timeline
 //
 // Shortcut: Control+ArrowUp
 // ---------------------------------------------------------------------------
@@ -8,7 +8,7 @@ import { getSortedGroupIds } from "$lib/utils/annotation";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 
 export const command = {
-  name: "annotation.go_to_prev_group",
+  name: "idah-video:annotation.go-to-prev-group",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "Control+ArrowUp",

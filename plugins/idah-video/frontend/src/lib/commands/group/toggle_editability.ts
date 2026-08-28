@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_group_editability — Toggle editability (lock) of a group of annotations
+// idah-video:annotation.group.toggle-editability — Toggle editability (lock) of a group of annotations
 // Undoable: restores the previous locked state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle_group_editability", {
+//   driver.command.call("idah-video:annotation.group.toggle-editability", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ import { selection } from "$lib/state/selection.svelte";
 import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state/selection.svelte";
 
 export const command = {
-  name: "annotation.toggle_group_editability",
+  name: "idah-video:annotation.group.toggle-editability",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "L",

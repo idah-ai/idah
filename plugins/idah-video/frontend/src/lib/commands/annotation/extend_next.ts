@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// annotation.extend_next — Extend the next annotation's start to a frame
+// idah-video:annotation.extend-next — Extend the next annotation's start to a frame
 //
 // Single-selection: extends the annotation after the current frame in the
 // selected group (original behaviour).
@@ -7,8 +7,13 @@
 // the current frame.
 // Undoable: restores snapshots of all modified annotations.
 //
-// Shortcut:  ]  (default mode)
-// Context menu: driver.command.call("annotation.extend_next", { annotationId, frame });
+// Shortcut:  ]  (default mode) — extends the annotation after the current
+//            frame in the selected group.
+//
+// Can also be called with explicit props from the context menu:
+//   driver.command.call("idah-video:annotation.extend-next", { annotationId, frame, items });
+//
+// Prevents overlapping with the previous annotation in the group.
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
@@ -25,7 +30,7 @@ import {
 } from "./_extend_utils";
 
 export const command = {
-  name: "annotation.extend_next",
+  name: "idah-video:annotation.extend-next",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "BracketLeft",
@@ -75,7 +80,8 @@ export function register(driver: IIdahDriverV2): void {
       } else {
         const targets = resolveTargets();
         if (targets.length === 0) return noopAction(command);
-        const allGids = new Set(targets.map((t) => (t.metadata as any)?.group_id ?? t.id));
+        // const allGids = new Set(targets.map((t) => (t.metadata as any)?.group_id ?? t.id));
+
         // Filter out locked groups — extend only unlocked ones
         const unlockedTargets = targets.filter((t) => {
           const gid = (t.metadata as any)?.group_id ?? t.id;

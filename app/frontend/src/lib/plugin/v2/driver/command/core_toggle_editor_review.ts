@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.toggle_editor_review",
+    name: "core:mode.toggle-editor-review",
     group: "General",
     modes: ["*"],
     shortcut: "Alt+Tab",
@@ -10,7 +10,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: "Switch between Editor and Review workspaces",
     callback: () => ({
       command: {
-        name: "core.toggle_editor_review",
+        name: "core:mode.toggle-editor-review",
         group: "General",
         modes: [],
         shortcut: null,

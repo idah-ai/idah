@@ -8,7 +8,7 @@ import { ui, type RenderMode } from "$lib/state/ui.svelte";
 import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
-  name: "ui.toggle_render_mode",
+  name: "idah-image:ui.toggle-render-mode",
   group: "Display",
   modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, NOTE_MODE],
   shortcut: null,
@@ -24,10 +24,13 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
+    // opts.value sets an explicit mode (settings menu); no opts toggles (shortcut).
+    callback: (opts) => ({
       command: { ...command },
       do() {
-        ui.renderMode = (ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode;
+        const value = opts?.value as RenderMode | undefined;
+        ui.renderMode = value ?? ((ui.renderMode === "bilinear" ? "nearest-neighbor" : "bilinear") as RenderMode);
+        driver.settings.invalidate();
       },
       isCombinable() {
         return false;

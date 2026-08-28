@@ -49,6 +49,7 @@
   import { maskSession } from "$lib/state/mask-session.svelte";
   import { toolPanel } from "$lib/state/tool-panel.svelte";
   import FloatingToolPanel from "$lib/components/App/FloatingToolPanel/FloatingToolPanel.svelte";
+  import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
   import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
@@ -323,7 +324,7 @@
   async function addAnnotation(shape: IImageAnnotationShape, value: AnnotationValue = {}) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.add", { shape, value });
+    getDriver().command.call("idah-image:annotation.add", { shape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -342,7 +343,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("idah-image:annotation.delete", { annotationId });
   }
 
   function deleteAnnotation(annotation: IImageAnnotationRecord) {
@@ -420,6 +421,7 @@
           if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
             maskTool.active = "brush";
           }
+          toolPanel.show(MaskToolConfigurations);
           getDriver().toolbar.invalidate();
           return;
         }
@@ -442,6 +444,7 @@
         if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
           maskTool.active = "brush";
         }
+        toolPanel.show(MaskToolConfigurations);
         getDriver().toolbar.invalidate();
       }
     } else if (shapeSelectionArgs && requirementFullfilled) {
@@ -483,7 +486,7 @@
       const shapeData = ann.shape as IImageAnnotationShape;
       const shapeType = shapeData?.type ?? type;
       const updatedShape: IImageAnnotationShape = { type: shapeType, points, ...extraProps };
-      getDriver().command.call("annotation.update", {
+      getDriver().command.call("idah-image:annotation.update", {
         annotation: ann,
         shape: updatedShape,
       });
@@ -515,7 +518,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("idah-image:annotation.update", { annotation: ann, value });
   }
 
   function selectAnnotation(annotation?: IImageAnnotationRecord) {

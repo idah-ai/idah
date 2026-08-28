@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// annotation.split — Split an annotation at a given frame
+// idah-video:annotation.split — Split an annotation at a given frame
 //
 // Creates two annotations from one: the first runs from the original start
 // to the split frame, the second from the split frame to the original end.
@@ -9,7 +9,7 @@
 // Undoable: deletes the two new annotations and restores the original.
 //
 // Usage:
-//   driver.command.call("annotation.split", { annotationId: "...", at: 42 });
+//   driver.command.call("idah-video:annotation.split", { annotationId: "...", at: 42 });
 //
 // Shortcut: S
 // Active only when there's a selected annotation.
@@ -28,7 +28,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.split",
+  name: "idah-video:annotation.split",
   group: "Annotation",
   modes: ["editor"] as string[],
   shortcut: "S",

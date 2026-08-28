@@ -70,9 +70,7 @@
 
   // Whether multiple annotations / groups are selected — drives showing the
   // "Extend All" actions instead of the per-track single extend actions.
-  let isMultiSelection = $derived(
-    selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 1,
-  );
+  let isMultiSelection = $derived(selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 1);
 
   // Annotations belonging to the clicked group (trackId) — used to decide
   // which "Extend All" action is relevant.
@@ -89,7 +87,7 @@
     let best = Infinity;
     for (const ann of clickedGroupAnnotations) {
       const frames = (ann.shape as any)?.frames as any[] | undefined;
-      const first = frames && frames.length > 0 ? (frames[0]?.frame as number) ?? Infinity : Infinity;
+      const first = frames && frames.length > 0 ? ((frames[0]?.frame as number) ?? Infinity) : Infinity;
       if (first < best) best = first;
     }
     return best;
@@ -99,7 +97,7 @@
     let best = -1;
     for (const ann of clickedGroupAnnotations) {
       const frames = (ann.shape as any)?.frames as any[] | undefined;
-      const last = frames && frames.length > 0 ? (frames[frames.length - 1]?.frame as number) ?? -1 : -1;
+      const last = frames && frames.length > 0 ? ((frames[frames.length - 1]?.frame as number) ?? -1) : -1;
       if (last > best) best = last;
     }
     return best;

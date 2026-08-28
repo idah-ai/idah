@@ -71,16 +71,22 @@
     if (ui.timeDisplay === "time") {
       const fps = media.fps;
       return (value: number, target?: string) => {
-        const s = Math.floor(value) / fps;
-        const h = Math.floor(s / 3600);
-        const m = Math.floor((s % 3600) / 60);
-        const sec = Math.floor(s % 60);
+        const frame = Math.floor(value);
+        const totalSec = Math.floor(frame / fps);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const sec = totalSec % 60;
         const showFrame = target === "caret" || target === "ruler-sub";
         const base =
           h > 0
             ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
             : `${m}:${String(sec).padStart(2, "0")}`;
-        return showFrame ? `${base}.${String(Math.floor(value) % fps).padStart(2, "0")}` : base;
+        // Frames elapsed since the current second began. Derived from totalSec rather than
+        // `frame % fps` so it stays a whole number for fractional fps (29.97, 23.976) and
+        // resets to 0 exactly when the second rolls over. The epsilon absorbs float error in
+        // `totalSec * fps`, which would otherwise make ceil overshoot and yield -1.
+        const subFrame = frame - Math.ceil(totalSec * fps - 1e-6);
+        return showFrame ? `${base}.${String(subFrame).padStart(2, "0")}` : base;
       };
     }
     return (value: number, _target?: string) => String(Math.floor(value) + 1);

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.copy — Copy selected annotations into clipboard
+// idah-video:selection.copy — Copy selected annotations into clipboard
 //
 // Stores the shape, value, metadata, and group structure of every selected
 // annotation so they can be pasted with the same category, frame timing,
@@ -14,7 +14,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "selection.copy",
+  name: "idah-video:selection.copy",
   group: "Selection",
   modes: ["editor"],
   shortcut: "Control+C",

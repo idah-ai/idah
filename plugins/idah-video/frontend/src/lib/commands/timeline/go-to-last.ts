@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timeline.go_to_last — Jump to the last frame
+// idah-video:timeline.go-to-last — Jump to the last frame
 // Shortcut: Ctrl+Shift+ArrowRight
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -8,7 +8,7 @@ import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "timeline.go_to_last",
+  name: "idah-video:timeline.go-to-last",
   group: "Timeline",
   modes: ["editor", "review"],
   shortcut: "Control+Shift+ArrowRight",

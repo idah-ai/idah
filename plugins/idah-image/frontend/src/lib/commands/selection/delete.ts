@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.delete — Delete whatever is currently selected
+// idah-image:selection.delete — Delete whatever is currently selected
 // Undoable: restores the annotation(s).
 // Shortcut: Delete / Backspace
 // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import { invalidateAll } from "$lib/mask/tile-cache";
 import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
-  name: "selection.delete",
+  name: "idah-image:selection.delete",
   group: "Selection",
   modes: [DEFAULT_MODE],
   shortcut: "Backspace",

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.delete — Delete whatever is currently selected
+// idah-video:selection.delete — Delete whatever is currently selected
 // Undoable: restores the annotation(s).
 // Shortcut: Delete / Backspace
 // ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
-  name: "selection.delete",
+  name: "idah-video:selection.delete",
   group: "Selection",
   modes: ["editor"],
   shortcut: "Backspace",

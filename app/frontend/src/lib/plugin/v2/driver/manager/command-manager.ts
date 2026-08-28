@@ -5,12 +5,15 @@ import type { ICommandDescriptor, ICommandAction, ICommandStackEntry, IShortcut 
 import { buildKeyCombination } from "../../utils/shortcut-utils";
 import { isMac } from "../../utils/browser";
 
+/** A fully-resolved command entry as stored in the registry. */
+type RegistryEntry = ICommandDescriptor & {
+  callback: (opts?: Record<string, unknown>) => ICommandAction;
+  activeWhen?: () => boolean;
+};
+
 export class CommandManagerV2 {
-  /** Registered commands keyed by name. */
-  private registry = new Map<
-    string,
-    ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction; activeWhen?: () => boolean }
-  >();
+  /** Registered commands keyed by fully-qualified name (`origin:category.action`). */
+  private registry = new Map<string, RegistryEntry>();
 
   /** Undo stack (most recent at end). */
   private undoStack: ICommandStackEntry[] = [];
