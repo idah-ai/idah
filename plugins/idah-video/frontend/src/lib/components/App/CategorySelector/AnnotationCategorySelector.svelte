@@ -18,7 +18,7 @@
   import type { IConfigValue } from "$idah/v2/types";
 
   import type { AnnotationItem, DataStore } from "$lib/state/data.svelte";
-  import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
+  import { NON_DRAWABLE_SHAPE_TYPES, type IVideoAnnotationRecord, type IVideoAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -54,7 +54,7 @@
   let tools = $derived(
     new Map<string, IConfigValue[]>(
       Object.entries(getDriver().config)
-        .filter(([shapeType, _]) => shapeType != "entry:root")
+        .filter(([shapeType]) => !NON_DRAWABLE_SHAPE_TYPES.has(shapeType))
         .map(([shapeType, { values }]) => [shapeType, values]),
     ),
   );

@@ -51,6 +51,7 @@ import { register as registerMaskToggleMode } from "./annotation/mask_toggle_mod
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
 import { register as registerToggleDebugConsole } from "./display/toggle-debug-console";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
+import { register as registerSidebarTab } from "./sidebar_tab";
 
 import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
@@ -124,6 +125,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerToggleColorMode(driver);
   registerToggleDebugConsole(driver);
   registerToggleRenderMode(driver);
+  registerSidebarTab(driver);
 
   // ── Snap ─────────────────────────────────────────────────────────────
   registerSnapMagneticToggle(driver);

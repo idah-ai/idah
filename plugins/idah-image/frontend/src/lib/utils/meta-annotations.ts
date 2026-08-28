@@ -1,0 +1,36 @@
+// ---------------------------------------------------------------------------
+// meta-annotations.ts — Pure logic for entry-level (entry:root) meta annotations.
+//
+// Kept as plain functions (no Svelte runes) so the uniqueness rules can be
+// unit-tested in isolation. The workspace components call these and translate
+// the returned resolution into add/update commands.
+// ---------------------------------------------------------------------------
+
+import { ENTRY_ROOT, type IImageAnnotationRecord, type IImageAnnotationValue } from "$lib/types";
+
+/** Find the single entry:root annotation in a list of annotation items. */
+export function findEntryRootAnnotation(items: IImageAnnotationRecord[]): IImageAnnotationRecord | undefined {
+  return items.find((a) => (a.shape as { type?: string })?.type === ENTRY_ROOT);
+}
+
+export type EntryResolution =
+  | { action: "update"; existing: IImageAnnotationRecord }
+  | { action: "create" }
+  | { action: "none" };
+
+/**
+ * Decide whether setting the entry meta should update the existing entry:root
+ * record, create a new one, or do nothing. Uniqueness is enforced client-side:
+ * at most one entry:root annotation may exist per entry — a second write updates
+ * the existing record instead of duplicating. "create" is returned only when no
+ * record exists AND a category is provided (an empty meta is never created).
+ */
+export function resolveEntryRoot(
+  items: IImageAnnotationRecord[],
+  value: IImageAnnotationValue,
+): EntryResolution {
+  const existing = findEntryRootAnnotation(items);
+  if (existing) return { action: "update", existing };
+  if (value.category) return { action: "create" };
+  return { action: "none" };
+}

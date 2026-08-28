@@ -54,6 +54,8 @@
     TrackInfoSlot,
     noteItems,
     NoteTrackInfoSlot,
+    frameItems,
+    FrameTrackInfoSlot,
   }: Props = $props();
 
   // Selection state (selectionLength is always 1 — single frame)
@@ -553,6 +555,61 @@
     </div>
   {/if}
 
+  {#snippet pinnedRow(rowItems: TimelineItem[], infoSlot: Snippet<[]> | undefined, height: number, wrapperClass: string)}
+    <div class={wrapperClass} style="height: {height}px;">
+      <div class="timeline-notes-spacer bg-secondary border-r">
+        {#if infoSlot}
+          {@render infoSlot()}
+        {/if}
+      </div>
+      <div class="timeline-notes-content-wrapper bg-secondary" role="presentation" onmousemove={handleNotesMouseMove} onmouseleave={handleMouseLeave} onclick={handleNotesClick} onwheel={handleNotesWheel}>
+        <div
+          class="timeline-notes-content"
+          style="width: {contentWidth}px; transform: translateX({-viewport.startRange * scale}px);"
+        >
+          {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
+            <Selection
+              offset={selectionOffset}
+              length={selectionLength}
+              {scale}
+              height={height}
+              trackLength={length}
+            />
+            <Caret
+              x={selectionOffset * scale}
+              value={selectionOffset}
+              {labelFormatter}
+              height={height}
+              color="#4a90d9"
+              showLabel={false}
+            />
+          {/if}
+          {#each rowItems as item (item.rawData.id)}
+            <TrackItem {item} {scale} />
+          {/each}
+          {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
+            <Selection
+              offset={caretFrame}
+              length={1}
+              {scale}
+              height={height}
+              trackLength={length}
+              color="orangered"
+            />
+            <Caret
+              x={caretPixelX}
+              value={caretFrame}
+              {labelFormatter}
+              height={height}
+              color="orangered"
+              showLabel={false}
+            />
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/snippet}
+
   <div class="timeline-ruler-wrapper">
     <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true">
       {#if TrackInfoHeaderSlot}
@@ -600,58 +657,10 @@
   </div>
 
   {#if noteItems && noteItems.length > 0}
-    <div class="timeline-notes-wrapper" style="height: {NOTES_ROW_HEIGHT}px;">
-      <div class="timeline-notes-spacer bg-secondary border-r">
-        {#if NoteTrackInfoSlot}
-          {@render NoteTrackInfoSlot()}
-        {/if}
-      </div>
-      <div class="timeline-notes-content-wrapper bg-secondary" role="presentation" onmousemove={handleNotesMouseMove} onmouseleave={handleMouseLeave} onclick={handleNotesClick} onwheel={handleNotesWheel}>
-        <div
-          class="timeline-notes-content"
-          style="width: {contentWidth}px; transform: translateX({-viewport.startRange * scale}px);"
-        >
-          {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
-            <Selection
-              offset={selectionOffset}
-              length={selectionLength}
-              {scale}
-              height={NOTES_ROW_HEIGHT}
-              trackLength={length}
-            />
-            <Caret
-              x={selectionOffset * scale}
-              value={selectionOffset}
-              {labelFormatter}
-              height={NOTES_ROW_HEIGHT}
-              color="#4a90d9"
-              showLabel={false}
-            />
-          {/if}
-          {#each noteItems as item (item.rawData.id)}
-            <TrackItem {item} {scale} />
-          {/each}
-          {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
-            <Selection
-              offset={caretFrame}
-              length={1}
-              {scale}
-              height={NOTES_ROW_HEIGHT}
-              trackLength={length}
-              color="orangered"
-            />
-            <Caret
-              x={caretPixelX}
-              value={caretFrame}
-              {labelFormatter}
-              height={NOTES_ROW_HEIGHT}
-              color="orangered"
-              showLabel={false}
-            />
-          {/if}
-        </div>
-      </div>
-    </div>
+    {@render pinnedRow(noteItems, NoteTrackInfoSlot, NOTES_ROW_HEIGHT, "timeline-notes-wrapper")}
+  {/if}
+  {#if frameItems && frameItems.length > 0}
+    {@render pinnedRow(frameItems, FrameTrackInfoSlot, NOTES_ROW_HEIGHT, "timeline-frame-wrapper")}
   {/if}
 
   <!-- Vertical scroll container: scrolls both trackinfos and tracks together -->
@@ -769,6 +778,15 @@
   }
 
   .timeline-notes-wrapper {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid hsl(var(--border));
+    overflow: hidden;
+    z-index: 0;
+    position: relative;
+  }
+
+  .timeline-frame-wrapper {
     display: flex;
     flex-shrink: 0;
     border-bottom: 1px solid hsl(var(--border));

@@ -6,6 +6,7 @@
   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+  import { resolveEntryRoot } from "$lib/utils/meta-annotations";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -27,6 +28,8 @@
     IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
+    ENTRY_ROOT,
+    NON_DRAWABLE_SHAPE_TYPES,
   } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
@@ -41,7 +44,7 @@
   import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
   import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
-  import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
+  import type { IImageAnnotationRecord, IImageAnnotationShape, IImageAnnotationValue } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
   import { syncStatus } from "$lib/state/driver.svelte";
@@ -232,7 +235,7 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === ENTRY_ROOT);
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
     /** TOOLS CONFIGURATION */
@@ -363,7 +366,7 @@
       getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
     );
 
-    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id)
+    if (valueMode == ENTRY_ROOT && !selAnnotation && entryRoot.value?.metadata?.id)
       selection.selectAnnotation(entryRoot.value as any);
 
     // wait for confirmation
@@ -378,7 +381,7 @@
       return;
     }
 
-    if (valueMode == "entry:root" && !selAnnotation) {
+    if (valueMode == ENTRY_ROOT && !selAnnotation) {
       if (value.category && value.category != "" && requirementFullfilled)
         addAnnotation({ type: valueMode } as IImageAnnotationShape, $state.snapshot(value));
     } else if (selAnnotation) {
@@ -388,7 +391,7 @@
           $state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord,
           $state.snapshot(value),
         );
-    } else if (valueMode !== "entry:root") {
+    } else if (valueMode !== ENTRY_ROOT) {
       // ── Resolve the actual shape type from config ────────────────────
       // The valueMode may be DEFAULT_MODE (popover/right sidebar flow), but
       // the category might belong to a mask config. Resolve by checking if
@@ -521,6 +524,35 @@
     getDriver().command.call("idah-image:annotation.update", { annotation: ann, value });
   }
 
+  // The entry:root annotation for this entry, derived reactively from the live
+  // store (never a stale singleton) so the Meta tab always reflects reality.
+  let entryRootAnnotation = $derived<IImageAnnotationRecord | undefined>(
+    data.annotations?.items.find((a) => (a.shape as any).type === ENTRY_ROOT) as IImageAnnotationRecord | undefined,
+  );
+
+  /** Set the whole entry meta (entry:root). Uniqueness is enforced client-side:
+   *  at most one entry:root annotation may exist per entry — creating a second
+   *  one updates the existing record instead of duplicating. */
+  function onEntryRootChange(value: AnnotationValue) {
+    if (!editable) return;
+    const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
+    const resolution = resolveEntryRoot(items, value as IImageAnnotationValue);
+    if (resolution.action === "update") {
+      updateAnnotationValue(resolution.existing, value);
+    } else if (resolution.action === "create") {
+      addAnnotation({ type: ENTRY_ROOT } as IImageAnnotationShape, value);
+    }
+  }
+
+  /** Delete the entry:root annotation for this entry. */
+  function onDeleteEntryRoot() {
+    if (!editable) return;
+    const existing = entryRootAnnotation;
+    if (existing) {
+      getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });
+    }
+  }
+
   function selectAnnotation(annotation?: IImageAnnotationRecord) {
     if (annotation) {
       selection.selectAnnotation(annotation as any);
@@ -529,9 +561,13 @@
     }
   }
 
-  // Derive viewport annotations from the global store
+  // Derive viewport annotations from the global store. Non-drawable records
+  // (entry:root) are excluded so they never render on canvas, appear in the
+  // annotation sidebar, or reach the timeline.
   let viewportAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
-    const raw = data.annotations?.items ?? [];
+    const raw = (data.annotations?.items ?? []).filter(
+      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+    );
     return raw.map((ann) => ({
       id: ann.id,
       shape: ann.shape as IImageAnnotationShape,
@@ -729,7 +765,15 @@
                 </ShapesContainer>
               {/if}
 
-              <PropertiesSidebar {annotationId} {annotationValue} {onEditValue} onReSelectCategory={reSelectCategory} />
+              <PropertiesSidebar
+                {annotationId}
+                {annotationValue}
+                {onEditValue}
+                onReSelectCategory={reSelectCategory}
+                {entryRootAnnotation}
+                onEntryRootChange={onEntryRootChange}
+                onDeleteEntryRoot={onDeleteEntryRoot}
+              />
             </section>
           </ResizablePane>
         </ResizablePaneGroup>

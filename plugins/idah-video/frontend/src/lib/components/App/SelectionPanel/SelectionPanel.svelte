@@ -10,6 +10,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { compareGroups } from "$lib/utils/annotation";
+  import { NON_DRAWABLE_SHAPE_TYPES } from "$lib/types";
 
   import type { IConfigProperty } from "$idah/v2/types";
   import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
@@ -39,6 +40,13 @@
   // Determine which shape type config to use based on selection state
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
+
+  // A selected meta annotation (entry:root / idah-video:frame) is never shown
+  // in the Annotations tab — it's edited through the Meta tab instead. Treat it
+  // as no selection here so the annotations list renders rather than the meta form.
+  let isMetaAnnotation = $derived(
+    sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation.shape as { type?: string })?.type ?? ""),
+  );
 
   // The active shape type: from annotation, from group (via first annotation), or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
@@ -113,8 +121,15 @@
     const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
     const frame = currentFrame;
 
-    // Filter to current frame
-    const onFrame = items.filter((ann) => ann.shape.start <= frame && ann.shape.end >= frame);
+    // Filter to current frame. Non-drawable records (entry:root spanning the
+    // whole video, and per-frame idah-video:frame) are excluded — they are not
+    // drawable shapes and are only ever created/edited through the Meta tab.
+    const onFrame = items.filter(
+      (ann) =>
+        ann.shape.start <= frame &&
+        ann.shape.end >= frame &&
+        !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+    );
 
     // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
     const map = new Map<string, IVideoAnnotationRecord[]>();
@@ -163,7 +178,7 @@
   }
 </script>
 
-{#if !sel}
+{#if !sel || isMetaAnnotation}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} {currentFrame} />

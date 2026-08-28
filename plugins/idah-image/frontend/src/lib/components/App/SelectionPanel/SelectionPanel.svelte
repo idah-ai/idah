@@ -7,7 +7,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { DEFAULT_MODE, IMAGE_MASK } from "$lib/types";
+  import { DEFAULT_MODE, IMAGE_MASK, NON_DRAWABLE_SHAPE_TYPES } from "$lib/types";
 
     import type { IConfigProperty } from "$idah/v2/types";
     import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
@@ -29,6 +29,13 @@
   // Determine which shape type config to use based on selection state
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
+
+  // A selected meta annotation (entry:root) is never shown in the Annotations
+  // tab — it's edited through the Meta tab instead. Treat it as no selection
+  // here so the annotations list renders rather than the meta form.
+  let isMetaAnnotation = $derived(
+    sel && NON_DRAWABLE_SHAPE_TYPES.has((sel.shape as { type?: string })?.type ?? ""),
+  );
 
   // The active shape type: from annotation or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
@@ -56,10 +63,14 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   });
 
-  // All annotations on the current frame (default mode, no selection)
+  // All annotations on the current frame (default mode, no selection).
+  // Non-drawable records (entry:root) are excluded — they are not drawable
+  // shapes and are only ever created/edited through the Meta tab.
   let currentFrameAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
-    return data.annotations.items as unknown as IImageAnnotationRecord[];
+    return (data.annotations.items as unknown as IImageAnnotationRecord[]).filter(
+      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+    );
   });
 
   let showAnnotationsList = $derived(
@@ -96,7 +107,7 @@
   }
 </script>
 
-{#if !sel}
+{#if !sel || isMetaAnnotation}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} />

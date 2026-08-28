@@ -23,6 +23,10 @@
         "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
+        },
+        "frame": {
+          "label": "Frame",
+          "icon": "api/v1/plugins/idah-video/assets/frame-icon.svg"
         }
       }
     }

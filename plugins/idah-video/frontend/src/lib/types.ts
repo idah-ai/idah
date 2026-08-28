@@ -36,6 +36,27 @@ export interface IVideoFrameSelection {
 export const VIDEO_BOUNDING_BOX = "idah-video:bounding-box";
 export const VIDEO_POLYGON = "idah-video:polygon";
 
+/**
+ * Special, non-drawable shape type holding entry-level (whole video)
+ * category + properties. Not namespaced under a modality.
+ */
+export const ENTRY_ROOT = "entry:root";
+
+/**
+ * Per-frame meta shape, namespaced under the idah-video modality and declared
+ * in the plugin manifest (modalities[0].shapes) exactly like bounding-box /
+ * polygon. Modeled as a zero-geometry single-keyframe annotation so it reuses
+ * the store's windowed range-fetch and per-frame filtering.
+ */
+export const VIDEO_FRAME = "idah-video:frame";
+
+/**
+ * Shape types that are never rendered as drawable geometry and must be
+ * excluded from the left-sidebar tool list, the on-canvas layer, the generic
+ * annotation list, and the per-shape timeline tracks.
+ */
+export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT, VIDEO_FRAME]);
+
 // ─── Video annotation shape ──────────────────────────────────────────────
 
 /**
