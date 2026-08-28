@@ -50,7 +50,7 @@
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import type { IVideoAnnotationRecord, IVideoAnnotationShape } from "$lib/types";
+  import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { centroid as centroidUtil } from "$lib/utils/math/point";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -707,6 +707,33 @@
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
     onSelection(viewport.mode, frame, points, angle, annId);
+
+    // ── Synchronous local data store update to prevent viewport blink ──
+    // The dispatched command's async do() will also update the store, but
+    // local drag/selection state is cleared synchronously in onMouseUp,
+    // which would cause shapes to snap back to their old positions before
+    // the async update completes. Updating the local store synchronously
+    // here keeps shapes at their new positions through the render that
+    // follows, eliminating the blink.
+    const ann = data.annotations?.items?.find((r) => r.id === annId);
+    if (!ann) return;
+    const shape = ann.shape as IVideoAnnotationShape | undefined;
+    if (!shape?.frames?.length) return;
+    const currentFrame = viewport.video.displayedFrame.value;
+    const frames = [...shape.frames];
+    const existingIdx = frames.findIndex((f) => f.frame === currentFrame);
+    const newSelection: IVideoFrameSelection = { frame: currentFrame, points, angle };
+    if (existingIdx >= 0) frames[existingIdx] = newSelection;
+    else frames.push(newSelection);
+    frames.sort((a, b) => a.frame - b.frame);
+
+    const min = frames.reduce((m, f) => Math.min(m, f.frame), Infinity);
+    const max = frames.reduce((m, f) => Math.max(m, f.frame), -Infinity);
+
+    data.annotations!.upsert({
+      ...ann,
+      shape: { ...shape, start: min, end: max, frames },
+    } as any);
   }
 
   let _noteHandledByClick = false;
