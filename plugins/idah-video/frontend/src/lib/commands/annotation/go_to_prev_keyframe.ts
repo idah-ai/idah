@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// annotation.go_to_prev_keyframe — Jump to the previous keyframe in the
+// idah-video:annotation.go-to-prev-keyframe — Jump to the previous keyframe in the
 // currently selected group.
 //
 // If an annotation is selected, uses its group. If a group is selected,
@@ -14,7 +14,7 @@ import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
 export const command = {
-  name: "annotation.go_to_prev_keyframe",
+  name: "idah-video:annotation.go-to-prev-keyframe",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "Control+ArrowLeft",

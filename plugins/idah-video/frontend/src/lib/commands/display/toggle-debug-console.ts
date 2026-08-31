@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "debug.toggle_console",
+  name: "idah-video:ui.toggle-debug-console",
   group: "Display",
   modes: ["*"],
   shortcut: "Control+Shift+Backquote",

@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_category_editability
+// idah-image:annotation.category.toggle-editability
 // Toggle editability (lock) of annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.toggle_category_editability",
+//     "idah-image:annotation.category.toggle-editability",
 //     {
 //       category: "vehicle",
 //     },
@@ -28,7 +28,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 
 export const command = {
-  name: "annotation.toggle_category_editability",
+  name: "idah-image:annotation.category.toggle-editability",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

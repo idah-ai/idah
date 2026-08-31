@@ -1,8 +1,9 @@
 <script lang="ts">
   import { ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
-  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
+  import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
@@ -14,7 +15,6 @@
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem, IToolbarNode, IToolbarGroupNode } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
-  import { SvelteMap } from "svelte/reactivity";
 
   // Props
   interface Props {
@@ -61,6 +61,7 @@
 
   onMount(refreshToolbar);
 
+  /** Shortcut label for the dropdown-menu items (KbdTooltipButton resolves its own leaf shortcuts). */
   function cmdShortcut(name: string): string | undefined {
     const s = driver.command.getShortcut(name);
     return s ? getShortcutLabel(s) : undefined;
@@ -92,14 +93,14 @@
 
   const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
-      name: "core.undo",
+      name: "history.undo",
       label: "Undo",
       icon: UndoIcon,
       disabled: !canUndo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
       handleClick: () => driver.command.undo(),
     },
     {
-      name: "core.redo",
+      name: "history.redo",
       label: "Redo",
       icon: RedoIcon,
       disabled: !canRedo || disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
@@ -111,24 +112,20 @@
 <!-- Leaf item as a header-bar button -->
 {#snippet leafButton(item: IToolbarItem)}
   {@const isToggled = isItemToggled(item)}
-  <ToolTooltip
+  <KbdTooltipButton
     label={item.label}
-    shortcut={item.name ? cmdShortcut(item.name) : undefined}
+    {driver}
+    commandName={item.name}
     align="center"
     delayDuration={100}
+    variant={isToggled ? "default" : "ghost"}
+    size="icon-sm"
+    onclick={item.onClick}
+    disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
   >
-    {#snippet trigger()}
-      <Button
-        variant={isToggled ? "default" : "ghost"}
-        size="icon-sm"
-        onclick={item.onClick}
-        disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
-      >
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html item.icon}
-      </Button>
-    {/snippet}
-  </ToolTooltip>
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+    {@html item.icon}
+  </KbdTooltipButton>
 {/snippet}
 
 <!-- Child inside a dropdown: a leaf becomes an item, a nested group becomes a submenu -->
@@ -219,13 +216,18 @@
 
   <Separator orientation="vertical"></Separator>
 
-  {#each commands as { name, label, icon: Icon, disabled, handleClick }, commandIndex (commandIndex)}
-    <ToolTooltip {label} shortcut={cmdShortcut(name)} align="center" delayDuration={100}>
-      {#snippet trigger()}
-        <Button variant="ghost" size="icon-sm" {disabled} onclick={handleClick}>
-          <Icon />
-        </Button>
-      {/snippet}
-    </ToolTooltip>
+  {#each commands as { name, label, icon, disabled, handleClick }, commandIndex (commandIndex)}
+    <KbdTooltipButton
+      {label}
+      {driver}
+      commandName={name}
+      {icon}
+      align="center"
+      delayDuration={100}
+      variant="ghost"
+      size="icon-sm"
+      {disabled}
+      onclick={handleClick}
+    />
   {/each}
 </div>

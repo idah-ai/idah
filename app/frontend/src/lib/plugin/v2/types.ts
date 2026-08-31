@@ -802,10 +802,10 @@ export interface ISettingsDriverV2 {
    * this after mutating a setting; core — which cannot reactively read the
    * plugin's own reactive state across the bundle boundary — re-reads the
    * affected values while its settings menu is open.
-   * Bumps the adapter's `revision` counter, the same invalidation mechanism
-   * `toolbar.invalidate()` uses for toggle state.
+   * Bumps the adapter's `revision` counter — the same mechanism and name as
+   * `toolbar.invalidate()`.
    */
-  emitChange(): void;
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────

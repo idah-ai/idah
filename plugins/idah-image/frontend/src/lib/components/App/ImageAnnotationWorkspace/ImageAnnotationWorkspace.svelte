@@ -14,11 +14,6 @@
   import { media } from "$lib/state/media.svelte";
   import {
     DEFAULT_MODE,
-    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
-    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
-    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
-    IMAGE_LINE as IDAH_IMAGE_LINE,
-    IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
     IMAGE_BOUNDING_BOX,
     IMAGE_CIRCLE,
     IMAGE_ELLIPSE,
@@ -49,6 +44,7 @@
   import { maskSession } from "$lib/state/mask-session.svelte";
   import { toolPanel } from "$lib/state/tool-panel.svelte";
   import FloatingToolPanel from "$lib/components/App/FloatingToolPanel/FloatingToolPanel.svelte";
+  import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
   import { handlePopoverCancel } from "./popover-cancel";
 
   // Local type aliases for V1-compatible annotation values
@@ -72,14 +68,12 @@
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
-  const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let entryId = $derived(getDriver().id);
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
-  let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === NOTE_MODE);
 
   // let image: Image | undefined = $state();
@@ -119,14 +113,6 @@
   });
 
   let length = $state(0);
-  let tools: {
-    name: string;
-    label: string;
-    type: string;
-    iconName: string;
-    disabled?: boolean;
-    handleClick: () => void;
-  }[] = $state([]);
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
@@ -234,96 +220,12 @@
     const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
-    /** TOOLS CONFIGURATION */
-    const toolListConfig = [
-      {
-        name: "tools.visual",
-        label: "Visual",
-        type: "default",
-        iconName: "mouse-pointer-2",
-        command: "tools.visual",
-      },
-      {
-        name: "tools.bounding_box",
-        label: "Bounding Box",
-        type: IDAH_IMAGE_BOUNDING_BOX,
-        iconName: "vector-square",
-        disabled: !editable,
-        command: "tools.bounding_box",
-      },
-      {
-        name: "tools.polygon",
-        label: "Polygon",
-        type: IDAH_IMAGE_POLYGON,
-        iconName: "polygon",
-        disabled: !editable,
-        command: "tools.polygon",
-      },
-      {
-        name: "tools.circle",
-        label: "Circle",
-        type: IDAH_IMAGE_CIRCLE,
-        iconName: "circle",
-        disabled: !editable,
-        command: "tools.circle",
-      },
-      {
-        name: "tools.ellipse",
-        label: "Ellipse",
-        type: IDAH_IMAGE_ELLIPSE,
-        iconName: "ellipse",
-        disabled: !editable,
-        command: "tools.ellipse",
-      },
-      {
-        name: "tools.line",
-        label: "Line",
-        type: IDAH_IMAGE_LINE,
-        iconName: "minimize-2",
-        disabled: !editable,
-        command: "tools.line",
-      },
-      {
-        name: "tools.note",
-        label: "Add Note",
-        type: NOTE_MODE,
-        iconName: "message-circle",
-        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and REVIEW_MODE
-        command: "tools.note",
-      },
-    ];
-
-    const toolConfig = toolListConfig.filter((tool) => {
-      if (
-        [IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_ELLIPSE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON].includes(
-          tool.type,
-        )
-      ) {
-        const cfg = getDriver().config[tool.type];
-        return cfg && cfg.values && cfg.values.length > 0;
-      }
-      return true;
-    });
-
-    tools = toolConfig.map((tool) => {
-      return {
-        name: tool.name,
-        label: tool.label,
-        type: tool.type,
-        iconName: tool.iconName,
-        disabled: tool.disabled,
-        handleClick: () => getDriver().command.call(tool.command),
-      };
-    });
-
-    // Set toolbar tools on the driver — the mock page's toolbar manager reads them
-    // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
   async function addAnnotation(shape: IImageAnnotationShape, value: AnnotationValue = {}) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.add", { shape, value });
+    getDriver().command.call("idah-image:annotation.add", { shape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -342,7 +244,7 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("idah-image:annotation.delete", { annotationId });
   }
 
   function deleteAnnotation(annotation: IImageAnnotationRecord) {
@@ -420,6 +322,7 @@
           if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
             maskTool.active = "brush";
           }
+          toolPanel.show(MaskToolConfigurations);
           getDriver().toolbar.invalidate();
           return;
         }
@@ -442,6 +345,7 @@
         if (maskTool.active !== "brush" && maskTool.active !== "polygon") {
           maskTool.active = "brush";
         }
+        toolPanel.show(MaskToolConfigurations);
         getDriver().toolbar.invalidate();
       }
     } else if (shapeSelectionArgs && requirementFullfilled) {
@@ -483,7 +387,7 @@
       const shapeData = ann.shape as IImageAnnotationShape;
       const shapeType = shapeData?.type ?? type;
       const updatedShape: IImageAnnotationShape = { type: shapeType, points, ...extraProps };
-      getDriver().command.call("annotation.update", {
+      getDriver().command.call("idah-image:annotation.update", {
         annotation: ann,
         shape: updatedShape,
       });
@@ -515,7 +419,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("idah-image:annotation.update", { annotation: ann, value });
   }
 
   function selectAnnotation(annotation?: IImageAnnotationRecord) {

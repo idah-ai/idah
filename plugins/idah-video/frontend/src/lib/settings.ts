@@ -56,9 +56,9 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "nearest-neighbor", label: "Pixelated" },
             ],
             // Route through the command so the shortcut/palette and this menu
-            // share one mutation path; the command fires settings.emitChange().
+            // share one mutation path; the command fires settings.invalidate().
             get: () => ui.renderMode,
-            set: (v: string) => driver.command.call("ui.toggle_render_mode", { value: v }),
+            set: (v: string) => driver.command.call("idah-video:ui.toggle-render-mode", { value: v }),
           },
           {
             type: "options",
@@ -70,7 +70,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "random", label: "Random" },
             ],
             get: () => ui.colorMode,
-            set: (v: string) => driver.command.call("ui.toggle_color_mode", { value: v }),
+            set: (v: string) => driver.command.call("idah-video:ui.toggle-color-mode", { value: v }),
           },
           {
             type: "options",
@@ -82,7 +82,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "time", label: "Time" },
             ],
             get: () => ui.timeDisplay,
-            set: (v: string) => driver.command.call("ui.toggle_time_display", { value: v }),
+            set: (v: string) => driver.command.call("idah-video:ui.toggle-time-display", { value: v }),
           },
           {
             type: "options",

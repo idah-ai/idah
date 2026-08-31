@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// mask.toggle_mode — Toggle mask paint mode (add/remove)
+// idah-image:annotation.mask-brush.toggle-mode — Toggle mask paint mode (add/remove)
 // Not undoable (stateless).
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
@@ -7,7 +7,7 @@ import { DEFAULT_MODE, IMAGE_MASK } from "$lib/types";
 import { maskSession } from "$lib/state/mask-session.svelte";
 
 export const command = {
-  name: "mask.toggle_mode",
+  name: "idah-image:annotation.mask-brush.toggle-mode",
   group: "Annotation",
   modes: [IMAGE_MASK],
   shortcut: "Z",

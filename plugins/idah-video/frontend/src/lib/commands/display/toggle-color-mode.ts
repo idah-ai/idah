@@ -7,7 +7,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { ui, type ColorMode } from "$lib/state/ui.svelte";
 
 export const command = {
-  name: "ui.toggle_color_mode",
+  name: "idah-video:ui.toggle-color-mode",
   group: "Display",
   modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
   shortcut: null,
@@ -28,7 +28,7 @@ export function register(driver: IIdahDriverV2): void {
       do() {
         const value = opts?.value as ColorMode | undefined;
         ui.colorMode = value ?? ((ui.colorMode === "category" ? "random" : "category") as ColorMode);
-        driver.settings.emitChange();
+        driver.settings.invalidate();
       },
       isCombinable() { return false; },
       combine(p) { return p; },

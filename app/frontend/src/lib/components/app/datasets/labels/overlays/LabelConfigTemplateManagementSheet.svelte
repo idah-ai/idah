@@ -3,22 +3,23 @@
 
   import * as Sheet from "$lib/components/ui/sheet";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
-  import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import DatasetModalityBadge from "@/components/app/datasets/badges/DatasetModalityBadge.svelte";
+  import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import EditableTextField from "@/components/app/forms/fields/editable-text/EditableTextField.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import {
     labelConfigTemplateDataSource,
     LabelConfigTemplateRecord,
   } from "@/data/model/dataset/label-config-template/record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
-  import { refetches } from "@/utils/refetch";
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import { refetches } from "@/utils/refetch";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig } from "@/plugin/v2/types";
@@ -47,7 +48,6 @@
   let saving = $state(false);
   let loaded = $state(false);
   let templates = $state<LabelConfigTemplateRecord[]>([]);
-  let openConfirmDeleteModal = $state(false);
 
   const isSelected = $derived(selectedTemplateId !== null);
   const templatesIsEmpty = $derived(templates.length === 0);
@@ -131,18 +131,27 @@
     }
   }
 
-  async function deleteTemplate() {
-    if (!selectedTemplateId) return;
-    try {
-      await labelConfigTemplateDataSource.delete(selectedTemplateId);
-      selectedTemplateId = null;
-      loaded = false;
-      openConfirmDeleteModal = false;
-      $refetches.labelConfigTemplates.list = new Date();
-      showToast.success({ title: "Template deleted", description: "The template has been deleted." });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
+  async function confirmDeleteTemplate(): Promise<void> {
+    const templateId = selectedTemplateId;
+    if (!templateId) return;
+
+    await showConfirmModal({
+      title: "Delete Template",
+      description: `Are you sure you want to delete this template "${selectedTemplateName}"? This action cannot be undone.`,
+      confirmLabel: "Yes, Delete",
+      onConfirm: async () => {
+        try {
+          await labelConfigTemplateDataSource.delete(templateId);
+          selectedTemplateId = null;
+          loaded = false;
+          $refetches.labelConfigTemplates.list = new Date();
+          showToast.success({ title: "Template deleted", description: "The template has been deleted." });
+        } catch (error) {
+          showActionFailedToast(error);
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
   }
 
   async function applyTemplate() {
@@ -197,11 +206,7 @@
               />
 
               <div class="ml-auto flex items-center gap-4">
-                <Button
-                  variant="destructive-outline"
-                  disabled={!loaded}
-                  onclick={() => (openConfirmDeleteModal = true)}
-                >
+                <Button variant="destructive-outline" disabled={!loaded} onclick={confirmDeleteTemplate}>
                   <Trash2Icon />
                   Delete
                 </Button>
@@ -253,11 +258,3 @@
     {/key}
   </Sheet.Content>
 </Sheet.Root>
-
-<ConfirmModal
-  title="Delete Template"
-  description={`Are you sure you want to delete this template "${selectedTemplateName}"? This action cannot be undone.`}
-  confirmLabel="Yes, Delete"
-  onConfirm={deleteTemplate}
-  bind:open={openConfirmDeleteModal}
-/>

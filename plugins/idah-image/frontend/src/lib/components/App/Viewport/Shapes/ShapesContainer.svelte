@@ -466,9 +466,12 @@
     if (isMaskBrushMode) {
       e.preventDefault();
       e.stopPropagation();
-      const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
-        ? selAnnotation.id
-        : undefined;
+      // If the selected annotation is a locked mask, refuse to paint at all
+      // (no new mask, no edit) — mirroring the vector-shape lock guard.
+      const isLockedSelectedMask =
+        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      if (isLockedSelectedMask) return;
+      const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK ? selAnnotation.id : undefined;
       maskBrushPointerDown(scenePixelCursor[0], scenePixelCursor[1], maskAnnId);
       return;
     }
@@ -476,6 +479,11 @@
     // ── Mask polygon mode — delegate to PolygonCreateShape (rendered below) ─
     if (isMaskPolygonMode) {
       e.stopPropagation();
+      // If the selected annotation is a locked mask, refuse to draw at all
+      // (no new mask, no edit) — mirroring the vector-shape lock guard.
+      const isLockedSelectedMask =
+        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      if (isLockedSelectedMask) return;
       maskPolygonCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
@@ -572,6 +580,12 @@
 
     // ── Mask brush mode — flush on pointer up ─────────────────────
     if (isMaskBrushMode) {
+      // If the selected annotation is a locked mask, don't flush or open the
+      // category popover — the mouse-down guard already refused to paint, so
+      // there is no session to flush and no new mask to create.
+      const isLockedSelectedMask =
+        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      if (isLockedSelectedMask) return;
       // Save the annotationId BEFORE the flush resets it
       const hadAnnotation = !!maskSession.annotationId;
       maskBrushPointerUp(getDriver());
@@ -887,12 +901,17 @@
             // onShapeSelection which would strip existing tiles from the
             // local shape. For new annotations, use onSelection to create.
             const sel = selection.value;
+            // Defense-in-depth: never commit onto (or spin off a new mask
+            // against) a locked mask annotation.
+            if (sel && (sel.shape as any)?.type === IMAGE_MASK && annotation.isLocked(sel)) {
+              return;
+            }
             const existingId = sel && (sel.shape as any)?.type === IMAGE_MASK
               ? sel.id
               : undefined;
             if (existingId) {
               // Edit existing mask — just flush the session tiles
-              getDriver().command.call("annotation.mask_shapes.flush");
+              getDriver().command.call("idah-image:annotation.mask-shapes.flush");
             } else {
               // New mask — trigger creation via onSelection
               onSelection(IMAGE_MASK, []);
