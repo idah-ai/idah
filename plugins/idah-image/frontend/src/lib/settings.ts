@@ -104,7 +104,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
 // Plugin and core live in separate Svelte runtimes, so this is a one-time read
 // rather than a reactive subscription.
 export function hydrateSettings(driver: IIdahDriverV2): void {
-  const v = driver.accountSettings.get(CATEGORY_LABEL_VISIBILITY_KEY);
+  const v = driver.accountSettings.get<LabelVisibility>(CATEGORY_LABEL_VISIBILITY_KEY);
   if (v === "always" || v === "hover" || v === "never") {
     ui.labelVisibility = v;
   }

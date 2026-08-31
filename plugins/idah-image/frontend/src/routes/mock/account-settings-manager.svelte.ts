@@ -22,7 +22,7 @@ export class AccountSettingsManager implements IAccountSettingsDriverV2 {
     return this.overrides;
   }
 
-  get(_key: string): AccountSettingValue | undefined {
+  get<T extends AccountSettingValue>(_key: string): T | undefined {
     // Mock: no generic settings store.
     return undefined;
   }

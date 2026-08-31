@@ -9,8 +9,8 @@
 // components reading it re-render automatically.
 // -----------------------------------------------------------------------
 import { SvelteMap } from "svelte/reactivity";
-import type { AccountSettingValue } from "../../types";
 import { accountSettingBackendDataSource, commandShortcutKey } from "@/data/model/setting/account_setting/record";
+import type { AccountSettingValue } from "@/data/model/setting/account_setting/types";
 
 export class AccountSettingsManager {
   // All loaded settings, keyed by (plugin, key) → { id, value }. A composite key
@@ -32,14 +32,14 @@ export class AccountSettingsManager {
     return `${this.plugin} ${key}`;
   }
 
-  get(key: string): AccountSettingValue | undefined {
-    return this.settings.get(this.#mapKey(key))?.value;
+  get<T extends AccountSettingValue>(key: string): T | undefined {
+    return this.settings.get(this.#mapKey(key))?.value as T | undefined;
   }
 
   // Create-or-update a setting in this manager's plugin namespace.
   async upsert(key: string, value: AccountSettingValue): Promise<void> {
     const { data } = await accountSettingBackendDataSource.upsert(key, value, this.plugin);
-    this.settings.set(this.#mapKey(key), { id: data.id, value: data.value as AccountSettingValue });
+    this.settings.set(this.#mapKey(key), { id: data.id, value: data.value });
   }
 
   async load(accountId: string): Promise<void> {
@@ -52,7 +52,7 @@ export class AccountSettingsManager {
     this.settings.clear();
     for (const rec of res.data) {
       if (rec.plugin !== this.plugin) continue;
-      this.settings.set(this.#mapKey(rec.key), { id: rec.id, value: rec.value as AccountSettingValue });
+      this.settings.set(this.#mapKey(rec.key), { id: rec.id, value: rec.value });
     }
 
     this.#syncOverridesFromStore();

@@ -31,8 +31,18 @@ describe("AccountSettingsManager", () => {
 
     await videoSettings.upsert("show-timeline", true);
 
-    expect(videoSettings.get("show-timeline")).toBe(true);
-    expect(imageSettings.get("show-timeline")).toBeUndefined();
+    expect(videoSettings.get<boolean>("show-timeline")).toBe(true);
+    expect(imageSettings.get<boolean>("show-timeline")).toBeUndefined();
+  });
+
+  it("round-trips nested JSONB values through a typed read", async () => {
+    const preferences = { fontSize: 14, sections: [{ name: "editor", visible: true }] };
+    upsert.mockResolvedValue({ data: { id: "setting-1", value: preferences } });
+    const settings = new AccountSettingsManager("idah-video");
+
+    await settings.upsert("preferences", preferences);
+
+    expect(settings.get<typeof preferences>("preferences")).toEqual(preferences);
   });
 
   it("persists shortcut overrides in its plugin namespace", async () => {
@@ -62,6 +72,6 @@ describe("AccountSettingsManager", () => {
 
     expect(settings.getShortcutOverrides()).toBe(overrides);
     expect(overrides).toEqual({ "timeline.play": "K" });
-    expect(settings.get("command:shortcut")).toEqual({ "timeline.play": "K" });
+    expect(settings.get<Record<string, string>>("command:shortcut")).toEqual({ "timeline.play": "K" });
   });
 });

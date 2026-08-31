@@ -2,6 +2,8 @@
 // V2 Driver — Type definitions
 // ---------------------------------------------------------------------------
 
+import type { AccountSettingValue } from "@/data/model/setting/account_setting/types";
+
 /**
  * A keyboard shortcut expressed as a canonical key-combination string.
  *
@@ -666,7 +668,7 @@ export interface IToolbarDriverV2 {
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
 
-export type AccountSettingValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
+export type { AccountSettingValue } from "@/data/model/setting/account_setting/types";
 
 /**
  * Loads & persists the current user's account settings. A generic store
@@ -680,7 +682,7 @@ export interface IAccountSettingsDriverV2 {
    * Read a setting in the active plugin's namespace, or undefined if not
    * loaded.
    */
-  get(key: string): AccountSettingValue | undefined;
+  get<T extends AccountSettingValue>(key: string): T | undefined;
 
   /**
    * Create-or-update a setting in the active plugin's namespace. The row is

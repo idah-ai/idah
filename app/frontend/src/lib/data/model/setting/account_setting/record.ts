@@ -3,7 +3,7 @@ import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 
-import type { Hash } from "@/utils/types";
+import type { AccountSettingValue } from "./types";
 
 export const accountSettingsType = "setting:account_settings";
 
@@ -12,7 +12,7 @@ export class AccountSettingRecord extends Record {
   @field() public account_id!: string;
   @field() public key!: string;
   @field() public plugin!: string;
-  @field() public value!: Hash | [] | string | number | boolean | null | undefined;
+  @field() public value!: AccountSettingValue;
 }
 
 RecordFactory.registerTypes(AccountSettingRecord);
