@@ -33,9 +33,13 @@ module AccountSettings
       account_settings.index({ account_id: })
     end
 
-    def update(record)
-      account_settings.update!(record.id, record.attributes)
-      account_settings.find!(record.id)
+    # Create-or-update the current account's setting addressed by its natural
+    # key (account_id, key, plugin). account_id is taken from the auth context
+    # so callers can only write their own settings. Returns the upserted record.
+    def upsert(key, value, plugin: "")
+      account_id = auth_context.metadata[:id]
+      account_settings.set(key, value, account_id:, plugin:)
+      account_settings.index({ account_id:, key:, plugin: }).first
     end
 
     def delete(account_id)

@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe AccountSettings::Service, database: true do
-  let(:auth_context) { Verse::Auth::Context.new }
+  let(:auth_context) { Verse::Auth::Context.new(metadata: { id: account_id }) }
 
   subject { described_class.new(auth_context) }
 
@@ -51,24 +51,30 @@ RSpec.describe AccountSettings::Service, database: true do
     end
   end
 
-  describe "#update" do
-    it "updates an account setting" do
-      setting_id = account_settings_repo.create(attributes)
+  describe "#upsert" do
+    it "creates the setting on first write and returns the record" do
+      result = subject.upsert("theme", "dark")
 
-      record = deserialize(
-        {
-          data: {
-            type: Resource::Setting::AccountSettings,
-            id: setting_id,
-            attributes: {
-              value: "light"
-            }
-          }
-        }
-      )
+      expect(result.account_id).to eq(account_id)
+      expect(result.key).to eq("theme")
+      expect(result.value).to eq("dark")
+    end
 
-      updated_setting = subject.update(record)
-      expect(updated_setting.value).to eq("light")
+    it "updates the same natural key on subsequent writes (no duplicate row)" do
+      subject.upsert("theme", "dark")
+      result = subject.upsert("theme", "light")
+
+      expect(result.value).to eq("light")
+      rows = account_settings_repo.index({ account_id: account_id, key: "theme" })
+      expect(rows.length).to eq(1)
+    end
+
+    it "keeps rows independent per plugin" do
+      subject.upsert("label", "a", plugin: "idah-image")
+      subject.upsert("label", "b", plugin: "idah-video")
+
+      expect(account_settings_repo.get("label", account_id: account_id, plugin: "idah-image")).to eq("a")
+      expect(account_settings_repo.get("label", account_id: account_id, plugin: "idah-video")).to eq("b")
     end
   end
 
