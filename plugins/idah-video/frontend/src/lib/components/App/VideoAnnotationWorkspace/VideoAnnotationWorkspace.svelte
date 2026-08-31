@@ -52,14 +52,12 @@
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
-  const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let entryId = $derived(getDriver().id);
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep) && !viewport.isReviewWorkspace);
-  let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === "note");
 
   let player: Video | undefined = $state();
@@ -99,14 +97,6 @@
   });
 
   let length = $state(0);
-  let tools: {
-    name: string;
-    label: string;
-    type: string;
-    iconName: string;
-    disabled?: boolean;
-    handleClick: () => void;
-  }[] = $state([]);
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
@@ -208,62 +198,6 @@
     const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
-    /** TOOLS CONFIGURATION */
-    const toolListConfig = [
-      {
-        name: "tools.visual",
-        label: "Visual",
-        type: "default",
-        iconName: "mouse-pointer-2",
-        command: "tools.visual",
-      },
-      {
-        name: "tools.bounding_box",
-        label: "Bounding Box",
-        type: IDAH_VIDEO_BOUNDING_BOX,
-        iconName: "vector-square",
-        disabled: !editable,
-        command: "tools.bounding_box",
-      },
-      {
-        name: "tools.polygon",
-        label: "Polygon",
-        type: IDAH_VIDEO_POLYGON,
-        iconName: "polygon",
-        disabled: !editable,
-        command: "tools.polygon",
-      },
-      {
-        name: "tools.note",
-        label: "Add Note",
-        type: "note",
-        iconName: "message-circle",
-        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
-        command: "tools.note",
-      },
-    ];
-
-    const toolConfig = toolListConfig.filter((tool) => {
-      if (["idah-video:bounding-box", "idah-video:polygon"].includes(tool.type)) {
-        const cfg = getDriver().config[tool.type];
-        return cfg && cfg.values && cfg.values.length > 0;
-      }
-      return true;
-    });
-
-    tools = toolConfig.map((tool) => {
-      return {
-        name: tool.name,
-        label: tool.label,
-        type: tool.type,
-        iconName: tool.iconName,
-        disabled: tool.disabled,
-        handleClick: () => getDriver().command.call(tool.command),
-      };
-    });
-
-    // Set toolbar tools on the driver — the mock page's toolbar manager reads them
-    // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
   function seekToFrame(frame: number) {
