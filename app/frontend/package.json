@@ -58,6 +58,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "@tailwindcss/oxide",
       "esbuild"
     ]
   },

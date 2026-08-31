@@ -77,25 +77,29 @@ export function register(driver: IIdahDriverV2): void {
 
       if (groupAnnotations.length === 0) return noopAction(command);
 
-      // Snapshot IDs and their current locked state from the annotation module
-      const snapshot = groupAnnotations.map((ann) => ({
-        id: ann.id,
-        locked: annotation.isLocked(ann),
-      }));
+      // Determine the group ID from the first annotation's metadata or fall back to the first annotation's own id
+      const resolvedGroupId: string =
+        (groupAnnotations[0] as any)?.metadata?.group_id ?? groupId ?? groupAnnotations[0]?.id;
+
+      // Snapshot includes the group ID and the group's overall locked status,
+      // so that toggling uses the group-level key.
+      const snapshot = {
+        groupId: resolvedGroupId,
+        locked: annotation.isLocked(resolvedGroupId),
+        previousLocks: groupAnnotations.map((ann) => ({
+          id: ann.id,
+          locked: annotation.isLocked(ann),
+        })),
+      };
 
       return {
         command: { ...command },
         async do() {
-          const anyLocked = snapshot.some((s) => s.locked);
-          const newLocked = !anyLocked;
-          for (const { id } of snapshot) {
-            annotation.toggleLocked(id, newLocked);
-          }
+          const newLocked = !snapshot.locked;
+          annotation.toggleLocked(snapshot.groupId, newLocked);
         },
         async undo() {
-          for (const { id, locked } of snapshot) {
-            annotation.toggleLocked(id, locked);
-          }
+          annotation.toggleLocked(snapshot.groupId, snapshot.locked);
         },
         isCombinable() {
           return false;

@@ -9,6 +9,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], angle: number) => void;
@@ -19,6 +20,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = "editor",
     onClick,
     onEditComplete,
@@ -29,18 +31,22 @@
   let _polyComp: any = $state();
 
   /** Expose the active tool selection to parents. */
-  let _toolSelection = $derived.by<{ startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined>(() => {
+  let _toolSelection = $derived.by<
+    { startSelection: (p: Point, altKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined
+  >(() => {
     const comp = annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
     if (comp?.startSelection && comp?.endSelection) {
       return {
-        startSelection: (p: Point, shiftKey?: boolean) => comp.startSelection(p, shiftKey),
+        startSelection: (p: Point, altKey?: boolean) => comp.startSelection(p, altKey),
         endSelection: (p: Point) => comp.endSelection(p),
       };
     }
     return undefined;
   });
 
-  export function getToolSelection(): { startSelection: (p: Point, shiftKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined {
+  export function getToolSelection():
+    | { startSelection: (p: Point, altKey?: boolean) => boolean; endSelection: (p: Point) => void }
+    | undefined {
     return _toolSelection;
   }
 
@@ -62,6 +68,7 @@
     {selected}
     {editable}
     {cursor}
+    {multiDragDelta}
     {mode}
     {onClick}
     {onEditComplete}
@@ -73,6 +80,7 @@
     {selected}
     {editable}
     {cursor}
+    {multiDragDelta}
     {mode}
     {onClick}
     {onEditComplete}

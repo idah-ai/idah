@@ -95,6 +95,7 @@
   // Derive selectionOffset from currentFrame
   const selectionOffset = $derived(currentFrame);
 
+  // Derive selection ID from group selection for backward-compatible track highlight
   let selectedGroupId = $derived.by(() => {
     const v = selection.value;
     return v?.type === "group" ? v.groupId : undefined;
@@ -711,7 +712,7 @@
               {scale}
               items={track.items}
               top={track.top}
-              isSelected={selectedGroupId === track.id}
+              isSelected={selection.isGroupSelected(track.id)}
               trackId={track.id}
             />
           {/each}

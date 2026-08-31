@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnnotationsList from "$lib/components/App/SelectionPanel/_AnnotationsList.svelte";
+  import SelectedAnnotationsList from "$lib/components/App/SelectionPanel/_SelectedAnnotationsList.svelte";
   import CreateMode from "$lib/components/App/SelectionPanel/_CreateMode.svelte";
   import EditMode from "$lib/components/App/SelectionPanel/_EditMode.svelte";
   import GroupEditMode from "$lib/components/App/SelectionPanel/_GroupEditMode.svelte";
@@ -57,6 +58,9 @@
       : undefined,
   );
   let configValues = $derived(config?.values ?? []);
+
+  // Flatten all annotations from selected groups (for displaying multi-group selection)
+  let groupAnnotations = $derived(selection.selectedGroupAnnotations);
 
   // Annotation from the selected group (for group edit mode display)
   let groupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
@@ -184,6 +188,12 @@
       disabled={effectiveDisabled}
     />
   {/if}
+{:else if selection.selectedAnnotationIds.size > 1}
+  <!-- Multiple annotations selected: show a compact list of selected items -->
+  <SelectedAnnotationsList />
+{:else if selection.selectedGroupIds.size > 1}
+  <!-- Multiple groups selected: show the annotations belonging to those groups -->
+  <SelectedAnnotationsList items={groupAnnotations} />
 {:else if sel.type === "group"}
   <!-- Group edit mode -->
   <GroupEditMode
@@ -197,7 +207,7 @@
     disabled={effectiveDisabled}
   />
 {:else if sel.type === "annotation"}
-  <!-- Edit mode: edit the currently selected annotation -->
+  <!-- Edit mode: edit a single selected annotation -->
   <EditMode
     {modeTitle}
     {shapeType}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { hover } from "$lib/state/hover.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
@@ -24,6 +25,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], angle: number) => void;
@@ -34,6 +36,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = "editor",
     onClick,
     onEditComplete,
@@ -118,7 +121,13 @@
   // ── Display points ────────────────────────────────────────────────────
   let displayPoints = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return points.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
     }
     return points;
   });
@@ -262,7 +271,7 @@
   const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX * HANDLE_RADIUS_PX;
   const ROTATE_RADIUS_PX_SQR = ROTATE_RADIUS_PX * ROTATE_RADIUS_PX;
 
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
 
     // Inverse-rotate the cursor so we can test against the unrotated AABB.
@@ -373,10 +382,13 @@
   //   "cursor-pointer"   → otherwise
   //   "cursor-note"       → hovering in note mode
   let bodyCursor = $derived(
-    mode === "note" ? "cursor-note" :
-    isEditing ? "cursor-grabbing" :
-    editable && selected ? "cursor-grab" :
-    "cursor-pointer"
+    mode === "note"
+      ? "cursor-note"
+      : isEditing
+        ? "cursor-grabbing"
+        : editable && selected
+          ? "cursor-grab"
+          : "cursor-pointer",
   );
 
 </script>
@@ -416,7 +428,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4}
+  {#if editable && selected && !isEditing && displayPoints.length === 4 && selection.selectedAnnotationIds.size <= 1}
     <BBoxHandler
       {displayPoints}
       {centroidN}

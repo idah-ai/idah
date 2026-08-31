@@ -17,7 +17,7 @@
     selectedIndices: Set<number>;
     boxStart: Point | undefined;
     boxEnd: Point | undefined;
-    shiftHeld: boolean;
+    altHeld: boolean;
     onStartVertexDrag: (vertexIndex: number) => void;
     onDeleteVertex: (vertexIndex: number) => void;
     onAddVertex: (edgeIndex: number) => void;
@@ -32,7 +32,7 @@
     selectedIndices,
     boxStart,
     boxEnd,
-    shiftHeld,
+    altHeld,
     onStartVertexDrag,
     onDeleteVertex,
     onAddVertex,
@@ -135,8 +135,8 @@
       pointer-events="none"
     />
   {/if}
-  <!-- Minus icon when Shift+hover (delete mode) -->
-  {#if isHovered && shiftHeld}
+  <!-- Minus icon when Alt+hover (delete mode) -->
+  {#if isHovered && altHeld}
     <line
       x1={point[0] * w - R_dot}
       y1={point[1] * h}
@@ -156,12 +156,12 @@
     r={R_hit}
     fill="transparent"
     style:outline="none"
-    style:cursor={shiftHeld ? removeCursorCss : isEditing ? "none" : "move"}
+    style:cursor={altHeld ? removeCursorCss : isEditing ? "none" : "move"}
     onmouseenter={() => (hoveredVertexIndex = i)}
     onmouseleave={() => (hoveredVertexIndex = undefined)}
     onmousedown={(e) => {
       e.stopPropagation();
-      if (e.shiftKey) onDeleteVertex(i);
+      if (e.altKey) onDeleteVertex(i);
       else onStartVertexDrag(i);
     }}
   />

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { Toaster } from "svelte-sonner";
 
   import { Button } from "$lib/components/ui/Button";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
@@ -679,3 +680,4 @@
 <DebugConsole />
 <ContextMenu />
 <ConfirmDialog />
+<Toaster />

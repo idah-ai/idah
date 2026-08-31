@@ -1,5 +1,6 @@
 <script lang="ts">
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { type Point } from "$lib/utils/math/point";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -18,6 +19,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = "editor",
     onClick,
     onEditComplete,
@@ -26,6 +28,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], angle: number) => void;
@@ -59,8 +62,8 @@
   let boxEnd: Point | undefined = $state();
   let multiDragOrigin: Point | undefined = $state();
 
-  // Track Shift key for cursor changes
-  let shiftHeld = $state(false);
+  // Track Alt key for cursor changes (vertex multi-selection)
+  let altHeld = $state(false);
 
   let isEditing = $derived(
     dragVertexIndex !== undefined ||
@@ -84,7 +87,13 @@
 
   let displayVertices = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return vertices.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return vertices.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
     }
     return vertices;
   });
@@ -133,14 +142,14 @@
     onEditComplete?.(pts, 0);
   }
 
-  export function startSelection(start: Point, shiftKey = false): boolean {
+  export function startSelection(start: Point, altKey = false): boolean {
     if (!editable || baseVertices.length < 3) return false;
 
     // Check if clicking on a vertex
     const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
     if (vi >= 0) {
-      if (shiftKey) {
-        // Shift+click on a vertex: delete it (but keep minimum 3 points)
+      if (altKey) {
+        // Alt+click on a vertex: delete it (but keep minimum 3 points)
         if (baseVertices.length <= 3) return true;
         const next = [...baseVertices];
         next.splice(vi, 1);
@@ -162,8 +171,8 @@
       return true;
     }
 
-    if (shiftKey) {
-      // Shift+drag anywhere: start box selection (no need to be inside polygon)
+    if (altKey) {
+      // Alt+drag anywhere: start box selection (no need to be inside polygon)
       boxStart = start;
       boxEnd = start;
       _localVertices = [...baseVertices];
@@ -244,10 +253,13 @@
   //   "cursor-pointer"   → otherwise
   //   "cursor-note"       → hovering in note mode
   let bodyCursor = $derived(
-    mode === "note" ? "cursor-note" :
-    isEditing ? "cursor-grabbing" :
-    editable && selected ? "cursor-grab" :
-    "cursor-pointer"
+    mode === "note"
+      ? "cursor-note"
+      : isEditing
+        ? "cursor-grabbing"
+        : editable && selected
+          ? "cursor-grab"
+          : "cursor-pointer",
   );
 
 </script>
@@ -255,10 +267,10 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <svelte:window
   onkeydown={(e) => {
-    if (e.key === "Shift") shiftHeld = true;
+    if (e.key === "Alt") altHeld = true;
   }}
   onkeyup={(e) => {
-    if (e.key === "Shift") shiftHeld = false;
+    if (e.key === "Alt") altHeld = false;
   }}
 />
 
@@ -302,7 +314,7 @@
               media.width > 0 ? svgPt.x / media.width : 0,
               media.height > 0 ? svgPt.y / media.height : 0,
             ];
-            startSelection(norm, e.shiftKey);
+            startSelection(norm, e.altKey);
           }
         }
       }
@@ -310,7 +322,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayVertices.length >= 3}
+  {#if editable && selected && !isEditing && displayVertices.length >= 3 && selection.selectedAnnotationIds.size <= 1}
     <PolygonHandler
       vertices={displayVertices}
       {color}
@@ -318,7 +330,7 @@
       selectedIndices={_selectedIndices}
       {boxStart}
       {boxEnd}
-      {shiftHeld}
+      {altHeld}
       onStartVertexDrag={(i) => {
         if (_selectedIndices.size > 0 && _selectedIndices.has(i)) {
           // Vertex is part of multi-selection — start multi-drag
