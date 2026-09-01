@@ -130,7 +130,7 @@ RSpec.describe Exports::Upd::Exporter do
           # write_jsonl: default = stdin writable, no output to drain
           [[], [stdin_mock], []]
         else
-          # drain_remaining: default = both pipes ready (EOF immediately)
+          # read_remaining_output: default = both pipes ready (EOF immediately)
           [[stdout_mock, stderr_mock], [], []]
         end
       end

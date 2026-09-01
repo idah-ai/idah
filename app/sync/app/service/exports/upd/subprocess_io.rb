@@ -38,9 +38,9 @@ module Exports
             raise "Timeout while waiting to communicate with updcli-static"
           end
 
-          # 1. Drain all available output to prevent deadlock
+          # 1. Read any available output to prevent deadlock
           #    (subprocess can't write if pipes are full)
-          drain_readable(ready_read)
+          read_available_output(ready_read)
 
           # 2. Try to write to stdin if it's ready
           if ready_write&.include?(@stdin)
@@ -53,7 +53,7 @@ module Exports
 
       # Read all remaining output from both streams until EOF or timeout.
       # Prevents hangs if the subprocess stalls on full output pipes.
-      def drain_remaining
+      def read_remaining_output
         streams = { @stdout => :out, @stderr => :err }
 
         until streams.empty?
@@ -90,8 +90,8 @@ module Exports
 
       private
 
-      # Drain all readable streams immediately; do not block
-      def drain_readable(ready_read)
+      # Read any available output from the streams that are ready; non-blocking.
+      def read_available_output(ready_read)
         ready_read&.each do |io|
           loop do
             chunk = io.read_nonblock(4096, exception: false)

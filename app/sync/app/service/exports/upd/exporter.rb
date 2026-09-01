@@ -68,7 +68,7 @@ module Exports
             # Read everything the subprocess still emits, as it comes.
             # Drain both streams together via IO.select so neither pipe can
             # fill up while the other is being drained (avoiding deadlock).
-            io.drain_remaining
+            io.read_remaining_output
           end
 
           exit_status = wait_thr.value
