@@ -3,6 +3,7 @@
 require "json"
 require "tempfile"
 require "open3"
+require_relative "subprocess_io"
 
 module Exports
   module Upd
@@ -27,70 +28,36 @@ module Exports
         media_tempfiles = []
 
         Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
-          err_lines = []
+          io = SubprocessIO.new(stdin, stdout, stderr, on_output: on_output)
 
           begin
             # Initialise UPD file via stdin — avoids a separate system("... init") call
-            write_stdin(
-              stdin,
-              stdout,
-              stderr,
-              err_lines,
-              build_init_jsonl,
-              on_output: on_output
-            )
+            io.write_jsonl(build_init_jsonl)
 
             context.datasets.each do |dataset|
-              write_stdin(
-                stdin,
-                stdout,
-                stderr,
-                err_lines,
-                build_dataset_jsonl(dataset),
-                on_output: on_output
-              )
+              io.write_jsonl(build_dataset_jsonl(dataset))
+
+              include_medias = context.options[:include_medias]
 
               dataset.entries.each do |entry|
-                include_medias = context.options[:include_medias]
-
-                write_stdin(
-                  stdin,
-                  stdout,
-                  stderr,
-                  err_lines,
-                  build_entry_jsonl(dataset.record.id, entry, include_medias),
-                  on_output: on_output
-                )
+                io.write_jsonl(build_entry_jsonl(dataset.record.id, entry, include_medias))
 
                 entry.annotations.each do |annotation|
-                  write_stdin(
-                    stdin,
-                    stdout,
-                    stderr,
-                    err_lines,
-                    build_annotation_jsonl(entry.record.id, annotation),
-                    on_output: on_output
-                  )
+                  io.write_jsonl(build_annotation_jsonl(entry.record.id, annotation))
                 end
 
                 entry_medias(entry, include_medias, exported_resources).each do |media|
                   tempfile = download_media(media)
                   media_tempfiles << tempfile
-                  write_stdin(
-                    stdin,
-                    stdout,
-                    stderr,
-                    err_lines,
-                    build_media_jsonl(media, tempfile.path),
-                    on_output: on_output
-                  )
+                  io.write_jsonl(build_media_jsonl(media, tempfile.path))
                 end
               end
             end
-          rescue StreamClosed
+          rescue SubprocessIO::StreamClosed => e
             # updcli-static stopped reading stdin (usually a crash mid-append).
             # Skip further generation; the ensure block drains its output and
             # wait_thr reports the actual exit failure.
+            Verse.logger&.warn { "Subprocess communication failed: #{e.message}" }
           ensure
             begin
               stdin.close
@@ -99,14 +66,15 @@ module Exports
             end
 
             # Read everything the subprocess still emits, as it comes.
-            read_until_eof(stdout, :out, err_lines, on_output: on_output)
-            read_until_eof(stderr, :err, err_lines, on_output: on_output)
+            # Drain both streams together via IO.select so neither pipe can
+            # fill up while the other is being drained (avoiding deadlock).
+            io.drain_remaining
           end
 
           exit_status = wait_thr.value
 
           unless exit_status.success?
-            raise "updcli-static append failed: #{err_lines.join}"
+            raise "updcli-static append failed: #{io.err_lines.join}"
           end
         ensure
           # Clean up media tempfiles
@@ -117,79 +85,6 @@ module Exports
       end
 
       private
-
-      # Write a JSONL command to updcli's stdin, draining whatever output the
-      # subprocess already produced (via IO.select) so its pipes never fill
-      # up. If updcli closes its stdin (crash), stop generating and let
-      # export() surface the underlying failure.
-      def write_stdin(stdin, stdout, stderr, err_lines, line, on_output: nil)
-        drain_outputs(stdout, stderr, err_lines, on_output: on_output)
-
-        stdin.puts(line)
-      rescue Errno::EPIPE, IOError => e
-        raise StreamClosed, "updcli-static closed its stdin: #{e.message}"
-      ensure
-        drain_outputs(stdout, stderr, err_lines, on_output: on_output)
-      end
-
-      # Non-blocking drain of whatever stdout/stderr updcli produced so far,
-      # using IO.select to keep control of read/write interleaving.
-      def drain_outputs(stdout, stderr, err_lines, on_output: nil)
-        streams = { stdout => :out, stderr => :err }
-
-        until streams.empty?
-          ready = IO.select(streams.keys, nil, nil, 0)
-          break unless ready
-
-          ready.first.each do |io|
-            loop do
-              chunk = io.read_nonblock(4096, exception: false)
-
-              case chunk
-              when :wait_readable
-                break
-              when nil # EOF
-                streams.delete(io)
-                break
-              else
-                emit_output(chunk, streams[io], err_lines, on_output: on_output)
-              end
-            end
-          end
-        end
-      end
-
-      # Blocking read of `io` until EOF (the subprocess exited and closed the
-      # pipe), forwarding output as it arrives.
-      def read_until_eof(io, stream, err_lines, on_output: nil)
-        loop do
-          chunk = io.read_nonblock(4096, exception: false)
-
-          case chunk
-          when nil # EOF
-            break
-          when :wait_readable
-            break unless IO.select([io], nil, nil, nil)
-          else
-            emit_output(chunk, stream, err_lines, on_output: on_output)
-          end
-        end
-      end
-
-      # Forward a chunk of updcli output: stderr is kept for the failure
-      # message, and every chunk goes to the optional callback (or to the
-      # Verse logger by default) as it is read.
-      def emit_output(chunk, stream, err_lines, on_output: nil)
-        err_lines << chunk if stream == :err
-
-        if on_output
-          on_output.call(chunk, stream)
-        elsif stream == :out
-          Verse.logger&.debug { "updcli: #{chunk}" }
-        else
-          Verse.logger&.warn { "updcli: #{chunk}" }
-        end
-      end
 
       def include_medias?(include_medias)
         ["original", "all"].include?(include_medias)

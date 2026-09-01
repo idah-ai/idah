@@ -70,16 +70,22 @@ RSpec.describe Exports::Upd::Exporter do
 
     # Shared blocks for capturing JSONL writes
     let(:jsonl_writes) { @jsonl_writes ||= [] }
+    let(:jsonl_data) { @jsonl_data ||= "".dup }
 
     let(:stdin_mock) do
       double("stdin").tap do |mock|
-        allow(mock).to receive(:puts) { |line| @jsonl_writes << line }
+        allow(mock).to receive(:write_nonblock) do |data|
+          @jsonl_data << data
+          # Simulate writing the full line at once (default behaviour)
+          captured_line = data.dup
+          (@jsonl_writes ||= []) << captured_line if data.end_with?("\n")
+          data.bytesize
+        end
         allow(mock).to receive(:close)
       end
     end
 
-    # Simulate an updcli-static that produces no output: both pipes are
-    # immediately at EOF.
+    # Default: both pipes return EOF immediately (subprocess produced nothing)
     let(:stdout_mock) do
       double("stdout").tap do |mock|
         allow(mock).to receive(:read_nonblock).with(4096, exception: false).and_return(nil)
@@ -97,6 +103,7 @@ RSpec.describe Exports::Upd::Exporter do
 
     before do
       @jsonl_writes = []
+      @jsonl_data = "".dup
 
       # Stub ENV
       allow(ENV).to receive(:fetch).with("IDAH_URL").and_return("http://localhost:3000/")
@@ -112,8 +119,21 @@ RSpec.describe Exports::Upd::Exporter do
       allow(File).to receive(:open).and_call_original
       allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
 
-      # No subprocess output is pending by default.
-      allow(IO).to receive(:select).and_return(nil)
+      # -- IO.select stubs for SubprocessIO --
+      #
+      # We match by timeout (10 is ours, 0/+inf are Ruby's/etc.) and dispatch
+      # based on whether stdin is in the write array.
+      allow(IO).to receive(:select) do |read, write, _error, timeout|
+        next unless timeout == 10  # only intercept our calls
+
+        if write == [stdin_mock]
+          # write_jsonl: default = stdin writable, no output to drain
+          [[], [stdin_mock], []]
+        else
+          # drain_remaining: default = both pipes ready (EOF immediately)
+          [[stdout_mock, stderr_mock], [], []]
+        end
+      end
 
       # Stub Open3.popen3 to capture JSONL lines written to stdin
       allow(Open3).to receive(:popen3)
@@ -351,7 +371,16 @@ RSpec.describe Exports::Upd::Exporter do
           .with(4096, exception: false)
           .and_return("boom error\n", nil)
 
-        allow(IO).to receive(:select).and_return([[stderr_mock]], nil)
+        # Override IO.select: return stderr readable on first write_jsonl call
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+
+          if write == [stdin_mock]
+            [[stderr_mock], [], []]
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
 
         expect {
           exporter.export(context)
@@ -363,11 +392,161 @@ RSpec.describe Exports::Upd::Exporter do
       let(:exit_status_mock) { double("exit_status", success?: false) }
 
       it "surfaces the append failure instead of Errno::EPIPE" do
-        allow(stdin_mock).to receive(:puts).and_raise(Errno::EPIPE, "Broken pipe")
+        # Simulate write_nonblock raising EPIPE on the first write
+        allow(stdin_mock).to receive(:write_nonblock).and_raise(Errno::EPIPE, "Broken pipe")
+
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+
+          if write == [stdin_mock]
+            [[], [stdin_mock], []]
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
 
         expect {
           exporter.export(context)
         }.to raise_error(RuntimeError, /updcli-static append failed:/)
+      end
+    end
+
+    context "stdout/stderr deadlock prevention" do
+      it "drains subprocess output during write via IO.select multiplexing" do
+        emitted_output = []
+        on_output = ->(chunk, stream) { emitted_output << [chunk, stream] }
+
+        call_count = 0
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+
+          if write == [stdin_mock]
+            call_count += 1
+            case call_count
+            when 1 then [[stdout_mock], [stdin_mock], []]   # stdout + stdin
+            when 2 then [[stderr_mock], [stdin_mock], []]   # stderr + stdin
+            else        [[], [stdin_mock], []]               # just stdin
+            end
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
+
+        # stdout gives data then EOF, stderr gives data then EOF
+        allow(stdout_mock).to receive(:read_nonblock)
+          .with(4096, exception: false)
+          .and_return("stdout-chunk\n", nil)
+
+        allow(stderr_mock).to receive(:read_nonblock)
+          .with(4096, exception: false)
+          .and_return("stderr-chunk\n", nil)
+        exporter.export(context, on_output: on_output)
+
+        expect(emitted_output).to include(["stdout-chunk\n", :out])
+        expect(emitted_output).to include(["stderr-chunk\n", :err])
+      end
+
+      it "handles premature output pipe closure gracefully" do
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+
+          if write == [stdin_mock]
+            [[stdout_mock], [stdin_mock], []]   # stdout readable (EOF)
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
+
+        # stdout returns nil (EOF) immediately -> subprocess closed its output
+        allow(stdout_mock).to receive(:read_nonblock)
+          .with(4096, exception: false)
+          .and_return(nil)
+
+        # StreamClosed is caught internally by export's rescue block.
+        # The ensure runs, then wait_thr.value reports the exit status.
+        # With a successful exit, export completes normally.
+        expect { exporter.export(context) }.not_to raise_error
+      end
+    end
+
+    context "large stdin input (>64KB pipe buffer)" do
+      it "splits a large JSONL line across multiple write_nonblock calls" do
+        huge_line = "x" * (80 * 1024) + "\n"
+
+        # Stub the entry builder to return an artificially huge line (> 64KB)
+        allow(exporter).to receive(:build_entry_jsonl).and_return(huge_line)
+
+        call_count = 0
+        allow(stdin_mock).to receive(:write_nonblock) do |data|
+          call_count += 1
+          # Simulate pipe buffer behavior: if data is too large for the buffer,
+          # write only half and let the while loop retry with the remainder.
+          if data.bytesize > 65_536
+            data.bytesize / 2
+          else
+            data.bytesize
+          end
+        end
+
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+          if write == [stdin_mock]
+            [[], [stdin_mock], []]
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
+
+        exporter.export(context)
+
+        # The huge line forced an extra write_nonblock call (4 commands → 5 calls)
+        expect(call_count).to be >= 5
+      end
+    end
+
+    context "IO::WaitWritable on stdin" do
+      it "retries write when pipe is temporarily full" do
+        call_count = 0
+        allow(stdin_mock).to receive(:write_nonblock) do |data|
+          call_count += 1
+          # Raise EAGAIN on first write attempt (the init line), succeed on retry
+          if call_count == 1
+            raise IO::EAGAINWaitWritable, "Resource temporarily unavailable"
+          else
+            data.bytesize
+          end
+        end
+
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+          if write == [stdin_mock]
+            [[], [stdin_mock], []]
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
+
+        exporter.export(context)
+
+        # First command (init) had a retry, so total calls >= commands count + 1
+        expect(call_count).to be >= 5
+      end
+    end
+
+    context "IO.select timeout in write_jsonl" do
+      it "raises a timeout error when subprocess stalls" do
+        allow(IO).to receive(:select) do |read, write, _error, timeout|
+          next unless timeout == 10
+          if write == [stdin_mock]
+            nil
+          else
+            [[stdout_mock, stderr_mock], [], []]
+          end
+        end
+
+        expect {
+          exporter.export(context)
+        }.to raise_error(RuntimeError, /Timeout while waiting/)
       end
     end
 
