@@ -103,16 +103,28 @@
     if (categoryId) onEditValue({ category: categoryId }, shape_type);
   }
 
-  /** Clicking a tab routes through the same command as the shortcut, so the
-   *  deselection behavior is identical whether the user clicks or presses a key. */
+  /** Clicking a tab deselects synchronously and switches the tab directly, so
+   *  the target tab never renders with a stale selection. (The shortcut commands
+   *  do the same inside their do(), which runs synchronously for these no-undo
+   *  navigation commands.) */
   function handleOuterTabClick(tab: "annotations" | "meta") {
-    if (tab === "annotations") getDriver().command.call("idah-image:sidebar-tab.selection");
-    else getDriver().command.call("idah-image:sidebar-tab.meta");
+    selection.deselect();
+    sidebarTabs.rightTab = tab;
   }
 
   function shortcutLabel(commandName: string): string | undefined {
     const raw = getDriver().command.getShortcut(commandName);
     return raw ? getShortcutLabel(raw) : undefined;
+  }
+
+  // bits-ui's Tabs uses roving-tabindex arrow-key navigation on the TabsList,
+  // which would steal the arrow keys from the image workspace's key handling.
+  // Stop arrow/Home/End keys from being consumed here so they reach the
+  // workspace's window-level keydown handler instead.
+  function handleTabsListKeydown(e: KeyboardEvent) {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) {
+      e.stopPropagation();
+    }
   }
 </script>
 
@@ -122,7 +134,7 @@
       <SidebarGroupContent>
         {#if showTabs}
           <Tabs bind:value={activeRightTab}>
-            <TabsList class="w-full">
+            <TabsList class="w-full" onkeydown={handleTabsListKeydown}>
               <Tooltips class="flex-1 flex">
                 {#snippet trigger()}
                   <TabsTrigger value="annotations" class="w-full text-xs" onclick={() => handleOuterTabClick("annotations")}>
