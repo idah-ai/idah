@@ -10,6 +10,9 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { LabelVisibility } from "./state/ui.svelte";
 import { ui } from "./state/ui.svelte";
 
+// Account-settings key for the persisted category label visibility.
+const CATEGORY_LABEL_VISIBILITY_KEY = "annotation:category.label-visibility";
+
 export function registerSettings(driver: IIdahDriverV2): void {
   // NOTE: these descriptors are NOT type-checked here — the setting types are
   // kept only in core (not duplicated into this plugin). The canonical shape
@@ -35,7 +38,8 @@ export function registerSettings(driver: IIdahDriverV2): void {
             type: "slider",
             key: "annotation-opacity",
             label: "Annotation opacity",
-            description: "Fade the fill of annotations — the border stroke stays fully visible. Resets to 100 each time the plugin loads.",
+            description:
+              "Fade the fill of annotations — the border stroke stays fully visible. Resets to 100 each time the plugin loads.",
             min: 0,
             max: 100,
             step: 1,
@@ -54,7 +58,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             // Route through the command so the shortcut/palette and this menu
             // share one mutation path; the command fires settings.invalidate().
             get: () => ui.renderMode,
-            set: (v: string) => driver.command.call("ui.toggle_render_mode", { value: v }),
+            set: (v: string) => driver.command.call("idah-video:ui.toggle-render-mode", { value: v }),
           },
           {
             type: "options",
@@ -66,7 +70,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "random", label: "Random" },
             ],
             get: () => ui.colorMode,
-            set: (v: string) => driver.command.call("ui.toggle_color_mode", { value: v }),
+            set: (v: string) => driver.command.call("idah-video:ui.toggle-color-mode", { value: v }),
           },
           {
             type: "options",
@@ -78,14 +82,14 @@ export function registerSettings(driver: IIdahDriverV2): void {
               { value: "time", label: "Time" },
             ],
             get: () => ui.timeDisplay,
-            set: (v: string) => driver.command.call("ui.toggle_time_display", { value: v }),
+            set: (v: string) => driver.command.call("idah-video:ui.toggle-time-display", { value: v }),
           },
           {
             type: "options",
             key: "label-visibility",
             label: "Category label",
             description:
-              "Show each annotation's category name on the canvas — always, only while hovered or selected, or never. Resets to Off each time the plugin loads.",
+              "Show each annotation's category name on the canvas — always, only while hovered or selected, or never. Saved to your account.",
             options: [
               { value: "always", label: "On" },
               { value: "hover", label: "On hover" },
@@ -94,11 +98,26 @@ export function registerSettings(driver: IIdahDriverV2): void {
             // Set directly rather than through a command: unlike the other
             // options this has no shortcut or palette entry, so the popover is
             // the only mutation path and core emits the change after set().
+            // Persist in the active plugin namespace; hydrateSettings() seeds it on init.
             get: () => ui.labelVisibility,
-            set: (v: string) => (ui.labelVisibility = v as LabelVisibility),
+            set: (v: string) => {
+              ui.labelVisibility = v as LabelVisibility;
+              void driver.accountSettings.upsert(CATEGORY_LABEL_VISIBILITY_KEY, v);
+            },
           },
         ],
       },
     ],
   });
+}
+
+// Seed ui.labelVisibility from the persisted account setting. Called once from
+// init(), after core has awaited accountSettings.load(), so the value is present.
+// Plugin and core live in separate Svelte runtimes, so this is a one-time read
+// rather than a reactive subscription.
+export function hydrateSettings(driver: IIdahDriverV2): void {
+  const v = driver.accountSettings.get<LabelVisibility>(CATEGORY_LABEL_VISIBILITY_KEY);
+  if (v === "always" || v === "hover" || v === "never") {
+    ui.labelVisibility = v;
+  }
 }
