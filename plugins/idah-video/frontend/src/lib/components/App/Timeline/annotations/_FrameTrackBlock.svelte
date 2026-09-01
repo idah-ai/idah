@@ -30,6 +30,16 @@
     new Map(frameAnnotations.map((a) => [a.id, resolveAnnotationColor(a)])),
   );
 
+  // Highlight the selected meta annotation the same way shaped annotations do.
+  let entryRootSelected = $derived.by(() => {
+    const v = selection.value;
+    return v?.type === "annotation" && entryRootAnnotation && v.annotation.id === entryRootAnnotation.id;
+  });
+  let frameSelected = $derived.by(() => {
+    const v = selection.value;
+    return v?.type === "annotation" && (v.annotation as { id?: string })?.id;
+  });
+
   function handleFrameClick(e: MouseEvent, ann: IVideoAnnotationRecord) {
     e.preventDefault();
     const frame = ann.shape.start;
@@ -67,12 +77,15 @@
       role="button"
       tabindex="-1"
       class="absolute cursor-pointer rounded-sm border focus:outline-none"
+      class:ring-2={entryRootSelected}
+      class:ring-offset-1={entryRootSelected}
       style:top="3px"
       style:height="calc(100% - 6px)"
       style:left="{rootPos}%"
       style:width="{rootWidth}%"
       style:background-color={entryRootColor ? entryRootColor + "40" : "hsl(var(--primary) / 0.25)"}
       style:border-color={entryRootColor ?? "hsl(var(--primary))"}
+      style:--tw-ring-color={entryRootSelected ? (entryRootColor ?? "hsl(var(--primary))") : "transparent"}
       onclick={(e) => handleEntryRootClick(e, entryRootAnnotation)}
       oncontextmenu={(e) => handleEntryRootContextMenu(e, entryRootAnnotation)}
       onkeypress={() => {}}
@@ -88,11 +101,14 @@
       role="button"
       tabindex="-1"
       class="absolute translate-x-[5%] cursor-pointer rounded-sm focus:outline-none"
+      class:ring-2={frameSelected === ann.id}
+      class:ring-offset-1={frameSelected === ann.id}
       style:top="3px"
       style:height="calc(100% - 6px)"
       style:left="{position}%"
       style:width="{width}%"
       style:background-color={color ?? "hsl(var(--primary))"}
+      style:--tw-ring-color={frameSelected === ann.id ? (color ?? "hsl(var(--primary))") : "transparent"}
       onclick={(e) => handleFrameClick(e, ann)}
       oncontextmenu={(e) => handleContextMenu(e, ann)}
       onkeypress={() => {}}

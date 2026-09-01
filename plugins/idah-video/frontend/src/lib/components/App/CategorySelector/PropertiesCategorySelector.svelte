@@ -129,6 +129,21 @@
     if (viewport.isCreationMode) sidebarTabs.rightTab = "annotations";
   });
 
+  // While on the Meta > Frame tab, keep the selection in sync with the current
+  // frame: select the idah-video:frame annotation for the displayed frame when
+  // one exists, otherwise deselect.
+  $effect(() => {
+    if (sidebarTabs.rightTab !== "meta" || sidebarTabs.metaTab !== "frame") return;
+    const frame = currentFrame;
+    if (frame === undefined) return;
+    const sel = selection.value;
+    const selectedId = sel?.type === "annotation" ? (sel.annotation as { id?: string })?.id : undefined;
+    // Already selected the current frame's annotation — nothing to do.
+    if (frameAnnotation && selectedId === frameAnnotation.id) return;
+    if (frameAnnotation) selection.selectAnnotation(frameAnnotation as any);
+    else selection.deselect();
+  });
+
   // Functions
   function categorySelection(shape_type: string, categoryId?: string) {
     if (categoryId) onEditValue({ category: categoryId }, shape_type);
