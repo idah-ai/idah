@@ -123,15 +123,15 @@
     }]
   })
 
-  // Meta row — rendered as a sticky row between ruler and tracks, visible in
+  // Tagging row — rendered as a sticky row between ruler and tracks, visible in
   // both annotate and review modes (unlike the Notes row, which is review-only).
-  // rawData carries both the per-frame meta and the entry:root annotation so the
+  // rawData carries both the per-frame tagging and the entry:root annotation so the
   // row can render the entry:root outer cell plus the individual frame markers.
-  // The row only appears when a meta label config exists (entry:root or idah-video:frame),
+  // The row only appears when a tagging label config exists (entry:root or idah-video:frame),
   // mirroring the sidebar tabs' visibility rule.
-  let hasMetaConfig = $derived(Boolean(getDriver().config[ENTRY_ROOT]) || Boolean(getDriver().config[VIDEO_FRAME]));
+  let hasTaggingConfig = $derived(Boolean(getDriver().config[ENTRY_ROOT]) || Boolean(getDriver().config[VIDEO_FRAME]));
   let frameItems = $derived.by(() => {
-    if (!hasMetaConfig) return [];
+    if (!hasTaggingConfig) return [];
     if (frameAnnotations.length === 0 && !entryRootAnnotation) return [];
     return [{
       trackId: "__frame_tags__",
@@ -142,19 +142,19 @@
     }]
   })
 
-  // All meta annotations (entry:root + all frame meta) for the header controls.
-  let allMeta = $derived([...frameAnnotations, ...(entryRootAnnotation ? [entryRootAnnotation] : [])]);
-  let allMetaHidden = $derived(allMeta.length > 0 && allMeta.every((a) => annotation.isHidden(a)));
-  let allMetaLocked = $derived(allMeta.length > 0 && allMeta.every((a) => annotation.isLocked(a)));
+  // All tagging annotations (entry:root + all frame tagging) for the header controls.
+  let allTagging = $derived([...frameAnnotations, ...(entryRootAnnotation ? [entryRootAnnotation] : [])]);
+  let allTaggingHidden = $derived(allTagging.length > 0 && allTagging.every((a) => annotation.isHidden(a)));
+  let allTaggingLocked = $derived(allTagging.length > 0 && allTagging.every((a) => annotation.isLocked(a)));
 
-  function toggleMetaVisibility() {
-    const newHidden = !allMetaHidden;
-    for (const a of allMeta) annotation.toggleHidden(a.id, newHidden);
+  function toggleTaggingVisibility() {
+    const newHidden = !allTaggingHidden;
+    for (const a of allTagging) annotation.toggleHidden(a.id, newHidden);
   }
 
-  function toggleMetaLocked() {
-    const newLocked = !allMetaLocked;
-    for (const a of allMeta) annotation.toggleLocked(a.id, newLocked);
+  function toggleTaggingLocked() {
+    const newLocked = !allTaggingLocked;
+    for (const a of allTagging) annotation.toggleLocked(a.id, newLocked);
   }
 </script>
 
@@ -204,45 +204,45 @@
         tabindex="-1"
         class="group flex h-full cursor-pointer items-center px-2 select-none"
       >
-        <p class="text-xs font-medium">Meta</p>
+        <p class="text-xs font-medium">Tagging</p>
         <div class="ml-auto flex items-center opacity-0 transition-opacity group-hover:opacity-100">
           <KbdTooltipButton
-            label="Show/Hide all meta"
-            icon={allMetaHidden ? EyeOffIcon : EyeIcon}
+            label="Show/Hide all tagging"
+            icon={allTaggingHidden ? EyeOffIcon : EyeIcon}
             variant="ghost"
             size="icon-sm"
-            disabled={allMeta.length === 0}
+            disabled={allTagging.length === 0}
             onclick={(e: MouseEvent) => {
               e.stopPropagation();
-              toggleMetaVisibility();
+              toggleTaggingVisibility();
             }}
           />
           <KbdTooltipButton
-            label="Lock/Unlock all meta"
-            icon={allMetaLocked ? LockIcon : LockOpenIcon}
+            label="Lock/Unlock all tagging"
+            icon={allTaggingLocked ? LockIcon : LockOpenIcon}
             variant="ghost"
             size="icon-sm"
-            disabled={allMeta.length === 0}
+            disabled={allTagging.length === 0}
             onclick={(e: MouseEvent) => {
               e.stopPropagation();
-              toggleMetaLocked();
+              toggleTaggingLocked();
             }}
           />
           <KbdTooltipButton
-            label="Remove all meta"
+            label="Remove all tagging"
             icon={Trash2Icon}
             variant="ghost"
             size="icon-sm"
-            disabled={!isEditable() || allMeta.length === 0 || allMeta.some((a) => annotation.isLocked(a)) || viewport.isReviewWorkspace}
+            disabled={!isEditable() || allTagging.length === 0 || allTagging.some((a) => annotation.isLocked(a)) || viewport.isReviewWorkspace}
             onclick={(e: MouseEvent) => {
               e.stopPropagation();
               showConfirmDialog({
-                title: "Remove all meta",
-                description: "Are you sure you want to remove all meta annotations (entry and frame)?",
+                title: "Remove all tagging",
+                description: "Are you sure you want to remove all tagging annotations (entry and frame)?",
                 onConfirm: () => {
                   getDriver().command.call("idah-video:annotation.group.delete", {
-                    groupId: "__meta__",
-                    annotations: allMeta,
+                    groupId: "__tagging__",
+                    annotations: allTagging,
                   });
                 },
               });

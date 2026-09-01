@@ -29,6 +29,6 @@
     }}
   >
     <Trash2Icon />
-    Delete entry
+    Delete video
   </Button>
 </div>

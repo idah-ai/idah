@@ -34,7 +34,7 @@ export interface TimelineProps extends RulerProps {
   /** Label slot for the notes row's left spacer. */
   NoteTrackInfoSlot?: Snippet<[]>;
 
-  /** Items to render in the pinned frame-meta row (always visible between ruler and tracks, when non-empty). */
+  /** Items to render in the pinned frame-tagging row (always visible between ruler and tracks, when non-empty). */
   frameItems?: TimelineItem[];
   /** Label slot for the frame row's left spacer. */
   FrameTrackInfoSlot?: Snippet<[]>;

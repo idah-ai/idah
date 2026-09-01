@@ -30,7 +30,7 @@
     new Map(frameAnnotations.map((a) => [a.id, resolveAnnotationColor(a)])),
   );
 
-  // Highlight the selected meta annotation the same way shaped annotations do.
+  // Highlight the selected tagging annotation the same way shaped annotations do.
   let entryRootSelected = $derived.by(() => {
     const v = selection.value;
     return v?.type === "annotation" && entryRootAnnotation && v.annotation.id === entryRootAnnotation.id;
@@ -44,13 +44,13 @@
     e.preventDefault();
     const frame = ann.shape.start;
     viewport.video.goToFrame(frame);
-    // Select the frame meta so the right sidebar switches to meta > frame.
+    // Select the frame tagging so the right sidebar switches to tagging > frame.
     selection.selectAnnotation(ann as any);
   }
 
   function handleEntryRootClick(e: MouseEvent, ann: IVideoAnnotationRecord) {
     e.preventDefault();
-    // Select the entry:root annotation so the right sidebar switches to meta > entry.
+    // Select the entry:root annotation so the right sidebar switches to tagging > entry.
     selection.selectAnnotation(ann as any);
   }
 

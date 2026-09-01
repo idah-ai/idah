@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
 // idah-image:sidebar-tab.* — Jump to a right-sidebar tab via keyboard shortcut.
-//
+
 // These are pure UI-navigation commands: they switch the active tab without
 // touching any annotation data, so they intentionally have NO `undo` method —
 // the command manager only pushes to the undo stack when an action has an
 // `undo`, keeping these out of history.
 //
 // Any tab change returns to the default (editor) mode via the existing
-// core:mode.exit command. The Meta command also selects the entry:root
+// core:mode.exit command. The Tagging command also selects the entry:root
 // annotation when one exists, otherwise it deselects. Both the tab clicks and
 // the shortcuts route through these commands so the behavior stays uniform.
 // ---------------------------------------------------------------------------
@@ -50,13 +50,13 @@ export const selectionCommand = {
   longDescription: "Jump to the Annotations tab in the right sidebar",
 };
 
-export const metaCommand = {
-  name: "idah-image:sidebar-tab.meta",
+export const taggingCommand = {
+  name: "idah-image:sidebar-tab.tagging",
   group: "UI",
   modes: ["*"],
-  shortcut: "M",
-  shortDescription: "Meta tab",
-  longDescription: "Jump to the Meta tab in the right sidebar",
+  shortcut: "T",
+  shortDescription: "Tagging tab",
+  longDescription: "Jump to the Tagging tab in the right sidebar",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -76,20 +76,21 @@ export function register(driver: IIdahDriverV2): void {
   });
 
   driver.command.register({
-    name: metaCommand.name,
-    modes: metaCommand.modes,
-    shortcut: metaCommand.shortcut,
-    shortDescription: metaCommand.shortDescription,
-    longDescription: metaCommand.longDescription,
+    name: taggingCommand.name,
+    modes: taggingCommand.modes,
+    shortcut: taggingCommand.shortcut,
+    shortDescription: taggingCommand.shortDescription,
+    longDescription: taggingCommand.longDescription,
     callback: (): ICommandAction => {
       exitToDefaultMode(driver);
       // Select the entry:root annotation if one exists, else deselect.
+
       const entryRoot = findEntryRoot();
       if (entryRoot) selection.selectAnnotation(entryRoot as any);
       else selection.deselect();
-      sidebarTabs.rightTab = "meta";
-      return noopAction(metaCommand);
+      sidebarTabs.rightTab = "tagging";
+      return noopAction(taggingCommand);
     },
-    group: metaCommand.group,
+    group: taggingCommand.group,
   });
 }

@@ -46,22 +46,22 @@
 {#if config}
   <section class="flex flex-col gap-3">
     <div class="flex items-center gap-2">
-      <Text weight="semibold">Entry</Text>
+      <Text weight="semibold">Image</Text>
       <Badge variant={entryRootAnnotation ? "info" : "success-200"}>{entryRootAnnotation ? "EDIT" : "CREATE"}</Badge>
       {#if entryRootAnnotation}
         <div class="ml-auto flex items-center gap-0">
           <CategoryAction
-            label={annotation.isHidden(entryRootAnnotation) ? "Show entry" : "Hide entry"}
+            label={annotation.isHidden(entryRootAnnotation) ? "Show image" : "Hide image"}
             icon={annotation.isHidden(entryRootAnnotation) ? EyeOffIcon : EyeIcon}
             onclick={() => annotation.toggleHidden(entryRootAnnotation.id, !annotation.isHidden(entryRootAnnotation))}
           />
           <CategoryAction
-            label={annotation.isLocked(entryRootAnnotation) ? "Unlock entry" : "Lock entry"}
+            label={annotation.isLocked(entryRootAnnotation) ? "Unlock image" : "Lock image"}
             icon={annotation.isLocked(entryRootAnnotation) ? LockIcon : LockOpenIcon}
             onclick={() => annotation.toggleLocked(entryRootAnnotation.id, !annotation.isLocked(entryRootAnnotation))}
           />
           <CategoryAction
-            label="Delete entry"
+            label="Delete image"
             icon={Trash2Icon}
             disabled={disabled}
             onclick={() => onDelete?.()}
@@ -95,6 +95,6 @@
   </section>
 {:else}
   <Text size="sm" class="text-muted-foreground">
-    No entry-level or frame-level meta is configured for this dataset.
+    No entry-level or frame-level tagging is configured for this dataset.
   </Text>
 {/if}

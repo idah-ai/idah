@@ -41,10 +41,10 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
-  // A selected meta annotation (entry:root / idah-video:frame) is never shown
-  // in the Annotations tab — it's edited through the Meta tab instead. Treat it
-  // as no selection here so the annotations list renders rather than the meta form.
-  let isMetaAnnotation = $derived(
+  // A selected tagging annotation (entry:root / idah-video:frame) is never shown
+  // in the Annotations tab — it's edited through the Tagging tab instead. Treat it
+  // as no selection here so the annotations list renders rather than the tagging form.
+  let isTaggingAnnotation = $derived(
     sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation.shape as { type?: string })?.type ?? ""),
   );
 
@@ -123,7 +123,7 @@
 
     // Filter to current frame. Non-drawable records (entry:root spanning the
     // whole video, and per-frame idah-video:frame) are excluded — they are not
-    // drawable shapes and are only ever created/edited through the Meta tab.
+    // drawable shapes and are only ever created/edited through the Tagging tab.
     const onFrame = items.filter(
       (ann) =>
         ann.shape.start <= frame &&
@@ -178,7 +178,7 @@
   }
 </script>
 
-{#if !sel || isMetaAnnotation}
+{#if !sel || isTaggingAnnotation}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} {currentFrame} />

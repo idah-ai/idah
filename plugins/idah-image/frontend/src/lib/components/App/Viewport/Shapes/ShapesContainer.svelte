@@ -195,7 +195,7 @@
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
         // Skip non-drawable records (entry:root) — they are never rendered on
-        // canvas and are only edited through the Meta tab.
+        // canvasand are only edited through the Tagging tab.
         if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {

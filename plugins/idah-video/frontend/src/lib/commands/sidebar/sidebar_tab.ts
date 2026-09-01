@@ -1,14 +1,14 @@
 // ---------------------------------------------------------------------------
 // idah-video:sidebar-tab.* — Jump to a right-sidebar tab via keyboard shortcut.
-//
+
 // These are pure UI-navigation commands: they switch the active tab without
 // touching any annotation data, so they intentionally have NO `undo` method —
 // the command manager only pushes to the undo stack when an action has an
 // `undo`, keeping these out of history.
 //
 // Any tab change returns to the default (editor) mode via the existing
-// core:mode.exit command. The Meta commands also select the appropriate meta
-// annotation when one exists (entry:root for Entry, idah-video:frame for the
+// core:mode.exit command. The Tagging commands also select the appropriate tagging
+// annotation when one exists (entry:root for Video, idah-video:frame for the
 // current frame for Frame), otherwise they deselect. Both the tab clicks and
 // the shortcuts route through these commands so the behavior stays uniform.
 // ---------------------------------------------------------------------------
@@ -33,6 +33,7 @@ function noopAction(command: { name: string }): ICommandAction {
 }
 
 // Return to the default (editor) mode via the existing core:mode.exit command.
+
 function exitToDefaultMode(driver: IIdahDriverV2) {
   driver.command.call("core:mode.exit");
 }
@@ -43,7 +44,7 @@ function findEntryRoot(): IVideoAnnotationRecord | undefined {
     | undefined;
 }
 
-function findCurrentFrameMeta(): IVideoAnnotationRecord | undefined {
+function findCurrentFrameTagging(): IVideoAnnotationRecord | undefined {
   const frame = viewport.video.currentFrame.value;
   return (data.annotations?.items ?? []).find(
     (a) =>
@@ -62,22 +63,22 @@ export const selectionCommand = {
   longDescription: "Jump to the Annotations tab in the right sidebar",
 };
 
-export const metaCommand = {
-  name: "idah-video:sidebar-tab.meta",
+export const taggingCommand = {
+  name: "idah-video:sidebar-tab.tagging",
   group: "UI",
   modes: ["*"],
-  shortcut: "M",
-  shortDescription: "Meta tab",
-  longDescription: "Jump to the Meta tab in the right sidebar",
+  shortcut: "T",
+  shortDescription: "Tagging tab",
+  longDescription: "Jump to the Tagging tab in the right sidebar",
 };
 
-export const entryCommand = {
-  name: "idah-video:sidebar-tab.entry",
+export const videoCommand = {
+  name: "idah-video:sidebar-tab.video",
   group: "UI",
   modes: ["*"],
-  shortcut: "E",
-  shortDescription: "Meta > Entry tab",
-  longDescription: "Jump to the Entry sub-tab in the Meta tab",
+  shortcut: "V",
+  shortDescription: "Tagging > Video tab",
+  longDescription: "Jump to the Video sub-tab in the Tagging tab",
 };
 
 export const frameCommand = {
@@ -85,8 +86,8 @@ export const frameCommand = {
   group: "UI",
   modes: ["*"],
   shortcut: "F",
-  shortDescription: "Meta > Frame tab",
-  longDescription: "Jump to the Frame sub-tab in the Meta tab",
+  shortDescription: "Tagging > Frame tab",
+  longDescription: "Jump to the Frame sub-tab in the Tagging tab",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -106,49 +107,50 @@ export function register(driver: IIdahDriverV2): void {
   });
 
   driver.command.register({
-    name: metaCommand.name,
-    modes: metaCommand.modes,
-    shortcut: metaCommand.shortcut,
-    shortDescription: metaCommand.shortDescription,
-    longDescription: metaCommand.longDescription,
+    name: taggingCommand.name,
+    modes: taggingCommand.modes,
+    shortcut: taggingCommand.shortcut,
+    shortDescription: taggingCommand.shortDescription,
+    longDescription: taggingCommand.longDescription,
     callback: (): ICommandAction => {
       exitToDefaultMode(driver);
-      // Select the appropriate meta annotation if one exists, else deselect.
+      // Select the appropriate tagging annotation if one exists, else deselect.
+
       const entryRoot = findEntryRoot();
-      const frameMeta = findCurrentFrameMeta();
+      const frameTagging = findCurrentFrameTagging();
       if (entryRoot) {
         selection.selectAnnotation(entryRoot as any);
-        sidebarTabs.rightTab = "meta";
-        sidebarTabs.metaTab = "entry";
-      } else if (frameMeta) {
-        selection.selectAnnotation(frameMeta as any);
-        sidebarTabs.rightTab = "meta";
-        sidebarTabs.metaTab = "frame";
+        sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "entry";
+      } else if (frameTagging) {
+        selection.selectAnnotation(frameTagging as any);
+        sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "frame";
       } else {
         selection.deselect();
-        sidebarTabs.rightTab = "meta";
+        sidebarTabs.rightTab = "tagging";
       }
-      return noopAction(metaCommand);
+      return noopAction(taggingCommand);
     },
-    group: metaCommand.group,
+    group: taggingCommand.group,
   });
 
   driver.command.register({
-    name: entryCommand.name,
-    modes: entryCommand.modes,
-    shortcut: entryCommand.shortcut,
-    shortDescription: entryCommand.shortDescription,
-    longDescription: entryCommand.longDescription,
+    name: videoCommand.name,
+    modes: videoCommand.modes,
+    shortcut: videoCommand.shortcut,
+    shortDescription: videoCommand.shortDescription,
+    longDescription: videoCommand.longDescription,
     callback: (): ICommandAction => {
       exitToDefaultMode(driver);
       const entryRoot = findEntryRoot();
       if (entryRoot) selection.selectAnnotation(entryRoot as any);
       else selection.deselect();
-      sidebarTabs.rightTab = "meta";
-      sidebarTabs.metaTab = "entry";
-      return noopAction(entryCommand);
+      sidebarTabs.rightTab = "tagging";
+      sidebarTabs.taggingTab = "entry";
+      return noopAction(videoCommand);
     },
-    group: entryCommand.group,
+    group: videoCommand.group,
   });
 
   driver.command.register({
@@ -159,11 +161,11 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: frameCommand.longDescription,
     callback: (): ICommandAction => {
       exitToDefaultMode(driver);
-      const frameMeta = findCurrentFrameMeta();
-      if (frameMeta) selection.selectAnnotation(frameMeta as any);
+      const frameTagging = findCurrentFrameTagging();
+      if (frameTagging) selection.selectAnnotation(frameTagging as any);
       else selection.deselect();
-      sidebarTabs.rightTab = "meta";
-      sidebarTabs.metaTab = "frame";
+      sidebarTabs.rightTab = "tagging";
+      sidebarTabs.taggingTab = "frame";
       return noopAction(frameCommand);
     },
     group: frameCommand.group,

@@ -1,20 +1,19 @@
 // ---------------------------------------------------------------------------
-// sidebar-tabs.svelte.ts — Right-sidebar tab state (Annotations / Meta)
+// sidebar-tabs.svelte.ts — Right-sidebar tab state (Annotations / Tagging)
 //
 // Shared between the PropertiesCategorySelector component (which renders the
 // tabs) and the keyboard-shortcut commands (which jump between tabs). Stored
 // as a Svelte 5 rune object so both can read/write it reactively.
-// ---------------------------------------------------------------------------
 
-export type RightTab = "annotations" | "meta";
-export type MetaTab = "entry" | "frame";
+export type RightTab = "annotations" | "tagging";
+export type TaggingTab = "entry" | "frame";
 
 let _rightTab: RightTab = $state("annotations");
-let _metaTab: MetaTab = $state("entry");
+let _taggingTab: TaggingTab = $state("entry");
 
 export const sidebarTabs: {
   rightTab: RightTab;
-  metaTab: MetaTab;
+  taggingTab: TaggingTab;
 } = {
   get rightTab() {
     return _rightTab;
@@ -22,10 +21,10 @@ export const sidebarTabs: {
   set rightTab(v: RightTab) {
     _rightTab = v;
   },
-  get metaTab() {
-    return _metaTab;
+  get taggingTab() {
+    return _taggingTab;
   },
-  set metaTab(v: MetaTab) {
-    _metaTab = v;
+  set taggingTab(v: TaggingTab) {
+    _taggingTab = v;
   },
 };

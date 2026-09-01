@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// meta-annotations.ts — Pure logic for entry-level (entry:root) meta annotations.
+// tagging-annotations.ts — Pure logic for entry-level (entry:root) tagging annotations.
 //
 // Kept as plain functions (no Svelte runes) so the uniqueness rules can be
 // unit-tested in isolation. The workspace components call these and translate
@@ -19,11 +19,11 @@ export type EntryResolution =
   | { action: "none" };
 
 /**
- * Decide whether setting the entry meta should update the existing entry:root
+ * Decide whether settingthe entry tagging should update the existing entry:root
  * record, create a new one, or do nothing. Uniqueness is enforced client-side:
  * at most one entry:root annotation may exist per entry — a second write updates
  * the existing record instead of duplicating. "create" is returned only when no
- * record exists AND a category is provided (an empty meta is never created).
+ * record exists AND a category is provided (an empty tagging is never created).
  */
 export function resolveEntryRoot(
   items: IImageAnnotationRecord[],

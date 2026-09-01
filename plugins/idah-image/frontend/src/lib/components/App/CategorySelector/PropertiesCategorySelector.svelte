@@ -7,7 +7,7 @@
   import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
 
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
-  import MetaPanel from "$lib/components/App/SelectionPanel/_MetaPanel.svelte";
+  import TaggingPanel from "$lib/components/App/SelectionPanel/_TaggingPanel.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -65,9 +65,9 @@
       !["annotate", "review"].includes(getDriver().workflowStep),
   );
 
-  // Meta tab disabled state: follows the same editability rules as the
+  // Tagging tab disabled state: follows the same editability rules as the
   // Annotations tab (workflow step + lock state of the existing entry:root record).
-  let metaDisabled = $derived(
+  let taggingDisabled = $derived(
     (entryRootAnnotation && annotation.isLocked(entryRootAnnotation)) ||
       !["annotate", "review"].includes(getDriver().workflowStep),
   );
@@ -79,14 +79,14 @@
 
   // ── Selection-driven tab switching ─────────────────────────────────────
   // Selecting an annotation routes to the appropriate tab:
-  //   - entry:root → meta
+  //   - entry:root → tagging
   //   - any shaped (drawable) annotation → annotations
   $effect(() => {
     const sel = selection.value;
     if (!sel) return;
     const shapeType = (sel.shape as { type?: string })?.type;
     if (shapeType === ENTRY_ROOT) {
-      sidebarTabs.rightTab = "meta";
+      sidebarTabs.rightTab = "tagging";
     } else {
       sidebarTabs.rightTab = "annotations";
     }
@@ -107,7 +107,7 @@
    *  the target tab never renders with a stale selection. (The shortcut commands
    *  do the same inside their do(), which runs synchronously for these no-undo
    *  navigation commands.) */
-  function handleOuterTabClick(tab: "annotations" | "meta") {
+  function handleOuterTabClick(tab: "annotations" | "tagging") {
     selection.deselect();
     sidebarTabs.rightTab = tab;
   }
@@ -154,16 +154,16 @@
               </Tooltips>
               <Tooltips class="flex-1 flex">
                 {#snippet trigger()}
-                  <TabsTrigger value="meta" class="w-full text-xs" onclick={() => handleOuterTabClick("meta")}>
-                    Meta
+                  <TabsTrigger value="tagging" class="w-full text-xs" onclick={() => handleOuterTabClick("tagging")}>
+                    Tagging
                   </TabsTrigger>
                 {/snippet}
                 {#snippet content()}
                   <div class="flex items-center gap-4">
-                    <span>Meta</span>
-                    {#if shortcutLabel("idah-image:sidebar-tab.meta")}
+                    <span>Tagging</span>
+                    {#if shortcutLabel("idah-image:sidebar-tab.tagging")}
                       <KbdGroup>
-                        <Kbd class="border">{shortcutLabel("idah-image:sidebar-tab.meta")}</Kbd>
+                        <Kbd class="border">{shortcutLabel("idah-image:sidebar-tab.tagging")}</Kbd>
                       </KbdGroup>
                     {/if}
                   </div>
@@ -192,12 +192,12 @@
               {/key}
             </TabsContent>
 
-            <TabsContent value="meta">
-              <MetaPanel
+            <TabsContent value="tagging">
+              <TaggingPanel
                 entryRootAnnotation={entryRootAnnotation}
                 onCreateOrUpdate={onEntryRootChange}
                 onDelete={onDeleteEntryRoot ?? (() => {})}
-                disabled={metaDisabled}
+                disabled={taggingDisabled}
               />
             </TabsContent>
           </Tabs>

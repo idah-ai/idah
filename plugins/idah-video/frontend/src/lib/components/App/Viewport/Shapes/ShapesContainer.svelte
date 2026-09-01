@@ -187,7 +187,7 @@
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
         // Skip non-drawable records (entry:root / idah-video:frame) — they
-        // are never rendered on canvas and are only edited through the Meta tab.
+        // are never rendered on canvas and are only edited through the Tagging tab.
         if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
         // Skip annotations outside the current frame range
         const { start, end } = (ann.shape ?? {}) as { start?: number; end?: number };

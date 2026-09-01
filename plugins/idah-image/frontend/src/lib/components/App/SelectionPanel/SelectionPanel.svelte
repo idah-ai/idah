@@ -30,10 +30,10 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
-  // A selected meta annotation (entry:root) is never shown in the Annotations
-  // tab — it's edited through the Meta tab instead. Treat it as no selection
-  // here so the annotations list renders rather than the meta form.
-  let isMetaAnnotation = $derived(
+  // A selected tagging annotation (entry:root) is never shown in the Annotations
+  // tab — it's edited through the Tagging tab instead. Treat it as no selection
+  // here so the annotations list renders rather than the tagging form.
+  let isTaggingAnnotation = $derived(
     sel && NON_DRAWABLE_SHAPE_TYPES.has((sel.shape as { type?: string })?.type ?? ""),
   );
 
@@ -65,7 +65,7 @@
 
   // All annotations on the current frame (default mode, no selection).
   // Non-drawable records (entry:root) are excluded — they are not drawable
-  // shapes and are only ever created/edited through the Meta tab.
+  // shapesand are only ever created/edited through the Tagging tab.
   let currentFrameAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
     return (data.annotations.items as unknown as IImageAnnotationRecord[]).filter(
@@ -107,7 +107,7 @@
   }
 </script>
 
-{#if !sel || isMetaAnnotation}
+{#if !sel || isTaggingAnnotation}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} />

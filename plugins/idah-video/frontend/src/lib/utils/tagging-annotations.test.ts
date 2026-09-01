@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// meta-annotations.test.ts — Unit tests for entry:root / idah-video:frame uniqueness
+// tagging-annotations.test.ts — Unit tests for entry:root / idah-video:frame uniqueness
 // ---------------------------------------------------------------------------
 import { describe, it, expect } from "vitest";
 
@@ -8,7 +8,7 @@ import {
   findEntryRootAnnotation,
   resolveFrame,
   resolveEntryRoot,
-} from "./meta-annotations";
+} from "./tagging-annotations";
 import type { IVideoAnnotationRecord } from "$lib/types";
 
 function rootRecord(category?: string, id = "root-001"): IVideoAnnotationRecord {

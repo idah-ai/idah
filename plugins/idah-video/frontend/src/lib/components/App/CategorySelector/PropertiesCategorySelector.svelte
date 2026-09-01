@@ -7,7 +7,7 @@
   import { getShortcutLabel } from "$lib/components/ui/Kbd/utils";
 
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
-  import MetaPanel from "$lib/components/App/SelectionPanel/_MetaPanel.svelte";
+  import TaggingPanel from "$lib/components/App/SelectionPanel/_TaggingPanel.svelte";
 
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
@@ -77,46 +77,46 @@
       !["annotate", "review"].includes(getDriver().workflowStep),
   );
 
-  // Meta tab disabled state: follows the same editability rules as the
+  // Tagging tab disabled state: follows the same editability rules as the
   // Annotations tab (workflow step + lock state of the existing records).
-  let metaDisabled = $derived(
+  let taggingDisabled = $derived(
     (entryRootAnnotation && annotation.isLocked(entryRootAnnotation)) ||
       (frameAnnotation && annotation.isLocked(frameAnnotation)) ||
       !["annotate", "review"].includes(getDriver().workflowStep),
   );
 
-  // Whether each meta sub-form is configured for this dataset.
+  // Whether each tagging sub-form is configured for this dataset.
   let hasEntryConfig = $derived(Boolean(getDriver().config[ENTRY_ROOT]));
   let hasFrameConfig = $derived(Boolean(getDriver().config[VIDEO_FRAME]));
-  // Hide the whole tab bar when no meta config exists.
+  // Hide the whole tab bar when no tagging config exists.
   let showTabs = $derived(hasEntryConfig || hasFrameConfig);
 
-  // Outer tab: "annotations" | "meta"
+  // Outer tab: "annotations" | "tagging"
   let activeRightTab = $derived(sidebarTabs.rightTab);
-  // Inner meta sub-tab: "entry" | "frame"
-  let activeMetaTab = $derived(sidebarTabs.metaTab);
+  // Inner tagging sub-tab: "entry" | "frame"
+  let activeTaggingTab = $derived(sidebarTabs.taggingTab);
 
-  // When only one meta sub-form is configured, show it directly without
+  // When only one tagging sub-form is configured, show it directly without
   // sub-tabs. Otherwise default to "entry".
-  let showMetaSubTabs = $derived(hasEntryConfig && hasFrameConfig);
-  let effectiveMetaTab = $derived(showMetaSubTabs ? activeMetaTab : hasFrameConfig ? "frame" : "entry");
+  let showTaggingSubTabs = $derived(hasEntryConfig && hasFrameConfig);
+  let effectiveTaggingTab = $derived(showTaggingSubTabs ? activeTaggingTab : hasFrameConfig ? "frame" : "entry");
 
   // ── Selection-driven tab switching ─────────────────────────────────────
   // Selecting an annotation routes to the appropriate tab:
-  //   - idah-video:frame → meta > frame
+  //   - idah-video:frame → tagging > frame
   //   - any shaped (drawable) annotation → annotations
-  //   - entry:root → meta > entry
+  //   - entry:root → tagging > entry
   $effect(() => {
     const sel = selection.value;
     if (!sel) return;
     if (sel.type === "annotation") {
       const shapeType = (sel.annotation.shape as { type?: string })?.type;
       if (shapeType === VIDEO_FRAME) {
-        sidebarTabs.rightTab = "meta";
-        sidebarTabs.metaTab = "frame";
+        sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "frame";
       } else if (shapeType === ENTRY_ROOT) {
-        sidebarTabs.rightTab = "meta";
-        sidebarTabs.metaTab = "entry";
+        sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "entry";
       } else {
         sidebarTabs.rightTab = "annotations";
       }
@@ -129,11 +129,11 @@
     if (viewport.isCreationMode) sidebarTabs.rightTab = "annotations";
   });
 
-  // While on the Meta > Frame tab, keep the selection in sync with the current
+  // While on the Tagging > Frame tab, keep the selection in sync with the current
   // frame: select the idah-video:frame annotation for the displayed frame when
   // one exists, otherwise deselect.
   $effect(() => {
-    if (sidebarTabs.rightTab !== "meta" || sidebarTabs.metaTab !== "frame") return;
+    if (sidebarTabs.rightTab !== "tagging" || sidebarTabs.taggingTab !== "frame") return;
     const frame = currentFrame;
     if (frame === undefined) return;
     const sel = selection.value;
@@ -153,15 +153,15 @@
    *  the target tab never renders with a stale selection. (The shortcut commands
    *  do the same inside their do(), which runs synchronously for these no-undo
    *  navigation commands.) */
-  function handleOuterTabClick(tab: "annotations" | "meta") {
+  function handleOuterTabClick(tab: "annotations" | "tagging") {
     selection.deselect();
     sidebarTabs.rightTab = tab;
   }
 
-  function handleMetaTabClick(tab: "entry" | "frame") {
+  function handleTaggingTabClick(tab: "entry" | "frame") {
     selection.deselect();
-    sidebarTabs.rightTab = "meta";
-    sidebarTabs.metaTab = tab;
+    sidebarTabs.rightTab = "tagging";
+    sidebarTabs.taggingTab = tab;
   }
 
   function shortcutLabel(commandName: string): string | undefined {
@@ -206,16 +206,16 @@
               </Tooltips>
               <Tooltips class="flex-1 flex">
                 {#snippet trigger()}
-                  <TabsTrigger value="meta" class="w-full text-xs" onclick={() => handleOuterTabClick("meta")}>
-                    Meta
+                  <TabsTrigger value="tagging" class="w-full text-xs" onclick={() => handleOuterTabClick("tagging")}>
+                    Tagging
                   </TabsTrigger>
                 {/snippet}
                 {#snippet content()}
                   <div class="flex items-center gap-4">
-                    <span>Meta</span>
-                    {#if shortcutLabel("idah-video:sidebar-tab.meta")}
+                    <span>Tagging</span>
+                    {#if shortcutLabel("idah-video:sidebar-tab.tagging")}
                       <KbdGroup>
-                        <Kbd class="border">{shortcutLabel("idah-video:sidebar-tab.meta")}</Kbd>
+                        <Kbd class="border">{shortcutLabel("idah-video:sidebar-tab.tagging")}</Kbd>
                       </KbdGroup>
                     {/if}
                   </div>
@@ -244,22 +244,22 @@
               {/key}
             </TabsContent>
 
-            <TabsContent value="meta">
-              {#if showMetaSubTabs}
-                <Tabs bind:value={activeMetaTab}>
+            <TabsContent value="tagging">
+              {#if showTaggingSubTabs}
+                <Tabs bind:value={activeTaggingTab}>
                   <TabsList class="w-full" onkeydown={handleTabsListKeydown}>
                     <Tooltips class="flex-1 flex">
                       {#snippet trigger()}
-                        <TabsTrigger value="entry" class="w-full text-xs" onclick={() => handleMetaTabClick("entry")}>
-                          Entry
+                        <TabsTrigger value="entry" class="w-full text-xs" onclick={() => handleTaggingTabClick("entry")}>
+                          Video
                         </TabsTrigger>
                       {/snippet}
                       {#snippet content()}
                         <div class="flex items-center gap-4">
-                          <span>Entry</span>
-                          {#if shortcutLabel("idah-video:sidebar-tab.entry")}
+                          <span>Video</span>
+                          {#if shortcutLabel("idah-video:sidebar-tab.video")}
                             <KbdGroup>
-                              <Kbd class="border">{shortcutLabel("idah-video:sidebar-tab.entry")}</Kbd>
+                              <Kbd class="border">{shortcutLabel("idah-video:sidebar-tab.video")}</Kbd>
                             </KbdGroup>
                           {/if}
                         </div>
@@ -267,7 +267,7 @@
                     </Tooltips>
                     <Tooltips class="flex-1 flex">
                       {#snippet trigger()}
-                        <TabsTrigger value="frame" class="w-full text-xs" onclick={() => handleMetaTabClick("frame")}>
+                        <TabsTrigger value="frame" class="w-full text-xs" onclick={() => handleTaggingTabClick("frame")}>
                           Frame
                         </TabsTrigger>
                       {/snippet}
@@ -284,7 +284,7 @@
                     </Tooltips>
                   </TabsList>
                   <TabsContent value="entry">
-                    <MetaPanel
+                    <TaggingPanel
                       activeTab="entry"
                       {entryRootAnnotation}
                       {frameAnnotation}
@@ -293,11 +293,11 @@
                       onFrameChange={onFrameChange}
                       onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
                       onFrameDelete={onDeleteFrame ?? (() => {})}
-                      disabled={metaDisabled}
+                      disabled={taggingDisabled}
                     />
                   </TabsContent>
                   <TabsContent value="frame">
-                    <MetaPanel
+                    <TaggingPanel
                       activeTab="frame"
                       {entryRootAnnotation}
                       {frameAnnotation}
@@ -306,21 +306,21 @@
                       onFrameChange={onFrameChange}
                       onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
                       onFrameDelete={onDeleteFrame ?? (() => {})}
-                      disabled={metaDisabled}
+                      disabled={taggingDisabled}
                     />
                   </TabsContent>
                 </Tabs>
               {:else}
-                <MetaPanel
-                  activeTab={effectiveMetaTab}
+                <TaggingPanel
+                  activeTab={effectiveTaggingTab}
                   {entryRootAnnotation}
                   {frameAnnotation}
                   currentFrame={currentFrame ?? 0}
                   onEntryRootChange={onEntryRootChange}
                   onFrameChange={onFrameChange}
-                  onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
+                  onEntryRootDelete={onDeleteEntryRoot ?? ( ()=> {})}
                   onFrameDelete={onDeleteFrame ?? (() => {})}
-                  disabled={metaDisabled}
+                  disabled={taggingDisabled}
                 />
               {/if}
             </TabsContent>

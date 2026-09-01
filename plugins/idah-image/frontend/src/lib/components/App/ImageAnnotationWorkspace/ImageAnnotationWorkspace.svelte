@@ -6,7 +6,7 @@
   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { resolveEntryRoot } from "$lib/utils/meta-annotations";
+  import { resolveEntryRoot } from "$lib/utils/tagging-annotations";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -525,12 +525,12 @@
   }
 
   // The entry:root annotation for this entry, derived reactively from the live
-  // store (never a stale singleton) so the Meta tab always reflects reality.
+  // store (never a stale singleton) so the Tagging tab always reflects reality.
   let entryRootAnnotation = $derived<IImageAnnotationRecord | undefined>(
     data.annotations?.items.find((a) => (a.shape as any).type === ENTRY_ROOT) as IImageAnnotationRecord | undefined,
   );
 
-  /** Set the whole entry meta (entry:root). Uniqueness is enforced client-side:
+  /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
    *  at most one entry:root annotation may exist per entry — creating a second
    *  one updates the existing record instead of duplicating. */
   function onEntryRootChange(value: AnnotationValue) {

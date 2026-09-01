@@ -6,7 +6,7 @@
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { resolveFrame, resolveEntryRoot } from "$lib/utils/meta-annotations";
+  import { resolveFrame, resolveEntryRoot } from "$lib/utils/tagging-annotations";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -482,7 +482,7 @@
   }
 
   // The entry:root annotation for this entry, derived reactively from the live
-  // store (never a stale singleton) so the Meta tab always reflects reality.
+  // store (never a stale singleton) so the Tagging tab always reflects reality.
   let entryRootAnnotation = $derived<IVideoAnnotationRecord | undefined>(
     data.annotations?.items.find((a) => (a.shape as any).type === ENTRY_ROOT) as IVideoAnnotationRecord | undefined,
   );
@@ -498,8 +498,8 @@
   });
 
   // All idah-video:frame annotations for this entry, unfiltered by workspace
-  // mode (frame meta is an annotate-time feature, not review-only). Feeds the
-  // pinned Meta row in the Timeline.
+  // mode (frame tagging is an annotate-time feature, not review-only). Feeds the
+  // pinned Tagging row in the Timeline.
   let frameAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
     return (data.annotations.items as unknown as IVideoAnnotationRecord[])
@@ -507,7 +507,7 @@
       .sort((a, b) => a.shape.start - b.shape.start);
   });
 
-  /** Set the whole entry meta (entry:root). Uniqueness is enforced client-side:
+  /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
    *  at most one entry:root annotation may exist per entry — creating a second
    *  one updates the existing record instead of duplicating. */
   function onEntryRootChange(value: AnnotationValue) {
@@ -521,7 +521,7 @@
     }
   }
 
-  /** Set the current frame meta (idah-video:frame). Uniqueness is enforced client-side
+  /** Set the current frame tagging (idah-video:frame. Uniqueness is enforced client-side
    *  per frame value: at most one idah-video:frame annotation may exist for a
    *  given frame — creating a second one for the same frame updates the existing
    *  record instead of duplicating. */
