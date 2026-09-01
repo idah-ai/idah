@@ -123,8 +123,8 @@ RSpec.describe Exports::Upd::Exporter do
       #
       # We match by timeout (10 is ours, 0/+inf are Ruby's/etc.) and dispatch
       # based on whether stdin is in the write array.
-      allow(IO).to receive(:select) do |read, write, _error, timeout|
-        next unless timeout == 10  # only intercept our calls
+      allow(IO).to receive(:select) do |_read, write, _error, timeout|
+        next unless timeout == 10 # only intercept our calls
 
         if write == [stdin_mock]
           # write_jsonl: default = stdin writable, no output to drain
@@ -372,7 +372,7 @@ RSpec.describe Exports::Upd::Exporter do
           .and_return("boom error\n", nil)
 
         # Override IO.select: return stderr readable on first write_jsonl call
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
 
           if write == [stdin_mock]
@@ -395,7 +395,7 @@ RSpec.describe Exports::Upd::Exporter do
         # Simulate write_nonblock raising EPIPE on the first write
         allow(stdin_mock).to receive(:write_nonblock).and_raise(Errno::EPIPE, "Broken pipe")
 
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
 
           if write == [stdin_mock]
@@ -417,7 +417,7 @@ RSpec.describe Exports::Upd::Exporter do
         on_output = ->(chunk, stream) { emitted_output << [chunk, stream] }
 
         call_count = 0
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
 
           if write == [stdin_mock]
@@ -425,7 +425,7 @@ RSpec.describe Exports::Upd::Exporter do
             case call_count
             when 1 then [[stdout_mock], [stdin_mock], []]   # stdout + stdin
             when 2 then [[stderr_mock], [stdin_mock], []]   # stderr + stdin
-            else        [[], [stdin_mock], []]               # just stdin
+            else        [[], [stdin_mock], []] # just stdin
             end
           else
             [[stdout_mock, stderr_mock], [], []]
@@ -447,11 +447,11 @@ RSpec.describe Exports::Upd::Exporter do
       end
 
       it "handles premature output pipe closure gracefully" do
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
 
           if write == [stdin_mock]
-            [[stdout_mock], [stdin_mock], []]   # stdout readable (EOF)
+            [[stdout_mock], [stdin_mock], []] # stdout readable (EOF)
           else
             [[stdout_mock, stderr_mock], [], []]
           end
@@ -471,7 +471,7 @@ RSpec.describe Exports::Upd::Exporter do
 
     context "large stdin input (>64KB pipe buffer)" do
       it "splits a large JSONL line across multiple write_nonblock calls" do
-        huge_line = "x" * (80 * 1024) + "\n"
+        huge_line = "#{"x" * (80 * 1024)}\n"
 
         # Stub the entry builder to return an artificially huge line (> 64KB)
         allow(exporter).to receive(:build_entry_jsonl).and_return(huge_line)
@@ -488,8 +488,9 @@ RSpec.describe Exports::Upd::Exporter do
           end
         end
 
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
+
           if write == [stdin_mock]
             [[], [stdin_mock], []]
           else
@@ -510,15 +511,14 @@ RSpec.describe Exports::Upd::Exporter do
         allow(stdin_mock).to receive(:write_nonblock) do |data|
           call_count += 1
           # Raise EAGAIN on first write attempt (the init line), succeed on retry
-          if call_count == 1
-            raise IO::EAGAINWaitWritable, "Resource temporarily unavailable"
-          else
-            data.bytesize
-          end
+          raise IO::EAGAINWaitWritable, "Resource temporarily unavailable" if call_count == 1
+
+          data.bytesize
         end
 
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
+
           if write == [stdin_mock]
             [[], [stdin_mock], []]
           else
@@ -535,8 +535,9 @@ RSpec.describe Exports::Upd::Exporter do
 
     context "IO.select timeout in write_jsonl" do
       it "raises a timeout error when subprocess stalls" do
-        allow(IO).to receive(:select) do |read, write, _error, timeout|
+        allow(IO).to receive(:select) do |_read, write, _error, timeout|
           next unless timeout == 10
+
           if write == [stdin_mock]
             nil
           else

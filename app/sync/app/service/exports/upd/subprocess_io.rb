@@ -32,7 +32,7 @@ module Exports
         data_to_write = line.end_with?("\n") ? line : "#{line}\n"
 
         while data_to_write.bytesize > 0
-          ready_read, ready_write, _ = IO.select([@stdout, @stderr], [@stdin], nil, SELECT_TIMEOUT)
+          ready_read, ready_write, = IO.select([@stdout, @stderr], [@stdin], nil, SELECT_TIMEOUT)
 
           if ready_read.nil? && ready_write.nil?
             raise "Timeout while waiting to communicate with updcli-static"
@@ -43,10 +43,10 @@ module Exports
           read_available_output(ready_read)
 
           # 2. Try to write to stdin if it's ready
-          if ready_write&.include?(@stdin)
-            perform_nonblock_write(data_to_write) do |written|
-              data_to_write = data_to_write.byteslice(written..-1)
-            end
+          next unless ready_write&.include?(@stdin)
+
+          perform_nonblock_write(data_to_write) do |written|
+            data_to_write = data_to_write.byteslice(written..-1)
           end
         end
       end
@@ -67,22 +67,20 @@ module Exports
 
           ready.first.each do |io|
             loop do
-              begin
-                chunk = io.read_nonblock(4096, exception: false)
+              chunk = io.read_nonblock(4096, exception: false)
 
-                case chunk
-                when :wait_readable
-                  break
-                when nil # EOF
-                  streams.delete(io)
-                  break
-                else
-                  emit_output(chunk, streams[io])
-                end
-              rescue IOError, Errno::EPIPE, Errno::ECONNRESET
+              case chunk
+              when :wait_readable
+                break
+              when nil # EOF
                 streams.delete(io)
                 break
+              else
+                emit_output(chunk, streams[io])
               end
+            rescue IOError, Errno::EPIPE, Errno::ECONNRESET
+              streams.delete(io)
+              break
             end
           end
         end
@@ -101,7 +99,7 @@ module Exports
             when nil
               raise StreamClosed, "updcli-static closed its outputs prematurely"
             else
-              type = (io == @stdout) ? :out : :err
+              type = io == @stdout ? :out : :err
               emit_output(chunk, type)
             end
           end
@@ -110,16 +108,14 @@ module Exports
 
       # Attempt a non-blocking write; retry on EAGAIN, raise on EPIPE
       def perform_nonblock_write(data)
-        begin
-          written = @stdin.write_nonblock(data)
-          yield written
-        rescue IO::WaitWritable
-          # Pipe filled up mid-write; loop will retry after IO.select tells us
-          # it's writable (next iteration will call IO.select and come back
-          # here when ready)
-        rescue Errno::EPIPE, IOError => e
-          raise StreamClosed, "updcli-static closed its stdin: #{e.message}"
-        end
+        written = @stdin.write_nonblock(data)
+        yield written
+      rescue IO::WaitWritable
+        # Pipe filled up mid-write; loop will retry after IO.select tells us
+        # it's writable (next iteration will call IO.select and come back
+        # here when ready)
+      rescue Errno::EPIPE, IOError => e
+        raise StreamClosed, "updcli-static closed its stdin: #{e.message}"
       end
 
       # Emit output: collect stderr, log or callback
