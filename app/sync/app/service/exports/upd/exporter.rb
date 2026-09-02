@@ -232,13 +232,22 @@ module Exports
       end
 
       def build_media_jsonl(media, file_path)
+        attributes = media.record.data[:attributes]
+        metadata = capitalized_dashed_keys(attributes[:meta]).merge(
+          {
+            "Created-By" => attributes[:created_by],
+            "Created-At" => attributes[:created_at]
+          }
+        )
+
         {
           command: "media:create",
           args: {
             id: media.record.resource,
             file: file_path,
             key: media.record.key,
-            mimetype: media.record.mime_type
+            mimetype: media.record.mime_type,
+            metadata: metadata.to_json
           }
         }.to_json
       end
