@@ -717,5 +717,10 @@ RSpec.describe Exports::Upd::Exporter do
       result = exporter.send(:capitalized_dashed_keys, {})
       expect(result).to eq({})
     end
+
+    it "returns an empty hash when the param is nil" do
+      result = exporter.send(:capitalized_dashed_keys, nil)
+      expect(result).to eq({})
+    end
   end
 end
