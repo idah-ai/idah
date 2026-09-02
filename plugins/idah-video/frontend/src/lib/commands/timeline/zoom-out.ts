@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timeline.zoom_out — Zoom out of the timeline view
+// idah-video:timeline.zoom-out — Zoom out of the timeline view
 //
 // Shortcut: Control+Minus (Cmd+- on Mac, Ctrl+- on Windows)
 // Not undoable.
@@ -9,7 +9,7 @@ import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "timeline.zoom_out",
+  name: "idah-video:timeline.zoom-out",
   group: "Timeline",
   modes: ["editor", "review"] as string[],
   shortcut: "Control+Minus",

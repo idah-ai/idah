@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.updateGroupCategory — Update category for all annotations in a group
+// idah-video:annotation.update-group-category — Update category for all annotations in a group
 // Undoable: restores previous categories.
 //
 // Usage:
-//   driver.command.call("annotation.updateGroupCategory", {
+//   driver.command.call("idah-video:annotation.update-group-category", {
 //     groupId: "...",
 //     categoryIdToBeUpdate: "new-category-id"
 //   });
@@ -15,7 +15,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.updateGroupCategory",
+  name: "idah-video:annotation.update-group-category",
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,

@@ -52,14 +52,12 @@
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
-  const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let entryId = $derived(getDriver().id);
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep) && !viewport.isReviewWorkspace);
-  let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === "note");
 
   let player: Video | undefined = $state();
@@ -99,14 +97,6 @@
   });
 
   let length = $state(0);
-  let tools: {
-    name: string;
-    label: string;
-    type: string;
-    iconName: string;
-    disabled?: boolean;
-    handleClick: () => void;
-  }[] = $state([]);
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
@@ -208,62 +198,6 @@
     const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
-    /** TOOLS CONFIGURATION */
-    const toolListConfig = [
-      {
-        name: "tools.visual",
-        label: "Visual",
-        type: "default",
-        iconName: "mouse-pointer-2",
-        command: "tools.visual",
-      },
-      {
-        name: "tools.bounding_box",
-        label: "Bounding Box",
-        type: IDAH_VIDEO_BOUNDING_BOX,
-        iconName: "vector-square",
-        disabled: !editable,
-        command: "tools.bounding_box",
-      },
-      {
-        name: "tools.polygon",
-        label: "Polygon",
-        type: IDAH_VIDEO_POLYGON,
-        iconName: "polygon",
-        disabled: !editable,
-        command: "tools.polygon",
-      },
-      {
-        name: "tools.note",
-        label: "Add Note",
-        type: "note",
-        iconName: "message-circle",
-        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
-        command: "tools.note",
-      },
-    ];
-
-    const toolConfig = toolListConfig.filter((tool) => {
-      if (["idah-video:bounding-box", "idah-video:polygon"].includes(tool.type)) {
-        const cfg = getDriver().config[tool.type];
-        return cfg && cfg.values && cfg.values.length > 0;
-      }
-      return true;
-    });
-
-    tools = toolConfig.map((tool) => {
-      return {
-        name: tool.name,
-        label: tool.label,
-        type: tool.type,
-        iconName: tool.iconName,
-        disabled: tool.disabled,
-        handleClick: () => getDriver().command.call(tool.command),
-      };
-    });
-
-    // Set toolbar tools on the driver — the mock page's toolbar manager reads them
-    // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
   function seekToFrame(frame: number) {
@@ -281,7 +215,7 @@
       frames: frames as IVideoFrameSelection[],
     };
 
-    getDriver().command.call("annotation.add", { shape: videoShape, value });
+    getDriver().command.call("idah-video:annotation.add", { shape: videoShape, value });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -300,19 +234,19 @@
 
   async function removeAnnotation(annotationId: string) {
     if (!editable) return;
-    getDriver().command.call("annotation.delete", { annotationId });
+    getDriver().command.call("idah-video:annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: IVideoFrameSelection) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.keyframe_add", { annotationId: id, selection });
+    getDriver().command.call("idah-video:annotation.keyframe.add", { annotationId: id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
     if (!editable) return;
 
-    getDriver().command.call("annotation.keyframe_delete", { annotationId, frame });
+    getDriver().command.call("idah-video:annotation.keyframe.delete", { annotationId, frame });
   }
 
   function deleteAnnotation(annotation: IVideoAnnotationRecord, frame?: number) {
@@ -360,7 +294,7 @@
       if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
     } else if (selGroup) {
       // Update category for all annotations in the group
-      getDriver().command.call("annotation.updateGroupCategory", {
+      getDriver().command.call("idah-video:annotation.update-group-category", {
         groupId: selGroup.groupId,
         categoryIdToBeUpdate: value.category,
       });
@@ -463,7 +397,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("annotation.update", { annotation: ann, value });
+    getDriver().command.call("idah-video:annotation.update", { annotation: ann, value });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {

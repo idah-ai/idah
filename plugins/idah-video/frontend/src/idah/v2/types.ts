@@ -606,6 +606,30 @@ export interface IToolbarDriverV2 {
   invalidate(): void;
 }
 
+// ─── V2 Driver — Settings submodule ───────────────────────────────────────
+
+// LEAN BY CHOICE: the full setting descriptor types (ISettingItem /
+// ISliderSetting / IOptionsSetting / ISettingGroup / ISettingProvider) live
+// ONLY in core (app/frontend/src/lib/plugin/v2/types.ts) and are intentionally
+// NOT duplicated here. The plugin passes setting descriptors untyped; core
+// validates and renders them by their `type`. This trades away compile-time
+// safety on what this plugin sends, in exchange for no duplicated contract.
+//
+// To get that safety net back, either:
+//   (a) re-mirror the descriptor block from core into this file, or
+//   (b) extract the shared driver contract into a module both core and
+//       plugins import (removes the duplication for every submodule at once).
+export interface ISettingsDriverV2 {
+  /** Register a provider of setting descriptors — untyped here (see note above). */
+  register(provider: unknown): void;
+  /** Notify core that a setting value changed (e.g. from a command/shortcut) so
+   *  an open settings menu re-reads it. Core cannot observe this plugin's state
+   *  reactively across the bundle boundary, so this call is the only signal it
+   *  gets: it bumps a revision counter core reads while rendering. Cheap and
+   *  idempotent — call it after every mutation, from any source. */
+  invalidate(): void;
+}
+
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
 /**
@@ -645,16 +669,33 @@ export interface IStatsDriverV2 {
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
 
+export type AccountSettingValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AccountSettingValue[]
+  | { [key: string]: AccountSettingValue };
+
 /**
  * Loads & persists the current user's account settings. A generic store
  * (themes / prefs later); today it backs command-palette shortcut overrides.
  */
 export interface IAccountSettingsDriverV2 {
-  /** Load all of the current user's account settings into memory. */
+  /** Load all of the active plugin's account settings into memory. */
   load(accountId: string): Promise<void>;
 
-  /** Read a raw setting value by key, or undefined if not loaded. */
-  get(key: string): unknown;
+  /**
+   * Read a setting in the active plugin's namespace, or undefined if not
+   * loaded.
+   */
+  get<T extends AccountSettingValue>(key: string): T | undefined;
+
+  /**
+   * Create-or-update a setting in the active plugin's namespace. The row is
+   * created on first write and updated afterward.
+   */
+  upsert(key: string, value: AccountSettingValue): Promise<void>;
 
   /**
    * The live command-name → shortcut override map. Stable reference, mutated
@@ -705,6 +746,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
   readonly notes: INotesDriverV2;
   readonly stats: IStatsDriverV2;
+  readonly settings: ISettingsDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────

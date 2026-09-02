@@ -162,7 +162,7 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     _mockTileBuffers.set("0:0", createFullBuffer());    // non-empty
     _mockTileBuffers.set("0:1", createEmptyBuffer());    // empty → null
 
-    const addCmd = getRegistered("annotation.add");
+    const addCmd = getRegistered("idah-image:annotation.add");
     const addAction = addCmd.callback({
       shape: { type: "idah-image:mask" },
       value: { category: "cat" },
@@ -200,7 +200,7 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     mockSetShape.mockClear();
     mockSetShapes.mockClear();
 
-    const flushCmd = getRegistered("annotation.mask_shapes.flush");
+    const flushCmd = getRegistered("idah-image:annotation.mask-shapes.flush");
     const flushAction = flushCmd.callback();
 
     await flushAction.do();
@@ -220,7 +220,7 @@ describe("mask tile integrity — full undo/redo cycle", () => {
     mockCreate.mockClear();
     mockDelete.mockClear();
 
-    const deleteCmd = getRegistered("annotation.delete");
+    const deleteCmd = getRegistered("idah-image:annotation.delete");
     const deleteAction = deleteCmd.callback({
       annotationId: "generated-uuid-123",
     });

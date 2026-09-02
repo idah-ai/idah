@@ -105,41 +105,41 @@
     <!-- VIDEO::FIRST FRAME -->
     <KbdTooltipButton
       label="First frame"
-      commandName="timeline.go_to_first"
+      commandName="idah-video:timeline.go-to-first"
       icon={ChevronFirstIcon}
       variant="outline"
       size="icon-sm"
-      onclick={() => getDriver().command.call("timeline.go_to_first")}
+      onclick={() => getDriver().command.call("idah-video:timeline.go-to-first")}
     />
 
     <!-- VIDEO::PREVIOUS FRAME STEP -->
     <KbdTooltipButton
       label={`Previous ${frameStep} frames`}
-      commandName="viewport.skip_backward"
+      commandName="idah-video:viewport.skip-backward"
       icon={ChevronsLeftIcon}
       variant="outline"
       size="icon-sm"
       onOpenChange={fetchFrameStepFromLocalStorage}
-      onclick={() => getDriver().command.call("viewport.skip_backward")}
+      onclick={() => getDriver().command.call("idah-video:viewport.skip-backward")}
     />
 
     <!-- VIDEO::PREVIOUS FRAME -->
     <KbdTooltipButton
       label="Previous frame"
-      commandName="viewport.previous_frame"
+      commandName="idah-video:viewport.previous-frame"
       icon={ChevronLeftIcon}
       variant="outline"
       size="icon-sm"
-      onclick={() => getDriver().command.call("viewport.previous_frame")}
+      onclick={() => getDriver().command.call("idah-video:viewport.previous-frame")}
     />
 
     <!-- VIDEO::PLAY / PAUSE -->
     <KbdTooltipButton
       label={viewport.video.status === "play" ? "Pause" : "Play"}
-      commandName="viewport.play"
+      commandName="idah-video:viewport.play"
       variant="outline"
       size="icon-sm"
-      onclick={() => getDriver().command.call("viewport.play")}
+      onclick={() => getDriver().command.call("idah-video:viewport.play")}
     >
       {#if viewport.video.status === "play"}
         <PauseIcon />
@@ -151,32 +151,32 @@
     <!-- VIDEO::NEXT FRAME -->
     <KbdTooltipButton
       label="Next frame"
-      commandName="viewport.next_frame"
+      commandName="idah-video:viewport.next-frame"
       icon={ChevronRightIcon}
       variant="outline"
       size="icon-sm"
-      onclick={() => getDriver().command.call("viewport.next_frame")}
+      onclick={() => getDriver().command.call("idah-video:viewport.next-frame")}
     />
 
     <!-- VIDEO::NEXT FRAME STEP -->
     <KbdTooltipButton
       label={`Next ${frameStep} frames`}
-      commandName="viewport.skip_forward"
+      commandName="idah-video:viewport.skip-forward"
       icon={ChevronsRightIcon}
       variant="outline"
       size="icon-sm"
       onOpenChange={fetchFrameStepFromLocalStorage}
-      onclick={() => getDriver().command.call("viewport.skip_forward")}
+      onclick={() => getDriver().command.call("idah-video:viewport.skip-forward")}
     />
 
     <!-- VIDEO::LAST FRAME -->
     <KbdTooltipButton
       label="Last frame"
-      commandName="timeline.go_to_last"
+      commandName="idah-video:timeline.go-to-last"
       icon={ChevronLastIcon}
       variant="outline"
       size="icon-sm"
-      onclick={() => getDriver().command.call("timeline.go_to_last")}
+      onclick={() => getDriver().command.call("idah-video:timeline.go-to-last")}
     />
 
     <VideoSettingsDropdownMenu bind:video {volume} />
@@ -200,7 +200,7 @@
     {#if !viewport.isReviewWorkspace}
       <KbdTooltipButton
         label="Split annotation"
-        commandName="annotation.split"
+        commandName="idah-video:annotation.split"
         icon={SquareSplitHorizontalIcon}
         variant="outline"
         size="icon-sm"
@@ -208,7 +208,7 @@
         onclick={() => {
           const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
           if (ann)
-            getDriver().command.call("annotation.split", {
+            getDriver().command.call("idah-video:annotation.split", {
               annotationId: ann.metadata?.id ?? ann.id,
               at: viewport.video.currentFrame.value,
             });

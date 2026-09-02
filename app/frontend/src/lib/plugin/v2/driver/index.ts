@@ -10,6 +10,7 @@ import type {
   IMediaInfo,
   IToolbarDriverV2,
   IStatsDriverV2,
+  ISettingsDriverV2,
   IModeEvent,
   INotesDriverV2,
   IProjectInfo,
@@ -55,7 +56,7 @@ function sortConfigByOrder(config: IConfig): IConfig {
 export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
-  private readonly accountSettingsMgr = new AccountSettingsManager();
+  private readonly accountSettingsMgr: AccountSettingsManager;
   private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
@@ -67,6 +68,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   readonly annotations: IAnnotationsDriverV2;
   readonly notes: INotesDriverV2;
   readonly stats: IStatsDriverV2;
+  readonly settings: ISettingsDriverV2;
 
   // ── Activity context ──────────────────────────────────────────────────
 
@@ -90,6 +92,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Internal references (have cache/clearCache) ──────────────────────
   private idbAnnotationsDriver: (IAnnotationsDriverV2 & { clearCache(): Promise<void> }) | null = null;
   #notesAdapter: NotesDriverAdapter | null = null;
+  #settingsAdapter: SettingsDriverAdapter | null = null;
 
   constructor(opts: {
     id: string;
@@ -107,6 +110,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._config = sortConfigByOrder(opts.config);
     this._workflowStep = opts.workflowStep;
     this._entryStatus = opts.entryStatus;
+    this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
     });
@@ -137,6 +141,13 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
     // Build stats driver — core stats from this driver + plugin-registered providers
     this.stats = new StatsDriverAdapter(this);
+
+    // Build settings driver — plugin-registered settings shown in the topbar menu.
+    // Plugins get the sealed (register/invalidate) view; core keeps the full
+    // adapter (collect/revision) via `settingsAdapter`, same split as notes.
+    const settingsAdapter = new SettingsDriverAdapter();
+    this.settings = settingsAdapter.sealed();
+    this.#settingsAdapter = settingsAdapter;
 
     // ── Register default commands ─────────────────────────────────────
     registerCommands(this);
@@ -169,6 +180,15 @@ export class IdahDriverV2 implements IIdahDriverV2 {
    */
   get notesAdapter(): NotesDriverAdapter | null {
     return this.#notesAdapter;
+  }
+
+  /**
+   * @internal Used by the core topbar settings menu only.
+   * Returns the concrete SettingsDriverAdapter (not the sealed
+   * ISettingsDriverV2) for access to core-only methods (collect, revision).
+   */
+  get settingsAdapter(): SettingsDriverAdapter | null {
+    return this.#settingsAdapter;
   }
 
   /**
@@ -358,6 +378,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get stats() {
         return driver.stats;
       },
+      get settings() {
+        return driver.settings;
+      },
 
       setMode: driver.setMode.bind(driver),
       onModeChange: driver.onModeChange.bind(driver),
@@ -380,6 +403,7 @@ import { CommandDriverAdapter } from "./adapter/command";
 import { NotesDriverAdapter } from "./adapter/notes";
 import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
+import { SettingsDriverAdapter } from "./adapter/settings.svelte";
 
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {

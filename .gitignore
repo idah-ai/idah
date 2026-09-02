@@ -57,3 +57,6 @@ test/version_tmp/
 
 # Local git worktrees
 .claude/worktrees/
+
+# Local agent instructions (project conventions live in AGENTS.md)
+CLAUDE.md
