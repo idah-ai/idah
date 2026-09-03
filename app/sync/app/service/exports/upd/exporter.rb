@@ -23,6 +23,10 @@ module Exports
         # unique in a UPD file: keep track of the resources already appended.
         exported_resources = Set.new
 
+        # Export only the completed entries unless explicitly told otherwise.
+        entries_filter =
+          context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
+
         # Keep references to media tempfiles so they are not garbage collected
         # before updcli-static reads them during the append call.
         media_tempfiles = {}
@@ -39,7 +43,7 @@ module Exports
 
               include_medias = context.options[:include_medias]
 
-              dataset.entries.each do |entry|
+              dataset.entries(entries_filter).each do |entry|
                 io.write_jsonl(build_entry_jsonl(dataset.record.id, entry, include_medias))
 
                 entry.annotations.each do |annotation|
