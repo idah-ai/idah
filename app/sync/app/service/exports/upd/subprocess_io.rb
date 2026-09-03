@@ -51,41 +51,6 @@ module Exports
         end
       end
 
-      # Non-blocking read of whatever output the subprocess has produced so
-      # far. Returns an array of [chunk, stream] pairs, with :out or :err.
-      # Chunks are NOT emitted via emit_output here — they will be picked
-      # up by the next write_jsonl's read_available_output or the final
-      # read_remaining_output.
-      #
-      # If filter is given, only lines containing that string are returned
-      # (non-matching lines are still consumed from the pipe and discarded).
-      def read_output_now(filter: nil, timeout: 0.1)
-        lines = []
-
-        loop do
-          ready = IO.select([@stdout, @stderr], nil, nil, timeout)
-          break unless ready
-
-          ready.first.each do |io|
-            stream = io == @stdout ? :out : :err
-
-            loop do
-              chunk = io.read_nonblock(4096, exception: false)
-              case chunk
-              when :wait_readable
-                break
-              when nil # EOF
-                break
-              else
-                lines << [chunk, stream] if filter.nil? || chunk.include?(filter)
-              end
-            end
-          end
-        end
-
-        lines
-      end
-
       # Read all remaining output from both streams until EOF or timeout.
       # Prevents hangs if the subprocess stalls on full output pipes.
       def read_remaining_output

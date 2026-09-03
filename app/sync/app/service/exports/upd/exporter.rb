@@ -29,7 +29,7 @@ module Exports
 
         # Keep references to media tempfiles so they are not garbage collected
         # before updcli-static reads them during the append call.
-        media_tempfiles = {}
+        media_tempfiles = []
 
         Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
           io = SubprocessIO.new(stdin, stdout, stderr, on_output: on_output)
@@ -52,18 +52,8 @@ module Exports
 
                 entry_medias(entry, include_medias, exported_resources).each do |media|
                   tempfile = download_media(media)
+                  media_tempfiles << tempfile
                   io.write_jsonl(build_media_jsonl(media, tempfile.path))
-                  media_tempfiles[tempfile.path] = tempfile
-
-                  # Parse subprocess confirmation lines — each includes
-                  # file_path so we can match and close the exact tempfile.
-                  write_output = io.read_output_now(filter: "media.create")
-                  write_output.each do |line,|
-                    next unless line =~ /file_path\s*:\s*(\S+)/
-
-                    f = media_tempfiles.delete($1)
-                    f&.close!
-                  end
                 end
               end
             end
@@ -91,8 +81,8 @@ module Exports
             raise "updcli-static append failed: #{io.err_lines.join}"
           end
         ensure
-          # Clean up any tempfiles that weren't eagerly removed
-          media_tempfiles.each_value(&:close!)
+          # Clean up media tempfiles
+          media_tempfiles.each(&:close!)
         end
 
         context.io.file = File.open(file_path)
