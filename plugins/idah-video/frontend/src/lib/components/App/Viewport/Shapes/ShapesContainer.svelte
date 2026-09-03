@@ -49,7 +49,7 @@
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import type { IVideoAnnotationRecord, IVideoAnnotationShape } from "$lib/types";
+  import { NON_DRAWABLE_SHAPE_TYPES, type IVideoAnnotationRecord, type IVideoAnnotationShape } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { centroid as centroidUtil } from "$lib/utils/math/point";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -186,6 +186,9 @@
       (acc, ann) => {
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
+        // Skip non-drawable records (entry:root / idah-video:frame) — they
+        // are never rendered on canvas and are only edited through the Tagging tab.
+        if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
         // Skip annotations outside the current frame range
         const { start, end } = (ann.shape ?? {}) as { start?: number; end?: number };
         if (start == null || end == null || frame < start || frame > end) return acc;

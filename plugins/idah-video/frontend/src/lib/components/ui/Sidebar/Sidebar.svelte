@@ -80,7 +80,10 @@
     <div
       data-slot="sidebar-container"
       class={cn(
-        "w-(--sidebar-width) fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
+        // z-[60] keeps the sidebar above the annotation-create popover (z-50) so the
+        // tabs stay interactive while the popup is open. If the popover's z-index ever
+        // changes, bump this value to stay above it.
+        "w-(--sidebar-width) fixed inset-y-0 z-[60] hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
         side === "left"
           ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
           : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",

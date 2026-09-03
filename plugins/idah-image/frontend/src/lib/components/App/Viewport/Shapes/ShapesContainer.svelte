@@ -65,6 +65,7 @@
     IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
+    NON_DRAWABLE_SHAPE_TYPES,
     type IImageAnnotationShape,
     type IImageAnnotationRecord,
   } from "$lib/types";
@@ -193,6 +194,9 @@
       (acc, ann) => {
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
+        // Skip non-drawable records (entry:root) — they are never rendered on
+        // canvasand are only edited through the Tagging tab.
+        if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {
           acc.selected.push(ann);

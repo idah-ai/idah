@@ -14,7 +14,7 @@
   "modalities": [
     {
       "id": "idah-video",
-      "label": "Video files",
+      "label": "Video",
       "shapes": {
         "bounding-box": {
           "label": "Bounding Box",
@@ -23,6 +23,12 @@
         "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
+        }
+      },
+      "tagging": {
+        "frame": {
+          "label": "Frame",
+          "icon": "api/v1/plugins/idah-video/assets/frame-icon.svg"
         }
       }
     }

@@ -10,23 +10,28 @@
   import TimelineZoom from "$lib/components/App/Timeline/TimelineZoom.svelte";
   import VideoController from "$lib/components/App/Viewport/VideoController.svelte";
   import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
-  import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { notes } from "$lib/state/data.svelte";
-  import type { IVideoAnnotationRecord } from "$lib/types";
+  import { ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
   import type { INoteRecord } from "$idah/v2/types";
   import EntryTrackBlock from "../Timeline/review/_EntryTrackBlock.svelte";
+  import EntryTaggingTrackBlock from "../Timeline/annotations/_EntryTaggingTrackBlock.svelte";
+  import FrameCategoryTrackBlock from "../Timeline/annotations/_FrameCategoryTrackBlock.svelte";
+  import BulkActions from "../Timeline/annotations/_BulkActions.svelte";
+  import type { TrackData, TaggingRowKind } from "$lib/components/App/Timeline/types";
 
   // Props
   interface Props {
     viewportAnnotations: IVideoAnnotationRecord[];
+    frameAnnotations: IVideoAnnotationRecord[];
+    entryRootAnnotation?: IVideoAnnotationRecord;
     length: number;
     player: Video | undefined;
     volume: { level: number; muted: boolean };
   }
-  let { viewportAnnotations, length, player = $bindable(), volume }: Props = $props();
+  let { viewportAnnotations, frameAnnotations, entryRootAnnotation, length, player = $bindable(), volume }: Props = $props();
 
   // Internal state
   let panelHeight: number = $state(0);
@@ -114,6 +119,62 @@
       component: EntryTrackBlock,
     }]
   })
+
+  // Tagging rows — rendered as normal tracks in the scrollable body, grouped under a
+  // collapsible "Tagging" header. One row for the entry:root annotation and one row per
+  // frame-annotation category present. The group only appears when a tagging label config
+  // exists (entry:root or idah-video:frame), mirroring the sidebar tabs' rule.
+  let hasTaggingConfig = $derived(Boolean(getDriver().config[ENTRY_ROOT]) || Boolean(getDriver().config[VIDEO_FRAME]));
+  let taggingItems = $derived.by(() => {
+    if (!hasTaggingConfig) return [];
+    if (frameAnnotations.length === 0 && !entryRootAnnotation) return [];
+
+    const tracks: TrackData[] = [];
+
+    // One row for the entry:root / video-level annotation.
+    if (entryRootAnnotation) {
+      tracks.push({
+        id: "__entry_tag__",
+        title: "Video",
+        subtitle: "Entry",
+        kind: "tagging",
+        top: 0,
+        items: [{
+          trackId: "__entry_tag__",
+          startRange: entryRootAnnotation.shape.start,
+          endRange: entryRootAnnotation.shape.end,
+          rawData: { type: "entry" as TaggingRowKind, annotations: [entryRootAnnotation] },
+          component: EntryTaggingTrackBlock,
+        }],
+      });
+    }
+
+    // One row per frame-annotation category present.
+    const byCategory = new Map<string, IVideoAnnotationRecord[]>();
+    for (const ann of frameAnnotations) {
+      const cat = ann.value?.category ?? "uncategorized";
+      if (!byCategory.has(cat)) byCategory.set(cat, []);
+      byCategory.get(cat)!.push(ann);
+    }
+    for (const [category, anns] of byCategory) {
+      tracks.push({
+        id: `__frame_tag:${category}`,
+        title: category,
+        subtitle: "Frame",
+        kind: "tagging",
+        top: 0,
+        items: [{
+          trackId: `__frame_tag:${category}`,
+          startRange: anns[0]?.shape.start ?? 0,
+          endRange: anns[anns.length - 1]?.shape.start ?? 0,
+          rawData: { type: "frame" as TaggingRowKind, category, annotations: anns },
+          component: FrameCategoryTrackBlock,
+        }],
+      });
+    }
+
+    return tracks;
+  })
 </script>
 
 <TimelinePanel bind:panelHeight>
@@ -128,6 +189,7 @@
     {items}
     {length}
     {noteItems}
+    {taggingItems}
     remainingHeight={panelHeight - toolbarHeight}
     rulerSmallStep={effectiveRulerMinorStep}
     rulerBigStep={effectiveRulerMajorStep}
@@ -138,7 +200,19 @@
     }}
   >
     {#snippet TrackInfoHeaderSlot()}
-      <TrackInfoHeader annotations={viewportAnnotations} />
+      <div class="flex h-full w-full items-center px-2">
+        <p class="text-xs font-medium">Annotations</p>
+        <div class="ml-auto">
+          <BulkActions
+            annotations={[
+              ...viewportAnnotations,
+              ...frameAnnotations,
+              ...(entryRootAnnotation ? [entryRootAnnotation] : []),
+            ]}
+            label="all annotations"
+          />
+        </div>
+      </div>
     {/snippet}
 
     {#snippet TrackInfoSlot({ track })}

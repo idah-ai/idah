@@ -21,7 +21,7 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
-  import type { ModalityShapes } from "@/data/model/setting/plugin/types";
+  import type { ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
   import type { IConfig } from "@/plugin/v2/types";
   import type { Resource, Scope } from "@/security/types";
 
@@ -45,6 +45,8 @@
   let selectedTemplateName = $state<string>("");
   let modality = $state("");
   let shapes = $state<ModalityShapes>({});
+  let tagging = $state<ModalityTagging>({});
+  let modalityLabel = $state("");
   let saving = $state(false);
   let loaded = $state(false);
   let templates = $state<LabelConfigTemplateRecord[]>([]);
@@ -87,7 +89,16 @@
       selectedTemplateName = res.data.name;
       controller.load(res.data.labeling_configuration);
       modality = deriveModality(res.data.labeling_configuration);
-      shapes = modality ? (await pluginsBackendDataSource.showModality(modality)).shapes : {};
+      if (modality) {
+        const showModalityRes = await pluginsBackendDataSource.showModality(modality);
+        shapes = showModalityRes.shapes;
+        tagging = showModalityRes.tagging;
+        modalityLabel = showModalityRes.label ?? "";
+      } else {
+        shapes = {};
+        tagging = {};
+        modalityLabel = "";
+      }
       loaded = true;
     } catch (error) {
       showActionFailedToast(error);
@@ -232,7 +243,7 @@
 
           <section class="h-full">
             {#if loaded}
-              <LabelConfigEditor {modality} {shapes} {controller} {permission} />
+              <LabelConfigEditor {modality} {shapes} {tagging} {modalityLabel} {controller} {permission} />
             {:else}
               <div class="flex h-full items-center justify-center">
                 <ResponseBlock

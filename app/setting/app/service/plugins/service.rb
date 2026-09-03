@@ -81,19 +81,22 @@ module Plugins
 
     def show_modality(modality_name)
       shapes = {}
+      tagging = {}
+      label = nil
 
       PluginSystem.registry.plugins.each_value do |plugin|
         next unless plugin.modalities
 
         plugin.modalities.each do |mod|
           next unless mod.id == modality_name
-          next unless mod.shapes
 
-          shapes.merge!(mod.shapes.transform_values(&:to_h))
+          label ||= mod.label
+          shapes.merge!(mod.shapes.transform_values(&:to_h)) if mod.shapes
+          tagging.merge!(mod.tagging.transform_values(&:to_h)) if mod.tagging
         end
       end
 
-      { shapes: }
+      { shapes:, tagging:, label: }
     end
 
     def serve_file(plugin_name, filename)

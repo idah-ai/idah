@@ -10,6 +10,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { compareGroups } from "$lib/utils/annotation";
+  import { NON_DRAWABLE_SHAPE_TYPES } from "$lib/types";
 
   import type { IConfigProperty } from "$idah/v2/types";
   import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
@@ -22,6 +23,8 @@
     onReSelectCategory?: (reselectedCategoryId: string) => void;
     onEditValue: (value?: IVideoAnnotationValue) => void;
     disabled: boolean;
+    /** Override the shape type (defaults to viewport.mode when no selection). */
+    shapeTypeOverride?: string;
   };
 
   let {
@@ -31,6 +34,7 @@
     onReSelectCategory,
     onEditValue,
     disabled,
+    shapeTypeOverride,
   }: Props = $props();
 
   let effectiveDisabled = $derived(disabled || !isEditable());
@@ -40,7 +44,15 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
-  // The active shape type: from annotation, from group (via first annotation), or from drawing mode
+  // A selected tagging annotation (entry:root / idah-video:frame) is never shown
+  // in the Annotations tab — it's edited through the Tagging tab instead. Treat it
+  // as no selection here so the annotations list renders rather than the tagging form.
+  let isTaggingAnnotation = $derived(
+    sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation.shape as { type?: string })?.type ?? ""),
+  );
+
+  // The active shape type: from annotation, from group (via first annotation), from
+  // the shapeTypeOverride prop, or from drawing mode.
   let shapeType = $derived.by<string | undefined>(() => {
     if (sel?.type === "annotation") return sel.annotation.shape.type as string;
     if (sel?.type === "group" && data.annotations) {
@@ -48,7 +60,7 @@
       const groupAnn = items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
       if (groupAnn) return groupAnn.shape.type as string;
     }
-    return viewport.mode;
+    return shapeTypeOverride ?? viewport.mode;
   });
 
   let config = $derived(
@@ -113,8 +125,15 @@
     const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
     const frame = currentFrame;
 
-    // Filter to current frame
-    const onFrame = items.filter((ann) => ann.shape.start <= frame && ann.shape.end >= frame);
+    // Filter to current frame. Non-drawable records (entry:root spanning the
+    // whole video, and per-frame idah-video:frame) are excluded — they are not
+    // drawable shapes and are only ever created/edited through the Tagging tab.
+    const onFrame = items.filter(
+      (ann) =>
+        ann.shape.start <= frame &&
+        ann.shape.end >= frame &&
+        !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+    );
 
     // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
     const map = new Map<string, IVideoAnnotationRecord[]>();
@@ -141,7 +160,9 @@
   });
 
   let showAnnotationsList = $derived(
-    (viewport.mode === "editor" || viewport.isReviewWorkspace) && currentFrameAnnotations.length > 0,
+    !shapeTypeOverride &&
+      (viewport.mode === "editor" || viewport.isReviewWorkspace) &&
+      currentFrameAnnotations.length > 0,
   );
 
   // -----------------------------------------------------------------------
@@ -163,7 +184,7 @@
   }
 </script>
 
-{#if !sel}
+{#if !sel || isTaggingAnnotation}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} {currentFrame} />
