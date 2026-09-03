@@ -110,6 +110,8 @@ module Exports
       end
 
       def capitalized_dashed_keys(hash)
+        return {} if hash.nil?
+
         hash.transform_keys do |key|
           key.to_s.split("_").map(&:capitalize).join("-")
         end
@@ -175,7 +177,7 @@ module Exports
         # Fetch original media metadata to get original width and height
         original_media = entry.medias({ key: "" }).first
         if original_media
-          media_meta = original_media.record.data[:attributes][:meta] || {}
+          media_meta = original_media.record.data[:attributes][:meta]
           normalized_meta = capitalized_dashed_keys(media_meta)
           normalized_meta.each { |meta_key, meta_value| metadata[meta_key] = meta_value }
         end
@@ -193,7 +195,7 @@ module Exports
 
       def build_annotation_jsonl(entry_id, annotation)
         attributes = annotation.record.data[:attributes]
-        metadata = attributes[:metadata] || {}
+        metadata = attributes[:metadata]
         dimensions = annotation.record.dimensions
         type = dimensions.delete(:type)
 
@@ -232,13 +234,22 @@ module Exports
       end
 
       def build_media_jsonl(media, file_path)
+        attributes = media.record.data[:attributes]
+        metadata = capitalized_dashed_keys(attributes[:meta]).merge(
+          {
+            "Created-By" => attributes[:created_by],
+            "Created-At" => attributes[:created_at]
+          }
+        )
+
         {
           command: "media:create",
           args: {
             id: media.record.resource,
             file: file_path,
             key: media.record.key,
-            mimetype: media.record.mime_type
+            mimetype: media.record.mime_type,
+            metadata: metadata.to_json
           }
         }.to_json
       end
