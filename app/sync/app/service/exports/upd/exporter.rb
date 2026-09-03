@@ -57,8 +57,9 @@ module Exports
 
                   # Parse subprocess confirmation lines — each includes
                   # file_path so we can match and close the exact tempfile.
-                  io.read_output_now(filter: "media.create").each do |line, _|
+                  io.read_output_now(filter: "media.create").each_key do |line|
                     next unless line =~ /file_path\s*:\s*(\S+)/
+
                     f = media_tempfiles.delete($1)
                     f&.close!
                   end

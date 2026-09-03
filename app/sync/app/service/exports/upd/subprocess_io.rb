@@ -67,7 +67,7 @@ module Exports
           break unless ready
 
           ready.first.each do |io|
-            stream = (io == @stdout) ? :out : :err
+            stream = io == @stdout ? :out : :err
 
             loop do
               chunk = io.read_nonblock(4096, exception: false)
