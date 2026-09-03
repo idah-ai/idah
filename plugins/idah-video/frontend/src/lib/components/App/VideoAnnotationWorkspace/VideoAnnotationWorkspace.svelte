@@ -6,7 +6,7 @@
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { resolveEntryRoot, resolveFrame } from "$lib/utils/tagging-annotations";
+  import { resolveEntryRoot, resolveFrame, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -533,14 +533,15 @@
   // Frame tagging config (values + properties) for the create popover.
   /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
    *  at most one entry:root annotation may exist per entry — creating a second
-   *  one updates the existing record instead of duplicating. */
-  function onEntryRootChange(value: AnnotationValue) {
-    if (!editable) return;
-    if (!value.category) return;
+   *  one updates the existing record instead of duplicating. Returns whether the
+   *  change was persisted (false when a required field is missing). */
+  function onEntryRootChange(value: AnnotationValue): boolean {
+    if (!editable) return false;
+    if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!requiredFullfilled(value, properties)) return;
+    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
     const resolution = resolveEntryRoot(items, value as IVideoAnnotationValue);
     if (resolution.action === "update") {
@@ -548,17 +549,19 @@
     } else if (resolution.action === "create") {
       addAnnotation(entryRootFullRangeShape(), value);
     }
+    return true;
   }
 
   /** Create a frame annotation from the given value. Uniqueness is enforced client-side
-   *  per (frame, category): at most one frame annotation per category per frame. */
-  function onFrameCreate(value: AnnotationValue) {
-    if (!editable) return;
-    if (!value.category) return;
+   *  per (frame, category): at most one frame annotation per category per frame.
+   *  Returns whether the change was persisted (false when a required field is missing). */
+  function onFrameCreate(value: AnnotationValue): boolean {
+    if (!editable) return false;
+    if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!requiredFullfilled(value, properties)) return;
+    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
     const frame = viewport.video.currentFrame.value;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
     const resolution = resolveFrame(items, frame, value.category, value as IVideoAnnotationValue);
@@ -570,12 +573,19 @@
         value,
       );
     }
+    return true;
   }
 
-  /** Update an existing idah-video:frame tagging record. */
-  function onFrameUpdate(ann: IVideoAnnotationRecord, value: AnnotationValue) {
-    if (!editable) return;
+  /** Update an existing idah-video:frame tagging record. Returns whether the change
+   *  was persisted (false when a required field is missing). */
+  function onFrameUpdate(ann: IVideoAnnotationRecord, value: AnnotationValue): boolean {
+    if (!editable) return false;
+    // Editing must satisfy the same required-field gate as creation.
+    const properties =
+      getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
     updateAnnotationValue(ann, value);
+    return true;
   }
 
   /** Delete the entry:root annotation for this entry. */

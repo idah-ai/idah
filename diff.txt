@@ -1,0 +1,1951 @@
+diff --git a/plugins/idah-image/frontend/src/lib/assets/icons/file.svg b/plugins/idah-image/frontend/src/lib/assets/icons/file.svg
+index bbdea64b3..dc2f10f77 100644
+--- a/plugins/idah-image/frontend/src/lib/assets/icons/file.svg
++++ b/plugins/idah-image/frontend/src/lib/assets/icons/file.svg
+@@ -1,4 +1,4 @@
+ <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M14 2v4a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+-</svg>
+\ No newline at end of file
++</svg>
+diff --git a/plugins/idah-image/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte b/plugins/idah-image/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte
+index 2bf721b23..820fcd089 100644
+--- a/plugins/idah-image/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte
++++ b/plugins/idah-image/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte
+@@ -42,7 +42,7 @@
+     onEditValue: (annotationValue: IImageAnnotationValue, mode: string) => void;
+     onReSelectCategory?: (reselectedCategoryId: string) => void;
+     entryRootAnnotation?: IImageAnnotationRecord;
+-    onEntryRootChange?: (value: IImageAnnotationValue) => void;
++    onEntryRootChange?: (value: IImageAnnotationValue) => boolean;
+     onDeleteEntryRoot?: () => void;
+   } = $props();
+ 
+@@ -84,11 +84,13 @@
+   $effect(() => {
+     const sel = selection.value;
+     if (!sel) return;
+-    const shapeType = (sel.shape as { type?: string })?.type;
+-    if (shapeType === ENTRY_ROOT) {
+-      sidebarTabs.rightTab = "tagging";
+-    } else {
+-      sidebarTabs.rightTab = "annotations";
++    if (sel.type === "annotation") {
++      const shapeType = (sel.shape as { type?: string })?.type;
++      if (shapeType === ENTRY_ROOT) {
++        sidebarTabs.rightTab = "tagging";
++      } else {
++        sidebarTabs.rightTab = "annotations";
++      }
+     }
+   });
+ 
+@@ -98,6 +100,27 @@
+     if (viewport.isCreationMode) sidebarTabs.rightTab = "annotations";
+   });
+ 
++  // ── Entry-root tab: keep the entry:root annotation as the active selection ──
++  // When the user is on the Tagging tab and an entry:root record exists, it must
++  // be the active global selection so the generic per-selection commands (delete,
++  // hide, lock, …) work on it. Guard against re-triggering the inverse effect
++  // above (which switches to this tab when entry:root is selected).
++  $effect(() => {
++    if (sidebarTabs.rightTab !== "tagging") return;
++    if (!entryRootAnnotation) return;
++    if (selection.isAnnotationSelected(entryRootAnnotation.id)) return;
++    selection.selectAnnotation(entryRootAnnotation as any);
++  });
++
++  // When that selection is cleared (deselect) while still on the Tagging tab,
++  // switch back to the Annotations tab so the Tagging tab never shows an
++  // empty/awkward state.
++  $effect(() => {
++    if (sidebarTabs.rightTab !== "tagging") return;
++    if (selection.value) return;
++    sidebarTabs.rightTab = "annotations";
++  });
++
+   // Functions
+   function categorySelection(shape_type: string, categoryId?: string) {
+     if (categoryId) onEditValue({ category: categoryId }, shape_type);
+@@ -135,9 +158,13 @@
+         {#if showTabs}
+           <Tabs bind:value={activeRightTab}>
+             <TabsList class="w-full" onkeydown={handleTabsListKeydown}>
+-              <Tooltips class="flex-1 flex">
++              <Tooltips class="flex flex-1">
+                 {#snippet trigger()}
+-                  <TabsTrigger value="annotations" class="w-full text-xs" onclick={() => handleOuterTabClick("annotations")}>
++                  <TabsTrigger
++                    value="annotations"
++                    class="w-full text-xs"
++                    onclick={() => handleOuterTabClick("annotations")}
++                  >
+                     Annotations
+                   </TabsTrigger>
+                 {/snippet}
+@@ -152,7 +179,7 @@
+                   </div>
+                 {/snippet}
+               </Tooltips>
+-              <Tooltips class="flex-1 flex">
++              <Tooltips class="flex flex-1">
+                 {#snippet trigger()}
+                   <TabsTrigger value="tagging" class="w-full text-xs" onclick={() => handleOuterTabClick("tagging")}>
+                     Tagging
+@@ -194,7 +221,7 @@
+ 
+             <TabsContent value="tagging">
+               <TaggingPanel
+-                entryRootAnnotation={entryRootAnnotation}
++                {entryRootAnnotation}
+                 onCreateOrUpdate={onEntryRootChange}
+                 onDelete={onDeleteEntryRoot ?? (() => {})}
+                 disabled={taggingDisabled}
+diff --git a/plugins/idah-image/frontend/src/lib/components/App/ImageAnnotationWorkspace/ImageAnnotationWorkspace.svelte b/plugins/idah-image/frontend/src/lib/components/App/ImageAnnotationWorkspace/ImageAnnotationWorkspace.svelte
+index 176f3b281..7d2cede8c 100644
+--- a/plugins/idah-image/frontend/src/lib/components/App/ImageAnnotationWorkspace/ImageAnnotationWorkspace.svelte
++++ b/plugins/idah-image/frontend/src/lib/components/App/ImageAnnotationWorkspace/ImageAnnotationWorkspace.svelte
+@@ -6,7 +6,7 @@
+   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
+ 
+   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+-  import { resolveEntryRoot } from "$lib/utils/tagging-annotations";
++  import { resolveEntryRoot, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
+   import { annotation } from "$lib/state/annotation.svelte";
+   import { data } from "$lib/state/data.svelte";
+   import { getDriver } from "$lib/state/driver.svelte";
+@@ -522,14 +522,15 @@
+ 
+   /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
+    *  at most one entry:root annotation may exist per entry — creating a second
+-   *  one updates the existing record instead of duplicating. */
+-  function onEntryRootChange(value: AnnotationValue) {
+-    if (!editable) return;
+-    if (!value.category) return;
++   *  one updates the existing record instead of duplicating. Returns whether the
++   *  change was persisted (false when a required field is missing). */
++  function onEntryRootChange(value: AnnotationValue): boolean {
++    if (!editable) return false;
++    if (!value.category) return false;
+     // Only create/update when the category + required properties are valid.
+     const properties =
+       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
+-    if (!requiredFullfilled(value, properties)) return;
++    if (!isTaggingValueComplete(value as IImageAnnotationValue, properties)) return false;
+     const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
+     const resolution = resolveEntryRoot(items, value as IImageAnnotationValue);
+     if (resolution.action === "update") {
+@@ -537,6 +538,7 @@
+     } else if (resolution.action === "create") {
+       addAnnotation({ type: ENTRY_ROOT } as IImageAnnotationShape, value);
+     }
++    return true;
+   }
+ 
+   /** Delete the entry:root annotation for this entry. */
+@@ -761,8 +763,8 @@
+                 {onEditValue}
+                 onReSelectCategory={reSelectCategory}
+                 {entryRootAnnotation}
+-                onEntryRootChange={onEntryRootChange}
+-                onDeleteEntryRoot={onDeleteEntryRoot}
++                {onEntryRootChange}
++                {onDeleteEntryRoot}
+               />
+             </section>
+           </ResizablePane>
+diff --git a/plugins/idah-image/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte b/plugins/idah-image/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte
+index 377de8afc..7ed97eafe 100644
+--- a/plugins/idah-image/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte
++++ b/plugins/idah-image/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte
+@@ -14,7 +14,8 @@
+ 
+   type Props = {
+     entryRootAnnotation: IImageAnnotationRecord | undefined;
+-    onCreateOrUpdate?: (value: IImageAnnotationValue) => void;
++    /** Returns whether the change was persisted (false when a required field is missing). */
++    onCreateOrUpdate?: (value: IImageAnnotationValue) => boolean;
+     onDelete?: () => void;
+     disabled: boolean;
+   };
+@@ -27,6 +28,9 @@
+   // exists. Synced from the existing annotation so edits to an existing
+   // entry:root record are reflected here.
+   let draftValue = $state<IImageAnnotationValue>({});
++  // Visible feedback when a change can't be saved because a required field is
++  // missing. The draft still shows the user's edit, but the record is unchanged.
++  let saveError = $state<string | null>(null);
+   $effect(() => {
+     const v = entryRootAnnotation?.value;
+     draftValue = v ? { ...v } : {};
+@@ -39,12 +43,18 @@
+ 
+   function onChange(next: IImageAnnotationValue) {
+     draftValue = next;
+-    onCreateOrUpdate?.(next);
++    saveError = null;
++    if (onCreateOrUpdate?.(next) === false) {
++      saveError = "Complete the required fields to save the image tagging.";
++    }
+   }
+ </script>
+ 
+ {#if config}
+   <section class="flex flex-col gap-3">
++    {#if saveError}
++      <p class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{saveError}</p>
++    {/if}
+     <div class="flex items-center gap-2">
+       <Text weight="semibold">Image</Text>
+       <Badge variant={entryRootAnnotation ? "info" : "success-200"}>{entryRootAnnotation ? "EDIT" : "CREATE"}</Badge>
+@@ -60,12 +70,7 @@
+             icon={annotation.isLocked(entryRootAnnotation) ? LockIcon : LockOpenIcon}
+             onclick={() => annotation.toggleLocked(entryRootAnnotation.id, !annotation.isLocked(entryRootAnnotation))}
+           />
+-          <CategoryAction
+-            label="Delete image"
+-            icon={Trash2Icon}
+-            disabled={disabled}
+-            onclick={() => onDelete?.()}
+-          />
++          <CategoryAction label="Delete image" icon={Trash2Icon} {disabled} onclick={() => onDelete?.()} />
+         </div>
+       {/if}
+     </div>
+diff --git a/plugins/idah-image/frontend/src/lib/state/sidebar-tabs.svelte.ts b/plugins/idah-image/frontend/src/lib/state/sidebar-tabs.svelte.ts
+index d2f69e09b..0d9a4899a 100644
+--- a/plugins/idah-image/frontend/src/lib/state/sidebar-tabs.svelte.ts
++++ b/plugins/idah-image/frontend/src/lib/state/sidebar-tabs.svelte.ts
+@@ -18,4 +18,4 @@ export const sidebarTabs: {
+   set rightTab(v: RightTab) {
+     _rightTab = v;
+   },
+-};
+\ No newline at end of file
++};
+diff --git a/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.test.ts b/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.test.ts
+index a4c1c6f1b..4cfb49512 100644
+--- a/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.test.ts
++++ b/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.test.ts
+@@ -3,8 +3,9 @@
+ // ---------------------------------------------------------------------------
+ import { describe, it, expect } from "vitest";
+ 
+-import { findEntryRootAnnotation, resolveEntryRoot } from "./tagging-annotations";
++import { findEntryRootAnnotation, resolveEntryRoot, isTaggingValueComplete } from "./tagging-annotations";
+ import type { IImageAnnotationRecord } from "$lib/types";
++import type { IConfigProperty } from "$idah/v2/types";
+ 
+ function rootRecord(category?: string, id = "root-001"): IImageAnnotationRecord {
+   return {
+@@ -51,4 +52,26 @@ describe("resolveEntryRoot", () => {
+     const res = resolveEntryRoot([], {});
+     expect(res.action).toBe("none");
+   });
+-});
+\ No newline at end of file
++});
++
++describe("isTaggingValueComplete", () => {
++  const required: IConfigProperty[] = [{ id: "label", required: true, type: "text", format: {} } as IConfigProperty];
++  const optional: IConfigProperty[] = [{ id: "label", required: false, type: "text", format: {} } as IConfigProperty];
++
++  it("is true when no required properties exist", () => {
++    expect(isTaggingValueComplete({ category: "a" }, [])).toBe(true);
++  });
++
++  it("is true when all required properties are filled", () => {
++    expect(isTaggingValueComplete({ category: "a", attributes: { label: "x" } }, required)).toBe(true);
++  });
++
++  it("is false when a required property is missing", () => {
++    expect(isTaggingValueComplete({ category: "a", attributes: {} }, required)).toBe(false);
++    expect(isTaggingValueComplete({ category: "a" }, required)).toBe(false);
++  });
++
++  it("ignores optional properties", () => {
++    expect(isTaggingValueComplete({ category: "a" }, optional)).toBe(true);
++  });
++});
+diff --git a/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.ts b/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.ts
+index f3a0f683d..e6346f197 100644
+--- a/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.ts
++++ b/plugins/idah-image/frontend/src/lib/utils/tagging-annotations.ts
+@@ -7,6 +7,18 @@
+ // ---------------------------------------------------------------------------
+ 
+ import { ENTRY_ROOT, type IImageAnnotationRecord, type IImageAnnotationValue } from "$lib/types";
++import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
++import type { IConfigProperty } from "$idah/v2/types";
++
++/**
++ * Single owner of the "is this entry:root tagging value valid to persist" check.
++ * Creating and updating must both pass this before persisting. The caller resolves
++ * the shape's filtered properties via the driver config and passes them in,
++ * keeping this function pure/testable.
++ */
++export function isTaggingValueComplete(value: IImageAnnotationValue, properties: IConfigProperty[] = []): boolean {
++  return requiredFullfilled(value as unknown as Record<string, unknown>, properties);
++}
+ 
+ /** Find the single entry:root annotation in a list of annotation items. */
+ export function findEntryRootAnnotation(items: IImageAnnotationRecord[]): IImageAnnotationRecord | undefined {
+@@ -25,12 +37,9 @@ export type EntryResolution =
+  * the existing record instead of duplicating. "create" is returned only when no
+  * record exists AND a category is provided (an empty tagging is never created).
+  */
+-export function resolveEntryRoot(
+-  items: IImageAnnotationRecord[],
+-  value: IImageAnnotationValue,
+-): EntryResolution {
++export function resolveEntryRoot(items: IImageAnnotationRecord[], value: IImageAnnotationValue): EntryResolution {
+   const existing = findEntryRootAnnotation(items);
+   if (existing) return { action: "update", existing };
+   if (value.category) return { action: "create" };
+   return { action: "none" };
+-}
+\ No newline at end of file
++}
+diff --git a/plugins/idah-video/assets/frame-icon.svg b/plugins/idah-video/assets/frame-icon.svg
+index 1a35310af..a765450a0 100644
+--- a/plugins/idah-video/assets/frame-icon.svg
++++ b/plugins/idah-video/assets/frame-icon.svg
+@@ -3,4 +3,4 @@
+   <path d="M22 18H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M6 2v20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M18 2v20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+-</svg>
+\ No newline at end of file
++</svg>
+diff --git a/plugins/idah-video/frontend/src/lib/assets/icons/file.svg b/plugins/idah-video/frontend/src/lib/assets/icons/file.svg
+index bbdea64b3..dc2f10f77 100644
+--- a/plugins/idah-video/frontend/src/lib/assets/icons/file.svg
++++ b/plugins/idah-video/frontend/src/lib/assets/icons/file.svg
+@@ -1,4 +1,4 @@
+ <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M14 2v4a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+-</svg>
+\ No newline at end of file
++</svg>
+diff --git a/plugins/idah-video/frontend/src/lib/assets/icons/frame.svg b/plugins/idah-video/frontend/src/lib/assets/icons/frame.svg
+index 1c2126365..e50785278 100644
+--- a/plugins/idah-video/frontend/src/lib/assets/icons/frame.svg
++++ b/plugins/idah-video/frontend/src/lib/assets/icons/frame.svg
+@@ -4,4 +4,4 @@
+ <path d="M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+-</svg>
+\ No newline at end of file
++</svg>
+diff --git a/plugins/idah-video/frontend/src/lib/commands/group/delete.ts b/plugins/idah-video/frontend/src/lib/commands/group/delete.ts
+index a6fcdf769..283325615 100644
+--- a/plugins/idah-video/frontend/src/lib/commands/group/delete.ts
++++ b/plugins/idah-video/frontend/src/lib/commands/group/delete.ts
+@@ -1,9 +1,18 @@
+ // ---------------------------------------------------------------------------
+-// idah-video:annotation.group.delete — Delete all annotations in a group
+-// Undoable: restores all annotations.
++// idah-video:annotation.group.delete — Delete an explicit list of annotations,
++// or all annotations in a group.
++// Undoable: restores all deleted annotations.
++//
++// This is the shared primitive for "delete this explicit list of annotations":
++// pass `annotations` (optionally with a `groupId` for keyboard/palette context)
++// and the list is deleted directly. When only `groupId` is given, the members
++// are resolved from the data store by group id.
+ //
+ // Usage:
+ //   driver.command.call("idah-video:annotation.group.delete", {
++//     annotations: [ ... ]            // delete exactly these
++//   });
++//   driver.command.call("idah-video:annotation.group.delete", {
+ //     groupId: "...", annotations?: [ ... ]
+ //   });
+ // ---------------------------------------------------------------------------
+@@ -25,7 +34,9 @@ export const command = {
+ };
+ 
+ export interface GroupDeleteProps {
+-  groupId: string;
++  /** Group id used to resolve members when `annotations` is not provided. */
++  groupId?: string;
++  /** Explicit list of annotations to delete. When non-empty, `groupId` is ignored. */
+   annotations?: AnnotationItem[];
+ }
+ 
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/BottomPanel/BottomPanel.svelte b/plugins/idah-video/frontend/src/lib/components/App/BottomPanel/BottomPanel.svelte
+index 1a34baa83..0772d1d63 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/BottomPanel/BottomPanel.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/BottomPanel/BottomPanel.svelte
+@@ -19,7 +19,8 @@
+   import EntryTrackBlock from "../Timeline/review/_EntryTrackBlock.svelte";
+   import EntryTaggingTrackBlock from "../Timeline/annotations/_EntryTaggingTrackBlock.svelte";
+   import FrameCategoryTrackBlock from "../Timeline/annotations/_FrameCategoryTrackBlock.svelte";
+-  import type { TrackData } from "$lib/components/App/Timeline/types";
++  import BulkActions from "../Timeline/annotations/_BulkActions.svelte";
++  import type { TrackData, TaggingRowKind } from "$lib/components/App/Timeline/types";
+ 
+   // Props
+   interface Props {
+@@ -30,7 +31,14 @@
+     player: Video | undefined;
+     volume: { level: number; muted: boolean };
+   }
+-  let { viewportAnnotations, frameAnnotations, entryRootAnnotation, length, player = $bindable(), volume }: Props = $props();
++  let {
++    viewportAnnotations,
++    frameAnnotations,
++    entryRootAnnotation,
++    length,
++    player = $bindable(),
++    volume,
++  }: Props = $props();
+ 
+   // Internal state
+   let panelHeight: number = $state(0);
+@@ -90,34 +98,40 @@
+   });
+ 
+   let entryNotes: INoteRecord[] = $derived(viewport.isReviewWorkspace ? notes.list : []);
+-  let pinnedNotes = $derived(entryNotes.filter((n) => {
+-    const pos = n.anchor.position as { frame?: number } | undefined;
+-    return pos?.frame !== undefined && n.anchor.anchor_type === "entry";
+-  }))
+-  let sortedPinnedNotes = $derived(pinnedNotes.sort((a, b) => {
+-    const fa = (a.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
+-    const fb = (b.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
+-    return fa - fb;
+-  }))
++  let pinnedNotes = $derived(
++    entryNotes.filter((n) => {
++      const pos = n.anchor.position as { frame?: number } | undefined;
++      return pos?.frame !== undefined && n.anchor.anchor_type === "entry";
++    }),
++  );
++  let sortedPinnedNotes = $derived(
++    pinnedNotes.sort((a, b) => {
++      const fa = (a.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
++      const fb = (b.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
++      return fa - fb;
++    }),
++  );
+ 
+   let items = $derived.by(() => {
+     return transformAnnotationsToTracks({
+       annotations: viewportAnnotations,
+-      labelConfig: getDriver().config
+-    })
+-  })
++      labelConfig: getDriver().config,
++    });
++  });
+ 
+   // Entry notes row — rendered as a sticky row between ruler and tracks
+   let noteItems = $derived.by(() => {
+     if (!viewport.isReviewWorkspace || sortedPinnedNotes.length === 0) return [];
+-    return [{
+-      trackId: "__entry_notes__",
+-      startRange: (sortedPinnedNotes.at(0)?.anchor.position as {frame: number}).frame,
+-      endRange: (sortedPinnedNotes.at(-1)?.anchor.position as {frame: number}).frame,
+-      rawData: sortedPinnedNotes,
+-      component: EntryTrackBlock,
+-    }]
+-  })
++    return [
++      {
++        trackId: "__entry_notes__",
++        startRange: (sortedPinnedNotes.at(0)?.anchor.position as { frame: number }).frame,
++        endRange: (sortedPinnedNotes.at(-1)?.anchor.position as { frame: number }).frame,
++        rawData: sortedPinnedNotes,
++        component: EntryTrackBlock,
++      },
++    ];
++  });
+ 
+   // Tagging rows — rendered as normal tracks in the scrollable body, grouped under a
+   // collapsible "Tagging" header. One row for the entry:root annotation and one row per
+@@ -138,13 +152,15 @@
+         subtitle: "Entry",
+         kind: "tagging",
+         top: 0,
+-        items: [{
+-          trackId: "__entry_tag__",
+-          startRange: entryRootAnnotation.shape.start,
+-          endRange: entryRootAnnotation.shape.end,
+-          rawData: { type: "entry", annotations: [entryRootAnnotation] },
+-          component: EntryTaggingTrackBlock,
+-        }],
++        items: [
++          {
++            trackId: "__entry_tag__",
++            startRange: entryRootAnnotation.shape.start,
++            endRange: entryRootAnnotation.shape.end,
++            rawData: { type: "entry" as TaggingRowKind, annotations: [entryRootAnnotation] },
++            component: EntryTaggingTrackBlock,
++          },
++        ],
+       });
+     }
+ 
+@@ -162,18 +178,20 @@
+         subtitle: "Frame",
+         kind: "tagging",
+         top: 0,
+-        items: [{
+-          trackId: `__frame_tag:${category}`,
+-          startRange: anns[0]?.shape.start ?? 0,
+-          endRange: anns[anns.length - 1]?.shape.start ?? 0,
+-          rawData: { type: "frame", category, annotations: anns },
+-          component: FrameCategoryTrackBlock,
+-        }],
++        items: [
++          {
++            trackId: `__frame_tag:${category}`,
++            startRange: anns[0]?.shape.start ?? 0,
++            endRange: anns[anns.length - 1]?.shape.start ?? 0,
++            rawData: { type: "frame" as TaggingRowKind, category, annotations: anns },
++            component: FrameCategoryTrackBlock,
++          },
++        ],
+       });
+     }
+ 
+     return tracks;
+-  })
++  });
+ </script>
+ 
+ <TimelinePanel bind:panelHeight>
+@@ -198,16 +216,26 @@
+       viewport.timeline.dimensions = [w, h];
+     }}
+   >
++    {#snippet TrackInfoHeaderSlot()}
++      <BulkActions
++        annotations={[
++          ...viewportAnnotations,
++          ...frameAnnotations,
++          ...(entryRootAnnotation ? [entryRootAnnotation] : []),
++        ]}
++        label="all annotations"
++        showLabel="Show/Hide All"
++        lockLabel="Lock/Unlock All"
++        deleteLabel="Delete all annotations"
++      />
++    {/snippet}
++
+     {#snippet TrackInfoSlot({ track })}
+       <AnnotationTrackInfo {track} />
+     {/snippet}
+ 
+     {#snippet NoteTrackInfoSlot()}
+-      <div
+-        role="button"
+-        tabindex="-1"
+-        class="flex h-full cursor-pointer items-center px-2 select-none"
+-      >
++      <div role="button" tabindex="-1" class="flex h-full cursor-pointer items-center px-2 select-none">
+         <p class="text-xs font-medium">Notes</p>
+       </div>
+     {/snippet}
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte b/plugins/idah-video/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte
+index aa2a6bba5..1527a3d82 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/CategorySelector/PropertiesCategorySelector.svelte
+@@ -49,9 +49,9 @@
+     entryRootAnnotation?: IVideoAnnotationRecord;
+     currentFrameAnnotations?: IVideoAnnotationRecord[];
+     currentFrame?: number;
+-    onEntryRootChange?: (value: IVideoAnnotationValue) => void;
+-    onFrameCreate?: (value: IVideoAnnotationValue) => void;
+-    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => void;
++    onEntryRootChange?: (value: IVideoAnnotationValue) => boolean;
++    onFrameCreate?: (value: IVideoAnnotationValue) => boolean;
++    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => boolean;
+     onDeleteEntryRoot?: () => void;
+     onDeleteFrame?: (ann: IVideoAnnotationRecord) => void;
+   } = $props();
+@@ -131,7 +131,26 @@
+     if (viewport.isCreationMode) sidebarTabs.rightTab = "annotations";
+   });
+ 
++  // ── Entry-root tab: keep the entry:root annotation as the active selection ──
++  // When the user is on the Tagging > Video (entry) tab and an entry:root record
++  // exists, it must be the active global selection so the generic per-selection
++  // commands (delete, hide, lock, …) work on it. Guard against re-triggering the
++  // inverse effect above (which switches to this tab when entry:root is selected).
++  $effect(() => {
++    if (sidebarTabs.rightTab !== "tagging" || sidebarTabs.taggingTab !== "entry") return;
++    if (!entryRootAnnotation) return;
++    if (selection.isAnnotationSelected(entryRootAnnotation.id)) return;
++    selection.selectAnnotation(entryRootAnnotation as any);
++  });
+ 
++  // When that selection is cleared (deselect) while still on the entry tab, switch
++  // back to the Annotations tab so the Tagging tab never shows an empty/awkward
++  // state. The Frame sub-tab keeps its own deselect behavior (return to its list).
++  $effect(() => {
++    if (sidebarTabs.rightTab !== "tagging" || sidebarTabs.taggingTab !== "entry") return;
++    if (selection.value) return;
++    sidebarTabs.rightTab = "annotations";
++  });
+ 
+   // Functions
+   function categorySelection(shape_type: string, categoryId?: string) {
+@@ -176,9 +195,13 @@
+         {#if showTabs}
+           <Tabs bind:value={activeRightTab}>
+             <TabsList class="w-full" onkeydown={handleTabsListKeydown}>
+-              <Tooltips class="flex-1 flex">
++              <Tooltips class="flex flex-1">
+                 {#snippet trigger()}
+-                  <TabsTrigger value="annotations" class="w-full text-xs" onclick={() => handleOuterTabClick("annotations")}>
++                  <TabsTrigger
++                    value="annotations"
++                    class="w-full text-xs"
++                    onclick={() => handleOuterTabClick("annotations")}
++                  >
+                     Annotations
+                   </TabsTrigger>
+                 {/snippet}
+@@ -193,7 +216,7 @@
+                   </div>
+                 {/snippet}
+               </Tooltips>
+-              <Tooltips class="flex-1 flex">
++              <Tooltips class="flex flex-1">
+                 {#snippet trigger()}
+                   <TabsTrigger value="tagging" class="w-full text-xs" onclick={() => handleOuterTabClick("tagging")}>
+                     Tagging
+@@ -237,9 +260,13 @@
+               {#if showTaggingSubTabs}
+                 <Tabs bind:value={activeTaggingTab}>
+                   <TabsList class="w-full" onkeydown={handleTabsListKeydown}>
+-                    <Tooltips class="flex-1 flex">
++                    <Tooltips class="flex flex-1">
+                       {#snippet trigger()}
+-                        <TabsTrigger value="entry" class="w-full text-xs" onclick={() => handleTaggingTabClick("entry")}>
++                        <TabsTrigger
++                          value="entry"
++                          class="w-full text-xs"
++                          onclick={() => handleTaggingTabClick("entry")}
++                        >
+                           Video
+                         </TabsTrigger>
+                       {/snippet}
+@@ -254,9 +281,13 @@
+                         </div>
+                       {/snippet}
+                     </Tooltips>
+-                    <Tooltips class="flex-1 flex">
++                    <Tooltips class="flex flex-1">
+                       {#snippet trigger()}
+-                        <TabsTrigger value="frame" class="w-full text-xs" onclick={() => handleTaggingTabClick("frame")}>
++                        <TabsTrigger
++                          value="frame"
++                          class="w-full text-xs"
++                          onclick={() => handleTaggingTabClick("frame")}
++                        >
+                           Frame
+                         </TabsTrigger>
+                       {/snippet}
+@@ -278,9 +309,9 @@
+                       {entryRootAnnotation}
+                       {currentFrameAnnotations}
+                       currentFrame={currentFrame ?? 0}
+-                      onEntryRootChange={onEntryRootChange}
+-                      onFrameCreate={onFrameCreate}
+-                      onFrameUpdate={onFrameUpdate}
++                      {onEntryRootChange}
++                      {onFrameCreate}
++                      {onFrameUpdate}
+                       onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
+                       onFrameDelete={onDeleteFrame ?? (() => {})}
+                       disabled={taggingDisabled}
+@@ -292,9 +323,9 @@
+                       {entryRootAnnotation}
+                       {currentFrameAnnotations}
+                       currentFrame={currentFrame ?? 0}
+-                      onEntryRootChange={onEntryRootChange}
+-                      onFrameCreate={onFrameCreate}
+-                      onFrameUpdate={onFrameUpdate}
++                      {onEntryRootChange}
++                      {onFrameCreate}
++                      {onFrameUpdate}
+                       onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
+                       onFrameDelete={onDeleteFrame ?? (() => {})}
+                       disabled={taggingDisabled}
+@@ -307,9 +338,9 @@
+                   {entryRootAnnotation}
+                   {currentFrameAnnotations}
+                   currentFrame={currentFrame ?? 0}
+-                  onEntryRootChange={onEntryRootChange}
+-                  onFrameCreate={onFrameCreate}
+-                  onFrameUpdate={onFrameUpdate}
++                  {onEntryRootChange}
++                  {onFrameCreate}
++                  {onFrameUpdate}
+                   onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
+                   onFrameDelete={onDeleteFrame ?? (() => {})}
+                   disabled={taggingDisabled}
+@@ -340,4 +371,4 @@
+       </SidebarGroupContent>
+     </SidebarGroup>
+   </SidebarContent>
+-</Sidebar>
+\ No newline at end of file
++</Sidebar>
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte b/plugins/idah-video/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte
+index 8adb1c8e8..121bb0202 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/SelectionPanel/_TaggingPanel.svelte
+@@ -7,31 +7,24 @@
+   import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
+   import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
+   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
+-  import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+-  import Button from "$lib/components/ui/Button/Button.svelte";
+ 
+   import { getDriver } from "$lib/state/driver.svelte";
+   import { annotation } from "$lib/state/annotation.svelte";
+   import { selection } from "$lib/state/selection.svelte";
+-  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
+ 
+-  import {
+-    VIDEO_FRAME,
+-    ENTRY_ROOT,
+-    type IVideoAnnotationRecord,
+-    type IVideoAnnotationValue,
+-  } from "$lib/types";
++  import { VIDEO_FRAME, ENTRY_ROOT, type IVideoAnnotationRecord, type IVideoAnnotationValue } from "$lib/types";
+ 
+   type Props = {
+     /** Which sub-form to render (driven by the Tagging sub-tabs). */
+-    activeTab:"entry" | "frame";
++    activeTab: "entry" | "frame";
+     entryRootAnnotation: IVideoAnnotationRecord | undefined;
+     /** All idah-video:frame annotations for the CURRENT frame (one per category). */
+     currentFrameAnnotations?: IVideoAnnotationRecord[];
+     currentFrame: number;
+-    onEntryRootChange?: (value: IVideoAnnotationValue) => void;
+-    onFrameCreate?: (value: IVideoAnnotationValue) => void;
+-    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => void;
++    /** Returns whether the change was persisted (false when a required field is missing). */
++    onEntryRootChange?: (value: IVideoAnnotationValue) => boolean;
++    onFrameCreate?: (value: IVideoAnnotationValue) => boolean;
++    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => boolean;
+     onEntryRootDelete?: () => void;
+     onFrameDelete?: (ann: IVideoAnnotationRecord) => void;
+     disabled: boolean;
+@@ -57,6 +50,10 @@
+   let frameCreateDraft = $state<IVideoAnnotationValue>({});
+   let frameEditDraft = $state<IVideoAnnotationValue>({});
+ 
++  // Visible feedback when a change can't be saved because a required field is
++  // missing. The draft still shows the user's edit, but the record is unchanged.
++  let saveError = $state<string | null>(null);
++
+   // Reset the in-progress create draft when the current frame changes, so the
+   // category select isn't locked to a previous frame's selection.
+   let prevFrame = $state(currentFrame);
+@@ -101,7 +98,6 @@
+   const rootProperties = $derived(rootConfig?.properties ?? []);
+ 
+   const frameValues = $derived(frameConfig?.values ?? []);
+-  const frameCreateCategory = $derived(frameValues.find((c) => c.id === frameCreateDraft.category));
+   const frameProperties = $derived(frameConfig?.properties ?? []);
+ 
+   // Categories already used by existing frame annotations at the current frame.
+@@ -115,25 +111,34 @@
+   // Categories still available to create a new frame annotation at the current frame.
+   const availableFrameCategories = $derived(frameValues.filter((v) => !usedFrameCategories.has(v.id)));
+ 
++  // The workspace owns the required-field gate (single place per shape type); here
++  // we only surface feedback when a change was dropped because it was incomplete.
+   function onRootChange(next: IVideoAnnotationValue) {
+     rootDraft = next;
+-    onEntryRootChange?.(next);
++    saveError = null;
++    if (onEntryRootChange?.(next) === false) {
++      saveError = "Complete the required fields to save the video tagging.";
++    }
+   }
+ 
+   function handleFrameCreate(next: IVideoAnnotationValue) {
+     frameCreateDraft = next;
+-    // Only create/update when the category + required properties are valid.
+-    const properties =
+-      getDriver().getFilteredConfig(VIDEO_FRAME, next as unknown as Record<string, unknown>)?.properties ?? [];
+-    if (requiredFullfilled(next, properties)) {
+-      onFrameCreate?.(next);
++    saveError = null;
++    const ok = onFrameCreate?.(next);
++    if (ok === false) {
++      saveError = "Complete the required fields to save the frame tagging.";
++    } else {
++      // Successful create (or no handler): return to the frame list view.
+       frameCreateDraft = {};
+     }
+   }
+ 
+   function handleFrameEdit(next: IVideoAnnotationValue) {
+     frameEditDraft = next;
+-    if (selectedFrameAnnotation) onFrameUpdate?.(selectedFrameAnnotation, next);
++    saveError = null;
++    if (selectedFrameAnnotation && onFrameUpdate?.(selectedFrameAnnotation, next) === false) {
++      saveError = "Complete the required fields to save the frame tagging.";
++    }
+   }
+ </script>
+ 
+@@ -144,6 +149,9 @@
+ {:else if activeTab === "entry"}
+   {#if rootConfig}
+     <section class="flex flex-col gap-3">
++      {#if saveError}
++        <p class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{saveError}</p>
++      {/if}
+       <div class="flex items-center gap-2">
+         <Text weight="semibold">Video</Text>
+         <Badge variant={entryRootAnnotation ? "info" : "success-200"}>{entryRootAnnotation ? "EDIT" : "CREATE"}</Badge>
+@@ -159,12 +167,7 @@
+               icon={annotation.isLocked(entryRootAnnotation) ? LockIcon : LockOpenIcon}
+               onclick={() => annotation.toggleLocked(entryRootAnnotation.id, !annotation.isLocked(entryRootAnnotation))}
+             />
+-            <CategoryAction
+-              label="Delete video"
+-              icon={Trash2Icon}
+-              disabled={disabled}
+-              onclick={() => onEntryRootDelete?.()}
+-            />
++            <CategoryAction label="Delete video" icon={Trash2Icon} {disabled} onclick={() => onEntryRootDelete?.()} />
+           </div>
+         {/if}
+       </div>
+@@ -193,146 +196,146 @@
+       {/if}
+     </section>
+   {/if}
+-{:else}
+-  {#if frameConfig}
+-    {#key currentFrame}
+-      <section class="flex flex-col gap-3">
+-        <div class="flex items-center gap-2">
+-          <Text weight="semibold">Frame: {currentFrame + 1}</Text>
+-          <button
+-            type="button"
+-            class="cursor-pointer"
+-            title="Back to frame annotations list"
+-            onclick={() => selection.deselect()}
+-          >
+-            <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
+-          </button>
+-        </div>
+-
+-        {#if selectedFrameAnnotation}
+-          <!-- Edit form for the selected frame annotation (list hidden) -->
+-          <div class="flex flex-col gap-3">
+-            <div class="flex items-center gap-2">
+-              <Text weight="semibold">
+-                {frameValues.find((v) => v.id === frameEditDraft.category)?.label ?? "Frame"}
+-              </Text>
+-              <Badge variant="info">EDIT</Badge>
+-              <div class="ml-auto flex items-center gap-0">
+-                <CategoryAction
+-                  label={annotation.isHidden(selectedFrameAnnotation) ? "Show frame" : "Hide frame"}
+-                  icon={annotation.isHidden(selectedFrameAnnotation) ? EyeOffIcon : EyeIcon}
+-                  onclick={() =>
+-                    annotation.toggleHidden(selectedFrameAnnotation.id, !annotation.isHidden(selectedFrameAnnotation))}
+-                />
+-                <CategoryAction
+-                  label={annotation.isLocked(selectedFrameAnnotation) ? "Unlock frame" : "Lock frame"}
+-                  icon={annotation.isLocked(selectedFrameAnnotation) ? LockIcon : LockOpenIcon}
+-                  onclick={() =>
+-                    annotation.toggleLocked(selectedFrameAnnotation.id, !annotation.isLocked(selectedFrameAnnotation))}
+-                />
+-                <CategoryAction
+-                  label="Delete frame"
+-                  icon={Trash2Icon}
+-                  disabled={disabled}
+-                  onclick={() => onFrameDelete?.(selectedFrameAnnotation)}
+-                />
+-              </div>
+-            </div>
++{:else if frameConfig}
++  {#key currentFrame}
++    <section class="flex flex-col gap-3">
++      {#if saveError}
++        <p class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{saveError}</p>
++      {/if}
++      <div class="flex items-center gap-2">
++        <Text weight="semibold">Frame: {currentFrame + 1}</Text>
++        <button
++          type="button"
++          class="cursor-pointer"
++          title="Back to frame annotations list"
++          onclick={() => selection.deselect()}
++        >
++          <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
++        </button>
++      </div>
+ 
+-            <CategorySelect
+-              configValues={frameValues}
+-              category={frameValues.find((v) => v.id === frameEditDraft.category)}
+-              selectedCategory={frameEditDraft.category ?? ""}
+-              shapeType={VIDEO_FRAME}
+-              onValueChange={(id) => handleFrameEdit({ ...frameEditDraft, category: id })}
+-              {disabled}
+-              placeholder="Select a category"
+-            />
+-            {#if frameEditDraft.category && frameProperties.length > 0}
+-              <PropertiesSection
+-                properties={frameProperties}
+-                annotationValue={frameEditDraft}
+-                onValueChange={(property, v) =>
+-                  handleFrameEdit({
+-                    ...frameEditDraft,
+-                    attributes: { ...(frameEditDraft.attributes ?? {}), [property.id]: v },
+-                  })}
++      {#if selectedFrameAnnotation}
++        <!-- Edit form for the selected frame annotation (list hidden) -->
++        <div class="flex flex-col gap-3">
++          <div class="flex items-center gap-2">
++            <Text weight="semibold">
++              {frameValues.find((v) => v.id === frameEditDraft.category)?.label ?? "Frame"}
++            </Text>
++            <Badge variant="info">EDIT</Badge>
++            <div class="ml-auto flex items-center gap-0">
++              <CategoryAction
++                label={annotation.isHidden(selectedFrameAnnotation) ? "Show frame" : "Hide frame"}
++                icon={annotation.isHidden(selectedFrameAnnotation) ? EyeOffIcon : EyeIcon}
++                onclick={() =>
++                  annotation.toggleHidden(selectedFrameAnnotation.id, !annotation.isHidden(selectedFrameAnnotation))}
++              />
++              <CategoryAction
++                label={annotation.isLocked(selectedFrameAnnotation) ? "Unlock frame" : "Lock frame"}
++                icon={annotation.isLocked(selectedFrameAnnotation) ? LockIcon : LockOpenIcon}
++                onclick={() =>
++                  annotation.toggleLocked(selectedFrameAnnotation.id, !annotation.isLocked(selectedFrameAnnotation))}
++              />
++              <CategoryAction
++                label="Delete frame"
++                icon={Trash2Icon}
+                 {disabled}
++                onclick={() => onFrameDelete?.(selectedFrameAnnotation)}
+               />
+-            {/if}
+-          </div>
+-        {:else if frameCreateDraft.category}
+-          <!-- Create form for a new frame annotation (list hidden) -->
+-          <div class="flex flex-col gap-3">
+-            <div class="flex items-center gap-2">
+-              <Text weight="semibold">
+-                {frameValues.find((v) => v.id === frameCreateDraft.category)?.label ?? "Frame"}
+-              </Text>
+-              <Badge variant="success-200">CREATE</Badge>
+             </div>
+-            <CategorySelect
+-              configValues={frameValues}
+-              category={frameValues.find((v) => v.id === frameCreateDraft.category)}
+-              selectedCategory={frameCreateDraft.category ?? ""}
+-              shapeType={VIDEO_FRAME}
+-              onValueChange={(id) => handleFrameCreate({ ...frameCreateDraft, category: id })}
+-              disabledValues={usedFrameCategories}
++          </div>
++
++          <CategorySelect
++            configValues={frameValues}
++            category={frameValues.find((v) => v.id === frameEditDraft.category)}
++            selectedCategory={frameEditDraft.category ?? ""}
++            shapeType={VIDEO_FRAME}
++            onValueChange={(id) => handleFrameEdit({ ...frameEditDraft, category: id })}
++            {disabled}
++            placeholder="Select a category"
++          />
++          {#if frameEditDraft.category && frameProperties.length > 0}
++            <PropertiesSection
++              properties={frameProperties}
++              annotationValue={frameEditDraft}
++              onValueChange={(property, v) =>
++                handleFrameEdit({
++                  ...frameEditDraft,
++                  attributes: { ...(frameEditDraft.attributes ?? {}), [property.id]: v },
++                })}
+               {disabled}
+-              placeholder="Select a category"
+             />
+-            {#if frameCreateDraft.category && frameProperties.length > 0}
+-              <PropertiesSection
+-                properties={frameProperties}
+-                annotationValue={frameCreateDraft}
+-                onValueChange={(property, v) =>
+-                  handleFrameCreate({
+-                    ...frameCreateDraft,
+-                    attributes: { ...(frameCreateDraft.attributes ?? {}), [property.id]: v },
+-                  })}
+-                {disabled}
+-              />
+-            {/if}
++          {/if}
++        </div>
++      {:else if frameCreateDraft.category}
++        <!-- Create form for a new frame annotation (list hidden) -->
++        <div class="flex flex-col gap-3">
++          <div class="flex items-center gap-2">
++            <Text weight="semibold">
++              {frameValues.find((v) => v.id === frameCreateDraft.category)?.label ?? "Frame"}
++            </Text>
++            <Badge variant="success-200">CREATE</Badge>
+           </div>
+-        {:else}
+-          <!-- List existing frame annotations + a category select to create a new frame -->
+-          <div class="flex flex-col gap-3">
+-            <CategorySelect
+-              configValues={availableFrameCategories}
+-              category={undefined}
+-              selectedCategory=""
+-              shapeType={VIDEO_FRAME}
+-              onValueChange={(id) => id && handleFrameCreate({ category: id })}
+-              disabled={disabled || availableFrameCategories.length === 0}
+-              placeholder="Select a category"
++          <CategorySelect
++            configValues={frameValues}
++            category={frameValues.find((v) => v.id === frameCreateDraft.category)}
++            selectedCategory={frameCreateDraft.category ?? ""}
++            shapeType={VIDEO_FRAME}
++            onValueChange={(id) => handleFrameCreate({ ...frameCreateDraft, category: id })}
++            {disabled}
++            placeholder="Select a category"
++          />
++          {#if frameCreateDraft.category && frameProperties.length > 0}
++            <PropertiesSection
++              properties={frameProperties}
++              annotationValue={frameCreateDraft}
++              onValueChange={(property, v) =>
++                handleFrameCreate({
++                  ...frameCreateDraft,
++                  attributes: { ...(frameCreateDraft.attributes ?? {}), [property.id]: v },
++                })}
++              {disabled}
+             />
++          {/if}
++        </div>
++      {:else}
++        <!-- List existing frame annotations + a category select to create a new frame -->
++        <div class="flex flex-col gap-3">
++          <CategorySelect
++            configValues={availableFrameCategories}
++            category={undefined}
++            selectedCategory=""
++            shapeType={VIDEO_FRAME}
++            onValueChange={(id) => id && handleFrameCreate({ category: id })}
++            disabled={disabled || availableFrameCategories.length === 0}
++            placeholder="Select a category"
++          />
+ 
+-            <Separator class="my-2" />
++          <Separator class="my-2" />
+ 
+-            <div class="flex flex-col gap-1">
+-              {#each currentFrameAnnotations as ann (ann.id)}
+-                {@const annCategory = frameValues.find((v) => v.id === ann.value?.category)}
+-                {@const annColor = annCategory?.color ?? null}
+-                <div
+-                  role="button"
+-                  tabindex="-1"
+-                  class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs"
+-                  onclick={() => selection.selectAnnotation(ann as any)}
+-                  onkeypress={() => {}}
+-                >
+-                  {#if annCategory}
+-                    <span class="size-2 shrink-0 rounded-full" style:background-color={annColor}></span>
+-                    <span class="truncate">{annCategory.label}</span>
+-                  {:else}
+-                    <span class="truncate text-muted-foreground">{ann.value?.category ?? "Uncategorized"}</span>
+-                  {/if}
+-                </div>
+-              {:else}
+-                <div class="text-muted-foreground px-2 py-4 text-center text-xs">No frame annotations</div>
+-              {/each}
+-            </div>
++          <div class="flex flex-col gap-1">
++            {#each currentFrameAnnotations as ann (ann.id)}
++              {@const annCategory = frameValues.find((v) => v.id === ann.value?.category)}
++              {@const annColor = annCategory?.color ?? null}
++              <div
++                role="button"
++                tabindex="-1"
++                class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs"
++                onclick={() => selection.selectAnnotation(ann as any)}
++                onkeypress={() => {}}
++              >
++                {#if annCategory}
++                  <span class="size-2 shrink-0 rounded-full" style:background-color={annColor}></span>
++                  <span class="truncate">{annCategory.label}</span>
++                {:else}
++                  <span class="text-muted-foreground truncate">{ann.value?.category ?? "Uncategorized"}</span>
++                {/if}
++              </div>
++            {:else}
++              <div class="text-muted-foreground px-2 py-4 text-center text-xs">No frame annotations</div>
++            {/each}
+           </div>
+-        {/if}
+-      </section>
+-    {/key}
+-  {/if}
+-{/if}
+\ No newline at end of file
++        </div>
++      {/if}
++    </section>
++  {/key}
++{/if}
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/Timeline.svelte b/plugins/idah-video/frontend/src/lib/components/App/Timeline/Timeline.svelte
+index d762b15f8..aeb7859f0 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/Timeline/Timeline.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/Timeline.svelte
+@@ -9,6 +9,7 @@
+   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
+   import TrackItem from "$lib/components/App/Timeline/_TrackItem.svelte";
+   import TaggingTrackInfo from "$lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte";
++  import BulkActions from "$lib/components/App/Timeline/annotations/_BulkActions.svelte";
+ 
+   import { modKey } from "$lib/utils/browser";
+   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
+@@ -16,14 +17,9 @@
+   import { media } from "$lib/state/media.svelte";
+   import { viewport as vp } from "$lib/state/viewport.svelte";
+   import { NOTES_ROW_HEIGHT, TRACK_HEIGHT, GROUP_HEADER_HEIGHT } from "$lib/components/App/Timeline/constants";
+-  import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME } from "$lib/types";
+-
+-  import type {
+-    TimelineItem,
+-    TimelineProps,
+-    TrackData,
+-    Viewport,
+-  } from "$lib/components/App/Timeline/types";
++  import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
++
++  import type { TimelineItem, TimelineProps, TrackData, Viewport } from "$lib/components/App/Timeline/types";
+   import type { IAnnotationRecord } from "$idah/v2/types";
+ 
+   interface Props extends TimelineProps {
+@@ -53,6 +49,7 @@
+     onZoom,
+ 
+     TrackInfoSlot,
++    TrackInfoHeaderSlot,
+     noteItems,
+     NoteTrackInfoSlot,
+     taggingItems = [],
+@@ -563,6 +560,31 @@
+   // Combined row list: group headers interleaved with their tracks, so the Tagging
+   // rows sit between the Tagging header and the Annotations header. Each row is either
+   // a group header or a track. Collapsed groups render only their header.
++
++  // The annotations backing each group header's bulk actions:
++  //   - Tagging header → every entry:root + every idah-video:frame annotation
++  //   - Annotations header → every drawable annotation
++  const taggingAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
++    const out: IVideoAnnotationRecord[] = [];
++    for (const t of taggingItems) {
++      for (const item of t.items) {
++        const raw = item.rawData as { annotations?: IVideoAnnotationRecord[] };
++        if (raw?.annotations) out.push(...raw.annotations);
++      }
++    }
++    return out;
++  });
++  const annotationItems = $derived.by<IVideoAnnotationRecord[]>(() => {
++    const out: IVideoAnnotationRecord[] = [];
++    for (const t of items) {
++      for (const item of t.items) {
++        const raw = item.rawData as IVideoAnnotationRecord | undefined;
++        if (raw?.id) out.push(raw);
++      }
++    }
++    return out;
++  });
++
+   const allRows = $derived.by(() => {
+     const rows: Array<
+       | { type: "header"; label: string; collapsed: boolean; group: "tagging" | "annotations" }
+@@ -621,31 +643,37 @@
+     </div>
+   {/if}
+ 
+-  {#snippet pinnedRow(rowItems: TimelineItem[], infoSlot: Snippet<[]> | undefined, height: number, wrapperClass: string)}
++  {#snippet pinnedRow(
++    rowItems: TimelineItem[],
++    infoSlot: Snippet<[]> | undefined,
++    height: number,
++    wrapperClass: string,
++  )}
+     <div class={wrapperClass} style="height: {height}px;">
+       <div class="timeline-notes-spacer bg-secondary border-r">
+         {#if infoSlot}
+           {@render infoSlot()}
+         {/if}
+       </div>
+-      <div class="timeline-notes-content-wrapper bg-secondary" role="presentation" onmousemove={handleNotesMouseMove} onmouseleave={handleMouseLeave} onclick={handleNotesClick} onwheel={handleNotesWheel}>
++      <div
++        class="timeline-notes-content-wrapper bg-secondary"
++        role="presentation"
++        onmousemove={handleNotesMouseMove}
++        onmouseleave={handleMouseLeave}
++        onclick={handleNotesClick}
++        onwheel={handleNotesWheel}
++      >
+         <div
+           class="timeline-notes-content"
+           style="width: {contentWidth}px; transform: translateX({-viewport.startRange * scale}px);"
+         >
+           {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
+-            <Selection
+-              offset={selectionOffset}
+-              length={selectionLength}
+-              {scale}
+-              height={height}
+-              trackLength={length}
+-            />
++            <Selection offset={selectionOffset} length={selectionLength} {scale} {height} trackLength={length} />
+             <Caret
+               x={selectionOffset * scale}
+               value={selectionOffset}
+               {labelFormatter}
+-              height={height}
++              {height}
+               color="#4a90d9"
+               showLabel={false}
+             />
+@@ -654,22 +682,8 @@
+             <TrackItem {item} {scale} />
+           {/each}
+           {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
+-            <Selection
+-              offset={caretFrame}
+-              length={1}
+-              {scale}
+-              height={height}
+-              trackLength={length}
+-              color="orangered"
+-            />
+-            <Caret
+-              x={caretPixelX}
+-              value={caretFrame}
+-              {labelFormatter}
+-              height={height}
+-              color="orangered"
+-              showLabel={false}
+-            />
++            <Selection offset={caretFrame} length={1} {scale} {height} trackLength={length} color="orangered" />
++            <Caret x={caretPixelX} value={caretFrame} {labelFormatter} {height} color="orangered" showLabel={false} />
+           {/if}
+         </div>
+       </div>
+@@ -677,7 +691,11 @@
+   {/snippet}
+ 
+   <div class="timeline-ruler-wrapper">
+-    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true"></div>
++    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true">
++      {#if TrackInfoHeaderSlot}
++        {@render TrackInfoHeaderSlot()}
++      {/if}
++    </div>
+ 
+     <div
+       role="button"
+@@ -728,28 +746,40 @@
+     bind:this={bodyScrollEl}
+     bind:clientHeight={bodyScrollClientHeight}
+     onscroll={handleBodyScroll}
+-    oncontextmenu={(e) => { if (vp.isReviewWorkspace) e.preventDefault(); }}
++    oncontextmenu={(e) => {
++      if (vp.isReviewWorkspace) e.preventDefault();
++    }}
+   >
+     <div class="timeline-main">
+       <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">
+         {#each visibleRows as row (row.type === "header" ? `h:${row.label}` : `t:${row.track.id}`)}
+           {#if row.type === "header"}
+-            <button
+-              type="button"
+-              class="timeline-group-header"
+-              style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;"
+-              onclick={() => {
+-                if (row.group === "tagging") taggingCollapsed = !taggingCollapsed;
+-                else annotationsCollapsed = !annotationsCollapsed;
+-              }}
+-            >
+-              {#if row.collapsed}
+-                <ChevronRightIcon class="text-muted-foreground size-4" />
+-              {:else}
+-                <ChevronDownIcon class="text-muted-foreground size-4" />
+-              {/if}
+-              <p class="text-xs font-medium">{row.label}</p>
+-            </button>
++            <div class="timeline-group-header" style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;">
++              <button
++                type="button"
++                class="flex min-w-0 flex-1 cursor-pointer items-center gap-1 text-left focus:outline-none"
++                onclick={() => {
++                  if (row.group === "tagging") taggingCollapsed = !taggingCollapsed;
++                  else annotationsCollapsed = !annotationsCollapsed;
++                }}
++              >
++                {#if row.collapsed}
++                  <ChevronRightIcon class="text-muted-foreground size-4" />
++                {:else}
++                  <ChevronDownIcon class="text-muted-foreground size-4" />
++                {/if}
++                <p class="text-xs font-medium">{row.label}</p>
++              </button>
++              <div class="ml-auto flex shrink-0 items-center">
++                <BulkActions
++                  annotations={row.group === "tagging" ? taggingAnnotations : annotationItems}
++                  label={row.label}
++                  showLabel={`Show/Hide ${row.label}`}
++                  lockLabel={`Lock/Unlock ${row.label}`}
++                  deleteLabel={`Remove ${row.label}`}
++                />
++              </div>
++            </div>
+           {:else}
+             <div class="timeline-trackinfo-row" style="top: {row.top}px; height: {TRACK_HEIGHT}px;">
+               {#if row.track.kind === "tagging"}
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/_Track.svelte b/plugins/idah-video/frontend/src/lib/components/App/Timeline/_Track.svelte
+index e0da49f23..124cdb0c1 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/Timeline/_Track.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/_Track.svelte
+@@ -14,7 +14,7 @@
+   import { viewport as vp } from "$lib/state/viewport.svelte";
+   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
+ 
+-  import type { TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
++  import type { TimelineItem, Viewport, TaggingRowKind } from "$lib/components/App/Timeline/types";
+ 
+   interface Props {
+     viewport: Viewport;
+@@ -75,7 +75,7 @@
+     if (kind === "tagging") {
+       // Clicking a frame-category tagging row's background goes to the tagging > frame
+       // tab. The entry:root row keeps the default group-selection behavior.
+-      const isFrameRow = (items[0]?.rawData as { type?: string })?.type === "frame";
++      const isFrameRow = (items[0]?.rawData as { type?: TaggingRowKind })?.type === "frame";
+       if (isFrameRow) {
+         selection.deselect();
+         sidebarTabs.rightTab = "tagging";
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_BulkActions.svelte b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_BulkActions.svelte
+new file mode 100644
+index 000000000..60d8dc95b
+--- /dev/null
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_BulkActions.svelte
+@@ -0,0 +1,102 @@
++<script lang="ts">
++  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
++
++  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
++
++  import { annotation } from "$lib/state/annotation.svelte";
++  import { getDriver } from "$lib/state/driver.svelte";
++  import { isEditable } from "$lib/state/editor.svelte";
++  import { viewport } from "$lib/state/viewport.svelte";
++  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
++
++  import type { IVideoAnnotationRecord } from "$lib/types";
++
++  // Shared show/hide + lock/unlock + delete trio for a list of annotations.
++  // Used by the top-level header, the group headers, and the per-row tagging
++  // actions so bulk toggles are wired once and always go through the undoable
++  // group commands (idah-video:annotation.group.toggle-visibility /
++  // toggle-editability) and the shared delete primitive
++  // (idah-video:annotation.group.delete with an explicit annotations list).
++
++  type Props = {
++    annotations: IVideoAnnotationRecord[];
++    /** Label used in the delete confirm dialog, e.g. "Tagging", "all annotations". */
++    label: string;
++    /** Tooltip labels for the three actions. */
++    showLabel?: string;
++    lockLabel?: string;
++    deleteLabel?: string;
++    /** When true, the actions are hidden until the row is hovered (per-row context). */
++    revealOnHover?: boolean;
++  };
++  let {
++    annotations,
++    label,
++    showLabel = "Show/Hide",
++    lockLabel = "Lock/Unlock",
++    deleteLabel = "Remove",
++    revealOnHover = false,
++  }: Props = $props();
++
++  const isAllHidden = $derived(annotations.length > 0 && annotations.every((a) => annotation.isHidden(a)));
++  const isAllLocked = $derived(annotations.length > 0 && annotations.every((a) => annotation.isLocked(a)));
++  const isSomeLocked = $derived(annotations.some((a) => annotation.isLocked(a)));
++
++  function toggleVisibility() {
++    getDriver().command.call("idah-video:annotation.group.toggle-visibility", { annotations });
++  }
++
++  function toggleLocked() {
++    getDriver().command.call("idah-video:annotation.group.toggle-editability", { annotations });
++  }
++
++  function removeAll() {
++    showConfirmDialog({
++      title: `Remove ${label}`,
++      description: `Are you sure you want to remove ${label}?`,
++      onConfirm: () => {
++        getDriver().command.call("idah-video:annotation.group.delete", { annotations });
++      },
++    });
++  }
++</script>
++
++<div
++  class={revealOnHover
++    ? "flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100"
++    : "flex shrink-0 items-center"}
++>
++  <KbdTooltipButton
++    label={showLabel}
++    icon={isAllHidden ? EyeOffIcon : EyeIcon}
++    variant="ghost"
++    size="icon-sm"
++    disabled={annotations.length === 0}
++    onclick={(e: MouseEvent) => {
++      e.stopPropagation();
++      toggleVisibility();
++    }}
++  />
++  <KbdTooltipButton
++    label={lockLabel}
++    icon={isAllLocked ? LockIcon : LockOpenIcon}
++    variant="ghost"
++    size="icon-sm"
++    disabled={annotations.length === 0}
++    onclick={(e: MouseEvent) => {
++      e.stopPropagation();
++      toggleLocked();
++    }}
++  />
++  <KbdTooltipButton
++    label={deleteLabel}
++    icon={Trash2Icon}
++    variant="ghost"
++    size="icon-sm"
++    disabled={!isEditable() || annotations.length === 0 || isSomeLocked || viewport.isReviewWorkspace}
++    onclick={(e: MouseEvent) => {
++      e.stopPropagation();
++      removeAll();
++    }}
++  />
++</div>
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_EntryTaggingTrackBlock.svelte b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_EntryTaggingTrackBlock.svelte
+index a3e54ae20..4c92fb61c 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_EntryTaggingTrackBlock.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_EntryTaggingTrackBlock.svelte
+@@ -14,18 +14,15 @@
+   let { item }: Props = $props();
+ 
+   let { startRange, endRange, rawData } = $derived(item);
+-  let entryRootAnnotation = $derived(
+-    (rawData as { annotations?: IVideoAnnotationRecord[] }).annotations?.[0],
+-  );
++  let entryRootAnnotation = $derived((rawData as { annotations?: IVideoAnnotationRecord[] }).annotations?.[0]);
+   const rangeSize = $derived(Number(endRange - startRange) + 1);
+ 
+   let entryRootColor = $derived.by(() =>
+     entryRootAnnotation ? resolveAnnotationColor(entryRootAnnotation) : undefined,
+   );
+-  let entryRootSelected = $derived.by(() => {
+-    const v = selection.value;
+-    return v?.type === "annotation" && entryRootAnnotation && v.annotation.id === entryRootAnnotation.id;
+-  });
++  let entryRootSelected = $derived.by(() =>
++    entryRootAnnotation ? selection.isAnnotationSelected(entryRootAnnotation.id) : false,
++  );
+ 
+   function handleEntryRootClick(e: MouseEvent, ann: IVideoAnnotationRecord) {
+     e.preventDefault();
+@@ -64,4 +61,4 @@
+       onkeypress={() => {}}
+     ></div>
+   {/if}
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_FrameCategoryTrackBlock.svelte b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_FrameCategoryTrackBlock.svelte
+index 4f2de7572..5311350c6 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_FrameCategoryTrackBlock.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_FrameCategoryTrackBlock.svelte
+@@ -19,14 +19,16 @@
+   let frameAnnotations = $derived((rawData as { annotations: IVideoAnnotationRecord[] }).annotations ?? []);
+   const rangeSize = $derived(Number(endRange - startRange) + 1);
+ 
+-  let frameColors = $derived.by(() =>
+-    new Map(frameAnnotations.map((a) => [a.id, resolveAnnotationColor(a)])),
+-  );
++  let frameColors = $derived.by(() => new Map(frameAnnotations.map((a) => [a.id, resolveAnnotationColor(a)])));
+   let frameSelected = $derived.by(() => {
+     const v = selection.value;
+     return v?.type === "annotation" && (v.annotation as { id?: string })?.id;
+   });
+ 
++  function isAnnotationSelected(id: string): boolean {
++    return selection.isAnnotationSelected(id);
++  }
++
+   function handleFrameClick(e: MouseEvent, ann: IVideoAnnotationRecord) {
+     e.preventDefault();
+     const frame = ann.shape.start;
+@@ -52,17 +54,17 @@
+       role="button"
+       tabindex="-1"
+       class="absolute translate-x-[5%] cursor-pointer rounded-sm focus:outline-none"
+-      class:ring-2={frameSelected === ann.id}
+-      class:ring-offset-1={frameSelected === ann.id}
++      class:ring-2={isAnnotationSelected(ann.id)}
++      class:ring-offset-1={isAnnotationSelected(ann.id)}
+       style:top="3px"
+       style:height="calc(100% - 6px)"
+       style:left="{position}%"
+       style:width="{width}%"
+       style:background-color={color ?? "hsl(var(--primary))"}
+-      style:--tw-ring-color={frameSelected === ann.id ? (color ?? "hsl(var(--primary))") : "transparent"}
++      style:--tw-ring-color={isAnnotationSelected(ann.id) ? (color ?? "hsl(var(--primary))") : "transparent"}
+       onclick={(e) => handleFrameClick(e, ann)}
+       oncontextmenu={(e) => handleContextMenu(e, ann)}
+       onkeypress={() => {}}
+     ></div>
+   {/each}
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte
+index 3c37810f7..f4b7a2f1b 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte
+@@ -1,14 +1,9 @@
+ <script lang="ts">
+-  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+-
+-  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
+   import Icon from "$lib/components/ui/Icon/Icon.svelte";
+ 
+-  import { annotation } from "$lib/state/annotation.svelte";
++  import BulkActions from "$lib/components/App/Timeline/annotations/_BulkActions.svelte";
++
+   import { getDriver } from "$lib/state/driver.svelte";
+-  import { isEditable } from "$lib/state/editor.svelte";
+-  import { viewport } from "$lib/state/viewport.svelte";
+-  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+   import { resolveAnnotationColor } from "$lib/utils/color";
+   import { categoryValueToLabel } from "$lib/utils/annotation";
+   import { findCategory } from "$lib/components/App/VideoAnnotationWorkspace/utils/category";
+@@ -17,10 +12,11 @@
+   import videoIconSvg from "$lib/assets/icons/file.svg?raw";
+ 
+   import { VIDEO_FRAME, ENTRY_ROOT, type IVideoAnnotationRecord } from "$lib/types";
++  import type { TaggingRowKind } from "$lib/components/App/Timeline/types";
+ 
+   type Props = {
+     row: {
+-      type: "entry" | "frame";
++      type: TaggingRowKind;
+       category?: string;
+       annotations: IVideoAnnotationRecord[];
+     };
+@@ -42,39 +38,12 @@
+     return annotations[0] ? resolveAnnotationColor(annotations[0]) : "gray";
+   });
+ 
+-  const isAllHidden = $derived(annotations.length > 0 && annotations.every((a) => annotation.isHidden(a)));
+-  const isAllLocked = $derived(annotations.length > 0 && annotations.every((a) => annotation.isLocked(a)));
+-  const isSomeLocked = $derived(annotations.some((a) => annotation.isLocked(a)));
+-
+   // Header label: prefixed by type (Video / Image for entry, Frame for categories).
+   const typeLabel = $derived(isEntry ? "Video" : "Frame");
+   const categoryLabel = $derived(category?.label ?? (row.category ? categoryValueToLabel(row.category) : ""));
+   // Entry row: modality label (Video/Image) on top, category below — like the frame row.
+   const title = $derived(categoryLabel ? categoryLabel : "Uncategorized");
+   const subtitle = $derived(isEntry ? typeLabel : "Frame");
+-
+-  function toggleVisibility() {
+-    const newHidden = !isAllHidden;
+-    for (const a of annotations) annotation.toggleHidden(a.id, newHidden);
+-  }
+-
+-  function toggleLocked() {
+-    const newLocked = !isAllLocked;
+-    for (const a of annotations) annotation.toggleLocked(a.id, newLocked);
+-  }
+-
+-  function removeAll() {
+-    showConfirmDialog({
+-      title: `Remove ${typeLabel} tagging`,
+-      description: `Are you sure you want to remove all ${typeLabel} tagging annotations?`,
+-      onConfirm: () => {
+-        getDriver().command.call("idah-video:annotation.group.delete", {
+-          groupId: `__tagging__:${row.type}:${row.category ?? "entry"}`,
+-          annotations,
+-        });
+-      },
+-    });
+-  }
+ </script>
+ 
+ <div class="group flex h-full w-full items-center gap-2 border-b px-2">
+@@ -89,39 +58,14 @@
+     <span class="truncate text-xs">{title}</span>
+   </div>
+ 
+-  <div class="ml-auto flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+-    <KbdTooltipButton
+-      label={`Show/Hide ${typeLabel}`}
+-      icon={isAllHidden ? EyeOffIcon : EyeIcon}
+-      variant="ghost"
+-      size="icon-sm"
+-      disabled={annotations.length === 0}
+-      onclick={(e: MouseEvent) => {
+-        e.stopPropagation();
+-        toggleVisibility();
+-      }}
+-    />
+-    <KbdTooltipButton
+-      label={`Lock/Unlock ${typeLabel}`}
+-      icon={isAllLocked ? LockIcon : LockOpenIcon}
+-      variant="ghost"
+-      size="icon-sm"
+-      disabled={annotations.length === 0}
+-      onclick={(e: MouseEvent) => {
+-        e.stopPropagation();
+-        toggleLocked();
+-      }}
+-    />
+-    <KbdTooltipButton
+-      label={`Remove ${typeLabel}`}
+-      icon={Trash2Icon}
+-      variant="ghost"
+-      size="icon-sm"
+-      disabled={!isEditable() || annotations.length === 0 || isSomeLocked || viewport.isReviewWorkspace}
+-      onclick={(e: MouseEvent) => {
+-        e.stopPropagation();
+-        removeAll();
+-      }}
++  <div class="ml-auto">
++    <BulkActions
++      {annotations}
++      label={`${typeLabel} tagging`}
++      showLabel={`Show/Hide ${typeLabel}`}
++      lockLabel={`Lock/Unlock ${typeLabel}`}
++      deleteLabel={`Remove ${typeLabel}`}
++      revealOnHover
+     />
+   </div>
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/Timeline/types.ts b/plugins/idah-video/frontend/src/lib/components/App/Timeline/types.ts
+index bec85b880..3493c4541 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/Timeline/types.ts
++++ b/plugins/idah-video/frontend/src/lib/components/App/Timeline/types.ts
+@@ -7,6 +7,9 @@ export interface Viewport {
+   endRange: number;
+ }
+ 
++/** Discriminant for the two tagging row kinds in the timeline. */
++export type TaggingRowKind = "entry" | "frame";
++
+ export interface TimelineItem<T extends Record<string, unknown> = Record<string, unknown>> {
+   trackId: string;
+   startRange: number;
+diff --git a/plugins/idah-video/frontend/src/lib/components/App/VideoAnnotationWorkspace/VideoAnnotationWorkspace.svelte b/plugins/idah-video/frontend/src/lib/components/App/VideoAnnotationWorkspace/VideoAnnotationWorkspace.svelte
+index e49d27730..ae290d209 100644
+--- a/plugins/idah-video/frontend/src/lib/components/App/VideoAnnotationWorkspace/VideoAnnotationWorkspace.svelte
++++ b/plugins/idah-video/frontend/src/lib/components/App/VideoAnnotationWorkspace/VideoAnnotationWorkspace.svelte
+@@ -6,7 +6,7 @@
+   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
+ 
+   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+-  import { resolveEntryRoot, resolveFrame } from "$lib/utils/tagging-annotations";
++  import { resolveEntryRoot, resolveFrame, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
+   import {
+     findClosestAnnotationInGroup,
+     groupAnnotations,
+@@ -43,11 +43,21 @@
+   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
+ 
+-  import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection, IVideoAnnotationValue } from "$lib/types";
++  import type {
++    IVideoAnnotationRecord,
++    IVideoAnnotationShape,
++    IVideoFrameSelection,
++    IVideoAnnotationValue,
++  } from "$lib/types";
+   import type { Point } from "$lib/utils/math/point";
+ 
+   // Local type aliases for V1-compatible annotation shapes/values
+-  type AnnotationShape = Record<string, unknown> & { type: string; start?: number; end?: number; frames?: IVideoFrameSelection[] };
++  type AnnotationShape = Record<string, unknown> & {
++    type: string;
++    start?: number;
++    end?: number;
++    frames?: IVideoFrameSelection[];
++  };
+   type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
+   interface AnnotationGroup<T> {
+     groupId: string;
+@@ -533,14 +543,15 @@
+   // Frame tagging config (values + properties) for the create popover.
+   /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
+    *  at most one entry:root annotation may exist per entry — creating a second
+-   *  one updates the existing record instead of duplicating. */
+-  function onEntryRootChange(value: AnnotationValue) {
+-    if (!editable) return;
+-    if (!value.category) return;
++   *  one updates the existing record instead of duplicating. Returns whether the
++   *  change was persisted (false when a required field is missing). */
++  function onEntryRootChange(value: AnnotationValue): boolean {
++    if (!editable) return false;
++    if (!value.category) return false;
+     // Only create/update when the category + required properties are valid.
+     const properties =
+       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
+-    if (!requiredFullfilled(value, properties)) return;
++    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
+     const resolution = resolveEntryRoot(items, value as IVideoAnnotationValue);
+     if (resolution.action === "update") {
+@@ -548,34 +559,40 @@
+     } else if (resolution.action === "create") {
+       addAnnotation(entryRootFullRangeShape(), value);
+     }
++    return true;
+   }
+ 
+   /** Create a frame annotation from the given value. Uniqueness is enforced client-side
+-   *  per (frame, category): at most one frame annotation per category per frame. */
+-  function onFrameCreate(value: AnnotationValue) {
+-    if (!editable) return;
+-    if (!value.category) return;
++   *  per (frame, category): at most one frame annotation per category per frame.
++   *  Returns whether the change was persisted (false when a required field is missing). */
++  function onFrameCreate(value: AnnotationValue): boolean {
++    if (!editable) return false;
++    if (!value.category) return false;
+     // Only create/update when the category + required properties are valid.
+     const properties =
+       getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
+-    if (!requiredFullfilled(value, properties)) return;
++    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+     const frame = viewport.video.currentFrame.value;
+     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
+     const resolution = resolveFrame(items, frame, value.category, value as IVideoAnnotationValue);
+     if (resolution.action === "update") {
+       updateAnnotationValue(resolution.existing, value);
+     } else if (resolution.action === "create") {
+-      addAnnotation(
+-        { type: VIDEO_FRAME, start: frame, end: frame, frames: [] },
+-        value,
+-      );
++      addAnnotation({ type: VIDEO_FRAME, start: frame, end: frame, frames: [] }, value);
+     }
++    return true;
+   }
+ 
+-  /** Update an existing idah-video:frame tagging record. */
+-  function onFrameUpdate(ann: IVideoAnnotationRecord, value: AnnotationValue) {
+-    if (!editable) return;
++  /** Update an existing idah-video:frame tagging record. Returns whether the change
++   *  was persisted (false when a required field is missing). */
++  function onFrameUpdate(ann: IVideoAnnotationRecord, value: AnnotationValue): boolean {
++    if (!editable) return false;
++    // Editing must satisfy the same required-field gate as creation.
++    const properties =
++      getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
++    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+     updateAnnotationValue(ann, value);
++    return true;
+   }
+ 
+   /** Delete the entry:root annotation for this entry. */
+@@ -861,11 +878,11 @@
+                 {entryRootAnnotation}
+                 {currentFrameAnnotations}
+                 currentFrame={viewport.video.currentFrame.value}
+-                onEntryRootChange={onEntryRootChange}
+-                onFrameCreate={onFrameCreate}
+-                onFrameUpdate={onFrameUpdate}
+-                onDeleteEntryRoot={onDeleteEntryRoot}
+-                onDeleteFrame={onDeleteFrame}
++                {onEntryRootChange}
++                {onFrameCreate}
++                {onFrameUpdate}
++                {onDeleteEntryRoot}
++                {onDeleteFrame}
+               />
+             </section>
+           </ResizablePane>
+@@ -875,7 +892,14 @@
+       <ResizableHandle withHandle />
+ 
+       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
+-        <BottomPanel {viewportAnnotations} {length} bind:player volume={viewport.video.sound} {frameAnnotations} {entryRootAnnotation} />
++        <BottomPanel
++          {viewportAnnotations}
++          {length}
++          bind:player
++          volume={viewport.video.sound}
++          {frameAnnotations}
++          {entryRootAnnotation}
++        />
+       </ResizablePane>
+     </ResizablePaneGroup>
+   </div>
+diff --git a/plugins/idah-video/frontend/src/lib/state/sidebar-tabs.svelte.ts b/plugins/idah-video/frontend/src/lib/state/sidebar-tabs.svelte.ts
+index 7b32b02ad..076958d91 100644
+--- a/plugins/idah-video/frontend/src/lib/state/sidebar-tabs.svelte.ts
++++ b/plugins/idah-video/frontend/src/lib/state/sidebar-tabs.svelte.ts
+@@ -27,4 +27,4 @@ export const sidebarTabs: {
+   set taggingTab(v: TaggingTab) {
+     _taggingTab = v;
+   },
+-};
+\ No newline at end of file
++};
+diff --git a/plugins/idah-video/frontend/src/lib/types.ts b/plugins/idah-video/frontend/src/lib/types.ts
+index feee7f802..500387348 100644
+--- a/plugins/idah-video/frontend/src/lib/types.ts
++++ b/plugins/idah-video/frontend/src/lib/types.ts
+@@ -44,9 +44,10 @@ export const ENTRY_ROOT = "entry:root";
+ 
+ /**
+  * Per-frame tagging shape, namespaced under the idah-video modality and declared
+- * in the plugin manifest (modalities[0].shapes) exactly like bounding-box /
+- * polygon. Modeled as a zero-geometry single-keyframe annotation so it reuses
+- * the store's windowed range-fetch and per-frame filtering.
++ * in the plugin manifest (modalities[0].tagging) exactly like bounding-box /
++ * polygon are declared under modalities[0].shapes. Modeled as a zero-geometry
++ * single-keyframe annotation so it reuses the store's windowed range-fetch and
++ * per-frame filtering.
+  */
+ export const VIDEO_FRAME = "idah-video:frame";
+ 
+diff --git a/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.test.ts b/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.test.ts
+index 506a7101d..fe171c24d 100644
+--- a/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.test.ts
++++ b/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.test.ts
+@@ -9,8 +9,10 @@ import {
+   findEntryRootAnnotation,
+   resolveFrame,
+   resolveEntryRoot,
++  isTaggingValueComplete,
+ } from "./tagging-annotations";
+ import type { IVideoAnnotationRecord } from "$lib/types";
++import type { IConfigProperty } from "$idah/v2/types";
+ 
+ function rootRecord(category?: string, id = "root-001"): IVideoAnnotationRecord {
+   return {
+@@ -120,4 +122,26 @@ describe("resolveFrame", () => {
+     const res = resolveFrame([existing], 5, "b", { category: "b" });
+     expect(res.action).toBe("create");
+   });
+-});
+\ No newline at end of file
++});
++
++describe("isTaggingValueComplete", () => {
++  const required: IConfigProperty[] = [{ id: "label", required: true, type: "text", format: {} } as IConfigProperty];
++  const optional: IConfigProperty[] = [{ id: "label", required: false, type: "text", format: {} } as IConfigProperty];
++
++  it("is true when no required properties exist", () => {
++    expect(isTaggingValueComplete({ category: "a" }, [])).toBe(true);
++  });
++
++  it("is true when all required properties are filled", () => {
++    expect(isTaggingValueComplete({ category: "a", attributes: { label: "x" } }, required)).toBe(true);
++  });
++
++  it("is false when a required property is missing", () => {
++    expect(isTaggingValueComplete({ category: "a", attributes: {} }, required)).toBe(false);
++    expect(isTaggingValueComplete({ category: "a" }, required)).toBe(false);
++  });
++
++  it("ignores optional properties", () => {
++    expect(isTaggingValueComplete({ category: "a" }, optional)).toBe(true);
++  });
++});
+diff --git a/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.ts b/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.ts
+index 450cdd3b5..39bf2d875 100644
+--- a/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.ts
++++ b/plugins/idah-video/frontend/src/lib/utils/tagging-annotations.ts
+@@ -7,12 +7,19 @@
+ // the returned resolution into add/update commands.
+ // ---------------------------------------------------------------------------
+ 
+-import {
+-  VIDEO_FRAME,
+-  ENTRY_ROOT,
+-  type IVideoAnnotationRecord,
+-  type IVideoAnnotationValue,
+-} from "$lib/types";
++import { VIDEO_FRAME, ENTRY_ROOT, type IVideoAnnotationRecord, type IVideoAnnotationValue } from "$lib/types";
++import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
++import type { IConfigProperty } from "$idah/v2/types";
++
++/**
++ * Single owner of the "is this tagging value valid to persist" check for both
++ * entry:root and idah-video:frame. Creating and updating must both pass this
++ * before persisting. The caller resolves the shape's filtered properties via
++ * the driver config and passes them in, keeping this function pure/testable.
++ */
++export function isTaggingValueComplete(value: IVideoAnnotationValue, properties: IConfigProperty[] = []): boolean {
++  return requiredFullfilled(value as unknown as Record<string, unknown>, properties);
++}
+ 
+ /** Find the single entry:root annotation in a list of annotation items. */
+ export function findEntryRootAnnotation(items: IVideoAnnotationRecord[]): IVideoAnnotationRecord | undefined {
+@@ -40,22 +47,13 @@ export function findFrameAnnotation(
+ }
+ 
+ /** All idah-video:frame annotations for a specific frame value (any category). */
+-export function findFrameAnnotations(
+-  items: IVideoAnnotationRecord[],
+-  frame: number,
+-): IVideoAnnotationRecord[] {
++export function findFrameAnnotations(items: IVideoAnnotationRecord[], frame: number): IVideoAnnotationRecord[] {
+   return items.filter(
+-    (a) =>
+-      (a.shape as { type?: string })?.type === VIDEO_FRAME &&
+-      a.shape.start === frame &&
+-      a.shape.end === frame,
++    (a) => (a.shape as { type?: string })?.type === VIDEO_FRAME && a.shape.start === frame && a.shape.end === frame,
+   );
+ }
+ 
+-export type EntryResolution<T> =
+-  | { action: "update"; existing: T }
+-  | { action: "create" }
+-  | { action: "none" };
++export type EntryResolution<T> = { action: "update"; existing: T } | { action: "create" } | { action: "none" };
+ 
+ /**
+  * Decide whether setting the entry tagging should update the existing entry:root
+@@ -92,4 +90,4 @@ export function resolveFrame(
+   if (existing) return { action: "update", existing };
+   if (value.category) return { action: "create" };
+   return { action: "none" };
+-}
+\ No newline at end of file
++}

@@ -9,6 +9,7 @@
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
   import TrackItem from "$lib/components/App/Timeline/_TrackItem.svelte";
   import TaggingTrackInfo from "$lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte";
+  import BulkActions from "$lib/components/App/Timeline/annotations/_BulkActions.svelte";
 
   import { modKey } from "$lib/utils/browser";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
@@ -16,7 +17,7 @@
   import { media } from "$lib/state/media.svelte";
   import { viewport as vp } from "$lib/state/viewport.svelte";
   import { NOTES_ROW_HEIGHT, TRACK_HEIGHT, GROUP_HEADER_HEIGHT } from "$lib/components/App/Timeline/constants";
-  import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME } from "$lib/types";
+  import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
 
   import type {
     TimelineItem,
@@ -53,6 +54,7 @@
     onZoom,
 
     TrackInfoSlot,
+    TrackInfoHeaderSlot,
     noteItems,
     NoteTrackInfoSlot,
     taggingItems = [],
@@ -563,6 +565,31 @@
   // Combined row list: group headers interleaved with their tracks, so the Tagging
   // rows sit between the Tagging header and the Annotations header. Each row is either
   // a group header or a track. Collapsed groups render only their header.
+
+  // The annotations backing each group header's bulk actions:
+  //   - Tagging header → every entry:root + every idah-video:frame annotation
+  //   - Annotations header → every drawable annotation
+  const taggingAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
+    const out: IVideoAnnotationRecord[] = [];
+    for (const t of taggingItems) {
+      for (const item of t.items) {
+        const raw = item.rawData as { annotations?: IVideoAnnotationRecord[] };
+        if (raw?.annotations) out.push(...raw.annotations);
+      }
+    }
+    return out;
+  });
+  const annotationItems = $derived.by<IVideoAnnotationRecord[]>(() => {
+    const out: IVideoAnnotationRecord[] = [];
+    for (const t of items) {
+      for (const item of t.items) {
+        const raw = item.rawData as IVideoAnnotationRecord | undefined;
+        if (raw?.id) out.push(raw);
+      }
+    }
+    return out;
+  });
+
   const allRows = $derived.by(() => {
     const rows: Array<
       | { type: "header"; label: string; collapsed: boolean; group: "tagging" | "annotations" }
@@ -677,7 +704,11 @@
   {/snippet}
 
   <div class="timeline-ruler-wrapper">
-    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true"></div>
+    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true">
+      {#if TrackInfoHeaderSlot}
+        {@render TrackInfoHeaderSlot()}
+      {/if}
+    </div>
 
     <div
       role="button"
@@ -734,22 +765,32 @@
       <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">
         {#each visibleRows as row (row.type === "header" ? `h:${row.label}` : `t:${row.track.id}`)}
           {#if row.type === "header"}
-            <button
-              type="button"
+            <div
               class="timeline-group-header"
               style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;"
-              onclick={() => {
-                if (row.group === "tagging") taggingCollapsed = !taggingCollapsed;
-                else annotationsCollapsed = !annotationsCollapsed;
-              }}
             >
-              {#if row.collapsed}
-                <ChevronRightIcon class="text-muted-foreground size-4" />
-              {:else}
-                <ChevronDownIcon class="text-muted-foreground size-4" />
-              {/if}
-              <p class="text-xs font-medium">{row.label}</p>
-            </button>
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-1 text-left focus:outline-none"
+                onclick={() => {
+                  if (row.group === "tagging") taggingCollapsed = !taggingCollapsed;
+                  else annotationsCollapsed = !annotationsCollapsed;
+                }}
+              >
+                {#if row.collapsed}
+                  <ChevronRightIcon class="text-muted-foreground size-4" />
+                {:else}
+                  <ChevronDownIcon class="text-muted-foreground size-4" />
+                {/if}
+                <p class="text-xs font-medium">{row.label}</p>
+              </button>
+              <div class="ml-auto flex shrink-0 items-center">
+                <BulkActions
+                  annotations={row.group === "tagging" ? taggingAnnotations : annotationItems}
+                  label={row.group === "tagging" ? "tags" : "annotations"}
+                />
+              </div>
+            </div>
           {:else}
             <div class="timeline-trackinfo-row" style="top: {row.top}px; height: {TRACK_HEIGHT}px;">
               {#if row.track.kind === "tagging"}
@@ -899,6 +940,8 @@
   .timeline-ruler-spacer {
     width: 300px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
   }
 
   .timeline-ruler-viewport {

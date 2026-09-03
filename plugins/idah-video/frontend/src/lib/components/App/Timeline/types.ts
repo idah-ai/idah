@@ -7,6 +7,9 @@ export interface Viewport {
   endRange: number;
 }
 
+/** Discriminant for the two tagging row kinds in the timeline. */
+export type TaggingRowKind = "entry" | "frame";
+
 export interface TimelineItem<T extends Record<string, unknown> = Record<string, unknown>> {
   trackId: string;
   startRange: number;

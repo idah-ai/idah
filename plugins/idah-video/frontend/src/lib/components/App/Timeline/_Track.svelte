@@ -14,7 +14,7 @@
   import { viewport as vp } from "$lib/state/viewport.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
-  import type { TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
+  import type { TimelineItem, Viewport, TaggingRowKind } from "$lib/components/App/Timeline/types";
 
   interface Props {
     viewport: Viewport;
@@ -75,7 +75,7 @@
     if (kind === "tagging") {
       // Clicking a frame-category tagging row's background goes to the tagging > frame
       // tab. The entry:root row keeps the default group-selection behavior.
-      const isFrameRow = (items[0]?.rawData as { type?: string })?.type === "frame";
+      const isFrameRow = (items[0]?.rawData as { type?: TaggingRowKind })?.type === "frame";
       if (isFrameRow) {
         selection.deselect();
         sidebarTabs.rightTab = "tagging";

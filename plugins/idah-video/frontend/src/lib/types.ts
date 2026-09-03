@@ -44,9 +44,10 @@ export const ENTRY_ROOT = "entry:root";
 
 /**
  * Per-frame tagging shape, namespaced under the idah-video modality and declared
- * in the plugin manifest (modalities[0].shapes) exactly like bounding-box /
- * polygon. Modeled as a zero-geometry single-keyframe annotation so it reuses
- * the store's windowed range-fetch and per-frame filtering.
+ * in the plugin manifest (modalities[0].tagging) exactly like bounding-box /
+ * polygon are declared under modalities[0].shapes. Modeled as a zero-geometry
+ * single-keyframe annotation so it reuses the store's windowed range-fetch and
+ * per-frame filtering.
  */
 export const VIDEO_FRAME = "idah-video:frame";
 

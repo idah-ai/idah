@@ -14,7 +14,8 @@
 
   type Props = {
     entryRootAnnotation: IImageAnnotationRecord | undefined;
-    onCreateOrUpdate?: (value: IImageAnnotationValue) => void;
+    /** Returns whether the change was persisted (false when a required field is missing). */
+    onCreateOrUpdate?: (value: IImageAnnotationValue) => boolean;
     onDelete?: () => void;
     disabled: boolean;
   };
@@ -27,6 +28,9 @@
   // exists. Synced from the existing annotation so edits to an existing
   // entry:root record are reflected here.
   let draftValue = $state<IImageAnnotationValue>({});
+  // Visible feedback when a change can't be saved because a required field is
+  // missing. The draft still shows the user's edit, but the record is unchanged.
+  let saveError = $state<string | null>(null);
   $effect(() => {
     const v = entryRootAnnotation?.value;
     draftValue = v ? { ...v } : {};
@@ -39,29 +43,35 @@
 
   function onChange(next: IImageAnnotationValue) {
     draftValue = next;
-    onCreateOrUpdate?.(next);
+    saveError = null;
+    if (onCreateOrUpdate?.(next) === false) {
+      saveError = "Complete the required fields to save the image tagging.";
+    }
   }
 </script>
 
 {#if config}
   <section class="flex flex-col gap-3">
+    {#if saveError}
+      <p class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{saveError}</p>
+    {/if}
     <div class="flex items-center gap-2">
       <Text weight="semibold">Image</Text>
       <Badge variant={entryRootAnnotation ? "info" : "success-200"}>{entryRootAnnotation ? "EDIT" : "CREATE"}</Badge>
       {#if entryRootAnnotation}
         <div class="ml-auto flex items-center gap-0">
           <CategoryAction
-            label={annotation.isHidden(entryRootAnnotation) ? "Show image" : "Hide image"}
+            label={annotation.isHidden(entryRootAnnotation) ? "Show image tag" : "Hide image tag"}
             icon={annotation.isHidden(entryRootAnnotation) ? EyeOffIcon : EyeIcon}
             onclick={() => annotation.toggleHidden(entryRootAnnotation.id, !annotation.isHidden(entryRootAnnotation))}
           />
           <CategoryAction
-            label={annotation.isLocked(entryRootAnnotation) ? "Unlock image" : "Lock image"}
+            label={annotation.isLocked(entryRootAnnotation) ? "Unlock image tag" : "Lock image tag"}
             icon={annotation.isLocked(entryRootAnnotation) ? LockIcon : LockOpenIcon}
             onclick={() => annotation.toggleLocked(entryRootAnnotation.id, !annotation.isLocked(entryRootAnnotation))}
           />
           <CategoryAction
-            label="Delete image"
+            label="Delete image tag"
             icon={Trash2Icon}
             disabled={disabled}
             onclick={() => onDelete?.()}

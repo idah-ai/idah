@@ -13,6 +13,21 @@ import {
   type IVideoAnnotationRecord,
   type IVideoAnnotationValue,
 } from "$lib/types";
+import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+import type { IConfigProperty } from "$idah/v2/types";
+
+/**
+ * Single owner of the "is this tagging value valid to persist" check for both
+ * entry:root and idah-video:frame. Creating and updating must both pass this
+ * before persisting. The caller resolves the shape's filtered properties via
+ * the driver config and passes them in, keeping this function pure/testable.
+ */
+export function isTaggingValueComplete(
+  value: IVideoAnnotationValue,
+  properties: IConfigProperty[] = [],
+): boolean {
+  return requiredFullfilled(value as unknown as Record<string, unknown>, properties);
+}
 
 /** Find the single entry:root annotation in a list of annotation items. */
 export function findEntryRootAnnotation(items: IVideoAnnotationRecord[]): IVideoAnnotationRecord | undefined {

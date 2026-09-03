@@ -49,9 +49,9 @@
     entryRootAnnotation?: IVideoAnnotationRecord;
     currentFrameAnnotations?: IVideoAnnotationRecord[];
     currentFrame?: number;
-    onEntryRootChange?: (value: IVideoAnnotationValue) => void;
-    onFrameCreate?: (value: IVideoAnnotationValue) => void;
-    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => void;
+    onEntryRootChange?: (value: IVideoAnnotationValue) => boolean;
+    onFrameCreate?: (value: IVideoAnnotationValue) => boolean;
+    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => boolean;
     onDeleteEntryRoot?: () => void;
     onDeleteFrame?: (ann: IVideoAnnotationRecord) => void;
   } = $props();
@@ -129,6 +129,31 @@
   // Annotations tab so the create form is visible, as it was before the tabs.
   $effect(() => {
     if (viewport.isCreationMode) sidebarTabs.rightTab = "annotations";
+  });
+
+  // ── Entry-root tab: keep the entry:root annotation as the active selection ──
+  // When the user is on the Tagging > Video (entry) tab and an entry:root record
+  // exists, it must be the active global selection so the generic per-selection
+  // commands (delete, hide, lock, …) work on it. Guard against re-triggering the
+  // inverse effect above (which switches to this tab when entry:root is selected).
+  $effect(() => {
+    if (sidebarTabs.rightTab !== "tagging" || sidebarTabs.taggingTab !== "entry") return;
+    if (!entryRootAnnotation) return;
+    if (selection.isAnnotationSelected(entryRootAnnotation.id)) return;
+    selection.selectAnnotation(entryRootAnnotation as any);
+  });
+
+  // When the entry:root annotation is deselected while still on the entry tab,
+  // switch back to the Annotations tab so the Tagging tab never shows an
+  // empty/awkward state. This only fires on the transition from "entry:root was
+  // selected" to "nothing is selected" — if no entry:root exists yet, the user is
+  // legitimately on a create form and must not be bounced back. The Frame
+  // sub-tab keeps its own deselect behavior (return to its list).
+  $effect(() => {
+    if (sidebarTabs.rightTab !== "tagging" || sidebarTabs.taggingTab !== "entry") return;
+    if (!entryRootAnnotation) return;
+    if (selection.isAnnotationSelected(entryRootAnnotation.id)) return;
+    sidebarTabs.rightTab = "annotations";
   });
 
 

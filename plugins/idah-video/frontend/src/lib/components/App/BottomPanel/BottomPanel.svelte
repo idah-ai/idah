@@ -19,7 +19,8 @@
   import EntryTrackBlock from "../Timeline/review/_EntryTrackBlock.svelte";
   import EntryTaggingTrackBlock from "../Timeline/annotations/_EntryTaggingTrackBlock.svelte";
   import FrameCategoryTrackBlock from "../Timeline/annotations/_FrameCategoryTrackBlock.svelte";
-  import type { TrackData } from "$lib/components/App/Timeline/types";
+  import BulkActions from "../Timeline/annotations/_BulkActions.svelte";
+  import type { TrackData, TaggingRowKind } from "$lib/components/App/Timeline/types";
 
   // Props
   interface Props {
@@ -142,7 +143,7 @@
           trackId: "__entry_tag__",
           startRange: entryRootAnnotation.shape.start,
           endRange: entryRootAnnotation.shape.end,
-          rawData: { type: "entry", annotations: [entryRootAnnotation] },
+          rawData: { type: "entry" as TaggingRowKind, annotations: [entryRootAnnotation] },
           component: EntryTaggingTrackBlock,
         }],
       });
@@ -166,7 +167,7 @@
           trackId: `__frame_tag:${category}`,
           startRange: anns[0]?.shape.start ?? 0,
           endRange: anns[anns.length - 1]?.shape.start ?? 0,
-          rawData: { type: "frame", category, annotations: anns },
+          rawData: { type: "frame" as TaggingRowKind, category, annotations: anns },
           component: FrameCategoryTrackBlock,
         }],
       });
@@ -198,6 +199,22 @@
       viewport.timeline.dimensions = [w, h];
     }}
   >
+    {#snippet TrackInfoHeaderSlot()}
+      <div class="flex h-full w-full items-center px-2">
+        <p class="text-xs font-medium">Annotations</p>
+        <div class="ml-auto">
+          <BulkActions
+            annotations={[
+              ...viewportAnnotations,
+              ...frameAnnotations,
+              ...(entryRootAnnotation ? [entryRootAnnotation] : []),
+            ]}
+            label="all annotations"
+          />
+        </div>
+      </div>
+    {/snippet}
+
     {#snippet TrackInfoSlot({ track })}
       <AnnotationTrackInfo {track} />
     {/snippet}

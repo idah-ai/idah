@@ -6,7 +6,7 @@
   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
-  import { resolveEntryRoot } from "$lib/utils/tagging-annotations";
+  import { resolveEntryRoot, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -522,14 +522,15 @@
 
   /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
    *  at most one entry:root annotation may exist per entry — creating a second
-   *  one updates the existing record instead of duplicating. */
-  function onEntryRootChange(value: AnnotationValue) {
-    if (!editable) return;
-    if (!value.category) return;
+   *  one updates the existing record instead of duplicating. Returns whether the
+   *  change was persisted (false when a required field is missing). */
+  function onEntryRootChange(value: AnnotationValue): boolean {
+    if (!editable) return false;
+    if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!requiredFullfilled(value, properties)) return;
+    if (!isTaggingValueComplete(value as IImageAnnotationValue, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
     const resolution = resolveEntryRoot(items, value as IImageAnnotationValue);
     if (resolution.action === "update") {
@@ -537,6 +538,7 @@
     } else if (resolution.action === "create") {
       addAnnotation({ type: ENTRY_ROOT } as IImageAnnotationShape, value);
     }
+    return true;
   }
 
   /** Delete the entry:root annotation for this entry. */

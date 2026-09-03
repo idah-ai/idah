@@ -22,10 +22,9 @@
   let entryRootColor = $derived.by(() =>
     entryRootAnnotation ? resolveAnnotationColor(entryRootAnnotation) : undefined,
   );
-  let entryRootSelected = $derived.by(() => {
-    const v = selection.value;
-    return v?.type === "annotation" && entryRootAnnotation && v.annotation.id === entryRootAnnotation.id;
-  });
+  let entryRootSelected = $derived.by(() =>
+    entryRootAnnotation ? selection.isAnnotationSelected(entryRootAnnotation.id) : false,
+  );
 
   function handleEntryRootClick(e: MouseEvent, ann: IVideoAnnotationRecord) {
     e.preventDefault();

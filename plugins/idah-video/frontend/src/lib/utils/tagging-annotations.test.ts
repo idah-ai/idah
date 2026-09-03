@@ -9,8 +9,10 @@ import {
   findEntryRootAnnotation,
   resolveFrame,
   resolveEntryRoot,
+  isTaggingValueComplete,
 } from "./tagging-annotations";
 import type { IVideoAnnotationRecord } from "$lib/types";
+import type { IConfigProperty } from "$idah/v2/types";
 
 function rootRecord(category?: string, id = "root-001"): IVideoAnnotationRecord {
   return {
@@ -119,5 +121,31 @@ describe("resolveFrame", () => {
     const existing = frameRecord(5, "a");
     const res = resolveFrame([existing], 5, "b", { category: "b" });
     expect(res.action).toBe("create");
+  });
+});
+
+describe("isTaggingValueComplete", () => {
+  const required: IConfigProperty[] = [
+    { id: "label", required: true, type: "text", format: {} } as IConfigProperty,
+  ];
+  const optional: IConfigProperty[] = [
+    { id: "label", required: false, type: "text", format: {} } as IConfigProperty,
+  ];
+
+  it("is true when no required properties exist", () => {
+    expect(isTaggingValueComplete({ category: "a" }, [])).toBe(true);
+  });
+
+  it("is true when all required properties are filled", () => {
+    expect(isTaggingValueComplete({ category: "a", attributes: { label: "x" } }, required)).toBe(true);
+  });
+
+  it("is false when a required property is missing", () => {
+    expect(isTaggingValueComplete({ category: "a", attributes: {} }, required)).toBe(false);
+    expect(isTaggingValueComplete({ category: "a" }, required)).toBe(false);
+  });
+
+  it("ignores optional properties", () => {
+    expect(isTaggingValueComplete({ category: "a" }, optional)).toBe(true);
   });
 });
