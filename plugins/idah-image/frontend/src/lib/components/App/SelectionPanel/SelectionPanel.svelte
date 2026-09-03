@@ -20,10 +20,19 @@
     onReSelectCategory?: (reselectedCategoryId: string) => void;
     onEditValue: (value?: IImageAnnotationValue) => void;
     disabled: boolean;
+    /** Override the shape type (defaults to viewport.mode when no selection). */
+    shapeTypeOverride?: string;
   };
 
-  let { selectedCategory, annotationValue, onSelectCategory, onReSelectCategory, onEditValue, disabled }: Props =
-    $props();
+  let {
+    selectedCategory,
+    annotationValue,
+    onSelectCategory,
+    onReSelectCategory,
+    onEditValue,
+    disabled,
+    shapeTypeOverride,
+  }: Props = $props();
 
   // -----------------------------------------------------------------------
   // Determine which shape type config to use based on selection state
@@ -37,10 +46,10 @@
     sel && NON_DRAWABLE_SHAPE_TYPES.has((sel.shape as { type?: string })?.type ?? ""),
   );
 
-  // The active shape type: from annotation or from drawing mode
+  // The active shape type: from annotation, from the shapeTypeOverride prop, or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
     if (sel) return sel.shape.type as string;
-    return viewport.mode;
+    return shapeTypeOverride ?? viewport.mode;
   });
 
   let config = $derived(

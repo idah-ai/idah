@@ -34,10 +34,8 @@ export interface TimelineProps extends RulerProps {
   /** Label slot for the notes row's left spacer. */
   NoteTrackInfoSlot?: Snippet<[]>;
 
-  /** Items to render in the pinned frame-tagging row (always visible between ruler and tracks, when non-empty). */
-  frameItems?: TimelineItem[];
-  /** Label slot for the frame row's left spacer. */
-  FrameTrackInfoSlot?: Snippet<[]>;
+  /** Tagging tracks (entry:root + per-category frame rows), rendered in the body under a collapsible group. */
+  taggingItems?: TrackData[];
 }
 
 /**
@@ -49,4 +47,6 @@ export interface TrackData {
   subtitle?: string;
   top: number;
   items: TimelineItem[];
+  /** Distinguishes tagging rows (entry:root / frame categories) from drawable annotation tracks. */
+  kind?: "tagging" | "annotation";
 }

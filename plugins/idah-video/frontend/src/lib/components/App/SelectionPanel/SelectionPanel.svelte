@@ -23,6 +23,8 @@
     onReSelectCategory?: (reselectedCategoryId: string) => void;
     onEditValue: (value?: IVideoAnnotationValue) => void;
     disabled: boolean;
+    /** Override the shape type (defaults to viewport.mode when no selection). */
+    shapeTypeOverride?: string;
   };
 
   let {
@@ -32,6 +34,7 @@
     onReSelectCategory,
     onEditValue,
     disabled,
+    shapeTypeOverride,
   }: Props = $props();
 
   let effectiveDisabled = $derived(disabled || !isEditable());
@@ -48,7 +51,8 @@
     sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation.shape as { type?: string })?.type ?? ""),
   );
 
-  // The active shape type: from annotation, from group (via first annotation), or from drawing mode
+  // The active shape type: from annotation, from group (via first annotation), from
+  // the shapeTypeOverride prop, or from drawing mode.
   let shapeType = $derived.by<string | undefined>(() => {
     if (sel?.type === "annotation") return sel.annotation.shape.type as string;
     if (sel?.type === "group" && data.annotations) {
@@ -56,7 +60,7 @@
       const groupAnn = items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
       if (groupAnn) return groupAnn.shape.type as string;
     }
-    return viewport.mode;
+    return shapeTypeOverride ?? viewport.mode;
   });
 
   let config = $derived(
@@ -156,7 +160,9 @@
   });
 
   let showAnnotationsList = $derived(
-    (viewport.mode === "editor" || viewport.isReviewWorkspace) && currentFrameAnnotations.length > 0,
+    !shapeTypeOverride &&
+      (viewport.mode === "editor" || viewport.isReviewWorkspace) &&
+      currentFrameAnnotations.length > 0,
   );
 
   // -----------------------------------------------------------------------

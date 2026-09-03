@@ -19,13 +19,36 @@ export function findEntryRootAnnotation(items: IVideoAnnotationRecord[]): IVideo
   return items.find((a) => (a.shape as { type?: string })?.type === ENTRY_ROOT);
 }
 
-/** Find the idah-video:frame annotation for a specific frame value. */
+/**
+ * Find the idah-video:frame annotation for a specific frame value and category.
+ * Uniqueness is enforced per (frame, category): at most one frame annotation
+ * may exist per category per frame — mirroring how image masks allow one mask per
+ * category. A different category at the same frame yields a distinct annotation.
+ */
 export function findFrameAnnotation(
   items: IVideoAnnotationRecord[],
   frame: number,
+  category: string,
 ): IVideoAnnotationRecord | undefined {
   return items.find(
-    (a) => (a.shape as { type?: string })?.type === VIDEO_FRAME && a.shape.start === frame && a.shape.end === frame,
+    (a) =>
+      (a.shape as { type?: string })?.type === VIDEO_FRAME &&
+      a.shape.start === frame &&
+      a.shape.end === frame &&
+      a.value?.category === category,
+  );
+}
+
+/** All idah-video:frame annotations for a specific frame value (any category). */
+export function findFrameAnnotations(
+  items: IVideoAnnotationRecord[],
+  frame: number,
+): IVideoAnnotationRecord[] {
+  return items.filter(
+    (a) =>
+      (a.shape as { type?: string })?.type === VIDEO_FRAME &&
+      a.shape.start === frame &&
+      a.shape.end === frame,
   );
 }
 
@@ -52,18 +75,20 @@ export function resolveEntryRoot(
 }
 
 /**
- * Decide whether setting the current frame's tagging should update the existing
- * idah-video:frame record for that frame, create a new one, or do nothing.
- * Uniqueness is enforced client-side per frame value: at most one
- * idah-video:frame annotation may exist for a given frame — a second write for
- * the same frame updates the existing record instead of duplicating.
+ * Decide whether setting the current frame's tagging for a given category should
+ * update the existing idah-video:frame record for that (frame, category), create a
+ * new one, or do nothing. Uniqueness is enforced client-side per (frame, category):
+ * at most one idah-video:frame annotation may exist per category per frame — a
+ * second write for the same (frame, category) updates the existing record instead of
+ * duplicating. A different category at the same frame creates a separate annotation.
  */
 export function resolveFrame(
   items: IVideoAnnotationRecord[],
   frame: number,
+  category: string,
   value: IVideoAnnotationValue,
 ): EntryResolution<IVideoAnnotationRecord> {
-  const existing = findFrameAnnotation(items, frame);
+  const existing = findFrameAnnotation(items, frame, category);
   if (existing) return { action: "update", existing };
   if (value.category) return { action: "create" };
   return { action: "none" };

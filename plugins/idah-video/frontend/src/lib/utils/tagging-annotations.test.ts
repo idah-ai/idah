@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   findFrameAnnotation,
+  findFrameAnnotations,
   findEntryRootAnnotation,
   resolveFrame,
   resolveEntryRoot,
@@ -48,14 +49,32 @@ describe("findEntryRootAnnotation", () => {
 });
 
 describe("findFrameAnnotation", () => {
-  it("returns undefined when no idah-video:frame annotation exists for the frame", () => {
-    expect(findFrameAnnotation([frameRecord(5)], 6)).toBeUndefined();
-    expect(findFrameAnnotation([], 5)).toBeUndefined();
+  it("returns undefined when no idah-video:frame annotation exists for the (frame, category)", () => {
+    expect(findFrameAnnotation([frameRecord(5, "a")], 6, "a")).toBeUndefined();
+    expect(findFrameAnnotation([], 5, "a")).toBeUndefined();
   });
 
-  it("finds the idah-video:frame annotation for the exact frame", () => {
-    const f5 = frameRecord(5);
-    expect(findFrameAnnotation([frameRecord(4), f5, frameRecord(6)], 5)).toBe(f5);
+  it("finds the idah-video:frame annotation for the exact (frame, category)", () => {
+    const f5 = frameRecord(5, "a");
+    expect(findFrameAnnotation([frameRecord(4, "a"), f5, frameRecord(6, "a")], 5, "a")).toBe(f5);
+  });
+
+  it("returns undefined when the category differs at the same frame", () => {
+    const f5 = frameRecord(5, "a");
+    expect(findFrameAnnotation([f5], 5, "b")).toBeUndefined();
+  });
+});
+
+describe("findFrameAnnotations", () => {
+  it("returns all idah-video:frame annotations for the frame across categories", () => {
+    const fa = frameRecord(5, "a");
+    const fb = frameRecord(5, "b");
+    const fc = frameRecord(6, "a");
+    expect(findFrameAnnotations([fa, fb, fc], 5)).toEqual([fa, fb]);
+  });
+
+  it("returns empty when none exist for the frame", () => {
+    expect(findFrameAnnotations([], 5)).toEqual([]);
   });
 });
 
@@ -79,20 +98,26 @@ describe("resolveEntryRoot", () => {
 });
 
 describe("resolveFrame", () => {
-  it("updates the existing record for the same frame", () => {
+  it("updates the existing record for the same (frame, category)", () => {
     const existing = frameRecord(5, "a");
-    const res = resolveFrame([existing], 5, { category: "b" });
+    const res = resolveFrame([existing], 5, "a", { category: "a" });
     expect(res.action).toBe("update");
     if (res.action === "update") expect(res.existing).toBe(existing);
   });
 
-  it("creates a new record when none exists for the frame and a category is provided", () => {
-    const res = resolveFrame([frameRecord(4)], 5, { category: "b" });
+  it("creates a new record when none exists for the (frame, category) and a category is provided", () => {
+    const res = resolveFrame([frameRecord(4, "a")], 5, "b", { category: "b" });
     expect(res.action).toBe("create");
   });
 
-  it("does nothing when none exists for the frame and no category is provided", () => {
-    const res = resolveFrame([], 5, {});
+  it("does nothing when none exists for the (frame, category) and no category is provided", () => {
+    const res = resolveFrame([], 5, "a", {});
     expect(res.action).toBe("none");
+  });
+
+  it("creates a separate annotation for a different category at the same frame", () => {
+    const existing = frameRecord(5, "a");
+    const res = resolveFrame([existing], 5, "b", { category: "b" });
+    expect(res.action).toBe("create");
   });
 });

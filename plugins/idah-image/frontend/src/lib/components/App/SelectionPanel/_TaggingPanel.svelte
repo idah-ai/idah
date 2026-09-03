@@ -80,7 +80,7 @@
       placeholder="Select a category"
     />
 
-    {#if properties.length > 0}
+    {#if draftValue.category && properties.length > 0}
       <PropertiesSection
         {properties}
         annotationValue={draftValue}

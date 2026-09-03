@@ -12,6 +12,7 @@
   import { cn } from "$lib/utils";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport as vp } from "$lib/state/viewport.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
   import type { TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
 
@@ -23,9 +24,11 @@
     isSelected: boolean;
     /** Pass along the track's group id so the track-background context menu can use it. */
     trackId?: string;
+    /** Distinguishes tagging rows (entry:root / frame categories) from drawable annotation tracks. */
+    kind?: "tagging" | "annotation";
   }
 
-  let { viewport, items, scale, top, isSelected, trackId }: Props = $props();
+  let { viewport, items, scale, top, isSelected, trackId, kind }: Props = $props();
 
   // Only render items visible in the viewport
   const visibleItems = $derived(
@@ -69,6 +72,17 @@
   function handleTrackClick(e: MouseEvent) {
     // Only for clicks directly on the track div (not on TrackItem children)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
+    if (kind === "tagging") {
+      // Clicking a frame-category tagging row's background goes to the tagging > frame
+      // tab. The entry:root row keeps the default group-selection behavior.
+      const isFrameRow = (items[0]?.rawData as { type?: string })?.type === "frame";
+      if (isFrameRow) {
+        selection.deselect();
+        sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "frame";
+        return;
+      }
+    }
     if (trackId) {
       selection.selectGroup(trackId);
     }

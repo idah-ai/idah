@@ -10,20 +10,16 @@
   import TimelineZoom from "$lib/components/App/Timeline/TimelineZoom.svelte";
   import VideoController from "$lib/components/App/Viewport/VideoController.svelte";
   import AnnotationTrackInfo from "$lib/components/App/Timeline/annotations/_AnnotationTrackInfo.svelte";
-  import TrackInfoHeader from "$lib/components/App/Timeline/annotations/_TrackInfoHeader.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { notes } from "$lib/state/data.svelte";
-  import { isEditable } from "$lib/state/editor.svelte";
-  import { annotation } from "$lib/state/annotation.svelte";
-  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
-  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
-  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
   import { ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
   import type { INoteRecord } from "$idah/v2/types";
   import EntryTrackBlock from "../Timeline/review/_EntryTrackBlock.svelte";
-  import FrameTrackBlock from "../Timeline/annotations/_FrameTrackBlock.svelte";
+  import EntryTaggingTrackBlock from "../Timeline/annotations/_EntryTaggingTrackBlock.svelte";
+  import FrameCategoryTrackBlock from "../Timeline/annotations/_FrameCategoryTrackBlock.svelte";
+  import type { TrackData } from "$lib/components/App/Timeline/types";
 
   // Props
   interface Props {
@@ -123,39 +119,61 @@
     }]
   })
 
-  // Tagging row — rendered as a sticky row between ruler and tracks, visible in
-  // both annotate and review modes (unlike the Notes row, which is review-only).
-  // rawData carries both the per-frame tagging and the entry:root annotation so the
-  // row can render the entry:root outer cell plus the individual frame markers.
-  // The row only appears when a tagging label config exists (entry:root or idah-video:frame),
-  // mirroring the sidebar tabs' visibility rule.
+  // Tagging rows — rendered as normal tracks in the scrollable body, grouped under a
+  // collapsible "Tagging" header. One row for the entry:root annotation and one row per
+  // frame-annotation category present. The group only appears when a tagging label config
+  // exists (entry:root or idah-video:frame), mirroring the sidebar tabs' rule.
   let hasTaggingConfig = $derived(Boolean(getDriver().config[ENTRY_ROOT]) || Boolean(getDriver().config[VIDEO_FRAME]));
-  let frameItems = $derived.by(() => {
+  let taggingItems = $derived.by(() => {
     if (!hasTaggingConfig) return [];
     if (frameAnnotations.length === 0 && !entryRootAnnotation) return [];
-    return [{
-      trackId: "__frame_tags__",
-      startRange: frameAnnotations[0]?.shape.start ?? entryRootAnnotation?.shape.start ?? 0,
-      endRange: frameAnnotations[frameAnnotations.length - 1]?.shape.start ?? entryRootAnnotation?.shape.end ?? 0,
-      rawData: { frameAnnotations, entryRootAnnotation },
-      component: FrameTrackBlock,
-    }]
+
+    const tracks: TrackData[] = [];
+
+    // One row for the entry:root / video-level annotation.
+    if (entryRootAnnotation) {
+      tracks.push({
+        id: "__entry_tag__",
+        title: "Video",
+        subtitle: "Entry",
+        kind: "tagging",
+        top: 0,
+        items: [{
+          trackId: "__entry_tag__",
+          startRange: entryRootAnnotation.shape.start,
+          endRange: entryRootAnnotation.shape.end,
+          rawData: { type: "entry", annotations: [entryRootAnnotation] },
+          component: EntryTaggingTrackBlock,
+        }],
+      });
+    }
+
+    // One row per frame-annotation category present.
+    const byCategory = new Map<string, IVideoAnnotationRecord[]>();
+    for (const ann of frameAnnotations) {
+      const cat = ann.value?.category ?? "uncategorized";
+      if (!byCategory.has(cat)) byCategory.set(cat, []);
+      byCategory.get(cat)!.push(ann);
+    }
+    for (const [category, anns] of byCategory) {
+      tracks.push({
+        id: `__frame_tag:${category}`,
+        title: category,
+        subtitle: "Frame",
+        kind: "tagging",
+        top: 0,
+        items: [{
+          trackId: `__frame_tag:${category}`,
+          startRange: anns[0]?.shape.start ?? 0,
+          endRange: anns[anns.length - 1]?.shape.start ?? 0,
+          rawData: { type: "frame", category, annotations: anns },
+          component: FrameCategoryTrackBlock,
+        }],
+      });
+    }
+
+    return tracks;
   })
-
-  // All tagging annotations (entry:root + all frame tagging) for the header controls.
-  let allTagging = $derived([...frameAnnotations, ...(entryRootAnnotation ? [entryRootAnnotation] : [])]);
-  let allTaggingHidden = $derived(allTagging.length > 0 && allTagging.every((a) => annotation.isHidden(a)));
-  let allTaggingLocked = $derived(allTagging.length > 0 && allTagging.every((a) => annotation.isLocked(a)));
-
-  function toggleTaggingVisibility() {
-    const newHidden = !allTaggingHidden;
-    for (const a of allTagging) annotation.toggleHidden(a.id, newHidden);
-  }
-
-  function toggleTaggingLocked() {
-    const newLocked = !allTaggingLocked;
-    for (const a of allTagging) annotation.toggleLocked(a.id, newLocked);
-  }
 </script>
 
 <TimelinePanel bind:panelHeight>
@@ -170,7 +188,7 @@
     {items}
     {length}
     {noteItems}
-    {frameItems}
+    {taggingItems}
     remainingHeight={panelHeight - toolbarHeight}
     rulerSmallStep={effectiveRulerMinorStep}
     rulerBigStep={effectiveRulerMajorStep}
@@ -180,10 +198,6 @@
       viewport.timeline.dimensions = [w, h];
     }}
   >
-    {#snippet TrackInfoHeaderSlot()}
-      <TrackInfoHeader annotations={viewportAnnotations} />
-    {/snippet}
-
     {#snippet TrackInfoSlot({ track })}
       <AnnotationTrackInfo {track} />
     {/snippet}
@@ -195,60 +209,6 @@
         class="flex h-full cursor-pointer items-center px-2 select-none"
       >
         <p class="text-xs font-medium">Notes</p>
-      </div>
-    {/snippet}
-
-    {#snippet FrameTrackInfoSlot()}
-      <div
-        role="button"
-        tabindex="-1"
-        class="group flex h-full cursor-pointer items-center px-2 select-none"
-      >
-        <p class="text-xs font-medium">Tagging</p>
-        <div class="ml-auto flex items-center opacity-0 transition-opacity group-hover:opacity-100">
-          <KbdTooltipButton
-            label="Show/Hide all tagging"
-            icon={allTaggingHidden ? EyeOffIcon : EyeIcon}
-            variant="ghost"
-            size="icon-sm"
-            disabled={allTagging.length === 0}
-            onclick={(e: MouseEvent) => {
-              e.stopPropagation();
-              toggleTaggingVisibility();
-            }}
-          />
-          <KbdTooltipButton
-            label="Lock/Unlock all tagging"
-            icon={allTaggingLocked ? LockIcon : LockOpenIcon}
-            variant="ghost"
-            size="icon-sm"
-            disabled={allTagging.length === 0}
-            onclick={(e: MouseEvent) => {
-              e.stopPropagation();
-              toggleTaggingLocked();
-            }}
-          />
-          <KbdTooltipButton
-            label="Remove all tagging"
-            icon={Trash2Icon}
-            variant="ghost"
-            size="icon-sm"
-            disabled={!isEditable() || allTagging.length === 0 || allTagging.some((a) => annotation.isLocked(a)) || viewport.isReviewWorkspace}
-            onclick={(e: MouseEvent) => {
-              e.stopPropagation();
-              showConfirmDialog({
-                title: "Remove all tagging",
-                description: "Are you sure you want to remove all tagging annotations (entry and frame)?",
-                onConfirm: () => {
-                  getDriver().command.call("idah-video:annotation.group.delete", {
-                    groupId: "__tagging__",
-                    annotations: allTagging,
-                  });
-                },
-              });
-            }}
-          />
-        </div>
       </div>
     {/snippet}
   </Timeline>

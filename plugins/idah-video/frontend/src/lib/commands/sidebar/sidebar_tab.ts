@@ -14,7 +14,6 @@
 // ---------------------------------------------------------------------------
 import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 import { selection } from "$lib/state/selection.svelte";
-import { viewport } from "$lib/state/viewport.svelte";
 import { data } from "$lib/state/data.svelte";
 import { ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
@@ -44,15 +43,7 @@ function findEntryRoot(): IVideoAnnotationRecord | undefined {
     | undefined;
 }
 
-function findCurrentFrameTagging(): IVideoAnnotationRecord | undefined {
-  const frame = viewport.video.currentFrame.value;
-  return (data.annotations?.items ?? []).find(
-    (a) =>
-      (a.shape as { type?: string })?.type === VIDEO_FRAME &&
-      (a.shape as { start?: number }).start === frame &&
-      (a.shape as { end?: number }).end === frame,
-  ) as IVideoAnnotationRecord | undefined;
-}
+
 
 export const selectionCommand = {
   name: "idah-video:sidebar-tab.selection",
@@ -114,21 +105,23 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: taggingCommand.longDescription,
     callback: (): ICommandAction => {
       exitToDefaultMode(driver);
-      // Select the appropriate tagging annotation if one exists, else deselect.
-
-      const entryRoot = findEntryRoot();
-      const frameTagging = findCurrentFrameTagging();
-      if (entryRoot) {
-        selection.selectAnnotation(entryRoot as any);
+      // Go to the tab matching the current selection: entry for entry:root, frame
+      // for idah-video:frame. If the selection isn't a tagging annotation (or there
+      // is none), select the entry:root (root) annotation and land on the entry tab.
+      const sel = selection.value;
+      const shapeType = sel?.type === "annotation" ? (sel.annotation.shape as { type?: string })?.type : undefined;
+      if (shapeType === ENTRY_ROOT) {
         sidebarTabs.rightTab = "tagging";
         sidebarTabs.taggingTab = "entry";
-      } else if (frameTagging) {
-        selection.selectAnnotation(frameTagging as any);
+      } else if (shapeType === VIDEO_FRAME) {
         sidebarTabs.rightTab = "tagging";
         sidebarTabs.taggingTab = "frame";
       } else {
-        selection.deselect();
+        const entryRoot = findEntryRoot();
+        if (entryRoot) selection.selectAnnotation(entryRoot as any);
+        else selection.deselect();
         sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "entry";
       }
       return noopAction(taggingCommand);
     },
@@ -161,9 +154,12 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: frameCommand.longDescription,
     callback: (): ICommandAction => {
       exitToDefaultMode(driver);
-      const frameTagging = findCurrentFrameTagging();
-      if (frameTagging) selection.selectAnnotation(frameTagging as any);
-      else selection.deselect();
+      // Only keep the selection if it's already a frame annotation; otherwise
+      // deselect so we land on the frame create + list view.
+      const sel = selection.value;
+      const isFrameAnnotation =
+        sel?.type === "annotation" && (sel.annotation.shape as { type?: string })?.type === VIDEO_FRAME;
+      if (!isFrameAnnotation) selection.deselect();
       sidebarTabs.rightTab = "tagging";
       sidebarTabs.taggingTab = "frame";
       return noopAction(frameCommand);

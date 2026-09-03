@@ -16,10 +16,20 @@
     onValueChange: (value?: string) => void;
     disabled: boolean;
     placeholder?: string;
+    /** Category ids to disable in the picker (e.g. already-used categories). */
+    disabledValues?: Set<string>;
   };
 
-  let { configValues, category, selectedCategory, shapeType, onValueChange, disabled, placeholder }: Props =
-    $props();
+  let {
+    configValues,
+    category,
+    selectedCategory,
+    shapeType,
+    onValueChange,
+    disabled,
+    placeholder,
+    disabledValues,
+  }: Props = $props();
 </script>
 
 <div class="flex flex-col gap-1">
@@ -51,7 +61,7 @@
             {value}
             label={valueLabel}
             class={"text-xs " + (selectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
-            disabled={selectedCategory == value}
+            disabled={selectedCategory == value || disabledValues?.has(value)}
           >
             <ShapeIcon {shapeType} {color} />
             {valueLabel}

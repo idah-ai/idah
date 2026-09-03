@@ -33,10 +33,11 @@
     onEditValue,
     onReSelectCategory,
     entryRootAnnotation,
-    frameAnnotation,
+    currentFrameAnnotations,
     currentFrame,
     onEntryRootChange,
-    onFrameChange,
+    onFrameCreate,
+    onFrameUpdate,
     onDeleteEntryRoot,
     onDeleteFrame,
   }: {
@@ -46,12 +47,13 @@
     onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
     entryRootAnnotation?: IVideoAnnotationRecord;
-    frameAnnotation?: IVideoAnnotationRecord;
+    currentFrameAnnotations?: IVideoAnnotationRecord[];
     currentFrame?: number;
     onEntryRootChange?: (value: IVideoAnnotationValue) => void;
-    onFrameChange?: (value: IVideoAnnotationValue) => void;
+    onFrameCreate?: (value: IVideoAnnotationValue) => void;
+    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => void;
     onDeleteEntryRoot?: () => void;
-    onDeleteFrame?: () => void;
+    onDeleteFrame?: (ann: IVideoAnnotationRecord) => void;
   } = $props();
 
   // Variables
@@ -81,7 +83,7 @@
   // Annotations tab (workflow step + lock state of the existing records).
   let taggingDisabled = $derived(
     (entryRootAnnotation && annotation.isLocked(entryRootAnnotation)) ||
-      (frameAnnotation && annotation.isLocked(frameAnnotation)) ||
+      (currentFrameAnnotations?.some((a) => annotation.isLocked(a)) ?? false) ||
       !["annotate", "review"].includes(getDriver().workflowStep),
   );
 
@@ -129,20 +131,7 @@
     if (viewport.isCreationMode) sidebarTabs.rightTab = "annotations";
   });
 
-  // While on the Tagging > Frame tab, keep the selection in sync with the current
-  // frame: select the idah-video:frame annotation for the displayed frame when
-  // one exists, otherwise deselect.
-  $effect(() => {
-    if (sidebarTabs.rightTab !== "tagging" || sidebarTabs.taggingTab !== "frame") return;
-    const frame = currentFrame;
-    if (frame === undefined) return;
-    const sel = selection.value;
-    const selectedId = sel?.type === "annotation" ? (sel.annotation as { id?: string })?.id : undefined;
-    // Already selected the current frame's annotation — nothing to do.
-    if (frameAnnotation && selectedId === frameAnnotation.id) return;
-    if (frameAnnotation) selection.selectAnnotation(frameAnnotation as any);
-    else selection.deselect();
-  });
+
 
   // Functions
   function categorySelection(shape_type: string, categoryId?: string) {
@@ -287,10 +276,11 @@
                     <TaggingPanel
                       activeTab="entry"
                       {entryRootAnnotation}
-                      {frameAnnotation}
+                      {currentFrameAnnotations}
                       currentFrame={currentFrame ?? 0}
                       onEntryRootChange={onEntryRootChange}
-                      onFrameChange={onFrameChange}
+                      onFrameCreate={onFrameCreate}
+                      onFrameUpdate={onFrameUpdate}
                       onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
                       onFrameDelete={onDeleteFrame ?? (() => {})}
                       disabled={taggingDisabled}
@@ -300,10 +290,11 @@
                     <TaggingPanel
                       activeTab="frame"
                       {entryRootAnnotation}
-                      {frameAnnotation}
+                      {currentFrameAnnotations}
                       currentFrame={currentFrame ?? 0}
                       onEntryRootChange={onEntryRootChange}
-                      onFrameChange={onFrameChange}
+                      onFrameCreate={onFrameCreate}
+                      onFrameUpdate={onFrameUpdate}
                       onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
                       onFrameDelete={onDeleteFrame ?? (() => {})}
                       disabled={taggingDisabled}
@@ -314,11 +305,12 @@
                 <TaggingPanel
                   activeTab={effectiveTaggingTab}
                   {entryRootAnnotation}
-                  {frameAnnotation}
+                  {currentFrameAnnotations}
                   currentFrame={currentFrame ?? 0}
                   onEntryRootChange={onEntryRootChange}
-                  onFrameChange={onFrameChange}
-                  onEntryRootDelete={onDeleteEntryRoot ?? ( ()=> {})}
+                  onFrameCreate={onFrameCreate}
+                  onFrameUpdate={onFrameUpdate}
+                  onEntryRootDelete={onDeleteEntryRoot ?? (() => {})}
                   onFrameDelete={onDeleteFrame ?? (() => {})}
                   disabled={taggingDisabled}
                 />

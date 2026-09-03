@@ -1,14 +1,19 @@
 <script lang="ts">
   import Text from "$lib/components/ui/Text/Text.svelte";
   import Badge from "$lib/components/ui/Badge/Badge.svelte";
+  import { Separator } from "$lib/components/ui/Separator";
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
   import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
   import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
+  import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+  import Button from "$lib/components/ui/Button/Button.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { selection } from "$lib/state/selection.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
   import {
     VIDEO_FRAME,
@@ -21,23 +26,25 @@
     /** Which sub-form to render (driven by the Tagging sub-tabs). */
     activeTab:"entry" | "frame";
     entryRootAnnotation: IVideoAnnotationRecord | undefined;
-    /** The idah-video:frame annotation for the CURRENT frame, or undefined. */
-    frameAnnotation: IVideoAnnotationRecord | undefined;
+    /** All idah-video:frame annotations for the CURRENT frame (one per category). */
+    currentFrameAnnotations?: IVideoAnnotationRecord[];
     currentFrame: number;
     onEntryRootChange?: (value: IVideoAnnotationValue) => void;
-    onFrameChange?: (value: IVideoAnnotationValue) => void;
+    onFrameCreate?: (value: IVideoAnnotationValue) => void;
+    onFrameUpdate?: (ann: IVideoAnnotationRecord, value: IVideoAnnotationValue) => void;
     onEntryRootDelete?: () => void;
-    onFrameDelete?: () => void;
+    onFrameDelete?: (ann: IVideoAnnotationRecord) => void;
     disabled: boolean;
   };
 
   let {
     activeTab,
     entryRootAnnotation,
-    frameAnnotation,
+    currentFrameAnnotations = [],
     currentFrame,
     onEntryRootChange,
-    onFrameChange,
+    onFrameCreate,
+    onFrameUpdate,
     onEntryRootDelete,
     onFrameDelete,
     disabled,
@@ -47,21 +54,46 @@
   // annotation exists. Synced from the existing annotations so edits to an
   // existing record are reflected here.
   let rootDraft = $state<IVideoAnnotationValue>({});
-  let frameDraft = $state<IVideoAnnotationValue>({});
+  let frameCreateDraft = $state<IVideoAnnotationValue>({});
+  let frameEditDraft = $state<IVideoAnnotationValue>({});
+
+  // Reset the in-progress create draft when the current frame changes, so the
+  // category select isn't locked to a previous frame's selection.
+  let prevFrame = $state(currentFrame);
+  $effect(() => {
+    if (currentFrame !== prevFrame) {
+      prevFrame = currentFrame;
+      frameCreateDraft = {};
+    }
+  });
+
+  // The currently selected frame annotation, derived from the global selection store
+  // so the timeline markers and this form share the same selection state.
+
+  let selectedFrameAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
+    const v = selection.value;
+    if (v?.type !== "annotation") return undefined;
+    const ann = v.annotation as IVideoAnnotationRecord;
+    return currentFrameAnnotations.find((a) => a.id === ann.id);
+  });
+
   $effect(() => {
     const rv = entryRootAnnotation?.value;
     rootDraft = rv ? { ...rv } : {};
   });
+
+  // Sync the edit draft from the selected annotation.
+
   $effect(() => {
-    const fv = frameAnnotation?.value;
-    frameDraft = fv ? { ...fv } : {};
+    const v = selectedFrameAnnotation?.value;
+    frameEditDraft = v ? { ...v } : {};
   });
 
   const rootConfig = $derived(
     getDriver().getFilteredConfig(ENTRY_ROOT, rootDraft as unknown as Record<string, unknown>),
   );
   const frameConfig = $derived(
-    getDriver().getFilteredConfig(VIDEO_FRAME, frameDraft as unknown as Record<string, unknown>),
+    getDriver().getFilteredConfig(VIDEO_FRAME, frameCreateDraft as unknown as Record<string, unknown>),
   );
 
   const rootValues = $derived(rootConfig?.values ?? []);
@@ -69,17 +101,39 @@
   const rootProperties = $derived(rootConfig?.properties ?? []);
 
   const frameValues = $derived(frameConfig?.values ?? []);
-  const frameCategory = $derived(frameValues.find((c) => c.id === frameDraft.category));
+  const frameCreateCategory = $derived(frameValues.find((c) => c.id === frameCreateDraft.category));
   const frameProperties = $derived(frameConfig?.properties ?? []);
+
+  // Categories already used by existing frame annotations at the current frame.
+
+  // Used to disable them in the create picker — only one frame annotation per category.
+
+  const usedFrameCategories = $derived(
+    new Set(currentFrameAnnotations.map((a) => a.value?.category).filter((c): c is string => Boolean(c))),
+  );
+
+  // Categories still available to create a new frame annotation at the current frame.
+  const availableFrameCategories = $derived(frameValues.filter((v) => !usedFrameCategories.has(v.id)));
 
   function onRootChange(next: IVideoAnnotationValue) {
     rootDraft = next;
     onEntryRootChange?.(next);
   }
 
-  function handleFrameChange(next: IVideoAnnotationValue) {
-    frameDraft = next;
-    onFrameChange?.(next);
+  function handleFrameCreate(next: IVideoAnnotationValue) {
+    frameCreateDraft = next;
+    // Only create/update when the category + required properties are valid.
+    const properties =
+      getDriver().getFilteredConfig(VIDEO_FRAME, next as unknown as Record<string, unknown>)?.properties ?? [];
+    if (requiredFullfilled(next, properties)) {
+      onFrameCreate?.(next);
+      frameCreateDraft = {};
+    }
+  }
+
+  function handleFrameEdit(next: IVideoAnnotationValue) {
+    frameEditDraft = next;
+    if (selectedFrameAnnotation) onFrameUpdate?.(selectedFrameAnnotation, next);
   }
 </script>
 
@@ -125,7 +179,7 @@
         placeholder="Select a category"
       />
 
-      {#if rootProperties.length > 0}
+      {#if rootDraft.category && rootProperties.length > 0}
         <PropertiesSection
           properties={rootProperties}
           annotationValue={rootDraft}
@@ -145,50 +199,138 @@
       <section class="flex flex-col gap-3">
         <div class="flex items-center gap-2">
           <Text weight="semibold">Frame: {currentFrame + 1}</Text>
-          <Badge variant={frameAnnotation ? "info" : "success-200"}>{frameAnnotation ? "EDIT" : "CREATE"}</Badge>
-          {#if frameAnnotation}
-            <div class="ml-auto flex items-center gap-0">
-              <CategoryAction
-                label={annotation.isHidden(frameAnnotation) ? "Show frame" : "Hide frame"}
-                icon={annotation.isHidden(frameAnnotation) ? EyeOffIcon : EyeIcon}
-                onclick={() => annotation.toggleHidden(frameAnnotation.id, !annotation.isHidden(frameAnnotation))}
-              />
-              <CategoryAction
-                label={annotation.isLocked(frameAnnotation) ? "Unlock frame" : "Lock frame"}
-                icon={annotation.isLocked(frameAnnotation) ? LockIcon : LockOpenIcon}
-                onclick={() => annotation.toggleLocked(frameAnnotation.id, !annotation.isLocked(frameAnnotation))}
-              />
-              <CategoryAction
-                label="Delete frame"
-                icon={Trash2Icon}
-                disabled={disabled}
-                onclick={() => onFrameDelete?.()}
-              />
-            </div>
-          {/if}
+          <button
+            type="button"
+            class="cursor-pointer"
+            title="Back to frame annotations list"
+            onclick={() => selection.deselect()}
+          >
+            <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
+          </button>
         </div>
 
-        <CategorySelect
-          configValues={frameValues}
-          category={frameCategory}
-          selectedCategory={frameDraft.category ?? ""}
-          shapeType={VIDEO_FRAME}
-          onValueChange={(id) => handleFrameChange({ ...frameDraft, category: id })}
-          {disabled}
-          placeholder="Select a category"
-        />
+        {#if selectedFrameAnnotation}
+          <!-- Edit form for the selected frame annotation (list hidden) -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <Text weight="semibold">
+                {frameValues.find((v) => v.id === frameEditDraft.category)?.label ?? "Frame"}
+              </Text>
+              <Badge variant="info">EDIT</Badge>
+              <div class="ml-auto flex items-center gap-0">
+                <CategoryAction
+                  label={annotation.isHidden(selectedFrameAnnotation) ? "Show frame" : "Hide frame"}
+                  icon={annotation.isHidden(selectedFrameAnnotation) ? EyeOffIcon : EyeIcon}
+                  onclick={() =>
+                    annotation.toggleHidden(selectedFrameAnnotation.id, !annotation.isHidden(selectedFrameAnnotation))}
+                />
+                <CategoryAction
+                  label={annotation.isLocked(selectedFrameAnnotation) ? "Unlock frame" : "Lock frame"}
+                  icon={annotation.isLocked(selectedFrameAnnotation) ? LockIcon : LockOpenIcon}
+                  onclick={() =>
+                    annotation.toggleLocked(selectedFrameAnnotation.id, !annotation.isLocked(selectedFrameAnnotation))}
+                />
+                <CategoryAction
+                  label="Delete frame"
+                  icon={Trash2Icon}
+                  disabled={disabled}
+                  onclick={() => onFrameDelete?.(selectedFrameAnnotation)}
+                />
+              </div>
+            </div>
 
-        {#if frameProperties.length > 0}
-          <PropertiesSection
-            properties={frameProperties}
-            annotationValue={frameDraft}
-            onValueChange={(property, v) =>
-              handleFrameChange({
-                ...frameDraft,
-                attributes: { ...(frameDraft.attributes ?? {}), [property.id]: v },
-              })}
-            {disabled}
-          />
+            <CategorySelect
+              configValues={frameValues}
+              category={frameValues.find((v) => v.id === frameEditDraft.category)}
+              selectedCategory={frameEditDraft.category ?? ""}
+              shapeType={VIDEO_FRAME}
+              onValueChange={(id) => handleFrameEdit({ ...frameEditDraft, category: id })}
+              {disabled}
+              placeholder="Select a category"
+            />
+            {#if frameEditDraft.category && frameProperties.length > 0}
+              <PropertiesSection
+                properties={frameProperties}
+                annotationValue={frameEditDraft}
+                onValueChange={(property, v) =>
+                  handleFrameEdit({
+                    ...frameEditDraft,
+                    attributes: { ...(frameEditDraft.attributes ?? {}), [property.id]: v },
+                  })}
+                {disabled}
+              />
+            {/if}
+          </div>
+        {:else if frameCreateDraft.category}
+          <!-- Create form for a new frame annotation (list hidden) -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <Text weight="semibold">
+                {frameValues.find((v) => v.id === frameCreateDraft.category)?.label ?? "Frame"}
+              </Text>
+              <Badge variant="success-200">CREATE</Badge>
+            </div>
+            <CategorySelect
+              configValues={frameValues}
+              category={frameValues.find((v) => v.id === frameCreateDraft.category)}
+              selectedCategory={frameCreateDraft.category ?? ""}
+              shapeType={VIDEO_FRAME}
+              onValueChange={(id) => handleFrameCreate({ ...frameCreateDraft, category: id })}
+              disabledValues={usedFrameCategories}
+              {disabled}
+              placeholder="Select a category"
+            />
+            {#if frameCreateDraft.category && frameProperties.length > 0}
+              <PropertiesSection
+                properties={frameProperties}
+                annotationValue={frameCreateDraft}
+                onValueChange={(property, v) =>
+                  handleFrameCreate({
+                    ...frameCreateDraft,
+                    attributes: { ...(frameCreateDraft.attributes ?? {}), [property.id]: v },
+                  })}
+                {disabled}
+              />
+            {/if}
+          </div>
+        {:else}
+          <!-- List existing frame annotations + a category select to create a new frame -->
+          <div class="flex flex-col gap-3">
+            <CategorySelect
+              configValues={availableFrameCategories}
+              category={undefined}
+              selectedCategory=""
+              shapeType={VIDEO_FRAME}
+              onValueChange={(id) => id && handleFrameCreate({ category: id })}
+              disabled={disabled || availableFrameCategories.length === 0}
+              placeholder="Select a category"
+            />
+
+            <Separator class="my-2" />
+
+            <div class="flex flex-col gap-1">
+              {#each currentFrameAnnotations as ann (ann.id)}
+                {@const annCategory = frameValues.find((v) => v.id === ann.value?.category)}
+                {@const annColor = annCategory?.color ?? null}
+                <div
+                  role="button"
+                  tabindex="-1"
+                  class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs"
+                  onclick={() => selection.selectAnnotation(ann as any)}
+                  onkeypress={() => {}}
+                >
+                  {#if annCategory}
+                    <span class="size-2 shrink-0 rounded-full" style:background-color={annColor}></span>
+                    <span class="truncate">{annCategory.label}</span>
+                  {:else}
+                    <span class="truncate text-muted-foreground">{ann.value?.category ?? "Uncategorized"}</span>
+                  {/if}
+                </div>
+              {:else}
+                <div class="text-muted-foreground px-2 py-4 text-center text-xs">No frame annotations</div>
+              {/each}
+            </div>
+          </div>
         {/if}
       </section>
     {/key}

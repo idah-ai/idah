@@ -103,16 +103,6 @@
   /** Whether the user can confirm the current annotation creation (has category + all required properties filled). */
   let canConfirm = $derived.by(() => {
     if (!editable || isNoteMode) return false;
-
-    if (mode === "entry:root") {
-      if (!pendingValue.category || pendingValue.category === "") return false;
-
-      const properties =
-        getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
-
-      return requiredFullfilled(pendingValue, properties);
-    }
-
     if (!shapeSelectionArgs) return false;
     if (!pendingValue.category || pendingValue.category === "") return false;
     const properties =
@@ -535,6 +525,11 @@
    *  one updates the existing record instead of duplicating. */
   function onEntryRootChange(value: AnnotationValue) {
     if (!editable) return;
+    if (!value.category) return;
+    // Only create/update when the category + required properties are valid.
+    const properties =
+      getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!requiredFullfilled(value, properties)) return;
     const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
     const resolution = resolveEntryRoot(items, value as IImageAnnotationValue);
     if (resolution.action === "update") {
@@ -638,29 +633,28 @@
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           if (!canConfirm) return;
-          showPopOver = false;
-          if (mode === "entry:root") {
-            addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
-          } else if (shapeSelectionArgs) {
+          if (shapeSelectionArgs) {
+            showPopOver = false;
             confirmCreateAnnotation(...shapeSelectionArgs);
           }
         }
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if pendingValue.category}
+        {#if pendingValue.category || shapeSelectionArgs?.[0] === ENTRY_ROOT}
           <SelectionPanel
-            selectedCategory={pendingValue.category}
+            selectedCategory={pendingValue.category ?? ""}
             annotationValue={pendingValue}
+            shapeTypeOverride={shapeSelectionArgs?.[0]}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
               pendingValue = {
                 ...pendingValue,
                 category: selectedCategory,
               };
-              onEditValue({ category: pendingValue.category }, mode);
+              onEditValue({ category: pendingValue.category }, shapeSelectionArgs?.[0] ?? mode);
             }}
-            onEditValue={(value) => value && onEditValue(value, mode)}
+            onEditValue={(value) => value && onEditValue(value, shapeSelectionArgs?.[0] ?? mode)}
             disabled={false}
           />
         {:else}
@@ -708,13 +702,9 @@
         <Button
           size="sm"
           onclick={() => {
-            showPopOver = false;
-            switch (mode) {
-              case "entry:root":
-                addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
-                break;
-              default:
-                if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
+            if (shapeSelectionArgs && pendingValue.category) {
+              showPopOver = false;
+              confirmCreateAnnotation(...shapeSelectionArgs);
             }
           }}
           disabled={!canConfirm}

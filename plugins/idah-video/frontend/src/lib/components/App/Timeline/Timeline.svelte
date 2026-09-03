@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick, untrack, type Snippet } from "svelte";
+  import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
 
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
@@ -7,14 +8,15 @@
   import Track from "$lib/components/App/Timeline/_Track.svelte";
   import TrackInfo from "$lib/components/App/Timeline/_TrackInfo.svelte";
   import TrackItem from "$lib/components/App/Timeline/_TrackItem.svelte";
+  import TaggingTrackInfo from "$lib/components/App/Timeline/annotations/_TaggingTrackInfo.svelte";
 
   import { modKey } from "$lib/utils/browser";
   import { selection, type IAnnotationSelection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { media } from "$lib/state/media.svelte";
   import { viewport as vp } from "$lib/state/viewport.svelte";
-  import { NOTES_ROW_HEIGHT, TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
-  import { getAnnotationGroupId } from "$lib/types";
+  import { NOTES_ROW_HEIGHT, TRACK_HEIGHT, GROUP_HEADER_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME } from "$lib/types";
 
   import type {
     TimelineItem,
@@ -50,18 +52,21 @@
     onDimensionsChange,
     onZoom,
 
-    TrackInfoHeaderSlot,
     TrackInfoSlot,
     noteItems,
     NoteTrackInfoSlot,
-    frameItems,
-    FrameTrackInfoSlot,
+    taggingItems = [],
   }: Props = $props();
 
   // Selection state (selectionLength is always 1 — single frame)
   // Starts as true so the selection caret is visible from the beginning at frame 0
   let selectionLength = $state(1);
   let hasSelection = $state(true);
+
+  // Collapsible group state: the Tagging rows (entry:root + per-category frame rows)
+  // and the Annotations tracks can each be collapsed/expanded.
+  let taggingCollapsed = $state(false);
+  let annotationsCollapsed = $state(false);
 
   // ── Label formatter ───────────────────────────────────────────────────
   // Accepts (value, target). target="caret" includes frame sub-second (h:mm:ss.ff),
@@ -515,14 +520,37 @@
     handleAnnotationScroll(v as IAnnotationSelection);
   });
 
+  // Auto-open the collapsible group that contains the current selection, so the
+  // scroll-to-selection behavior stays visible. Tagging annotations (entry:root /
+  // idah-video:frame) live in the Tagging group; drawable annotations live in the
+  // Annotations group.
+  $effect(() => {
+    const v = selection.value;
+    if (v?.type !== "annotation") return;
+    const shapeType = (v.annotation.shape as { type?: string })?.type;
+    if (shapeType === ENTRY_ROOT || shapeType === VIDEO_FRAME) {
+      taggingCollapsed = false;
+    } else {
+      annotationsCollapsed = false;
+    }
+  });
+
   function handleAnnotationScroll(selectionValue: IAnnotationSelection) {
     if (!selection.isAnnotation() || !bodyScrollEl) return;
 
     const groupId = getAnnotationGroupId(selectionValue.annotation);
-    const trackIndex = items.findIndex((t) => t.id === groupId);
-    if (trackIndex === -1) return;
+    // Find the track row's top offset within the combined row list.
+    let trackTop = 0;
+    let found = false;
+    for (const r of allRows) {
+      if (r.type === "track" && r.track.id === groupId) {
+        found = true;
+        break;
+      }
+      trackTop += rowHeight(r);
+    }
+    if (!found) return;
 
-    const trackTop = trackIndex * TRACK_HEIGHT;
     const trackBottom = trackTop + TRACK_HEIGHT;
     const currentScrollTop = bodyScrollEl.scrollTop;
     const currentScrollBottom = currentScrollTop + bodyScrollClientHeight;
@@ -532,20 +560,58 @@
     bodyScrollEl.scrollTop = Math.max(0, trackTop - bodyScrollClientHeight / 2 + TRACK_HEIGHT / 2);
   }
 
-  // Calculate tracks height for content
-  const tracksHeight = $derived(items.length * TRACK_HEIGHT);
+  // Combined row list: group headers interleaved with their tracks, so the Tagging
+  // rows sit between the Tagging header and the Annotations header. Each row is either
+  // a group header or a track. Collapsed groups render only their header.
+  const allRows = $derived.by(() => {
+    const rows: Array<
+      | { type: "header"; label: string; collapsed: boolean; group: "tagging" | "annotations" }
+      | { type: "track"; track: TrackData }
+    > = [];
 
-  // Derive which tracks are vertically visible (with one track of overdraw on each side)
-  const firstVisibleTrackIndex = $derived(Math.max(0, Math.floor(bodyScrollTop / TRACK_HEIGHT) - 1));
-  const lastVisibleTrackIndex = $derived(
-    Math.min(items.length - 1, Math.ceil((bodyScrollTop + bodyScrollClientHeight) / TRACK_HEIGHT)),
+    if (taggingItems.length > 0) {
+      rows.push({ type: "header", label: "Tagging", collapsed: taggingCollapsed, group: "tagging" });
+      if (!taggingCollapsed) {
+        for (const t of taggingItems) rows.push({ type: "track", track: t });
+      }
+    }
+
+    if (items.length > 0) {
+      rows.push({ type: "header", label: "Annotations", collapsed: annotationsCollapsed, group: "annotations" });
+      if (!annotationsCollapsed) {
+        for (const t of items) rows.push({ type: "track", track: t });
+      }
+    }
+
+    return rows;
+  });
+
+  // Row height: group headers and tracks have different heights.
+  const rowHeight = (row: { type: string }) => (row.type === "header" ? GROUP_HEADER_HEIGHT : TRACK_HEIGHT);
+
+  // Calculate total content height.
+  const tracksHeight = $derived(allRows.reduce((sum, r) => sum + rowHeight(r), 0));
+
+  // Derive which rows are vertically visible (with one row of overdraw on each side).
+  const firstVisibleRowIndex = $derived(Math.max(0, Math.floor(bodyScrollTop / TRACK_HEIGHT) - 1));
+  const lastVisibleRowIndex = $derived(
+    Math.min(allRows.length - 1, Math.ceil((bodyScrollTop + bodyScrollClientHeight) / TRACK_HEIGHT)),
   );
-  const visibleTracks = $derived(
-    items.slice(firstVisibleTrackIndex, lastVisibleTrackIndex + 1).map((track, i) => ({
-      ...track,
-      top: (firstVisibleTrackIndex + i) * TRACK_HEIGHT,
-    })),
-  );
+  const visibleRows = $derived.by(() => {
+    let top = 0;
+    const out: Array<
+      | { type: "header"; label: string; collapsed: boolean; group: "tagging" | "annotations"; top: number }
+      | { type: "track"; track: TrackData; top: number }
+    > = [];
+    for (let i = 0; i < allRows.length; i++) {
+      const r = allRows[i];
+      if (i >= firstVisibleRowIndex && i <= lastVisibleRowIndex) {
+        out.push(r.type === "header" ? { ...r, top } : { ...r, top });
+      }
+      top += rowHeight(r);
+    }
+    return out;
+  });
 </script>
 
 <div class="timeline border" style:height="{Math.max(remainingHeight, TRACK_HEIGHT)}px">
@@ -611,11 +677,7 @@
   {/snippet}
 
   <div class="timeline-ruler-wrapper">
-    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true">
-      {#if TrackInfoHeaderSlot}
-        {@render TrackInfoHeaderSlot()}
-      {/if}
-    </div>
+    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true"></div>
 
     <div
       role="button"
@@ -659,11 +721,8 @@
   {#if noteItems && noteItems.length > 0}
     {@render pinnedRow(noteItems, NoteTrackInfoSlot, NOTES_ROW_HEIGHT, "timeline-notes-wrapper")}
   {/if}
-  {#if frameItems && frameItems.length > 0}
-    {@render pinnedRow(frameItems, FrameTrackInfoSlot, NOTES_ROW_HEIGHT, "timeline-frame-wrapper")}
-  {/if}
 
-  <!-- Vertical scroll container: scrolls both trackinfos and tracks together -->
+  <!-- Vertical scroll container: scrolls both group headers and tracks together -->
   <div
     class="timeline-body-scroll"
     bind:this={bodyScrollEl}
@@ -673,14 +732,35 @@
   >
     <div class="timeline-main">
       <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">
-        {#each visibleTracks as track (track.id)}
-          <div class="timeline-trackinfo-row" style="top: {track.top}px;">
-            {#if TrackInfoSlot}
-              {@render TrackInfoSlot({ track })}
-            {:else}
-              <TrackInfo {track} />
-            {/if}
-          </div>
+        {#each visibleRows as row (row.type === "header" ? `h:${row.label}` : `t:${row.track.id}`)}
+          {#if row.type === "header"}
+            <button
+              type="button"
+              class="timeline-group-header"
+              style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;"
+              onclick={() => {
+                if (row.group === "tagging") taggingCollapsed = !taggingCollapsed;
+                else annotationsCollapsed = !annotationsCollapsed;
+              }}
+            >
+              {#if row.collapsed}
+                <ChevronRightIcon class="text-muted-foreground size-4" />
+              {:else}
+                <ChevronDownIcon class="text-muted-foreground size-4" />
+              {/if}
+              <p class="text-xs font-medium">{row.label}</p>
+            </button>
+          {:else}
+            <div class="timeline-trackinfo-row" style="top: {row.top}px; height: {TRACK_HEIGHT}px;">
+              {#if row.track.kind === "tagging"}
+                <TaggingTrackInfo row={row.track.items[0]?.rawData} />
+              {:else if TrackInfoSlot}
+                {@render TrackInfoSlot({ track: row.track })}
+              {:else}
+                <TrackInfo track={row.track} />
+              {/if}
+            </div>
+          {/if}
         {/each}
       </div>
 
@@ -714,15 +794,20 @@
               showLabel={false}
             />
           {/if}
-          {#each visibleTracks as track (track.id)}
-            <Track
-              {viewport}
-              {scale}
-              items={track.items}
-              top={track.top}
-              isSelected={selectedGroupId === track.id}
-              trackId={track.id}
-            />
+          {#each visibleRows as row (row.type === "header" ? `h:${row.label}` : `t:${row.track.id}`)}
+            {#if row.type === "header"}
+              <div class="timeline-group-header-bar" style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;"></div>
+            {:else}
+              <Track
+                {viewport}
+                {scale}
+                items={row.track.items}
+                top={row.top}
+                isSelected={selectedGroupId === row.track.id}
+                trackId={row.track.id}
+                kind={row.track.kind}
+              />
+            {/if}
           {/each}
           {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
             <Selection
@@ -855,6 +940,30 @@
 
   .timeline-main {
     display: flex;
+  }
+
+  .timeline-group-header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary));
+    cursor: pointer;
+    text-align: left;
+    z-index: 1;
+  }
+
+  .timeline-group-header-bar {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary));
+    z-index: 1;
   }
 
   .timeline-trackinfos-body {
