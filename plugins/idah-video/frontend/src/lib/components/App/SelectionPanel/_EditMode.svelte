@@ -103,6 +103,7 @@
       {@const ys = points.map((p) => p[1])}
       {@const pxW = ((Math.max(...xs) - Math.min(...xs)) * media.width).toFixed(0)}
       {@const pxH = ((Math.max(...ys) - Math.min(...ys)) * media.height).toFixed(0)}
+      {@const pxArea = (Number(pxW) * Number(pxH)).toLocaleString()}
       <Separator class="mt-3" />
       <section class="flex flex-col gap-2">
         <div class="flex flex-row items-center gap-2">
@@ -110,6 +111,9 @@
         </div>
         <Text size="sm" class="text-muted-foreground">
           Width: {pxW} px, Height: {pxH} px
+        </Text>
+        <Text size="sm" class="text-muted-foreground">
+          Area: {pxArea} px²
         </Text>
       </section>
     {/if}
