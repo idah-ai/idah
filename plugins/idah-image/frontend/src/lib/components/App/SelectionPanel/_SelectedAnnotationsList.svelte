@@ -62,8 +62,6 @@
       {@const annConfig = getDriver().config[annShapeType]}
       {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
       {@const annColor = annCategory?.color ?? null}
-      <!-- {@const annGroupId = ann.metadata?.group_id ?? ann.id}
-        {@const annGroupIdLastPart = annGroupId.split("-").pop()} -->
       {@const annDisplayName = annCategory ? `${annCategory.label}` : (ann.value?.category ?? "Uncategorized")}
       {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
       <div class="hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
