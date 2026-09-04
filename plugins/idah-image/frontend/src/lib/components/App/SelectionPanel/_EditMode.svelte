@@ -8,8 +8,10 @@
   import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
 
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
+  import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
+  import { IMAGE_BOUNDING_BOX } from "$lib/types";
 
   import type { IConfigProperty, IConfigValue } from "$idah/v2/types";
   import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
@@ -90,5 +92,22 @@
   {#if properties.length > 0}
     <Separator class="mt-3" />
     <PropertiesSection {properties} {annotationValue} {onValueChange} {disabled} />
+  {/if}
+
+  {#if annotation?.shape?.type === IMAGE_BOUNDING_BOX}
+    {@const points = annotation.shape.points as [number, number][]}
+    {@const xs = points.map((p) => p[0])}
+    {@const ys = points.map((p) => p[1])}
+    {@const pxW = ((Math.max(...xs) - Math.min(...xs)) * media.width).toFixed(0)}
+    {@const pxH = ((Math.max(...ys) - Math.min(...ys)) * media.height).toFixed(0)}
+    <Separator class="mt-3" />
+    <section class="flex flex-col gap-2">
+      <div class="flex flex-row items-center gap-2">
+        <Text size="sm" weight="semibold">Dimensions</Text>
+      </div>
+      <Text size="sm" class="text-muted-foreground">
+        Width: {pxW} px, Height: {pxH} px
+      </Text>
+    </section>
   {/if}
 </section>

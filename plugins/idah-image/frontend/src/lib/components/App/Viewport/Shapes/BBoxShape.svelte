@@ -7,6 +7,7 @@
   import { resolveShapeStyles } from "$lib/utils/styles";
   import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
   import {
     boundingBoxHandle,
@@ -408,6 +409,41 @@
       e.stopPropagation();
     }}
   />
+
+  <!-- Pixel dimension label at top-left corner of the bounding box -->
+  {#if selected || selection.isAnnotationSelected(annotation.id) || hover.isHovered(annotation.id)}
+    {@const invScale = 1 / viewport.workspace.transform.scale}
+    {@const allX = displayPoints.map((p) => p[0])}
+    {@const allY = displayPoints.map((p) => p[1])}
+    {@const minX = Math.min(...allX)}
+    {@const minY = Math.min(...allY)}
+    {@const maxX = Math.max(...allX)}
+    {@const maxY = Math.max(...allY)}
+    {@const pxW = ((maxX - minX) * w).toFixed(0)}
+    {@const pxH = ((maxY - minY) * h).toFixed(0)}
+    {@const labelX = minX * w}
+    {@const labelY = minY * h - 6 * invScale}
+    <g
+      transform="translate({labelX}, {labelY}) scale({invScale})"
+      style:pointer-events="none"
+      style:user-select="none"
+    >
+      <text
+        x={0}
+        y={0}
+        style:font-size="12px"
+        style:font-weight="bold"
+        style:fill="#fff"
+        style:text-anchor="start"
+        style:dominant-baseline="auto"
+        style:paint-order="stroke"
+        style:stroke="rgba(0, 0, 0, 0.85)"
+        style:stroke-width="3px"
+        style:stroke-linecap="round"
+        style:stroke-linejoin="round"
+      >{pxW} × {pxH}</text>
+    </g>
+  {/if}
 
   {#if editable && selected && !isEditing && displayPoints.length === 4}
     <BBoxHandler

@@ -90,4 +90,23 @@
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
   />
+  <!-- Dimension label during creation -->
+  {@const pxW = Math.abs(cx - sx).toFixed(0)}
+  {@const pxH = Math.abs(cy - sy).toFixed(0)}
+  <text
+    x={Math.min(sx, cx)}
+    y={Math.min(sy, cy) - 6}
+    style:font-size="12px"
+    style:font-weight="bold"
+    style:fill="#fff"
+    style:text-anchor="start"
+    style:paint-order="stroke"
+    style:stroke="rgba(0, 0, 0, 0.85)"
+    style:stroke-width="3px"
+    style:stroke-linecap="round"
+    style:stroke-linejoin="round"
+    style:pointer-events="none"
+    style:user-select="none"
+    vector-effect="non-scaling-stroke"
+  >{pxW} × {pxH}</text>
 {/if}

@@ -8,8 +8,12 @@
   import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
 
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
+  import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
+  import { VIDEO_BOUNDING_BOX } from "$lib/types";
+  import { getInterpolatedFrame } from "$lib/utils/interpolation";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { IConfigProperty, IConfigValue } from "$idah/v2/types";
   import type { IVideoAnnotationRecord, IVideoAnnotationValue } from "$lib/types";
@@ -88,5 +92,26 @@
   {#if properties.length > 0}
     <Separator class="mt-3" />
     <PropertiesSection {properties} {annotationValue} {onValueChange} {disabled} />
+  {/if}
+
+  {#if annotation?.shape?.type === VIDEO_BOUNDING_BOX}
+    {@const shape = annotation.shape}
+    {@const interpolated = getInterpolatedFrame(shape, viewport.video.displayedFrame.value)}
+    {@const points = interpolated?.points as [number, number][] | undefined ?? []}
+    {#if points.length >= 4}
+      {@const xs = points.map((p) => p[0])}
+      {@const ys = points.map((p) => p[1])}
+      {@const pxW = ((Math.max(...xs) - Math.min(...xs)) * media.width).toFixed(0)}
+      {@const pxH = ((Math.max(...ys) - Math.min(...ys)) * media.height).toFixed(0)}
+      <Separator class="mt-3" />
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-row items-center gap-2">
+          <Text size="sm" weight="semibold">Dimensions</Text>
+        </div>
+        <Text size="sm" class="text-muted-foreground">
+          Width: {pxW} px, Height: {pxH} px
+        </Text>
+      </section>
+    {/if}
   {/if}
 </section>
