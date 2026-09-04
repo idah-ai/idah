@@ -31,6 +31,8 @@ import { register as registerViewportZoomOut } from "./viewport/zoom-out";
 
 import { register as registerSelectionCenter } from "./selection/center";
 import { register as registerSelectionDelete } from "./selection/delete";
+import { register as registerSelectionCopy } from "./selection/copy";
+import { register as registerSelectionPaste } from "./selection/paste";
 
 import { register as registerNoteAdd } from "./note/add";
 
@@ -82,6 +84,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   // ── Selection ─────────────────────────────────────────────────────────
   registerSelectionDelete(driver);
   registerSelectionCenter(driver);
+  registerSelectionCopy(driver);
+  registerSelectionPaste(driver);
 
   // ── Note ──────────────────────────────────────────────────────────────
   registerNoteAdd(driver);

@@ -17,6 +17,7 @@
   // ---------------------------------------------------------------------------
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
   import { hover } from "$lib/state/hover.svelte";
@@ -34,6 +35,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps?: Record<string, unknown>) => void;
@@ -44,6 +46,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
@@ -98,7 +101,13 @@
   // ── Display values ────────────────────────────────────────────────────
   let displayCenter = $derived.by((): Point => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return [center[0] + panOffset[0], center[1] + panOffset[1]];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return [center[0] + multiDragDelta[0], center[1] + multiDragDelta[1]] as Point;
     }
     return center;
   });
@@ -119,7 +128,7 @@
   }
 
   // ── Selection API ─────────────────────────────────────────────────────
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable) return false;
     if (!baseCenter || baseRadius <= 0) return false;
 
@@ -251,7 +260,7 @@
   />
 
   <!-- Handles when selected -->
-  {#if editable && selected}
+  {#if editable && selected && !isEditing && selection.selectedAnnotationIds.size <= 1}
     <CircleHandler
       center={displayCenter}
       {color}

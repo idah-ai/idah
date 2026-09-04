@@ -79,6 +79,7 @@
     if (category) {
       selection.deselect();
       onSelectAnnotation();
+
       onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(

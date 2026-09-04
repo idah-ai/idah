@@ -17,6 +17,7 @@
   // ---------------------------------------------------------------------------
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
   import { resolveShapeStyles } from "$lib/utils/styles";
@@ -39,6 +40,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
@@ -49,6 +51,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
@@ -125,6 +128,9 @@
   let panOffset = $derived.by((): Point => {
     if (panStart && cursorPx) {
       return [(cursorPx[0] - panStart[0]) / w, (cursorPx[1] - panStart[1]) / h];
+    }
+    if (multiDragDelta && selected) {
+      return [multiDragDelta[0] / w, multiDragDelta[1] / h];
     }
     return [0, 0];
   });
@@ -255,7 +261,7 @@
   const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX * HANDLE_RADIUS_PX;
   const ROTATE_RADIUS_PX_SQR = ROTATE_RADIUS_PX * ROTATE_RADIUS_PX;
 
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
 
     const curAngle = currentAngle();
@@ -381,7 +387,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4}
+  {#if editable && selected && !isEditing && displayPoints.length === 4 && selection.selectedAnnotationIds.size <= 1 }
     <EllipseHandler
       centroid={displayCentroid}
       radiusX={displayRadii[0]}

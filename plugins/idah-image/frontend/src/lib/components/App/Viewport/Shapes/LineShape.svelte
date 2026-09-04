@@ -13,6 +13,7 @@
   import { hover } from "$lib/state/hover.svelte";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
   import { type Point } from "$lib/utils/math/point";
@@ -27,6 +28,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
@@ -37,6 +39,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
@@ -85,6 +88,9 @@
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
       return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
     }
+    if (multiDragDelta && selected) {
+      return points.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
+    }
     return points;
   });
 
@@ -112,7 +118,7 @@
   const HIT_RADIUS_PX = 12; // Wide invisible hit zone for easier line selection
 
   // ── Selection API ─────────────────────────────────────────────────────
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable || points.length < 2) return false;
 
     // Check if cursor is within hit radius of the line
@@ -233,7 +239,7 @@
   />
 
   <!-- Handles when selected -->
-  {#if editable && selected && displayPoints.length >= 2}
+  {#if editable && selected && displayPoints.length >= 2 && selection.selectedAnnotationIds.size <= 1 }
     <LineHandler
       displayPoints={displayPoints}
       {color}
