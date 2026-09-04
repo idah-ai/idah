@@ -6,9 +6,10 @@
   // component. Responsibilities:
   //   • Wraps <img> inside a <Viewport> (pan/zoom)
   //   • Renders an SVG layer on top with crosshair, build-mode preview, etc.
-  //   • Filters visible annotations by current frame and renders them via
-  //     AnnotationGeometry
+  //   • Filters visible annotations and renders them via AnnotationGeometry
   //   • Handles mouse events for selection, panning, and build-mode creation
+  //   • Supports multi-selection: Shift+Click toggle, Shift+Drag rectangle selection
+  //     (Alt key is used for vertex deletion and box selection in polygon editing)
   //   • Exposes zoomIn/zoomOut helpers
   // ---------------------------------------------------------------------------
 
@@ -223,13 +224,20 @@
   });
 
   // Derive tool selection from the currently selected annotation's component
-  let selAnnotation = $derived(selection.value);
+  // let selAnnotation = $derived(selection.value);
+  // Derive tool selection from the primary (first) selected annotation's component
+  // In multi-selection mode, only the primary annotation gets edit handles.
+  let selAnnotation = $derived.by((): IAnnotationRecord | undefined => {
+    // if (!selection.isAnnotation()) return undefined;
+    const anns = selection.selectedAnnotations;
+    return anns.length > 0 ? anns[0] : undefined;
+  });
 
   let toolSelection = $derived.by(() => {
-    const selId = selection.value?.id ?? null;
-    if (!selId) return undefined;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
-    if (idx === -1) return undefined;
+  if (!selAnnotation) return undefined;
+
+  const idx = visibleAnnotations.findIndex((a) => a.id === selAnnotation.id);
+  if (idx === -1) return undefined;
     return _compRefs[idx]?.getToolSelection();
   });
 
@@ -257,15 +265,46 @@
     return resolveAnnotationColor(pendingAnnotation);
   });
 
+  // ── Rectangle selection state ─────────────────────────────────────────
+  let isRectSelecting = $state(false);
+  let rectStart: Point | null = $state(null);
+  let rectEnd: Point | null = $state(null);
+
+  /** Normalized selection rectangle: [minX, minY, maxX, maxY]. */
+  let selectionRect = $derived.by((): [number, number, number, number] | null => {
+    if (!isRectSelecting || !rectStart || !rectEnd) return null;
+    return [
+      Math.min(rectStart[0], rectEnd[0]),
+      Math.min(rectStart[1], rectEnd[1]),
+      Math.max(rectStart[0], rectEnd[0]),
+      Math.max(rectStart[1], rectEnd[1]),
+    ];
+  });
+
+  // ── Multi-drag state (Feature 2 — Move Selected Shapes) ────────────────
+  /** Normalized cursor position when the multi-drag started. */
+  let _multiDragOrigin: Point | null = $state(null);
+  /** Current shared drag delta in normalized coords. */
+  let _multiDragDelta: Point | null = $state(null);
+
+  /** Whether any selected annotation component is currently being edited (dragged). */
+  let _anySelectedEditing = $derived.by((): boolean => {
+    for (let i = 0; i < visibleAnnotations.length; i++) {
+      if (selection.isAnnotationSelected(visibleAnnotations[i].id) && _compRefs[i]?.getIsEditing?.()) {
+        return true;
+      }
+    }
+    return false;
+  });
+
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
   let isDragging = $state(false);
 
-  /** Whether the user is actively dragging/resizing/rotating a shape handle — derived from the selected annotation's component. */
+  /** Whether the user is actively dragging/resizing/rotating a shape handle — derived from the primary selected annotation's component. */
   let isEditingShape = $derived.by((): boolean => {
-    const selId = selection.value?.id ?? null;
-    if (!selId) return false;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
+    if (!selAnnotation) return false;
+    const idx = visibleAnnotations.findIndex((a) => a.id === selAnnotation.id);
     if (idx === -1) return false;
     return _compRefs[idx]?.getIsEditing?.() ?? false;
   });
@@ -369,6 +408,42 @@
     return `${-tx / s} ${-ty / s} ${w / s} ${h / s}`;
   });
 
+  // ── Rectangle selection helpers ────────────────────────────────────────
+
+  /** Compute the AABB of an annotation's shape. Returns null if no geometry. */
+  function getAnnotationAABB(ann: IAnnotationRecord): [number, number, number, number] | null {
+    const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+    if (!shape?.points?.length) return null;
+
+    const xs = shape.points.map((p) => p[0]);
+    const ys = shape.points.map((p) => p[1]);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+
+  /** Check if two AABBs intersect. */
+  function aabbIntersects(a: [number, number, number, number], b: [number, number, number, number]): boolean {
+    return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+  }
+
+  /** Complete the rectangle selection, selecting all visible annotations intersecting the rect. */
+  function completeRectSelection() {
+    const rect = selectionRect;
+    if (!rect) return;
+
+    const intersectingIds = visibleAnnotations
+      .filter((ann) => {
+        const aabb = getAnnotationAABB(ann);
+        if (!aabb) return false;
+        return aabbIntersects(aabb, rect);
+      })
+      .map((ann) => ann.id);
+
+    selection.selectAnnotations(intersectingIds);
+    isRectSelecting = false;
+    rectStart = null;
+    rectEnd = null;
+  }
+
   // ── Event handlers ───────────────────────────────────────────────────
   /**
    * Hit-test the mask canvas layer at the given image-pixel coordinates.
@@ -389,6 +464,32 @@
     // ── Mask brush painting (no early return — let viewport tracking below proceed) ─
     if (isMaskBrushMode) {
       maskBrushPointerMove(scenePixelCursor[0], scenePixelCursor[1]);
+    }
+
+    // Track the last known cursor position in normalized coords so commands
+    // (e.g. selection.paste) can target where the user's cursor currently is.
+    // This is a plain $state write in a regular function — it does NOT create
+    // a reactive cycle. viewport.cursor is only read by the async paste command.
+    viewport.cursor = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+
+    // ── Rectangle selection tracking ───────────────────────────────
+    if (isRectSelecting) {
+      rectEnd = sceneNormalizedCursor;
+      return;
+    }
+
+    // ── Multi-drag: track shared delta for batch move ─────────────────
+    // When multiple annotations are selected and one is being dragged,
+    // compute the delta and pass it to all selected shapes so they move
+    // together visually.
+    if (selection.selectedAnnotations.length > 1 && _anySelectedEditing) {
+      if (!_multiDragOrigin) {
+        _multiDragOrigin = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+      }
+      _multiDragDelta = [
+        sceneNormalizedCursor[0] - _multiDragOrigin[0],
+        sceneNormalizedCursor[1] - _multiDragOrigin[1],
+      ];
     }
 
     // ── Magnetic snap query ────────────────────────────────────────
@@ -538,9 +639,21 @@
       return;
     }
 
+    // ── Shift+Drag: start rectangle selection ──────────────────────
+    // If shift is held and we're not over a shape handle, start rect selection.
+    if (e.shiftKey && viewport.mode === DEFAULT_MODE) {
+      isRectSelecting = true;
+      rectStart = sceneNormalizedCursor;
+      rectEnd = sceneNormalizedCursor;
+      e.stopPropagation();
+      return;
+    }
+
     // ── Default mode: try editing selected annotation (SVG shapes) ─
+    // Pass Alt key so PolygonShape can start vertex box selection
+    // (Alt+Drag) even when the drag begins outside the polygon shape.
     if (toolSelection) {
-      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
+      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.altKey);
       if (consumed) {
         e.stopPropagation();
         return;
@@ -553,13 +666,32 @@
   }
 
   function onMouseLeave(_e: MouseEvent) {
-    // Cancel any active tool edit (bounding box drag, resize, rotate)
-    toolSelection?.endSelection(sceneNormalizedCursor);
+    // Cancel any active tool edit (bounding box drag, resize, rotate) on EVERY
+    // component — same reason as onMouseUp: the primary annotation's toolSelection
+    // is not necessarily the one that started a drag.
+    // Note: _compRefs holds AnnotationGeometry instances; they expose endSelection
+    // through getToolSelection(), not directly.
+    for (let i = 0; i < _compRefs.length; i++) {
+      _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
+    }
+    // Cancel active rectangle selection
+    if (isRectSelecting) {
+      isRectSelecting = false;
+      rectStart = null;
+      rectEnd = null;
+    }
     // Stop viewport panning
     zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
 
   function onMouseUp(e: MouseEvent) {
+    // ── Rectangle selection: complete selection ────────────────────
+    if (isRectSelecting) {
+      rectEnd = sceneNormalizedCursor;
+      completeRectSelection();
+      return;
+    }
+
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseUp(snappedCursor);
@@ -604,8 +736,49 @@
       return;
     }
 
-    // Default mode: finalize edit operation
-    toolSelection?.endSelection(sceneNormalizedCursor);
+    // Default mode: finalize edit operation on every annotation component.
+    //
+    // When a non-primary annotation is clicked (Shift+Click to deselect from a
+    // multi-selection), its `startSelection` runs during mousedown but the
+    // `toolSelection` derived from `selAnnotation` (primary) still points to
+    // a *different* component.  That means the clicked component's `panStart`
+    // (and any other drag state) would never be cleared, causing the deselected
+    // shape to follow the cursor as if it were still being dragged.
+    //
+    // Iterating all refs guarantees every stale drag is cleaned up.
+    // Note: _compRefs holds AnnotationGeometry instances; they expose endSelection
+    // through getToolSelection(), not directly.
+
+    // Capture which annotation was being dragged BEFORE clearing drag state.
+    let _draggedId: string | null = null;
+    if (_multiDragDelta) {
+      for (let i = 0; i < visibleAnnotations.length; i++) {
+        if (_compRefs[i]?.getIsEditing?.()) {
+          _draggedId = visibleAnnotations[i].id;
+          break;
+        }
+      }
+    }
+
+    for (let i = 0; i < _compRefs.length; i++) {
+      _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
+    }
+
+    // ── Multi-drag: commit delta to all other selected annotations ──
+    const dragDelta = _multiDragDelta; // local const for TS narrowing
+    if (dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0)) {
+      for (let i = 0; i < visibleAnnotations.length; i++) {
+        const ann = visibleAnnotations[i];
+        if (!selection.isAnnotationSelected(ann.id)) continue;
+        if (ann.id === _draggedId) continue;
+        const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+        if (!shape?.points?.length) continue;
+        const movedPoints = shape.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
+        handleEditComplete(ann.id, movedPoints, {});
+      }
+    }
+    _multiDragOrigin = null;
+    _multiDragDelta = null;
 
     // Only pan on mouseup if we were panning
     zoomableElement!.mouseUp(e);
@@ -693,6 +866,12 @@
     if (maskHit.annotationId) {
       e.stopPropagation();
       selection.selectAnnotation(maskHit.annotation as any);
+    } else {
+      // No mask hit — deselect on empty space click.
+      // This is a safety net: the SVG's onMouseDown should have already handled
+      // the deselect, but in case the event didn't reach the SVG (e.g. the
+      // Viewport layer consumed it), we handle it here.
+      selection.deselect();
     }
   }
 
@@ -708,6 +887,23 @@
 
   function handleEditComplete(annId: string, points: Point[], extraProps: Record<string, unknown> = {}) {
     onSelection(viewport.mode, points, extraProps, annId);
+
+    // ── Synchronous local data store update to prevent viewport blink ──
+    // The dispatched command's async do() will also update the store, but
+    // local drag/selection state is cleared synchronously in onMouseUp,
+    // which would cause shapes to snap back to their old positions before
+    // the async update completes. Updating the local store synchronously
+    // here keeps shapes at their new positions through the render that
+    // follows, eliminating the blink.
+    const ann = data.annotations?.items?.find((r) => r.id === annId);
+    if (!ann) return;
+    const shape = ann.shape as IImageAnnotationShape | undefined;
+    if (!shape) return;
+
+    data.annotations!.upsert({
+      ...ann,
+      shape: { ...shape, points },
+    } as any);
   }
 
   let _hoveringMask = $state(false);
@@ -735,7 +931,7 @@
     });
   }
 
-  function handleClick(ann: IAnnotationRecord) {
+  function handleClick(ann: IAnnotationRecord, e: MouseEvent) {
     // Note mode: create an annotation-anchored note
     if (isNoteMode) {
       _noteHandledByClick = true;
@@ -746,7 +942,14 @@
     // Don't select annotations in creation mode
     if (viewport.isCreationMode) return;
 
-    // Don't select already selected annotation
+    // ── Multi-selection: shift+click toggles this annotation ──
+    if (e.shiftKey) {
+      selection.toggleAnnotation(ann.id);
+      return;
+    }
+
+    // Don't re-select an already selected annotation — prevents unnecessary
+    // _selectedAnnotationIds Set allocation which triggers reactive cascades.
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
@@ -795,8 +998,9 @@
           !annotation.isLocked(ann) &&
           !["errored", "completed"].includes(getDriver().entryStatus)}
         cursor={snappedCursor}
+        multiDragDelta={_multiDragDelta}
         mode={viewport.mode}
-        onClick={() => handleClick(ann)}
+        onClick={(e: MouseEvent) => handleClick(ann, e)}
         onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
           handleEditComplete(ann.id, aabb, extraProps)}
       />
@@ -825,6 +1029,21 @@
         fill={snapColor}
         opacity="0.9"
         vector-effect="non-scaling-stroke"
+      />
+    {/if}
+
+    <!-- Rectangle selection overlay -->
+    {#if selectionRect}
+      <rect
+        x={selectionRect[0] * media.width}
+        y={selectionRect[1] * media.height}
+        width={(selectionRect[2] - selectionRect[0]) * media.width}
+        height={(selectionRect[3] - selectionRect[1]) * media.height}
+        fill="rgba(59, 130, 246, 0.2)"
+        stroke="#3b82f6"
+        stroke-width={1.5 / viewport.workspace.transform.scale}
+        vector-effect="non-scaling-stroke"
+        pointer-events="none"
       />
     {/if}
 

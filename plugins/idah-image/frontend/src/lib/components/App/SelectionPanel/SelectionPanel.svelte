@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnnotationsList from "$lib/components/App/SelectionPanel/_AnnotationsList.svelte";
+  import SelectedAnnotationsList from "$lib/components/App/SelectionPanel/_SelectedAnnotationsList.svelte";
   import CreateMode from "$lib/components/App/SelectionPanel/_CreateMode.svelte";
   import EditMode from "$lib/components/App/SelectionPanel/_EditMode.svelte";
 
@@ -9,8 +10,8 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { DEFAULT_MODE, IMAGE_MASK } from "$lib/types";
 
-    import type { IConfigProperty } from "$idah/v2/types";
-    import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
+  import type { IConfigProperty } from "$idah/v2/types";
+  import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
 
   type Props = {
     selectedCategory: string;
@@ -42,6 +43,7 @@
       : undefined,
   );
   let configValues = $derived(config?.values ?? []);
+
   let category = $derived(configValues.find((c) => c.id == selectedCategory));
   let properties = $derived(config?.properties ?? []);
 
@@ -118,8 +120,11 @@
       {usedMaskCategories}
     />
   {/if}
+{:else if selection.selectedAnnotationIds.size > 1}
+  <!-- Multiple annotations selected: show a compact list of selected items -->
+  <SelectedAnnotationsList />
 {:else}
-  <!-- Edit mode: edit the currently selected annotation -->
+  <!-- Edit mode: edit a single selected annotation -->
   <EditMode
     {modeTitle}
     {shapeType}
