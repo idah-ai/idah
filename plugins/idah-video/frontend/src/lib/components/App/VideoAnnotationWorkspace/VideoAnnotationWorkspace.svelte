@@ -198,7 +198,6 @@
     // Find entry-root annotation from the global store
     const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === ENTRY_ROOT);
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
-
   });
 
   function seekToFrame(frame: number) {
@@ -267,9 +266,17 @@
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
+    // When a shaped annotation is selected, validate against its real shape type
+    // (box/polygon), not the sidebar's fallback mode, so required properties are
+    // evaluated against the correct config. entry:root is edited only through the
+    // Tagging tab and never reaches here as a selected shape.
+    const gateShapeType = selAnnotation
+      ? (selAnnotation.shape as { type?: string })?.type ?? valueMode
+      : valueMode;
+
     let requirementFullfilled = requiredFullfilled(
       value,
-      getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
+      getDriver().getFilteredConfig(gateShapeType, value as unknown as Record<string, unknown>)?.properties,
     );
 
     if (valueMode == ENTRY_ROOT && !selAnnotation && entryRoot.value?.metadata?.id)
@@ -282,7 +289,7 @@
       if (!selAnnotation) {
         pendingValue = value;
       } else {
-        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+        selection.selectAnnotation({ ...selAnnotation, value } as any);
       }
       return;
     }
@@ -291,7 +298,7 @@
       if (value.category && value.category != "" && requirementFullfilled)
         addAnnotation(entryRootFullRangeShape(), $state.snapshot(value));
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+      selection.selectAnnotation({ ...selAnnotation, value } as any);
       if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
     } else if (selGroup) {
       // Update category for all annotations in the group

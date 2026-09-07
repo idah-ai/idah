@@ -11,19 +11,11 @@
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
 
-  import type { IConfigValue } from "$idah/v2/types";
-  import {
-    DEFAULT_MODE,
-    ENTRY_ROOT,
-    NON_DRAWABLE_SHAPE_TYPES,
-    type IImageAnnotationRecord,
-    type IImageAnnotationValue,
-  } from "$lib/types";
+  import { ENTRY_ROOT, type IImageAnnotationRecord, type IImageAnnotationValue } from "$lib/types";
 
   // Props
   let {
@@ -47,21 +39,22 @@
   } = $props();
 
   // Variables
-  let tools = $derived(
-    new Map<string, IConfigValue[]>(
-      Object.entries(getDriver().config)
-        .filter(([shapeType]) => !NON_DRAWABLE_SHAPE_TYPES.has(shapeType))
-        .map(([shapeType, { values }]) => [shapeType, values]),
-    ),
-  );
   let mode = $derived(viewport.mode);
   let selAnnotation = $derived(selection.value);
-  let defaultMode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
 
-  // Derived disabled state using the annotation module
+  // The active shape type the Annotations tab should configure/validate against:
+  // the selected annotation's real shape type when editing, otherwise the active
+  // tool (viewport.mode). entry:root is edited only through the Tagging tab now,
+  // so it is never a target here.
+  let selectedShapeType = $derived.by<string | undefined>(() => {
+    if (selAnnotation) return (selAnnotation.shape as { type?: string })?.type;
+    return mode;
+  });
+
+  // Derived disabled state using the annotation lock. entry:root is never shown
+  // on the Annotations tab, so its lock no longer affects this tab's editability.
   let disabled = $derived(
     (selAnnotation && annotation.isLocked(selAnnotation)) ||
-      (defaultMode || mode == ENTRY_ROOT ? !!entryRoot?.value?.locked : false) ||
       !["annotate", "review"].includes(getDriver().workflowStep),
   );
 
@@ -198,21 +191,15 @@
             </TabsList>
 
             <TabsContent value="annotations">
-              {#key [annotationValue, mode, entryRoot?.value?.category]}
+              {#key [annotationValue, mode, selectedShapeType]}
                 <SelectionPanel
-                  selectedCategory={(defaultMode
-                    ? annotationValue.category || entryRoot?.value?.category
-                    : annotationValue.category) || ""}
+                  selectedCategory={annotationValue.category || ""}
                   {annotationId}
-                  annotationValue={(defaultMode
-                    ? Object.keys(annotationValue).length
-                      ? annotationValue
-                      : entryRoot?.value
-                    : annotationValue) || {}}
+                  annotationValue={annotationValue || {}}
                   onSelectCategory={(selectedCategoryId) =>
-                    categorySelection(defaultMode ? ENTRY_ROOT : mode, selectedCategoryId)}
+                    categorySelection(selectedShapeType ?? "", selectedCategoryId)}
                   onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
-                  onEditValue={(value) => value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
+                  onEditValue={(value) => value && onEditValue(value, selectedShapeType ?? "")}
                   {disabled}
                 />
               {/key}
@@ -228,21 +215,15 @@
             </TabsContent>
           </Tabs>
         {:else}
-          {#key [annotationValue, mode, entryRoot?.value?.category]}
+          {#key [annotationValue, mode, selectedShapeType]}
             <SelectionPanel
-              selectedCategory={(defaultMode
-                ? annotationValue.category || entryRoot?.value?.category
-                : annotationValue.category) || ""}
+              selectedCategory={annotationValue.category || ""}
               {annotationId}
-              annotationValue={(defaultMode
-                ? Object.keys(annotationValue).length
-                  ? annotationValue
-                  : entryRoot?.value
-                : annotationValue) || {}}
+              annotationValue={annotationValue || {}}
               onSelectCategory={(selectedCategoryId) =>
-                categorySelection(defaultMode ? ENTRY_ROOT : mode, selectedCategoryId)}
+                categorySelection(selectedShapeType ?? "", selectedCategoryId)}
               onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
-              onEditValue={(value) => value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
+              onEditValue={(value) => value && onEditValue(value, selectedShapeType ?? "")}
               {disabled}
             />
           {/key}
