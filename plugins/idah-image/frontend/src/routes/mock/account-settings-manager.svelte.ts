@@ -11,7 +11,7 @@
 // so CommandManagerV2 can hold the same object and read live values, while
 // components reading it re-render automatically.
 // -----------------------------------------------------------------------
-import type { IAccountSettingsDriverV2 } from "$idah/v2/types";
+import type { AccountSettingValue, IAccountSettingsDriverV2 } from "$idah/v2/types";
 
 export class AccountSettingsManager implements IAccountSettingsDriverV2 {
   // Live command-name → shortcut map. SAME reactive object handed to
@@ -22,10 +22,13 @@ export class AccountSettingsManager implements IAccountSettingsDriverV2 {
     return this.overrides;
   }
 
-  get(_key: string): unknown {
+  get<T extends AccountSettingValue>(_key: string): T | undefined {
     // Mock: no generic settings store.
     return undefined;
   }
+
+  // Mock: no backend, so nothing is persisted.
+  async upsert(_key: string, _value: AccountSettingValue): Promise<void> {}
 
   // Mock: nothing to load — overrides start empty and live only in memory.
   async load(_accountId: string): Promise<void> {}

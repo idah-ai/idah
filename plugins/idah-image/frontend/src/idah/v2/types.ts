@@ -643,16 +643,33 @@ export interface ISettingsDriverV2 {
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
 
+export type AccountSettingValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AccountSettingValue[]
+  | { [key: string]: AccountSettingValue };
+
 /**
  * Loads & persists the current user's account settings. A generic store
  * (themes / prefs later); today it backs command-palette shortcut overrides.
  */
 export interface IAccountSettingsDriverV2 {
-  /** Load all of the current user's account settings into memory. */
+  /** Load all of the active plugin's account settings into memory. */
   load(accountId: string): Promise<void>;
 
-  /** Read a raw setting value by key, or undefined if not loaded. */
-  get(key: string): unknown;
+  /**
+   * Read a setting in the active plugin's namespace, or undefined if not
+   * loaded.
+   */
+  get<T extends AccountSettingValue>(key: string): T | undefined;
+
+  /**
+   * Create-or-update a setting in the active plugin's namespace. The row is
+   * created on first write and updated afterward.
+   */
+  upsert(key: string, value: AccountSettingValue): Promise<void>;
 
   /**
    * The live command-name → shortcut override map. Stable reference, mutated

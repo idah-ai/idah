@@ -36,30 +36,24 @@
     return response.data[0];
   }
 
-  async function updateAccountSetting(id: string | undefined, value: boolean) {
-    if (!id) return;
-    await accountSettingBackendDataSource.update(id, {
-      attributes: {
-        value,
-      },
-    });
+  // Write by natural key via upsert (account_id derived server-side). No row id
+  // needed — the row is created on first write, updated after.
+  async function upsertNotificationSetting(key: keyof typeof notifications, value: boolean) {
+    await accountSettingBackendDataSource.upsert(key, value);
   }
 
-  async function toggleAllNotifications(ids: Array<string | undefined>, checkedValue: boolean) {
-    if (!ids.length) return;
+  async function toggleAllNotifications(checkedValue: boolean) {
+    const keys = Object.keys(notifications) as Array<keyof typeof notifications>;
 
-    ids.forEach(async (id) => {
-      if (!id) return;
-      await updateAccountSetting(id, checkedValue);
-    });
+    await Promise.all(keys.map((key) => upsertNotificationSetting(key, checkedValue)));
 
-    Object.entries(notifications).forEach(([key]) => {
-      notifications[key as keyof typeof notifications] = checkedValue;
+    keys.forEach((key) => {
+      notifications[key] = checkedValue;
     });
   }
 </script>
 
-{#await loadNotificationSettings() then [organizationActivities, projectActivities]}
+{#await loadNotificationSettings() then}
   <SettingsCard title="Notifications">
     <Item variant="outline">
       <ItemContent>
@@ -71,7 +65,7 @@
         <Switch
           checked={allNotificationsChecked}
           onCheckedChange={(checkedValue) => {
-            toggleAllNotifications([organizationActivities?.id, projectActivities?.id], checkedValue);
+            toggleAllNotifications(checkedValue);
           }}
         />
       </ItemActions>
@@ -88,7 +82,7 @@
       <Switch
         checked={notifications[organizationActivitiesKey]}
         onCheckedChange={(checkedChange) => {
-          updateAccountSetting(organizationActivities?.id, checkedChange);
+          upsertNotificationSetting(organizationActivitiesKey, checkedChange);
           notifications[organizationActivitiesKey] = checkedChange;
         }}
       />
@@ -105,7 +99,7 @@
       <Switch
         checked={notifications[projectActivitiesKey]}
         onCheckedChange={(checkedChange) => {
-          updateAccountSetting(projectActivities?.id, checkedChange);
+          upsertNotificationSetting(projectActivitiesKey, checkedChange);
           notifications[projectActivitiesKey] = checkedChange;
         }}
       />
