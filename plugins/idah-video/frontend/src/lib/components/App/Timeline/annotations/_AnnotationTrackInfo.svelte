@@ -20,6 +20,7 @@
   import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { annotation } from "$lib/state/annotation.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -68,6 +69,9 @@
     /**
      * Select annotation group only — don't change the current drawing mode
      */
+    // Clicking an annotation row while on the Tagging tab should surface the
+    // Annotations tab so the selected annotation is visible/editable there.
+    sidebarTabs.rightTab = "annotations";
     selectAnnotationGroup();
   }
 </script>

@@ -203,7 +203,7 @@
         <p class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{saveError}</p>
       {/if}
       <div class="flex items-center gap-2">
-        <Text weight="semibold">Frame: {currentFrame + 1}</Text>
+        <Text weight="semibold">Frame tagging</Text>
         <button
           type="button"
           class="cursor-pointer"
@@ -212,6 +212,7 @@
         >
           <Badge variant="secondary">{currentFrameAnnotations.length}</Badge>
         </button>
+        <Text class="ml-auto text-muted-foreground">on Frame: {currentFrame + 1}</Text>
       </div>
 
       {#if selectedFrameAnnotation}

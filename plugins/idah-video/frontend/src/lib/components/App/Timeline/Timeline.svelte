@@ -704,11 +704,7 @@
   {/snippet}
 
   <div class="timeline-ruler-wrapper">
-    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true">
-      {#if TrackInfoHeaderSlot}
-        {@render TrackInfoHeaderSlot()}
-      {/if}
-    </div>
+    <div class="timeline-ruler-spacer bg-secondary border-r" aria-hidden="true"></div>
 
     <div
       role="button"
