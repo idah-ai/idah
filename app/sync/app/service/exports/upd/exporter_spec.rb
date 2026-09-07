@@ -65,6 +65,11 @@ RSpec.describe Exports::Upd::Exporter do
       Verse::JsonApi::Struct.new media_data[:data][0]
     end
 
+    # Processor-generated media: carries no meta of its own (defaults to {}).
+    let(:derived_media_response) do
+      Verse::JsonApi::Struct.new media_data[:data][1]
+    end
+
     let(:media_binary_data) { "fake binary video data" }
     let(:mock_file) { instance_double(File, close: true) }
 
@@ -282,16 +287,36 @@ RSpec.describe Exports::Upd::Exporter do
           expect(parsed["args"]["file"]).to be_a(String)
           expect(parsed["args"]["key"]).to eq("")
           expect(parsed["args"]["mimetype"]).to eq("video/quicktime")
+          expect(parsed["args"]["metadata"]).to be_a(String)
         end
       end
 
       context "when include_medias is 'all'" do
         let(:options) { { include_medias: "all" } }
 
+        before do
+          allow(Api[:idah].media.medias).to receive(:index_all)
+            .and_return([media_response, derived_media_response])
+        end
+
         it "writes a JSONL line for each media" do
           exporter.export(context)
           media_lines = @jsonl_writes.select { |l| l.include?("media:create") }
-          expect(media_lines.size).to eq(1) # only 1 in fixture data currently
+          expect(media_lines.size).to eq(2)
+        end
+
+        it "writes metadata for a derived media whose meta is empty" do
+          exporter.export(context)
+
+          media_line = @jsonl_writes.find { |l| l.include?("master.m3u8") }
+          metadata = JSON.parse(JSON.parse(media_line)["args"]["metadata"])
+
+          expect(metadata).to eq(
+            {
+              "Created-By" => nil,
+              "Created-At" => "2026-01-26 13:39:44 +0000"
+            }
+          )
         end
       end
 
@@ -360,6 +385,43 @@ RSpec.describe Exports::Upd::Exporter do
         metadata = JSON.parse(parsed["args"]["metadata"])
 
         expect(metadata["Confidence"]).to eq(0.92)
+      end
+    end
+
+    context "media metadata" do
+      let(:options) { { include_medias: "original" } }
+
+      before do
+        allow(Api[:idah].media.medias).to receive(:index_all).with(
+          filter: { resource: "4c2052a1475842e9.mov", key: "" }
+        ).and_return([media_response])
+      end
+
+      def media_metadata
+        exporter.export(context)
+
+        media_line = @jsonl_writes.find { |l| l.include?("media:create") }
+        JSON.parse(JSON.parse(media_line)["args"]["metadata"])
+      end
+
+      it "includes the media meta attributes as capitalized-dashed keys" do
+        metadata = media_metadata
+
+        expect(metadata["Width"]).to eq(1920)
+        expect(metadata["Height"]).to eq(1080)
+      end
+
+      it "includes created-by and created-at" do
+        metadata = media_metadata
+
+        expect(metadata["Created-By"]).to eq(10)
+        expect(metadata["Created-At"]).to eq("2026-01-26 13:39:38 +0000")
+      end
+
+      it "does not leak the other media attributes" do
+        metadata = media_metadata
+
+        expect(metadata.keys).to contain_exactly("Width", "Height", "Created-By", "Created-At")
       end
     end
 
@@ -653,6 +715,11 @@ RSpec.describe Exports::Upd::Exporter do
 
     it "handles empty hash" do
       result = exporter.send(:capitalized_dashed_keys, {})
+      expect(result).to eq({})
+    end
+
+    it "returns an empty hash when the param is nil" do
+      result = exporter.send(:capitalized_dashed_keys, nil)
       expect(result).to eq({})
     end
   end
