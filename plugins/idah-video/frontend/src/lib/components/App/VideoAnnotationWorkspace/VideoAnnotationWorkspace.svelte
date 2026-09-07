@@ -122,7 +122,7 @@
         shape = { ...shape, start: frame, end: frame, frames: [{ frame, angle, points }] };
         break;
       case IDAH_VIDEO_POLYGON:
-        shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
+        shape = { ...shape, start: frame, end: frame, frames: [{ frame, points, angle: 0 }] };
         break;
       default:
         return undefined;
