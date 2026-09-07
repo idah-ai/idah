@@ -358,77 +358,77 @@
       <CardContent class="flex flex-col gap-2">
         {#each orderedConfigGroups as { group, keys } (group)}
           {#if group}
-            <div class="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:mt-0">
+            <div class="text-muted-foreground mt-1 text-xs font-semibold tracking-wide uppercase first:mt-0">
               {group}
             </div>
           {/if}
 
           {#each keys as labelConfigKey (labelConfigKey)}
-          {@const isSelect = controller.selectedConfigKey === labelConfigKey}
-          {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
-          {@const currentShape = shapes[shapeKey] as ModalityShape}
-          {@const currentTagging = tagging[shapeKey] as ModalityShape | undefined}
-          {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
-          <div
-            role="listitem"
-            class={cn("group/shape relative flex w-full items-center gap-1 rounded-md pr-5", {
-              "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:z-10 before:h-0.5":
-                shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "before",
-              "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:z-10 after:h-0.5":
-                shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "after",
-              "opacity-50": shapeDrag.draggedKey === labelConfigKey,
-            })}
-            ondragover={(e) => shapeDrag.over(e, labelConfigKey)}
-            ondragleave={shapeDrag.leave}
-            ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
-          >
-            <Can action="update" resource={permission.resource} scopes={permission.scopes}>
-              <span
-                role="button"
-                tabindex="-1"
-                aria-label="Drag to reorder configuration"
-                draggable="true"
-                class="shrink-0 cursor-grab opacity-0 transition-opacity duration-200 group-hover/shape:opacity-100 active:cursor-grabbing"
-                ondragstart={(e) => {
-                  e.dataTransfer?.setData("text/plain", labelConfigKey);
-                  if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-                  shapeDrag.start(labelConfigKey);
-                }}
-                ondragend={shapeDrag.end}
-              >
-                <GripVerticalIcon class="text-muted-foreground size-4" />
-              </span>
-            </Can>
-
-            <Button
-              variant={isSelect ? "default" : "secondary"}
-              class="group w-full justify-start pr-1"
-              onclick={() => selectConfigKey(labelConfigKey)}
+            {@const isSelect = controller.selectedConfigKey === labelConfigKey}
+            {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
+            {@const currentShape = shapes[shapeKey] as ModalityShape}
+            {@const currentTagging = tagging[shapeKey] as ModalityShape | undefined}
+            {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
+            <div
+              role="listitem"
+              class={cn("group/shape relative flex w-full items-center gap-1 rounded-md pr-5", {
+                "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:z-10 before:h-0.5":
+                  shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "before",
+                "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:z-10 after:h-0.5":
+                  shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "after",
+                "opacity-50": shapeDrag.draggedKey === labelConfigKey,
+              })}
+              ondragover={(e) => shapeDrag.over(e, labelConfigKey)}
+              ondragleave={shapeDrag.leave}
+              ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
             >
-              {currentShape
-                ? currentShape.label
-                : currentTagging
-                  ? currentTagging.label
-                  : labelConfigKey === "entry:root" && modalityLabel
-                    ? modalityLabel
-                    : humanize(labelConfigKeyDisplay)}
+              <Can action="update" resource={permission.resource} scopes={permission.scopes}>
+                <span
+                  role="button"
+                  tabindex="-1"
+                  aria-label="Drag to reorder configuration"
+                  draggable="true"
+                  class="shrink-0 cursor-grab opacity-0 transition-opacity duration-200 group-hover/shape:opacity-100 active:cursor-grabbing"
+                  ondragstart={(e) => {
+                    e.dataTransfer?.setData("text/plain", labelConfigKey);
+                    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+                    shapeDrag.start(labelConfigKey);
+                  }}
+                  ondragend={shapeDrag.end}
+                >
+                  <GripVerticalIcon class="text-muted-foreground size-4" />
+                </span>
+              </Can>
 
-              <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
-                {#snippet trigger({ props })}
-                  <Button
-                    {...props}
-                    variant="ghost"
-                    size="icon-sm"
-                    class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
-                      "opacity-100": props["data-state"] === "open",
-                    })}
-                  >
-                    <EllipsisVerticalIcon />
-                  </Button>
-                {/snippet}
-              </DropdownMenus>
-            </Button>
-          </div>
+              <Button
+                variant={isSelect ? "default" : "secondary"}
+                class="group w-full justify-start pr-1"
+                onclick={() => selectConfigKey(labelConfigKey)}
+              >
+                {currentShape
+                  ? currentShape.label
+                  : currentTagging
+                    ? currentTagging.label
+                    : labelConfigKey === "entry:root" && modalityLabel
+                      ? modalityLabel
+                      : humanize(labelConfigKeyDisplay)}
+
+                <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
+                  {#snippet trigger({ props })}
+                    <Button
+                      {...props}
+                      variant="ghost"
+                      size="icon-sm"
+                      class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
+                        "opacity-100": props["data-state"] === "open",
+                      })}
+                    >
+                      <EllipsisVerticalIcon />
+                    </Button>
+                  {/snippet}
+                </DropdownMenus>
+              </Button>
+            </div>
           {/each}
         {:else}
           <ResponseBlock
