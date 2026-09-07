@@ -194,7 +194,12 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       // Optimistic: insert locally first
       originalUpsert(item);
       try {
-        await driver.create($state.snapshot({ ...data, id }));
+        // Strip null metadata — backend only accepts a Hash or omitted field
+        const payload = $state.snapshot({ ...data, id });
+        if (payload.metadata == null) {
+          delete payload.metadata;
+        }
+        await driver.create(payload);
       } catch {
         // Rollback on failure
         store.remove(id);

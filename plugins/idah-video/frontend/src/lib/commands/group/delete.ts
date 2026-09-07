@@ -1,8 +1,17 @@
 // ---------------------------------------------------------------------------
-// idah-video:annotation.group.delete — Delete all annotations in a group
-// Undoable: restores all annotations.
+// idah-video:annotation.group.delete — Delete an explicit list of annotations,
+// or all annotations in a group.
+// Undoable: restores all deleted annotations.
+//
+// This is the shared primitive for "delete this explicit list of annotations":
+// pass `annotations` (optionally with a `groupId` for keyboard/palette context)
+// and the list is deleted directly. When only `groupId` is given, the members
+// are resolved from the data store by group id.
 //
 // Usage:
+//   driver.command.call("idah-video:annotation.group.delete", {
+//     annotations: [ ... ]            // delete exactly these
+//   });
 //   driver.command.call("idah-video:annotation.group.delete", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
@@ -25,7 +34,9 @@ export const command = {
 };
 
 export interface GroupDeleteProps {
-  groupId: string;
+  /** Group id used to resolve members when `annotations` is not provided. */
+  groupId?: string;
+  /** Explicit list of annotations to delete. When non-empty, `groupId` is ignored. */
   annotations?: AnnotationItem[];
 }
 
