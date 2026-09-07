@@ -56,6 +56,7 @@
 
     if (viewport.isReviewWorkspace) return;
 
+    sidebarTabs.rightTab = "annotations";
     selectAnnotationGroup();
 
     const contextMenuProps: ContextMenuComponentProps = {
