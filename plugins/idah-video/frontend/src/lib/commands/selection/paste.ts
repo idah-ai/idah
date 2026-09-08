@@ -44,20 +44,28 @@ export function register(driver: IIdahDriverV2): void {
       const clipboardData = clipboard.annotations!;
       const centroid = clipboard.centroid;
 
+      // Resolve the paste position ONCE at callback time (when the command is
+      // first invoked by call()).  This ensures undo/redo always paste at the
+      // same position, even if the cursor or playback head has moved.
+      const captureX = (opts?.x as number | undefined) ?? viewport.cursor[0];
+      const captureY = (opts?.y as number | undefined) ?? viewport.cursor[1];
+      const capturePastePos: [number, number] = [captureX, captureY];
+
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
 
       return {
         command: { ...command },
         async do() {
-          // Paste position: explicit option (context menu), else last cursor,
-          // else viewport center.
-          const targetX = (opts?.x as number | undefined) ?? viewport.cursor[0];
-          const targetY = (opts?.y as number | undefined) ?? viewport.cursor[1];
-          const pastePos: [number, number] = [targetX, targetY];
+          // Reset from any previous redo cycle
+          createdIds.length = 0;
 
           // Map original group IDs → new group IDs
           const groupMap = new Map<string, string>();
+
+          // Use the captured values so undo/redo are deterministic regardless
+          // of cursor position or playback head at redo time.
+          const pastePos = capturePastePos;
 
           // Anchor the paste to the copied annotations' interpolated positions at the
           // CURRENT playhead frame (not their first keyframe). This way, when you paste
@@ -112,13 +120,11 @@ export function register(driver: IIdahDriverV2): void {
             const newShape = {
               ...entry.shape,
               start: originalStart ?? 0,
-              end: originalEnd ?? (originalStart ?? 0),
+              end: originalEnd ?? originalStart ?? 0,
               frames: newFrames,
             };
 
-            const newMetadata = entry.metadata
-              ? { ...entry.metadata, group_id: newGroupId }
-              : { group_id: newGroupId };
+            const newMetadata = entry.metadata ? { ...entry.metadata, group_id: newGroupId } : { group_id: newGroupId };
 
             try {
               await data.annotations!.create({
@@ -150,8 +156,12 @@ export function register(driver: IIdahDriverV2): void {
             selection.deselect();
           }
         },
-        isCombinable() { return false; },
-        combine(p: never) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p: never) {
+          return p;
+        },
       };
     },
   });
