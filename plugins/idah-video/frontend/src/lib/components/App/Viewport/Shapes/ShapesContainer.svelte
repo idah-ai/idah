@@ -50,7 +50,12 @@
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
-  import { NON_DRAWABLE_SHAPE_TYPES, type IVideoAnnotationRecord, type IVideoAnnotationShape, type IVideoFrameSelection } from "$lib/types";
+  import {
+    NON_DRAWABLE_SHAPE_TYPES,
+    type IVideoAnnotationRecord,
+    type IVideoAnnotationShape,
+    type IVideoFrameSelection,
+  } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { centroid as centroidUtil } from "$lib/utils/math/point";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -244,9 +249,62 @@
   let rectStart: Point | null = $state(null);
   let rectEnd: Point | null = $state(null);
 
+  /** Screen-pixel movement below which a press-and-release still counts as a click, not a drag. */
+  const DRAG_SLOP_PX = 4;
+
+  /**
+   * Client position of the most recent mousedown, recorded in the capture phase
+   * so it is captured even for presses a shape stops on the bubble phase. Comparing
+   * against it tells a real click apart from the click that trails every drag —
+   * no flag to set, so nothing can go stale between gestures.
+   */
+  let _mouseDownClient: Point | null = null;
+
+  /** Whether the pointer moved past the slop between the last mousedown and this event. */
+  function movedSinceMouseDown(e: MouseEvent): boolean {
+    if (!_mouseDownClient) return false;
+    return (
+      Math.abs(e.clientX - _mouseDownClient[0]) > DRAG_SLOP_PX ||
+      Math.abs(e.clientY - _mouseDownClient[1]) > DRAG_SLOP_PX
+    );
+  }
+
+  /** Whether the current Shift+Drag moved far enough to be a rectangle selection rather than a click. */
+  function rectSelectionIsDrag(): boolean {
+    if (!rectStart || !rectEnd) return false;
+    const scale = viewport.workspace.transform.scale || 1;
+    const dx = Math.abs(rectEnd[0] - rectStart[0]) * media.width * scale;
+    const dy = Math.abs(rectEnd[1] - rectStart[1]) * media.height * scale;
+    return dx > DRAG_SLOP_PX || dy > DRAG_SLOP_PX;
+  }
+
+  /** Clear rectangle-selection state without touching the current selection. */
+  function cancelRectSelection() {
+    isRectSelecting = false;
+    rectStart = null;
+    rectEnd = null;
+    document.removeEventListener("mouseup", onDocRectMouseUp);
+  }
+
+  /**
+   * Finalize a rectangle selection. Also bound to document mouseup while one is
+   * active: releasing outside the SVG must never leave `isRectSelecting` stuck,
+   * because onMouseMove returns early while it is set — which would silently
+   * block panning and every subsequent shape drag.
+   */
+  function finishRectSelection() {
+    if (!isRectSelecting) return;
+    if (rectSelectionIsDrag()) completeRectSelection();
+    else cancelRectSelection();
+  }
+
+  function onDocRectMouseUp() {
+    finishRectSelection();
+  }
+
   /** Normalized selection rectangle: [minX, minY, maxX, maxY]. */
   let selectionRect = $derived.by((): [number, number, number, number] | null => {
-    if (!isRectSelecting || !rectStart || !rectEnd) return null;
+    if (!isRectSelecting || !rectStart || !rectEnd || !rectSelectionIsDrag()) return null;
     return [
       Math.min(rectStart[0], rectEnd[0]),
       Math.min(rectStart[1], rectEnd[1]),
@@ -354,6 +412,7 @@
     return () => {
       ro.disconnect();
       document.head.removeChild(style);
+      document.removeEventListener("mouseup", onDocRectMouseUp);
     };
   });
 
@@ -439,9 +498,7 @@
       .map((ann) => ann.id);
 
     selection.selectAnnotations(intersectingIds);
-    isRectSelecting = false;
-    rectStart = null;
-    rectEnd = null;
+    cancelRectSelection();
   }
 
   // ── Event handlers ───────────────────────────────────────────────────
@@ -514,6 +571,8 @@
   // phase, so this runs in the capture phase to get in first. Once started, the
   // Viewport's own document-level listeners carry the drag to completion.
   function onMouseDownCapture(e: MouseEvent) {
+    _mouseDownClient = [e.clientX, e.clientY];
+
     if (e.button !== 1) return;
     e.preventDefault(); // suppress the browser's middle-click autoscroll
     e.stopPropagation(); // keep shape/selection handlers from reacting
@@ -558,6 +617,7 @@
       isRectSelecting = true;
       rectStart = sceneNormalizedCursor;
       rectEnd = sceneNormalizedCursor;
+      document.addEventListener("mouseup", onDocRectMouseUp);
       e.stopPropagation();
       return;
     }
@@ -588,12 +648,8 @@
     for (let i = 0; i < _compRefs.length; i++) {
       _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
     }
-    // Cancel active rectangle selection
-    if (isRectSelecting) {
-      isRectSelecting = false;
-      rectStart = null;
-      rectEnd = null;
-    }
+    // An active rectangle selection is intentionally left running: dragging past
+    // the SVG edge and back should keep the same rectangle.
     // Stop viewport panning
     zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
@@ -602,7 +658,9 @@
     // ── Rectangle selection: complete selection ────────────────────
     if (isRectSelecting) {
       rectEnd = sceneNormalizedCursor;
-      completeRectSelection();
+      // A drag commits the rectangle; a plain Shift+Click falls through to
+      // handleClick's toggle with the selection untouched.
+      finishRectSelection();
       return;
     }
 
@@ -747,6 +805,11 @@
    * - Plain Click: select only that annotation.
    */
   function handleClick(ann: IAnnotationRecord, event?: MouseEvent) {
+    // Swallow the click that trails a drag (rectangle selection, or a shape move
+    // released over another shape) — mouseup already did the meaningful work, and
+    // running Shift+Click toggling here would undo it.
+    if (event && movedSinceMouseDown(event)) return;
+
     // Note mode: create an annotation-anchored note
     if (isNoteMode) {
       _noteHandledByClick = true;
