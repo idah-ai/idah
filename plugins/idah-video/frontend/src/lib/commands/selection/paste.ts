@@ -13,7 +13,6 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { uuidv7 } from "uuidv7";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
@@ -72,45 +71,24 @@ export function register(driver: IIdahDriverV2): void {
             const dx = pastePos[0] - centroid[0];
             const dy = pastePos[1] - centroid[1];
 
-            // Truncate the pasted annotation's start to the current frame if
-            // its original start is before the playhead
-            const currentFrame = viewport.video.currentFrame.value;
+            // Copy the annotation's frame range as-is: start/end and every
+            // keyframe's frame value are an exact copy of the original. Only the
+            // spatial position is offset by (dx, dy).
+            const originalFrames = (entry.shape?.frames as any[]) ?? [];
             const originalStart = (entry.shape as any).start as number | undefined;
             const originalEnd = (entry.shape as any).end as number | undefined;
-            const shouldTruncate = originalStart !== undefined && originalStart < currentFrame;
-            const newStart = shouldTruncate ? currentFrame : (originalStart ?? 0);
-            const newEnd = originalEnd ?? (originalStart ?? 0) + 1;
-
-            // Clone the shape, offset all frame points, and drop keyframes
-            // before the new start (outside the truncated range).
-            const originalFrames = (entry.shape?.frames as any[]) ?? [];
-            const newFrames = originalFrames
-              .filter((f: any) => f.frame >= newStart)
-              .map((frame: any) => {
-                if (!frame?.points) return { ...frame };
-                return {
-                  ...frame,
-                  points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-                };
-              });
-
-            // If no keyframe exists at the exact new start frame, create one
-            // by interpolating from the original shape's surrounding keyframes.
-            if (originalFrames.length > 0 && !newFrames.some((f: any) => f.frame === newStart)) {
-              const interp = getInterpolatedFrame(entry.shape as any, newStart);
-              if (interp?.points?.length) {
-                newFrames.push({
-                  frame: newStart,
-                  angle: interp.angle ?? 0,
-                  points: interp.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-                });
-              }
-            }
+            const newFrames = originalFrames.map((frame: any) => {
+              if (!frame?.points) return { ...frame };
+              return {
+                ...frame,
+                points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
+              };
+            });
 
             const newShape = {
               ...entry.shape,
-              start: newStart,
-              end: newEnd,
+              start: originalStart ?? 0,
+              end: originalEnd ?? (originalStart ?? 0) + 1,
               frames: newFrames,
             };
 
