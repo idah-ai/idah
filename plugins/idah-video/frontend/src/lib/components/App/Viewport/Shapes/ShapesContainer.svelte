@@ -419,6 +419,10 @@
       .cursor-grabbing, .cursor-grabbing * { cursor: grabbing !important; }
       .cursor-pointer { cursor: pointer; }
       .cursor-target { cursor: alias; }
+      /* Applied to <body> while a viewport gesture is live: a drag that leaves the
+         SVG would otherwise start a native text selection across the sidebars and
+         timeline it passes over. */
+      .idah-video-dragging, .idah-video-dragging * { user-select: none !important; -webkit-user-select: none !important; }
     `;
     document.head.appendChild(style);
 
@@ -524,14 +528,24 @@
   function beginGestureTracking() {
     document.addEventListener("mousemove", onDocMouseMove);
     document.addEventListener("mouseup", onDocMouseUp);
+    document.body.classList.add("idah-video-dragging");
   }
 
   function endGestureTracking() {
     document.removeEventListener("mousemove", onDocMouseMove);
     document.removeEventListener("mouseup", onDocMouseUp);
+    document.body.classList.remove("idah-video-dragging");
   }
 
   function onDocMouseMove(e: MouseEvent) {
+    // Recovery: no buttons held means the release happened somewhere we never
+    // saw it (released over another window, say). Finalize rather than leave the
+    // gesture — and the body's user-select lock — hanging.
+    if (e.buttons === 0) {
+      onDocMouseUp(e);
+      return;
+    }
+
     // Moves over the SVG are already served by its own handler — this only
     // extends a gesture that has wandered outside it.
     if (!svgEl || (e.target instanceof Node && svgEl.contains(e.target))) return;
