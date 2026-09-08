@@ -394,7 +394,6 @@
           ? "cursor-grab"
           : "cursor-pointer",
   );
-
 </script>
 
 {#if pathD}
@@ -425,6 +424,12 @@
       // In review mode, let the event bubble for panning
       if (viewport.mode === "review") return;
 
+      // Shift+Drag over a shape that isn't part of an editable selection is a
+      // rectangle selection: let it bubble to the container. When the shape IS
+      // selected and editable, shift keeps its old meaning — grab and move the
+      // selection — so multi-shape drags still start here.
+      if (e.shiftKey && !(editable && selected)) return;
+
       if (editable && selected && cursor) {
         startSelection(cursor);
       }
@@ -432,7 +437,10 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4}
+  <!-- Handles hide while the shape is edited, and while ANY shape in a multi-selection
+       is dragged: multiDragDelta is non-null for the whole group drag, so the read-only
+       dots on the shapes being carried along disappear with the dragged one's. -->
+  {#if editable && selected && !isEditing && !multiDragDelta && displayPoints.length === 4}
     <BBoxHandler
       {displayPoints}
       {centroidN}

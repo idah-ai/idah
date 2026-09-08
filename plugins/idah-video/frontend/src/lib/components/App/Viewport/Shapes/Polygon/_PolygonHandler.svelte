@@ -74,150 +74,144 @@
   <!-- Read-only (multi-select): inert gray dots at vertices only → no edge
        diamonds, no scale handle, no interactivity -->
   {#each vertexHandles as point, i (i)}
-    <circle
-      cx={point[0] * w}
-      cy={point[1] * h}
-      r={R}
-      fill="#9ca3af"
-      pointer-events="none"
-    />
+    <circle cx={point[0] * w} cy={point[1] * h} r={R / 2} fill="#9ca3af" pointer-events="none" />
   {/each}
 {:else}
-<!-- Edge midpoint handles (diamond shape) -->
-{#each edgeMidpoints as point, i (i)}
-  {@const isHovered = hoveredEdgeIndex === i}
-  {@const cx = point[0] * w}
-  {@const cy = point[1] * h}
-  {@const r = isHovered ? R_edge_hovered : R_edge}
-  <polygon
-    points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
-    fill="grey"
-    stroke="white"
-    stroke-width={S_line}
-    stroke-linejoin="round"
-    pointer-events="none"
-  />
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <polygon
-    points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
-    fill="transparent"
-    style:outline="none"
-    style:cursor={isEditing ? "default" : addCursorCss}
-    onmouseenter={() => (hoveredEdgeIndex = i)}
-    onmouseleave={() => (hoveredEdgeIndex = undefined)}
-    onmousedown={(e) => {
-      e.stopPropagation();
-      onAddVertex(i);
-    }}
-  />
-{/each}
+  <!-- Edge midpoint handles (diamond shape) -->
+  {#each edgeMidpoints as point, i (i)}
+    {@const isHovered = hoveredEdgeIndex === i}
+    {@const cx = point[0] * w}
+    {@const cy = point[1] * h}
+    {@const r = isHovered ? R_edge_hovered : R_edge}
+    <polygon
+      points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
+      fill="grey"
+      stroke="white"
+      stroke-width={S_line}
+      stroke-linejoin="round"
+      pointer-events="none"
+    />
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <polygon
+      points={`${cx},${cy - R_edge_hit} ${cx + R_edge_hit},${cy} ${cx},${cy + R_edge_hit} ${cx - R_edge_hit},${cy}`}
+      fill="transparent"
+      style:outline="none"
+      style:cursor={isEditing ? "default" : addCursorCss}
+      onmouseenter={() => (hoveredEdgeIndex = i)}
+      onmouseleave={() => (hoveredEdgeIndex = undefined)}
+      onmousedown={(e) => {
+        e.stopPropagation();
+        onAddVertex(i);
+      }}
+    />
+  {/each}
 
-<!-- Vertex handles -->
-{#each vertexHandles as point, i (i)}
-  {@const isHovered = hoveredVertexIndex === i}
-  {@const isSelected = selectedIndices.has(i)}
-  {@const curR = isHovered || isSelected ? R_hovered : R}
-  <!-- White halo for contrast -->
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={isHovered || isSelected ? R_hovered : R}
-    fill="white"
-    fill-opacity={isHovered ? 0.8 : 0.6}
-    pointer-events="none"
-  />
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={curR}
-    fill={color}
-    fill-opacity={isSelected ? 0.7 : isHovered ? 0.5 : 0.25}
-    stroke={color}
-    stroke-width={isSelected ? S_line * 2 : S_line}
-    pointer-events="none"
-  />
-  <circle cx={point[0] * w} cy={point[1] * h} r={R_dot} fill={color} pointer-events="none" />
-  {#if isSelected}
+  <!-- Vertex handles -->
+  {#each vertexHandles as point, i (i)}
+    {@const isHovered = hoveredVertexIndex === i}
+    {@const isSelected = selectedIndices.has(i)}
+    {@const curR = isHovered || isSelected ? R_hovered : R}
+    <!-- White halo for contrast -->
     <circle
       cx={point[0] * w}
       cy={point[1] * h}
-      r={R_hovered + 3 * invScale}
-      fill="none"
-      stroke={color}
-      stroke-width={1.5}
-      stroke-dasharray="3,2"
-      vector-effect="non-scaling-stroke"
+      r={isHovered || isSelected ? R_hovered : R}
+      fill="white"
+      fill-opacity={isHovered ? 0.8 : 0.6}
       pointer-events="none"
     />
-  {/if}
-  <!-- Minus icon when Alt+hover (delete mode) -->
-  {#if isHovered && altHeld}
-    <line
-      x1={point[0] * w - R_dot}
-      y1={point[1] * h}
-      x2={point[0] * w + R_dot}
-      y2={point[1] * h}
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={curR}
+      fill={color}
+      fill-opacity={isSelected ? 0.7 : isHovered ? 0.5 : 0.25}
       stroke={color}
-      stroke-width={S_line * 2}
-      stroke-linecap="round"
+      stroke-width={isSelected ? S_line * 2 : S_line}
       pointer-events="none"
     />
-  {/if}
-  <!-- Hit zone -->
+    <circle cx={point[0] * w} cy={point[1] * h} r={R_dot} fill={color} pointer-events="none" />
+    {#if isSelected}
+      <circle
+        cx={point[0] * w}
+        cy={point[1] * h}
+        r={R_hovered + 3 * invScale}
+        fill="none"
+        stroke={color}
+        stroke-width={1.5}
+        stroke-dasharray="3,2"
+        vector-effect="non-scaling-stroke"
+        pointer-events="none"
+      />
+    {/if}
+    <!-- Minus icon when Alt+hover (delete mode) -->
+    {#if isHovered && altHeld}
+      <line
+        x1={point[0] * w - R_dot}
+        y1={point[1] * h}
+        x2={point[0] * w + R_dot}
+        y2={point[1] * h}
+        stroke={color}
+        stroke-width={S_line * 2}
+        stroke-linecap="round"
+        pointer-events="none"
+      />
+    {/if}
+    <!-- Hit zone -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={R_hit}
+      fill="transparent"
+      style:outline="none"
+      style:cursor={altHeld ? removeCursorCss : isEditing ? "none" : "move"}
+      onmouseenter={() => (hoveredVertexIndex = i)}
+      onmouseleave={() => (hoveredVertexIndex = undefined)}
+      onmousedown={(e) => {
+        e.stopPropagation();
+        if (e.altKey) onDeleteVertex(i);
+        else onStartVertexDrag(i);
+      }}
+    />
+  {/each}
+
+  <!-- Scale handle at centroid -->
+  <!-- White halo for contrast -->
+  <circle
+    cx={centroid[0] * w}
+    cy={centroid[1] * h}
+    r={hoveredScale ? R_scale_hovered : R_scale}
+    fill="white"
+    fill-opacity={hoveredScale ? 0.8 : 0.6}
+    pointer-events="none"
+  />
+  <circle
+    cx={centroid[0] * w}
+    cy={centroid[1] * h}
+    r={hoveredScale ? R_scale_hovered : R_scale}
+    fill={color}
+    fill-opacity={hoveredScale ? 0.4 : 0.2}
+    stroke={color}
+    stroke-width={S_line}
+    pointer-events="none"
+  />
+  <circle cx={centroid[0] * w} cy={centroid[1] * h} r={R_scale_dot} fill={color} pointer-events="none" />
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={R_hit}
+    cx={centroid[0] * w}
+    cy={centroid[1] * h}
+    r={R_scale_hit}
     fill="transparent"
     style:outline="none"
-    style:cursor={altHeld ? removeCursorCss : isEditing ? "none" : "move"}
-    onmouseenter={() => (hoveredVertexIndex = i)}
-    onmouseleave={() => (hoveredVertexIndex = undefined)}
+    style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 12 12, nesw-resize`}
+    onmouseenter={() => (hoveredScale = true)}
+    onmouseleave={() => (hoveredScale = false)}
     onmousedown={(e) => {
       e.stopPropagation();
-      if (e.altKey) onDeleteVertex(i);
-      else onStartVertexDrag(i);
+      onStartScale();
     }}
   />
-{/each}
-
-<!-- Scale handle at centroid -->
-<!-- White halo for contrast -->
-<circle
-  cx={centroid[0] * w}
-  cy={centroid[1] * h}
-  r={hoveredScale ? R_scale_hovered : R_scale}
-  fill="white"
-  fill-opacity={hoveredScale ? 0.8 : 0.6}
-  pointer-events="none"
-/>
-<circle
-  cx={centroid[0] * w}
-  cy={centroid[1] * h}
-  r={hoveredScale ? R_scale_hovered : R_scale}
-  fill={color}
-  fill-opacity={hoveredScale ? 0.4 : 0.2}
-  stroke={color}
-  stroke-width={S_line}
-  pointer-events="none"
-/>
-<circle cx={centroid[0] * w} cy={centroid[1] * h} r={R_scale_dot} fill={color} pointer-events="none" />
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<circle
-  cx={centroid[0] * w}
-  cy={centroid[1] * h}
-  r={R_scale_hit}
-  fill="transparent"
-  style:outline="none"
-  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 12 12, nesw-resize`}
-  onmouseenter={() => (hoveredScale = true)}
-  onmouseleave={() => (hoveredScale = false)}
-  onmousedown={(e) => {
-    e.stopPropagation();
-    onStartScale();
-  }}
-/>
 {/if}
 
 <!-- Box selection overlay -->
