@@ -8,7 +8,6 @@
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
-import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
@@ -39,19 +38,11 @@ export function register(driver: IIdahDriverV2): void {
           const all = data.annotations?.items ?? [];
           if (all.length === 0) return;
 
-          // Collect the selected annotations (from both annotation IDs and group IDs)
+          // Copy only what is selected: a selected annotation alone, a selected
+          // group whole. Track selection (track id = group id) is the track copy.
           const selectedIds = new Set(selection.selectedAnnotationIds);
           const selectedGids = new Set(selection.selectedGroupIds);
 
-          // Resolve group IDs from selected annotations
-          for (const ann of all) {
-            if (selectedIds.has(ann.id)) {
-              const gid = (ann.metadata as any)?.group_id ?? ann.id;
-              selectedGids.add(gid);
-            }
-          }
-
-          // Collect all annotations from the selected groups
           const copySet = new Set<string>();
           const entries: {
             shape: Record<string, unknown>;
@@ -63,7 +54,7 @@ export function register(driver: IIdahDriverV2): void {
 
           for (const ann of all) {
             const gid = (ann.metadata as any)?.group_id ?? ann.id;
-            if (selectedGids.has(gid) && !copySet.has(ann.id)) {
+            if ((selectedIds.has(ann.id) || selectedGids.has(gid)) && !copySet.has(ann.id)) {
               copySet.add(ann.id);
               entries.push({
                 shape: { ...(ann.shape as any) },
@@ -77,8 +68,7 @@ export function register(driver: IIdahDriverV2): void {
 
           if (entries.length === 0) return;
 
-          // Compute centroid of all annotations' interpolated points at the current frame
-          const currentFrame = viewport.video.currentFrame.value;
+          // Centroid of the copied first keyframes — paste uses it only as a fallback.
           let cx = 0, cy = 0, count = 0;
 
           for (const entry of entries) {
