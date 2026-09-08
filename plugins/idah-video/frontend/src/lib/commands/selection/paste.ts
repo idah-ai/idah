@@ -112,7 +112,7 @@ export function register(driver: IIdahDriverV2): void {
             const newShape = {
               ...entry.shape,
               start: originalStart ?? 0,
-              end: originalEnd ?? (originalStart ?? 0) + 1,
+              end: originalEnd ?? (originalStart ?? 0),
               frames: newFrames,
             };
 
