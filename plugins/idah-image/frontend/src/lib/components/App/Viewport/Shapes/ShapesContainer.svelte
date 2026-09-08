@@ -73,6 +73,7 @@
   import type { Point } from "$lib/utils/math/point";
   import { centroid as centroidUtil } from "$lib/utils/math/point";
   import { rotatePointN } from "./BoundingBox/utils";
+  import { ellipseAABB } from "./Ellipse/utils";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
   // ── Types ──────────────────────────────────────────────────────────────
@@ -500,10 +501,40 @@
 
   // ── Rectangle selection helpers ────────────────────────────────────────
 
+  /**
+   * Resolve a shape's outline in normalized coords.
+   *
+   * Most types store real coordinates in `points`, but circle and ellipse store a
+   * center plus radii — circle keeps its radius in `shape.radius` (scaled against
+   * min(w, h), as the renderer does), ellipse keeps [rx, ry] in `points[1]`. Taking
+   * min/max over those raw entries treats a radius as a coordinate and yields a box
+   * nowhere near the shape, so each needs its own corners.
+   */
+  function getShapeOutline(shape: IImageAnnotationShape): Point[] | null {
+    if (shape.type === IMAGE_CIRCLE) {
+      const c = shape.points?.[0] as Point | undefined;
+      if (!c) return null;
+      const r = (shape.radius as number | undefined) ?? 0;
+      const basis = Math.min(media.width, media.height);
+      const rx = media.width > 0 ? (r * basis) / media.width : 0;
+      const ry = media.height > 0 ? (r * basis) / media.height : 0;
+      return ellipseAABB(c, rx, ry);
+    }
+
+    if (shape.type === IMAGE_ELLIPSE) {
+      const c = shape.points?.[0] as Point | undefined;
+      const r = shape.points?.[1] as Point | undefined;
+      if (!c || !r) return null;
+      return ellipseAABB(c, r[0], r[1]);
+    }
+
+    return shape.points?.length ? (shape.points as Point[]) : null;
+  }
+
   /** Compute the AABB of an annotation's shape. Returns null if no geometry. */
   function getAnnotationAABB(ann: IAnnotationRecord): [number, number, number, number] | null {
     const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
-    if (!shape?.points?.length) return null;
+    if (!shape) return null;
 
     // `points` holds the unrotated corners — `angle` is applied as a render
     // transform around the centroid (see BBoxShape's transform-origin), so the
@@ -512,7 +543,8 @@
     // the user sees it. rotatePointN does the math in pixel space, matching the
     // render; shapes with no angle skip this untouched.
     const angle = (shape.angle as number | undefined) ?? 0;
-    let pts = shape.points as Point[];
+    let pts = getShapeOutline(shape);
+    if (!pts?.length) return null;
     if (angle !== 0 && media.width > 0 && media.height > 0) {
       const center = centroidUtil(pts);
       pts = pts.map((pt) => rotatePointN(pt, center, angle, media.width, media.height));
