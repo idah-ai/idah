@@ -51,11 +51,8 @@
   // Compute color using the same annotationColor() as the viewport shapes
   let color = $derived.by(() => resolveAnnotationColor(annotation));
 
-  // Check if this specific annotation is the selected one
-  let isSelected = $derived.by(() => {
-    const v = selection.value;
-    return v?.type === "annotation" && v.annotation.id === annotation.id;
-  });
+  // Check if this specific annotation is selected.
+   let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
 
   // Functions
   function handleOnContextMenu(e: MouseEvent) {

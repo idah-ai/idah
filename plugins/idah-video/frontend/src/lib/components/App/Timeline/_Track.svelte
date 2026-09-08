@@ -60,8 +60,10 @@
         items: items as any,
       };
 
-      /** Select annotation group */
-      selection.selectGroup(trackId);
+      /** Select annotation group — but only if not already part of a multi-selection */
+      if (!selection.isGroupSelected(trackId)) {
+        selection.selectGroup(trackId);
+      }
 
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }
@@ -84,7 +86,12 @@
       }
     }
     if (trackId) {
-      selection.selectGroup(trackId);
+      // Shift+Click toggles the group in/out of the timeline group selection
+      if (e.shiftKey) {
+        selection.toggleGroup(trackId);
+      } else {
+        selection.selectGroup(trackId);
+      }
     }
   }
 </script>

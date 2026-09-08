@@ -19,12 +19,7 @@
   import { NOTES_ROW_HEIGHT, TRACK_HEIGHT, GROUP_HEADER_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
 
-  import type {
-    TimelineItem,
-    TimelineProps,
-    TrackData,
-    Viewport,
-  } from "$lib/components/App/Timeline/types";
+  import type { TimelineItem, TimelineProps, TrackData, Viewport } from "$lib/components/App/Timeline/types";
   import type { IAnnotationRecord } from "$idah/v2/types";
 
   interface Props extends TimelineProps {
@@ -104,6 +99,7 @@
   // Derive selectionOffset from currentFrame
   const selectionOffset = $derived(currentFrame);
 
+  // Derive selection ID from group selection for backward-compatible track highlight
   let selectedGroupId = $derived.by(() => {
     const v = selection.value;
     return v?.type === "group" ? v.groupId : undefined;
@@ -648,31 +644,37 @@
     </div>
   {/if}
 
-  {#snippet pinnedRow(rowItems: TimelineItem[], infoSlot: Snippet<[]> | undefined, height: number, wrapperClass: string)}
+  {#snippet pinnedRow(
+    rowItems: TimelineItem[],
+    infoSlot: Snippet<[]> | undefined,
+    height: number,
+    wrapperClass: string,
+  )}
     <div class={wrapperClass} style="height: {height}px;">
       <div class="timeline-notes-spacer bg-secondary border-r">
         {#if infoSlot}
           {@render infoSlot()}
         {/if}
       </div>
-      <div class="timeline-notes-content-wrapper bg-secondary" role="presentation" onmousemove={handleNotesMouseMove} onmouseleave={handleMouseLeave} onclick={handleNotesClick} onwheel={handleNotesWheel}>
+      <div
+        class="timeline-notes-content-wrapper bg-secondary"
+        role="presentation"
+        onmousemove={handleNotesMouseMove}
+        onmouseleave={handleMouseLeave}
+        onclick={handleNotesClick}
+        onwheel={handleNotesWheel}
+      >
         <div
           class="timeline-notes-content"
           style="width: {contentWidth}px; transform: translateX({-viewport.startRange * scale}px);"
         >
           {#if hasSelection && selectionOffset >= 0 && selectionOffset < length}
-            <Selection
-              offset={selectionOffset}
-              length={selectionLength}
-              {scale}
-              height={height}
-              trackLength={length}
-            />
+            <Selection offset={selectionOffset} length={selectionLength} {scale} {height} trackLength={length} />
             <Caret
               x={selectionOffset * scale}
               value={selectionOffset}
               {labelFormatter}
-              height={height}
+              {height}
               color="#4a90d9"
               showLabel={false}
             />
@@ -681,22 +683,8 @@
             <TrackItem {item} {scale} />
           {/each}
           {#if showCaret && caretPixelX >= 0 && caretPixelX <= contentWidth}
-            <Selection
-              offset={caretFrame}
-              length={1}
-              {scale}
-              height={height}
-              trackLength={length}
-              color="orangered"
-            />
-            <Caret
-              x={caretPixelX}
-              value={caretFrame}
-              {labelFormatter}
-              height={height}
-              color="orangered"
-              showLabel={false}
-            />
+            <Selection offset={caretFrame} length={1} {scale} {height} trackLength={length} color="orangered" />
+            <Caret x={caretPixelX} value={caretFrame} {labelFormatter} {height} color="orangered" showLabel={false} />
           {/if}
         </div>
       </div>
@@ -755,16 +743,15 @@
     bind:this={bodyScrollEl}
     bind:clientHeight={bodyScrollClientHeight}
     onscroll={handleBodyScroll}
-    oncontextmenu={(e) => { if (vp.isReviewWorkspace) e.preventDefault(); }}
+    oncontextmenu={(e) => {
+      if (vp.isReviewWorkspace) e.preventDefault();
+    }}
   >
     <div class="timeline-main">
       <div class="timeline-trackinfos-body border-r" style="height: {tracksHeight}px;">
         {#each visibleRows as row (row.type === "header" ? `h:${row.label}` : `t:${row.track.id}`)}
           {#if row.type === "header"}
-            <div
-              class="timeline-group-header"
-              style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;"
-            >
+            <div class="timeline-group-header" style="top: {row.top}px; height: {GROUP_HEADER_HEIGHT}px;">
               <button
                 type="button"
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-1 text-left focus:outline-none"
@@ -840,7 +827,7 @@
                 {scale}
                 items={row.track.items}
                 top={row.top}
-                isSelected={selectedGroupId === row.track.id}
+                isSelected={selection.isGroupSelected(row.track.id)}
                 trackId={row.track.id}
                 kind={row.track.kind}
               />
