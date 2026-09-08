@@ -11,7 +11,7 @@
 
   import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
   import { hexToRgba } from "$lib/utils/color";
-
+  import { viewport } from "$lib/state/viewport.svelte";
   import type { Point } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@
       [x2, y2],
       [x1, y2],
     ];
-    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, {angle: 0}, undefined);
+    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, { angle: 0 }, undefined);
     return true;
   }
 
@@ -99,22 +99,26 @@
     vector-effect="non-scaling-stroke"
   />
   <!-- Dimension label during creation -->
+  {@const invScale = 1 / viewport.workspace.transform.scale}
   {@const pxW = Math.abs(cx - sx).toFixed(0)}
   {@const pxH = Math.abs(cy - sy).toFixed(0)}
-  <text
-    x={Math.min(sx, cx)}
-    y={Math.min(sy, cy) - 6}
-    style:font-size="12px"
-    style:font-weight="bold"
-    style:fill="#fff"
-    style:text-anchor="start"
-    style:paint-order="stroke"
-    style:stroke="rgba(0, 0, 0, 0.85)"
-    style:stroke-width="3px"
-    style:stroke-linecap="round"
-    style:stroke-linejoin="round"
-    style:pointer-events="none"
-    style:user-select="none"
-    vector-effect="non-scaling-stroke"
-  >{pxW} × {pxH}</text>
+  {@const minX = Math.min(sx, cx)}
+  {@const minY = Math.min(sy, cy)}
+  <g transform="translate({minX}, {minY - 6 * invScale}) scale({invScale})" style:pointer-events="none" style:user-select="none">
+    <text
+      x={0}
+      y={0}
+      style:font-size="12px"
+      style:font-weight="bold"
+      style:fill="#fff"
+      style:text-anchor="start"
+      style:paint-order="stroke"
+      style:stroke="rgba(0, 0, 0, 0.85)"
+      style:stroke-width="3px"
+      style:stroke-linecap="round"
+      style:stroke-linejoin="round"
+      style:pointer-events="none"
+      style:user-select="none">{pxW} × {pxH}</text
+    >
+  </g>
 {/if}
