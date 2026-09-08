@@ -49,6 +49,7 @@
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
+  import { rotatePointN } from "./BoundingBox/utils";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import {
     NON_DRAWABLE_SHAPE_TYPES,
@@ -491,8 +492,21 @@
     const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
     if (!interp?.points?.length) return null;
 
-    const xs = interp.points.map((p) => p[0]);
-    const ys = interp.points.map((p) => p[1]);
+    // `points` holds the unrotated corners — `angle` is applied as a render
+    // transform around the centroid (see BBoxShape's transform-origin), so the
+    // box must be rotated the same way here. Otherwise a rotated annotation is
+    // hit-tested against the bounds it would occupy at 0°, which is not where
+    // the user sees it. rotatePointN does the math in pixel space, matching the
+    // render; polygons carry no angle and skip this untouched.
+    const angle = interp.angle ?? 0;
+    let pts = interp.points;
+    if (angle !== 0 && media.width > 0 && media.height > 0) {
+      const center = centroidUtil(pts);
+      pts = pts.map((p) => rotatePointN(p, center, angle, media.width, media.height));
+    }
+
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
     return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   }
 
