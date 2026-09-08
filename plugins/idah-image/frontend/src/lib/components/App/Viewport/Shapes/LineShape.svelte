@@ -190,6 +190,13 @@
     onmousedown={(e) => {
       if (viewport.isCreationMode) return;
       if (viewport.mode === "review") return;
+
+      // Shift+Drag over a shape that isn't part of an editable selection is a
+      // rectangle selection: let it bubble to the container. When the shape IS
+      // selected and editable, shift keeps its old meaning — grab and move the
+      // selection — so multi-shape drags still start here.
+      if (e.shiftKey && !(editable && selected)) return;
+
       if (editable && selected) {
         const svg = (e.currentTarget as SVGElement).ownerSVGElement;
         if (svg) {
@@ -239,8 +246,9 @@
   />
 
   <!-- Handles when selected -->
-  {#if editable && selected && displayPoints.length >= 2 && selection.selectedAnnotationIds.size <= 1 }
+  {#if editable && selected && !multiDragDelta && displayPoints.length >= 2}
     <LineHandler
+      readOnly={selection.selectedAnnotationIds.size > 1}
       displayPoints={displayPoints}
       {color}
       {isEditing}

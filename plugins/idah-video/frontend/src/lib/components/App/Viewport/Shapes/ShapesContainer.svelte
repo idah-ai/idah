@@ -666,6 +666,17 @@
     // gesture that starts here is tracked to its release, wherever that lands.
     beginGestureTracking();
 
+    // Anchor a potential group drag at the press point. The dragged shape records
+    // its own start here too (its mousedown runs next, in the bubble phase), so
+    // letting the first mousemove set the origin instead leaves the rest of the
+    // selection permanently short by that first movement — they lag behind the
+    // shape under the cursor and commit in the wrong place.
+    if (svgEl) {
+      const rect = svgEl.getBoundingClientRect();
+      mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
+      _multiDragOrigin = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+    }
+
     if (e.button !== 1) return;
     e.preventDefault(); // suppress the browser's middle-click autoscroll
     e.stopPropagation(); // keep shape/selection handlers from reacting

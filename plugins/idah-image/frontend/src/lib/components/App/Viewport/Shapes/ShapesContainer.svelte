@@ -71,6 +71,8 @@
     type IImageAnnotationRecord,
   } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
+  import { centroid as centroidUtil } from "$lib/utils/math/point";
+  import { rotatePointN } from "./BoundingBox/utils";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
   // ── Types ──────────────────────────────────────────────────────────────
@@ -274,14 +276,80 @@
   let rectStart: Point | null = $state(null);
   let rectEnd: Point | null = $state(null);
 
-  /** Normalized selection rectangle: [minX, minY, maxX, maxY]. */
+  /** Screen-pixel movement below which a press-and-release still counts as a click, not a drag. */
+  const DRAG_SLOP_PX = 4;
+
+  /**
+   * Client position of the most recent mousedown, recorded in the capture phase
+   * so it is captured even for presses a shape stops on the bubble phase. Comparing
+   * against it tells a real click apart from the click that trails every drag —
+   * no flag to set, so nothing can go stale between gestures.
+   */
+  let _mouseDownClient: Point | null = null;
+
+  /** Whether the pointer moved past the slop between the last mousedown and this event. */
+  function movedSinceMouseDown(e: MouseEvent): boolean {
+    if (!_mouseDownClient) return false;
+    return (
+      Math.abs(e.clientX - _mouseDownClient[0]) > DRAG_SLOP_PX ||
+      Math.abs(e.clientY - _mouseDownClient[1]) > DRAG_SLOP_PX
+    );
+  }
+
+  /** Whether the current Shift+Drag moved far enough to be a rectangle selection rather than a click. */
+  function rectSelectionIsDrag(): boolean {
+    if (!rectStart || !rectEnd) return false;
+    const scale = viewport.workspace.transform.scale || 1;
+    const dx = Math.abs(rectEnd[0] - rectStart[0]) * media.width * scale;
+    const dy = Math.abs(rectEnd[1] - rectStart[1]) * media.height * scale;
+    return dx > DRAG_SLOP_PX || dy > DRAG_SLOP_PX;
+  }
+
+  /** Clear rectangle-selection state without touching the current selection. */
+  function cancelRectSelection() {
+    isRectSelecting = false;
+    rectStart = null;
+    rectEnd = null;
+  }
+
+  /** Finalize a rectangle selection: a real drag commits it, a click-sized one is discarded. */
+  function finishRectSelection() {
+    if (!isRectSelecting) return;
+    if (rectSelectionIsDrag()) completeRectSelection();
+    else cancelRectSelection();
+  }
+
+  /**
+   * The region currently on screen, in normalized media coords: [minX, minY, maxX, maxY].
+   * Mirrors the SVG viewBox — scene origin is -translate/scale, extent is dimensions/scale.
+   */
+  let visibleBoundsN = $derived.by((): [number, number, number, number] => {
+    const [tx, ty] = viewport.workspace.transform.translate;
+    const [w, h] = viewport.workspace.dimensions;
+    const sc = viewport.workspace.transform.scale || 1;
+    const mw = media.width || 1;
+    const mh = media.height || 1;
+    return [-tx / sc / mw, -ty / sc / mh, (-tx + w) / sc / mw, (-ty + h) / sc / mh];
+  });
+
+  /**
+   * Normalized selection rectangle: [minX, minY, maxX, maxY].
+   *
+   * Clamped to the visible region: the drag keeps tracking outside the SVG (so
+   * crossing the edge doesn't strand the gesture), but the rectangle itself must
+   * not reach content the user cannot see and did not knowingly sweep over.
+   * Clamping here covers both the drawn overlay and completeRectSelection, so the
+   * box the user sees is exactly the box that selects.
+   */
   let selectionRect = $derived.by((): [number, number, number, number] | null => {
-    if (!isRectSelecting || !rectStart || !rectEnd) return null;
+    if (!isRectSelecting || !rectStart || !rectEnd || !rectSelectionIsDrag()) return null;
+    const [vx0, vy0, vx1, vy1] = visibleBoundsN;
+    const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
     return [
-      Math.min(rectStart[0], rectEnd[0]),
-      Math.min(rectStart[1], rectEnd[1]),
-      Math.max(rectStart[0], rectEnd[0]),
-      Math.max(rectStart[1], rectEnd[1]),
+      clamp(Math.min(rectStart[0], rectEnd[0]), vx0, vx1),
+      clamp(Math.min(rectStart[1], rectEnd[1]), vy0, vy1),
+      clamp(Math.max(rectStart[0], rectEnd[0]), vx0, vx1),
+      clamp(Math.max(rectStart[1], rectEnd[1]), vy0, vy1),
     ];
   });
 
@@ -366,12 +434,17 @@
       .cursor-grabbing, .cursor-grabbing * { cursor: grabbing !important; }
       .cursor-pointer { cursor: pointer; }
       .cursor-target { cursor: alias; }
+      /* Applied to <body> while a viewport gesture is live: a drag that leaves the
+         SVG would otherwise start a native text selection across the sidebars it
+         passes over. */
+      .idah-image-dragging, .idah-image-dragging * { user-select: none !important; -webkit-user-select: none !important; }
     `;
     document.head.appendChild(style);
 
     return () => {
       viewport.svgElement = null;
       document.head.removeChild(style);
+      endGestureTracking();
     };
   });
 
@@ -432,8 +505,21 @@
     const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
     if (!shape?.points?.length) return null;
 
-    const xs = shape.points.map((p) => p[0]);
-    const ys = shape.points.map((p) => p[1]);
+    // `points` holds the unrotated corners — `angle` is applied as a render
+    // transform around the centroid (see BBoxShape's transform-origin), so the
+    // box must be rotated the same way here. Otherwise a rotated annotation is
+    // hit-tested against the bounds it would occupy at 0°, which is not where
+    // the user sees it. rotatePointN does the math in pixel space, matching the
+    // render; shapes with no angle skip this untouched.
+    const angle = (shape.angle as number | undefined) ?? 0;
+    let pts = shape.points as Point[];
+    if (angle !== 0 && media.width > 0 && media.height > 0) {
+      const center = centroidUtil(pts);
+      pts = pts.map((pt) => rotatePointN(pt, center, angle, media.width, media.height));
+    }
+
+    const xs = pts.map((pt) => pt[0]);
+    const ys = pts.map((pt) => pt[1]);
     return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   }
 
@@ -456,9 +542,7 @@
       .map((ann) => ann.id);
 
     selection.selectAnnotations(intersectingIds);
-    isRectSelecting = false;
-    rectStart = null;
-    rectEnd = null;
+    cancelRectSelection();
   }
 
   // ── Event handlers ───────────────────────────────────────────────────
@@ -475,8 +559,52 @@
     return [255, 0, 0, 100];
   }
 
+  // ── Document-level gesture tracking ──────────────────────────────────
+  // A press that starts on the SVG must keep tracking after the cursor leaves it,
+  // and must finalize wherever it is released. Without this, crossing the viewport
+  // edge mid-drag stranded the gesture: the batch commit for a multi-selection
+  // lives in onMouseUp, which never fires for a release outside the SVG, so only
+  // the shape that was under the cursor kept its new position.
+  // Viewport does the same for panning (see panStart there).
+  function beginGestureTracking() {
+    document.addEventListener("mousemove", onDocMouseMove);
+    document.addEventListener("mouseup", onDocMouseUp);
+    document.body.classList.add("idah-image-dragging");
+  }
+
+  function endGestureTracking() {
+    document.removeEventListener("mousemove", onDocMouseMove);
+    document.removeEventListener("mouseup", onDocMouseUp);
+    document.body.classList.remove("idah-image-dragging");
+  }
+
+  function onDocMouseMove(e: MouseEvent) {
+    // Recovery: no buttons held means the release happened somewhere we never
+    // saw it (released over another window, say). Finalize rather than leave the
+    // gesture — and the body's user-select lock — hanging.
+    if (e.buttons === 0) {
+      onDocMouseUp(e);
+      return;
+    }
+
+    // Moves over the SVG are already served by its own handler — this only
+    // extends a gesture that has wandered outside it.
+    if (!svgEl || (e.target instanceof Node && svgEl.contains(e.target))) return;
+    const rect = svgEl.getBoundingClientRect();
+    handlePointerMove(e, [e.clientX - rect.left, e.clientY - rect.top], true);
+  }
+
+  function onDocMouseUp(e: MouseEvent) {
+    endGestureTracking();
+    onMouseUp(e);
+  }
+
   function onMouseMove(e: MouseEvent) {
-    mousePosition = [e.offsetX, e.offsetY];
+    handlePointerMove(e, [e.offsetX, e.offsetY], false);
+  }
+
+  function handlePointerMove(e: MouseEvent, position: Point, fromDocument: boolean) {
+    mousePosition = position;
 
     // ── Mask brush painting (no early return — let viewport tracking below proceed) ─
     if (isMaskBrushMode) {
@@ -540,8 +668,10 @@
       scheduleHoverHitTest();
     }
 
-    // Only pan in default mode
-    if (viewport.mode === DEFAULT_MODE) {
+    // Only pan in default mode. Never forward a document-sourced event: its
+    // offsetX/offsetY are relative to whatever element happens to be under the
+    // cursor, and Viewport installs its own document listeners once a pan starts.
+    if (!fromDocument && viewport.mode === DEFAULT_MODE) {
       zoomableElement!.mouseMove(e);
     }
   }
@@ -556,6 +686,25 @@
   // phase, so this runs in the capture phase to get in first. Once started, the
   // Viewport's own document-level listeners carry the drag to completion.
   function onMouseDownCapture(e: MouseEvent) {
+    _mouseDownClient = [e.clientX, e.clientY];
+    // Capture phase: runs even for presses a shape stops on bubble, so every
+    // gesture that starts here is tracked to its release, wherever that lands.
+    // Middle-click is excluded: onMouseUpCapture stops that release in the
+    // capture phase, so a document mouseup would never arrive to untrack it —
+    // and Viewport already carries middle-button pans on its own listeners.
+    if (e.button !== 1) beginGestureTracking();
+
+    // Anchor a potential group drag at the press point. The dragged shape records
+    // its own start here too (its mousedown runs next, in the bubble phase), so
+    // letting the first mousemove set the origin instead leaves the rest of the
+    // selection permanently short by that first movement — they lag behind the
+    // shape under the cursor and commit in the wrong place.
+    if (svgEl) {
+      const rect = svgEl.getBoundingClientRect();
+      mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
+      _multiDragOrigin = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+    }
+
     if (e.button !== 1) return;
     e.preventDefault(); // suppress the browser's middle-click autoscroll
     e.stopPropagation(); // keep shape/selection handlers from reacting
@@ -682,30 +831,13 @@
     zoomableElement!.mouseDown(e);
   }
 
-  function onMouseLeave(_e: MouseEvent) {
-    // Cancel any active tool edit (bounding box drag, resize, rotate) on EVERY
-    // component — same reason as onMouseUp: the primary annotation's toolSelection
-    // is not necessarily the one that started a drag.
-    // Note: _compRefs holds AnnotationGeometry instances; they expose endSelection
-    // through getToolSelection(), not directly.
-    for (let i = 0; i < _compRefs.length; i++) {
-      _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
-    }
-    // Cancel active rectangle selection
-    if (isRectSelecting) {
-      isRectSelecting = false;
-      rectStart = null;
-      rectEnd = null;
-    }
-    // Stop viewport panning
-    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
-  }
-
   function onMouseUp(e: MouseEvent) {
     // ── Rectangle selection: complete selection ────────────────────
     if (isRectSelecting) {
       rectEnd = sceneNormalizedCursor;
-      completeRectSelection();
+      // A drag commits the rectangle; a plain Shift+Click falls through to
+      // handleClick's toggle with the selection untouched.
+      finishRectSelection();
       return;
     }
 
@@ -1012,6 +1144,11 @@
   }
 
   function handleClick(ann: IAnnotationRecord, e: MouseEvent) {
+    // Swallow the click that trails a drag (rectangle selection, or a shape move
+    // released over another shape) — mouseup already did the meaningful work, and
+    // running Shift+Click toggling here would undo it.
+    if (movedSinceMouseDown(e)) return;
+
     // Note mode: create an annotation-anchored note
     if (isNoteMode) {
       _noteHandledByClick = true;
@@ -1058,9 +1195,7 @@
     onmousedowncapture={onMouseDownCapture}
     onmouseupcapture={onMouseUpCapture}
     onmousedown={onMouseDown}
-    onmouseup={onMouseUp}
     onmousemove={onMouseMove}
-    onmouseleave={onMouseLeave}
     onwheel={onWheel}
     onclick={onSvgClick}
   >
@@ -1121,7 +1256,7 @@
         height={(selectionRect[3] - selectionRect[1]) * media.height}
         fill="rgba(59, 130, 246, 0.2)"
         stroke="#3b82f6"
-        stroke-width={1.5 / viewport.workspace.transform.scale}
+        stroke-width={1.5}
         vector-effect="non-scaling-stroke"
         pointer-events="none"
       />
