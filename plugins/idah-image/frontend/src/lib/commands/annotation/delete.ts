@@ -15,6 +15,8 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { IMAGE_MASK } from "$lib/types";
 import { invalidateAll } from "$lib/mask/tile-cache";
 import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
+import { showToast } from "$lib/components/ui/Toast/index.svelte"
+import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
   name: "idah-image:annotation.delete",
@@ -43,6 +45,14 @@ export function register(driver: IIdahDriverV2): void {
 
       const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
       if (!record) return noopAction(command);
+
+      if (annotation.isLocked(record)) {
+        showToast.warning({
+          title: "Cannot delete annotation",
+          description: "This annotation is locked.",
+        });
+        return noopAction(command);
+      }
 
       return {
         command: { ...command },

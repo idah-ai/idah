@@ -12,8 +12,9 @@
   import { cn } from "$lib/utils";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport as vp } from "$lib/state/viewport.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
-  import type { TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
+  import type { TimelineItem, Viewport, TaggingRowKind } from "$lib/components/App/Timeline/types";
 
   interface Props {
     viewport: Viewport;
@@ -23,9 +24,11 @@
     isSelected: boolean;
     /** Pass along the track's group id so the track-background context menu can use it. */
     trackId?: string;
+    /** Distinguishes tagging rows (entry:root / frame categories) from drawable annotation tracks. */
+    kind?: "tagging" | "annotation";
   }
 
-  let { viewport, items, scale, top, isSelected, trackId }: Props = $props();
+  let { viewport, items, scale, top, isSelected, trackId, kind }: Props = $props();
 
   // Only render items visible in the viewport
   const visibleItems = $derived(
@@ -57,8 +60,10 @@
         items: items as any,
       };
 
-      /** Select annotation group */
-      selection.selectGroup(trackId);
+      /** Select annotation group — but only if not already part of a multi-selection */
+      if (!selection.isGroupSelected(trackId)) {
+        selection.selectGroup(trackId);
+      }
 
       showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
     }
@@ -69,8 +74,24 @@
   function handleTrackClick(e: MouseEvent) {
     // Only for clicks directly on the track div (not on TrackItem children)
     if ((e.target as HTMLElement) !== e.currentTarget) return;
+    if (kind === "tagging") {
+      // Clicking a frame-category tagging row's background goes to the tagging > frame
+      // tab. The entry:root row keeps the default group-selection behavior.
+      const isFrameRow = (items[0]?.rawData as { type?: TaggingRowKind })?.type === "frame";
+      if (isFrameRow) {
+        selection.deselect();
+        sidebarTabs.rightTab = "tagging";
+        sidebarTabs.taggingTab = "frame";
+        return;
+      }
+    }
     if (trackId) {
-      selection.selectGroup(trackId);
+      // Shift+Click toggles the group in/out of the timeline group selection
+      if (e.shiftKey) {
+        selection.toggleGroup(trackId);
+      } else {
+        selection.selectGroup(trackId);
+      }
     }
   }
 </script>

@@ -32,10 +32,13 @@ export function register(driver: IIdahDriverV2): void {
       if (!isEditable()) return noopAction(command);
       if (!data.annotations) return noopAction(command);
 
-      const snapshot: { id: string; locked: boolean }[] = data.annotations.items.map((ann) => ({
-        id: ann.id,
-        locked: annotation.isLocked(ann),
-      }));
+      const lockKeys = new Map<string, boolean>();
+      for (const ann of data.annotations.items) {
+        if (!lockKeys.has(ann.id)) {
+          lockKeys.set(ann.id, annotation.isLocked(ann.id));
+        }
+      }
+      const snapshot = Array.from(lockKeys.entries()).map(([id, locked]) => ({ id, locked }));
       if (snapshot.length === 0) return noopAction(command);
 
       return {
