@@ -292,24 +292,28 @@
 
     const scale = viewport.workspace.transform.scale;
 
-    // 1. Check resize handles (nearest-first)
-    const handles = boundingBoxHandle(points);
-    for (let i = 0; i < handles.length; i++) {
-      const handle = handles[i];
-      const dx = Math.abs(start[0] - handle[0]) * w * scale;
-      const dy = Math.abs(start[1] - handle[1]) * h * scale;
-      // If within handle radius, start resizing with this handle
-      if (dx * dx + dy * dy < HANDLE_RADIUS_PX_SQR) {
-        resizeHandleIndex = i;
-        resizeInitialPoints = [...points];
-        _localPoints = [...points];
-        activeCursor = rotatedCursorSVG(i, currentAngle(), color);
-        return true;
+    // In multi-select, the visible handles are read-only placeholders. Skip the
+    // resize and rotation handle hit tests and fall straight through to pan so a
+    // click on a handle position never starts a real resize/rotate.
+    const multiSelect = selection.selectedAnnotationIds.size > 1;
+    if (!multiSelect) {
+      // 1. Check resize handles (nearest-first)
+      const handles = boundingBoxHandle(points);
+      for (let i = 0; i < handles.length; i++) {
+        const handle = handles[i];
+        const dx = Math.abs(start[0] - handle[0]) * w * scale;
+        const dy = Math.abs(start[1] - handle[1]) * h * scale;
+        // If within handle radius, start resizing with this handle
+        if (dx * dx + dy * dy < HANDLE_RADIUS_PX_SQR) {
+          resizeHandleIndex = i;
+          resizeInitialPoints = [...points];
+          _localPoints = [...points];
+          activeCursor = rotatedCursorSVG(i, currentAngle(), color);
+          return true;
+        }
       }
-    }
 
-    // 2. Check rotation handle
-    {
+      // 2. Check rotation handle
       const allY = points.map((p) => p[1]);
       const allX = points.map((p) => p[0]);
       const minYVal = Math.min(...allY);
@@ -428,7 +432,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4 && selection.selectedAnnotationIds.size <= 1}
+  {#if editable && selected && !isEditing && displayPoints.length === 4}
     <BBoxHandler
       {displayPoints}
       {centroidN}
@@ -437,6 +441,7 @@
       {color}
       {isEditing}
       {cursorPx}
+      readOnly={selection.selectedAnnotationIds.size > 1}
       onStartResize={(idx) => {
         resizeHandleIndex = idx;
         resizeInitialPoints = [...points];

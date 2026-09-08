@@ -23,6 +23,7 @@
     onAddVertex: (edgeIndex: number) => void;
     onStartPan: () => void;
     onStartScale: () => void;
+    readOnly?: boolean;
   };
 
   let {
@@ -38,6 +39,7 @@
     onAddVertex,
     onStartPan,
     onStartScale,
+    readOnly = false,
   }: Props = $props();
 
   let w = $derived(media.width);
@@ -68,6 +70,19 @@
   let centroid = $derived(polygonCentroid(vertices));
 </script>
 
+{#if readOnly}
+  <!-- Read-only (multi-select): inert gray dots at vertices only → no edge
+       diamonds, no scale handle, no interactivity -->
+  {#each vertexHandles as point, i (i)}
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={R}
+      fill="#9ca3af"
+      pointer-events="none"
+    />
+  {/each}
+{:else}
 <!-- Edge midpoint handles (diamond shape) -->
 {#each edgeMidpoints as point, i (i)}
   {@const isHovered = hoveredEdgeIndex === i}
@@ -203,6 +218,7 @@
     onStartScale();
   }}
 />
+{/if}
 
 <!-- Box selection overlay -->
 {#if boxStart && boxEnd}
