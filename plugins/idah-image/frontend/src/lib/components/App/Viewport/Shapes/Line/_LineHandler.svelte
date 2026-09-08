@@ -19,13 +19,7 @@
     onStartResize: (endpointIndex: number) => void;
   };
 
-  let {
-    displayPoints,
-    color,
-    isEditing,
-    onStartResize,
-    readOnly = false,
-  }: Props = $props();
+  let { displayPoints, color, isEditing, onStartResize, readOnly = false }: Props = $props();
 
   let w = $derived(media.width);
   let h = $derived(media.height);
@@ -40,7 +34,7 @@
   let S_line = $derived(2 * invScale);
 </script>
 
-{#if readOnly && !isEditing}
+{#if readOnly}
   <!-- Read-only (multi-select): inert gray dots at the endpoints -->
   {#each displayPoints as point, i (i)}
     <circle cx={point[0] * w} cy={point[1] * h} r={R / 2} fill="#9ca3af" pointer-events="none" />

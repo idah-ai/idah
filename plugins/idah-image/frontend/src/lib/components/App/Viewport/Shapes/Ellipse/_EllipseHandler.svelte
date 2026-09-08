@@ -96,7 +96,7 @@
   let revPlusFillOpacity = $derived(hoveredRevPlus ? 0.35 : 0.15);
 </script>
 
-{#if readOnly && !isEditing}
+{#if readOnly}
   <!-- Read-only (multi-select): inert gray dots at each handle position, no rotation handle -->
   <g style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px" style:transform="rotate({currentAngle}rad)">
     {#each ellipseHandles(centroidN, radiusX, radiusY, 0, w, h) as point, handleIndex (handleIndex)}

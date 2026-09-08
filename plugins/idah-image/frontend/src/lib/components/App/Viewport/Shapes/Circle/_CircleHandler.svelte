@@ -19,13 +19,7 @@
     onStartScale: () => void;
   };
 
-  let {
-    center,
-    color,
-    isEditing,
-    onStartScale,
-    readOnly = false,
-  }: Props = $props();
+  let { center, color, isEditing, onStartScale, readOnly = false }: Props = $props();
 
   let w = $derived(media.width);
   let h = $derived(media.height);
@@ -40,7 +34,7 @@
   let S_line = $derived(2 * invScale);
 </script>
 
-{#if readOnly && !isEditing}
+{#if readOnly}
   <!-- Read-only (multi-select): inert gray dot at the center, no scale handle -->
   <circle cx={center[0] * w} cy={center[1] * h} r={R_center / 2} fill="#9ca3af" pointer-events="none" />
 {:else}

@@ -71,7 +71,7 @@
   let centroid = $derived(polygonCentroid(vertices));
 </script>
 
-{#if readOnly && !isEditing}
+{#if readOnly}
   <!-- Read-only (multi-select): inert gray dots at vertices only → no edge
        diamonds, no scale handle, no interactivity -->
   {#each vertexHandles as point, i (i)}
