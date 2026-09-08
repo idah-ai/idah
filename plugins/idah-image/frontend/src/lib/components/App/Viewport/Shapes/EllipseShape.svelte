@@ -24,6 +24,7 @@
   import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import EllipseHandler from "./Ellipse/_EllipseHandler.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
   import {
     ellipseAABB,
     inverseRotatePointN,
@@ -399,6 +400,17 @@
       e.stopPropagation();
     }}
   />
+
+  <!-- Pixel dimension label at top-left of AABB -->
+  {#if selected || selection.isAnnotationSelected(annotation.id) || hover.isHovered(annotation.id)}
+    {@const rxPx = displayRadii[0] * w}
+    {@const ryPx = displayRadii[1] * h}
+    {@const pxW = (rxPx * 2).toFixed(0)}
+    {@const pxH = (ryPx * 2).toFixed(0)}
+    {@const labelX = (displayCentroid[0] * w) - rxPx}
+    {@const labelY = (displayCentroid[1] * h) - ryPx}
+    <DimensionLabel x={labelX} y={labelY} text="{pxW} × {pxH}" />
+  {/if}
 
   {#if editable && selected && !isEditing && !multiDragDelta && displayPoints.length === 4}
     <EllipseHandler
