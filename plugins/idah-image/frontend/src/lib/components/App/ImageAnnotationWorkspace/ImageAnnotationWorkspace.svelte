@@ -6,6 +6,7 @@
   import { ResizablePane, ResizablePaneGroup } from "$lib/components/ui/Resizable";
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
+  import { resolveEntryRoot, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -14,11 +15,6 @@
   import { media } from "$lib/state/media.svelte";
   import {
     DEFAULT_MODE,
-    IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX,
-    IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE,
-    IMAGE_ELLIPSE as IDAH_IMAGE_ELLIPSE,
-    IMAGE_LINE as IDAH_IMAGE_LINE,
-    IMAGE_POLYGON as IDAH_IMAGE_POLYGON,
     IMAGE_BOUNDING_BOX,
     IMAGE_CIRCLE,
     IMAGE_ELLIPSE,
@@ -27,6 +23,8 @@
     IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
+    ENTRY_ROOT,
+    NON_DRAWABLE_SHAPE_TYPES,
   } from "$lib/types";
 
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
@@ -41,7 +39,7 @@
   import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
   import { maskPolygonDraft } from "$lib/commands/mode/mask_polygon";
 
-  import type { IImageAnnotationRecord, IImageAnnotationShape } from "$lib/types";
+  import type { IImageAnnotationRecord, IImageAnnotationShape, IImageAnnotationValue } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
   import { viewport } from "$lib/state/viewport.svelte";
   import { syncStatus } from "$lib/state/driver.svelte";
@@ -73,14 +71,12 @@
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
-  const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let entryId = $derived(getDriver().id);
   let mediaUrl = $derived(media.url);
   let workflowStep = $derived(getDriver().workflowStep);
   let mediaInfo: { meta: Record<string, unknown> } | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
-  let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived(mode === NOTE_MODE);
 
   // let image: Image | undefined = $state();
@@ -100,16 +96,6 @@
   /** Whether the user can confirm the current annotation creation (has category + all required properties filled). */
   let canConfirm = $derived.by(() => {
     if (!editable || isNoteMode) return false;
-
-    if (mode === "entry:root") {
-      if (!pendingValue.category || pendingValue.category === "") return false;
-
-      const properties =
-        getDriver().getFilteredConfig(mode, pendingValue as unknown as Record<string, unknown>)?.properties ?? [];
-
-      return requiredFullfilled(pendingValue, properties);
-    }
-
     if (!shapeSelectionArgs) return false;
     if (!pendingValue.category || pendingValue.category === "") return false;
     const properties =
@@ -120,14 +106,6 @@
   });
 
   let length = $state(0);
-  let tools: {
-    name: string;
-    label: string;
-    type: string;
-    iconName: string;
-    disabled?: boolean;
-    handleClick: () => void;
-  }[] = $state([]);
 
   let overlay: ShapesContainer | undefined = $state();
   let showPopOver = $state(false);
@@ -232,93 +210,9 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === "entry:root");
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === ENTRY_ROOT);
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
 
-    /** TOOLS CONFIGURATION */
-    const toolListConfig = [
-      {
-        name: "tools.visual",
-        label: "Visual",
-        type: "default",
-        iconName: "mouse-pointer-2",
-        command: "tools.visual",
-      },
-      {
-        name: "tools.bounding_box",
-        label: "Bounding Box",
-        type: IDAH_IMAGE_BOUNDING_BOX,
-        iconName: "vector-square",
-        disabled: !editable,
-        command: "tools.bounding_box",
-      },
-      {
-        name: "tools.polygon",
-        label: "Polygon",
-        type: IDAH_IMAGE_POLYGON,
-        iconName: "polygon",
-        disabled: !editable,
-        command: "tools.polygon",
-      },
-      {
-        name: "tools.circle",
-        label: "Circle",
-        type: IDAH_IMAGE_CIRCLE,
-        iconName: "circle",
-        disabled: !editable,
-        command: "tools.circle",
-      },
-      {
-        name: "tools.ellipse",
-        label: "Ellipse",
-        type: IDAH_IMAGE_ELLIPSE,
-        iconName: "ellipse",
-        disabled: !editable,
-        command: "tools.ellipse",
-      },
-      {
-        name: "tools.line",
-        label: "Line",
-        type: IDAH_IMAGE_LINE,
-        iconName: "minimize-2",
-        disabled: !editable,
-        command: "tools.line",
-      },
-      {
-        name: "tools.note",
-        label: "Add Note",
-        type: NOTE_MODE,
-        iconName: "message-circle",
-        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and REVIEW_MODE
-        command: "tools.note",
-      },
-    ];
-
-    const toolConfig = toolListConfig.filter((tool) => {
-      if (
-        [IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_CIRCLE, IDAH_IMAGE_ELLIPSE, IDAH_IMAGE_LINE, IDAH_IMAGE_POLYGON].includes(
-          tool.type,
-        )
-      ) {
-        const cfg = getDriver().config[tool.type];
-        return cfg && cfg.values && cfg.values.length > 0;
-      }
-      return true;
-    });
-
-    tools = toolConfig.map((tool) => {
-      return {
-        name: tool.name,
-        label: tool.label,
-        type: tool.type,
-        iconName: tool.iconName,
-        disabled: tool.disabled,
-        handleClick: () => getDriver().command.call(tool.command),
-      };
-    });
-
-    // Set toolbar tools on the driver — the mock page's toolbar manager reads them
-    // (Note: tools state is used by the Svelte component for inline tool tracking)
   });
 
   async function addAnnotation(shape: IImageAnnotationShape, value: AnnotationValue = {}) {
@@ -358,12 +252,20 @@
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
+    // When a shaped annotation is selected, validate against its real shape type
+    // (box/polygon/mask), not the sidebar's fallback mode, so required properties
+    // are evaluated against the correct config. entry:root is edited only through
+    // the Tagging tab and never reaches here as a selected shape.
+    const gateShapeType = selAnnotation
+      ? (selAnnotation.shape as { type?: string })?.type ?? valueMode
+      : valueMode;
+
     let requirementFullfilled = requiredFullfilled(
       value,
-      getDriver().getFilteredConfig(valueMode, value as unknown as Record<string, unknown>)?.properties,
+      getDriver().getFilteredConfig(gateShapeType, value as unknown as Record<string, unknown>)?.properties,
     );
 
-    if (valueMode == "entry:root" && !selAnnotation && entryRoot.value?.metadata?.id)
+    if (valueMode == ENTRY_ROOT && !selAnnotation && entryRoot.value?.metadata?.id)
       selection.selectAnnotation(entryRoot.value as any);
 
     // wait for confirmation
@@ -373,22 +275,22 @@
       if (!selAnnotation) {
         pendingValue = value;
       } else {
-        selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+        selection.selectAnnotation({ ...selAnnotation, value } as any);
       }
       return;
     }
 
-    if (valueMode == "entry:root" && !selAnnotation) {
+    if (valueMode == ENTRY_ROOT && !selAnnotation) {
       if (value.category && value.category != "" && requirementFullfilled)
         addAnnotation({ type: valueMode } as IImageAnnotationShape, $state.snapshot(value));
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, value: annotationValue } as any);
+      selection.selectAnnotation({ ...selAnnotation, value } as any);
       if (requirementFullfilled)
         updateAnnotationValue(
           $state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord,
           $state.snapshot(value),
         );
-    } else if (valueMode !== "entry:root") {
+    } else if (valueMode !== ENTRY_ROOT) {
       // ── Resolve the actual shape type from config ────────────────────
       // The valueMode may be DEFAULT_MODE (popover/right sidebar flow), but
       // the category might belong to a mask config. Resolve by checking if
@@ -521,6 +423,42 @@
     getDriver().command.call("idah-image:annotation.update", { annotation: ann, value });
   }
 
+  // The entry:root annotation for this entry, derived reactively from the live
+  // store (never a stale singleton) so the Tagging tab always reflects reality.
+  let entryRootAnnotation = $derived<IImageAnnotationRecord | undefined>(
+    data.annotations?.items.find((a) => (a.shape as any).type === ENTRY_ROOT) as IImageAnnotationRecord | undefined,
+  );
+
+  /** Set the whole entry tagging (entry:root. Uniqueness is enforced client-side:
+   *  at most one entry:root annotation may exist per entry — creating a second
+   *  one updates the existing record instead of duplicating. Returns whether the
+   *  change was persisted (false when a required field is missing). */
+  function onEntryRootChange(value: AnnotationValue): boolean {
+    if (!editable) return false;
+    if (!value.category) return false;
+    // Only create/update when the category + required properties are valid.
+    const properties =
+      getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!isTaggingValueComplete(value as IImageAnnotationValue, properties)) return false;
+    const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
+    const resolution = resolveEntryRoot(items, value as IImageAnnotationValue);
+    if (resolution.action === "update") {
+      updateAnnotationValue(resolution.existing, value);
+    } else if (resolution.action === "create") {
+      addAnnotation({ type: ENTRY_ROOT } as IImageAnnotationShape, value);
+    }
+    return true;
+  }
+
+  /** Delete the entry:root annotation for this entry. */
+  function onDeleteEntryRoot() {
+    if (!editable) return;
+    const existing = entryRootAnnotation;
+    if (existing) {
+      getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });
+    }
+  }
+
   function selectAnnotation(annotation?: IImageAnnotationRecord) {
     if (annotation) {
       selection.selectAnnotation(annotation as any);
@@ -529,9 +467,13 @@
     }
   }
 
-  // Derive viewport annotations from the global store
+  // Derive viewport annotations from the global store. Non-drawable records
+  // (entry:root) are excluded so they never render on canvas, appear in the
+  // annotation sidebar, or reach the timeline.
   let viewportAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
-    const raw = data.annotations?.items ?? [];
+    const raw = (data.annotations?.items ?? []).filter(
+      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+    );
     return raw.map((ann) => ({
       id: ann.id,
       shape: ann.shape as IImageAnnotationShape,
@@ -562,8 +504,10 @@
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
-    // onEditValue handles the update for both selAnnotation and selGroup cases
-    onEditValue({ category: reselectedCategoryId }, mode);
+    // onEditValue handles the update for both selAnnotation and selGroup cases.
+    // When a shaped annotation is selected, validate against its real shape type.
+    const shapeType = selAnnotation ? (selAnnotation.shape as { type?: string })?.type ?? mode : mode;
+    onEditValue({ category: reselectedCategoryId }, shapeType);
   }
 </script>
 
@@ -602,29 +546,28 @@
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           if (!canConfirm) return;
-          showPopOver = false;
-          if (mode === "entry:root") {
-            addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
-          } else if (shapeSelectionArgs) {
+          if (shapeSelectionArgs) {
+            showPopOver = false;
             confirmCreateAnnotation(...shapeSelectionArgs);
           }
         }
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if pendingValue.category}
+        {#if pendingValue.category || shapeSelectionArgs?.[0] === ENTRY_ROOT}
           <SelectionPanel
-            selectedCategory={pendingValue.category}
+            selectedCategory={pendingValue.category ?? ""}
             annotationValue={pendingValue}
+            shapeTypeOverride={shapeSelectionArgs?.[0]}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
               pendingValue = {
                 ...pendingValue,
                 category: selectedCategory,
               };
-              onEditValue({ category: pendingValue.category }, mode);
+              onEditValue({ category: pendingValue.category }, shapeSelectionArgs?.[0] ?? mode);
             }}
-            onEditValue={(value) => value && onEditValue(value, mode)}
+            onEditValue={(value) => value && onEditValue(value, shapeSelectionArgs?.[0] ?? mode)}
             disabled={false}
           />
         {:else}
@@ -672,13 +615,9 @@
         <Button
           size="sm"
           onclick={() => {
-            showPopOver = false;
-            switch (mode) {
-              case "entry:root":
-                addAnnotation({ type: "entry:root" } as IImageAnnotationShape, $state.snapshot(pendingValue));
-                break;
-              default:
-                if (shapeSelectionArgs && pendingValue.category) confirmCreateAnnotation(...shapeSelectionArgs);
+            if (shapeSelectionArgs && pendingValue.category) {
+              showPopOver = false;
+              confirmCreateAnnotation(...shapeSelectionArgs);
             }
           }}
           disabled={!canConfirm}
@@ -729,7 +668,15 @@
                 </ShapesContainer>
               {/if}
 
-              <PropertiesSidebar {annotationId} {annotationValue} {onEditValue} onReSelectCategory={reSelectCategory} />
+              <PropertiesSidebar
+                {annotationId}
+                {annotationValue}
+                {onEditValue}
+                onReSelectCategory={reSelectCategory}
+                {entryRootAnnotation}
+                onEntryRootChange={onEntryRootChange}
+                onDeleteEntryRoot={onDeleteEntryRoot}
+              />
             </section>
           </ResizablePane>
         </ResizablePaneGroup>

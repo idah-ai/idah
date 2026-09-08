@@ -20,6 +20,7 @@
   import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { annotation } from "$lib/state/annotation.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -55,6 +56,7 @@
     // If this group is not already selected, select it (replacing current selection).
     // If it IS already selected, preserve the multi-selection.
     if (!selection.isGroupSelected(id)) {
+      sidebarTabs.rightTab = "annotations";
       selectAnnotationGroup();
     }
 
@@ -71,6 +73,9 @@
      * of the timeline group selection (same modifier as viewport multi-select).
      * Plain click replaces the selection with this single group (existing behaviour).
      */
+    // Clicking an annotation row while on the Tagging tab should surface the
+    // Annotations tab so the selected annotation is visible/editable there.
+    sidebarTabs.rightTab = "annotations";
     if (e.shiftKey) {
       selection.toggleGroup(id);
     } else {

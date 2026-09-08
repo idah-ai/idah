@@ -7,6 +7,9 @@ export interface Viewport {
   endRange: number;
 }
 
+/** Discriminant for the two tagging row kinds in the timeline. */
+export type TaggingRowKind = "entry" | "frame";
+
 export interface TimelineItem<T extends Record<string, unknown> = Record<string, unknown>> {
   trackId: string;
   startRange: number;
@@ -33,6 +36,9 @@ export interface TimelineProps extends RulerProps {
   noteItems?: TimelineItem[];
   /** Label slot for the notes row's left spacer. */
   NoteTrackInfoSlot?: Snippet<[]>;
+
+  /** Tagging tracks (entry:root + per-category frame rows), rendered in the body under a collapsible group. */
+  taggingItems?: TrackData[];
 }
 
 /**
@@ -44,4 +50,6 @@ export interface TrackData {
   subtitle?: string;
   top: number;
   items: TimelineItem[];
+  /** Distinguishes tagging rows (entry:root / frame categories) from drawable annotation tracks. */
+  kind?: "tagging" | "annotation";
 }
