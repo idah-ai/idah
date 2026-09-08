@@ -283,33 +283,46 @@
     isRectSelecting = false;
     rectStart = null;
     rectEnd = null;
-    document.removeEventListener("mouseup", onDocRectMouseUp);
   }
 
-  /**
-   * Finalize a rectangle selection. Also bound to document mouseup while one is
-   * active: releasing outside the SVG must never leave `isRectSelecting` stuck,
-   * because onMouseMove returns early while it is set — which would silently
-   * block panning and every subsequent shape drag.
-   */
+  /** Finalize a rectangle selection: a real drag commits it, a click-sized one is discarded. */
   function finishRectSelection() {
     if (!isRectSelecting) return;
     if (rectSelectionIsDrag()) completeRectSelection();
     else cancelRectSelection();
   }
 
-  function onDocRectMouseUp() {
-    finishRectSelection();
-  }
+  /**
+   * The region currently on screen, in normalized media coords: [minX, minY, maxX, maxY].
+   * Mirrors the SVG viewBox — scene origin is -translate/scale, extent is dimensions/scale.
+   */
+  let visibleBoundsN = $derived.by((): [number, number, number, number] => {
+    const [tx, ty] = viewport.workspace.transform.translate;
+    const [w, h] = viewport.workspace.dimensions;
+    const s = viewport.workspace.transform.scale || 1;
+    const mw = media.width || 1;
+    const mh = media.height || 1;
+    return [-tx / s / mw, -ty / s / mh, (-tx + w) / s / mw, (-ty + h) / s / mh];
+  });
 
-  /** Normalized selection rectangle: [minX, minY, maxX, maxY]. */
+  /**
+   * Normalized selection rectangle: [minX, minY, maxX, maxY].
+   *
+   * Clamped to the visible region: the drag keeps tracking outside the SVG (so
+   * crossing the edge doesn't strand the gesture), but the rectangle itself must
+   * not reach content the user cannot see and did not knowingly sweep over.
+   * Clamping here covers both the drawn overlay and completeRectSelection, so the
+   * box the user sees is exactly the box that selects.
+   */
   let selectionRect = $derived.by((): [number, number, number, number] | null => {
     if (!isRectSelecting || !rectStart || !rectEnd || !rectSelectionIsDrag()) return null;
+    const [vx0, vy0, vx1, vy1] = visibleBoundsN;
+    const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
     return [
-      Math.min(rectStart[0], rectEnd[0]),
-      Math.min(rectStart[1], rectEnd[1]),
-      Math.max(rectStart[0], rectEnd[0]),
-      Math.max(rectStart[1], rectEnd[1]),
+      clamp(Math.min(rectStart[0], rectEnd[0]), vx0, vx1),
+      clamp(Math.min(rectStart[1], rectEnd[1]), vy0, vy1),
+      clamp(Math.max(rectStart[0], rectEnd[0]), vx0, vx1),
+      clamp(Math.max(rectStart[1], rectEnd[1]), vy0, vy1),
     ];
   });
 
@@ -412,7 +425,7 @@
     return () => {
       ro.disconnect();
       document.head.removeChild(style);
-      document.removeEventListener("mouseup", onDocRectMouseUp);
+      endGestureTracking();
     };
   });
 
@@ -501,9 +514,43 @@
     cancelRectSelection();
   }
 
+  // ── Document-level gesture tracking ──────────────────────────────────
+  // A press that starts on the SVG must keep tracking after the cursor leaves it,
+  // and must finalize wherever it is released. Without this, crossing the viewport
+  // edge mid-drag stranded the gesture: the batch commit for a multi-selection
+  // lives in onMouseUp, which never fires for a release outside the SVG, so only
+  // the shape that was under the cursor kept its new position.
+  // Viewport does the same for panning (see panStart there).
+  function beginGestureTracking() {
+    document.addEventListener("mousemove", onDocMouseMove);
+    document.addEventListener("mouseup", onDocMouseUp);
+  }
+
+  function endGestureTracking() {
+    document.removeEventListener("mousemove", onDocMouseMove);
+    document.removeEventListener("mouseup", onDocMouseUp);
+  }
+
+  function onDocMouseMove(e: MouseEvent) {
+    // Moves over the SVG are already served by its own handler — this only
+    // extends a gesture that has wandered outside it.
+    if (!svgEl || (e.target instanceof Node && svgEl.contains(e.target))) return;
+    const rect = svgEl.getBoundingClientRect();
+    handlePointerMove(e, [e.clientX - rect.left, e.clientY - rect.top], true);
+  }
+
+  function onDocMouseUp(e: MouseEvent) {
+    endGestureTracking();
+    onMouseUp(e);
+  }
+
   // ── Event handlers ───────────────────────────────────────────────────
   function onMouseMove(e: MouseEvent) {
-    mousePosition = [e.offsetX, e.offsetY];
+    handlePointerMove(e, [e.offsetX, e.offsetY], false);
+  }
+
+  function handlePointerMove(e: MouseEvent, position: Point, fromDocument: boolean) {
+    mousePosition = position;
 
     // Track the last known cursor position in normalized coords so commands
     // (e.g. selection.paste) can target where the user's cursor currently is.
@@ -555,8 +602,10 @@
       ];
     }
 
-    // Only pan in editor mode
-    if (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE) {
+    // Only pan in editor mode. Never forward a document-sourced event: its
+    // offsetX/offsetY are relative to whatever element happens to be under the
+    // cursor, and Viewport installs its own document listeners once a pan starts.
+    if (!fromDocument && (viewport.mode === EDITOR_MODE || viewport.mode === REVIEW_MODE)) {
       zoomableElement!.mouseMove(e);
     }
   }
@@ -572,6 +621,9 @@
   // Viewport's own document-level listeners carry the drag to completion.
   function onMouseDownCapture(e: MouseEvent) {
     _mouseDownClient = [e.clientX, e.clientY];
+    // Capture phase: runs even for presses a shape stops on bubble, so every
+    // gesture that starts here is tracked to its release, wherever that lands.
+    beginGestureTracking();
 
     if (e.button !== 1) return;
     e.preventDefault(); // suppress the browser's middle-click autoscroll
@@ -617,7 +669,6 @@
       isRectSelecting = true;
       rectStart = sceneNormalizedCursor;
       rectEnd = sceneNormalizedCursor;
-      document.addEventListener("mouseup", onDocRectMouseUp);
       e.stopPropagation();
       return;
     }
@@ -637,21 +688,6 @@
     // Nothing hit — deselect and start panning
     selection.deselect();
     zoomableElement!.mouseDown(e);
-  }
-
-  function onMouseLeave(_e: MouseEvent) {
-    // Cancel any active tool edit (bounding box drag, resize, rotate) on EVERY
-    // component — same reason as onMouseUp: the primary annotation's toolSelection
-    // is not necessarily the one that started a drag.
-    // Note: _compRefs holds AnnotationGeometry instances; they expose endSelection
-    // through getToolSelection(), not directly.
-    for (let i = 0; i < _compRefs.length; i++) {
-      _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
-    }
-    // An active rectangle selection is intentionally left running: dragging past
-    // the SVG edge and back should keep the same rectangle.
-    // Stop viewport panning
-    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
   }
 
   function onMouseUp(e: MouseEvent) {
@@ -887,10 +923,8 @@
     bind:this={svgEl}
     onmousedowncapture={onMouseDownCapture}
     onmousedown={onMouseDown}
-    onmouseup={onMouseUp}
     onclick={onSvgClick}
     onmousemove={onMouseMove}
-    onmouseleave={onMouseLeave}
     onwheel={onWheel}
   >
     <!-- Crosshair (for build modes) -->
