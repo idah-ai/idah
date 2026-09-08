@@ -41,7 +41,7 @@
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { data, setPendingNoteScene } from "$lib/state/data.svelte";
+  import { data, setPendingNoteScene, type AnnotationItem } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { snapDebug } from "$lib/state/ui.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -260,6 +260,19 @@
   let _multiDragOrigin: Point | null = $state(null);
   /** Current shared drag delta in normalized coords. */
   let _multiDragDelta: Point | null = $state(null);
+  /**
+   * Batch accumulator for multi-shape drag.
+   * When non-null, `handleEditComplete` collects updates here instead of
+   * dispatching individual commands. At the end of `onMouseUp` the entire
+   * batch is dispatched as a single undoable command, so one Ctrl+Z restores
+   * ALL moved shapes to their original positions.
+   */
+  let _commitBatch: Array<{
+    annotationId: string;
+    selection: IVideoFrameSelection;
+    /** Pre-move snapshot captured BEFORE the synchronous upsert runs. */
+    snapshot: AnnotationItem;
+  }> | null = null;
 
   /** Whether any selected annotation component is currently being edited (dragged). */
   let _anySelectedEditing = $derived.by((): boolean => {
@@ -643,12 +656,21 @@
       }
     }
 
+    // ── Multi-drag: begin batch collection ───────────────────────────
+    // If a multi-shape drag occurred, collect every commit into a single
+    // undoable command instead of N separate keyframe.add commands.
+    const dragDelta = _multiDragDelta; // local const for TS narrowing
+    const isBatchCommit = !!dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0);
+
+    if (isBatchCommit) {
+      _commitBatch = [];
+    }
+
     for (let i = 0; i < _compRefs.length; i++) {
       _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
     }
 
     // ── Multi-drag: commit delta to all other selected annotations ──
-    const dragDelta = _multiDragDelta; // local const for TS narrowing
     if (dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0)) {
       for (let i = 0; i < visibleAnnotations.length; i++) {
         const ann = visibleAnnotations[i];
@@ -660,6 +682,16 @@
         if (!interp?.points?.length) continue;
         const movedPoints = interp.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
         handleEditComplete(ann.id, movedPoints, interp.angle ?? 0);
+      }
+    }
+
+    // ── Dispatch the collected multi-drag batch as ONE undoable command ──
+    if (_commitBatch) {
+      const pending = _commitBatch;
+      _commitBatch = null;
+
+      if (pending.length > 0) {
+        getDriver().command.call("idah-video:annotation.keyframe.batch-add", { updates: pending });
       }
     }
     _multiDragOrigin = null;
@@ -709,7 +741,35 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], angle: number) {
-    onSelection(viewport.mode, frame, points, angle, annId);
+    const currentFrame = viewport.video.displayedFrame.value;
+    // Read the annotation BEFORE any mutation — this is our "original" state.
+    const ann = data.annotations?.items?.find((r) => r.id === annId);
+
+    if (_commitBatch) {
+      // ── Multi-drag batch mode ────────────────────────────────────────
+      // Capture the PRE-MOVE snapshot NOW (before the synchronous upsert
+      // below mutates the store). Undo restores this exact snapshot, so all
+      // shapes return to their original positions in one Ctrl+Z.
+      if (ann) {
+        _commitBatch.push({
+          annotationId: annId,
+          selection: { frame: currentFrame, points, angle },
+          snapshot: {
+            ...ann,
+            shape: {
+              ...(ann.shape ?? {}),
+              frames: [...((ann.shape?.frames as any[]) ?? [])],
+            },
+          } as AnnotationItem,
+        });
+      }
+    } else {
+      // ── Single-edit path (unchanged) ────────────────────────────────
+      // Dispatch FIRST so keyframe.add's callback reads the store before the
+      // upsert below — this is what lets its snapshot capture the original
+      // position.
+      onSelection(viewport.mode, frame, points, angle, annId);
+    }
 
     // ── Synchronous local data store update to prevent viewport blink ──
     // The dispatched command's async do() will also update the store, but
@@ -718,11 +778,9 @@
     // the async update completes. Updating the local store synchronously
     // here keeps shapes at their new positions through the render that
     // follows, eliminating the blink.
-    const ann = data.annotations?.items?.find((r) => r.id === annId);
     if (!ann) return;
     const shape = ann.shape as IVideoAnnotationShape | undefined;
     if (!shape?.frames?.length) return;
-    const currentFrame = viewport.video.displayedFrame.value;
     const frames = [...shape.frames];
     const existingIdx = frames.findIndex((f) => f.frame === currentFrame);
     const newSelection: IVideoFrameSelection = { frame: currentFrame, points, angle };
