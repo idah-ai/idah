@@ -145,30 +145,35 @@
   export function startSelection(start: Point, altKey = false): boolean {
     if (!editable || baseVertices.length < 3) return false;
 
-    // Check if clicking on a vertex
-    const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
-    if (vi >= 0) {
-      if (altKey) {
-        // Alt+click on a vertex: delete it (but keep minimum 3 points)
-        if (baseVertices.length <= 3) return true;
-        const next = [...baseVertices];
-        next.splice(vi, 1);
-        _localVertices = next;
+    // In multi-select, vertex handles are read-only placeholders. Skip the vertex
+    // hit test (and the alt-click-delete branch) and fall straight through to pan.
+    const multiSelect = selection.selectedAnnotationIds.size > 1;
+    if (!multiSelect) {
+      // Check if clicking on a vertex
+      const vi = hitTestVertex(start, vertices, w, h, 6, viewport.workspace.transform.scale);
+      if (vi >= 0) {
+        if (altKey) {
+          // Alt+click on a vertex: delete it (but keep minimum 3 points)
+          if (baseVertices.length <= 3) return true;
+          const next = [...baseVertices];
+          next.splice(vi, 1);
+          _localVertices = next;
+          _selectedIndices = new Set();
+          emitComplete();
+          return true;
+        }
+        // If this vertex is already in the multi-selection, start multi-drag
+        if (_selectedIndices.has(vi)) {
+          multiDragOrigin = start;
+          _localVertices = [...baseVertices];
+          return true;
+        }
+        // Single vertex drag — clear selection
         _selectedIndices = new Set();
-        emitComplete();
-        return true;
-      }
-      // If this vertex is already in the multi-selection, start multi-drag
-      if (_selectedIndices.has(vi)) {
-        multiDragOrigin = start;
+        dragVertexIndex = vi;
         _localVertices = [...baseVertices];
         return true;
       }
-      // Single vertex drag — clear selection
-      _selectedIndices = new Set();
-      dragVertexIndex = vi;
-      _localVertices = [...baseVertices];
-      return true;
     }
 
     if (altKey) {
@@ -327,7 +332,7 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayVertices.length >= 3 && selection.selectedAnnotationIds.size <= 1}
+  {#if editable && selected && !isEditing && displayVertices.length >= 3}
     <PolygonHandler
       vertices={displayVertices}
       {color}
@@ -336,6 +341,7 @@
       {boxStart}
       {boxEnd}
       {altHeld}
+      readOnly={selection.selectedAnnotationIds.size > 1}
       onStartVertexDrag={(i) => {
         if (_selectedIndices.size > 0 && _selectedIndices.has(i)) {
           // Vertex is part of multi-selection — start multi-drag
