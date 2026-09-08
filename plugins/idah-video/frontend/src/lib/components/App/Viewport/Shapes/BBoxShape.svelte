@@ -18,6 +18,7 @@
     rotateCursorSVG,
   } from "./BoundingBox/utils";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -427,29 +428,7 @@
     {@const maxY = Math.max(...allY)}
     {@const pxW = ((maxX - minX) * w).toFixed(0)}
     {@const pxH = ((maxY - minY) * h).toFixed(0)}
-    {@const invScale = 1 / viewport.workspace.transform.scale}
-    {@const labelX = minX * w}
-    {@const labelY = minY * h - 6 * invScale}
-    <g
-      transform="translate({labelX}, {labelY}) scale({invScale})"
-      style:pointer-events="none"
-      style:user-select="none"
-    >
-      <text
-        x={0}
-        y={0}
-        style:font-size="12px"
-        style:font-weight="bold"
-        style:fill="#fff"
-        style:text-anchor="start"
-        style:dominant-baseline="auto"
-        style:paint-order="stroke"
-        style:stroke="rgba(0, 0, 0, 0.85)"
-        style:stroke-width="3px"
-        style:stroke-linecap="round"
-        style:stroke-linejoin="round"
-      >{pxW} × {pxH}</text>
-    </g>
+    <DimensionLabel x={minX * w} y={minY * h} text="{pxW} × {pxH}" />
   {/if}
 
   {#if editable && selected && !isEditing && displayPoints.length === 4}

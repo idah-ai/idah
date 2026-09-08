@@ -10,7 +10,7 @@
 
   import { onMount } from "svelte";
   import { hexToRgba } from "$lib/utils/color";
-  import { viewport } from "$lib/state/viewport.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
   import type { Point } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -92,26 +92,9 @@
     vector-effect="non-scaling-stroke"
   />
   <!-- Dimension label during creation -->
-  {@const invScale = 1 / viewport.workspace.transform.scale}
   {@const pxW = Math.abs(cx - sx).toFixed(0)}
   {@const pxH = Math.abs(cy - sy).toFixed(0)}
   {@const minX = Math.min(sx, cx)}
   {@const minY = Math.min(sy, cy)}
-  <g transform="translate({minX}, {minY - 6 * invScale}) scale({invScale})" style:pointer-events="none" style:user-select="none">
-    <text
-      x={0}
-      y={0}
-      style:font-size="12px"
-      style:font-weight="bold"
-      style:fill="#fff"
-      style:text-anchor="start"
-      style:paint-order="stroke"
-      style:stroke="rgba(0, 0, 0, 0.85)"
-      style:stroke-width="3px"
-      style:stroke-linecap="round"
-      style:stroke-linejoin="round"
-      style:pointer-events="none"
-      style:user-select="none">{pxW} × {pxH}</text
-    >
-  </g>
+  <DimensionLabel x={minX} y={minY} text="{pxW} × {pxH}" />
 {/if}

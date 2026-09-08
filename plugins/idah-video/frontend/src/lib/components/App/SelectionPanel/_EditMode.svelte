@@ -11,7 +11,7 @@
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
-  import { VIDEO_BOUNDING_BOX } from "$lib/types";
+  import { getShapeDimensions, getDimensionEntries } from "$lib/utils/dimensions";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -94,27 +94,23 @@
     <PropertiesSection {properties} {annotationValue} {onValueChange} {disabled} />
   {/if}
 
-  {#if annotation?.shape?.type === VIDEO_BOUNDING_BOX}
+  {#if annotation}
     {@const shape = annotation.shape}
-    {@const interpolated = getInterpolatedFrame(shape, viewport.video.displayedFrame.value)}
-    {@const points = interpolated?.points as [number, number][] | undefined ?? []}
-    {#if points.length >= 4}
-      {@const xs = points.map((p) => p[0])}
-      {@const ys = points.map((p) => p[1])}
-      {@const pxW = ((Math.max(...xs) - Math.min(...xs)) * media.width).toFixed(0)}
-      {@const pxH = ((Math.max(...ys) - Math.min(...ys)) * media.height).toFixed(0)}
-      {@const pxArea = (Number(pxW) * Number(pxH)).toLocaleString()}
+    {@const interpolated = shape?.frames ? getInterpolatedFrame(shape, viewport.video.displayedFrame.value) : shape}
+    {@const virtualShape = interpolated ? { ...shape, points: interpolated.points ?? [] } : shape}
+    {@const dims = getShapeDimensions(virtualShape, media.width, media.height)}
+    {#if dims}
+      {@const entries = getDimensionEntries(dims)}
       <Separator class="mt-3" />
       <section class="flex flex-col gap-2">
         <div class="flex flex-row items-center gap-2">
           <Text size="sm" weight="semibold">Dimensions</Text>
         </div>
-        <Text size="sm" class="text-muted-foreground">
-          Width: {pxW} px, Height: {pxH} px
-        </Text>
-        <Text size="sm" class="text-muted-foreground">
-          Area: {pxArea} px²
-        </Text>
+        {#each entries as entry}
+          <Text size="sm" class="text-muted-foreground">
+            {entry.label}: {entry.value}
+          </Text>
+        {/each}
       </section>
     {/if}
   {/if}
