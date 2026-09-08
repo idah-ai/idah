@@ -18,6 +18,7 @@
     rotateCursorSVG,
   } from "./BoundingBox/utils";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
 
   // ── Props ──────────────────────────────────────────────────────────────
   type Props = {
@@ -436,6 +437,19 @@
       e.stopPropagation();
     }}
   />
+
+  <!-- Pixel dimension label at top-left corner of the bounding box -->
+  {#if selected || selection.isAnnotationSelected(annotation.id) || hover.isHovered(annotation.id)}
+    {@const allX = displayPoints.map((p) => p[0])}
+    {@const allY = displayPoints.map((p) => p[1])}
+    {@const minX = Math.min(...allX)}
+    {@const minY = Math.min(...allY)}
+    {@const maxX = Math.max(...allX)}
+    {@const maxY = Math.max(...allY)}
+    {@const pxW = ((maxX - minX) * w).toFixed(0)}
+    {@const pxH = ((maxY - minY) * h).toFixed(0)}
+    <DimensionLabel x={minX * w} y={minY * h} text="{pxW} × {pxH}" />
+  {/if}
 
   <!-- Handles hide while the shape is edited, and while ANY shape in a multi-selection
        is dragged: multiDragDelta is non-null for the whole group drag, so the read-only

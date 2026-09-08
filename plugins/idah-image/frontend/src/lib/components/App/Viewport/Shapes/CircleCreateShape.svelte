@@ -12,6 +12,7 @@
 
   import { IMAGE_CIRCLE as IDAH_IMAGE_CIRCLE } from "$lib/types";
   import { hexToRgba } from "$lib/utils/color";
+  import DimensionLabel from "./DimensionLabel.svelte";
 
   import type { Point } from "$lib/utils/math/point";
 
@@ -67,14 +68,18 @@
   {@const cyCenter = buildStart[1] * mediaHeight}
   {@const cx = cursor[0] * mediaWidth}
   {@const cy = cursor[1] * mediaHeight}
+  {@const pixelRadius = Math.sqrt((cx - cxCenter) ** 2 + (cy - cyCenter) ** 2)}
   <circle
     cx={cxCenter}
     cy={cyCenter}
-    r={Math.sqrt((cx - cxCenter) ** 2 + (cy - cyCenter) ** 2)}
+    r={pixelRadius}
     fill={fillColor}
     stroke={strokeColor}
     stroke-width="2"
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
   />
+  <!-- Dimension label during creation -->
+  {@const diamPx = (pixelRadius * 2).toFixed(0)}
+  <DimensionLabel x={cxCenter - pixelRadius} y={cyCenter - pixelRadius} text="{diamPx} × {diamPx}" />
 {/if}

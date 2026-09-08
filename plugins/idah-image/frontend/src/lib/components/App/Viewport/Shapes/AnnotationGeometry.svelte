@@ -14,6 +14,14 @@
   import LineShape from "./LineShape.svelte";
   import PolygonShape from "./PolygonShape.svelte";
 
+  const SHAPE_COMPONENTS: Record<string, any> = {
+    [IDAH_IMAGE_BOUNDING_BOX]: BBoxShape,
+    [IDAH_IMAGE_CIRCLE]: CircleShape,
+    [IDAH_IMAGE_ELLIPSE]: EllipseShape,
+    [IDAH_IMAGE_LINE]: LineShape,
+    [IDAH_IMAGE_POLYGON]: PolygonShape,
+  };
+
   type Props = {
     annotation: any;
     selected?: boolean;
@@ -36,33 +44,15 @@
     onEditComplete,
   }: Props = $props();
 
-  /** Component refs (any type because Svelte5 component instances). */
-  let _bboxComp: any = $state();
-  let _circleComp: any = $state();
-  let _ellipseComp: any = $state();
-  let _lineComp: any = $state();
-  let _polyComp: any = $state();
+  let _comp: any = $state();
 
-  /** Map shape type to its component ref. */
-  function _compForType(type: string | undefined): any {
-    switch (type) {
-      case IDAH_IMAGE_BOUNDING_BOX: return _bboxComp;
-      case IDAH_IMAGE_CIRCLE:       return _circleComp;
-      case IDAH_IMAGE_ELLIPSE:      return _ellipseComp;
-      case IDAH_IMAGE_LINE:         return _lineComp;
-      default:                      return _polyComp;
-    }
-  }
-
-  /** Expose the active tool selection to parents. */
   let _toolSelection = $derived.by<
     { startSelection: (p: Point, altKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined
   >(() => {
-    const comp = _compForType(annotation?.shape?.type);
-    if (comp?.startSelection && comp?.endSelection) {
+    if (_comp?.startSelection && _comp?.endSelection) {
       return {
-        startSelection: (p: Point, altKey?: boolean) => comp.startSelection(p, altKey),
-        endSelection: (p: Point) => comp.endSelection(p),
+        startSelection: (p: Point, altKey?: boolean) => _comp.startSelection(p, altKey),
+        endSelection: (p: Point) => _comp.endSelection(p),
       };
     }
     return undefined;
@@ -74,67 +64,17 @@
     return _toolSelection;
   }
 
-  /** Expose whether the user is actively editing (dragging/resizing) this annotation. */
-  let _isEditing = $derived.by((): boolean => {
-    return _compForType(annotation?.shape?.type)?.getIsEditing?.() ?? false;
-  });
+  let shapeType = $derived(annotation?.shape?.type);
+  let Comp = $derived(shapeType ? (SHAPE_COMPONENTS[shapeType] as any) : undefined);
 
   export function getIsEditing(): boolean {
-    return _isEditing;
+    return _comp?.getIsEditing?.() ?? false;
   }
 </script>
 
-{#if annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX}
-  <BBoxShape
-    bind:this={_bboxComp}
-    {annotation}
-    {selected}
-    {editable}
-    {cursor}
-    {multiDragDelta}
-    {mode}
-    {onClick}
-    {onEditComplete}
-  />
-{:else if annotation?.shape?.type === IDAH_IMAGE_CIRCLE}
-  <CircleShape
-    bind:this={_circleComp}
-    {annotation}
-    {selected}
-    {editable}
-    {cursor}
-    {multiDragDelta}
-    {mode}
-    {onClick}
-    {onEditComplete}
-  />
-{:else if annotation?.shape?.type === IDAH_IMAGE_ELLIPSE}
-  <EllipseShape
-    bind:this={_ellipseComp}
-    {annotation}
-    {selected}
-    {editable}
-    {cursor}
-    {multiDragDelta}
-    {mode}
-    {onClick}
-    {onEditComplete}
-  />
-{:else if annotation?.shape?.type === IDAH_IMAGE_LINE}
-  <LineShape
-    bind:this={_lineComp}
-    {annotation}
-    {selected}
-    {editable}
-    {cursor}
-    {multiDragDelta}
-    {mode}
-    {onClick}
-    {onEditComplete}
-  />
-{:else if annotation?.shape?.type === IDAH_IMAGE_POLYGON}
-  <PolygonShape
-    bind:this={_polyComp}
+{#if Comp}
+  <Comp
+    bind:this={_comp}
     {annotation}
     {selected}
     {editable}

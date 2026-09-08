@@ -25,6 +25,7 @@
   import { type Point } from "$lib/utils/math/point";
   import CircleHandler from "./Circle/_CircleHandler.svelte";
   import CircleScaleHandler from "./Circle/_CircleScaleHandler.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
   import { pointInCircle } from "./Circle/utils";
 
   import { DEFAULT_MODE, type IImageAnnotationShape } from "$lib/types";
@@ -265,6 +266,14 @@
     style={shapeStyleString}
     pointer-events="none"
   />
+
+  <!-- Pixel dimension label at top-left of AABB -->
+  {#if selected || selection.isAnnotationSelected(annotation.id) || hover.isHovered(annotation.id)}
+    {@const diamPx = (displayRadiusPx * 2).toFixed(0)}
+    {@const labelX = (displayCenter[0] * w) - displayRadiusPx}
+    {@const labelY = (displayCenter[1] * h) - displayRadiusPx}
+    <DimensionLabel x={labelX} y={labelY} text="{diamPx} × {diamPx}" />
+  {/if}
 
   <!-- Handles when selected -->
   {#if editable && selected && !isEditing && !multiDragDelta}
