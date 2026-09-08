@@ -15,6 +15,7 @@
     displayPoints: Point[];
     color: string;
     isEditing: boolean;
+    readOnly?: boolean;
     onStartResize: (endpointIndex: number) => void;
   };
 
@@ -23,6 +24,7 @@
     color,
     isEditing,
     onStartResize,
+    readOnly = false,
   }: Props = $props();
 
   let w = $derived(media.width);
@@ -38,44 +40,51 @@
   let S_line = $derived(2 * invScale);
 </script>
 
-<!-- Endpoint handles -->
-{#each displayPoints as point, i (i)}
-  {@const isHovered = hoveredEndpointIndex === i}
-  {@const curR = isHovered ? R_hovered : R}
-  <!-- White halo for contrast -->
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={isHovered ? R_hovered : R}
-    fill="white"
-    fill-opacity={isHovered ? 0.8 : 0.6}
-    pointer-events="none"
-  />
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={curR}
-    fill={color}
-    fill-opacity={isHovered ? 0.5 : 0.25}
-    stroke={color}
-    stroke-width={S_line}
-    pointer-events="none"
-  />
-  <circle cx={point[0] * w} cy={point[1] * h} r={R_dot} fill={color} pointer-events="none" />
-  <!-- Hit zone -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <circle
-    cx={point[0] * w}
-    cy={point[1] * h}
-    r={R_hit}
-    fill="transparent"
-    style:outline="none"
-    style:cursor={isEditing ? "none" : "move"}
-    onmouseenter={() => (hoveredEndpointIndex = i)}
-    onmouseleave={() => (hoveredEndpointIndex = undefined)}
-    onmousedown={(e) => {
-      e.stopPropagation();
-      onStartResize(i);
-    }}
-  />
-{/each}
+{#if readOnly && !isEditing}
+  <!-- Read-only (multi-select): inert gray dots at the endpoints -->
+  {#each displayPoints as point, i (i)}
+    <circle cx={point[0] * w} cy={point[1] * h} r={R / 2} fill="#9ca3af" pointer-events="none" />
+  {/each}
+{:else}
+  <!-- Endpoint handles -->
+  {#each displayPoints as point, i (i)}
+    {@const isHovered = hoveredEndpointIndex === i}
+    {@const curR = isHovered ? R_hovered : R}
+    <!-- White halo for contrast -->
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={isHovered ? R_hovered : R}
+      fill="white"
+      fill-opacity={isHovered ? 0.8 : 0.6}
+      pointer-events="none"
+    />
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={curR}
+      fill={color}
+      fill-opacity={isHovered ? 0.5 : 0.25}
+      stroke={color}
+      stroke-width={S_line}
+      pointer-events="none"
+    />
+    <circle cx={point[0] * w} cy={point[1] * h} r={R_dot} fill={color} pointer-events="none" />
+    <!-- Hit zone -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <circle
+      cx={point[0] * w}
+      cy={point[1] * h}
+      r={R_hit}
+      fill="transparent"
+      style:outline="none"
+      style:cursor={isEditing ? "none" : "move"}
+      onmouseenter={() => (hoveredEndpointIndex = i)}
+      onmouseleave={() => (hoveredEndpointIndex = undefined)}
+      onmousedown={(e) => {
+        e.stopPropagation();
+        onStartResize(i);
+      }}
+    />
+  {/each}
+{/if}

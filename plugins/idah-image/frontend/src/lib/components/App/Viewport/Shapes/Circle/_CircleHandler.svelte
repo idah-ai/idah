@@ -15,6 +15,7 @@
     center: Point;
     color: string;
     isEditing: boolean;
+    readOnly?: boolean;
     onStartScale: () => void;
   };
 
@@ -23,6 +24,7 @@
     color,
     isEditing,
     onStartScale,
+    readOnly = false,
   }: Props = $props();
 
   let w = $derived(media.width);
@@ -38,38 +40,43 @@
   let S_line = $derived(2 * invScale);
 </script>
 
-<!-- Center handle (initiates scale bar on drag) -->
-<circle
-  cx={center[0] * w}
-  cy={center[1] * h}
-  r={hoveredCenter ? R_center_hovered : R_center}
-  fill="white"
-  fill-opacity={hoveredCenter ? 0.8 : 0.6}
-  pointer-events="none"
-/>
-<circle
-  cx={center[0] * w}
-  cy={center[1] * h}
-  r={hoveredCenter ? R_center_hovered : R_center}
-  fill={color}
-  fill-opacity={hoveredCenter ? 0.4 : 0.2}
-  stroke={color}
-  stroke-width={S_line}
-  pointer-events="none"
-/>
-<circle cx={center[0] * w} cy={center[1] * h} r={R_dot} fill={color} pointer-events="none" />
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<circle
-  cx={center[0] * w}
-  cy={center[1] * h}
-  r={R_center_hit}
-  fill="transparent"
-  style:outline="none"
-  style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 12 12, nesw-resize`}
-  onmouseenter={() => (hoveredCenter = true)}
-  onmouseleave={() => (hoveredCenter = false)}
-  onmousedown={(e) => {
-    e.stopPropagation();
-    onStartScale();
-  }}
-/>
+{#if readOnly && !isEditing}
+  <!-- Read-only (multi-select): inert gray dot at the center, no scale handle -->
+  <circle cx={center[0] * w} cy={center[1] * h} r={R_center / 2} fill="#9ca3af" pointer-events="none" />
+{:else}
+  <!-- Center handle (initiates scale bar on drag) -->
+  <circle
+    cx={center[0] * w}
+    cy={center[1] * h}
+    r={hoveredCenter ? R_center_hovered : R_center}
+    fill="white"
+    fill-opacity={hoveredCenter ? 0.8 : 0.6}
+    pointer-events="none"
+  />
+  <circle
+    cx={center[0] * w}
+    cy={center[1] * h}
+    r={hoveredCenter ? R_center_hovered : R_center}
+    fill={color}
+    fill-opacity={hoveredCenter ? 0.4 : 0.2}
+    stroke={color}
+    stroke-width={S_line}
+    pointer-events="none"
+  />
+  <circle cx={center[0] * w} cy={center[1] * h} r={R_dot} fill={color} pointer-events="none" />
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <circle
+    cx={center[0] * w}
+    cy={center[1] * h}
+    r={R_center_hit}
+    fill="transparent"
+    style:outline="none"
+    style:cursor={isEditing ? "none" : `url('${scaleCursorSVG("black")}') 12 12, nesw-resize`}
+    onmouseenter={() => (hoveredCenter = true)}
+    onmouseleave={() => (hoveredCenter = false)}
+    onmousedown={(e) => {
+      e.stopPropagation();
+      onStartScale();
+    }}
+  />
+{/if}

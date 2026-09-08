@@ -386,6 +386,13 @@
     onmousedown={(e) => {
       if (viewport.isCreationMode) return;
       if (viewport.mode === "review") return;
+
+      // Shift+Drag over a shape that isn't part of an editable selection is a
+      // rectangle selection: let it bubble to the container. When the shape IS
+      // selected and editable, shift keeps its old meaning — grab and move the
+      // selection — so multi-shape drags still start here.
+      if (e.shiftKey && !(editable && selected)) return;
+
       if (editable && selected && cursor) {
         startSelection(cursor);
       }
@@ -393,8 +400,9 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4 && selection.selectedAnnotationIds.size <= 1 }
+  {#if editable && selected && !isEditing && !multiDragDelta && displayPoints.length === 4}
     <EllipseHandler
+      readOnly={selection.selectedAnnotationIds.size > 1}
       centroid={displayCentroid}
       radiusX={displayRadii[0]}
       radiusY={displayRadii[1]}

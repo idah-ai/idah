@@ -11,6 +11,7 @@
     currentAngle: number;
     color: string;
     isEditing: boolean;
+    readOnly?: boolean;
     cursorPx: Point | undefined;
 
     onStartResize: (handleIndex: number) => void;
@@ -36,6 +37,7 @@
     onIncrementRevolution,
     revolutionDisplay,
     rotateStart,
+    readOnly = false,
   }: Props = $props();
 
   let w = $derived(media.width);
@@ -95,197 +97,206 @@
   let revPlusFillOpacity = $derived(hoveredRevPlus ? 0.35 : 0.15);
 </script>
 
-<g style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px" style:transform="rotate({currentAngle}rad)">
-  <!-- Rotation line + handle -->
-  <line
-    x1={rotationLayout.topMidN[0] * w}
-    y1={rotationLayout.topMidN[1] * h}
-    x2={rotationLayout.topMidN[0] * w}
-    y2={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
-    stroke={color}
-    stroke-width={S_line}
-    pointer-events="none"
-  />
-  <!-- Rotation top dot: white outline + filled center -->
-  <circle
-    cx={rotationLayout.topMidN[0] * w}
-    cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
-    r={R_rotate_dot}
-    fill={color}
-    pointer-events="none"
-  />
-  <circle
-    role="slider"
-    tabindex="0"
-    style:outline="none"
-    aria-valuenow={currentAngle * (180 / Math.PI)}
-    onmouseenter={() => (hoveredRotate = true)}
-    onmouseleave={() => (hoveredRotate = false)}
-    onmousedown={(e) => {
-      e.stopPropagation();
-      const cp: Point = [centroidN[0] * w, centroidN[1] * h];
-      onStartRotate(cp);
-    }}
-    cx={rotationLayout.topMidN[0] * w}
-    cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
-    r={R_rotate_hit}
-    fill="transparent"
-    style:cursor={isEditing ? "none" : `url('${rotateCursorSVG(color)}') 18 18, grab`}
-  />
-  <circle
-    cx={rotationLayout.topMidN[0] * w}
-    cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
-    r={hoveredRotate ? R_rotate_hovered : R_rotate}
-    fill={color}
-    fill-opacity={rotateFillOpacity}
-    stroke={color}
-    stroke-width={S_line}
-    pointer-events="none"
-  />
-
-  <!-- Resize handles -->
-  {#each boundingBoxHandle(displayPoints) as point, handleIndex (handleIndex)}
-    {@const isHovered = hoveredHandleIndex === handleIndex}
-    {@const curR = isHovered ? R_hovered : R}
-    {@const curFillOpacity = isHovered ? 0.5 : 0.25}
-    <!-- White halo for contrast → expands on hover -->
-    <circle
-      cx={point[0] * w}
-      cy={point[1] * h}
-      r={isHovered ? R_hovered : R_hit}
-      fill="white"
-      fill-opacity={isHovered ? 0.8 : 0.6}
-      pointer-events="none"
-    />
-    <!-- Transparent hit zone -->
-    <circle
-      role="grid"
-      tabindex="-1"
-      style:outline="none"
-      onmouseenter={() => (hoveredHandleIndex = handleIndex)}
-      onmouseleave={() => (hoveredHandleIndex = undefined)}
-      onmousedown={(e) => {
-        e.stopPropagation();
-        onStartResize(handleIndex);
-      }}
-      cx={point[0] * w}
-      cy={point[1] * h}
-      r={R_hit}
-      fill="transparent"
-      style:cursor={isEditing
-        ? "none"
-        : `url('${rotatedCursorSVG(handleIndex, currentAngle, color)}') 18 18, ${handleCursor(handleIndex)}`}
-    />
-    <!-- Filled handle ring → grows and deepens on hover -->
-    <circle
-      cx={point[0] * w}
-      cy={point[1] * h}
-      r={curR}
-      fill={color}
-      fill-opacity={curFillOpacity}
+{#if readOnly && !isEditing}
+  <!-- Read-only (multi-select): inert gray dots at each handle position, no rotation handle -->
+  <g style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px" style:transform="rotate({currentAngle}rad)">
+    {#each boundingBoxHandle(displayPoints) as point, handleIndex (handleIndex)}
+      <circle cx={point[0] * w} cy={point[1] * h} r={R / 2} fill="#9ca3af" pointer-events="none" />
+    {/each}
+  </g>
+{:else}
+  <g style:transform-origin="{centroidPx[0]}px {centroidPx[1]}px" style:transform="rotate({currentAngle}rad)">
+    <!-- Rotation line + handle -->
+    <line
+      x1={rotationLayout.topMidN[0] * w}
+      y1={rotationLayout.topMidN[1] * h}
+      x2={rotationLayout.topMidN[0] * w}
+      y2={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
       stroke={color}
       stroke-width={S_line}
       pointer-events="none"
     />
-    <!-- Center dot -->
-    <circle cx={point[0] * w} cy={point[1] * h} r={R_center_dot} fill={color} pointer-events="none" />
-  {/each}
-</g>
+    <!-- Rotation top dot: white outline + filled center -->
+    <circle
+      cx={rotationLayout.topMidN[0] * w}
+      cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
+      r={R_rotate_dot}
+      fill={color}
+      pointer-events="none"
+    />
+    <circle
+      role="slider"
+      tabindex="0"
+      style:outline="none"
+      aria-valuenow={currentAngle * (180 / Math.PI)}
+      onmouseenter={() => (hoveredRotate = true)}
+      onmouseleave={() => (hoveredRotate = false)}
+      onmousedown={(e) => {
+        e.stopPropagation();
+        const cp: Point = [centroidN[0] * w, centroidN[1] * h];
+        onStartRotate(cp);
+      }}
+      cx={rotationLayout.topMidN[0] * w}
+      cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
+      r={R_rotate_hit}
+      fill="transparent"
+      style:cursor={isEditing ? "none" : `url('${rotateCursorSVG(color)}') 18 18, grab`}
+    />
+    <circle
+      cx={rotationLayout.topMidN[0] * w}
+      cy={(rotationLayout.topMidN[1] - rotationLayout.rotOffset) * h}
+      r={hoveredRotate ? R_rotate_hovered : R_rotate}
+      fill={color}
+      fill-opacity={rotateFillOpacity}
+      stroke={color}
+      stroke-width={S_line}
+      pointer-events="none"
+    />
 
-<!-- Rotation preview line -->
-{#if rotateStart && cursorPx}
+    <!-- Resize handles -->
+    {#each boundingBoxHandle(displayPoints) as point, handleIndex (handleIndex)}
+      {@const isHovered = hoveredHandleIndex === handleIndex}
+      {@const curR = isHovered ? R_hovered : R}
+      {@const curFillOpacity = isHovered ? 0.5 : 0.25}
+      <!-- White halo for contrast → expands on hover -->
+      <circle
+        cx={point[0] * w}
+        cy={point[1] * h}
+        r={isHovered ? R_hovered : R_hit}
+        fill="white"
+        fill-opacity={isHovered ? 0.8 : 0.6}
+        pointer-events="none"
+      />
+      <!-- Transparent hit zone -->
+      <circle
+        role="grid"
+        tabindex="-1"
+        style:outline="none"
+        onmouseenter={() => (hoveredHandleIndex = handleIndex)}
+        onmouseleave={() => (hoveredHandleIndex = undefined)}
+        onmousedown={(e) => {
+          e.stopPropagation();
+          onStartResize(handleIndex);
+        }}
+        cx={point[0] * w}
+        cy={point[1] * h}
+        r={R_hit}
+        fill="transparent"
+        style:cursor={isEditing
+          ? "none"
+          : `url('${rotatedCursorSVG(handleIndex, currentAngle, color)}') 18 18, ${handleCursor(handleIndex)}`}
+      />
+      <!-- Filled handle ring → grows and deepens on hover -->
+      <circle
+        cx={point[0] * w}
+        cy={point[1] * h}
+        r={curR}
+        fill={color}
+        fill-opacity={curFillOpacity}
+        stroke={color}
+        stroke-width={S_line}
+        pointer-events="none"
+      />
+      <!-- Center dot -->
+      <circle cx={point[0] * w} cy={point[1] * h} r={R_center_dot} fill={color} pointer-events="none" />
+    {/each}
+  </g>
+
+  <!-- Rotation preview line -->
+  {#if rotateStart && cursorPx}
+    <line
+      x1={centroidPx[0]}
+      y1={centroidPx[1]}
+      x2={cursorPx[0]}
+      y2={cursorPx[1]}
+      stroke={color}
+      stroke-width={S_line}
+      stroke-dasharray="5,5"
+      pointer-events="none"
+    />
+  {/if}
+
+  <!-- Revolution controls -->
   <line
-    x1={centroidPx[0]}
-    y1={centroidPx[1]}
-    x2={cursorPx[0]}
-    y2={cursorPx[1]}
+    x1={rotationLayout.rotHPxX - S_offset - R_rev}
+    y1={rotationLayout.rotHPxY}
+    x2={rotationLayout.rotHPxX - S_offset + R_rev}
+    y2={rotationLayout.rotHPxY}
     stroke={color}
     stroke-width={S_line}
-    stroke-dasharray="5,5"
-    pointer-events="none"
+  />
+  <circle
+    role="button"
+    tabindex="-1"
+    style:outline="none"
+    onmouseenter={() => (hoveredRevMinus = true)}
+    onmouseleave={() => (hoveredRevMinus = false)}
+    cx={rotationLayout.rotHPxX - S_offset}
+    cy={rotationLayout.rotHPxY}
+    r={hoveredRevMinus ? R_rev_hovered : R_rev}
+    fill={color}
+    fill-opacity={revMinusFillOpacity}
+    stroke={color}
+    stroke-width={S_line}
+    style:cursor="pointer"
+    onmousedown={(e) => {
+      e.stopPropagation();
+      onDecrementRevolution();
+    }}
+  />
+
+  <text
+    x={rotationLayout.rotHPxX}
+    y={rotationLayout.rotHPxY - S_offset}
+    text-anchor="middle"
+    dominant-baseline="central"
+    style:font-size="{S_font}px"
+    style:font-weight="bold"
+    style:fill={color}
+    style:paint-order="stroke"
+    style:stroke="white"
+    style:stroke-width="3px"
+    style:stroke-linecap="round"
+    style:stroke-linejoin="round"
+    style:pointer-events="none"
+    style:user-select="none"
+  >
+    {(currentAngle * (180 / Math.PI)).toFixed(1)}° {revolutionDisplay}
+  </text>
+
+  <line
+    x1={rotationLayout.rotHPxX + S_offset - R_rev}
+    y1={rotationLayout.rotHPxY}
+    x2={rotationLayout.rotHPxX + S_offset + R_rev}
+    y2={rotationLayout.rotHPxY}
+    stroke={color}
+    stroke-width={S_line}
+  />
+  <line
+    x1={rotationLayout.rotHPxX + S_offset}
+    y1={rotationLayout.rotHPxY - R_rev}
+    x2={rotationLayout.rotHPxX + S_offset}
+    y2={rotationLayout.rotHPxY + R_rev}
+    stroke={color}
+    stroke-width={S_line}
+  />
+  <circle
+    role="button"
+    tabindex="-1"
+    style:outline="none"
+    onmouseenter={() => (hoveredRevPlus = true)}
+    onmouseleave={() => (hoveredRevPlus = false)}
+    cx={rotationLayout.rotHPxX + S_offset}
+    cy={rotationLayout.rotHPxY}
+    r={hoveredRevPlus ? R_rev_hovered : R_rev}
+    fill={color}
+    fill-opacity={revPlusFillOpacity}
+    stroke={color}
+    stroke-width={S_line}
+    style:cursor="pointer"
+    onmousedown={(e) => {
+      e.stopPropagation();
+      onIncrementRevolution();
+    }}
   />
 {/if}
-
-<!-- Revolution controls -->
-<line
-  x1={rotationLayout.rotHPxX - S_offset - R_rev}
-  y1={rotationLayout.rotHPxY}
-  x2={rotationLayout.rotHPxX - S_offset + R_rev}
-  y2={rotationLayout.rotHPxY}
-  stroke={color}
-  stroke-width={S_line}
-/>
-<circle
-  role="button"
-  tabindex="-1"
-  style:outline="none"
-  onmouseenter={() => (hoveredRevMinus = true)}
-  onmouseleave={() => (hoveredRevMinus = false)}
-  cx={rotationLayout.rotHPxX - S_offset}
-  cy={rotationLayout.rotHPxY}
-  r={hoveredRevMinus ? R_rev_hovered : R_rev}
-  fill={color}
-  fill-opacity={revMinusFillOpacity}
-  stroke={color}
-  stroke-width={S_line}
-  style:cursor="pointer"
-  onmousedown={(e) => {
-    e.stopPropagation();
-    onDecrementRevolution();
-  }}
-/>
-
-<text
-  x={rotationLayout.rotHPxX}
-  y={rotationLayout.rotHPxY - S_offset}
-  text-anchor="middle"
-  dominant-baseline="central"
-  style:font-size="{S_font}px"
-  style:font-weight="bold"
-  style:fill={color}
-  style:paint-order="stroke"
-  style:stroke="white"
-  style:stroke-width="3px"
-  style:stroke-linecap="round"
-  style:stroke-linejoin="round"
-  style:pointer-events="none"
-  style:user-select="none"
->
-  {(currentAngle * (180 / Math.PI)).toFixed(1)}° {revolutionDisplay}
-</text>
-
-<line
-  x1={rotationLayout.rotHPxX + S_offset - R_rev}
-  y1={rotationLayout.rotHPxY}
-  x2={rotationLayout.rotHPxX + S_offset + R_rev}
-  y2={rotationLayout.rotHPxY}
-  stroke={color}
-  stroke-width={S_line}
-/>
-<line
-  x1={rotationLayout.rotHPxX + S_offset}
-  y1={rotationLayout.rotHPxY - R_rev}
-  x2={rotationLayout.rotHPxX + S_offset}
-  y2={rotationLayout.rotHPxY + R_rev}
-  stroke={color}
-  stroke-width={S_line}
-/>
-<circle
-  role="button"
-  tabindex="-1"
-  style:outline="none"
-  onmouseenter={() => (hoveredRevPlus = true)}
-  onmouseleave={() => (hoveredRevPlus = false)}
-  cx={rotationLayout.rotHPxX + S_offset}
-  cy={rotationLayout.rotHPxY}
-  r={hoveredRevPlus ? R_rev_hovered : R_rev}
-  fill={color}
-  fill-opacity={revPlusFillOpacity}
-  stroke={color}
-  stroke-width={S_line}
-  style:cursor="pointer"
-  onmousedown={(e) => {
-    e.stopPropagation();
-    onIncrementRevolution();
-  }}
-/>
