@@ -43,20 +43,22 @@
   let _lineComp: any = $state();
   let _polyComp: any = $state();
 
+  /** Map shape type to its component ref. */
+  function _compForType(type: string | undefined): any {
+    switch (type) {
+      case IDAH_IMAGE_BOUNDING_BOX: return _bboxComp;
+      case IDAH_IMAGE_CIRCLE:       return _circleComp;
+      case IDAH_IMAGE_ELLIPSE:      return _ellipseComp;
+      case IDAH_IMAGE_LINE:         return _lineComp;
+      default:                      return _polyComp;
+    }
+  }
+
   /** Expose the active tool selection to parents. */
   let _toolSelection = $derived.by<
     { startSelection: (p: Point, altKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined
   >(() => {
-    const comp =
-      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX
-        ? _bboxComp
-        : annotation?.shape?.type === IDAH_IMAGE_CIRCLE
-          ? _circleComp
-          : annotation?.shape?.type === IDAH_IMAGE_ELLIPSE
-            ? _ellipseComp
-            : annotation?.shape?.type === IDAH_IMAGE_LINE
-              ? _lineComp
-              : _polyComp;
+    const comp = _compForType(annotation?.shape?.type);
     if (comp?.startSelection && comp?.endSelection) {
       return {
         startSelection: (p: Point, altKey?: boolean) => comp.startSelection(p, altKey),
@@ -74,17 +76,7 @@
 
   /** Expose whether the user is actively editing (dragging/resizing) this annotation. */
   let _isEditing = $derived.by((): boolean => {
-    const comp =
-      annotation?.shape?.type === IDAH_IMAGE_BOUNDING_BOX
-        ? _bboxComp
-        : annotation?.shape?.type === IDAH_IMAGE_CIRCLE
-          ? _circleComp
-          : annotation?.shape?.type === IDAH_IMAGE_ELLIPSE
-            ? _ellipseComp
-            : annotation?.shape?.type === IDAH_IMAGE_LINE
-              ? _lineComp
-              : _polyComp;
-    return comp?.getIsEditing?.() ?? false;
+    return _compForType(annotation?.shape?.type)?.getIsEditing?.() ?? false;
   });
 
   export function getIsEditing(): boolean {

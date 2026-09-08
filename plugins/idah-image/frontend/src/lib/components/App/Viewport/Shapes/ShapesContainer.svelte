@@ -38,7 +38,7 @@
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
-  import { data, setPendingNoteScene } from "$lib/state/data.svelte";
+  import { data, setPendingNoteScene, type AnnotationItem } from "$lib/state/data.svelte";
   import { maskSession } from "$lib/state/mask-session.svelte";
   import { maskTool } from "$lib/state/mask-tool.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -286,6 +286,19 @@
   let _multiDragOrigin: Point | null = $state(null);
   /** Current shared drag delta in normalized coords. */
   let _multiDragDelta: Point | null = $state(null);
+  /**
+   * Batch accumulator for multi-shape drag.
+   * When non-null, `handleEditComplete` collects updates here instead of
+   * dispatching individual commands. At the end of `onMouseUp` the entire
+   * batch is dispatched as a single undoable command, so one Ctrl+Z restores
+   * ALL moved shapes to their original positions.
+   */
+  let _commitBatch: Array<{
+    annotationId: string;
+    shape: IImageAnnotationShape;
+    /** Pre-move snapshot captured BEFORE the synchronous upsert runs. */
+    snapshot: AnnotationItem;
+  }> | null = null;
 
   /** Whether any selected annotation component is currently being edited (dragged). */
   let _anySelectedEditing = $derived.by((): boolean => {
@@ -760,12 +773,20 @@
       }
     }
 
+    // ── Multi-drag: begin batch collection ───────────────────────────
+    // If a multi-shape drag occurred, collect every commit into a single
+    // undoable command instead of N separate annotation.update commands.
+    const dragDelta = _multiDragDelta; // local const for TS narrowing
+    const isBatchCommit = !!dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0);
+    if (isBatchCommit) {
+      _commitBatch = [];
+    }
+
     for (let i = 0; i < _compRefs.length; i++) {
       _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
     }
 
     // ── Multi-drag: commit delta to all other selected annotations ──
-    const dragDelta = _multiDragDelta; // local const for TS narrowing
     if (dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0)) {
       for (let i = 0; i < visibleAnnotations.length; i++) {
         const ann = visibleAnnotations[i];
@@ -773,8 +794,34 @@
         if (ann.id === _draggedId) continue;
         const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
         if (!shape?.points?.length) continue;
-        const movedPoints = shape.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
+
+        // Shift points based on shape type — some shapes store radii
+        // in points that must NOT be translated.
+        let movedPoints: Point[];
+        if (shape.type === IMAGE_CIRCLE) {
+          // points = [[cx, cy]] — only centroid shifts, radius is separate
+          movedPoints = [[shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]]];
+        } else if (shape.type === IMAGE_ELLIPSE) {
+          // points = [[cx, cy], [rx, ry]] — only centroid shifts, radii are separate
+          movedPoints = [
+            [shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]],
+            shape.points[1],
+          ];
+        } else {
+          // All points are positional vertices (bbox, polygon, line)
+          movedPoints = shape.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
+        }
+
         handleEditComplete(ann.id, movedPoints, {});
+      }
+    }
+
+    // ── Dispatch the collected multi-drag batch as ONE undoable command ──
+    if (_commitBatch) {
+      const pending = _commitBatch;
+      _commitBatch = null;
+      if (pending.length > 0) {
+        getDriver().command.call("idah-image:selection.batch-move", { updates: pending });
       }
     }
     _multiDragOrigin = null;
@@ -886,7 +933,37 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], extraProps: Record<string, unknown> = {}) {
-    onSelection(viewport.mode, points, extraProps, annId);
+    // Read the annotation BEFORE any mutation — this is our "original" state.
+    const ann = data.annotations?.items?.find((r) => r.id === annId);
+
+    if (_commitBatch) {
+      // ── Multi-drag batch mode ────────────────────────────────────────
+      // Capture the PRE-MOVE snapshot NOW (before the synchronous upsert
+      // below mutates the store). Undo restores this exact snapshot, so all
+      // shapes return to their original positions in one Ctrl+Z.
+      if (ann) {
+        const originalShape = ann.shape as IImageAnnotationShape | undefined;
+        _commitBatch.push({
+          annotationId: annId,
+          // Spread the original shape, then apply extraProps (e.g., ellipse
+          // angle after rotation), then override points with the moved
+          // position. This preserves shape-specific properties like ellipse
+          // `angle`, circle `radius`, etc. that the multi-drag loop's
+          // extraProps doesn't carry.
+          shape: { ...originalShape, ...extraProps, points } as IImageAnnotationShape,
+          snapshot: {
+            ...ann,
+            shape: { ...(ann.shape ?? {}) },
+          } as AnnotationItem,
+        });
+      }
+    } else {
+      // ── Single-edit path (unchanged) ────────────────────────────────
+      // Dispatch FIRST so annotation.update's callback reads the store before
+      // the upsert below — this is what lets its snapshot capture the original
+      // position.
+      onSelection(viewport.mode, points, extraProps, annId);
+    }
 
     // ── Synchronous local data store update to prevent viewport blink ──
     // The dispatched command's async do() will also update the store, but
@@ -895,7 +972,6 @@
     // the async update completes. Updating the local store synchronously
     // here keeps shapes at their new positions through the render that
     // follows, eliminating the blink.
-    const ann = data.annotations?.items?.find((r) => r.id === annId);
     if (!ann) return;
     const shape = ann.shape as IImageAnnotationShape | undefined;
     if (!shape) return;

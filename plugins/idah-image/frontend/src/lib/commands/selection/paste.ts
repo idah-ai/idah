@@ -43,17 +43,29 @@ export function register(driver: IIdahDriverV2): void {
       const clipboardData = clipboard.annotations!;
       const centroid = clipboard.centroid;
 
+      // Resolve the paste position ONCE at callback time (when the command is
+      // first invoked by call()).  This ensures undo/redo always paste at the
+      // same position, even if the cursor has moved.
+      const capturePastePos: [number, number] = [
+        (opts?.x as number | undefined) ?? viewport.cursor[0],
+        (opts?.y as number | undefined) ?? viewport.cursor[1],
+      ];
+
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
 
       return {
         command: { ...command },
         async do() {
-          // Paste position: explicit option (context menu), else last cursor,
-          // else viewport center.
-          const targetX = (opts?.x as number | undefined) ?? viewport.cursor[0];
-          const targetY = (opts?.y as number | undefined) ?? viewport.cursor[1];
-          const pastePos: [number, number] = [targetX, targetY];
+          // Reset from any previous redo cycle — each do()/undo() pair tracks
+          // only the IDs it actually created. Without this, redo appends fresh
+          // IDs on top of the old (already-deleted) ones, and the next undo()
+          // tries to delete non-existent annotations → throws.
+          createdIds.length = 0;
+
+          // Use the captured position so undo/redo are deterministic regardless
+          // of cursor position at redo time.
+          const pastePos = capturePastePos;
 
 
           for (const entry of clipboardData) {

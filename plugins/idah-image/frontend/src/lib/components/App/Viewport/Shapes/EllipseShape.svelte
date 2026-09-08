@@ -130,7 +130,7 @@
       return [(cursorPx[0] - panStart[0]) / w, (cursorPx[1] - panStart[1]) / h];
     }
     if (multiDragDelta && selected) {
-      return [multiDragDelta[0] / w, multiDragDelta[1] / h];
+      return [multiDragDelta[0], multiDragDelta[1]];
     }
     return [0, 0];
   });
@@ -138,7 +138,13 @@
   // ── Display points (include pan offset) — same as BBoxShape ──────────
   let displayPoints = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]] as Point);
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return points.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]] as Point);
     }
     return points;
   });
