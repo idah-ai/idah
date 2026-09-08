@@ -44,17 +44,27 @@ export function register(driver: IIdahDriverV2): void {
       const clipboardData = clipboard.annotations!;
       const centroid = clipboard.centroid;
 
+      // Resolve the paste position ONCE at callback time (when the command is
+      // first invoked by call()).  This ensures undo/redo always paste at the
+      // same position, even if the cursor or playback head has moved.
+      const captureX = (opts?.x as number | undefined) ?? viewport.cursor[0];
+      const captureY = (opts?.y as number | undefined) ?? viewport.cursor[1];
+      const capturePastePos: [number, number] = [captureX, captureY];
+      const captureFrame = viewport.video.currentFrame.value;
+
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
 
       return {
         command: { ...command },
         async do() {
-          // Paste position: explicit option (context menu), else last cursor,
-          // else viewport center.
-          const targetX = (opts?.x as number | undefined) ?? viewport.cursor[0];
-          const targetY = (opts?.y as number | undefined) ?? viewport.cursor[1];
-          const pastePos: [number, number] = [targetX, targetY];
+          // Reset from any previous redo cycle
+          createdIds.length = 0;
+
+          // Use the captured values so undo/redo are deterministic regardless
+          // of cursor position or playback head at redo time.
+          const pastePos = capturePastePos;
+          const currentFrame = captureFrame;
 
           // Map original group IDs → new group IDs
           const groupMap = new Map<string, string>();
@@ -73,8 +83,8 @@ export function register(driver: IIdahDriverV2): void {
             const dy = pastePos[1] - centroid[1];
 
             // Truncate the pasted annotation's start to the current frame if
-            // its original start is before the playhead
-            const currentFrame = viewport.video.currentFrame.value;
+            // its original start is before the playhead (currentFrame is
+            // captured at command-callback time so undo/redo are deterministic).
             const originalStart = (entry.shape as any).start as number | undefined;
             const originalEnd = (entry.shape as any).end as number | undefined;
             const shouldTruncate = originalStart !== undefined && originalStart < currentFrame;
