@@ -40,6 +40,7 @@ import { register as registerSelectionCopy } from "./selection/copy";
 import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
 import { register as registerSelectionPaste } from "./selection/paste";
+import { register as registerSelectionBatchMove } from "./selection/batch_move";
 
 import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
 import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
@@ -70,6 +71,7 @@ import { register as registerToggleColorMode } from "./display/toggle-color-mode
 import { register as registerToggleDebugConsole } from "./display/toggle-debug-console";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
+import { register as registerSidebarTab } from "./sidebar/sidebar_tab";
 import { register as registerTimelineFocus } from "./timeline/focus";
 import { register as registerTimelineGoToFirst } from "./timeline/go-to-first";
 import { register as registerTimelineGoToLast } from "./timeline/go-to-last";
@@ -111,6 +113,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerSelectionCenter(driver);
   registerSelectionCopy(driver);
   registerSelectionPaste(driver);
+  registerSelectionBatchMove(driver);
 
   // ── Keyframe ──────────────────────────────────────────────────────────
   registerKeyframeAdd(driver);
@@ -159,6 +162,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerToggleTimeDisplay(driver);
   registerToggleDebugConsole(driver);
   registerToggleRenderMode(driver);
+  registerSidebarTab(driver);
 
   // ── Snap ─────────────────────────────────────────────────────────────
   registerSnapMagneticToggle(driver);

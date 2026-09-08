@@ -44,20 +44,51 @@ export function register(driver: IIdahDriverV2): void {
       const clipboardData = clipboard.annotations!;
       const centroid = clipboard.centroid;
 
+      // Resolve the paste position ONCE at callback time (when the command is
+      // first invoked by call()).  This ensures undo/redo always paste at the
+      // same position, even if the cursor or playback head has moved.
+      const captureX = (opts?.x as number | undefined) ?? viewport.cursor[0];
+      const captureY = (opts?.y as number | undefined) ?? viewport.cursor[1];
+      const capturePastePos: [number, number] = [captureX, captureY];
+
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
 
       return {
         command: { ...command },
         async do() {
-          // Paste position: explicit option (context menu), else last cursor,
-          // else viewport center.
-          const targetX = (opts?.x as number | undefined) ?? viewport.cursor[0];
-          const targetY = (opts?.y as number | undefined) ?? viewport.cursor[1];
-          const pastePos: [number, number] = [targetX, targetY];
+          // Reset from any previous redo cycle
+          createdIds.length = 0;
 
           // Map original group IDs → new group IDs
           const groupMap = new Map<string, string>();
+
+          // Use the captured values so undo/redo are deterministic regardless
+          // of cursor position or playback head at redo time.
+          const pastePos = capturePastePos;
+
+          // Anchor the paste to the copied annotations' interpolated positions at the
+          // CURRENT playhead frame (not their first keyframe). This way, when you paste
+          // while not on the first frame, the pasted annotations land centered on the
+          // cursor at the current frame instead of being offset relative to frame 0.
+          const currentFrame = viewport.video.currentFrame.value;
+          let anchorCx = 0;
+          let anchorCy = 0;
+          let anchorCount = 0;
+          for (const entry of clipboardData) {
+            const frame = getInterpolatedFrame(entry.shape as any, currentFrame);
+            const pts = frame?.points as [number, number][] | undefined;
+            if (!pts?.length) continue;
+            for (const [px, py] of pts) {
+              anchorCx += px;
+              anchorCy += py;
+              anchorCount++;
+            }
+          }
+          // Fall back to the stored clipboard centroid if nothing interpolates at the
+          // current frame (e.g. pasting onto a frame outside the copied range).
+          const anchor: [number, number] =
+            anchorCount > 0 ? [anchorCx / anchorCount, anchorCy / anchorCount] : centroid;
 
           for (const entry of clipboardData) {
             // Generate new group ID for this original group
@@ -68,55 +99,32 @@ export function register(driver: IIdahDriverV2): void {
 
             const newId = uuidv7();
 
-            // Compute offset: shift ALL annotations by the same (pastePos - centroid).
-            const dx = pastePos[0] - centroid[0];
-            const dy = pastePos[1] - centroid[1];
+            // Compute offset: shift ALL annotations by the same (pastePos - anchor).
+            const dx = pastePos[0] - anchor[0];
+            const dy = pastePos[1] - anchor[1];
 
-            // Truncate the pasted annotation's start to the current frame if
-            // its original start is before the playhead
-            const currentFrame = viewport.video.currentFrame.value;
+            // Copy the annotation's frame range as-is: start/end and every
+            // keyframe's frame value are an exact copy of the original. Only the
+            // spatial position is offset by (dx, dy).
+            const originalFrames = (entry.shape?.frames as any[]) ?? [];
             const originalStart = (entry.shape as any).start as number | undefined;
             const originalEnd = (entry.shape as any).end as number | undefined;
-            const shouldTruncate = originalStart !== undefined && originalStart < currentFrame;
-            const newStart = shouldTruncate ? currentFrame : (originalStart ?? 0);
-            const newEnd = originalEnd ?? (originalStart ?? 0) + 1;
-
-            // Clone the shape, offset all frame points, and drop keyframes
-            // before the new start (outside the truncated range).
-            const originalFrames = (entry.shape?.frames as any[]) ?? [];
-            const newFrames = originalFrames
-              .filter((f: any) => f.frame >= newStart)
-              .map((frame: any) => {
-                if (!frame?.points) return { ...frame };
-                return {
-                  ...frame,
-                  points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-                };
-              });
-
-            // If no keyframe exists at the exact new start frame, create one
-            // by interpolating from the original shape's surrounding keyframes.
-            if (originalFrames.length > 0 && !newFrames.some((f: any) => f.frame === newStart)) {
-              const interp = getInterpolatedFrame(entry.shape as any, newStart);
-              if (interp?.points?.length) {
-                newFrames.push({
-                  frame: newStart,
-                  angle: interp.angle ?? 0,
-                  points: interp.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-                });
-              }
-            }
+            const newFrames = originalFrames.map((frame: any) => {
+              if (!frame?.points) return { ...frame };
+              return {
+                ...frame,
+                points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
+              };
+            });
 
             const newShape = {
               ...entry.shape,
-              start: newStart,
-              end: newEnd,
+              start: originalStart ?? 0,
+              end: originalEnd ?? originalStart ?? 0,
               frames: newFrames,
             };
 
-            const newMetadata = entry.metadata
-              ? { ...entry.metadata, group_id: newGroupId }
-              : { group_id: newGroupId };
+            const newMetadata = entry.metadata ? { ...entry.metadata, group_id: newGroupId } : { group_id: newGroupId };
 
             try {
               await data.annotations!.create({
@@ -148,8 +156,12 @@ export function register(driver: IIdahDriverV2): void {
             selection.deselect();
           }
         },
-        isCombinable() { return false; },
-        combine(p: never) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p: never) {
+          return p;
+        },
       };
     },
   });

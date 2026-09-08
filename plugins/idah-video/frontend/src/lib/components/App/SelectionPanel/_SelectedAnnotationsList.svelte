@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Badge } from "$lib/components/ui/Badge";
   import Icon from "$lib/components/ui/Icon";
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
@@ -41,6 +42,8 @@
   const showPagination = $derived(sourceItems.length > PAGE_SIZE);
   const placeholderCount = $derived(showPagination ? PAGE_SIZE - pagedAnnotations.length : 0);
 
+  const countLabel = $derived(`${sourceItems.length} ${sourceItems.length === 1 ? "annotation" : "annotations"}`);
+
   $effect(() => {
     if (page > totalPages) page = totalPages;
   });
@@ -48,8 +51,8 @@
 
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
-    <Text weight="semibold">Selected</Text>
-    <span class="text-muted-foreground text-xs">{sourceItems.length} annotations</span>
+    <Text weight="semibold">Multiple selection</Text>
+    <Badge variant="info">{countLabel}</Badge>
   </div>
 
   <div class="flex flex-col gap-1">
