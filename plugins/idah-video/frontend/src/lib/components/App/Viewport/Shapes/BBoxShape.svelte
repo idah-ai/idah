@@ -437,7 +437,10 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4}
+  <!-- Handles hide while the shape is edited, and while ANY shape in a multi-selection
+       is dragged: multiDragDelta is non-null for the whole group drag, so the read-only
+       dots on the shapes being carried along disappear with the dragged one's. -->
+  {#if editable && selected && !isEditing && !multiDragDelta && displayPoints.length === 4}
     <BBoxHandler
       {displayPoints}
       {centroidN}

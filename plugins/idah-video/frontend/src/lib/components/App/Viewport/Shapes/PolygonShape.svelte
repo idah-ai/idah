@@ -332,7 +332,9 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayVertices.length >= 3}
+  <!-- See BBoxShape: !multiDragDelta hides the read-only dots on every shape in the
+       group while any one of them is being dragged. -->
+  {#if editable && selected && !isEditing && !multiDragDelta && displayVertices.length >= 3}
     <PolygonHandler
       vertices={displayVertices}
       {color}
