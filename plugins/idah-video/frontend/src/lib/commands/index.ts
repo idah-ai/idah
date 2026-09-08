@@ -40,10 +40,10 @@ import { register as registerSelectionCopy } from "./selection/copy";
 import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
 import { register as registerSelectionPaste } from "./selection/paste";
+import { register as registerSelectionBatchMove } from "./selection/batch_move";
 
 import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
 import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
-import { register as registerKeyframeBatchAdd } from "./annotation/keyframe_batch_add";
 
 import { register as registerGroupDelete } from "./group/delete";
 import { register as registerGroupToggleEditability } from "./group/toggle_editability";
@@ -113,11 +113,11 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerSelectionCenter(driver);
   registerSelectionCopy(driver);
   registerSelectionPaste(driver);
+  registerSelectionBatchMove(driver);
 
   // ── Keyframe ──────────────────────────────────────────────────────────
   registerKeyframeAdd(driver);
   registerKeyframeDelete(driver);
-  registerKeyframeBatchAdd(driver);
 
   // ── Group ─────────────────────────────────────────────────────────────
   registerGroupDelete(driver);

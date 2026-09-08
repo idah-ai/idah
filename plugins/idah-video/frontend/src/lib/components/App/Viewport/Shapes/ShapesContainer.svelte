@@ -691,7 +691,7 @@
       _commitBatch = null;
 
       if (pending.length > 0) {
-        getDriver().command.call("idah-video:annotation.keyframe.batch-add", { updates: pending });
+        getDriver().command.call("idah-video:selection.batch-move", { updates: pending });
       }
     }
     _multiDragOrigin = null;

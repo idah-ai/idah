@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
-// idah-video:annotation.keyframe.batch-add — Add/update keyframes on MULTIPLE
-// annotations as a SINGLE undoable action (multi-shape drag).
+// idah-video:selection.batch-move — Move multiple selected shapes at once
+// as a SINGLE undoable action (multi-shape drag).
 //
 // This command receives pre-captured snapshots (taken before any store
 // mutation) so undo restores every annotation's original position in one
@@ -8,7 +8,7 @@
 // this command was dispatched.
 //
 // Usage:
-//   driver.command.call("idah-video:annotation.keyframe.batch-add", {
+//   driver.command.call("idah-video:selection.batch-move", {
 //     updates: [
 //       {
 //         annotationId: "...",
@@ -29,15 +29,15 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
-  name: "idah-video:annotation.keyframe.batch-add",
-  group: undefined,
-  modes: [] as string[],
+  name: "idah-video:selection.batch-move",
+  group: "Selection",
+  modes: ["editor"],
   shortcut: null,
-  shortDescription: null,
+  shortDescription: "Move multiple selected shapes",
   longDescription: null,
 };
 
-export interface KeyframeBatchAddProps {
+export interface BatchMoveProps {
   updates: Array<{
     annotationId: string;
     selection: IVideoFrameSelection;
@@ -49,12 +49,13 @@ export interface KeyframeBatchAddProps {
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
+    group: command.group,
     modes: command.modes,
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
-      const props = opts as unknown as KeyframeBatchAddProps | undefined;
+      const props = opts as unknown as BatchMoveProps | undefined;
       if (!isEditable()) return noopAction(command);
       if (!props?.updates?.length || !data.annotations) return noopAction(command);
 
@@ -119,6 +120,5 @@ export function register(driver: IIdahDriverV2): void {
         },
       };
     },
-    group: command.group,
   });
 }
