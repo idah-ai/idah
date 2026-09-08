@@ -13,6 +13,7 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { uuidv7 } from "uuidv7";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
@@ -58,6 +59,29 @@ export function register(driver: IIdahDriverV2): void {
           // Map original group IDs → new group IDs
           const groupMap = new Map<string, string>();
 
+          // Anchor the paste to the copied annotations' interpolated positions at the
+          // CURRENT playhead frame (not their first keyframe). This way, when you paste
+          // while not on the first frame, the pasted annotations land centered on the
+          // cursor at the current frame instead of being offset relative to frame 0.
+          const currentFrame = viewport.video.currentFrame.value;
+          let anchorCx = 0;
+          let anchorCy = 0;
+          let anchorCount = 0;
+          for (const entry of clipboardData) {
+            const frame = getInterpolatedFrame(entry.shape as any, currentFrame);
+            const pts = frame?.points as [number, number][] | undefined;
+            if (!pts?.length) continue;
+            for (const [px, py] of pts) {
+              anchorCx += px;
+              anchorCy += py;
+              anchorCount++;
+            }
+          }
+          // Fall back to the stored clipboard centroid if nothing interpolates at the
+          // current frame (e.g. pasting onto a frame outside the copied range).
+          const anchor: [number, number] =
+            anchorCount > 0 ? [anchorCx / anchorCount, anchorCy / anchorCount] : centroid;
+
           for (const entry of clipboardData) {
             // Generate new group ID for this original group
             if (!groupMap.has(entry.groupId)) {
@@ -67,9 +91,9 @@ export function register(driver: IIdahDriverV2): void {
 
             const newId = uuidv7();
 
-            // Compute offset: shift ALL annotations by the same (pastePos - centroid).
-            const dx = pastePos[0] - centroid[0];
-            const dy = pastePos[1] - centroid[1];
+            // Compute offset: shift ALL annotations by the same (pastePos - anchor).
+            const dx = pastePos[0] - anchor[0];
+            const dy = pastePos[1] - anchor[1];
 
             // Copy the annotation's frame range as-is: start/end and every
             // keyframe's frame value are an exact copy of the original. Only the
