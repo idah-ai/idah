@@ -1002,7 +1002,7 @@
         height={(selectionRect[3] - selectionRect[1]) * media.height}
         fill="rgba(59, 130, 246, 0.2)"
         stroke="#3b82f6"
-        stroke-width={1.5 / viewport.workspace.transform.scale}
+        stroke-width={1.5}
         vector-effect="non-scaling-stroke"
         pointer-events="none"
       />
