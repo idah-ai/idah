@@ -50,7 +50,6 @@ export function register(driver: IIdahDriverV2): void {
       const captureX = (opts?.x as number | undefined) ?? viewport.cursor[0];
       const captureY = (opts?.y as number | undefined) ?? viewport.cursor[1];
       const capturePastePos: [number, number] = [captureX, captureY];
-      const captureFrame = viewport.video.currentFrame.value;
 
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
@@ -61,13 +60,12 @@ export function register(driver: IIdahDriverV2): void {
           // Reset from any previous redo cycle
           createdIds.length = 0;
 
+          // Map original group IDs → new group IDs
+          const groupMap = new Map<string, string>();
+
           // Use the captured values so undo/redo are deterministic regardless
           // of cursor position or playback head at redo time.
           const pastePos = capturePastePos;
-          const currentFrame = captureFrame;
-
-          // Map original group IDs → new group IDs
-          const groupMap = new Map<string, string>();
 
           // Anchor the paste to the copied annotations' interpolated positions at the
           // CURRENT playhead frame (not their first keyframe). This way, when you paste
@@ -122,13 +120,11 @@ export function register(driver: IIdahDriverV2): void {
             const newShape = {
               ...entry.shape,
               start: originalStart ?? 0,
-              end: originalEnd ?? (originalStart ?? 0),
+              end: originalEnd ?? originalStart ?? 0,
               frames: newFrames,
             };
 
-            const newMetadata = entry.metadata
-              ? { ...entry.metadata, group_id: newGroupId }
-              : { group_id: newGroupId };
+            const newMetadata = entry.metadata ? { ...entry.metadata, group_id: newGroupId } : { group_id: newGroupId };
 
             try {
               await data.annotations!.create({
@@ -160,8 +156,12 @@ export function register(driver: IIdahDriverV2): void {
             selection.deselect();
           }
         },
-        isCombinable() { return false; },
-        combine(p: never) { return p; },
+        isCombinable() {
+          return false;
+        },
+        combine(p: never) {
+          return p;
+        },
       };
     },
   });
