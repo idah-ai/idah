@@ -14,17 +14,6 @@
 import type { Point } from "$lib/utils/math/point";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 
-export interface IShapeDimensions {
-  width?: number;
-  height?: number;
-  area?: number;
-  numPoints?: number;
-  radius?: number;
-  hRadius?: number;
-  vRadius?: number;
-  length?: number;
-}
-
 /** AABB width/height from normalized points (in pixels). */
 function aabbWH(points: Point[], mw: number, mh: number): { w: number; h: number } {
   const xs = points.map((p) => p[0]);
@@ -36,18 +25,35 @@ function aabbWH(points: Point[], mw: number, mh: number): { w: number; h: number
 }
 
 /**
- * Return pixel dimensions for a shape, falling back to pre-stored
- * `shape.dimensions` when available.
+ * Return dimension entries for a shape.
+ * If the shape carries a pre-stored `dimensions` key, uses that directly.
+ * Returns null when no dimensions can be computed.
  */
 export function getShapeDimensions(
   shape: Record<string, unknown> | undefined | null,
   mediaWidth: number,
   mediaHeight: number,
-): IShapeDimensions | null {
+): { label: string; value: string }[] | null {
   if (!shape) return null;
 
   // Use pre-stored dimensions when available (set by creation / edit flow).
-  if (shape.dimensions) return shape.dimensions as IShapeDimensions;
+  if (shape.dimensions) {
+    const d = shape.dimensions as Record<string, number | undefined>;
+    const out: { label: string; value: string }[] = [];
+    if (d.width !== undefined && d.height !== undefined) {
+      out.push({ label: "Width", value: `${d.width} px` });
+      out.push({ label: "Height", value: `${d.height} px` });
+    }
+    if (d.radius !== undefined) out.push({ label: "Radius", value: `${d.radius} px` });
+    if (d.hRadius !== undefined && d.vRadius !== undefined) {
+      out.push({ label: "H. Radius", value: `${d.hRadius} px` });
+      out.push({ label: "V. Radius", value: `${d.vRadius} px` });
+    }
+    if (d.length !== undefined) out.push({ label: "Length", value: `${d.length} px` });
+    if (d.numPoints !== undefined) out.push({ label: "Points", value: `${d.numPoints}` });
+    if (d.area !== undefined) out.push({ label: "Area", value: `${d.area.toLocaleString()} px²` });
+    return out.length > 0 ? out : null;
+  }
 
   const points = shape.points as Point[] | undefined;
   if (!points || points.length < 2) return null;
@@ -58,49 +64,22 @@ export function getShapeDimensions(
   if (type === VIDEO_BOUNDING_BOX) {
     if (points.length < 4) return null;
     const { w, h } = aabbWH(points, mediaWidth, mediaHeight);
-    return { width: w, height: h, area: w * h };
+    return [
+      { label: "Width", value: `${w} px` },
+      { label: "Height", value: `${h} px` },
+      { label: "Area", value: `${(w * h).toLocaleString()} px²` },
+    ];
   }
 
   // ── Polygon ─────────────────────────────────────────────────────
   if (type === VIDEO_POLYGON) {
     const { w, h } = aabbWH(points, mediaWidth, mediaHeight);
-    return { width: w, height: h, numPoints: points.length };
+    return [
+      { label: "Width", value: `${w} px` },
+      { label: "Height", value: `${h} px` },
+      { label: "Points", value: `${points.length}` },
+    ];
   }
 
   return null;
-}
-
-// ---------------------------------------------------------------------------
-// Display helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Human-readable dimension entries for a shape.
- * Returns an array of { label, value } pairs suitable for rendering.
- */
-export function getDimensionEntries(dims: IShapeDimensions): { label: string; value: string }[] {
-  const out: { label: string; value: string }[] = [];
-
-  if (dims.width !== undefined && dims.height !== undefined) {
-    out.push({ label: "Width", value: `${dims.width} px` });
-    out.push({ label: "Height", value: `${dims.height} px` });
-  }
-  if (dims.radius !== undefined) {
-    out.push({ label: "Radius", value: `${dims.radius} px` });
-  }
-  if (dims.hRadius !== undefined && dims.vRadius !== undefined) {
-    out.push({ label: "H. Radius", value: `${dims.hRadius} px` });
-    out.push({ label: "V. Radius", value: `${dims.vRadius} px` });
-  }
-  if (dims.length !== undefined) {
-    out.push({ label: "Length", value: `${dims.length} px` });
-  }
-  if (dims.numPoints !== undefined) {
-    out.push({ label: "Points", value: `${dims.numPoints}` });
-  }
-  if (dims.area !== undefined) {
-    out.push({ label: "Area", value: `${dims.area.toLocaleString()} px²` });
-  }
-
-  return out;
 }

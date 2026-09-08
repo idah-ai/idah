@@ -11,7 +11,7 @@
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
-  import { getShapeDimensions, getDimensionEntries } from "$lib/utils/dimensions";
+  import { getShapeDimensions } from "$lib/utils/dimensions";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import { viewport } from "$lib/state/viewport.svelte";
 
@@ -98,9 +98,8 @@
     {@const shape = annotation.shape}
     {@const interpolated = shape?.frames ? getInterpolatedFrame(shape, viewport.video.displayedFrame.value) : shape}
     {@const virtualShape = interpolated ? { ...shape, points: interpolated.points ?? [] } : shape}
-    {@const dims = getShapeDimensions(virtualShape, media.width, media.height)}
-    {#if dims}
-      {@const entries = getDimensionEntries(dims)}
+    {@const entries = getShapeDimensions(virtualShape, media.width, media.height)}
+    {#if entries}
       <Separator class="mt-3" />
       <section class="flex flex-col gap-2">
         <div class="flex flex-row items-center gap-2">

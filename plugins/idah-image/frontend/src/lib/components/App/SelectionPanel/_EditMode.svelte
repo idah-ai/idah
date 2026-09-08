@@ -11,7 +11,7 @@
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
-  import { getShapeDimensions, getDimensionEntries } from "$lib/utils/dimensions";
+  import { getShapeDimensions } from "$lib/utils/dimensions";
 
   import type { IConfigProperty, IConfigValue } from "$idah/v2/types";
   import type { IImageAnnotationRecord, IImageAnnotationValue } from "$lib/types";
@@ -95,9 +95,8 @@
   {/if}
 
   {#if annotation}
-    {@const dims = getShapeDimensions(annotation.shape, media.width, media.height)}
-    {#if dims}
-      {@const entries = getDimensionEntries(dims)}
+    {@const entries = getShapeDimensions(annotation.shape, media.width, media.height)}
+    {#if entries}
       <Separator class="mt-3" />
       <section class="flex flex-col gap-2">
         <div class="flex flex-row items-center gap-2">

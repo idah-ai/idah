@@ -10,7 +10,6 @@
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
   import { ui } from "$lib/state/ui.svelte";
-  import { selection } from "$lib/state/selection.svelte";
   import {
     boundingBoxHandle,
     rotatePointN,

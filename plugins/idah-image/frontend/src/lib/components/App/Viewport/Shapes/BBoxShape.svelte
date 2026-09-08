@@ -8,7 +8,6 @@
   import { resolveShapeStyles } from "$lib/utils/styles";
   import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
-  import { selection } from "$lib/state/selection.svelte";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
   import DimensionLabel from "./DimensionLabel.svelte";
   import {
