@@ -2,11 +2,7 @@
 // copy-paste.test.ts — Integration tests for selection.copy / selection.paste
 //
 // Drives the real copy.ts / paste.ts modules against mocked data/selection/
-// viewport/media stores. Tests the three bug fixes:
-//   1. Copying an idah-video:frame tag succeeds (doesn't silently abort)
-//   2. Pasting a copied idah-video:frame tag onto an already-tagged frame
-//      skips the duplicate instead of creating it
-//   3. A failed copy clears the clipboard so stale data isn't pasteable
+// viewport/media stores.
 // ---------------------------------------------------------------------------
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { clipboard } from "$lib/state/clipboard.svelte";
@@ -106,7 +102,7 @@ function makeAnn(
   };
 }
 
-/** Create a VIDEO_FRAME (per-frame tag) annotation fixture. */
+/** Create a VIDEO_FRAME (per-frame tag) annotation fixture with the REAL native shape (frames: []). */
 function makeFrameAnn(
   id: string,
   frame: number,
@@ -118,7 +114,7 @@ function makeFrameAnn(
       type: VIDEO_FRAME,
       start: frame,
       end: frame,
-      frames: [{ frame, angle: 0, points: [] }],
+      frames: [],
     },
     value: { category },
   };
@@ -225,31 +221,60 @@ describe("selection.copy + selection.paste", () => {
       expect(clipboard.centroid).not.toEqual([0, 0]);
       expect(mockToastSuccess).toHaveBeenCalled();
     });
+
+    it("copying and pasting an idah-video:frame tag with its REAL native shape (frames: []) succeeds", async () => {
+      const tagShape = { type: VIDEO_FRAME, start: 12, end: 12, frames: [] };
+      const tag = {
+        id: "tag-1",
+        shape: tagShape,
+        value: { category: "weather/sunny" },
+        metadata: {},
+      };
+      mockDataItems.push(tag);
+      mockSelectedAnnotationIds.add("tag-1");
+      mockCurrentFrameValue.value = 12;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      const copyAction = copyCallback();
+      copyAction.do();
+      expect(clipboard.hasData).toBe(true);
+
+      // Paste at frame 40 — well within bounds
+      mockCurrentFrameValue.value = 40;
+
+      const pasteAction = pasteCallback();
+      await pasteAction.do();
+
+      // The paste should have created exactly one annotation
+      expect(mockCreateFn).toHaveBeenCalledTimes(1);
+      const created = mockCreateFn.mock.calls[0][0];
+      expect(created.shape.start).toBe(40);
+      expect(created.shape.end).toBe(40);
+      expect(created.shape.frames).toEqual([]);
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Pasted" }),
+      );
+    });
   });
 
   // ── Bug 2: Pasting a copied idah-video:frame tag can create a duplicate ──
 
   describe("Bug 2 — VIDEO_FRAME paste duplicate guard", () => {
     it("paste callback is not a noop when clipboard has data", async () => {
-      // Set up clipboard with a VIDEO_FRAME tag
       const frameAnn = makeFrameAnn("frame-001", 42, "test/tag");
       mockDataItems.push(frameAnn);
       mockSelectedAnnotationIds.add("frame-001");
       mockCurrentFrameValue.value = 42;
 
       const { copyCallback, pasteCallback } = registerCommands();
-
-      // Copy first
       const copyAction = copyCallback();
       copyAction.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Paste callback should return a real action, not a noop
       const pasteAction = pasteCallback();
       expect(pasteAction.command.name).toBe("idah-video:selection.paste");
       expect(typeof (pasteAction as any).undo).toBe("function");
 
-      // Actually run the paste
       await pasteAction.do();
       // The copied annotation is still in mockDataItems, so findFrameAnnotation
       // will find it as a conflict — the paste should be skipped
@@ -257,22 +282,18 @@ describe("selection.copy + selection.paste", () => {
     });
 
     it("skips pasting a VIDEO_FRAME tag when same category already exists at target frame", async () => {
-      // Set up clipboard with a VIDEO_FRAME tag at frame 42
       const frameAnn = makeFrameAnn("frame-001", 42, "test/tag");
       mockDataItems.push(frameAnn);
       mockSelectedAnnotationIds.add("frame-001");
       mockCurrentFrameValue.value = 42;
 
       const { copyCallback, pasteCallback } = registerCommands();
-
-      // Copy first
       const copyAction = copyCallback();
       copyAction.do();
       expect(clipboard.hasData).toBe(true);
 
       // Paste at a DIFFERENT frame (delta != 0) so the target frame differs
-      // from the source frame. The copied annotation is still in mockDataItems
-      // at frame 42, but we paste at frame 50.
+      // from the source frame.
       mockCurrentFrameValue.value = 50;
 
       // Now add an existing tag at the target paste frame (frame 50, same category)
@@ -282,16 +303,11 @@ describe("selection.copy + selection.paste", () => {
       const pasteAction = pasteCallback();
       await pasteAction.do();
 
-      // The create should NOT have been called for the duplicate tag
       expect(mockCreateFn).not.toHaveBeenCalled();
-      // Warning toast about skipped duplicates
       expect(mockToastWarning).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Paste skipped",
-        }),
+        expect.objectContaining({ title: "Paste skipped" }),
       );
-      // Success toast was only from the copy step, not from paste
-      expect(mockToastSuccess).toHaveBeenCalledTimes(1);
+      expect(mockToastSuccess).toHaveBeenCalledTimes(1); // from copy step only
       expect(mockToastError).not.toHaveBeenCalled();
     });
 
@@ -302,23 +318,18 @@ describe("selection.copy + selection.paste", () => {
       mockCurrentFrameValue.value = 42;
 
       const { copyCallback, pasteCallback } = registerCommands();
-
-      // Copy
       const copyAction = copyCallback();
       copyAction.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Paste at a different frame
       mockCurrentFrameValue.value = 50;
 
-      // Add a tag with a DIFFERENT category at the target frame
       const existingTag = makeFrameAnn("existing-tag", 50, "test/cat-b");
       mockDataItems.push(existingTag);
 
       const pasteAction = pasteCallback();
       await pasteAction.do();
 
-      // The create SHOULD have been called (different category at target → no conflict)
       expect(mockCreateFn).toHaveBeenCalledTimes(1);
       expect(mockToastSuccess).toHaveBeenCalledWith(
         expect.objectContaining({ title: "Pasted" }),
@@ -332,19 +343,15 @@ describe("selection.copy + selection.paste", () => {
       mockCurrentFrameValue.value = 42;
 
       const { copyCallback, pasteCallback } = registerCommands();
-
-      // Copy
       const copyAction = copyCallback();
       copyAction.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Paste at a different frame with no existing tag
       mockCurrentFrameValue.value = 50;
 
       const pasteAction = pasteCallback();
       await pasteAction.do();
 
-      // The create SHOULD have been called (no conflict at target frame)
       expect(mockCreateFn).toHaveBeenCalledTimes(1);
       expect(mockToastSuccess).toHaveBeenCalledWith(
         expect.objectContaining({ title: "Pasted" }),
@@ -356,7 +363,6 @@ describe("selection.copy + selection.paste", () => {
 
   describe("Bug 3 — failed copy clears clipboard", () => {
     it("clears clipboard on ENTRY_ROOT rejection", () => {
-      // First, do a successful copy
       const bboxAnn = makeAnn("bbox-001");
       mockDataItems.push(bboxAnn);
       mockSelectedAnnotationIds.add("bbox-001");
@@ -367,7 +373,6 @@ describe("selection.copy + selection.paste", () => {
       action1.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Now add an ENTRY_ROOT annotation and select it alongside the bbox
       const rootAnn = {
         id: "root-001",
         shape: { type: ENTRY_ROOT },
@@ -376,24 +381,19 @@ describe("selection.copy + selection.paste", () => {
       mockDataItems.push(rootAnn);
       mockSelectedAnnotationIds.add("root-001");
 
-      // Second copy attempt should fail
       const action2 = copyCallback();
       action2.do();
 
-      // Clipboard should be cleared
       expect(clipboard.hasData).toBe(false);
       expect(clipboard.annotations).toBeNull();
       expect(clipboard.copyFrame).toBe(0);
-      // Error toast should have been shown
       expect(mockToastError).toHaveBeenCalledWith(
         expect.objectContaining({ title: "Copy failed" }),
       );
-      // Success toast should NOT have been called for the second attempt
       expect(mockToastSuccess).toHaveBeenCalledTimes(1); // only from the first copy
     });
 
     it("clears clipboard when selection doesn't cover copyFrame", () => {
-      // First, do a successful copy
       const bboxAnn = makeAnn("bbox-001");
       mockDataItems.push(bboxAnn);
       mockSelectedAnnotationIds.add("bbox-001");
@@ -404,7 +404,6 @@ describe("selection.copy + selection.paste", () => {
       action1.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Now select an annotation whose range doesn't cover the current frame
       mockSelectedAnnotationIds.clear();
       const outOfRangeAnn = makeAnn("out-001", {
         shape: {
@@ -420,13 +419,10 @@ describe("selection.copy + selection.paste", () => {
       });
       mockDataItems.push(outOfRangeAnn);
       mockSelectedAnnotationIds.add("out-001");
-      // currentFrame is still 15, but the annotation covers [50, 60]
 
-      // Second copy attempt should fail
       const action2 = copyCallback();
       action2.do();
 
-      // Clipboard should be cleared
       expect(clipboard.hasData).toBe(false);
       expect(clipboard.annotations).toBeNull();
       expect(mockToastError).toHaveBeenCalledWith(
@@ -436,7 +432,6 @@ describe("selection.copy + selection.paste", () => {
     });
 
     it("does NOT clear clipboard on empty-selection no-op", () => {
-      // First, do a successful copy
       const bboxAnn = makeAnn("bbox-001");
       mockDataItems.push(bboxAnn);
       mockSelectedAnnotationIds.add("bbox-001");
@@ -447,22 +442,17 @@ describe("selection.copy + selection.paste", () => {
       action1.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Now clear selection — nothing selected
       mockSelectedAnnotationIds.clear();
 
-      // Second copy attempt should be a no-op (entries.length === 0)
       const action2 = copyCallback();
       action2.do();
 
-      // Clipboard should still have the first copy's data
       expect(clipboard.hasData).toBe(true);
       expect(clipboard.annotations).toHaveLength(1);
-      // No error toast
       expect(mockToastError).not.toHaveBeenCalled();
     });
 
     it("paste is a no-op after a failed copy cleared the clipboard", async () => {
-      // First, do a successful copy
       const bboxAnn = makeAnn("bbox-001");
       mockDataItems.push(bboxAnn);
       mockSelectedAnnotationIds.add("bbox-001");
@@ -473,7 +463,6 @@ describe("selection.copy + selection.paste", () => {
       copyAction1.do();
       expect(clipboard.hasData).toBe(true);
 
-      // Now fail a copy (out of range)
       mockSelectedAnnotationIds.clear();
       const outOfRangeAnn = makeAnn("out-001", {
         shape: {
@@ -493,10 +482,8 @@ describe("selection.copy + selection.paste", () => {
       copyAction2.do();
       expect(clipboard.hasData).toBe(false);
 
-      // Paste should be a no-op (clipboard.hasData is false → noopAction)
       const pasteAction = pasteCallback();
       expect(pasteAction.command.name).toBe("idah-video:selection.paste");
-      // noopAction's do() is a no-op — nothing should be created
       await pasteAction.do();
       expect(mockCreateFn).not.toHaveBeenCalled();
     });
@@ -678,14 +665,13 @@ describe("selection.copy + selection.paste", () => {
       expect(createdShape.start).toBe(95);
       expect(createdShape.end).toBe(99); // clamped to MAX_FRAME
 
-      // Toast should reflect the skip (success toast was only from the copy step)
-      expect(mockToastSuccess).toHaveBeenCalledTimes(1); // from copy step only
       expect(mockToastWarning).toHaveBeenCalledWith(
         expect.objectContaining({
           title: "Pasted",
           description: expect.stringContaining("1 of 2"),
         }),
       );
+      expect(mockToastSuccess).toHaveBeenCalledTimes(1); // from copy step only
     });
   });
 });

@@ -80,6 +80,6 @@ export function shiftAndClampShape(
     frames,
     start: frames[0]?.frame ?? Math.max(minFrame, shiftedStart),
     end: frames[frames.length - 1]?.frame ?? Math.min(maxFrame, shiftedEnd),
-    outOfBounds: frames.length === 0,
+    outOfBounds: false,
   };
 }

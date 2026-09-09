@@ -216,11 +216,19 @@ describe("shiftAndClampShape", () => {
     expect(frame0!.points).toHaveLength(3);
   });
 
-  it("empty frames array returns outOfBounds", () => {
-    const shape = makeShape({ frames: [] });
-    const result = shiftAndClampShape(shape, 0, MIN, MAX);
-    // No frames means no keyframes — the helper reports outOfBounds.
-    expect(result.frames).toHaveLength(0);
+  it("empty frames array (e.g. an idah-video:frame tag) is NOT out of bounds when start/end are in range", () => {
+    const shape = makeShape({ start: 12, end: 12, frames: [] });
+    const result = shiftAndClampShape(shape, 5, MIN, MAX);
+    expect(result.outOfBounds).toBe(false);
+    expect(result.start).toBe(17);
+    expect(result.end).toBe(17);
+    expect(result.frames).toHaveLength(0); // stays empty, matching the native shape
+  });
+
+  it("empty frames array IS out of bounds when the shift genuinely pushes start/end outside the range", () => {
+    const shape = makeShape({ start: 12, end: 12, frames: [] });
+    const result = shiftAndClampShape(shape, -50, MIN, MAX); // 12 - 50 = -38
     expect(result.outOfBounds).toBe(true);
+    expect(result.frames).toHaveLength(0);
   });
 });
