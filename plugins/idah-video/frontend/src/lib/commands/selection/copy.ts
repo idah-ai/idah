@@ -82,6 +82,7 @@ export function register(driver: IIdahDriverV2): void {
           // ── All-or-nothing validation ────────────────────────────────
           // Check 1: ENTRY_ROOT is never copyable.
           if (entries.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+            clipboard.clear();
             showToast.error({
               title: "Copy failed",
               description: "The video entry can't be copied.",
@@ -97,6 +98,7 @@ export function register(driver: IIdahDriverV2): void {
             return start > copyFrame || end < copyFrame;
           });
           if (hasOutOfRange) {
+            clipboard.clear();
             showToast.error({
               title: "Copy failed",
               description: "One or more selected annotations don't exist at the current frame. Move the playhead into their range before copying.",
@@ -116,8 +118,11 @@ export function register(driver: IIdahDriverV2): void {
             for (const [px, py] of pts) { cx += px; cy += py; count++; }
           }
 
-          if (count === 0) return;
-          const centroid: [number, number] = [cx / count, cy / count];
+          // Zero-geometry shapes (e.g. idah-video:frame per-frame tags, which have
+          // no points at all) contribute nothing here — that must NOT abort the
+          // copy. Fall back to [0, 0]; it's inert for such shapes since (dx, dy) is
+          // only ever applied to points, and they have none.
+          const centroid: [number, number] = count > 0 ? [cx / count, cy / count] : [0, 0];
 
           // Compute centroid-relative offset for each entry
           for (const entry of entries) {

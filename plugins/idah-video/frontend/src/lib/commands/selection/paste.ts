@@ -20,8 +20,9 @@ import { clipboard } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { media } from "$lib/state/media.svelte";
 import { shiftAndClampShape } from "$lib/utils/frame-shift";
-import { ENTRY_ROOT } from "$lib/types";
-import type { IVideoAnnotationShape } from "$lib/types";
+import { ENTRY_ROOT, VIDEO_FRAME } from "$lib/types";
+import type { IVideoAnnotationShape, IVideoAnnotationRecord } from "$lib/types";
+import { findFrameAnnotation } from "$lib/utils/tagging-annotations";
 import { uuidv7 } from "uuidv7";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
@@ -70,11 +71,13 @@ export function register(driver: IIdahDriverV2): void {
         async do() {
           // Reset from any previous redo cycle
           createdIds.length = 0;
+          let skippedDuplicateTagCount = 0;
 
           // ── Defensive: reject ENTRY_ROOT in clipboard ────────────────
           // This should be unreachable given copy-time rejection, but paste
           // must never create a second ENTRY_ROOT.
           if (clipboardData.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+            clipboard.clear();
             showToast.error({
               title: "Paste failed",
               description: "The clipboard contains an item that can't be pasted.",
@@ -131,6 +134,25 @@ export function register(driver: IIdahDriverV2): void {
               continue;
             }
 
+            // ── VIDEO_FRAME duplicate guard ────────────────────────────
+            // At most one idah-video:frame annotation per (frame, category).
+            // If a tag of the same category already exists at the target frame,
+            // skip creating a duplicate rather than silently overwriting.
+            if ((entry.shape as any)?.type === VIDEO_FRAME) {
+              const category = (entry.value as any)?.category as string | undefined;
+              if (category) {
+                const conflict = findFrameAnnotation(
+                  (data.annotations?.items ?? []) as IVideoAnnotationRecord[],
+                  shifted.start, // === shifted.end for a single-keyframe tag
+                  category,
+                );
+                if (conflict) {
+                  skippedDuplicateTagCount++;
+                  continue;
+                }
+              }
+            }
+
             // Apply spatial offset (dx, dy) to every point in the shifted frames.
             const newFrames = shifted.frames.map((f) => ({
               ...f,
@@ -172,10 +194,20 @@ export function register(driver: IIdahDriverV2): void {
               title: "Pasted",
               description: `${created} annotation(s) pasted`,
             });
+          } else if (created > 0 && skippedDuplicateTagCount > 0) {
+            showToast.warning({
+              title: "Pasted",
+              description: `${created} of ${total} annotations pasted — ${skippedDuplicateTagCount} skipped because the frame is already tagged with that category.`,
+            });
           } else if (created > 0) {
             showToast.warning({
               title: "Pasted",
               description: `${created} of ${total} annotations pasted — some failed to save.`,
+            });
+          } else if (skippedDuplicateTagCount > 0) {
+            showToast.warning({
+              title: "Paste skipped",
+              description: `All ${total} annotation(s) skipped because the target frame(s) are already tagged with the same category.`,
             });
           } else {
             showToast.error({
