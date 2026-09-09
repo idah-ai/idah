@@ -4,13 +4,22 @@
 // Stores the shape, value, metadata, and group structure of every selected
 // annotation so they can be pasted with the same category, frame timing,
 // and group structure.
+//
+// Timeline-anchored copy/paste: the playhead frame at copy time is recorded
+// as copyFrame. Pasting will shift every keyframe by (pasteFrame - copyFrame)
+// so the annotation's geometry at copyFrame lands at the paste-time playhead.
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
+import { getInterpolatedFrame } from "$lib/utils/interpolation";
+import { ENTRY_ROOT } from "$lib/types";
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import type { IVideoAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "idah-video:selection.copy",
@@ -18,7 +27,7 @@ export const command = {
   modes: ["editor"],
   shortcut: "Control+C",
   shortDescription: "Copy selected annotations",
-  longDescription: "Copy selected annotations to the clipboard",
+  longDescription: "Copy selected annotations to the clipboard. The playhead frame at copy time is recorded so pasting at a different frame shifts the annotation's keyframes along the timeline.",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -37,6 +46,8 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           const all = data.annotations?.items ?? [];
           if (all.length === 0) return;
+
+          const copyFrame = viewport.video.currentFrame.value;
 
           // Copy only what is selected: a selected annotation alone, a selected
           // group whole. Track selection (track id = group id) is the track copy.
@@ -68,27 +79,78 @@ export function register(driver: IIdahDriverV2): void {
 
           if (entries.length === 0) return;
 
-          // Centroid of the copied first keyframes — paste uses it only as a fallback.
+          // ── All-or-nothing validation ────────────────────────────────
+          // Check 1: ENTRY_ROOT is never copyable.
+          if (entries.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+            clipboard.clear();
+            showToast.error({
+              title: "Copy failed",
+              description: "The video entry can't be copied.",
+            });
+            return;
+          }
+
+          // Check 2: Frame-coverage validation, group-aware.
+          //
+          // Individually selected entries (their group_id is NOT in
+          // selectedGids) must each cover copyFrame themselves — same
+          // strict rule as before.
+          //
+          // Group-selected entries (their group_id IS in selectedGids)
+          // only need at least ONE member of that group (the "anchor")
+          // to cover copyFrame. Non-anchor members are copied anyway;
+          // their keyframes will be shifted by the same delta at paste
+          // time, preserving relative timing within the track.
+          const outOfRange = (e: (typeof entries)[number]) => {
+            const s = e.shape as any;
+            return (s.start as number) > copyFrame || (s.end as number) < copyFrame;
+          };
+
+          const individuallySelected = entries.filter((e) => !selectedGids.has(e.groupId));
+          const hasIndividualOutOfRange = individuallySelected.some(outOfRange);
+
+          const groupSelectedEntries = entries.filter((e) => selectedGids.has(e.groupId));
+          const hasGroupWithoutAnchor = Array.from(selectedGids).some((gid) => {
+            const members = groupSelectedEntries.filter((e) => e.groupId === gid);
+            if (members.length === 0) return false;
+            return !members.some((e) => !outOfRange(e));
+          });
+
+          const hasOutOfRange = hasIndividualOutOfRange || hasGroupWithoutAnchor;
+          if (hasOutOfRange) {
+            clipboard.clear();
+            showToast.error({
+              title: "Copy failed",
+              description: "One or more selected annotations don't exist at the current frame. Move the playhead into their range before copying.",
+            });
+            return;
+          }
+
+          // ── Centroid at copyFrame ────────────────────────────────────
+          // Only entries that cover copyFrame contribute to the centroid;
+          // non-anchor group members (which don't cover copyFrame) are
+          // skipped by the `if (!pts?.length) continue` guard below.
+          // This is fine — (dx, dy) is shared across the whole batch, and
+          // the centroid only needs to reflect the anchor geometry.
           let cx = 0, cy = 0, count = 0;
 
           for (const entry of entries) {
-            const frames = entry.shape?.frames as any[] | undefined;
-            if (!frames?.length) continue;
-            // Find the interpolated frame (use frames[0] as approximation)
-            const frameData = frames[0];
-            const pts = frameData?.points as [number, number][] | undefined;
+            const frame = getInterpolatedFrame(entry.shape as IVideoAnnotationShape, copyFrame);
+            const pts = frame?.points as [number, number][] | undefined;
             if (!pts?.length) continue;
             for (const [px, py] of pts) { cx += px; cy += py; count++; }
           }
 
-          if (count === 0) return;
-          const centroid: [number, number] = [cx / count, cy / count];
+          // Zero-geometry shapes (e.g. idah-video:frame per-frame tags, which have
+          // no points at all) contribute nothing here — that must NOT abort the
+          // copy. Fall back to [0, 0]; it's inert for such shapes since (dx, dy) is
+          // only ever applied to points, and they have none.
+          const centroid: [number, number] = count > 0 ? [cx / count, cy / count] : [0, 0];
 
           // Compute centroid-relative offset for each entry
           for (const entry of entries) {
-            const frames = entry.shape?.frames as any[] | undefined;
-            const frameData = frames?.[0];
-            const pts = frameData?.points as [number, number][] | undefined;
+            const frame = getInterpolatedFrame(entry.shape as IVideoAnnotationShape, copyFrame);
+            const pts = frame?.points as [number, number][] | undefined;
             if (pts?.length) {
               const ex = pts.reduce((s, p) => s + p[0], 0) / pts.length;
               const ey = pts.reduce((s, p) => s + p[1], 0) / pts.length;
@@ -96,8 +158,13 @@ export function register(driver: IIdahDriverV2): void {
             }
           }
 
-          // Store in clipboard
-          clipboard.store(entries, centroid);
+          // Store in clipboard with copyFrame
+          clipboard.store(entries, centroid, copyFrame);
+
+          showToast.success({
+            title: "Copied",
+            description: `${entries.length} annotation(s) copied`,
+          });
         },
         isCombinable() { return false; },
         combine(p: never) { return p; },

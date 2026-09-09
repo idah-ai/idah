@@ -6,6 +6,11 @@
 // Pasted annotations are placed at the given cursor position (or, if absent,
 // at the center of the viewport).
 //
+// Timeline-anchored paste: every keyframe is shifted by
+// (pasteFrame - copyFrame) so the annotation's geometry at the copy-time
+// playhead lands at the paste-time playhead. If the shifted range clips past
+// the video bounds, boundary keyframes are synthesized via interpolation.
+//
 // Usage:
 //   driver.command.call("selection.paste", { x: 0.5, y: 0.5 });
 // ---------------------------------------------------------------------------
@@ -13,11 +18,16 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import { getInterpolatedFrame } from "$lib/utils/interpolation";
+import { media } from "$lib/state/media.svelte";
+import { shiftAndClampShape } from "$lib/utils/frame-shift";
+import { ENTRY_ROOT, VIDEO_FRAME } from "$lib/types";
+import type { IVideoAnnotationShape, IVideoAnnotationRecord } from "$lib/types";
+import { findFrameAnnotation } from "$lib/utils/tagging-annotations";
 import { uuidv7 } from "uuidv7";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "idah-video:selection.paste",
@@ -25,7 +35,7 @@ export const command = {
   modes: ["editor"],
   shortcut: "Control+V",
   shortDescription: "Paste copied annotations",
-  longDescription: "Paste annotations from the clipboard at the cursor position",
+  longDescription: "Paste annotations from the clipboard at the cursor position. Keyframes are shifted along the timeline so the copied geometry lands at the current playhead frame.",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -50,6 +60,8 @@ export function register(driver: IIdahDriverV2): void {
       const captureX = (opts?.x as number | undefined) ?? viewport.cursor[0];
       const captureY = (opts?.y as number | undefined) ?? viewport.cursor[1];
       const capturePastePos: [number, number] = [captureX, captureY];
+      // Capture the paste-time playhead frame at callback time for redo determinism.
+      const capturePasteFrame = viewport.video.currentFrame.value;
 
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
@@ -59,6 +71,20 @@ export function register(driver: IIdahDriverV2): void {
         async do() {
           // Reset from any previous redo cycle
           createdIds.length = 0;
+          let skippedDuplicateTagCount = 0;
+          let skippedOutOfBoundsCount = 0;
+
+          // ── Defensive: reject ENTRY_ROOT in clipboard ────────────────
+          // This should be unreachable given copy-time rejection, but paste
+          // must never create a second ENTRY_ROOT.
+          if (clipboardData.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+            clipboard.clear();
+            showToast.error({
+              title: "Paste failed",
+              description: "The clipboard contains an item that can't be pasted.",
+            });
+            return;
+          }
 
           // Map original group IDs → new group IDs
           const groupMap = new Map<string, string>();
@@ -66,29 +92,19 @@ export function register(driver: IIdahDriverV2): void {
           // Use the captured values so undo/redo are deterministic regardless
           // of cursor position or playback head at redo time.
           const pastePos = capturePastePos;
+          const pasteFrame = capturePasteFrame;
 
-          // Anchor the paste to the copied annotations' interpolated positions at the
-          // CURRENT playhead frame (not their first keyframe). This way, when you paste
-          // while not on the first frame, the pasted annotations land centered on the
-          // cursor at the current frame instead of being offset relative to frame 0.
-          const currentFrame = viewport.video.currentFrame.value;
-          let anchorCx = 0;
-          let anchorCy = 0;
-          let anchorCount = 0;
-          for (const entry of clipboardData) {
-            const frame = getInterpolatedFrame(entry.shape as any, currentFrame);
-            const pts = frame?.points as [number, number][] | undefined;
-            if (!pts?.length) continue;
-            for (const [px, py] of pts) {
-              anchorCx += px;
-              anchorCy += py;
-              anchorCount++;
-            }
-          }
-          // Fall back to the stored clipboard centroid if nothing interpolates at the
-          // current frame (e.g. pasting onto a frame outside the copied range).
-          const anchor: [number, number] =
-            anchorCount > 0 ? [anchorCx / anchorCount, anchorCy / anchorCount] : centroid;
+          // Compute the temporal delta once, shared by every entry.
+          const delta = pasteFrame - clipboard.copyFrame;
+
+          // Bounds for clamping.
+          const MIN_FRAME = 0;
+          const MAX_FRAME = media.totalFrames - 1;
+
+          // Spatial anchor is the clipboard centroid (interpolated at copyFrame).
+          const anchor: [number, number] = centroid;
+          const dx = pastePos[0] - anchor[0];
+          const dy = pastePos[1] - anchor[1];
 
           for (const entry of clipboardData) {
             // Generate new group ID for this original group
@@ -99,28 +115,51 @@ export function register(driver: IIdahDriverV2): void {
 
             const newId = uuidv7();
 
-            // Compute offset: shift ALL annotations by the same (pastePos - anchor).
-            const dx = pastePos[0] - anchor[0];
-            const dy = pastePos[1] - anchor[1];
+            // Shift and clamp the annotation's keyframes along the timeline.
+            const shifted = shiftAndClampShape(
+              entry.shape as IVideoAnnotationShape,
+              delta,
+              MIN_FRAME,
+              MAX_FRAME,
+            );
 
-            // Copy the annotation's frame range as-is: start/end and every
-            // keyframe's frame value are an exact copy of the original. Only the
-            // spatial position is offset by (dx, dy).
-            const originalFrames = (entry.shape?.frames as any[]) ?? [];
-            const originalStart = (entry.shape as any).start as number | undefined;
-            const originalEnd = (entry.shape as any).end as number | undefined;
-            const newFrames = originalFrames.map((frame: any) => {
-              if (!frame?.points) return { ...frame };
-              return {
-                ...frame,
-                points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-              };
-            });
+            // Non-anchor group members may land entirely outside the video
+            // bounds after the shared delta shift — that's expected, not a
+            // bug. Silently skip this entry.
+            if (shifted.outOfBounds) {
+              skippedOutOfBoundsCount++;
+              continue;
+            }
+
+            // ── VIDEO_FRAME duplicate guard ────────────────────────────
+            // At most one idah-video:frame annotation per (frame, category).
+            // If a tag of the same category already exists at the target frame,
+            // skip creating a duplicate rather than silently overwriting.
+            if ((entry.shape as any)?.type === VIDEO_FRAME) {
+              const category = (entry.value as any)?.category as string | undefined;
+              if (category) {
+                const conflict = findFrameAnnotation(
+                  (data.annotations?.items ?? []) as IVideoAnnotationRecord[],
+                  shifted.start, // === shifted.end for a single-keyframe tag
+                  category,
+                );
+                if (conflict) {
+                  skippedDuplicateTagCount++;
+                  continue;
+                }
+              }
+            }
+
+            // Apply spatial offset (dx, dy) to every point in the shifted frames.
+            const newFrames = shifted.frames.map((f) => ({
+              ...f,
+              points: f.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
+            }));
 
             const newShape = {
               ...entry.shape,
-              start: originalStart ?? 0,
-              end: originalEnd ?? originalStart ?? 0,
+              start: shifted.start,
+              end: shifted.end,
               frames: newFrames,
             };
 
@@ -142,6 +181,54 @@ export function register(driver: IIdahDriverV2): void {
           // Select the newly created annotations
           if (createdIds.length > 0) {
             selection.selectAnnotations(createdIds);
+          }
+
+          // ── Toast based on how many entries were actually created ────
+          const total = clipboardData.length;
+          const created = createdIds.length;
+          const skipped = total - created;
+          if (created === total) {
+            showToast.success({
+              title: "Pasted",
+              description: `${created} annotation(s) pasted`,
+            });
+          } else if (created > 0) {
+            // Compose a description from all skip reasons that apply.
+            const reasons: string[] = [];
+            if (skippedDuplicateTagCount > 0) {
+              reasons.push(`${skippedDuplicateTagCount} already tagged`);
+            }
+            if (skippedOutOfBoundsCount > 0) {
+              reasons.push(`${skippedOutOfBoundsCount} outside video bounds`);
+            }
+            const failedCount = skipped - skippedDuplicateTagCount - skippedOutOfBoundsCount;
+            if (failedCount > 0) {
+              reasons.push(`${failedCount} failed to save`);
+            }
+            showToast.warning({
+              title: "Pasted",
+              description: `${created} of ${total} annotations pasted — ${reasons.join(", ")}.`,
+            });
+          } else if (skippedDuplicateTagCount > 0 && skippedOutOfBoundsCount === 0) {
+            showToast.warning({
+              title: "Paste skipped",
+              description: `All ${total} annotation(s) skipped because the target frame(s) are already tagged with the same category.`,
+            });
+          } else if (skippedOutOfBoundsCount > 0 && skippedDuplicateTagCount === 0) {
+            showToast.warning({
+              title: "Paste skipped",
+              description: `All ${total} annotation(s) skipped because they would fall outside the video bounds.`,
+            });
+          } else if (skippedDuplicateTagCount > 0 && skippedOutOfBoundsCount > 0) {
+            showToast.warning({
+              title: "Paste skipped",
+              description: `All ${total} annotation(s) skipped — ${skippedDuplicateTagCount} already tagged, ${skippedOutOfBoundsCount} outside video bounds.`,
+            });
+          } else {
+            showToast.error({
+              title: "Paste failed",
+              description: "No annotations could be pasted.",
+            });
           }
         },
         async undo() {
