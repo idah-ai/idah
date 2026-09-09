@@ -5,7 +5,17 @@
 // with the same category, shape, frame timing, and group structure.
 // ---------------------------------------------------------------------------
 
-interface ClipboardAnnotation {
+/**
+ * What the copy was made from. A selection is either a group selection or an
+ * annotation selection, never both (see selection.svelte.ts), so this is one
+ * value for the whole clipboard.
+ *   "group"      — whole groups were selected (a track copy).
+ *   "annotation" — annotations were selected individually.
+ * Paste reads this back to restore the same kind of selection.
+ */
+export type ClipboardSelectionKind = "group" | "annotation";
+
+export interface ClipboardAnnotation {
   shape: Record<string, unknown>;
   value: Record<string, unknown> | undefined;
   metadata: Record<string, unknown> | undefined;
@@ -18,6 +28,7 @@ interface ClipboardAnnotation {
 let _annotations: ClipboardAnnotation[] | null = $state(null);
 let _centroid: [number, number] = $state([0, 0]);
 let _copyFrame: number = $state(0);
+let _selectionKind: ClipboardSelectionKind = $state("annotation");
 
 export const clipboard = {
   get annotations(): ClipboardAnnotation[] | null {
@@ -32,16 +43,27 @@ export const clipboard = {
   get hasData(): boolean {
     return _annotations !== null && _annotations.length > 0;
   },
+  /** What this copy was made from. Null when the clipboard is empty. */
+  get selectionKind(): ClipboardSelectionKind | null {
+    return _annotations?.length ? _selectionKind : null;
+  },
 
-  store(annotations: ClipboardAnnotation[], centroid: [number, number], copyFrame: number): void {
+  store(
+    annotations: ClipboardAnnotation[],
+    centroid: [number, number],
+    copyFrame: number,
+    selectionKind: ClipboardSelectionKind,
+  ): void {
     _annotations = annotations;
     _centroid = centroid;
     _copyFrame = copyFrame;
+    _selectionKind = selectionKind;
   },
 
   clear(): void {
     _annotations = null;
     _centroid = [0, 0];
     _copyFrame = 0;
+    _selectionKind = "annotation";
   },
 };
