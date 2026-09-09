@@ -11,6 +11,7 @@
 
   import { IMAGE_ELLIPSE } from "$lib/types";
   import { hexToRgba } from "$lib/utils/color";
+  import DimensionLabel from "./DimensionLabel.svelte";
 
   import type { Point } from "$lib/utils/math/point";
 
@@ -85,4 +86,8 @@
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
   />
+  <!-- Dimension label during creation -->
+  {@const pxW = Math.abs(cx - sx).toFixed(0)}
+  {@const pxH = Math.abs(cy - sy).toFixed(0)}
+  <DimensionLabel x={Math.min(sx, cx)} y={Math.min(sy, cy)} text="{pxW} × {pxH}" />
 {/if}

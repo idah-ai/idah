@@ -6,9 +6,10 @@
   // component. Responsibilities:
   //   • Wraps <img> inside a <Viewport> (pan/zoom)
   //   • Renders an SVG layer on top with crosshair, build-mode preview, etc.
-  //   • Filters visible annotations by current frame and renders them via
-  //     AnnotationGeometry
+  //   • Filters visible annotations and renders them via AnnotationGeometry
   //   • Handles mouse events for selection, panning, and build-mode creation
+  //   • Supports multi-selection: Shift+Click toggle, Shift+Drag rectangle selection
+  //     (Alt key is used for vertex deletion and box selection in polygon editing)
   //   • Exposes zoomIn/zoomOut helpers
   // ---------------------------------------------------------------------------
 
@@ -37,7 +38,7 @@
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
-  import { data, setPendingNoteScene } from "$lib/state/data.svelte";
+  import { data, setPendingNoteScene, type AnnotationItem } from "$lib/state/data.svelte";
   import { maskSession } from "$lib/state/mask-session.svelte";
   import { maskTool } from "$lib/state/mask-tool.svelte";
   import { media } from "$lib/state/media.svelte";
@@ -65,10 +66,14 @@
     IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
+    NON_DRAWABLE_SHAPE_TYPES,
     type IImageAnnotationShape,
     type IImageAnnotationRecord,
   } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
+  import { centroid as centroidUtil } from "$lib/utils/math/point";
+  import { rotatePointN } from "./BoundingBox/utils";
+  import { ellipseAABB } from "./Ellipse/utils";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
 
   // ── Types ──────────────────────────────────────────────────────────────
@@ -193,6 +198,9 @@
       (acc, ann) => {
         // Skip hidden annotations
         if (annotation.isHidden(ann)) return acc;
+        // Skip non-drawable records (entry:root) — they are never rendered on
+        // canvasand are only edited through the Tagging tab.
+        if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {
           acc.selected.push(ann);
@@ -223,13 +231,20 @@
   });
 
   // Derive tool selection from the currently selected annotation's component
-  let selAnnotation = $derived(selection.value);
+  // let selAnnotation = $derived(selection.value);
+  // Derive tool selection from the primary (first) selected annotation's component
+  // In multi-selection mode, only the primary annotation gets edit handles.
+  let selAnnotation = $derived.by((): IAnnotationRecord | undefined => {
+    // if (!selection.isAnnotation()) return undefined;
+    const anns = selection.selectedAnnotations;
+    return anns.length > 0 ? anns[0] : undefined;
+  });
 
   let toolSelection = $derived.by(() => {
-    const selId = selection.value?.id ?? null;
-    if (!selId) return undefined;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
-    if (idx === -1) return undefined;
+  if (!selAnnotation) return undefined;
+
+  const idx = visibleAnnotations.findIndex((a) => a.id === selAnnotation.id);
+  if (idx === -1) return undefined;
     return _compRefs[idx]?.getToolSelection();
   });
 
@@ -257,15 +272,125 @@
     return resolveAnnotationColor(pendingAnnotation);
   });
 
+  // ── Rectangle selection state ─────────────────────────────────────────
+  let isRectSelecting = $state(false);
+  let rectStart: Point | null = $state(null);
+  let rectEnd: Point | null = $state(null);
+
+  /** Screen-pixel movement below which a press-and-release still counts as a click, not a drag. */
+  const DRAG_SLOP_PX = 4;
+
+  /**
+   * Client position of the most recent mousedown, recorded in the capture phase
+   * so it is captured even for presses a shape stops on the bubble phase. Comparing
+   * against it tells a real click apart from the click that trails every drag —
+   * no flag to set, so nothing can go stale between gestures.
+   */
+  let _mouseDownClient: Point | null = null;
+
+  /** Whether the pointer moved past the slop between the last mousedown and this event. */
+  function movedSinceMouseDown(e: MouseEvent): boolean {
+    if (!_mouseDownClient) return false;
+    return (
+      Math.abs(e.clientX - _mouseDownClient[0]) > DRAG_SLOP_PX ||
+      Math.abs(e.clientY - _mouseDownClient[1]) > DRAG_SLOP_PX
+    );
+  }
+
+  /** Whether the current Shift+Drag moved far enough to be a rectangle selection rather than a click. */
+  function rectSelectionIsDrag(): boolean {
+    if (!rectStart || !rectEnd) return false;
+    const scale = viewport.workspace.transform.scale || 1;
+    const dx = Math.abs(rectEnd[0] - rectStart[0]) * media.width * scale;
+    const dy = Math.abs(rectEnd[1] - rectStart[1]) * media.height * scale;
+    return dx > DRAG_SLOP_PX || dy > DRAG_SLOP_PX;
+  }
+
+  /** Clear rectangle-selection state without touching the current selection. */
+  function cancelRectSelection() {
+    isRectSelecting = false;
+    rectStart = null;
+    rectEnd = null;
+  }
+
+  /** Finalize a rectangle selection: a real drag commits it, a click-sized one is discarded. */
+  function finishRectSelection() {
+    if (!isRectSelecting) return;
+    if (rectSelectionIsDrag()) completeRectSelection();
+    else cancelRectSelection();
+  }
+
+  /**
+   * The region currently on screen, in normalized media coords: [minX, minY, maxX, maxY].
+   * Mirrors the SVG viewBox — scene origin is -translate/scale, extent is dimensions/scale.
+   */
+  let visibleBoundsN = $derived.by((): [number, number, number, number] => {
+    const [tx, ty] = viewport.workspace.transform.translate;
+    const [w, h] = viewport.workspace.dimensions;
+    const sc = viewport.workspace.transform.scale || 1;
+    const mw = media.width || 1;
+    const mh = media.height || 1;
+    return [-tx / sc / mw, -ty / sc / mh, (-tx + w) / sc / mw, (-ty + h) / sc / mh];
+  });
+
+  /**
+   * Normalized selection rectangle: [minX, minY, maxX, maxY].
+   *
+   * Clamped to the visible region: the drag keeps tracking outside the SVG (so
+   * crossing the edge doesn't strand the gesture), but the rectangle itself must
+   * not reach content the user cannot see and did not knowingly sweep over.
+   * Clamping here covers both the drawn overlay and completeRectSelection, so the
+   * box the user sees is exactly the box that selects.
+   */
+  let selectionRect = $derived.by((): [number, number, number, number] | null => {
+    if (!isRectSelecting || !rectStart || !rectEnd || !rectSelectionIsDrag()) return null;
+    const [vx0, vy0, vx1, vy1] = visibleBoundsN;
+    const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+    return [
+      clamp(Math.min(rectStart[0], rectEnd[0]), vx0, vx1),
+      clamp(Math.min(rectStart[1], rectEnd[1]), vy0, vy1),
+      clamp(Math.max(rectStart[0], rectEnd[0]), vx0, vx1),
+      clamp(Math.max(rectStart[1], rectEnd[1]), vy0, vy1),
+    ];
+  });
+
+  // ── Multi-drag state (Feature 2 — Move Selected Shapes) ────────────────
+  /** Normalized cursor position when the multi-drag started. */
+  let _multiDragOrigin: Point | null = $state(null);
+  /** Current shared drag delta in normalized coords. */
+  let _multiDragDelta: Point | null = $state(null);
+  /**
+   * Batch accumulator for multi-shape drag.
+   * When non-null, `handleEditComplete` collects updates here instead of
+   * dispatching individual commands. At the end of `onMouseUp` the entire
+   * batch is dispatched as a single undoable command, so one Ctrl+Z restores
+   * ALL moved shapes to their original positions.
+   */
+  let _commitBatch: Array<{
+    annotationId: string;
+    shape: IImageAnnotationShape;
+    /** Pre-move snapshot captured BEFORE the synchronous upsert runs. */
+    snapshot: AnnotationItem;
+  }> | null = null;
+
+  /** Whether any selected annotation component is currently being edited (dragged). */
+  let _anySelectedEditing = $derived.by((): boolean => {
+    for (let i = 0; i < visibleAnnotations.length; i++) {
+      if (selection.isAnnotationSelected(visibleAnnotations[i].id) && _compRefs[i]?.getIsEditing?.()) {
+        return true;
+      }
+    }
+    return false;
+  });
+
   // ── Panning state ────────────────────────────────────────────────────
   let isPanning = $state(false);
   let isDragging = $state(false);
 
-  /** Whether the user is actively dragging/resizing/rotating a shape handle — derived from the selected annotation's component. */
+  /** Whether the user is actively dragging/resizing/rotating a shape handle — derived from the primary selected annotation's component. */
   let isEditingShape = $derived.by((): boolean => {
-    const selId = selection.value?.id ?? null;
-    if (!selId) return false;
-    const idx = visibleAnnotations.findIndex((a) => a.id === selId);
+    if (!selAnnotation) return false;
+    const idx = visibleAnnotations.findIndex((a) => a.id === selAnnotation.id);
     if (idx === -1) return false;
     return _compRefs[idx]?.getIsEditing?.() ?? false;
   });
@@ -310,12 +435,17 @@
       .cursor-grabbing, .cursor-grabbing * { cursor: grabbing !important; }
       .cursor-pointer { cursor: pointer; }
       .cursor-target { cursor: alias; }
+      /* Applied to <body> while a viewport gesture is live: a drag that leaves the
+         SVG would otherwise start a native text selection across the sidebars it
+         passes over. */
+      .idah-image-dragging, .idah-image-dragging * { user-select: none !important; -webkit-user-select: none !important; }
     `;
     document.head.appendChild(style);
 
     return () => {
       viewport.svgElement = null;
       document.head.removeChild(style);
+      endGestureTracking();
     };
   });
 
@@ -369,6 +499,84 @@
     return `${-tx / s} ${-ty / s} ${w / s} ${h / s}`;
   });
 
+  // ── Rectangle selection helpers ────────────────────────────────────────
+
+  /**
+   * Resolve a shape's outline in normalized coords.
+   *
+   * Most types store real coordinates in `points`, but circle and ellipse store a
+   * center plus radii — circle keeps its radius in `shape.radius` (scaled against
+   * min(w, h), as the renderer does), ellipse keeps [rx, ry] in `points[1]`. Taking
+   * min/max over those raw entries treats a radius as a coordinate and yields a box
+   * nowhere near the shape, so each needs its own corners.
+   */
+  function getShapeOutline(shape: IImageAnnotationShape): Point[] | null {
+    if (shape.type === IMAGE_CIRCLE) {
+      const c = shape.points?.[0] as Point | undefined;
+      if (!c) return null;
+      const r = (shape.radius as number | undefined) ?? 0;
+      const basis = Math.min(media.width, media.height);
+      const rx = media.width > 0 ? (r * basis) / media.width : 0;
+      const ry = media.height > 0 ? (r * basis) / media.height : 0;
+      return ellipseAABB(c, rx, ry);
+    }
+
+    if (shape.type === IMAGE_ELLIPSE) {
+      const c = shape.points?.[0] as Point | undefined;
+      const r = shape.points?.[1] as Point | undefined;
+      if (!c || !r) return null;
+      return ellipseAABB(c, r[0], r[1]);
+    }
+
+    return shape.points?.length ? (shape.points as Point[]) : null;
+  }
+
+  /** Compute the AABB of an annotation's shape. Returns null if no geometry. */
+  function getAnnotationAABB(ann: IAnnotationRecord): [number, number, number, number] | null {
+    const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+    if (!shape) return null;
+
+    // `points` holds the unrotated corners — `angle` is applied as a render
+    // transform around the centroid (see BBoxShape's transform-origin), so the
+    // box must be rotated the same way here. Otherwise a rotated annotation is
+    // hit-tested against the bounds it would occupy at 0°, which is not where
+    // the user sees it. rotatePointN does the math in pixel space, matching the
+    // render; shapes with no angle skip this untouched.
+    const angle = (shape.angle as number | undefined) ?? 0;
+    let pts = getShapeOutline(shape);
+    if (!pts?.length) return null;
+    if (angle !== 0 && media.width > 0 && media.height > 0) {
+      const center = centroidUtil(pts);
+      pts = pts.map((pt) => rotatePointN(pt, center, angle, media.width, media.height));
+    }
+
+    const xs = pts.map((pt) => pt[0]);
+    const ys = pts.map((pt) => pt[1]);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+
+  /** Check if two AABBs intersect. */
+  function aabbIntersects(a: [number, number, number, number], b: [number, number, number, number]): boolean {
+    return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+  }
+
+  /** Complete the rectangle selection, selecting all visible annotations intersecting the rect. */
+  function completeRectSelection() {
+    const rect = selectionRect;
+    if (!rect) return;
+
+    const intersectingIds = visibleAnnotations
+      .filter((ann) => {
+        const aabb = getAnnotationAABB(ann);
+        if (!aabb) return false;
+        return aabbIntersects(aabb, rect);
+      })
+      .map((ann) => ann.id);
+
+    selection.selectAnnotations(intersectingIds);
+    cancelRectSelection();
+  }
+
   // ── Event handlers ───────────────────────────────────────────────────
   /**
    * Hit-test the mask canvas layer at the given image-pixel coordinates.
@@ -383,12 +591,82 @@
     return [255, 0, 0, 100];
   }
 
+  // ── Document-level gesture tracking ──────────────────────────────────
+  // A press that starts on the SVG must keep tracking after the cursor leaves it,
+  // and must finalize wherever it is released. Without this, crossing the viewport
+  // edge mid-drag stranded the gesture: the batch commit for a multi-selection
+  // lives in onMouseUp, which never fires for a release outside the SVG, so only
+  // the shape that was under the cursor kept its new position.
+  // Viewport does the same for panning (see panStart there).
+  function beginGestureTracking() {
+    document.addEventListener("mousemove", onDocMouseMove);
+    document.addEventListener("mouseup", onDocMouseUp);
+    document.body.classList.add("idah-image-dragging");
+  }
+
+  function endGestureTracking() {
+    document.removeEventListener("mousemove", onDocMouseMove);
+    document.removeEventListener("mouseup", onDocMouseUp);
+    document.body.classList.remove("idah-image-dragging");
+  }
+
+  function onDocMouseMove(e: MouseEvent) {
+    // Recovery: no buttons held means the release happened somewhere we never
+    // saw it (released over another window, say). Finalize rather than leave the
+    // gesture — and the body's user-select lock — hanging.
+    if (e.buttons === 0) {
+      onDocMouseUp(e);
+      return;
+    }
+
+    // Moves over the SVG are already served by its own handler — this only
+    // extends a gesture that has wandered outside it.
+    if (!svgEl || (e.target instanceof Node && svgEl.contains(e.target))) return;
+    const rect = svgEl.getBoundingClientRect();
+    handlePointerMove(e, [e.clientX - rect.left, e.clientY - rect.top], true);
+  }
+
+  function onDocMouseUp(e: MouseEvent) {
+    endGestureTracking();
+    onMouseUp(e);
+  }
+
   function onMouseMove(e: MouseEvent) {
-    mousePosition = [e.offsetX, e.offsetY];
+    handlePointerMove(e, [e.offsetX, e.offsetY], false);
+  }
+
+  function handlePointerMove(e: MouseEvent, position: Point, fromDocument: boolean) {
+    mousePosition = position;
 
     // ── Mask brush painting (no early return — let viewport tracking below proceed) ─
     if (isMaskBrushMode) {
       maskBrushPointerMove(scenePixelCursor[0], scenePixelCursor[1]);
+    }
+
+    // Track the last known cursor position in normalized coords so commands
+    // (e.g. selection.paste) can target where the user's cursor currently is.
+    // This is a plain $state write in a regular function — it does NOT create
+    // a reactive cycle. viewport.cursor is only read by the async paste command.
+    viewport.cursor = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+
+    // ── Rectangle selection tracking ───────────────────────────────
+    if (isRectSelecting) {
+      rectEnd = sceneNormalizedCursor;
+      return;
+    }
+
+    // ── Multi-drag: track shared delta for batch move ─────────────────
+    // When multiple annotations are selected and one is being dragged,
+    // compute the delta and pass it to all selected shapes so they move
+    // together visually.
+    if (selection.selectedAnnotations.length > 1 && _anySelectedEditing) {
+      if (!_multiDragOrigin) {
+        _multiDragOrigin = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+      }
+      _multiDragDelta = [
+        sceneNormalizedCursor[0] - _multiDragOrigin[0],
+        sceneNormalizedCursor[1] - _multiDragOrigin[1],
+      ];
     }
 
     // ── Magnetic snap query ────────────────────────────────────────
@@ -422,8 +700,10 @@
       scheduleHoverHitTest();
     }
 
-    // Only pan in default mode
-    if (viewport.mode === DEFAULT_MODE) {
+    // Only pan in default mode. Never forward a document-sourced event: its
+    // offsetX/offsetY are relative to whatever element happens to be under the
+    // cursor, and Viewport installs its own document listeners once a pan starts.
+    if (!fromDocument && viewport.mode === DEFAULT_MODE) {
       zoomableElement!.mouseMove(e);
     }
   }
@@ -438,6 +718,25 @@
   // phase, so this runs in the capture phase to get in first. Once started, the
   // Viewport's own document-level listeners carry the drag to completion.
   function onMouseDownCapture(e: MouseEvent) {
+    _mouseDownClient = [e.clientX, e.clientY];
+    // Capture phase: runs even for presses a shape stops on bubble, so every
+    // gesture that starts here is tracked to its release, wherever that lands.
+    // Middle-click is excluded: onMouseUpCapture stops that release in the
+    // capture phase, so a document mouseup would never arrive to untrack it —
+    // and Viewport already carries middle-button pans on its own listeners.
+    if (e.button !== 1) beginGestureTracking();
+
+    // Anchor a potential group drag at the press point. The dragged shape records
+    // its own start here too (its mousedown runs next, in the bubble phase), so
+    // letting the first mousemove set the origin instead leaves the rest of the
+    // selection permanently short by that first movement — they lag behind the
+    // shape under the cursor and commit in the wrong place.
+    if (svgEl) {
+      const rect = svgEl.getBoundingClientRect();
+      mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
+      _multiDragOrigin = [sceneNormalizedCursor[0], sceneNormalizedCursor[1]];
+    }
+
     if (e.button !== 1) return;
     e.preventDefault(); // suppress the browser's middle-click autoscroll
     e.stopPropagation(); // keep shape/selection handlers from reacting
@@ -538,9 +837,21 @@
       return;
     }
 
+    // ── Shift+Drag: start rectangle selection ──────────────────────
+    // If shift is held and we're not over a shape handle, start rect selection.
+    if (e.shiftKey && viewport.mode === DEFAULT_MODE) {
+      isRectSelecting = true;
+      rectStart = sceneNormalizedCursor;
+      rectEnd = sceneNormalizedCursor;
+      e.stopPropagation();
+      return;
+    }
+
     // ── Default mode: try editing selected annotation (SVG shapes) ─
+    // Pass Alt key so PolygonShape can start vertex box selection
+    // (Alt+Drag) even when the drag begins outside the polygon shape.
     if (toolSelection) {
-      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.shiftKey);
+      const consumed = toolSelection.startSelection(sceneNormalizedCursor, e.altKey);
       if (consumed) {
         e.stopPropagation();
         return;
@@ -552,14 +863,16 @@
     zoomableElement!.mouseDown(e);
   }
 
-  function onMouseLeave(_e: MouseEvent) {
-    // Cancel any active tool edit (bounding box drag, resize, rotate)
-    toolSelection?.endSelection(sceneNormalizedCursor);
-    // Stop viewport panning
-    zoomableElement!.mouseUp(new MouseEvent("mouseup"));
-  }
-
   function onMouseUp(e: MouseEvent) {
+    // ── Rectangle selection: complete selection ────────────────────
+    if (isRectSelecting) {
+      rectEnd = sceneNormalizedCursor;
+      // A drag commits the rectangle; a plain Shift+Click falls through to
+      // handleClick's toggle with the selection untouched.
+      finishRectSelection();
+      return;
+    }
+
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseUp(snappedCursor);
@@ -604,8 +917,83 @@
       return;
     }
 
-    // Default mode: finalize edit operation
-    toolSelection?.endSelection(sceneNormalizedCursor);
+    // Default mode: finalize edit operation on every annotation component.
+    //
+    // When a non-primary annotation is clicked (Shift+Click to deselect from a
+    // multi-selection), its `startSelection` runs during mousedown but the
+    // `toolSelection` derived from `selAnnotation` (primary) still points to
+    // a *different* component.  That means the clicked component's `panStart`
+    // (and any other drag state) would never be cleared, causing the deselected
+    // shape to follow the cursor as if it were still being dragged.
+    //
+    // Iterating all refs guarantees every stale drag is cleaned up.
+    // Note: _compRefs holds AnnotationGeometry instances; they expose endSelection
+    // through getToolSelection(), not directly.
+
+    // Capture which annotation was being dragged BEFORE clearing drag state.
+    let _draggedId: string | null = null;
+    if (_multiDragDelta) {
+      for (let i = 0; i < visibleAnnotations.length; i++) {
+        if (_compRefs[i]?.getIsEditing?.()) {
+          _draggedId = visibleAnnotations[i].id;
+          break;
+        }
+      }
+    }
+
+    // ── Multi-drag: begin batch collection ───────────────────────────
+    // If a multi-shape drag occurred, collect every commit into a single
+    // undoable command instead of N separate annotation.update commands.
+    const dragDelta = _multiDragDelta; // local const for TS narrowing
+    const isBatchCommit = !!dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0);
+    if (isBatchCommit) {
+      _commitBatch = [];
+    }
+
+    for (let i = 0; i < _compRefs.length; i++) {
+      _compRefs[i]?.getToolSelection()?.endSelection(sceneNormalizedCursor);
+    }
+
+    // ── Multi-drag: commit delta to all other selected annotations ──
+    if (dragDelta && (dragDelta[0] !== 0 || dragDelta[1] !== 0)) {
+      for (let i = 0; i < visibleAnnotations.length; i++) {
+        const ann = visibleAnnotations[i];
+        if (!selection.isAnnotationSelected(ann.id)) continue;
+        if (ann.id === _draggedId) continue;
+        const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+        if (!shape?.points?.length) continue;
+
+        // Shift points based on shape type — some shapes store radii
+        // in points that must NOT be translated.
+        let movedPoints: Point[];
+        if (shape.type === IMAGE_CIRCLE) {
+          // points = [[cx, cy]] — only centroid shifts, radius is separate
+          movedPoints = [[shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]]];
+        } else if (shape.type === IMAGE_ELLIPSE) {
+          // points = [[cx, cy], [rx, ry]] — only centroid shifts, radii are separate
+          movedPoints = [
+            [shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]],
+            shape.points[1],
+          ];
+        } else {
+          // All points are positional vertices (bbox, polygon, line)
+          movedPoints = shape.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
+        }
+
+        handleEditComplete(ann.id, movedPoints, {});
+      }
+    }
+
+    // ── Dispatch the collected multi-drag batch as ONE undoable command ──
+    if (_commitBatch) {
+      const pending = _commitBatch;
+      _commitBatch = null;
+      if (pending.length > 0) {
+        getDriver().command.call("idah-image:selection.batch-move", { updates: pending });
+      }
+    }
+    _multiDragOrigin = null;
+    _multiDragDelta = null;
 
     // Only pan on mouseup if we were panning
     zoomableElement!.mouseUp(e);
@@ -693,6 +1081,12 @@
     if (maskHit.annotationId) {
       e.stopPropagation();
       selection.selectAnnotation(maskHit.annotation as any);
+    } else {
+      // No mask hit — deselect on empty space click.
+      // This is a safety net: the SVG's onMouseDown should have already handled
+      // the deselect, but in case the event didn't reach the SVG (e.g. the
+      // Viewport layer consumed it), we handle it here.
+      selection.deselect();
     }
   }
 
@@ -707,7 +1101,53 @@
   }
 
   function handleEditComplete(annId: string, points: Point[], extraProps: Record<string, unknown> = {}) {
-    onSelection(viewport.mode, points, extraProps, annId);
+    // Read the annotation BEFORE any mutation — this is our "original" state.
+    const ann = data.annotations?.items?.find((r) => r.id === annId);
+
+    if (_commitBatch) {
+      // ── Multi-drag batch mode ────────────────────────────────────────
+      // Capture the PRE-MOVE snapshot NOW (before the synchronous upsert
+      // below mutates the store). Undo restores this exact snapshot, so all
+      // shapes return to their original positions in one Ctrl+Z.
+      if (ann) {
+        const originalShape = ann.shape as IImageAnnotationShape | undefined;
+        _commitBatch.push({
+          annotationId: annId,
+          // Spread the original shape, then apply extraProps (e.g., ellipse
+          // angle after rotation), then override points with the moved
+          // position. This preserves shape-specific properties like ellipse
+          // `angle`, circle `radius`, etc. that the multi-drag loop's
+          // extraProps doesn't carry.
+          shape: { ...originalShape, ...extraProps, points } as IImageAnnotationShape,
+          snapshot: {
+            ...ann,
+            shape: { ...(ann.shape ?? {}) },
+          } as AnnotationItem,
+        });
+      }
+    } else {
+      // ── Single-edit path (unchanged) ────────────────────────────────
+      // Dispatch FIRST so annotation.update's callback reads the store before
+      // the upsert below — this is what lets its snapshot capture the original
+      // position.
+      onSelection(viewport.mode, points, extraProps, annId);
+    }
+
+    // ── Synchronous local data store update to prevent viewport blink ──
+    // The dispatched command's async do() will also update the store, but
+    // local drag/selection state is cleared synchronously in onMouseUp,
+    // which would cause shapes to snap back to their old positions before
+    // the async update completes. Updating the local store synchronously
+    // here keeps shapes at their new positions through the render that
+    // follows, eliminating the blink.
+    if (!ann) return;
+    const shape = ann.shape as IImageAnnotationShape | undefined;
+    if (!shape) return;
+
+    data.annotations!.upsert({
+      ...ann,
+      shape: { ...shape, points },
+    } as any);
   }
 
   let _hoveringMask = $state(false);
@@ -735,7 +1175,12 @@
     });
   }
 
-  function handleClick(ann: IAnnotationRecord) {
+  function handleClick(ann: IAnnotationRecord, e: MouseEvent) {
+    // Swallow the click that trails a drag (rectangle selection, or a shape move
+    // released over another shape) — mouseup already did the meaningful work, and
+    // running Shift+Click toggling here would undo it.
+    if (movedSinceMouseDown(e)) return;
+
     // Note mode: create an annotation-anchored note
     if (isNoteMode) {
       _noteHandledByClick = true;
@@ -746,7 +1191,14 @@
     // Don't select annotations in creation mode
     if (viewport.isCreationMode) return;
 
-    // Don't select already selected annotation
+    // ── Multi-selection: shift+click toggles this annotation ──
+    if (e.shiftKey) {
+      selection.toggleAnnotation(ann.id);
+      return;
+    }
+
+    // Don't re-select an already selected annotation — prevents unnecessary
+    // _selectedAnnotationIds Set allocation which triggers reactive cascades.
     if (selection.isAnnotationSelected(ann.id)) return;
 
     selection.selectAnnotation(ann);
@@ -775,9 +1227,7 @@
     onmousedowncapture={onMouseDownCapture}
     onmouseupcapture={onMouseUpCapture}
     onmousedown={onMouseDown}
-    onmouseup={onMouseUp}
     onmousemove={onMouseMove}
-    onmouseleave={onMouseLeave}
     onwheel={onWheel}
     onclick={onSvgClick}
   >
@@ -795,8 +1245,9 @@
           !annotation.isLocked(ann) &&
           !["errored", "completed"].includes(getDriver().entryStatus)}
         cursor={snappedCursor}
+        multiDragDelta={_multiDragDelta}
         mode={viewport.mode}
-        onClick={() => handleClick(ann)}
+        onClick={(e: MouseEvent) => handleClick(ann, e)}
         onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
           handleEditComplete(ann.id, aabb, extraProps)}
       />
@@ -825,6 +1276,21 @@
         fill={snapColor}
         opacity="0.9"
         vector-effect="non-scaling-stroke"
+      />
+    {/if}
+
+    <!-- Rectangle selection overlay -->
+    {#if selectionRect}
+      <rect
+        x={selectionRect[0] * media.width}
+        y={selectionRect[1] * media.height}
+        width={(selectionRect[2] - selectionRect[0]) * media.width}
+        height={(selectionRect[3] - selectionRect[1]) * media.height}
+        fill="rgba(59, 130, 246, 0.2)"
+        stroke="#3b82f6"
+        stroke-width={1.5}
+        vector-effect="non-scaling-stroke"
+        pointer-events="none"
       />
     {/if}
 

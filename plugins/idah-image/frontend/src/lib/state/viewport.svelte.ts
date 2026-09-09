@@ -51,6 +51,13 @@ class Viewport {
   /** Reference to the SVG element for screen coordinate calculations */
   svgElement: SVGSVGElement | null = $state(null);
 
+ /**
+   * Last known mouse cursor position in normalized media coords (0-1).
+   * Updated by ShapesContainer on every mousemove so commands like
+   * selection.paste can target the current cursor position.
+   */
+  cursor: [number, number] = $state([0.5, 0.5]);
+
   workspace = $state({
     transform: {
       translate: [0, 0] as [number, number],
