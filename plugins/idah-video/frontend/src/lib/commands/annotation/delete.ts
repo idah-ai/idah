@@ -14,6 +14,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "idah-video:annotation.delete",
@@ -43,7 +44,13 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
       if (!record) return noopAction(command);
       // Locked annotations (or those belonging to a locked group) must not be deletable.
-      if (annotation.isLocked(record)) return noopAction(command);
+      if (annotation.isLocked(record)) {
+        showToast.warning({
+          title: "Cannot delete annotation",
+          description: "This annotation is locked.",
+        });
+        return noopAction(command);
+      }
 
       return {
         command: { ...command },
@@ -60,7 +67,11 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await data.annotations!.create({
+            ...record,
+            id: record.id,
+            metadata: (record as any).metadata ?? {},
+          });
           // Seek to the annotation's start frame
           const restoredFrame = (record.shape as any)?.start;
           if (restoredFrame !== undefined) viewport.video.currentFrame.value = restoredFrame;

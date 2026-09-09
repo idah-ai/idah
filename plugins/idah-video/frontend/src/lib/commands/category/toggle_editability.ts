@@ -81,11 +81,14 @@ export function register(driver: IIdahDriverV2): void {
         return noopAction(command);
       }
 
-      // Snapshot IDs and their current locked state from annotation module
-      const snapshot = categoryAnnotations.map((ann) => ({
-        id: ann.id,
-        locked: annotation.isLocked(ann),
-      }));
+      const lockKeys = new Map<string, boolean>();
+      for (const ann of categoryAnnotations) {
+        const key = ((ann as any)?.metadata?.group_id as string | undefined) ?? ann.id;
+        if (!lockKeys.has(key)) {
+          lockKeys.set(key, annotation.isLocked(key));
+        }
+      }
+      const snapshot = Array.from(lockKeys.entries()).map(([id, locked]) => ({ id, locked }));
 
       return {
         command: { ...command },
