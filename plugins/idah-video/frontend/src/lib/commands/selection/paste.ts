@@ -72,6 +72,7 @@ export function register(driver: IIdahDriverV2): void {
           // Reset from any previous redo cycle
           createdIds.length = 0;
           let skippedDuplicateTagCount = 0;
+          let skippedOutOfBoundsCount = 0;
 
           // ── Defensive: reject ENTRY_ROOT in clipboard ────────────────
           // This should be unreachable given copy-time rejection, but paste
@@ -122,15 +123,11 @@ export function register(driver: IIdahDriverV2): void {
               MAX_FRAME,
             );
 
-            // Defensive: fully out-of-bounds should be unreachable given the
-            // copy-time bounds invariant (see plan §2.3 step 2). Skip this
-            // entry if it somehow occurs.
+            // Non-anchor group members may land entirely outside the video
+            // bounds after the shared delta shift — that's expected, not a
+            // bug. Silently skip this entry.
             if (shifted.outOfBounds) {
-              console.error(
-                "Paste: invariant violation — shifted annotation is entirely out of bounds. " +
-                "This should not happen given the copy-time frame-coverage check. Skipping entry.",
-                { entryId: newId, delta, start: shifted.start, end: shifted.end },
-              );
+              skippedOutOfBoundsCount++;
               continue;
             }
 
@@ -189,25 +186,43 @@ export function register(driver: IIdahDriverV2): void {
           // ── Toast based on how many entries were actually created ────
           const total = clipboardData.length;
           const created = createdIds.length;
+          const skipped = total - created;
           if (created === total) {
             showToast.success({
               title: "Pasted",
               description: `${created} annotation(s) pasted`,
             });
-          } else if (created > 0 && skippedDuplicateTagCount > 0) {
-            showToast.warning({
-              title: "Pasted",
-              description: `${created} of ${total} annotations pasted — ${skippedDuplicateTagCount} skipped because the frame is already tagged with that category.`,
-            });
           } else if (created > 0) {
+            // Compose a description from all skip reasons that apply.
+            const reasons: string[] = [];
+            if (skippedDuplicateTagCount > 0) {
+              reasons.push(`${skippedDuplicateTagCount} already tagged`);
+            }
+            if (skippedOutOfBoundsCount > 0) {
+              reasons.push(`${skippedOutOfBoundsCount} outside video bounds`);
+            }
+            const failedCount = skipped - skippedDuplicateTagCount - skippedOutOfBoundsCount;
+            if (failedCount > 0) {
+              reasons.push(`${failedCount} failed to save`);
+            }
             showToast.warning({
               title: "Pasted",
-              description: `${created} of ${total} annotations pasted — some failed to save.`,
+              description: `${created} of ${total} annotations pasted — ${reasons.join(", ")}.`,
             });
-          } else if (skippedDuplicateTagCount > 0) {
+          } else if (skippedDuplicateTagCount > 0 && skippedOutOfBoundsCount === 0) {
             showToast.warning({
               title: "Paste skipped",
               description: `All ${total} annotation(s) skipped because the target frame(s) are already tagged with the same category.`,
+            });
+          } else if (skippedOutOfBoundsCount > 0 && skippedDuplicateTagCount === 0) {
+            showToast.warning({
+              title: "Paste skipped",
+              description: `All ${total} annotation(s) skipped because they would fall outside the video bounds.`,
+            });
+          } else if (skippedDuplicateTagCount > 0 && skippedOutOfBoundsCount > 0) {
+            showToast.warning({
+              title: "Paste skipped",
+              description: `All ${total} annotation(s) skipped — ${skippedDuplicateTagCount} already tagged, ${skippedOutOfBoundsCount} outside video bounds.`,
             });
           } else {
             showToast.error({

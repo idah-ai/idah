@@ -90,13 +90,33 @@ export function register(driver: IIdahDriverV2): void {
             return;
           }
 
-          // Check 2: Every candidate must cover copyFrame.
-          const hasOutOfRange = entries.some((e) => {
+          // Check 2: Frame-coverage validation, group-aware.
+          //
+          // Individually selected entries (their group_id is NOT in
+          // selectedGids) must each cover copyFrame themselves — same
+          // strict rule as before.
+          //
+          // Group-selected entries (their group_id IS in selectedGids)
+          // only need at least ONE member of that group (the "anchor")
+          // to cover copyFrame. Non-anchor members are copied anyway;
+          // their keyframes will be shifted by the same delta at paste
+          // time, preserving relative timing within the track.
+          const outOfRange = (e: (typeof entries)[number]) => {
             const s = e.shape as any;
-            const start = s.start as number;
-            const end = s.end as number;
-            return start > copyFrame || end < copyFrame;
+            return (s.start as number) > copyFrame || (s.end as number) < copyFrame;
+          };
+
+          const individuallySelected = entries.filter((e) => !selectedGids.has(e.groupId));
+          const hasIndividualOutOfRange = individuallySelected.some(outOfRange);
+
+          const groupSelectedEntries = entries.filter((e) => selectedGids.has(e.groupId));
+          const hasGroupWithoutAnchor = Array.from(selectedGids).some((gid) => {
+            const members = groupSelectedEntries.filter((e) => e.groupId === gid);
+            if (members.length === 0) return false;
+            return !members.some((e) => !outOfRange(e));
           });
+
+          const hasOutOfRange = hasIndividualOutOfRange || hasGroupWithoutAnchor;
           if (hasOutOfRange) {
             clipboard.clear();
             showToast.error({
@@ -107,8 +127,11 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           // ── Centroid at copyFrame ────────────────────────────────────
-          // Because every entry passed the bounds check above,
-          // getInterpolatedFrame is guaranteed to succeed for every entry.
+          // Only entries that cover copyFrame contribute to the centroid;
+          // non-anchor group members (which don't cover copyFrame) are
+          // skipped by the `if (!pts?.length) continue` guard below.
+          // This is fine — (dx, dy) is shared across the whole batch, and
+          // the centroid only needs to reflect the anchor geometry.
           let cx = 0, cy = 0, count = 0;
 
           for (const entry of entries) {

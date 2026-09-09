@@ -501,4 +501,191 @@ describe("selection.copy + selection.paste", () => {
       expect(mockCreateFn).not.toHaveBeenCalled();
     });
   });
+
+  // ── Group copy/paste ─────────────────────────────────────────────────────
+
+  describe("group copy/paste", () => {
+    const GROUP_ID = "test-group-001";
+
+    function makeTrackSegments() {
+      const segA = {
+        id: "seg-a",
+        metadata: { group_id: GROUP_ID },
+        shape: {
+          type: "idah-video:bounding-box",
+          start: 0,
+          end: 10,
+          frames: [
+            { frame: 0, angle: 0, points: [[0, 0], [100, 100]] },
+            { frame: 5, angle: 0, points: [[10, 10], [90, 90]] },
+            { frame: 10, angle: 0, points: [[20, 20], [80, 80]] },
+          ],
+        },
+        value: { category: "test/cat" },
+      };
+      const segB = {
+        id: "seg-b",
+        metadata: { group_id: GROUP_ID },
+        shape: {
+          type: "idah-video:bounding-box",
+          start: 11,
+          end: 20,
+          frames: [
+            { frame: 11, angle: 0, points: [[30, 30], [70, 70]] },
+            { frame: 15, angle: 0, points: [[40, 40], [60, 60]] },
+            { frame: 20, angle: 0, points: [[50, 50], [50, 50]] },
+          ],
+        },
+        value: { category: "test/cat" },
+      };
+      return [segA, segB];
+    }
+
+    it("group copy succeeds with a partial anchor (only one segment covers copyFrame)", () => {
+      const [segA, segB] = makeTrackSegments();
+      mockDataItems.push(segA, segB);
+      mockSelectedGroupIds.add(GROUP_ID);
+      mockCurrentFrameValue.value = 5;
+
+      const { copyCallback } = registerCommands();
+      const action = copyCallback();
+      action.do();
+
+      expect(clipboard.hasData).toBe(true);
+      expect(clipboard.annotations).toHaveLength(2);
+      const ids = clipboard.annotations!.map((e) => (e.shape as any).start);
+      expect(ids).toContain(0);
+      expect(ids).toContain(11);
+      expect(clipboard.copyFrame).toBe(5);
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Copied", description: "2 annotation(s) copied" }),
+      );
+      expect(mockToastError).not.toHaveBeenCalled();
+    });
+
+    it("group copy fails when no segment covers the playhead", () => {
+      const [segA, segB] = makeTrackSegments();
+      mockDataItems.push(segA, segB);
+      mockSelectedGroupIds.add(GROUP_ID);
+      mockCurrentFrameValue.value = 30;
+
+      const { copyCallback } = registerCommands();
+      const action = copyCallback();
+      action.do();
+
+      expect(clipboard.hasData).toBe(false);
+      expect(mockToastError).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Copy failed" }),
+      );
+    });
+
+    it("individually selecting one segment still enforces the strict rule", () => {
+      const [segA] = makeTrackSegments();
+      mockDataItems.push(segA);
+      mockSelectedAnnotationIds.add("seg-a");
+      mockCurrentFrameValue.value = 15;
+
+      const { copyCallback } = registerCommands();
+      const action = copyCallback();
+      action.do();
+
+      expect(clipboard.hasData).toBe(false);
+      expect(mockToastError).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Copy failed" }),
+      );
+    });
+
+    it("paste preserves relative timing across segments", async () => {
+      const [segA, segB] = makeTrackSegments();
+      mockDataItems.push(segA, segB);
+      mockSelectedGroupIds.add(GROUP_ID);
+      mockCurrentFrameValue.value = 5;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      const copyAction = copyCallback();
+      copyAction.do();
+      expect(clipboard.hasData).toBe(true);
+
+      mockCurrentFrameValue.value = 20;
+
+      const pasteAction = pasteCallback();
+      await pasteAction.do();
+
+      expect(mockCreateFn).toHaveBeenCalledTimes(2);
+      const firstCallGroup = mockCreateFn.mock.calls[0][0].metadata?.group_id;
+      const secondCallGroup = mockCreateFn.mock.calls[1][0].metadata?.group_id;
+      expect(firstCallGroup).toBe(secondCallGroup);
+      expect(firstCallGroup).toMatch(/^test-uuid-/);
+
+      const shapeA = mockCreateFn.mock.calls[0][0].shape;
+      const shapeB = mockCreateFn.mock.calls[1][0].shape;
+      expect(shapeA.start).toBe(15);
+      expect(shapeA.end).toBe(25);
+      expect(shapeB.start).toBe(26);
+      expect(shapeB.end).toBe(35);
+      expect(shapeB.start - shapeA.end).toBe(1);
+
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Pasted", description: "2 annotation(s) pasted" }),
+      );
+    });
+
+    it("paste near video edge drops only the segment that goes fully out of bounds", async () => {
+      const shortSegA = {
+        id: "seg-a",
+        metadata: { group_id: GROUP_ID },
+        shape: {
+          type: "idah-video:bounding-box",
+          start: 0,
+          end: 5,
+          frames: [
+            { frame: 0, angle: 0, points: [[0, 0], [100, 100]] },
+            { frame: 5, angle: 0, points: [[10, 10], [90, 90]] },
+          ],
+        },
+        value: { category: "test/cat" },
+      };
+      const shortSegB = {
+        id: "seg-b",
+        metadata: { group_id: GROUP_ID },
+        shape: {
+          type: "idah-video:bounding-box",
+          start: 90,
+          end: 99,
+          frames: [
+            { frame: 90, angle: 0, points: [[30, 30], [70, 70]] },
+            { frame: 99, angle: 0, points: [[40, 40], [60, 60]] },
+          ],
+        },
+        value: { category: "test/cat" },
+      };
+      mockDataItems.push(shortSegA, shortSegB);
+      mockSelectedGroupIds.add(GROUP_ID);
+      mockCurrentFrameValue.value = 3;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      const copyAction = copyCallback();
+      copyAction.do();
+      expect(clipboard.hasData).toBe(true);
+
+      mockCurrentFrameValue.value = 98;
+
+      const pasteAction = pasteCallback();
+      await pasteAction.do();
+
+      expect(mockCreateFn).toHaveBeenCalledTimes(1);
+      const createdShape = mockCreateFn.mock.calls[0][0].shape;
+      expect(createdShape.start).toBe(95);
+      expect(createdShape.end).toBe(99); // clamped to MAX_FRAME
+
+      // Toast should reflect the skip (success toast was only from the copy step)
+      expect(mockToastSuccess).toHaveBeenCalledTimes(1); // from copy step only
+      expect(mockToastWarning).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Pasted",
+          description: expect.stringContaining("1 of 2"),
+        }),
+      );
+    });
+  });
 });
