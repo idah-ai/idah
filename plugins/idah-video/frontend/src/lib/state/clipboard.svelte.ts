@@ -17,6 +17,7 @@ interface ClipboardAnnotation {
 
 let _annotations: ClipboardAnnotation[] | null = $state(null);
 let _centroid: [number, number] = $state([0, 0]);
+let _copyFrame: number = $state(0);
 
 export const clipboard = {
   get annotations(): ClipboardAnnotation[] | null {
@@ -25,17 +26,22 @@ export const clipboard = {
   get centroid(): [number, number] {
     return _centroid;
   },
+  get copyFrame(): number {
+    return _copyFrame;
+  },
   get hasData(): boolean {
     return _annotations !== null && _annotations.length > 0;
   },
 
-  store(annotations: ClipboardAnnotation[], centroid: [number, number]): void {
+  store(annotations: ClipboardAnnotation[], centroid: [number, number], copyFrame: number): void {
     _annotations = annotations;
     _centroid = centroid;
+    _copyFrame = copyFrame;
   },
 
   clear(): void {
     _annotations = null;
     _centroid = [0, 0];
+    _copyFrame = 0;
   },
 };

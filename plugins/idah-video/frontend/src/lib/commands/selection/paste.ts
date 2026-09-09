@@ -6,6 +6,11 @@
 // Pasted annotations are placed at the given cursor position (or, if absent,
 // at the center of the viewport).
 //
+// Timeline-anchored paste: every keyframe is shifted by
+// (pasteFrame - copyFrame) so the annotation's geometry at the copy-time
+// playhead lands at the paste-time playhead. If the shifted range clips past
+// the video bounds, boundary keyframes are synthesized via interpolation.
+//
 // Usage:
 //   driver.command.call("selection.paste", { x: 0.5, y: 0.5 });
 // ---------------------------------------------------------------------------
@@ -13,11 +18,15 @@ import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import { getInterpolatedFrame } from "$lib/utils/interpolation";
+import { media } from "$lib/state/media.svelte";
+import { shiftAndClampShape } from "$lib/utils/frame-shift";
+import { ENTRY_ROOT } from "$lib/types";
+import type { IVideoAnnotationShape } from "$lib/types";
 import { uuidv7 } from "uuidv7";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "idah-video:selection.paste",
@@ -25,7 +34,7 @@ export const command = {
   modes: ["editor"],
   shortcut: "Control+V",
   shortDescription: "Paste copied annotations",
-  longDescription: "Paste annotations from the clipboard at the cursor position",
+  longDescription: "Paste annotations from the clipboard at the cursor position. Keyframes are shifted along the timeline so the copied geometry lands at the current playhead frame.",
 };
 
 export function register(driver: IIdahDriverV2): void {
@@ -50,6 +59,8 @@ export function register(driver: IIdahDriverV2): void {
       const captureX = (opts?.x as number | undefined) ?? viewport.cursor[0];
       const captureY = (opts?.y as number | undefined) ?? viewport.cursor[1];
       const capturePastePos: [number, number] = [captureX, captureY];
+      // Capture the paste-time playhead frame at callback time for redo determinism.
+      const capturePasteFrame = viewport.video.currentFrame.value;
 
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
@@ -60,35 +71,36 @@ export function register(driver: IIdahDriverV2): void {
           // Reset from any previous redo cycle
           createdIds.length = 0;
 
+          // ── Defensive: reject ENTRY_ROOT in clipboard ────────────────
+          // This should be unreachable given copy-time rejection, but paste
+          // must never create a second ENTRY_ROOT.
+          if (clipboardData.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+            showToast.error({
+              title: "Paste failed",
+              description: "The clipboard contains an item that can't be pasted.",
+            });
+            return;
+          }
+
           // Map original group IDs → new group IDs
           const groupMap = new Map<string, string>();
 
           // Use the captured values so undo/redo are deterministic regardless
           // of cursor position or playback head at redo time.
           const pastePos = capturePastePos;
+          const pasteFrame = capturePasteFrame;
 
-          // Anchor the paste to the copied annotations' interpolated positions at the
-          // CURRENT playhead frame (not their first keyframe). This way, when you paste
-          // while not on the first frame, the pasted annotations land centered on the
-          // cursor at the current frame instead of being offset relative to frame 0.
-          const currentFrame = viewport.video.currentFrame.value;
-          let anchorCx = 0;
-          let anchorCy = 0;
-          let anchorCount = 0;
-          for (const entry of clipboardData) {
-            const frame = getInterpolatedFrame(entry.shape as any, currentFrame);
-            const pts = frame?.points as [number, number][] | undefined;
-            if (!pts?.length) continue;
-            for (const [px, py] of pts) {
-              anchorCx += px;
-              anchorCy += py;
-              anchorCount++;
-            }
-          }
-          // Fall back to the stored clipboard centroid if nothing interpolates at the
-          // current frame (e.g. pasting onto a frame outside the copied range).
-          const anchor: [number, number] =
-            anchorCount > 0 ? [anchorCx / anchorCount, anchorCy / anchorCount] : centroid;
+          // Compute the temporal delta once, shared by every entry.
+          const delta = pasteFrame - clipboard.copyFrame;
+
+          // Bounds for clamping.
+          const MIN_FRAME = 0;
+          const MAX_FRAME = media.totalFrames - 1;
+
+          // Spatial anchor is the clipboard centroid (interpolated at copyFrame).
+          const anchor: [number, number] = centroid;
+          const dx = pastePos[0] - anchor[0];
+          const dy = pastePos[1] - anchor[1];
 
           for (const entry of clipboardData) {
             // Generate new group ID for this original group
@@ -99,28 +111,36 @@ export function register(driver: IIdahDriverV2): void {
 
             const newId = uuidv7();
 
-            // Compute offset: shift ALL annotations by the same (pastePos - anchor).
-            const dx = pastePos[0] - anchor[0];
-            const dy = pastePos[1] - anchor[1];
+            // Shift and clamp the annotation's keyframes along the timeline.
+            const shifted = shiftAndClampShape(
+              entry.shape as IVideoAnnotationShape,
+              delta,
+              MIN_FRAME,
+              MAX_FRAME,
+            );
 
-            // Copy the annotation's frame range as-is: start/end and every
-            // keyframe's frame value are an exact copy of the original. Only the
-            // spatial position is offset by (dx, dy).
-            const originalFrames = (entry.shape?.frames as any[]) ?? [];
-            const originalStart = (entry.shape as any).start as number | undefined;
-            const originalEnd = (entry.shape as any).end as number | undefined;
-            const newFrames = originalFrames.map((frame: any) => {
-              if (!frame?.points) return { ...frame };
-              return {
-                ...frame,
-                points: frame.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
-              };
-            });
+            // Defensive: fully out-of-bounds should be unreachable given the
+            // copy-time bounds invariant (see plan §2.3 step 2). Skip this
+            // entry if it somehow occurs.
+            if (shifted.outOfBounds) {
+              console.error(
+                "Paste: invariant violation — shifted annotation is entirely out of bounds. " +
+                "This should not happen given the copy-time frame-coverage check. Skipping entry.",
+                { entryId: newId, delta, start: shifted.start, end: shifted.end },
+              );
+              continue;
+            }
+
+            // Apply spatial offset (dx, dy) to every point in the shifted frames.
+            const newFrames = shifted.frames.map((f) => ({
+              ...f,
+              points: f.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
+            }));
 
             const newShape = {
               ...entry.shape,
-              start: originalStart ?? 0,
-              end: originalEnd ?? originalStart ?? 0,
+              start: shifted.start,
+              end: shifted.end,
               frames: newFrames,
             };
 
@@ -142,6 +162,26 @@ export function register(driver: IIdahDriverV2): void {
           // Select the newly created annotations
           if (createdIds.length > 0) {
             selection.selectAnnotations(createdIds);
+          }
+
+          // ── Toast based on how many entries were actually created ────
+          const total = clipboardData.length;
+          const created = createdIds.length;
+          if (created === total) {
+            showToast.success({
+              title: "Pasted",
+              description: `${created} annotation(s) pasted`,
+            });
+          } else if (created > 0) {
+            showToast.warning({
+              title: "Pasted",
+              description: `${created} of ${total} annotations pasted — some failed to save.`,
+            });
+          } else {
+            showToast.error({
+              title: "Paste failed",
+              description: "No annotations could be pasted.",
+            });
           }
         },
         async undo() {
