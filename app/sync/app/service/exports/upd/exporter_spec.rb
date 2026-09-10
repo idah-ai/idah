@@ -475,8 +475,8 @@ RSpec.describe Exports::Upd::Exporter do
 
     context "stdout/stderr deadlock prevention" do
       it "drains subprocess output during write via IO.select multiplexing" do
-        allow(Verse.logger).to receive()
-        allow(Verse.logger).to receive()
+        allow(Verse.logger).to receive(:debug)
+        allow(Verse.logger).to receive(:warn)
 
         call_count = 0
         allow(IO).to receive(:select) do |_read, write, _error, timeout|
@@ -504,11 +504,11 @@ RSpec.describe Exports::Upd::Exporter do
           .and_return("stderr-chunk\n", nil)
         exporter.export(context)
 
-        expect(Verse.logger).to have_received().with { |&block|
+        expect(Verse.logger).to have_received(:debug).with { |&block|
           block.call == "updcli: stdout-chunk\n"
         }
 
-        expect(Verse.logger).to have_received().with { |&block|
+        expect(Verse.logger).to have_received(:warn).with { |&block|
           block.call == "updcli: stderr-chunk\n"
         }
       end
