@@ -504,13 +504,13 @@ RSpec.describe Exports::Upd::Exporter do
           .and_return("stderr-chunk\n", nil)
         exporter.export(context)
 
-        expect(Verse.logger).to have_received(:debug).with { |&block|
-          block.call == "updcli: stdout-chunk\n"
-        }
+        expect(Verse.logger).to have_received(:debug) do |&block|
+          expect(block.call).to eq("updcli: stdout-chunk\n")
+        end
 
-        expect(Verse.logger).to have_received(:warn).with { |&block|
-          block.call == "updcli: stderr-chunk\n"
-        }
+        expect(Verse.logger).to have_received(:warn) do |&block|
+          expect(block.call).to eq("updcli: stderr-chunk\n")
+        end
       end
 
       it "handles premature output pipe closure gracefully" do
