@@ -30,12 +30,14 @@ namespace :dev do
 
     account_repo = Account::Repository.new(Verse::Auth::Context[:system])
     account = account_repo.find_by({ email: admin_data[:email] })
-    if account.nil?
-      account_repo.create(admin_data)
-      puts "Admin account is created with email: #{admin_data[:email]}, password = #{default_password}"
-    else
-      account_repo.update(account.id, admin_data)
-      puts "Admin account is updated with email: #{admin_data[:email]}, password = #{default_password}"
+    account_repo.no_event do
+      if account.nil?
+        account_repo.create(admin_data)
+        puts "Admin account is created with email: #{admin_data[:email]}, password = #{default_password}"
+      else
+        account_repo.update(account.id, admin_data)
+        puts "Admin account is updated with email: #{admin_data[:email]}, password = #{default_password}"
+      end
     end
   end
 
@@ -78,28 +80,30 @@ namespace :dev do
 
     puts "Creating dev users..."
 
-    users.each do |user_data|
-      account = account_repo.find_by({ email: user_data[:email] })
+    account_repo.no_event do
+      users.each do |user_data|
+        account = account_repo.find_by({ email: user_data[:email] })
 
-      params = {
-        name: user_data[:name],
-        email: user_data[:email],
-        hashed_password: hashed_password,
-        enabled: true,
-        joined_at: Time.now,
-        role_name: user_data[:role_name]
-      }
+        params = {
+          name: user_data[:name],
+          email: user_data[:email],
+          hashed_password: hashed_password,
+          enabled: true,
+          joined_at: Time.now,
+          role_name: user_data[:role_name]
+        }
 
-      if user_data[:role_scope]
-        params[:role_scope] = Sequel.pg_json(user_data[:role_scope])
-      end
+        if user_data[:role_scope]
+          params[:role_scope] = Sequel.pg_json(user_data[:role_scope])
+        end
 
-      if account.nil?
-        puts "create #{user_data[:email]}, password = #{password}"
-        account_repo.create(params)
-      else
-        puts "update #{user_data[:email]}, password = #{password}"
-        account_repo.update(account.id, params)
+        if account.nil?
+          puts "create #{user_data[:email]}, password = #{password}"
+          account_repo.create(params)
+        else
+          puts "update #{user_data[:email]}, password = #{password}"
+          account_repo.update(account.id, params)
+        end
       end
     end
 
