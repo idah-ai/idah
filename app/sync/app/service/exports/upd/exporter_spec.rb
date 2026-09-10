@@ -494,14 +494,15 @@ RSpec.describe Exports::Upd::Exporter do
           end
         end
 
-        # stdout gives data then EOF, stderr gives data then EOF
+        # stdout gives data, then :wait_readable (not EOF — that would trigger
+        # StreamClosed during write_jsonl), then nil (EOF for read_remaining_output).
         allow(stdout_mock).to receive(:read_nonblock)
           .with(4096, exception: false)
-          .and_return("stdout-chunk\n", nil)
+          .and_return("stdout-chunk\n", :wait_readable, nil)
 
         allow(stderr_mock).to receive(:read_nonblock)
           .with(4096, exception: false)
-          .and_return("stderr-chunk\n", nil)
+          .and_return("stderr-chunk\n", :wait_readable, nil)
         exporter.export(context)
 
         expect(Verse.logger).to have_received(:debug) do |&block|
