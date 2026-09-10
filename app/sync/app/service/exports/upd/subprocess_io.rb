@@ -117,7 +117,7 @@ module Exports
         raise StreamClosed, "updcli-static closed its stdin: #{e.message}"
       end
 
-      # Emit output: collect stderr, log or callback
+      # Emit output: collect stderr and log it
       def emit_output(chunk, stream)
         @err_lines << chunk if stream == :err
 
