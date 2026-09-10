@@ -12,11 +12,10 @@ module Exports
       # Raised when updcli-static closes stdin unexpectedly
       class StreamClosed < StandardError; end
 
-      def initialize(stdin, stdout, stderr, on_output: nil)
+      def initialize(stdin, stdout, stderr)
         @stdin = stdin
         @stdout = stdout
         @stderr = stderr
-        @on_output = on_output
         @err_lines = []
       end
 
@@ -122,9 +121,7 @@ module Exports
       def emit_output(chunk, stream)
         @err_lines << chunk if stream == :err
 
-        if @on_output
-          @on_output.call(chunk, stream)
-        elsif stream == :out
+        if stream == :out
           Verse.logger&.debug { "updcli: #{chunk}" }
         else
           Verse.logger&.warn { "updcli: #{chunk}" }

@@ -16,7 +16,7 @@ module Exports
       def description = "Export to UPD file."
       def options = Verse::Schema.empty
 
-      def export(context, on_output: nil)
+      def export(context)
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
         # Duplicated entries share the same media resource, but medias are
@@ -32,7 +32,7 @@ module Exports
         media_tempfiles = []
 
         Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
-          io = SubprocessIO.new(stdin, stdout, stderr, on_output: on_output)
+          io = SubprocessIO.new(stdin, stdout, stderr)
 
           begin
             # Initialise UPD file via stdin — avoids a separate system("... init") call
