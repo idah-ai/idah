@@ -16,6 +16,8 @@ const mockCreateFn = vi.hoisted(() => vi.fn<(...args: any[]) => any>());
 const mockSelectedAnnotationIds = vi.hoisted(() => new Set<string>());
 const mockSelectedGroupIds = vi.hoisted(() => new Set<string>());
 const mockSelectAnnotations = vi.hoisted(() => vi.fn());
+const mockAddAnnotations = vi.hoisted(() => vi.fn());
+const mockSelectGroups = vi.hoisted(() => vi.fn());
 const mockDeselect = vi.hoisted(() => vi.fn());
 const mockCurrentFrameValue = vi.hoisted(() => ({ value: 0 }));
 const mockCursor = vi.hoisted(() => [0.5, 0.5] as [number, number]);
@@ -44,6 +46,8 @@ vi.mock("$lib/state/selection.svelte", () => ({
     get selectedAnnotationIds() { return mockSelectedAnnotationIds; },
     get selectedGroupIds() { return mockSelectedGroupIds; },
     selectAnnotations: mockSelectAnnotations,
+    addAnnotations: mockAddAnnotations,
+    selectGroups: mockSelectGroups,
     deselect: mockDeselect,
     get selectedAnnotations() { return [] as any[]; },
   },
@@ -147,6 +151,8 @@ function resetMocks(): void {
   mockSelectedAnnotationIds.clear();
   mockSelectedGroupIds.clear();
   mockSelectAnnotations.mockReset();
+  mockAddAnnotations.mockReset();
+  mockSelectGroups.mockReset();
   mockDeselect.mockReset();
   mockCurrentFrameValue.value = 0;
   mockToastSuccess.mockReset();
@@ -672,6 +678,105 @@ describe("selection.copy + selection.paste", () => {
         }),
       );
       expect(mockToastSuccess).toHaveBeenCalledTimes(1); // from copy step only
+    });
+  });
+
+  // ── Selection restored after paste ─────────────────────────────────────
+
+  describe("paste restores the copy-time selection kind", () => {
+    const TRACK_ID = "track-sel-1";
+
+    function makeGroupedSegment(id: string, start: number, end: number): any {
+      return {
+        id,
+        metadata: { group_id: TRACK_ID },
+        shape: {
+          type: "idah-video:bounding-box",
+          start,
+          end,
+          frames: [
+            { frame: start, angle: 0, points: [[0, 0], [100, 100]] },
+            { frame: end, angle: 0, points: [[10, 10], [90, 90]] },
+          ],
+        },
+        value: { category: "test/cat" },
+      };
+    }
+
+    it("selects the new group when a group was copied", async () => {
+      mockDataItems.push(makeGroupedSegment("seg-a", 0, 10), makeGroupedSegment("seg-b", 20, 30));
+      mockSelectedGroupIds.add(TRACK_ID);
+      mockCurrentFrameValue.value = 5;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      copyCallback().do();
+
+      mockCurrentFrameValue.value = 40;
+      await pasteCallback().do();
+
+      expect(mockCreateFn).toHaveBeenCalledTimes(2);
+      const newGroupId = mockCreateFn.mock.calls[0][0].metadata.group_id;
+
+      expect(clipboard.selectionKind).toBe("group");
+      // Both segments share one new group id → a single group is selected.
+      expect(mockSelectGroups).toHaveBeenCalledTimes(1);
+      expect(mockSelectGroups).toHaveBeenCalledWith([newGroupId]);
+      expect(mockSelectAnnotations).not.toHaveBeenCalled();
+      expect(mockAddAnnotations).not.toHaveBeenCalled();
+    });
+
+    it("selects the new annotations when individual annotations were copied", async () => {
+      mockDataItems.push(makeAnn("bbox-001"), makeAnn("bbox-002"));
+      mockSelectedAnnotationIds.add("bbox-001");
+      mockSelectedAnnotationIds.add("bbox-002");
+      mockCurrentFrameValue.value = 15;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      copyCallback().do();
+      await pasteCallback().do();
+
+      expect(mockCreateFn).toHaveBeenCalledTimes(2);
+      const createdIds = mockCreateFn.mock.calls.map((c: any[]) => c[0].id);
+
+      expect(clipboard.selectionKind).toBe("annotation");
+      expect(mockSelectAnnotations).toHaveBeenCalledTimes(1);
+      expect(mockSelectAnnotations).toHaveBeenCalledWith(createdIds);
+      expect(mockSelectGroups).not.toHaveBeenCalled();
+    });
+
+    it("treats a group selection as the whole copy, even if annotation ids linger", async () => {
+      // Selection is either a group or annotations, never both — but the two
+      // sets are independent, so pin down which one wins.
+      const lone = makeAnn("bbox-001", {
+        shape: {
+          type: "idah-video:bounding-box",
+          start: 12,
+          end: 18,
+          frames: [
+            { frame: 12, angle: 0, points: [[0, 0], [100, 100]] },
+            { frame: 18, angle: 0, points: [[10, 10], [90, 90]] },
+          ],
+        },
+      });
+      mockDataItems.push(makeGroupedSegment("seg-a", 10, 20), lone);
+      mockSelectedGroupIds.add(TRACK_ID);
+      mockSelectedAnnotationIds.add("bbox-001");
+      mockCurrentFrameValue.value = 15;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      copyCallback().do();
+
+      // Only the group member is copied; the stray annotation is ignored.
+      expect(clipboard.selectionKind).toBe("group");
+      expect(clipboard.annotations).toHaveLength(1);
+      expect((clipboard.annotations![0].shape as any).start).toBe(10);
+
+      await pasteCallback().do();
+
+      expect(mockCreateFn).toHaveBeenCalledTimes(1);
+      expect(mockSelectGroups).toHaveBeenCalledWith([mockCreateFn.mock.calls[0][0].metadata.group_id]);
+      expect(mockSelectAnnotations).not.toHaveBeenCalled();
+      expect(mockAddAnnotations).not.toHaveBeenCalled();
     });
   });
 });

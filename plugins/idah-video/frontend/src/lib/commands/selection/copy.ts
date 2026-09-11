@@ -12,6 +12,7 @@
 import { data } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { clipboard } from "$lib/state/clipboard.svelte";
+import type { ClipboardAnnotation, ClipboardSelectionKind } from "$lib/state/clipboard.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
 import { ENTRY_ROOT } from "$lib/types";
@@ -49,33 +50,31 @@ export function register(driver: IIdahDriverV2): void {
 
           const copyFrame = viewport.video.currentFrame.value;
 
-          // Copy only what is selected: a selected annotation alone, a selected
-          // group whole. Track selection (track id = group id) is the track copy.
-          const selectedIds = new Set(selection.selectedAnnotationIds);
+          // A selection is either a group selection or an annotation selection,
+          // never both. That one fact decides what gets copied, how the frame
+          // coverage is validated, and how paste re-selects the result — so
+          // resolve it once, up front.
           const selectedGids = new Set(selection.selectedGroupIds);
+          const selectedIds = new Set(selection.selectedAnnotationIds);
+          const selectionKind: ClipboardSelectionKind = selectedGids.size > 0 ? "group" : "annotation";
 
-          const copySet = new Set<string>();
-          const entries: {
-            shape: Record<string, unknown>;
-            value: Record<string, unknown> | undefined;
-            metadata: Record<string, unknown> | undefined;
-            centroidOffset: [number, number];
-            groupId: string;
-          }[] = [];
+          const groupIdOf = (ann: (typeof all)[number]) => (ann.metadata as any)?.group_id ?? ann.id;
 
-          for (const ann of all) {
-            const gid = (ann.metadata as any)?.group_id ?? ann.id;
-            if ((selectedIds.has(ann.id) || selectedGids.has(gid)) && !copySet.has(ann.id)) {
-              copySet.add(ann.id);
-              entries.push({
-                shape: { ...(ann.shape as any) },
-                value: ann.value ? { ...(ann.value as any) } : undefined,
-                metadata: ann.metadata ? { ...(ann.metadata as any) } : undefined,
-                centroidOffset: [0, 0], // computed below
-                groupId: gid,
-              });
-            }
-          }
+          // A group copies whole (track selection — track id = group id),
+          // including members the user never selected individually and members
+          // outside the current frame. An annotation copies alone.
+          const isCopied =
+            selectionKind === "group"
+              ? (ann: (typeof all)[number]) => selectedGids.has(groupIdOf(ann))
+              : (ann: (typeof all)[number]) => selectedIds.has(ann.id);
+
+          const entries: ClipboardAnnotation[] = all.filter(isCopied).map((ann) => ({
+            shape: { ...(ann.shape as any) },
+            value: ann.value ? { ...(ann.value as any) } : undefined,
+            metadata: ann.metadata ? { ...(ann.metadata as any) } : undefined,
+            centroidOffset: [0, 0], // computed below
+            groupId: groupIdOf(ann),
+          }));
 
           if (entries.length === 0) return;
 
@@ -90,33 +89,28 @@ export function register(driver: IIdahDriverV2): void {
             return;
           }
 
-          // Check 2: Frame-coverage validation, group-aware.
+          // Check 2: Frame-coverage validation, per selection kind.
           //
-          // Individually selected entries (their group_id is NOT in
-          // selectedGids) must each cover copyFrame themselves — same
-          // strict rule as before.
+          // An annotation copy is strict: every entry must cover copyFrame
+          // itself.
           //
-          // Group-selected entries (their group_id IS in selectedGids)
-          // only need at least ONE member of that group (the "anchor")
-          // to cover copyFrame. Non-anchor members are copied anyway;
-          // their keyframes will be shifted by the same delta at paste
-          // time, preserving relative timing within the track.
+          // A group copy only needs at least ONE member of each group (the
+          // "anchor") to cover copyFrame. Non-anchor members are copied
+          // anyway; their keyframes will be shifted by the same delta at
+          // paste time, preserving relative timing within the track.
           const outOfRange = (e: (typeof entries)[number]) => {
             const s = e.shape as any;
             return (s.start as number) > copyFrame || (s.end as number) < copyFrame;
           };
 
-          const individuallySelected = entries.filter((e) => !selectedGids.has(e.groupId));
-          const hasIndividualOutOfRange = individuallySelected.some(outOfRange);
+          const hasOutOfRange =
+            selectionKind === "group"
+              ? Array.from(selectedGids).some((gid) => {
+                  const members = entries.filter((e) => e.groupId === gid);
+                  return members.length > 0 && !members.some((e) => !outOfRange(e));
+                })
+              : entries.some(outOfRange);
 
-          const groupSelectedEntries = entries.filter((e) => selectedGids.has(e.groupId));
-          const hasGroupWithoutAnchor = Array.from(selectedGids).some((gid) => {
-            const members = groupSelectedEntries.filter((e) => e.groupId === gid);
-            if (members.length === 0) return false;
-            return !members.some((e) => !outOfRange(e));
-          });
-
-          const hasOutOfRange = hasIndividualOutOfRange || hasGroupWithoutAnchor;
           if (hasOutOfRange) {
             clipboard.clear();
             showToast.error({
@@ -159,7 +153,7 @@ export function register(driver: IIdahDriverV2): void {
           }
 
           // Store in clipboard with copyFrame
-          clipboard.store(entries, centroid, copyFrame);
+          clipboard.store(entries, centroid, copyFrame, selectionKind);
 
           showToast.success({
             title: "Copied",

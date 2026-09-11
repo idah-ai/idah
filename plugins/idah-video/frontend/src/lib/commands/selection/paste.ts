@@ -53,6 +53,8 @@ export function register(driver: IIdahDriverV2): void {
 
       const clipboardData = clipboard.annotations!;
       const centroid = clipboard.centroid;
+      // Captured with the data: the clipboard may be replaced before a redo.
+      const clipboardKind = clipboard.selectionKind;
 
       // Resolve the paste position ONCE at callback time (when the command is
       // first invoked by call()).  This ensures undo/redo always paste at the
@@ -65,12 +67,16 @@ export function register(driver: IIdahDriverV2): void {
 
       // Shared between do() and undo() — tracks the IDs created by this paste.
       const createdIds: string[] = [];
+      // New group ids minted by this paste, in creation order — used to restore
+      // a group selection when the copy was made from one.
+      const createdGroupIds: string[] = [];
 
       return {
         command: { ...command },
         async do() {
           // Reset from any previous redo cycle
           createdIds.length = 0;
+          createdGroupIds.length = 0;
           let skippedDuplicateTagCount = 0;
           let skippedOutOfBoundsCount = 0;
 
@@ -173,14 +179,21 @@ export function register(driver: IIdahDriverV2): void {
                 metadata: newMetadata,
               } as any);
               createdIds.push(newId);
+              if (!createdGroupIds.includes(newGroupId)) createdGroupIds.push(newGroupId);
             } catch (err) {
               console.error("Paste: failed to create annotation", err);
             }
           }
 
-          // Select the newly created annotations
+          // ── Restore the copy-time selection kind ─────────────────────
+          // A group copy re-selects the new groups (so the whole pasted track
+          // stays selected); an annotation copy re-selects the new annotations.
           if (createdIds.length > 0) {
-            selection.selectAnnotations(createdIds);
+            if (clipboardKind === "group") {
+              selection.selectGroups(createdGroupIds);
+            } else {
+              selection.selectAnnotations(createdIds);
+            }
           }
 
           // ── Toast based on how many entries were actually created ────
@@ -238,8 +251,12 @@ export function register(driver: IIdahDriverV2): void {
               await data.annotations.delete(id);
             }
           }
-          // Restore previous selection if the pasted set is no longer valid.
-          if (selection.selectedAnnotations.every((a) => createdIds.includes(a.id))) {
+          // Clear the selection if it only ever pointed at what this paste
+          // created — either kind, depending on how the paste re-selected.
+          const selectsOnlyPasted =
+            selection.selectedAnnotations.every((a) => createdIds.includes(a.id)) &&
+            Array.from(selection.selectedGroupIds).every((gid) => createdGroupIds.includes(gid));
+          if (selectsOnlyPasted) {
             selection.deselect();
           }
         },

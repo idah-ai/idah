@@ -187,6 +187,15 @@ export const selection = {
   },
 
   /**
+   * Select several groups at once, replacing any current selection.
+   * Plural counterpart of selectAnnotations.
+   */
+  selectGroups(groupIds: string[]): void {
+    _selectedGroupIds = new Set(groupIds);
+    _selectedAnnotationIds = new Set();
+  },
+
+  /**
    * Toggle a group in/out of the timeline group selection.
    * Unlike selectGroup, this does NOT clear annotation selection —
    * timeline group multi-selection is independent of viewport shapes.
