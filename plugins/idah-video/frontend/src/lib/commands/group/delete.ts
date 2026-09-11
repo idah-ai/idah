@@ -1,8 +1,17 @@
 // ---------------------------------------------------------------------------
-// idah-video:annotation.group.delete — Delete all annotations in a group
-// Undoable: restores all annotations.
+// idah-video:annotation.group.delete — Delete an explicit list of annotations,
+// or all annotations in a group.
+// Undoable: restores all deleted annotations.
+//
+// This is the shared primitive for "delete this explicit list of annotations":
+// pass `annotations` (optionally with a `groupId` for keyboard/palette context)
+// and the list is deleted directly. When only `groupId` is given, the members
+// are resolved from the data store by group id.
 //
 // Usage:
+//   driver.command.call("idah-video:annotation.group.delete", {
+//     annotations: [ ... ]            // delete exactly these
+//   });
 //   driver.command.call("idah-video:annotation.group.delete", {
 //     groupId: "...", annotations?: [ ... ]
 //   });
@@ -14,6 +23,7 @@ import { noopAction } from "..";
 import { selection } from "$lib/state/selection.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "idah-video:annotation.group.delete",
@@ -25,7 +35,9 @@ export const command = {
 };
 
 export interface GroupDeleteProps {
-  groupId: string;
+  /** Group id used to resolve members when `annotations` is not provided. */
+  groupId?: string;
+  /** Explicit list of annotations to delete. When non-empty, `groupId` is ignored. */
   annotations?: AnnotationItem[];
 }
 
@@ -62,7 +74,13 @@ export function register(driver: IIdahDriverV2): void {
 
       if (groupAnnotations.length === 0) return noopAction(command);
       // Locked groups must not be deletable — check member annotations so individually-locked annotations are also caught.
-      if (groupAnnotations.some((ann) => annotation.isLocked(ann))) return noopAction(command);
+      if (groupAnnotations.some((ann) => annotation.isLocked(ann))) {
+        showToast.warning({
+          title: "Cannot delete group",
+          description: "One or more annotations in this group are locked.",
+        });
+        return noopAction(command);
+      }
 
       const snapshot = [...groupAnnotations];
 
@@ -75,7 +93,13 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          const creations = snapshot.map((ann) => data.annotations!.create({ ...ann, id: ann.id }));
+          const creations = snapshot.map((ann) =>
+            data.annotations!.create({
+              ...ann,
+              id: ann.id,
+              metadata: (ann as any).metadata ?? {},
+            }),
+          );
           await Promise.all(creations);
         },
         isCombinable() {

@@ -171,11 +171,11 @@ module Exports
           "Updated-At" => attributes[:updated_at],
         )
 
-        # Write dimensions to a temporary file and pass it via --shape @file
+        # Write shape_args to a temporary file and pass it via --shape @file
         # to avoid "Argument list too long" errors when the shape JSON is large.
         # The @filename prefix convention is the same as curl's -d @file.
         Tempfile.create(["shape", ".json"]) do |file|
-          file.write(dimensions.to_json)
+          file.write(annotation.record.shape_args.to_json)
           file.close
 
           # Create annotation in UPD
@@ -190,7 +190,7 @@ module Exports
             "--entry_id",
             entry_id,
             "--type",
-            type,
+            annotation.record.shape_type,
             "--shape",
             "@#{file.path}",
             "--category",

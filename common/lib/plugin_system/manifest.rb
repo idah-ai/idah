@@ -20,6 +20,7 @@ module PluginSystem
       end
 
       field? :shapes, Hash, of: shape_type
+      field? :tagging, Hash, of: shape_type
     end
 
     field? :repository do

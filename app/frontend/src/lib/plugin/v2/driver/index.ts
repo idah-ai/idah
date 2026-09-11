@@ -56,7 +56,7 @@ function sortConfigByOrder(config: IConfig): IConfig {
 export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
-  private readonly accountSettingsMgr = new AccountSettingsManager();
+  private readonly accountSettingsMgr: AccountSettingsManager;
   private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
@@ -110,6 +110,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._config = sortConfigByOrder(opts.config);
     this._workflowStep = opts.workflowStep;
     this._entryStatus = opts.entryStatus;
+    this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
     });

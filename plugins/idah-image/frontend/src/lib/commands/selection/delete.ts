@@ -30,23 +30,27 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: () => {
       if (!isEditable() || viewport.isReviewWorkspace) return noopAction(command);
-      const sel = selection.value;
-      if (!sel || !data.annotations) return noopAction(command);
+      const selected = selection.selectedAnnotations;
+      if (selected.length === 0 || !data.annotations) return noopAction(command);
 
-      const record = sel as AnnotationItem;
+      const records = selected as AnnotationItem[];
+      const ids = records.map((r) => r.id);
       return {
         command: { ...command },
         async do() {
           selection.deselect();
-          // Free cached mask bitmaps if this is a mask annotation
-          if (record.shape_type === IMAGE_MASK) {
-            invalidateAll(record.id);
+          // Free cached mask bitmaps if any are mask annotations
+          for (const record of records) {
+            if (record.shape_type === IMAGE_MASK) {
+              invalidateAll(record.id);
+            }
           }
-          await data.annotations!.delete(record.id);
+          // Delete all selected annotations
+          await Promise.all(ids.map((id) => data.annotations!.delete(id)));
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.restore(record.id);
+          await Promise.all(records.map((record) => data.annotations!.restore(record.id)));
         },
         isCombinable() { return false; },
         combine(p) { return p; },

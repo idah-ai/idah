@@ -26,7 +26,7 @@
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
-  import type { ModalityShapes } from "@/data/model/setting/plugin/types";
+  import type { ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
   import type { ProjectMemberScope, Resource, Scope } from "@/security/types";
 
   // Contexts
@@ -41,6 +41,8 @@
   let saving = $state(false);
   let modality = $state("");
   let shapes = $state<ModalityShapes>({});
+  let tagging = $state<ModalityTagging>({});
+  let modalityLabel = $state("");
   let loaded = $state(false);
   // Set right before re-triggering goto() from the modal so beforeNavigate doesn't re-block it.
   let bypassNavigationGuard = false;
@@ -81,6 +83,8 @@
 
     const showModalityRes = await pluginsBackendDataSource.showModality(modality);
     shapes = showModalityRes.shapes;
+    tagging = showModalityRes.tagging;
+    modalityLabel = showModalityRes.label ?? "";
 
     controller.load(datasetRes.data.labeling_configuration);
     loaded = true;
@@ -200,5 +204,14 @@
     {/snippet}
   </PageHeader>
 
-  <LabelConfigEditor {modality} {shapes} {controller} {permission} {datasetId} allowDuplicateToDatasets />
+  <LabelConfigEditor
+    {modality}
+    {shapes}
+    {tagging}
+    {modalityLabel}
+    {controller}
+    {permission}
+    {datasetId}
+    allowDuplicateToDatasets
+  />
 {/await}

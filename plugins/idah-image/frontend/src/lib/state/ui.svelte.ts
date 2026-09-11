@@ -59,9 +59,10 @@ class UIState {
   annotationOpacity = $state(100);
   imageOpacity = $state(100);
 
-  // Session-only for the same reason as opacity above — kept symmetrical with
-  // the other toolbar settings rather than joining the localStorage tier.
-  // Account-level persistence is a deliberate follow-up (see CU-869ef2pj0).
+  // Persisted per-plugin to account settings (not localStorage): hydrated from
+  // the account setting on init via settings.ts#hydrateSettings, and written back
+  // on change via the settings descriptor's set() (upsert). "never" is the
+  // fallback used before load completes or when unauthenticated.
   labelVisibility = $state<LabelVisibility>("never");
 
   isCommandDialogOpen = $state(false);

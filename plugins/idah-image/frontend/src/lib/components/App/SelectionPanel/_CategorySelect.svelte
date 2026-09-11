@@ -25,7 +25,7 @@
 
 <div class="flex flex-col gap-1">
   <Text size="sm" weight="semibold">Category</Text>
-  <Select type="single" {onValueChange} {disabled}>
+  <Select type="single" {onValueChange} {disabled} value={selectedCategory || undefined}>
     <SelectTrigger
       class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
     >

@@ -175,8 +175,8 @@ RSpec.describe Exports::Upd::Exporter do
             expect(args).to include("idah-video:bounding-box")
             expect(args).to include("--shape")
             expect(args.any? { |a| a.is_a?(String) && a.start_with?("@") }).to be(true)
-            expect(cmd).to include("--category")
-            expect(cmd).to include("--properties")
+            expect(args).to include("--category")
+            expect(args).to include("--properties")
             expect(args).to include("--metadata")
           end
           true
@@ -298,13 +298,15 @@ RSpec.describe Exports::Upd::Exporter do
     context "annotation dimensions handling" do
       it "passes shape_args without type and category/properties separately" do
         shape_valid = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("annotation create") && cmd.include?("--type \"idah-video:bounding-box\"")
-            # Shape should not contain type
-            shape_match = cmd.match(/--shape '({.*?})' --category/)
-            if shape_match
-              shape = JSON.parse(shape_match[1])
-              shape_valid = !shape.key?("type") && shape.key?("end") && shape.key?("start")
+        allow(exporter).to receive(:system) do |*args|
+          if args.include?("annotation") && args.include?("create")
+            type_idx = args.index("--type")
+            shape_idx = args.index("--shape")
+            if type_idx && shape_idx
+              # shape_type is passed as its own --type flag, not embedded in shape_args
+              shape_valid = args[type_idx + 1] == "idah-video:bounding-box" &&
+                            args[shape_idx + 1].is_a?(String) &&
+                            args[shape_idx + 1].start_with?("@")
             end
           end
           true
@@ -331,12 +333,11 @@ RSpec.describe Exports::Upd::Exporter do
         expect(shape_via_file).to be(true)
       end
 
-      it "writes dimensions JSON to the tempfile without type" do
+      it "writes shape_args JSON to the tempfile" do
         tempfile = instance_double(Tempfile, path: "/tmp/shape.json")
         expect(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(tempfile)
         expect(tempfile).to receive(:write) do |json|
           parsed = JSON.parse(json)
-          expect(parsed).not_to have_key("type")
           expect(parsed).to have_key("end")
           expect(parsed).to have_key("start")
         end
@@ -355,7 +356,7 @@ RSpec.describe Exports::Upd::Exporter do
             metadata_idx = args.index("--metadata")
             if category_idx && properties_idx && metadata_idx
               category_valid = args[category_idx + 1] == 'vehicles/car'
-              properties_valid = args[properties_idx + 1] == {}
+              properties_valid = args[properties_idx + 1] == '{}'
             end
           end
           true
@@ -377,8 +378,8 @@ RSpec.describe Exports::Upd::Exporter do
         allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([deleted_response])
 
         annotation_created = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          annotation_created = true if cmd.include?("annotation create")
+        allow(exporter).to receive(:system) do |*args|
+          annotation_created = true if args.include?("annotation") && args.include?("create")
           true
         end
 

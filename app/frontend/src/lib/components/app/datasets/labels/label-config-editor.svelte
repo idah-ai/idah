@@ -27,7 +27,7 @@
   import { humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
+  import type { ModalityShape, ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
   import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { Resource, Scope } from "@/security/types";
 
@@ -35,6 +35,9 @@
   interface Props {
     modality: string;
     shapes: ModalityShapes;
+    tagging: ModalityTagging;
+    /** Human-readable modality label from the plugin manifest (e.g. "Video"). */
+    modalityLabel: string;
     controller: LabelConfigController;
     permission: { resource: Resource; scopes: Scope[] };
     /** Whether to show the "duplicate configuration to other datasets" affordance
@@ -43,7 +46,16 @@
     /** Current dataset id, used to exclude it from the duplicate-to-datasets target list. */
     datasetId?: string;
   }
-  let { modality, shapes, controller, permission, allowDuplicateToDatasets = false, datasetId }: Props = $props();
+  let {
+    modality,
+    shapes,
+    tagging,
+    modalityLabel,
+    controller,
+    permission,
+    allowDuplicateToDatasets = false,
+    datasetId,
+  }: Props = $props();
 
   // Share the controller instance with descendants (CategoryTree reads its orderMap).
   setLabelConfigController(controller);
@@ -58,6 +70,30 @@
   let selectedLabelConfig = $derived(labelConfig[controller.selectedConfigKey] ?? null);
 
   let orderedConfigKeys = $derived(controller.getOrderedConfigKeys(labelConfig));
+
+  /** Group label for a config key: "Shapes", "Tagging", or null for unknown. */
+  function getConfigGroupLabel(labelConfigKey: string): string | null {
+    if (labelConfigKey === "entry:root") return "Tagging";
+    const shapeKey = labelConfigKey.split(":").slice(1).join(":");
+    if (shapeKey in shapes) return "Shapes";
+    if (shapeKey in tagging) return "Tagging";
+    return null;
+  }
+
+  /** Config keys grouped by their section, preserving display order. */
+  let orderedConfigGroups = $derived.by(() => {
+    const groups: Array<{ group: string | null; keys: string[] }> = [];
+    for (const key of orderedConfigKeys) {
+      const group = getConfigGroupLabel(key);
+      const last = groups[groups.length - 1];
+      if (last && last.group === group) {
+        last.keys.push(key);
+      } else {
+        groups.push({ group, keys: [key] });
+      }
+    }
+    return groups;
+  });
 
   /** Drag-and-drop reorder state for the shape (configuration) list. */
   let shapeDragState = $state<{
@@ -125,11 +161,21 @@
         };
       }),
     },
-    entry: {
-      label: "Entry",
+    tagging: {
+      label: "Tagging",
       items: [
+        ...Object.entries(tagging).map(([taggingKey, tag]) => {
+          return {
+            label: tag.label,
+            disabled: Object.keys(labelConfig).includes(`${modality}:${taggingKey}`),
+            action: () => {
+              controller.addLabelConfig(`${modality}:${taggingKey}`);
+              controller.selectedConfigKey = `${modality}:${taggingKey}`;
+            },
+          };
+        }),
         {
-          label: "Entry Root",
+          label: modalityLabel || "Root",
           disabled: Object.keys(labelConfig).includes("entry:root"),
           action: () => {
             controller.addLabelConfig("entry:root");
@@ -160,11 +206,20 @@
                   };
                 }),
               },
-              entry: {
-                label: "Entry",
+              tagging: {
+                label: "Tagging",
                 items: [
+                  ...Object.entries(tagging).map(([taggingKey, tag]) => {
+                    return {
+                      label: tag.label,
+                      disabled: labelConfigKey === `${modality}:${taggingKey}`,
+                      action: () => {
+                        controller.duplicateConfig(labelConfigKey, `${modality}:${taggingKey}`);
+                      },
+                    };
+                  }),
                   {
-                    label: "Entry Root",
+                    label: modalityLabel || "Root",
                     disabled: labelConfigKey === "entry:root",
                     action: () => {
                       controller.duplicateConfig(labelConfigKey, "entry:root");
@@ -190,9 +245,16 @@
   function getSelectLabelConfigLabel(selectedLabelConfigKey: string): string {
     if (!selectedLabelConfigKey) return "";
 
+    if (selectedLabelConfigKey === "entry:root") {
+      return `"${modalityLabel || "Root"}"`;
+    }
+
     const shapeKey = selectedLabelConfigKey.split(":").slice(1).join(":");
     const currentShape = shapes[shapeKey] as ModalityShape;
-    return currentShape ? `"${currentShape.label}"` : `"${humanize(shapeKey.replace(":", " "))}"`;
+    const currentTagging = tagging[shapeKey] as ModalityShape | undefined;
+    if (currentShape) return `"${currentShape.label}"`;
+    if (currentTagging) return `"${currentTagging.label}"`;
+    return `"${humanize(shapeKey.replace(":", " "))}"`;
   }
 
   function selectConfigKey(key: string) {
@@ -294,65 +356,80 @@
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
-        {#each orderedConfigKeys as labelConfigKey (labelConfigKey)}
-          {@const isSelect = controller.selectedConfigKey === labelConfigKey}
-          {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
-          {@const currentShape = shapes[shapeKey] as ModalityShape}
-          {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
-          <div
-            role="listitem"
-            class={cn("group/shape relative flex w-full items-center gap-1 rounded-md pr-5", {
-              "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:z-10 before:h-0.5":
-                shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "before",
-              "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:z-10 after:h-0.5":
-                shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "after",
-              "opacity-50": shapeDrag.draggedKey === labelConfigKey,
-            })}
-            ondragover={(e) => shapeDrag.over(e, labelConfigKey)}
-            ondragleave={shapeDrag.leave}
-            ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
-          >
-            <Can action="update" resource={permission.resource} scopes={permission.scopes}>
-              <span
-                role="button"
-                tabindex="-1"
-                aria-label="Drag to reorder configuration"
-                draggable="true"
-                class="shrink-0 cursor-grab opacity-0 transition-opacity duration-200 group-hover/shape:opacity-100 active:cursor-grabbing"
-                ondragstart={(e) => {
-                  e.dataTransfer?.setData("text/plain", labelConfigKey);
-                  if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-                  shapeDrag.start(labelConfigKey);
-                }}
-                ondragend={shapeDrag.end}
-              >
-                <GripVerticalIcon class="text-muted-foreground size-4" />
-              </span>
-            </Can>
+        {#each orderedConfigGroups as { group, keys } (group)}
+          {#if group}
+            <div class="text-muted-foreground mt-1 text-xs font-semibold tracking-wide uppercase first:mt-0">
+              {group}
+            </div>
+          {/if}
 
-            <Button
-              variant={isSelect ? "default" : "secondary"}
-              class="group w-full justify-start pr-1"
-              onclick={() => selectConfigKey(labelConfigKey)}
+          {#each keys as labelConfigKey (labelConfigKey)}
+            {@const isSelect = controller.selectedConfigKey === labelConfigKey}
+            {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
+            {@const currentShape = shapes[shapeKey] as ModalityShape}
+            {@const currentTagging = tagging[shapeKey] as ModalityShape | undefined}
+            {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
+            <div
+              role="listitem"
+              class={cn("group/shape relative flex w-full items-center gap-1 rounded-md pr-5", {
+                "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:z-10 before:h-0.5":
+                  shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "before",
+                "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:z-10 after:h-0.5":
+                  shapeDrag.dragOverKey === labelConfigKey && shapeDrag.dropPosition === "after",
+                "opacity-50": shapeDrag.draggedKey === labelConfigKey,
+              })}
+              ondragover={(e) => shapeDrag.over(e, labelConfigKey)}
+              ondragleave={shapeDrag.leave}
+              ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
             >
-              {currentShape ? currentShape.label : humanize(labelConfigKeyDisplay)}
+              <Can action="update" resource={permission.resource} scopes={permission.scopes}>
+                <span
+                  role="button"
+                  tabindex="-1"
+                  aria-label="Drag to reorder configuration"
+                  draggable="true"
+                  class="shrink-0 cursor-grab opacity-0 transition-opacity duration-200 group-hover/shape:opacity-100 active:cursor-grabbing"
+                  ondragstart={(e) => {
+                    e.dataTransfer?.setData("text/plain", labelConfigKey);
+                    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+                    shapeDrag.start(labelConfigKey);
+                  }}
+                  ondragend={shapeDrag.end}
+                >
+                  <GripVerticalIcon class="text-muted-foreground size-4" />
+                </span>
+              </Can>
 
-              <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
-                {#snippet trigger({ props })}
-                  <Button
-                    {...props}
-                    variant="ghost"
-                    size="icon-sm"
-                    class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
-                      "opacity-100": props["data-state"] === "open",
-                    })}
-                  >
-                    <EllipsisVerticalIcon />
-                  </Button>
-                {/snippet}
-              </DropdownMenus>
-            </Button>
-          </div>
+              <Button
+                variant={isSelect ? "default" : "secondary"}
+                class="group w-full justify-start pr-1"
+                onclick={() => selectConfigKey(labelConfigKey)}
+              >
+                {currentShape
+                  ? currentShape.label
+                  : currentTagging
+                    ? currentTagging.label
+                    : labelConfigKey === "entry:root" && modalityLabel
+                      ? modalityLabel
+                      : humanize(labelConfigKeyDisplay)}
+
+                <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
+                  {#snippet trigger({ props })}
+                    <Button
+                      {...props}
+                      variant="ghost"
+                      size="icon-sm"
+                      class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
+                        "opacity-100": props["data-state"] === "open",
+                      })}
+                    >
+                      <EllipsisVerticalIcon />
+                    </Button>
+                  {/snippet}
+                </DropdownMenus>
+              </Button>
+            </div>
+          {/each}
         {:else}
           <ResponseBlock
             title="No label configurations Yet"

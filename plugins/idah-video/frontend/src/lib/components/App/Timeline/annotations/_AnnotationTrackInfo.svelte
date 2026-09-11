@@ -20,6 +20,7 @@
   import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { annotation } from "$lib/state/annotation.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -36,10 +37,7 @@
     const ann = items[0]?.rawData;
     return ann ? resolveAnnotationColor(ann) : "gray";
   });
-  let isGroupSelected = $derived.by(() => {
-    const v = selection.value;
-    return v?.type === "group" && v.groupId === id;
-  });
+  let isGroupSelected = $derived(selection.isGroupSelected(id));
   let isGroupHidden = $derived(annotation.isHidden(id));
   let isGroupLocked = $derived(annotation.isLocked(id));
   let showTooltip = $derived(isGroupHidden || title.length > 17);
@@ -55,7 +53,12 @@
 
     if (viewport.isReviewWorkspace) return;
 
-    selectAnnotationGroup();
+    // If this group is not already selected, select it (replacing current selection).
+    // If it IS already selected, preserve the multi-selection.
+    if (!selection.isGroupSelected(id)) {
+      sidebarTabs.rightTab = "annotations";
+      selectAnnotationGroup();
+    }
 
     const contextMenuProps: ContextMenuComponentProps = {
       track,
@@ -64,11 +67,20 @@
     showContextMenu(TrackInfoContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
 
-  function handleClick() {
+  function handleClick(e: MouseEvent) {
     /**
-     * Select annotation group only — don't change the current drawing mode
+     * Select annotation group — Shift+Click toggles the group in/out
+     * of the timeline group selection (same modifier as viewport multi-select).
+     * Plain click replaces the selection with this single group (existing behaviour).
      */
-    selectAnnotationGroup();
+    // Clicking an annotation row while on the Tagging tab should surface the
+    // Annotations tab so the selected annotation is visible/editable there.
+    sidebarTabs.rightTab = "annotations";
+    if (e.shiftKey) {
+      selection.toggleGroup(id);
+    } else {
+      selectAnnotationGroup();
+    }
   }
 </script>
 

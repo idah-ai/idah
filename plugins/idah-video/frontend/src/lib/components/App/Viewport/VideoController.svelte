@@ -206,12 +206,11 @@
         size="icon-sm"
         disabled={disabledSplitButton}
         onclick={() => {
-          const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
-          if (ann)
-            getDriver().command.call("idah-video:annotation.split", {
-              annotationId: ann.metadata?.id ?? ann.id,
-              at: viewport.video.currentFrame.value,
-            });
+          // No annotationId — the split command will batch-split
+          // all selected annotations when called without opts.
+          getDriver().command.call("idah-video:annotation.split", {
+            at: viewport.video.currentFrame.value,
+          });
         }}
       />
     {/if}

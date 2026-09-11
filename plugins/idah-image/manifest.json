@@ -11,7 +11,7 @@
   "modalities": [
     {
       "id": "idah-image",
-      "label": "Image files",
+      "label": "Image",
       "shapes": {
         "bounding-box": {
           "label": "Bounding Box",

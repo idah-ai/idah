@@ -1,6 +1,7 @@
 <script lang="ts">
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { normalizeRect } from "$lib/utils/math/bbox";
   import { centroid as centroidUtil, type Point } from "$lib/utils/math/point";
@@ -8,6 +9,7 @@
   import { hover } from "$lib/state/hover.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import BBoxHandler from "./BoundingBox/_BBoxHandler.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
   import {
     boundingBoxHandle,
     inverseRotatePointN,
@@ -24,6 +26,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
@@ -34,6 +37,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
@@ -112,7 +116,13 @@
   // ── Display points ────────────────────────────────────────────────────
   let displayPoints = $derived.by((): Point[] => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return points.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
     }
     return points;
   });
@@ -256,7 +266,7 @@
   const HANDLE_RADIUS_PX_SQR = HANDLE_RADIUS_PX * HANDLE_RADIUS_PX;
   const ROTATE_RADIUS_PX_SQR = ROTATE_RADIUS_PX * ROTATE_RADIUS_PX;
 
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable || points.length !== 4) return false;
 
     // Inverse-rotate the cursor so we can test against the unrotated AABB.
@@ -402,6 +412,12 @@
       // In review mode, let the event bubble for panning
       if (viewport.mode === "review") return;
 
+      // Shift+Drag over a shape that isn't part of an editable selection is a
+      // rectangle selection: let it bubble to the container. When the shape IS
+      // selected and editable, shift keeps its old meaning — grab and move the
+      // selection — so multi-shape drags still start here.
+      if (e.shiftKey && !(editable && selected)) return;
+
       if (editable && selected && cursor) {
         startSelection(cursor);
       }
@@ -409,8 +425,25 @@
     }}
   />
 
-  {#if editable && selected && !isEditing && displayPoints.length === 4}
+  <!-- Pixel dimension label at top-left corner of the bounding box -->
+  {#if selected || selection.isAnnotationSelected(annotation.id) || hover.isHovered(annotation.id)}
+    {@const allX = displayPoints.map((p) => p[0])}
+    {@const allY = displayPoints.map((p) => p[1])}
+    {@const minX = Math.min(...allX)}
+    {@const minY = Math.min(...allY)}
+    {@const maxX = Math.max(...allX)}
+    {@const maxY = Math.max(...allY)}
+    {@const pxW = ((maxX - minX) * w).toFixed(0)}
+    {@const pxH = ((maxY - minY) * h).toFixed(0)}
+    <DimensionLabel x={minX * w} y={minY * h} text="{pxW} × {pxH}" />
+  {/if}
+
+  <!-- Handles hide while the shape is edited, and while ANY shape in a multi-selection
+       is dragged: multiDragDelta is non-null for the whole group drag, so the read-only
+       dots on the shapes being carried along disappear with the dragged one's. -->
+  {#if editable && selected && !isEditing && !multiDragDelta && displayPoints.length === 4}
     <BBoxHandler
+      readOnly={selection.selectedAnnotationIds.size > 1}
       {displayPoints}
       {centroidN}
       {centroidPx}
