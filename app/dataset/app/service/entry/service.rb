@@ -276,7 +276,7 @@ module Entry
     end
 
     def workflow_callback(entry_id, payload)
-      system_entries_repo.transaction do
+      entries.transaction do
         entry = system_entries_repo.find!(entry_id, included: [:dataset, :annotations])
 
         # Validate callback token from workflow_configuration keyed by current wf_step

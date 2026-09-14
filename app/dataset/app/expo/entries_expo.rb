@@ -137,6 +137,7 @@ class EntriesExpo < BaseExpo
     output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
   end
   def workflow_callback
+    auth_context.mark_as_checked!
     entry_id = params[:id]
     attrs    = params.dig(:data, :attributes) || {}
 
