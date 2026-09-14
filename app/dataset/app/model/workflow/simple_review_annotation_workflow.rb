@@ -129,5 +129,9 @@ module Workflow
     def self.allowed_note_feed
       ["annotate", "review"]
     end
+
+    def self.external_steps
+      []
+    end
   end
 end

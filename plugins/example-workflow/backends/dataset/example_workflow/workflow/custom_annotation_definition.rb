@@ -54,6 +54,10 @@ module ExampleWorkflow
       def self.allowed_note_feed
         ["annotate", "review", "final_check"]
       end
+
+      def self.external_steps
+        []
+      end
     end
   end
 end

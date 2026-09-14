@@ -52,6 +52,7 @@
         name: null,
         modality: null,
         workflow_name: null,
+        workflow_configuration: {},
       },
     });
   }
@@ -60,6 +61,7 @@
     dataset.name = value.name;
     dataset.modality = value.modality;
     dataset.workflow_name = value.workflow_name;
+    dataset.workflow_configuration = (value.workflow_configuration as Hash) ?? {};
     selectedDatasetId = value.selectedDatasetId;
   }
 
@@ -91,7 +93,7 @@
           modality: dataset.modality,
           workflow_name: dataset.workflow_name,
           labeling_configuration: labelConfig,
-          workflow_configuration: {},
+          workflow_configuration: dataset.workflow_configuration ?? {},
         },
         relationships: {
           project: {
@@ -127,6 +129,7 @@
           modality: dataset.modality,
           workflow_name: dataset.workflow_name,
           labeling_configuration: labelConfig,
+          workflow_configuration: dataset.workflow_configuration ?? {},
         },
       },
       {

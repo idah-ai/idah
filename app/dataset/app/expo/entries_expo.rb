@@ -119,6 +119,30 @@ class EntriesExpo < BaseExpo
     service.error(entry_id, **opts)
   end
 
+  expose on_http(:post, "/:id/workflow_callback") do
+    desc "Callback from an external service. The external app sends back\n" \
+         "annotation updates and notes, then IDAH advances the entry\n" \
+         "workflow via the workflow's resolve_external event."
+    input do
+      field :id, String
+      field :data, Hash do
+        field :attributes, Hash do
+          field? :token, String
+          field? :annotations, Array
+          field? :notes, Array
+        end
+      end
+    end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
+  end
+  def workflow_callback
+    entry_id = params[:id]
+    attrs    = params.dig(:data, :attributes) || {}
+
+    service.workflow_callback(entry_id, attrs)
+  end
+
   expose on_resource_event(Resource::Media::Jobs, "completed")
   def on_job_completed
     job_id = message.content[:resource_id]

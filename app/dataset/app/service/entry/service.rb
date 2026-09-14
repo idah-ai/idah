@@ -6,8 +6,12 @@ module Entry
         datasets: Dataset::Repository,
         projects: Project::Repository,
         project_members: ProjectMember::Repository,
-        annotations: Annotation::Repository
-    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
+        annotations: Annotation::Repository,
+        note_feeds: NoteFeed::Repository
+    use_system system_datasets_repo: Dataset::Repository,
+               system_entries_repo: Entry::Repository,
+               system_annotations_repo: Annotation::Repository,
+               system_note_feeds_repo: NoteFeed::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -142,7 +146,7 @@ module Entry
     def submit(entry_id, **opts)
       # check self reviewing here, reject
       entries.transaction do
-        entry = entries.find!(entry_id, included: [:dataset])
+        entry = entries.find!(entry_id, included: [:dataset, :annotations])
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
 
@@ -268,6 +272,66 @@ module Entry
           end
           next
         end
+      end
+    end
+
+    def workflow_callback(entry_id, payload)
+      system_entries_repo.transaction do
+        entry = system_entries_repo.find!(entry_id, included: [:dataset, :annotations])
+
+        # Validate callback token from workflow_configuration keyed by current wf_step
+        wf_config = entry.dataset.workflow_configuration || {}
+        step_config = wf_config[entry.wf_step.to_sym] || wf_config[entry.wf_step] || {}
+        expected_tok = step_config[:callback_token] || step_config["callback_token"]
+
+        if expected_tok && payload[:token] != expected_tok
+          raise Verse::Error::Unauthorized, "Invalid or missing callback token"
+        end
+        # Apply annotation updates from external app
+        (payload[:annotations] || []).each do |anno_data|
+          existing = entry.annotations.find { |a| a.id == anno_data["id"] }
+          if existing
+            system_annotations_repo.update!(existing.id, {
+              annotation: anno_data["annotation"] || existing.annotation,
+              dimensions: anno_data["dimensions"] || existing.dimensions,
+              metadata: (existing.metadata || {}).merge(anno_data["metadata"] || {})
+            })
+          else
+            system_annotations_repo.create(
+              id: UUIDv7.generate,
+              entry_id: entry.id,
+              project_id: entry.project_id,
+              dataset_id: entry.dataset_id,
+              annotation: anno_data["annotation"] || {},
+              dimensions: anno_data["dimensions"] || {},
+              metadata: anno_data["metadata"] || {},
+              created_by_email: "external-service@idah.local"
+            )
+          end
+        end
+
+        # Create note_feeds from external app feedback
+        (payload[:notes] || []).each do |note_data|
+          system_note_feeds_repo.create(
+            id: UUIDv7.generate,
+            entry_id: entry.id,
+            project_id: entry.project_id,
+            dataset_id: entry.dataset_id,
+            annotation_id: note_data["annotation_id"],
+            anchor_type: note_data["anchor_type"] || "entry",
+            position: note_data["position"],
+            status: "pending",
+            content_md: note_data["body"] || note_data["content_md"] || "",
+            created_by_email: "external-service@idah.local"
+          )
+        end
+
+        # Advance workflow via dedicated callback event
+        entry_workflow = entry.dataset.entry_workflow.new(system_entries_repo, entry)
+        entry_workflow.resolve_external!
+
+        system_datasets_repo.update_progress!(entry.dataset.id)
+        system_entries_repo.find!(entry.id, included: [:dataset])
       end
     end
   end

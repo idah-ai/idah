@@ -19,3 +19,26 @@ export interface ModalityShape {
 export interface ModalityShapes {
   [modalityName: string]: ModalityShape;
 }
+
+export interface DatasetConfigField {
+  key: string;
+  label: string;
+  type: "string" | "password" | "number" | "boolean";
+  required?: boolean;
+  placeholder?: string;
+  description?: string;
+  default?: string | number | boolean;
+}
+
+export interface DatasetConfigGroup {
+  key: string;
+  label: string;
+  description?: string;
+  fields: DatasetConfigField[];
+}
+
+export interface DatasetConfigSchema {
+  /** The workflow name this config applies to */
+  workflow: string;
+  groups: DatasetConfigGroup[];
+}
