@@ -1,10 +1,13 @@
 import tailwindcss from "@tailwindcss/vite";
 import { svelteTesting } from "@testing-library/svelte/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { sentrySvelteKit } from "@sentry/sveltekit";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
+  // Source-map upload needs SENTRY_AUTH_TOKEN in the build environment;
+  // enable it once that is wired into CI/Dockerfile.
+  plugins: [sentrySvelteKit({ autoUploadSourceMaps: false }), tailwindcss(), sveltekit()],
   server: {
     fs: {
       allow: ["/app/frontend/build"],

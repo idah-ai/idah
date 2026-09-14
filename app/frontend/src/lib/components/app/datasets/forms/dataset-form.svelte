@@ -140,6 +140,7 @@
         displayKey="name"
         valueKey="id"
         searchable
+        clearable
         searchKeyWithOperation="name__match"
         hiddenChoices={dataset.id ? [dataset.id] : []}
         dataSource={datasetsBackendDataSource}

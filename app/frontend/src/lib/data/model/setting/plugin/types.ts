@@ -20,6 +20,10 @@ export interface ModalityShapes {
   [modalityName: string]: ModalityShape;
 }
 
+export interface ModalityTagging {
+  [taggingName: string]: ModalityShape;
+}
+
 export interface DatasetConfigField {
   key: string;
   label: string;

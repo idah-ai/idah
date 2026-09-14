@@ -36,8 +36,11 @@ import { register as registerViewportZoomIn } from "./viewport/zoom-in";
 import { register as registerViewportZoomOut } from "./viewport/zoom-out";
 
 import { register as registerSelectionCenter } from "./selection/center";
+import { register as registerSelectionCopy } from "./selection/copy";
 import { register as registerSelectionDelete } from "./selection/delete";
 import { register as registerSelectionGoto } from "./selection/goto";
+import { register as registerSelectionPaste } from "./selection/paste";
+import { register as registerSelectionBatchMove } from "./selection/batch_move";
 
 import { register as registerKeyframeAdd } from "./annotation/keyframe_add";
 import { register as registerKeyframeDelete } from "./annotation/keyframe_delete";
@@ -57,6 +60,7 @@ import { register as registerAnnotationGoToNextKeyframe } from "./annotation/go_
 import { register as registerAnnotationGoToPrevGroup } from "./annotation/go_to_prev_group";
 import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_to_prev_keyframe";
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
+import { viewport } from "$lib/state/viewport.svelte";
 import { register as registerAnnotationSplit } from "./annotation/split";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
@@ -67,6 +71,7 @@ import { register as registerToggleColorMode } from "./display/toggle-color-mode
 import { register as registerToggleDebugConsole } from "./display/toggle-debug-console";
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
+import { register as registerSidebarTab } from "./sidebar/sidebar_tab";
 import { register as registerTimelineFocus } from "./timeline/focus";
 import { register as registerTimelineGoToFirst } from "./timeline/go-to-first";
 import { register as registerTimelineGoToLast } from "./timeline/go-to-last";
@@ -82,6 +87,7 @@ import { register as registerCategoryToggleVisibilitySolo } from "./category/tog
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModePolygon } from "./mode/polygon";
+import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 /**
@@ -105,6 +111,9 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerSelectionDelete(driver);
   registerSelectionGoto(driver);
   registerSelectionCenter(driver);
+  registerSelectionCopy(driver);
+  registerSelectionPaste(driver);
+  registerSelectionBatchMove(driver);
 
   // ── Keyframe ──────────────────────────────────────────────────────────
   registerKeyframeAdd(driver);
@@ -124,7 +133,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
-  registerAnnotationSplit(driver);
+  registerAnnotationSplit(driver, () => viewport.video.currentFrame.value);
   registerAnnotationExtendPrev(driver);
   registerAnnotationExtendNext(driver);
   registerAnnotationGoToNextKeyframe(driver);
@@ -153,4 +162,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerToggleTimeDisplay(driver);
   registerToggleDebugConsole(driver);
   registerToggleRenderMode(driver);
+  registerSidebarTab(driver);
+
+  // ── Snap ─────────────────────────────────────────────────────────────
+  registerSnapMagneticToggle(driver);
 }

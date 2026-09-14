@@ -7,6 +7,7 @@ import {
   IMAGE_POLYGON,
   NOTE_MODE,
   REVIEW_MODE,
+  IMAGE_MASK,
 } from "$lib/types";
 import { getDriver } from "./driver.svelte";
 import { media } from "./media.svelte";
@@ -24,7 +25,7 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE].includes(this.#mode);
+    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_MASK].includes(this.#mode);
   }
   get isEditorWorkspace() {
     return this.#mode === DEFAULT_MODE;
@@ -49,6 +50,13 @@ class Viewport {
 
   /** Reference to the SVG element for screen coordinate calculations */
   svgElement: SVGSVGElement | null = $state(null);
+
+ /**
+   * Last known mouse cursor position in normalized media coords (0-1).
+   * Updated by ShapesContainer on every mousemove so commands like
+   * selection.paste can target the current cursor position.
+   */
+  cursor: [number, number] = $state([0.5, 0.5]);
 
   workspace = $state({
     transform: {

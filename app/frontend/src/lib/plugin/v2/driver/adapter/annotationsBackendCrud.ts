@@ -25,7 +25,8 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       const filters: Record<string, unknown> = { ...params.filters };
       const res = await annotationsBackendDataSource.list({
         filters,
-        pagination: { page: params.page, itemsPerPage: params.pageSize },
+        pagination: params.pagination,
+        sort: params.sort,
         noCache: true,
       });
       return { data: res.data.map(annotationRecordToV2) };
@@ -61,6 +62,13 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       await rpc.call({
         method: "delete",
         params: { id, entry_id: entryId },
+      });
+    },
+
+    async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+      await rpc.call({
+        method: "write_shape",
+        params: { annotation_id: annotationId, key, value: value ?? null },
       });
     },
   };
@@ -134,5 +142,23 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
       },
     });
     return result as unknown as IAnnotationRecord;
+  }
+
+  async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+    await this.rpc.call({
+      method: "write_shape",
+      params: { annotation_id: annotationId, key, value: value ?? null },
+    });
+  }
+
+  async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+    await Promise.all(
+      entries.map(({ key, value }) =>
+        this.rpc.call({
+          method: "write_shape",
+          params: { annotation_id: annotationId, key, value: value ?? null },
+        }),
+      ),
+    );
   }
 }

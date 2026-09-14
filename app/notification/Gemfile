@@ -29,6 +29,19 @@ gem "sinatra-contrib"
 gem "aasm"
 gem "bootsnap", "~> 1.16"
 
+# --- Observability (see common/gems/verse-otel and verse-sentry) ---
+gem "sentry-opentelemetry" # verse-sentry `tracing: otel` bridge
+gem "stackprof" # Sentry Profiles backend
+gem "verse-otel", github: "verse-rb/verse-otel", branch: "master"
+gem "verse-sentry", github: "verse-rb/verse-sentry", branch: "master"
+
+# OTel instrumentations enabled in config/config.yml (verse-otel keeps them
+# as soft dependencies, so each one must be declared here).
+gem "opentelemetry-instrumentation-net_http"
+gem "opentelemetry-instrumentation-pg"
+gem "opentelemetry-instrumentation-rack"
+gem "opentelemetry-instrumentation-sinatra"
+
 group :test do
   gem "rack-test"
   gem "rspec", "~> 3.0"

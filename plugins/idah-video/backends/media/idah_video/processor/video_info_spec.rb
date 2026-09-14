@@ -12,8 +12,8 @@ RSpec.describe IdahVideo::Processor::VideoInfo do
 
         expect(video_info.width).to eq(480)
         expect(video_info.height).to eq(270)
-        expect(video_info.duration).to be_within(0.1).of(30.52)
-        expect(video_info.fps).to be_within(0.1).of(30)
+        expect(video_info.duration).to eq(30.033333)
+        expect(video_info.fps).to eq(30.0)
       end
 
       it "calculates the ratio correctly" do

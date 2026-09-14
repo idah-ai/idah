@@ -152,6 +152,9 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
             description: "",
             shapes: {
               "shapeA" => { label: "Shape A", icon: "iconA.svg" }
+            },
+            tagging: {
+              "tagA" => { label: "Tag A", icon: "tagA.svg" }
             }
           }],
           entryPoints: {}
@@ -188,10 +191,16 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       output = service.show_modality("modA")
 
       expect(output).to eq(
-        { shapes: {
-          shapeA: { label: "Shape A", icon: "iconA.svg" },
-          shapeB: { label: "Shape B", icon: "iconB.svg" }
-        } }
+        {
+          shapes: {
+            shapeA: { label: "Shape A", icon: "iconA.svg" },
+            shapeB: { label: "Shape B", icon: "iconB.svg" }
+          },
+          tagging: {
+            tagA: { label: "Tag A", icon: "tagA.svg" }
+          },
+          label: "modality A"
+        }
       )
     end
   end

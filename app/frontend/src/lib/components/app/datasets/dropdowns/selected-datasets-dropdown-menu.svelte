@@ -6,16 +6,18 @@
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { selectedDatasets } from "@/components/app/datasets/stores";
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
+  import { pluralizeUnit } from "@/utils/unit";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ProjectMemberScope } from "@/security/types";
@@ -23,11 +25,9 @@
   // Variables
   let projectId = page.params.projectId as string;
   let selectedDatasetsCount = $derived($selectedDatasets.length);
-  let deleting = $state(false);
   let canExportDataset = $state(false);
   let canDeleteDataset = $state(false);
   let openExportFormModal = $state<boolean>(false);
-  let openConfirmDeleteDatasetsModal = $state<boolean>(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -44,9 +44,7 @@
           icon: Trash2Icon,
           destructive: true,
           hidden: !canDeleteDataset,
-          action: () => {
-            openConfirmDeleteDatasetsModal = true;
-          },
+          action: confirmDeleteDatasets,
         },
       ],
     },
@@ -72,28 +70,38 @@
       (await $authStatus.authContext?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   }
 
-  async function deleteDatasets() {
-    deleting = true;
+  async function confirmDeleteDatasets(): Promise<void> {
+    // Captured before the mutation: clearing $selectedDatasets resets selectedDatasetsCount to 0.
+    const count = selectedDatasetsCount;
 
-    try {
-      await Promise.all(
-        $selectedDatasets.map(async (dataset) => {
-          await datasetsBackendDataSource.delete(dataset.id);
-        }),
-      );
+    const choice = await showConfirmModal({
+      title: "Delete Datasets",
+      description: `Are you sure you want to delete ${count} ${pluralizeUnit(count, "dataset")}? This action cannot be undone.`,
+      confirmLabel: "Yes, Delete",
+      onConfirm: async () => {
+        try {
+          await Promise.all(
+            $selectedDatasets.map(async (dataset) => {
+              await datasetsBackendDataSource.delete(dataset.id);
+            }),
+          );
 
-      $refetches.datasets.list = new Date();
-      openConfirmDeleteDatasetsModal = false;
-      $selectedDatasets = [];
-      goto(resolve(`/projects/${projectId}/datasets`));
-      showToast.success({
-        title: "Datasets deleted",
-        description: `The ${selectedDatasetsCount} dataset${selectedDatasetsCount > 1 ? "s" : ""} have been deleted.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-      deleting = false;
-    }
+          $refetches.datasets.list = new Date();
+          $selectedDatasets = [];
+          showToast.success({
+            title: "Datasets deleted",
+            description: `The ${count} ${pluralizeUnit(count, "dataset")} have been deleted.`,
+          });
+        } catch (error) {
+          showActionFailedToast(error);
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
+    if (choice === ConfirmModalChoice.Cancel) return;
+
+    // Navigating inside `onConfirm` would run while the modal is still open.
+    goto(resolve(`/projects/${projectId}/datasets`));
   }
 </script>
 
@@ -114,15 +122,4 @@
     datasetRecords={$selectedDatasets}
     bind:open={openExportFormModal}
   />
-
-  <ConfirmModal
-    title="Delete Datasets"
-    description="Are you sure you want to delete {selectedDatasetsCount} dataset{selectedDatasetsCount > 1 ? 's' : ''}?"
-    onConfirm={deleteDatasets}
-    bind:open={openConfirmDeleteDatasetsModal}
-  >
-    {#snippet confirm()}
-      <Button variant="destructive" loading={deleting} onclick={deleteDatasets}>Yes, Delete</Button>
-    {/snippet}
-  </ConfirmModal>
 {/if}

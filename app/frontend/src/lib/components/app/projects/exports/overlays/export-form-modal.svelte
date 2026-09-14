@@ -8,8 +8,10 @@
   import { CommandItem } from "@/components/ui/command";
   import { DialogTitle } from "@/components/ui/dialog";
   import { Item, ItemContent, ItemDescription } from "@/components/ui/item";
+  import Label from "@/components/ui/label/label.svelte";
   import { ScrollArea } from "@/components/ui/scroll-area";
   import { Skeleton } from "@/components/ui/skeleton";
+  import Switch from "@/components/ui/switch/switch.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
@@ -35,11 +37,13 @@
   let exporting = $state<boolean>(false);
   let selectedExporter = $state<string>("");
   let selectedIncludeMedias = $state<string>("original");
+  let completedEntriesOnly = $state<boolean>(true);
 
   // Functions
   function resetForm(): void {
     selectedExporter = "";
     selectedIncludeMedias = "original";
+    completedEntriesOnly = true;
   }
 
   async function loadExportFormatChoices(): Promise<Array<LabelValue<string | number>>> {
@@ -65,6 +69,7 @@
         datasetIds: datasetRecords.map((record) => record.id),
         exporter: selectedExporter,
         includeMedias: selectedIncludeMedias,
+        completedEntries: completedEntriesOnly,
       });
 
       $exportingExportRecords = [createdExportRecordRes.data];
@@ -149,6 +154,18 @@
         </CommandItem>
       {/snippet}
     </SingleSelectField>
+
+    <!-- SWITCH TO EXPORT ONLY THE COMPLETED ENTRIES -->
+    <div class="flex items-center gap-2">
+      <Switch
+        id="export-completed-entries"
+        checked={completedEntriesOnly}
+        onCheckedChange={(checkedValue) => {
+          completedEntriesOnly = checkedValue;
+        }}
+      />
+      <Label for="export-completed-entries">Completed Entries Only</Label>
+    </div>
 
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="medium">Dataset(s)</Text>

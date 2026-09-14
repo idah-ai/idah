@@ -59,10 +59,10 @@ export function createEntryColumns(workflowSteps: LabelValue<string>[]): Columns
       sortable: true,
       filterable: true,
       filterOptions: {
-        filterKey: "assigned_to_id",
-        filterKeys: ["assigned_to_id", "assigned"],
+        filterKey: "assigned_to_email",
+        filterKeys: ["assigned_to_email__match", "assigned"],
         filterBy: "datasource",
-        filterOperation: "eq",
+        filterOperation: "match",
       },
       visible: true,
       hidable: false,

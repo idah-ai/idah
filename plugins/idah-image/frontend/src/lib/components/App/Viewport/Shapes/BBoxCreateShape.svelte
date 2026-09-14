@@ -11,7 +11,7 @@
 
   import { IMAGE_BOUNDING_BOX as IDAH_IMAGE_BOUNDING_BOX } from "$lib/types";
   import { hexToRgba } from "$lib/utils/color";
-
+  import DimensionLabel from "./DimensionLabel.svelte";
   import type { Point } from "$lib/utils/math/point";
 
   // ── Props ──────────────────────────────────────────────────────────────
@@ -65,8 +65,13 @@
       [x2, y2],
       [x1, y2],
     ];
-    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, {angle: 0}, undefined);
+    onSelection(IDAH_IMAGE_BOUNDING_BOX, points, { angle: 0 }, undefined);
     return true;
+  }
+
+  // ── Exported helpers to read creation progress ──────────────────────
+  export function getBuildStart(): Point | undefined {
+    return buildStart;
   }
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────
@@ -93,4 +98,10 @@
     stroke-dasharray="6,3"
     vector-effect="non-scaling-stroke"
   />
+  <!-- Dimension label during creation -->
+  {@const pxW = Math.abs(cx - sx).toFixed(0)}
+  {@const pxH = Math.abs(cy - sy).toFixed(0)}
+  {@const minX = Math.min(sx, cx)}
+  {@const minY = Math.min(sy, cy)}
+  <DimensionLabel x={minX} y={minY} text="{pxW} × {pxH}" />
 {/if}

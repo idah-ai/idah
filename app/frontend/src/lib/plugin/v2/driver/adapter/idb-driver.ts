@@ -13,6 +13,7 @@
 // The queue implementation is the caller's concern.
 // ---------------------------------------------------------------------------
 
+import type { ListOptions } from "@/data/DataSource";
 import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../../types";
 import { uuidv7 } from "uuidv7";
 
@@ -33,10 +34,12 @@ const EXPIRATION_PERIOD_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
  * serialisation are transport concerns, not consumer-facing API concerns.
  */
 export interface ICrudDriver<T extends { id: string }> {
-  list(params: { filters: Record<string, unknown>; page: number; pageSize: number }): Promise<{ data: T[] }>;
+  list(params: ListOptions): Promise<{ data: T[] }>;
   create(record: T): Promise<T>;
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── Minimal IDB helpers ──────────────────────────────────────────────────────
@@ -64,8 +67,10 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       for (const s of IDB_STORES) {
-        const os = db.createObjectStore(s.name, s.options);
-        for (const idx of s.indexes) os.createIndex(idx.name, idx.keyPath);
+        if (!db.objectStoreNames.contains(s.name)) {
+          const os = db.createObjectStore(s.name, s.options);
+          for (const idx of s.indexes) os.createIndex(idx.name, idx.keyPath);
+        }
       }
     };
   });
@@ -300,6 +305,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
         create: driver.create.bind(driver),
         update: driver.update.bind(driver),
         delete: driver.delete.bind(driver),
+        setShape: driver.setShape.bind(driver),
+        setShapes: driver.setShapes.bind(driver),
       };
     },
 
@@ -329,24 +336,32 @@ export const IdbBackedAnnotationsDriverAdapter = <
       }
 
       if (!synced) {
-        let lastUpdated = await idbGetLastUpdated(db, entryId);
+        const lastUpdated = await idbGetLastUpdated(db, entryId);
+        let currentLastUpdatedAt = lastUpdated;
         let page = 1,
           hasMore = true;
         while (hasMore) {
           const response = await backend.list({
             filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
-            page,
-            pageSize: SYNC_PAGE_SIZE,
+            // Sort by updated_at with `id` as a unique tiebreaker. Without the
+            // tiebreaker, records sharing an updated_at order inconsistently
+            // across the paginated requests, so ~1 record slips through each
+            // page boundary and never gets synced (missing annotations).
+            sort: ["updated_at", "id"],
+            pagination: {
+              page,
+              itemsPerPage: SYNC_PAGE_SIZE,
+            },
           });
           response.data.forEach((a) => {
             const updatedAt = new Date(a.updated_at || 0);
-            if (updatedAt > lastUpdated) lastUpdated = updatedAt;
+            if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
           });
           await idbUpsertBatch(db, entryId, response.data);
           hasMore = response.data.length === SYNC_PAGE_SIZE;
           page++;
         }
-        await idbSetLastUpdated(db, entryId, lastUpdated);
+        await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
         synced = true;
       }
 
@@ -373,6 +388,74 @@ export const IdbBackedAnnotationsDriverAdapter = <
       await idbCreate(db, entryId, record);
       enqueue(backend.create(record));
       return record;
+    },
+
+    async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+      // Store tiles directly in the annotation's shape field in the main
+      // annotations store (not in a separate annotation_shapes store).
+      // This mirrors how the backend returns annotations with tiles merged
+      // into `dimensions`, and how data.svelte.ts manages the in-memory
+      // shape. No separate merge step needed.
+      const db = await getDb();
+      const tx = db.transaction(["annotations"], "readwrite");
+      const store = tx.objectStore("annotations");
+
+      const getReq = store.get([entryId, annotationId]);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+          const shape = { ...(record.shape as Record<string, unknown>) };
+          if (value === null) {
+            delete shape[key];
+          } else {
+            shape[key] = value;
+          }
+          store.put({ ...record, entryId, shape, updated_at: new Date().toISOString() });
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
+      });
+
+      // Enqueue the backend sync
+      enqueue(backend.setShape(annotationId, key, value));
+    },
+
+    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+      if (entries.length === 0) return;
+      const db = await getDb();
+      const tx = db.transaction(["annotations"], "readwrite");
+      const store = tx.objectStore("annotations");
+
+      const getReq = store.get([entryId, annotationId]);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+          const shape = { ...(record.shape as Record<string, unknown>) };
+          for (const { key, value } of entries) {
+            if (value === null) {
+              delete shape[key];
+            } else {
+              shape[key] = value;
+            }
+          }
+          store.put({ ...record, entryId, shape, updated_at: new Date().toISOString() });
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
+      });
+
+      // Enqueue individual backend syncs
+      for (const { key, value } of entries) {
+        enqueue(backend.setShape(annotationId, key, value));
+      }
     },
   };
 };

@@ -4,7 +4,7 @@
 // Otherwise → hide ALL groups except the target one
 //
 // Usage:
-//   driver.command.call("annotation.toggle_group_visibility_solo", {
+//   driver.command.call("idah-video:annotation.group.toggle-visibility-solo", {
 //     groupId: "..."
 //   });
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import { selection } from "$lib/state/selection.svelte";
 import type { IAnnotationSelection, IAnnotationGroupSelection } from "$lib/state/selection.svelte";
 
 export const command = {
-  name: "annotation.toggle_group_visibility_solo",
+  name: "idah-video:annotation.group.toggle-visibility-solo",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "Shift+H",

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timeline.scroll_to_annotation — Pan the timeline to the current frame when
+// idah-video:timeline.scroll-to-annotation — Pan the timeline to the current frame when
 // it is outside the viewport, keeping the current zoom level.
 //
 // If `viewport.video.currentFrame` is already visible within the viewport
@@ -16,7 +16,7 @@ import { media } from "$lib/state/media.svelte";
 import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 
 export const command = {
-  name: "timeline.scroll_to_annotation",
+  name: "idah-video:timeline.scroll-to-annotation",
   group: "Timeline",
   modes: ["editor", "review"],
   shortcut: null,

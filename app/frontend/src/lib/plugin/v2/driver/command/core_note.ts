@@ -4,7 +4,7 @@ const disabledToolsIfWorkflowSteps = ["done"];
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "mode.note",
+    name: "core:tool.note",
     group: "Tools",
     modes: ["review", "note"],
     shortcut: "N",
@@ -13,7 +13,7 @@ export function register(driver: IdahDriverV2) {
     activeWhen: () => !disabledToolsIfWorkflowSteps.includes(driver.workflowStep),
     callback: () => ({
       command: {
-        name: "mode.note",
+        name: "core:tool.note",
         group: "Tools",
         modes: ["review", "note"],
         shortcut: "N",

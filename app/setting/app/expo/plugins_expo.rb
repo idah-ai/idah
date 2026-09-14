@@ -44,6 +44,8 @@ class PluginsExpo < BaseExpo
     output do
       field :data, Hash do
         field(:shapes, Hash).meta(description: "Mapping of shape names to their details")
+        field(:tagging, Hash).meta(description: "Mapping of tagging names to their details")
+        field(:label, String).meta(description: "Human-readable label of the modality")
       end
     end
   end

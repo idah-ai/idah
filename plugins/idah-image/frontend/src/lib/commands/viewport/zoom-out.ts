@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.zoom_out — Zoom out of the viewport
+// idah-image:viewport.zoom-out — Zoom out of the viewport
 // Shortcut: Minus (-/_ key)
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
-  name: "viewport.zoom_out",
+  name: "idah-image:viewport.zoom-out",
   group: "Viewport",
   modes: [DEFAULT_MODE, REVIEW_MODE] as string[],
   shortcut: "Minus",

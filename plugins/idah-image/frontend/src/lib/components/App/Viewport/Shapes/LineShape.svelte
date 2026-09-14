@@ -10,8 +10,10 @@
   //   • startSelection(point) → returns true if point is on the line/invisible area
   //   • endSelection(point) → finalises the edit
   // ---------------------------------------------------------------------------
+  import { hover } from "$lib/state/hover.svelte";
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
   import { type Point } from "$lib/utils/math/point";
@@ -26,6 +28,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps: Record<string, unknown>) => void;
@@ -36,6 +39,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
@@ -84,6 +88,9 @@
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
       return points.map((p) => [p[0] + panOffset[0], p[1] + panOffset[1]]) as Point[];
     }
+    if (multiDragDelta && selected) {
+      return points.map((p) => [p[0] + multiDragDelta[0], p[1] + multiDragDelta[1]]) as Point[];
+    }
     return points;
   });
 
@@ -111,7 +118,7 @@
   const HIT_RADIUS_PX = 12; // Wide invisible hit zone for easier line selection
 
   // ── Selection API ─────────────────────────────────────────────────────
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable || points.length < 2) return false;
 
     // Check if cursor is within hit radius of the line
@@ -144,6 +151,10 @@
     _localPoints = undefined;
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   function handleStartResize(endpointIndex: number) {
     dragEndpointIndex = endpointIndex;
     _localPoints = [...points];
@@ -156,8 +167,6 @@
     editable && selected ? "cursor-grab" :
     "cursor-pointer"
   );
-
-  let over = $state(false);
 </script>
 
 {#if displayPoints.length >= 2}
@@ -172,8 +181,8 @@
     stroke-width={24}
     vector-effect="non-scaling-stroke"
     style:outline="none"
-    onmouseenter={() => (over = true)}
-    onmouseleave={() => (over = false)}
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     role="button"
     tabindex="-1"
@@ -181,6 +190,13 @@
     onmousedown={(e) => {
       if (viewport.isCreationMode) return;
       if (viewport.mode === "review") return;
+
+      // Shift+Drag over a shape that isn't part of an editable selection is a
+      // rectangle selection: let it bubble to the container. When the shape IS
+      // selected and editable, shift keeps its old meaning — grab and move the
+      // selection — so multi-shape drags still start here.
+      if (e.shiftKey && !(editable && selected)) return;
+
       if (editable && selected) {
         const svg = (e.currentTarget as SVGElement).ownerSVGElement;
         if (svg) {
@@ -230,8 +246,9 @@
   />
 
   <!-- Handles when selected -->
-  {#if editable && selected && displayPoints.length >= 2}
+  {#if editable && selected && !multiDragDelta && displayPoints.length >= 2}
     <LineHandler
+      readOnly={selection.selectedAnnotationIds.size > 1}
       displayPoints={displayPoints}
       {color}
       {isEditing}

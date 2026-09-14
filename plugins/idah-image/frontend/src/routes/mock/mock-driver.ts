@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 import type {
   IAccountSettingsDriverV2,
+  ISettingsDriverV2,
   IAnnotationRecord,
   IAnnotationsDriverV2,
   ICommandAction,
@@ -198,6 +199,14 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void {
     this.mgr.orderGroups(mode, groups);
   }
+
+  get revision(): number {
+    return this.mgr.revision;
+  }
+
+  invalidate(): void {
+    this.mgr.invalidate();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -226,6 +235,14 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
 
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
+  }
+
+  async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+    // Mock adapter: no-op for now
+  }
+
+  async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+    // Mock adapter: no-op for now
   }
 }
 
@@ -355,6 +372,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
   readonly toolbar: IToolbarDriverV2;
   readonly annotations: IAnnotationsDriverV2<IImageAnnotationShape, IImageAnnotationValue>;
   readonly notes: INotesDriverV2;
+  // STUB (standalone dev): the real settings driver lives in core; the mock only
+  // needs to accept registrations so the plugin's registerSettings() call in
+  // init() doesn't crash. There's no topbar here, so nothing renders.
+  readonly settings: ISettingsDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
 
   // ── Activity context (mutable) ────────────────────────────────────────
@@ -370,6 +391,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     meta: { duration: 0, fps: 0, width: 1920, height: 1080 },
   };
   private _workflowStep = "annotate";
+  private _entryStatus = "in_progress";
   private _mode = DEFAULT_MODE;
   private _ready = false;
 
@@ -394,6 +416,13 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     // Account settings — the manager implements IAccountSettingsDriverV2 directly.
     this.accountSettings = this.accountSettingsMgr;
 
+    // STUB (standalone dev): accept setting registrations but render nothing —
+    // the topbar that consumes these lives in core, not in this mock harness.
+    this.settings = {
+      register: () => {},
+      invalidate: () => {},
+    };
+
     // Hand the live override map to the dispatcher. AccountSettingsManager
     // mutates it in place, so the dispatcher sees overrides without re-wiring.
     this.commandMgr.attachOverrides(this.accountSettingsMgr.getShortcutOverrides());
@@ -404,7 +433,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     const driver = this;
 
     this.command.register({
-      name: "core.undo",
+      name: "core:history.undo",
       group: "General",
       modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Control+Z",
@@ -412,7 +441,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
       longDescription: "Undo the last action",
       callback: () => ({
         command: {
-          name: "core.undo",
+          name: "core:history.undo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -432,7 +461,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     });
 
     this.command.register({
-      name: "core.redo",
+      name: "core:history.redo",
       group: "General",
       modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Control+Shift+Z",
@@ -440,7 +469,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
       longDescription: "Redo the last undone action",
       callback: () => ({
         command: {
-          name: "core.redo",
+          name: "core:history.redo",
           group: "General",
           modes: [],
           shortcut: null,
@@ -460,7 +489,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     });
 
     this.command.register({
-      name: "core.exit_mode",
+      name: "core:mode.exit",
       group: "General",
       modes: [DEFAULT_MODE, REVIEW_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, "note"],
       shortcut: "Escape",
@@ -468,7 +497,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
       longDescription: "Return to the default selection mode",
       callback: () => ({
         command: {
-          name: "core.exit_mode",
+          name: "core:mode.exit",
           group: "General",
           modes: [],
           shortcut: null,
@@ -506,6 +535,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   get workflowStep(): string {
     return this._workflowStep;
+  }
+
+  get entryStatus(): string {
+    return this._entryStatus;
   }
 
   get mode(): string {

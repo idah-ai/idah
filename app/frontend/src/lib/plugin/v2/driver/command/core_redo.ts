@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.redo",
+    name: "core:history.redo",
     group: "General",
     modes: ["*"],
     shortcut: "Control+Shift+Z",
@@ -10,7 +10,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: "Redo the last undone action",
     callback: () => ({
       command: {
-        name: "core.redo",
+        name: "core:history.redo",
         group: "General",
         modes: [],
         shortcut: null,
