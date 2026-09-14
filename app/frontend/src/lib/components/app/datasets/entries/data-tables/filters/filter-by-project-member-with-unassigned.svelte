@@ -1,18 +1,23 @@
 <script lang="ts" generics="T extends Record">
-  import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
-  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
-  import { CommandItem } from "@/components/ui/command";
-  import UnassignedAvartar from "@/components/app/datasets/entries/data-tables/filters/unassigned-avartar.svelte";
+  import { Combobox } from "bits-ui";
+  import { onDestroy } from "svelte";
 
-  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import UnassignedAvartar from "@/components/app/datasets/entries/data-tables/filters/unassigned-avartar.svelte";
+  import ComboboxField from "@/components/app/forms/fields/combobox/combobox-field.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
+
+  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { Record } from "@/data/model/Record";
-  import { cn } from "@/utils";
+  import { debounce } from "@/utils/delayed";
 
   import type {
     DataTableColumnFilterOperation,
     DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
   import type { LabelValue } from "@/utils/types";
+
+  // Sentinel value for the "Unassigned" choice (distinct from a real email).
+  const UNASSIGNED = "__unassigned__";
 
   // Props
   let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
@@ -21,96 +26,99 @@
   if (!contexts || !("projectId" in contexts)) {
     throw new Error("`projectId` is required in contexts for FilterByProjectMember");
   }
-
   let { projectId } = contexts as { projectId: string };
 
-  // Variables
-  const resource: string = ProjectMemberRecord.type;
-  const filterKey: string = columnSetting.filterOptions?.filterKey || "project_member_id";
-  const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
-  const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
+  // Filter key → assigned_to_email__match
+  const filterKey: string = columnSetting.filterOptions?.filterKey || "assigned_to_email";
+  const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "match";
+  const emailKey: string = `${filterKey}__${filterOperation}`;
 
-  // `assigned` may arrive as boolean `false` (live) or the string `"false"` (restored from the
-  // URL, which stringifies every value), so compare loosely on the stringified form.
-  let filtersValue: string | number | null = $derived(
-    filters[filterKeyWithOperation] || (String(filters["assigned"]) === "false" ? "null" : null),
+  // Tracks the combobox input text (seeded from the active filter; re-seeds when the column popover
+  // reopens). Used only to decide Unassigned visibility.
+  let inputText: string = $state((filters[emailKey] as string | undefined) ?? "");
+
+  // The currently loaded member choices (from ComboboxField), to tell whether the input is a real member.
+  let members: LabelValue<string | number>[] = $state([]);
+
+  // Display flags
+  let unassignedActive = $derived(String(filters["assigned"]) === "false");
+  // Show "Unassigned" when the input is empty, the text matches its label, or the input is a selected
+  // member's email. Hide it only while typing a non-member search like "admin".
+  let showUnassigned = $derived(
+    !inputText ||
+      "unassigned".includes(inputText.toLowerCase()) ||
+      members.some((member) => String(member.value) === inputText),
   );
 
-  let additionalChoices: LabelValue<string | number>[] = [
-    {
-      label: "Unassigned",
-      value: "null",
-    },
-  ];
-
-  // Functions
-  function handleFilter(value: string | number | null): void {
-    switch (value) {
-      case "null":
-        // Unassigned: send `assigned: false`, clear the member id.
-        // Emit `undefined` (not `delete`) so the table's filter handler removes it from prefs + URL.
-        filters = { ...filters, [filterKeyWithOperation]: undefined, assigned: false };
-        break;
-      default:
-        // Member: send the member id, clear `assigned: false`.
-        filters = { ...filters, assigned: undefined, [filterKeyWithOperation]: value };
-    }
-
-    filtersValue = value;
-    onFilter({
-      filters,
-    });
+  // Functions — member-pick and free text both write the same key; "" removes it.
+  function applyEmail(text: string): void {
+    onFilter({ filters: { ...filters, assigned: undefined, [emailKey]: text || undefined } });
   }
+
+  function selectUnassigned(): void {
+    onFilter({ filters: { ...filters, [emailKey]: undefined, assigned: false } });
+  }
+
+  // Live filtering: apply the typed text to the entries table as you type. Per-instance `debounce` so
+  // it doesn't collide with ComboboxField's shared member-search debounce. Empty clears immediately.
+  const debouncedApply = debounce((text: string) => applyEmail(text));
+  function handleInput(text: string): void {
+    inputText = text;
+    if (!text) {
+      debouncedApply.cancel();
+      applyEmail("");
+      return;
+    }
+    debouncedApply(text);
+  }
+
+  onDestroy(() => debouncedApply.cancel());
 </script>
 
-<SingleSelectDatasourceField
-  name="{resource}/project_member_id"
-  dataSource={projectMembersBackendDataSource}
-  listOptions={{
-    filters: {
-      project_id: projectId,
-    },
-  }}
-  valueKey="account_id"
-  displayKey="email"
-  searchable
-  searchKeyWithOperation="email__match"
-  value={filtersValue}
-  {additionalChoices}
-  onSelected={handleFilter}
->
-  {#snippet slotTriggerValue({ selectedChoice })}
-    {#if selectedChoice?.data}
-      <AccountAvatar size="sm" email={selectedChoice.data["email"]} showEmail />
-    {:else if selectedChoice && selectedChoice.value === "null"}
-      <UnassignedAvartar class="size-6" />
-    {:else}
-      <span class="truncate">{selectedChoice?.label || filtersValue}</span>
-    {/if}
-  {/snippet}
+{#snippet noLabel()}{/snippet}
 
-  {#snippet slotChoice({ choice, select })}
-    <!-- Compare stringified: a member id restored from the URL is a string ("123") but the
-         choice value is a number (123); `!= null` keeps "nothing selected" unhighlighted. -->
-    {@const isSelected = filtersValue != null && String(filtersValue) === String(choice.value)}
-    <CommandItem
-      class={cn("group cursor-pointer", {
-        "bg-primary/10": isSelected,
-      })}
-      onclick={() => select(choice)}
-    >
-      {#if choice.data}
-        <AccountAvatar
-          name={choice.data["name"]}
-          email={choice.data["email"]}
-          showName
-          showEmail
-          size="sm"
-          {isSelected}
-        />
-      {:else}
-        <UnassignedAvartar isSelected={isSelected || filtersValue === "null"} />
-      {/if}
-    </CommandItem>
-  {/snippet}
-</SingleSelectDatasourceField>
+<div class="p-2">
+  <ComboboxField
+    name="assigned-to/email"
+    dataSource={projectMembersBackendDataSource}
+    class="min-w-64"
+    listOptions={{ filters: { project_id: projectId } }}
+    searchKeyWithOperation="email__match"
+    displayKey="email"
+    valueKey="email"
+    value={(filters[emailKey] as string | undefined) ?? null}
+    placeholder="Select a member or search email"
+    clearable
+    additionalChoices={showUnassigned ? [{ label: "Unassigned", value: UNASSIGNED }] : []}
+    slotLabel={noLabel}
+    onSelected={(value) => {
+      // Ignore null (ComboboxField emits it when typing drops the selection); clearing is handled by
+      // `onInput`. Only real member picks / Unassigned apply here.
+      if (value == null) return;
+      if (value === UNASSIGNED) {
+        selectUnassigned();
+      } else {
+        // Reflect the picked email in `inputText` so `showUnassigned` keeps "Unassigned" visible.
+        inputText = String(value);
+        applyEmail(String(value));
+      }
+    }}
+    onEnter={(text) => applyEmail(text)}
+    onInput={handleInput}
+    onChoicesChange={(choices) => (members = choices)}
+  >
+    {#snippet slotChoice({ choice })}
+      <Combobox.Item
+        class="data-highlighted:bg-muted flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none"
+        value={String(choice.value)}
+        label={String(choice.label)}
+      >
+        {#if choice.value === UNASSIGNED}
+          <UnassignedAvartar isSelected={unassignedActive} />
+        {:else}
+          <AccountAvatar email={String(choice.label)} showEmail size="sm" />
+        {/if}
+      </Combobox.Item>
+    {/snippet}
+  </ComboboxField>
+</div>

@@ -154,7 +154,7 @@
         const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
         if (ann) {
           selection.selectAnnotation(ann);
-          driver.command.call("selection.center");
+          driver.command.call("idah-image:selection.center");
         } else {
           // Annotations not loaded yet — defer until they are
           const stop = $effect.root(() => {
@@ -162,7 +162,7 @@
               const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
               if (!found) return;
               selection.selectAnnotation(found);
-              driver.command.call("selection.center");
+              driver.command.call("idah-image:selection.center");
               stop();
             });
           });

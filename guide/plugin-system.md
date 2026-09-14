@@ -441,6 +441,24 @@ Not all backend subdirectories need to be present — only those relevant to the
 
 ---
 
+## Service Plugin Symlinks
+
+Three of the four Ruby services expose the `plugins/` directory inside their own `app/<service>/` tree via a **symlink**, created by each service's `dev-entrypoint.sh` at container startup:
+
+```
+$ ls -la app/*/plugins
+lrwxrwxrwx  app/media/plugins   -> ../../plugins
+lrwxrwxrwx  app/setting/plugins -> ../../plugins
+lrwxrwxrwx  app/sync/plugins    -> ../../plugins
+
+### What this means in practice
+
+- **`plugins/<name>/` is the single canonical source tree** for every plugin. The symlinks exist only so that each service's filesystem-scanning logic (see [Discovery & Loading](#discovery--loading)) can find plugin code at `app/<service>/plugins/<name>/...` without needing special path configuration per service.
+- **Symlinks are created at startup**, not checked into git. They are set up by each service's `dev-entrypoint.sh` and always point at `../../plugins` — they cannot go stale or drift from the real tree.
+- **Always navigate to and edit files under `plugins/<name>/` directly.** If you encounter a path under `app/<service>/plugins/` during exploration (e.g., in a stack trace, a build log, or a directory listing), recognize it as the same file and go to the canonical path instead of treating it as a separate location.
+
+---
+
 ## Summary
 
 | Aspect | Detail |

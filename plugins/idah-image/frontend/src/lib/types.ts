@@ -18,6 +18,20 @@ export const IMAGE_POLYGON = "idah-image:polygon";
 export const IMAGE_LINE = "idah-image:line";
 export const IMAGE_CIRCLE = "idah-image:circle";
 export const IMAGE_ELLIPSE = "idah-image:ellipse";
+export const IMAGE_MASK = "idah-image:mask";
+
+/**
+ * Special, non-drawable shape type holding entry-level (whole image)
+ * category + properties. Not namespaced under a modality.
+ */
+export const ENTRY_ROOT = "entry:root";
+
+/**
+ * Shape types that are never rendered as drawable geometry and must be
+ * excluded from the left-sidebar tool list, the on-canvas layer, and the
+ * generic annotation list.
+ */
+export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT]);
 
 // ─── Image annotation shape ──────────────────────────────────────────────
 

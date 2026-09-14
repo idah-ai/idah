@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.update — Update an annotation's value (category, attributes, …)
+// idah-video:annotation.update — Update an annotation's value (category, attributes, …)
 // Undoable: restores the previous value.
 //
 // Usage:
-//   driver.command.call("annotation.update", { annotation, value });
+//   driver.command.call("idah-video:annotation.update", { annotation, value });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
@@ -12,7 +12,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.update",
+  name: "idah-video:annotation.update",
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,

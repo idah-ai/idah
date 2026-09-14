@@ -2,54 +2,50 @@
 // annotation.svelte.ts — Reactive visibility & lock state for annotations
 //
 // Tracks which annotation IDs are currently hidden from the viewport and
-// which are locked (non-editable). Both lists are backed by Svelte 5 $state,
-// so any component reading `annotation.isHidden(ann)` or
+// which are locked (non-editable). Both are backed by a Svelte 5 reactive
+// `SvelteSet`, so any component reading `annotation.isHidden(ann)` or
 // `annotation.isLocked(ann)` reacts automatically to changes.
+//
+// Sets (rather than arrays) give O(1) membership tests and mutations, so
+// bulk operations over many annotations (e.g. hide-all / lock-all on 10k+
+// items) stay linear instead of degrading to O(n²).
 //
 // Exposed as a plain object with query and mutation methods so components
 // use `annotation.toggleHidden(id, flag)` / `annotation.clearHidden()`
 // syntax.
 // ---------------------------------------------------------------------------
 
+import { SvelteSet } from "svelte/reactivity";
+
 import type { IAnnotationRecord } from "$idah/v2/types";
 
-let hiddenIds: string[] = $state([]);
-let lockedIds: string[] = $state([]);
+const hiddenIds = new SvelteSet<string>();
+const lockedIds = new SvelteSet<string>();
 
 export const annotation = {
   isLocked: (target: IAnnotationRecord | string) => {
-    if(typeof target === "string") return lockedIds.includes(target)
-
-    return lockedIds.includes(target.id);
+    return lockedIds.has(typeof target === "string" ? target : target.id);
   },
 
   isHidden: (target: IAnnotationRecord | string) => {
-    if (typeof target === "string") return hiddenIds.includes(target)
-
-    return hiddenIds.includes(target.id);
+    return hiddenIds.has(typeof target === "string" ? target : target.id);
   },
 
   clearLocked: () => {
-    lockedIds = [];
+    lockedIds.clear();
   },
 
   clearHidden: () => {
-    hiddenIds = [];
+    hiddenIds.clear();
   },
 
   toggleLocked: (id: string, locked: boolean) => {
-    if (locked) {
-      if (!lockedIds.includes(id)) lockedIds.push(id);
-    } else {
-      lockedIds = lockedIds.filter((lockedId) => lockedId !== id);
-    }
+    if (locked) lockedIds.add(id);
+    else lockedIds.delete(id);
   },
 
   toggleHidden: (id: string, hidden: boolean) => {
-    if (hidden) {
-      if (!hiddenIds.includes(id)) hiddenIds.push(id);
-    } else {
-      hiddenIds = hiddenIds.filter((hiddenId) => hiddenId !== id);
-    }
+    if (hidden) hiddenIds.add(id);
+    else hiddenIds.delete(id);
   },
 };

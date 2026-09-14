@@ -1,10 +1,5 @@
-export const delayed = async <T>(milliseconds: number, realPromise: () => Promise<T>) => {
-  await setTimeout(() => {}, milliseconds);
-  return realPromise();
-};
-
 function timeout(milliseconds: number) {
-  return new Promise(resolve => setTimeout(resolve, milliseconds));
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 export async function sleep(milliseconds: number) {
@@ -13,13 +8,21 @@ export async function sleep(milliseconds: number) {
   return Promise.resolve();
 }
 
-export const delayInput = (() => {
-  let timer: number | NodeJS.Timeout = 0;
-  return (callback: () => void, ms: number) => {
-    clearTimeout(timer);
-    return (timer = setTimeout(callback, ms));
-  };
-})();
+/**
+ * Per-instance debounce. Unlike `delayedInput`/`delayInput` (which share a single module-level timer
+ * and so collide when two callers run concurrently), each `debounce(...)` call gets its own timer.
+ * The returned function has a `.cancel()` to drop any pending call.
+ */
+export function debounce<A extends unknown[]>(fn: (...args: A) => void, delay: number = 300) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Object.assign(
+    (...args: A): void => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    },
+    { cancel: (): void => clearTimeout(timer) },
+  );
+}
 
 let currentTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -29,7 +32,7 @@ export function delayedInput<T>(input: T, delay: number = 300): Promise<T> {
     clearTimeout(currentTimeoutId);
   }
 
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     currentTimeoutId = setTimeout(() => {
       resolve(input);
       currentTimeoutId = null; // Clear the timeout ID after resolving

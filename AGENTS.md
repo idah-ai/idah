@@ -151,6 +151,12 @@ Mounted at `/app/common` in every Ruby service container. Key modules:
 - **Event channels**: Use `Resource::Service::Entity` for resource events, custom channels for everything else.
 - **Sequel vs ActiveRecord**: Use `Sequel.lit()`, `DB.execute()`, and Sequel migration DSL.
 - **Thread safety**: `MonitorMixin` for scheduler and thread pool synchronization.
+- **Plugin directory symlinks**: `plugins/<name>/` is the only canonical source tree for a plugin.
+  `app/media/plugins`, `app/setting/plugins`, and `app/sync/plugins` are symlinks to `../../plugins` —
+  any file under one of those paths is the exact same file as its `plugins/<name>/...` counterpart, not a
+  copy. Always read/edit via the canonical `plugins/<name>/` path; never treat the symlinked paths as a
+  second source of truth to explore or reconcile separately. `app/dataset/plugins` is the one exception —
+  not currently a symlink, see [`guide/plugin-system.md`](guide/plugin-system.md) for detail.
 
 ---
 

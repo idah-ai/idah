@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// viewport.zoom_in — Zoom into the viewport
+// idah-image:viewport.zoom-in — Zoom into the viewport
 // Shortcut: Equal (+/= key)
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, REVIEW_MODE } from "$lib/types";
 
 export const command = {
-  name: "viewport.zoom_in",
+  name: "idah-image:viewport.zoom-in",
   group: "Viewport",
   modes: [DEFAULT_MODE, REVIEW_MODE] as string[],
   shortcut: "Equal",

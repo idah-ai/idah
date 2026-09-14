@@ -137,17 +137,23 @@ export interface AnnotationDriver {
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
-  if (selection.value?.type === "annotation" && selection.value.annotation?.id === updatedId) {
+  if (selection.isAnnotationSelected(updatedId)) {
     const store = data.annotations;
     if (!store) return;
     const fresh = store.items.find((i) => i.id === updatedId);
-    if (fresh) selection.selectAnnotation(fresh);
+    if (fresh) {
+      // Re-select the annotation to refresh the reference in the set
+      // (the ID stays the same, but we need to ensure the derived
+      //  selectedAnnotations getter picks up the fresh object)
+      selection.deselectAnnotation(updatedId);
+      selection.addAnnotations([updatedId]);
+    }
   }
 }
 
 function syncSelectionOnDelete(deletedId: string): void {
-  if (selection.value?.type === "annotation" && selection.value.annotation?.id === deletedId) {
-    selection.deselect();
+  if (selection.isAnnotationSelected(deletedId)) {
+    selection.deselectAnnotation(deletedId);
   }
 }
 
@@ -194,7 +200,12 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
       // Optimistic: insert locally first
       originalUpsert(item);
       try {
-        await driver.create($state.snapshot({ ...data, id }));
+        // Strip null metadata — backend only accepts a Hash or omitted field
+        const payload = $state.snapshot({ ...data, id });
+        if (payload.metadata == null) {
+          delete payload.metadata;
+        }
+        await driver.create(payload);
       } catch {
         // Rollback on failure
         store.remove(id);
@@ -612,7 +623,7 @@ export function focusNote(note: INoteRecord): void {
     const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
     if (ann) {
       selection.selectAnnotation(ann);
-      driver.command.call("selection.center");
+      driver.command.call("idah-video:selection.center");
     } else {
       // Annotations not loaded yet — defer until they are
       const stop = $effect.root(() => {
@@ -620,7 +631,7 @@ export function focusNote(note: INoteRecord): void {
           const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
           if (!found) return;
           selection.selectAnnotation(found);
-          driver.command.call("selection.center");
+          driver.command.call("idah-video:selection.center");
           stop();
         });
       });

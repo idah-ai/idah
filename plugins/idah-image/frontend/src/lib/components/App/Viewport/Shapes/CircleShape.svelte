@@ -17,11 +17,15 @@
   // ---------------------------------------------------------------------------
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { selection } from "$lib/state/selection.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
   import { resolveShapeStyles } from "$lib/utils/styles";
+  import { hover } from "$lib/state/hover.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import { type Point } from "$lib/utils/math/point";
   import CircleHandler from "./Circle/_CircleHandler.svelte";
   import CircleScaleHandler from "./Circle/_CircleScaleHandler.svelte";
+  import DimensionLabel from "./DimensionLabel.svelte";
   import { pointInCircle } from "./Circle/utils";
 
   import { DEFAULT_MODE, type IImageAnnotationShape } from "$lib/types";
@@ -32,6 +36,7 @@
     selected?: boolean;
     editable?: boolean;
     cursor?: Point;
+    multiDragDelta?: Point | null;
     mode?: string;
     onClick?: (e: MouseEvent) => void;
     onEditComplete?: (points: Point[], extraProps?: Record<string, unknown>) => void;
@@ -42,6 +47,7 @@
     selected = false,
     editable = false,
     cursor,
+    multiDragDelta = null,
     mode = DEFAULT_MODE,
     onClick,
     onEditComplete,
@@ -96,7 +102,13 @@
   // ── Display values ────────────────────────────────────────────────────
   let displayCenter = $derived.by((): Point => {
     if (panStart && (panOffset[0] !== 0 || panOffset[1] !== 0)) {
+      // Local drag active — this is the annotation being dragged directly
       return [center[0] + panOffset[0], center[1] + panOffset[1]];
+    }
+    if (multiDragDelta && selected) {
+      // Not being locally dragged but part of a multi-selection —
+      // apply the shared drag delta so this shape moves together with others
+      return [center[0] + multiDragDelta[0], center[1] + multiDragDelta[1]] as Point;
     }
     return center;
   });
@@ -117,7 +129,7 @@
   }
 
   // ── Selection API ─────────────────────────────────────────────────────
-  export function startSelection(start: Point, _shiftKey?: boolean): boolean {
+  export function startSelection(start: Point, _altKey?: boolean): boolean {
     if (!editable) return false;
     if (!baseCenter || baseRadius <= 0) return false;
 
@@ -164,6 +176,10 @@
     _localRadius = undefined;
   }
 
+  export function getIsEditing(): boolean {
+    return isEditing;
+  }
+
   // ── Internal handlers ─────────────────────────────────────────────────
   function handleStartScale() {
     if (!cursor) return;
@@ -199,6 +215,8 @@
     stroke-width={12}
     vector-effect="non-scaling-stroke"
     style:outline="none"
+    onmouseenter={() => hover.setHovered(annotation.id)}
+    onmouseleave={() => hover.clearHovered(annotation.id)}
     class={bodyCursor}
     role="button"
     tabindex="-1"
@@ -206,6 +224,13 @@
     onmousedown={(e) => {
       if (viewport.isCreationMode) return;
       if (viewport.mode === "review") return;
+
+      // Shift+Drag over a shape that isn't part of an editable selection is a
+      // rectangle selection: let it bubble to the container. When the shape IS
+      // selected and editable, shift keeps its old meaning — grab and move the
+      // selection — so multi-shape drags still start here.
+      if (e.shiftKey && !(editable && selected)) return;
+
       if (editable && selected) {
         const svg = (e.currentTarget as SVGElement).ownerSVGElement;
         if (svg) {
@@ -228,12 +253,13 @@
   />
 
   <!-- Visible filled circle -->
+  <!-- ui.annotationOpacity scales fill only — stroke stays at full opacity regardless of the slider -->
   <circle
     cx={displayCenter[0] * w}
     cy={displayCenter[1] * h}
     r={displayRadiusPx}
     fill={color}
-    fill-opacity={selected ? 0.4 : 0.2}
+    fill-opacity={(selected ? 0.7 : 0.4) * (ui.annotationOpacity / 100)}
     stroke={color}
     stroke-width={selected ? 2 : 1.5}
     vector-effect="non-scaling-stroke"
@@ -241,9 +267,18 @@
     pointer-events="none"
   />
 
+  <!-- Pixel dimension label at top-left of AABB -->
+  {#if selected || selection.isAnnotationSelected(annotation.id) || hover.isHovered(annotation.id)}
+    {@const diamPx = (displayRadiusPx * 2).toFixed(0)}
+    {@const labelX = (displayCenter[0] * w) - displayRadiusPx}
+    {@const labelY = (displayCenter[1] * h) - displayRadiusPx}
+    <DimensionLabel x={labelX} y={labelY} text="{diamPx} × {diamPx}" />
+  {/if}
+
   <!-- Handles when selected -->
-  {#if editable && selected}
+  {#if editable && selected && !isEditing && !multiDragDelta}
     <CircleHandler
+      readOnly={selection.selectedAnnotationIds.size > 1}
       center={displayCenter}
       {color}
       {isEditing}

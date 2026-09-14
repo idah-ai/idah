@@ -4,7 +4,7 @@
   import { page } from "$app/state";
   import { onMount, setContext, type Snippet } from "svelte";
 
-  import DatasetModality from "@/components/app/datasets/badges/dataset-modality.svelte";
+  import DatasetModalityBadge from "@/components/app/datasets/badges/DatasetModalityBadge.svelte";
   import ProjectDatasetDropdownMenu from "@/components/app/datasets/dropdowns/project-dataset-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
@@ -68,7 +68,22 @@
     return dataset;
   }
 
-  function handleTabChange(value: DatasetTab): void {
+  /**
+   * Tabs are a view of the URL, never their own state.
+   *
+   * bits-ui activates a trigger optimistically, before any navigation resolves. That would
+   * strand the tab on a destination the router never reached — the labels page cancels
+   * navigation when there are unsaved changes, so cancelling the prompt used to leave the
+   * tab on the page the user never went to.
+   *
+   * Preventing the event stops that activation: svelte-toolbelt's `composeHandlers` runs our
+   * handler before the primitive's and skips the rest once `defaultPrevented` is set. The
+   * tab therefore only moves when `activeTab` recomputes from a URL that actually changed.
+   */
+  function selectTab(event: Event, value: DatasetTab): void {
+    event.preventDefault();
+    if (value === activeTab) return;
+
     goto(resolve(`/projects/${projectId}/datasets/${datasetId}/${value}`));
   }
 </script>
@@ -82,16 +97,27 @@
         {#snippet slotTitle()}
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
-            <DatasetModality dataset={datasetRecord}></DatasetModality>
+            <DatasetModalityBadge modality={datasetRecord.modality} />
             <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}
       </PageHeader>
 
-      <Tabs bind:value={activeTab}>
+      <!-- One-way: the URL owns the selection, so a cancelled navigation leaves it untouched. -->
+      <Tabs value={activeTab} activationMode="manual">
         <TabsList>
           {#each tabs as { label, value } (value)}
-            <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+            <TabsTrigger
+              {value}
+              onclick={(event) => selectTab(event, value)}
+              onkeydown={(event) => {
+                /* Enter/Space would otherwise activate optimistically and swallow the click. */
+                if (event.key !== "Enter" && event.key !== " ") return;
+                selectTab(event, value);
+              }}
+            >
+              {label}
+            </TabsTrigger>
           {/each}
         </TabsList>
       </Tabs>

@@ -162,5 +162,37 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
       body = JSON.parse(last_response.body, symbolize_names: true)
       expect(body.size).to eq(2)
     end
+
+    it "write_shape" do
+      expect(service).to receive(:write_shape).with(uuid, "tile-0x0", { "rle" => "ABC" }).and_return(1)
+
+      rpc_call rpc_cmd("write_shape", { annotation_id: uuid, key: "tile-0x0", value: { rle: "ABC" } })
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shape with null value (delete)" do
+      expect(service).to receive(:write_shape).with(uuid, "tile-0x0", nil).and_return(0)
+
+      rpc_call rpc_cmd("write_shape", { annotation_id: uuid, key: "tile-0x0", value: nil })
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "batch mixing write_shape with other calls" do
+      expect(service).to receive(:show).with(uuid).and_return(annotation_record)
+      expect(service).to receive(:write_shape).with(uuid, "tile-0x0", { "rle" => "ALPHA" }).and_return(1)
+      expect(service).to receive(:delete).with(uuid).and_return(true)
+
+      rpc_call [
+        rpc_cmd("show", { id: uuid }),
+        rpc_cmd("write_shape", { annotation_id: uuid, key: "tile-0x0", value: { rle: "ALPHA" } }),
+        rpc_cmd("delete", { id: uuid }),
+      ]
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body.size).to eq(3)
+    end
   end
 end

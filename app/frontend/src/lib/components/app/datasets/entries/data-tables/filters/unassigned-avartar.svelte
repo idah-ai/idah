@@ -18,7 +18,7 @@
 </script>
 
 <div class="group flex items-center gap-2">
-  <Avatar class={cn("size-8 rounded-full text-sm", className)}>
+  <Avatar class={cn("size-6 rounded-full text-sm", className)}>
     <AvatarImage alt={name} />
     <AvatarFallback
       class={cn("group-hover:bg-primary/10 rounded-lg", {
@@ -34,6 +34,6 @@
   </Avatar>
 
   <div class="grid flex-1 text-left text-sm leading-tight">
-    <span class="font-medium">{name}</span>
+    <span class="text-xs">{name}</span>
   </div>
 </div>
