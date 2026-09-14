@@ -5,12 +5,13 @@
 # This workflow will download a prebuilt Ruby version, install dependencies and run tests with Rake
 # For more information see: https://github.com/marketplace/actions/setup-ruby-jruby-and-truffleruby
 
-name: CI
+name: CI - App
 
 on:
   pull_request:
     paths:
       - "app/**"
+      - "common/**"
     types:
       # Trigger the workflow only when PR is ready for review
       - ready_for_review
@@ -27,6 +28,7 @@ env:
   SYNC_DIR: ./app/sync
   MEDIA_DIR: ./app/media
   DATASET_DIR: ./app/dataset
+  COMMON_DIR: ./common
 
 concurrency:
   group: ${{ github.head_ref }}
@@ -50,23 +52,32 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # Every Ruby service loads common/, so a change there runs all of them.
+          # common/'s own specs run in ci-common.yml.
           filters: |
             frontend:
               - added|modified: '${{ env.FRONTEND_DIR }}/**'
             iam:
               - added|modified: '${{ env.IAM_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
             media:
               - added|modified: '${{ env.MEDIA_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
             notification:
               - added|modified: '${{ env.NOTIFICATION_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
             setting:
               - added|modified: '${{ env.SETTING_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
             audit:
               - added|modified: '${{ env.AUDIT_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
             sync:
               - added|modified: '${{ env.SYNC_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
             dataset:
               - added|modified: '${{ env.DATASET_DIR }}/**'
+              - '${{ env.COMMON_DIR }}/**'
 
   frontend:
     name: Frontend
@@ -164,6 +175,8 @@ jobs:
               - added|modified: '${{ env.IAM_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.IAM_DIR }}/**/*.rb'
               - added|modified: '${{ env.IAM_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -171,7 +184,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/iam\/+//g')" >> $GITHUB_OUTPUT
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -180,7 +193,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -195,7 +208,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -203,12 +216,12 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: iam-code-coverage
@@ -243,6 +256,8 @@ jobs:
               - added|modified: '${{ env.NOTIFICATION_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.NOTIFICATION_DIR }}/**/*.rb'
               - added|modified: '${{ env.NOTIFICATION_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -250,7 +265,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/notification\/+//g')" >> $GITHUB_OUTPUT
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -259,7 +274,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -274,7 +289,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -282,16 +297,16 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: notification-code-coverage
-          path: ${{ env.MEDIA_DIR }}/coverage
+          path: ${{ env.NOTIFICATION_DIR }}/coverage
 
   setting:
     name: Setting Service
@@ -322,6 +337,8 @@ jobs:
               - added|modified: '${{ env.SETTING_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.SETTING_DIR }}/**/*.rb'
               - added|modified: '${{ env.SETTING_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -329,7 +346,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/setting\/+//g')" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
            sudo apt-get update && sudo apt-get install -y \
             imagemagick \
@@ -337,7 +354,7 @@ jobs:
             libmagickwand-dev
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -346,7 +363,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -361,7 +378,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -369,16 +386,16 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: setting-code-coverage
-          path: ${{ env.MEDIA_DIR }}/coverage
+          path: ${{ env.SETTING_DIR }}/coverage
 
   audit:
     name: Audit Service
@@ -409,6 +426,8 @@ jobs:
               - added|modified: '${{ env.AUDIT_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.AUDIT_DIR }}/**/*.rb'
               - added|modified: '${{ env.AUDIT_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -416,7 +435,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/audit\/+//g')" >> $GITHUB_OUTPUT
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -425,7 +444,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -440,7 +459,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -448,16 +467,16 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: audit-code-coverage
-          path: ${{ env.MEDIA_DIR }}/coverage
+          path: ${{ env.AUDIT_DIR }}/coverage
 
   sync:
     name: Sync Service
@@ -488,6 +507,8 @@ jobs:
               - added|modified: '${{ env.SYNC_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.SYNC_DIR }}/**/*.rb'
               - added|modified: '${{ env.SYNC_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -495,7 +516,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/sync\/+//g')" >> $GITHUB_OUTPUT
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -504,7 +525,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -519,7 +540,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -527,12 +548,12 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: sync-code-coverage
@@ -567,6 +588,8 @@ jobs:
               - added|modified: '${{ env.MEDIA_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.MEDIA_DIR }}/**/*.rb'
               - added|modified: '${{ env.MEDIA_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -574,7 +597,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/media\/+//g')" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           sudo apt-get update && sudo apt-get install -y \
             imagemagick \
@@ -582,7 +605,7 @@ jobs:
             libmagickwand-dev
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -591,7 +614,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -606,7 +629,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -614,12 +637,12 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: media-code-coverage
@@ -654,6 +677,8 @@ jobs:
               - added|modified: '${{ env.DATASET_DIR }}/Gemfile.lock'
               - added|modified: '${{ env.DATASET_DIR }}/**/*.rb'
               - added|modified: '${{ env.DATASET_DIR }}/**/*.rake'
+            common:
+              - '${{ env.COMMON_DIR }}/**'
 
       - name: Format Changed files
         id: filter-format
@@ -661,7 +686,7 @@ jobs:
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/dataset\/+//g')" >> $GITHUB_OUTPUT
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
@@ -670,7 +695,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Setup Database
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           bundle exec rake db:test:prepare
         env:
@@ -685,7 +710,7 @@ jobs:
           APP_ENVIRONMENT: test
 
       - name: Run RSpec
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         run: LOG_LEVEL=error bundle exec rspec --fail-fast
         env:
           CI: true
@@ -693,12 +718,12 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         run: |
           mkdir -p bin && cp ../../common/bin/check-coverage ./bin/check-coverage && bin/check-coverage
 
       - name: Upload Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: dataset-code-coverage
