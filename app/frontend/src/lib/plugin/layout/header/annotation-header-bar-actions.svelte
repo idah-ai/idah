@@ -28,7 +28,7 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { getShortcutLabel } from "@/components/ui/kbd/utils";
+
   import WorkflowStepActions from "@/plugin/layout/header/workflow-step-actions.svelte";
   import type { WorkflowStepConfig } from "@/plugin/layout/header/workflow-step-types";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
