@@ -20,8 +20,9 @@ module Workflow
 
     def clear(plugin_name)
       plugin_name = plugin_name.to_sym
-      @workflows.each_value do |coll|
-        coll.reject! { |entry| entry.plugin == plugin_name }
+      @workflows.each_key do |name|
+        @workflows[name].reject! { |entry| entry.plugin == plugin_name }
+        @workflows.delete(name) if @workflows[name].empty?
       end
     end
 
