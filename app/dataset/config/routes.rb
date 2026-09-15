@@ -10,6 +10,7 @@ Verse.on_boot do
     AnnotationsExpo,
     NoteFeedsExpo,
     NoteCommentsExpo,
+    WorkflowsExpo,
     EntryStatsExpo,
     LabelConfigTemplatesExpo
   ].each(&:register)

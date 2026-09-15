@@ -8,6 +8,7 @@
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { workflowsBackendDataSource } from "@/data/model/dataset/workflows/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
   import type { Resource } from "@/security/types";
@@ -22,7 +23,7 @@
   // Variables
   const resource: Resource = "dataset:datasets";
   let projectId = $derived(page.params.projectId as string);
-  let { name, modality } = $derived(dataset);
+  let { name, modality, workflow_name } = $derived(dataset);
   let selectedDatasetId = $state<string | null>(null);
 
   // Functions
@@ -31,12 +32,17 @@
       name,
       modality,
       selectedDatasetId,
+      workflow_name,
     });
   });
 
   async function loadModalities() {
     const modalitiesRes = await pluginsBackendDataSource.modalities();
     return modalitiesRes.modalities;
+  }
+
+  async function loadWorkflows() {
+    return await workflowsBackendDataSource.getWorkflows();
   }
 </script>
 
@@ -69,6 +75,24 @@
         value={modality}
         onSelected={(selectedValue) => {
           modality = selectedValue as string;
+        }}
+      />
+    {/await}
+
+    <!-- DATASET::WORKFLOW -->
+    {#await loadWorkflows() then workflows}
+      <SingleSelectField
+        name="{resource}/workflow"
+        label="Workflow"
+        placeholder="Select workflow"
+        choices={workflows.map((workflow) => ({
+          label: workflow.label,
+          value: workflow.name,
+        }))}
+        errors={fieldErrors["workflow_name"]}
+        value={workflow_name}
+        onSelected={(selectedValue) => {
+          workflow_name = selectedValue as string;
         }}
       />
     {/await}

@@ -533,7 +533,8 @@ RSpec.describe Annotation::Service, database: true do
           results = subject.index
           expect(results.size).to eq(3)
 
-          results.each_with_index do |r, idx|
+          results.each do |r|
+            idx = ids.index(r.id)
             expect(r.dimensions["tile-0x0"]).to eq({ "rle" => "VAL#{idx}" })
             expect(r.dimensions["tile-0x1"]).to eq({ "rle" => "VAL#{idx}b" })
           end
