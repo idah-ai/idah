@@ -183,7 +183,7 @@
         if (annotation.isHidden(ann)) return acc;
         // Skip non-drawable records (entry:root / idah-video:frame) — they
         // are never rendered on canvas and are only edited through the Tagging tab.
-        if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
+        if (NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type ?? "")) return acc;
         // Skip annotations outside the current frame range
         const { start, end } = (ann.shape_args ?? {}) as { start?: number; end?: number };
         if (start == null || end == null || frame < start || frame > end) return acc;
@@ -398,7 +398,7 @@
           return { id: ann.id, kind: "", data: null };
         }
         // Resolve interpolated geometry for the current displayed frame
-        const interpolated = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
+        const interpolated = getInterpolatedFrame(shape, viewport.video.displayedFrame.value, true, ann.shape_type);
         if (!interpolated || !interpolated.points) {
           // Shape has no keyframe data for this frame — skip by returning unknown kind
           return { id: ann.id, kind: "", data: null };
@@ -502,7 +502,7 @@
   function getAnnotationAABB(ann: IAnnotationRecord): [number, number, number, number] | null {
     const shape = (ann as any).shape_args as IVideoAnnotationShape | undefined;
     if (!shape?.frames?.length) return null;
-    const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
+    const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value, true, (ann as any).shape_type);
     if (!interp?.points?.length) return null;
 
     // `points` holds the unrotated corners — `angle` is applied as a render
@@ -811,7 +811,7 @@
         if (ann.id === _draggedId) continue;
         const shape = (ann as any).shape_args as IVideoAnnotationShape | undefined;
         if (!shape?.frames?.length) continue;
-        const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value);
+        const interp = getInterpolatedFrame(shape, viewport.video.displayedFrame.value, true, ann.shape_type);
         if (!interp?.points?.length) continue;
         const movedPoints = interp.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
         handleEditComplete(ann.id, movedPoints, interp.angle ?? 0);
@@ -889,9 +889,9 @@
           selection: { frame: currentFrame, points, angle },
           snapshot: {
             ...ann,
-            shape: {
-              ...(ann.shape ?? {}),
-              frames: [...((ann.shape?.frames as any[]) ?? [])],
+            shape_args: {
+              ...(ann.shape_args ?? {}),
+              frames: [...((ann.shape_args?.frames as any[]) ?? [])],
             },
           } as AnnotationItem,
         });
@@ -912,7 +912,7 @@
     // here keeps shapes at their new positions through the render that
     // follows, eliminating the blink.
     if (!ann) return;
-    const shape = ann.shape as IVideoAnnotationShape | undefined;
+    const shape = ann.shape_args as IVideoAnnotationShape | undefined;
     if (!shape?.frames?.length) return;
     const frames = [...shape.frames];
     const existingIdx = frames.findIndex((f) => f.frame === currentFrame);
@@ -926,7 +926,7 @@
 
     data.annotations!.upsert({
       ...ann,
-      shape: { ...shape, start: min, end: max, frames },
+      shape_args: { ...shape, start: min, end: max, frames },
     } as any);
   }
 
@@ -951,7 +951,7 @@
       const shape = (ann as any).shape_args as IVideoAnnotationShape | undefined;
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.frames?.length) {
-        const interp = getInterpolatedFrame(shape, frame, true);
+        const interp = getInterpolatedFrame(shape, frame, true, (ann as any).shape_type);
         if (interp?.points?.length) centroidN = centroidUtil(interp.points);
       }
 

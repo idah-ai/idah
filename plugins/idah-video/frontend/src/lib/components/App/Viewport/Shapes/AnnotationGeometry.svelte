@@ -43,14 +43,6 @@
     }
     return undefined;
   });
-    if (comp?.startSelection && comp?.endSelection) {
-      return {
-        startSelection: (p: Point, altKey?: boolean) => comp.startSelection(p, altKey),
-        endSelection: (p: Point) => comp.endSelection(p),
-      };
-    }
-    return undefined;
-  });
 
   export function getToolSelection():
     | { startSelection: (p: Point, altKey?: boolean) => boolean; endSelection: (p: Point) => void }

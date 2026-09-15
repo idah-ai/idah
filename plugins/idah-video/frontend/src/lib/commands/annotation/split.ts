@@ -181,7 +181,7 @@ function ensureSplitFrame(
 ): IVideoFrameSelection | undefined {
   let splitFrame = frames.find((f) => f.frame === splitAt);
   if (!splitFrame) {
-    const interpolated = getInterpolatedFrame(shape, splitAt);
+    const interpolated = getInterpolatedFrame(shape, splitAt, true, record.shape_type);
     if (interpolated) {
       splitFrame = { frame: splitAt, angle: interpolated.angle, points: interpolated.points ?? [] };
     }

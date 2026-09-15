@@ -525,7 +525,7 @@
   $effect(() => {
     const v = selection.value;
     if (v?.type !== "annotation") return;
-    const shapeType = (v.annotation.shape as { type?: string })?.type;
+    const shapeType = (v.annotation as any)?.shape_type;
     if (shapeType === ENTRY_ROOT || shapeType === VIDEO_FRAME) {
       taggingCollapsed = false;
     } else {

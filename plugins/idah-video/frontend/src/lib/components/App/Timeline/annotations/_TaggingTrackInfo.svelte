@@ -29,7 +29,7 @@
   // Resolve the category from the label config so we get the proper label + color.
   // The entry:root row carries its category on the annotation's value (not row.category).
   const shapeType = $derived(isEntry ? ENTRY_ROOT : VIDEO_FRAME);
-  const categoryId = $derived(row.category ?? annotations[0]?.value?.category);
+  const categoryId = $derived(row.category ?? annotations[0]?.category);
   const category = $derived(
     categoryId ? findCategory({ labelConfig: getDriver().config, categoryId, shapeType }) : undefined,
   );

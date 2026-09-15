@@ -87,8 +87,8 @@ function makeAnn(
 ): any {
   return {
     id,
-    shape: {
-      type: "idah-video:bounding-box",
+    shape_type: "idah-video:bounding-box",
+    shape_args: {
       start: 10,
       end: 20,
       frames: [
@@ -97,7 +97,7 @@ function makeAnn(
         { frame: 20, angle: 0, points: [[20, 20], [80, 80]] },
       ],
     },
-    value: { category: "test/cat" },
+    category: "test/cat",
     ...overrides,
   };
 }
@@ -110,13 +110,13 @@ function makeFrameAnn(
 ): any {
   return {
     id,
-    shape: {
-      type: VIDEO_FRAME,
+    shape_type: VIDEO_FRAME,
+    shape_args: {
       start: frame,
       end: frame,
       frames: [],
     },
-    value: { category },
+    category,
   };
 }
 
@@ -179,7 +179,7 @@ describe("selection.copy + selection.paste", () => {
 
       expect(clipboard.hasData).toBe(true);
       expect(clipboard.annotations).toHaveLength(1);
-      expect(clipboard.annotations![0].shape.type).toBe(VIDEO_FRAME);
+      expect(clipboard.annotations![0].shape_type).toBe(VIDEO_FRAME);
       expect(clipboard.copyFrame).toBe(42);
       // Centroid should be [0, 0] since VIDEO_FRAME has no points
       expect(clipboard.centroid).toEqual([0, 0]);
@@ -194,8 +194,7 @@ describe("selection.copy + selection.paste", () => {
     it("copies a mix of VIDEO_FRAME and regular annotations", () => {
       const frameAnn = makeFrameAnn("frame-001", 42, "test/tag");
       const bboxAnn = makeAnn("bbox-001", {
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_args: {
           start: 40,
           end: 50,
           frames: [
@@ -223,11 +222,12 @@ describe("selection.copy + selection.paste", () => {
     });
 
     it("copying and pasting an idah-video:frame tag with its REAL native shape (frames: []) succeeds", async () => {
-      const tagShape = { type: VIDEO_FRAME, start: 12, end: 12, frames: [] };
+      const tagShape = { start: 12, end: 12, frames: [] };
       const tag = {
         id: "tag-1",
-        shape: tagShape,
-        value: { category: "weather/sunny" },
+        shape_type: VIDEO_FRAME,
+        shape_args: tagShape,
+        category: "weather/sunny",
         metadata: {},
       };
       mockDataItems.push(tag);
@@ -248,9 +248,9 @@ describe("selection.copy + selection.paste", () => {
       // The paste should have created exactly one annotation
       expect(mockCreateFn).toHaveBeenCalledTimes(1);
       const created = mockCreateFn.mock.calls[0][0];
-      expect(created.shape.start).toBe(40);
-      expect(created.shape.end).toBe(40);
-      expect(created.shape.frames).toEqual([]);
+      expect(created.shape_args.start).toBe(40);
+      expect(created.shape_args.end).toBe(40);
+      expect(created.shape_args.frames).toEqual([]);
       expect(mockToastSuccess).toHaveBeenCalledWith(
         expect.objectContaining({ title: "Pasted" }),
       );
@@ -375,8 +375,9 @@ describe("selection.copy + selection.paste", () => {
 
       const rootAnn = {
         id: "root-001",
-        shape: { type: ENTRY_ROOT },
-        value: { category: "scene" },
+        shape_type: ENTRY_ROOT,
+        shape_args: {},
+        category: "scene",
       };
       mockDataItems.push(rootAnn);
       mockSelectedAnnotationIds.add("root-001");
@@ -406,8 +407,7 @@ describe("selection.copy + selection.paste", () => {
 
       mockSelectedAnnotationIds.clear();
       const outOfRangeAnn = makeAnn("out-001", {
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_args: {
           start: 50,
           end: 60,
           frames: [
@@ -465,8 +465,7 @@ describe("selection.copy + selection.paste", () => {
 
       mockSelectedAnnotationIds.clear();
       const outOfRangeAnn = makeAnn("out-001", {
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_args: {
           start: 50,
           end: 60,
           frames: [
@@ -498,8 +497,8 @@ describe("selection.copy + selection.paste", () => {
       const segA = {
         id: "seg-a",
         metadata: { group_id: GROUP_ID },
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_type: "idah-video:bounding-box",
+        shape_args: {
           start: 0,
           end: 10,
           frames: [
@@ -508,13 +507,13 @@ describe("selection.copy + selection.paste", () => {
             { frame: 10, angle: 0, points: [[20, 20], [80, 80]] },
           ],
         },
-        value: { category: "test/cat" },
+        category: "test/cat",
       };
       const segB = {
         id: "seg-b",
         metadata: { group_id: GROUP_ID },
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_type: "idah-video:bounding-box",
+        shape_args: {
           start: 11,
           end: 20,
           frames: [
@@ -523,7 +522,7 @@ describe("selection.copy + selection.paste", () => {
             { frame: 20, angle: 0, points: [[50, 50], [50, 50]] },
           ],
         },
-        value: { category: "test/cat" },
+        category: "test/cat",
       };
       return [segA, segB];
     }
@@ -540,7 +539,7 @@ describe("selection.copy + selection.paste", () => {
 
       expect(clipboard.hasData).toBe(true);
       expect(clipboard.annotations).toHaveLength(2);
-      const ids = clipboard.annotations!.map((e) => (e.shape as any).start);
+      const ids = clipboard.annotations!.map((e) => (e.shape_args as any).start);
       expect(ids).toContain(0);
       expect(ids).toContain(11);
       expect(clipboard.copyFrame).toBe(5);
@@ -604,8 +603,8 @@ describe("selection.copy + selection.paste", () => {
       expect(firstCallGroup).toBe(secondCallGroup);
       expect(firstCallGroup).toMatch(/^test-uuid-/);
 
-      const shapeA = mockCreateFn.mock.calls[0][0].shape;
-      const shapeB = mockCreateFn.mock.calls[1][0].shape;
+      const shapeA = mockCreateFn.mock.calls[0][0].shape_args;
+      const shapeB = mockCreateFn.mock.calls[1][0].shape_args;
       expect(shapeA.start).toBe(15);
       expect(shapeA.end).toBe(25);
       expect(shapeB.start).toBe(26);
@@ -621,8 +620,8 @@ describe("selection.copy + selection.paste", () => {
       const shortSegA = {
         id: "seg-a",
         metadata: { group_id: GROUP_ID },
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_type: "idah-video:bounding-box",
+        shape_args: {
           start: 0,
           end: 5,
           frames: [
@@ -630,13 +629,13 @@ describe("selection.copy + selection.paste", () => {
             { frame: 5, angle: 0, points: [[10, 10], [90, 90]] },
           ],
         },
-        value: { category: "test/cat" },
+        category: "test/cat",
       };
       const shortSegB = {
         id: "seg-b",
         metadata: { group_id: GROUP_ID },
-        shape: {
-          type: "idah-video:bounding-box",
+        shape_type: "idah-video:bounding-box",
+        shape_args: {
           start: 90,
           end: 99,
           frames: [
@@ -644,7 +643,7 @@ describe("selection.copy + selection.paste", () => {
             { frame: 99, angle: 0, points: [[40, 40], [60, 60]] },
           ],
         },
-        value: { category: "test/cat" },
+        category: "test/cat",
       };
       mockDataItems.push(shortSegA, shortSegB);
       mockSelectedGroupIds.add(GROUP_ID);
@@ -661,7 +660,7 @@ describe("selection.copy + selection.paste", () => {
       await pasteAction.do();
 
       expect(mockCreateFn).toHaveBeenCalledTimes(1);
-      const createdShape = mockCreateFn.mock.calls[0][0].shape;
+      const createdShape = mockCreateFn.mock.calls[0][0].shape_args;
       expect(createdShape.start).toBe(95);
       expect(createdShape.end).toBe(99); // clamped to MAX_FRAME
 

@@ -108,17 +108,12 @@ export interface DataStore<T extends DataItem> {
   getItemRange: GetItemRange<T>;
 }
 
-/** Annotation store — adds soft-delete restore (annotations only, not notes). */
-export interface AnnotationDataStore extends DataStore<AnnotationItem> {
-  restore(id: string): Promise<void>;
-}
-
 // ─── Annotation store factory ──────────────────────────────────────────
 
 export type AnnotationItem = {
   id: string;
   shape_type: string;
-  shape_args: { start: number; end: number } & Record<string, unknown>;
+  shape_args: Record<string, unknown>;
   category: string;
   properties?: Record<string, unknown>;
   metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
@@ -165,11 +160,11 @@ function syncSelectionOnDelete(deletedId: string): void {
   }
 }
 
-export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataStore {
+export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
   const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
-      "shape.start": { lte: rangeEnd },
-      "shape.end": { gte: rangeStart },
+      "shape_args.start": { lte: rangeEnd },
+      "shape_args.end": { gte: rangeStart },
     });
     return items as AnnotationItem[];
   });
@@ -532,7 +527,7 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { selection } from "$lib/state/selection.svelte";
 
-let _annotations: AnnotationDataStore | null = $state(null);
+let _annotations: DataStore<AnnotationItem> | null = $state(null);
 
 let _noteList: INoteRecord[] = $state([]);
 let _unsubNotes: (() => void) | null = null;
@@ -667,7 +662,7 @@ export function focusNote(note: INoteRecord): void {
 }
 
 export const data: {
-  annotations: AnnotationDataStore | null;
+  annotations: DataStore<AnnotationItem> | null;
 } = {
   get annotations() { return _annotations; },
 };

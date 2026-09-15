@@ -31,7 +31,7 @@ export function isTaggingValueComplete(
 
 /** Find the single entry:root annotation in a list of annotation items. */
 export function findEntryRootAnnotation(items: IVideoAnnotationRecord[]): IVideoAnnotationRecord | undefined {
-  return items.find((a) => (a.shape as { type?: string })?.type === ENTRY_ROOT);
+  return items.find((a) => a.shape_type === ENTRY_ROOT);
 }
 
 /**
@@ -47,10 +47,10 @@ export function findFrameAnnotation(
 ): IVideoAnnotationRecord | undefined {
   return items.find(
     (a) =>
-      (a.shape as { type?: string })?.type === VIDEO_FRAME &&
-      a.shape.start === frame &&
-      a.shape.end === frame &&
-      a.value?.category === category,
+      a.shape_type === VIDEO_FRAME &&
+      a.shape_args.start === frame &&
+      a.shape_args.end === frame &&
+      a.category === category,
   );
 }
 
@@ -61,9 +61,9 @@ export function findFrameAnnotations(
 ): IVideoAnnotationRecord[] {
   return items.filter(
     (a) =>
-      (a.shape as { type?: string })?.type === VIDEO_FRAME &&
-      a.shape.start === frame &&
-      a.shape.end === frame,
+      a.shape_type === VIDEO_FRAME &&
+      a.shape_args.start === frame &&
+      a.shape_args.end === frame,
   );
 }
 

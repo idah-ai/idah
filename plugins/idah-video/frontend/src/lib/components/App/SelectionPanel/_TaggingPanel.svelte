@@ -75,15 +75,17 @@
   });
 
   $effect(() => {
-    const rv = entryRootAnnotation?.value;
-    rootDraft = rv ? { ...rv } : {};
+    rootDraft = entryRootAnnotation
+      ? { category: entryRootAnnotation.category, properties: entryRootAnnotation.properties }
+      : {};
   });
 
   // Sync the edit draft from the selected annotation.
 
   $effect(() => {
-    const v = selectedFrameAnnotation?.value;
-    frameEditDraft = v ? { ...v } : {};
+    frameEditDraft = selectedFrameAnnotation
+      ? { category: selectedFrameAnnotation.category, properties: selectedFrameAnnotation.properties }
+      : {};
   });
 
   const rootConfig = $derived(
@@ -105,7 +107,7 @@
   // Used to disable them in the create picker — only one frame annotation per category.
 
   const usedFrameCategories = $derived(
-    new Set(currentFrameAnnotations.map((a) => a.value?.category).filter((c): c is string => Boolean(c))),
+    new Set(currentFrameAnnotations.map((a) => a.category).filter((c): c is string => Boolean(c))),
   );
 
   // Categories still available to create a new frame annotation at the current frame.
@@ -315,7 +317,7 @@
 
           <div class="flex flex-col gap-1">
             {#each currentFrameAnnotations as ann (ann.id)}
-              {@const annCategory = frameValues.find((v) => v.id === ann.value?.category)}
+              {@const annCategory = frameValues.find((v) => v.id === ann.category)}
               {@const annColor = annCategory?.color ?? null}
               <div
                 role="button"
@@ -328,7 +330,7 @@
                   <span class="size-2 shrink-0 rounded-full" style:background-color={annColor}></span>
                   <span class="truncate">{annCategory.label}</span>
                 {:else}
-                  <span class="text-muted-foreground truncate">{ann.value?.category ?? "Uncategorized"}</span>
+                  <span class="text-muted-foreground truncate">{ann.category ?? "Uncategorized"}</span>
                 {/if}
               </div>
             {:else}

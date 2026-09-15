@@ -37,11 +37,11 @@ const STYLE_SVG_MAP: Record<string, string> = {
  * semicolon-separated CSS string (e.g. `"stroke-dasharray:6, 3;opacity:4"`).
  *
  * @param annotation  The annotation record (must have `shape_type` and
- *                    `attributes`).
+ *                    `properties`).
  * @returns           A CSS string of property:value pairs, or empty string.
  *
  * @example
- *   // annotation has attributes: { "shape-proprety": "option_2" }
+ *   // annotation has properties: { "shape-proprety": "option_2" }
  *   // option_2.styles = { border: "dashed", opacity: 4 }
  *   // Returns: "stroke-dasharray:6, 3;opacity:4"
  */

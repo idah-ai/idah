@@ -10,16 +10,18 @@ import type { IConfigProperty } from "$idah/v2/types";
 function rootRecord(category?: string, id = "root-001"): IImageAnnotationRecord {
   return {
     id,
-    shape: { type: "entry:root", points: [] },
-    value: { category },
+    shape_type: "entry:root",
+    shape_args: { points: [] },
+    category,
   } as IImageAnnotationRecord;
 }
 
 function boxRecord(id = "box-001"): IImageAnnotationRecord {
   return {
     id,
-    shape: { type: "idah-image:bounding-box", points: [] },
-    value: { category: "car" },
+    shape_type: "idah-image:bounding-box",
+    shape_args: { points: [] },
+    category: "car",
   } as IImageAnnotationRecord;
 }
 
@@ -67,11 +69,10 @@ describe("isTaggingValueComplete", () => {
   });
 
   it("is true when all required properties are filled", () => {
-    expect(isTaggingValueComplete({ category: "a", attributes: { label: "x" } }, required)).toBe(true);
+    expect(isTaggingValueComplete({ category: "a", label: "x" }, required)).toBe(true);
   });
 
   it("is false when a required property is missing", () => {
-    expect(isTaggingValueComplete({ category: "a", attributes: {} }, required)).toBe(false);
     expect(isTaggingValueComplete({ category: "a" }, required)).toBe(false);
   });
 

@@ -25,7 +25,7 @@ export function isTaggingValueComplete(
 
 /** Find the single entry:root annotation in a list of annotation items. */
 export function findEntryRootAnnotation(items: IImageAnnotationRecord[]): IImageAnnotationRecord | undefined {
-  return items.find((a) => (a.shape as { type?: string })?.type === ENTRY_ROOT);
+  return items.find((a) => a.shape_type === ENTRY_ROOT);
 }
 
 export type EntryResolution =

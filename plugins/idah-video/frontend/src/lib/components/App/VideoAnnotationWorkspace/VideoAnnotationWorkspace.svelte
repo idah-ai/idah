@@ -463,7 +463,7 @@
   // The entry:root annotation for this entry, derived reactively from the live
   // store (never a stale singleton) so the Tagging tab always reflects reality.
   let entryRootAnnotation = $derived<IVideoAnnotationRecord | undefined>(
-    data.annotations?.items.find((a) => (a.shape as any).type === ENTRY_ROOT) as IVideoAnnotationRecord | undefined,
+    data.annotations?.items.find((a) => a.shape_type === ENTRY_ROOT) as IVideoAnnotationRecord | undefined,
   );
 
   // All idah-video:frame annotations for the CURRENT frame (one per category),
@@ -472,7 +472,7 @@
     if (!data.annotations) return [];
     const frame = viewport.video.currentFrame.value;
     return (data.annotations.items as unknown as IVideoAnnotationRecord[]).filter(
-      (a) => (a.shape as any).type === VIDEO_FRAME && a.shape.start === frame && a.shape.end === frame,
+      (a) => a.shape_type === VIDEO_FRAME && a.shape_args.start === frame && a.shape_args.end === frame,
     );
   });
 
@@ -482,8 +482,8 @@
   let frameAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
     return (data.annotations.items as unknown as IVideoAnnotationRecord[])
-      .filter((a) => (a.shape as any).type === VIDEO_FRAME)
-      .sort((a, b) => a.shape.start - b.shape.start);
+      .filter((a) => a.shape_type === VIDEO_FRAME)
+      .sort((a, b) => a.shape_args.start - b.shape_args.start);
   });
 
   // Frame tagging config (values + properties) for the create popover.
@@ -605,7 +605,7 @@
   // appear in the annotation sidebar, or reach the per-shape timeline tracks.
   let viewportAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     const raw = (data.annotations?.items ?? []).filter(
-      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type),
     );
     return raw.map((ann) => ({
       id: ann.id,
@@ -685,10 +685,11 @@
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if pendingCategory}
+        {#if pendingCategory || shapeSelectionArgs?.[0] === VIDEO_FRAME}
           <SelectionPanel
             selectedCategory={pendingCategory}
             annotationValue={annotationValue}
+            shapeTypeOverride={shapeSelectionArgs?.[0]}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
               pendingCategory = selectedCategory;
