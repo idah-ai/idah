@@ -483,7 +483,8 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
   try {
     const workflowsRes = await fetch(workflowsBasePath);
     const jsonData = await workflowsRes.json();
-    const workflows: Array<{ name: string; allowed_note_feed?: string[]; external_steps?: string[] }> = jsonData.data?.workflows ?? [];
+    const workflows: Array<{ name: string; allowed_note_feed?: string[]; external_steps?: string[] }> =
+      jsonData.data?.workflows ?? [];
 
     if (workflowName) {
       const workflow = workflows.find((w) => w.name === workflowName);

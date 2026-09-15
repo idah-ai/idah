@@ -3,7 +3,13 @@ import { clearCache } from "@/data/Cache";
 import { parseSingleElementError } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 
-import type { DatasetConfigSchema, Modalities, ModalityShapes, ModalityTagging, Plugins } from "@/data/model/setting/plugin/types";
+import type {
+  DatasetConfigSchema,
+  Modalities,
+  ModalityShapes,
+  ModalityTagging,
+  Plugins,
+} from "@/data/model/setting/plugin/types";
 import type { Hash } from "@/utils/types";
 
 @type("setting:plugins")

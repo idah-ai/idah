@@ -21,16 +21,23 @@
     error = null;
     schema = null;
 
-    pluginsBackendDataSource.datasetConfig(pluginName).then((config) => {
-      schema = config;
-      loading = false;
-    }).catch((err) => {
-      error = String(err);
-      loading = false;
-    });
+    pluginsBackendDataSource
+      .datasetConfig(pluginName)
+      .then((config) => {
+        schema = config;
+        loading = false;
+      })
+      .catch((err) => {
+        error = String(err);
+        loading = false;
+      });
   });
 
-  function updateField(groupKey: string, fieldKey: string, fieldValue: string | number | boolean | null | undefined): void {
+  function updateField(
+    groupKey: string,
+    fieldKey: string,
+    fieldValue: string | number | boolean | null | undefined,
+  ): void {
     const updated = { ...value };
     if (!updated[groupKey]) updated[groupKey] = {};
     updated[groupKey] = { ...updated[groupKey], [fieldKey]: fieldValue };
@@ -39,9 +46,9 @@
 </script>
 
 {#if loading}
-  <p class="text-sm text-muted-foreground italic">Loading configuration...</p>
+  <p class="text-muted-foreground text-sm italic">Loading configuration...</p>
 {:else if error}
-  <p class="text-sm text-destructive italic">{error}</p>
+  <p class="text-destructive text-sm italic">{error}</p>
 {:else if schema}
   <FieldSet class="p-1">
     {#each schema.groups as group, gi (group.key)}
