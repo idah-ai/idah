@@ -138,7 +138,6 @@ module Plugins
 
       return unless file_path
 
-      # binding.pry
       File.read(
         File.join(plugin.path, file_path)
       )

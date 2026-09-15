@@ -287,15 +287,19 @@ module Entry
         if expected_tok && payload[:token] != expected_tok
           raise Verse::Error::Unauthorized, "Invalid or missing callback token"
         end
+
         # Apply annotation updates from external app
         (payload[:annotations] || []).each do |anno_data|
           existing = entry.annotations.find { |a| a.id == anno_data["id"] }
           if existing
-            system_annotations_repo.update!(existing.id, {
-              annotation: anno_data["annotation"] || existing.annotation,
-              dimensions: anno_data["dimensions"] || existing.dimensions,
-              metadata: (existing.metadata || {}).merge(anno_data["metadata"] || {})
-            })
+            system_annotations_repo.update!(
+              existing.id,
+              {
+                annotation: anno_data["annotation"] || existing.annotation,
+                dimensions: anno_data["dimensions"] || existing.dimensions,
+                metadata: (existing.metadata || {}).merge(anno_data["metadata"] || {})
+              }
+            )
           else
             system_annotations_repo.create(
               id: UUIDv7.generate,

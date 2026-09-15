@@ -17,7 +17,7 @@ module QcWorkflow
 
       def self.steps
         [
-          { name: "start",     label: "Start",     description: "Entry is ready for annotation" },
+          { name: "start",     label: "Start", description: "Entry is ready for annotation" },
           { name: "annotate",  label: "Annotate",   description: "Annotate the entry" },
           { name: "qc",        label: "QC",         description: "External QC in progress — awaiting callback" },
           {
@@ -28,13 +28,13 @@ module QcWorkflow
               {
                 name: "approved",
                 choices: [
-                  { label: "Approve",        icon: "SquareCheckIcon", value: true },
-                  { label: "Request Changes", icon: "SquareXIcon",   value: false }
+                  { label: "Approve", icon: "SquareCheckIcon", value: true },
+                  { label: "Request Changes", icon: "SquareXIcon", value: false }
                 ]
               }
             ]
           },
-          { name: "done",      label: "Done",      description: "Annotation workflow completed" },
+          { name: "done", label: "Done", description: "Annotation workflow completed" },
         ]
       end
 

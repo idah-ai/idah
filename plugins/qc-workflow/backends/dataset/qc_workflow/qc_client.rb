@@ -43,21 +43,19 @@ module QcWorkflow
         }
 
         Thread.new do
-          begin
-            uri = URI(endpoint)
-            http = Net::HTTP.new(uri.host, uri.port)
-            http.open_timeout = 5
-            http.read_timeout = 5
+          uri = URI(endpoint)
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.open_timeout = 5
+          http.read_timeout = 5
 
-            request = Net::HTTP::Post.new(uri.request_uri)
-            request.body = payload.to_json
-            request["Content-Type"] = "application/json"
+          request = Net::HTTP::Post.new(uri.request_uri)
+          request.body = payload.to_json
+          request["Content-Type"] = "application/json"
 
-            response = http.request(request)
-            Verse.logger&.info("[QC] Sent to #{endpoint} — response: #{response.code}")
-          rescue StandardError => e
-            Verse.logger&.error("[QC] Failed to send to #{endpoint}: #{e.message}")
-          end
+          response = http.request(request)
+          Verse.logger&.info("[QC] Sent to #{endpoint} — response: #{response.code}")
+        rescue StandardError => e
+          Verse.logger&.error("[QC] Failed to send to #{endpoint}: #{e.message}")
         end
       end
     end
