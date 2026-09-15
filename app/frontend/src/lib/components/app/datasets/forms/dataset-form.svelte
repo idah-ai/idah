@@ -8,7 +8,7 @@
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
-  import { workflowsBackendDataSource } from "@/data/model/dataset/workflows/record";
+  import { WorkflowRecord, workflowsBackendDataSource } from "@/data/model/dataset/workflows/record";
 
   import WorkflowConfigEditor from "@/components/app/datasets/forms/workflow-config-editor.svelte";
 
@@ -30,7 +30,7 @@
   let workflow_configuration = $state<Hash>(dataset.workflow_configuration ?? {});
   let selectedDatasetId = $state<string | null>(null);
   let selectedWorkflowPlugin = $state<string | null>(null);
-  let workflows = $state<any[]>([]);
+  let workflows = $state<WorkflowRecord[]>([]);
 
   // Functions
   $effect(() => {

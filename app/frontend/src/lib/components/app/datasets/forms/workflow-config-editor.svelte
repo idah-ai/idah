@@ -44,14 +44,14 @@
   <p class="text-sm text-destructive italic">{error}</p>
 {:else if schema}
   <FieldSet class="p-1">
-    {#each schema.groups as group, gi}
+    {#each schema.groups as group, gi (group.key)}
       <FieldGroup>
         <h4 class="text-sm font-medium">{group.label}</h4>
         {#if group.description}
           <FieldDescription>{group.description}</FieldDescription>
         {/if}
 
-        {#each group.fields as fieldDef}
+        {#each group.fields as fieldDef (fieldDef.key)}
           {#if fieldDef.type === "boolean"}
             <label class="flex items-center gap-2 text-sm">
               <input
