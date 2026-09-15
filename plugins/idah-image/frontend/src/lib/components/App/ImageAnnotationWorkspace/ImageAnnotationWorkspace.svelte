@@ -229,7 +229,7 @@
 
   });
 
-  async function addAnnotation(shape: IImageAnnotationShape, category?: string, properties: AnnotationAttributes = {}, shapeType?: string) {
+  async function addAnnotation(shape: IImageAnnotationShape, shapeType: string, category?: string, properties: AnnotationAttributes = {}) {
     if (!editable) return;
 
     getDriver().command.call("idah-image:annotation.add", { shape, shape_type: shapeType, category, properties });
@@ -290,7 +290,7 @@
 
     if (valueMode == "entry:root" && !selAnnotation) {
       if (category && category != "" && requirementFullfilled)
-        addAnnotation({} as IImageAnnotationShape, category, $state.snapshot(effectiveProperties), valueMode);
+        addAnnotation({} as IImageAnnotationShape, valueMode, category, $state.snapshot(effectiveProperties));
     } else if (selAnnotation) {
       selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       if (requirementFullfilled)
@@ -374,11 +374,11 @@
     let properties = $state.snapshot(pendingValue) as AnnotationAttributes;
     let category = pendingCategory;
 
-    const shape: IImageAnnotationShape = { type, points, ..._extraProps };
+    const shape: IImageAnnotationShape = { points, ..._extraProps };
 
     shapeSelectionArgs = undefined;
     resetPending();
-    addAnnotation(shape, category, properties);
+    addAnnotation(shape, type, category, properties);
   }
 
   function onShapeSelection(
@@ -425,7 +425,7 @@
     ) {
       shapeSelectionArgs = undefined;
       resetPending();
-      addAnnotation(shape, annotation_category_from, annotation_properties_from, type);
+      addAnnotation(shape, type, annotation_category_from, annotation_properties_from);
     } else {
       shapeSelectionArgs = [type, _points, extraProps];
       // Keep pendingValue so the popover shows the selected category
@@ -450,19 +450,19 @@
    *  at most one entry:root annotation may exist per entry — creating a second
    *  one updates the existing record instead of duplicating. Returns whether the
    *  change was persisted (false when a required field is missing). */
-  function onEntryRootChange(value: AnnotationValue): boolean {
+  function onEntryRootChange(value: IImageAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IImageAnnotationValue, properties)) return false;
+    if (!isTaggingValueComplete(value, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
-    const resolution = resolveEntryRoot(items, value as IImageAnnotationValue);
+    const resolution = resolveEntryRoot(items, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation({ type: ENTRY_ROOT } as IImageAnnotationShape, value);
+      addAnnotation({} as IImageAnnotationShape, ENTRY_ROOT, value.category, value.properties);
     }
     return true;
   }

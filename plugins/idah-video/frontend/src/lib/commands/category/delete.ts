@@ -101,7 +101,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Restore deleted annotations
           for (const ann of snapshot) {
-            await data.annotations!.restore(ann.id);
+            await data.annotations!.restore(ann);
           }
         },
 

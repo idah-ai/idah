@@ -20,7 +20,7 @@ export function isTaggingValueComplete(
   value: IImageAnnotationValue,
   properties: IConfigProperty[] = [],
 ): boolean {
-  return requiredFullfilled(value as unknown as Record<string, unknown>, properties);
+  return requiredFullfilled(value.properties as Record<string, unknown> | undefined, properties);
 }
 
 /** Find the single entry:root annotation in a list of annotation items. */

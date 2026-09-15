@@ -97,19 +97,19 @@ export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationL
  * start/end range, or a keyframe with no points), and for unrecognised shapes.
  */
 export function labelCenterPx(
-  annotation: { shape?: unknown },
+  annotation: { shape_args?: unknown; shape_type?: string },
   w: number,
   h: number,
   frame: number,
 ): Point | null {
-  const shape = annotation?.shape_args as (IVideoAnnotationShape & { type?: string }) | undefined;
+  const shape = annotation?.shape_args as IVideoAnnotationShape | undefined;
   if (!shape) return null;
 
-  const frameData = getInterpolatedFrame(shape, frame, true, (annotation as any)?.shape_type);
+  const frameData = getInterpolatedFrame(shape, frame, true, annotation?.shape_type ?? "");
   const points = (frameData?.points ?? []) as Point[];
   if (points.length === 0) return null;
 
-  switch ((annotation as any)?.shape_type) {
+  switch (annotation?.shape_type) {
     case VIDEO_BOUNDING_BOX: {
       // 4 unrotated AABB corners per keyframe, plus a per-frame angle. Rotation
       // is about the pixel centroid, which leaves the centroid fixed — so the

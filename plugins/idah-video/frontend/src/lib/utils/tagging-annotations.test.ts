@@ -140,10 +140,11 @@ describe("isTaggingValueComplete", () => {
   });
 
   it("is true when all required properties are filled", () => {
-    expect(isTaggingValueComplete({ category: "a", label: "x" }, required)).toBe(true);
+    expect(isTaggingValueComplete({ category: "a", properties: { label: "x" } }, required)).toBe(true);
   });
 
   it("is false when a required property is missing", () => {
+    expect(isTaggingValueComplete({ category: "a", properties: {} }, required)).toBe(false);
     expect(isTaggingValueComplete({ category: "a" }, required)).toBe(false);
   });
 

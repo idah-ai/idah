@@ -108,7 +108,7 @@ export function register(driver: IIdahDriverV2): void {
           if (!data.annotations) return;
           if (isLastKeyframe) {
             // Restore the annotation that `do()` soft-deleted (mirrors annotation.delete's undo).
-            await data.annotations.restore(snapshot.id);
+            await data.annotations.restore(snapshot);
           } else {
             await data.annotations.update(snapshot);
           }

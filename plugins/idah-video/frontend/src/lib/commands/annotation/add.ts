@@ -29,7 +29,7 @@ export const command = {
 
 export interface AnnotationAddProps {
   shape: IVideoAnnotationShape;
-  shape_type?: string;
+  shape_type: string;
   category?: string;
   properties?: Record<string, unknown>;
   id?: string;
@@ -48,7 +48,7 @@ export function register(driver: IIdahDriverV2): void {
       if (!props || !data.annotations) return noopAction(command);
 
       const createdId = uuidv7();
-      const shapeType = props.shape_type ?? (props.shape as any).type;
+      const shapeType = props.shape_type;
 
       return {
         command: { ...command },

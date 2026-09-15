@@ -50,7 +50,7 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          await Promise.all(records.map((record) => data.annotations!.restore(record.id)));
+          await Promise.all(records.map((record) => data.annotations!.restore(record)));
         },
         isCombinable() { return false; },
         combine(p) { return p; },

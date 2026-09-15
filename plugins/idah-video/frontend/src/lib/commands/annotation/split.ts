@@ -77,7 +77,7 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
         if (at <= 0) return noopAction(command);
         const splitAt = at - 1;
         const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-        const splitFrame = ensureSplitFrame(shape, frames, splitAt);
+        const splitFrame = ensureSplitFrame(shape, frames, splitAt, record.shape_type);
         if (!splitFrame) return noopAction(command);
         const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
         targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
@@ -114,7 +114,7 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
           if (shape.start > at || shape.end < at) continue;
           const splitAt = at - 1;
           const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-          const splitFrame = ensureSplitFrame(shape, frames, splitAt);
+          const splitFrame = ensureSplitFrame(shape, frames, splitAt, record.shape_type);
           if (!splitFrame) continue;
           const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
           targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
@@ -178,10 +178,11 @@ function ensureSplitFrame(
   shape: IVideoAnnotationShape,
   frames: IVideoFrameSelection[],
   splitAt: number,
+  shapeType: string,
 ): IVideoFrameSelection | undefined {
   let splitFrame = frames.find((f) => f.frame === splitAt);
   if (!splitFrame) {
-    const interpolated = getInterpolatedFrame(shape, splitAt, true, record.shape_type);
+    const interpolated = getInterpolatedFrame(shape, splitAt, true, shapeType);
     if (interpolated) {
       splitFrame = { frame: splitAt, angle: interpolated.angle, points: interpolated.points ?? [] };
     }

@@ -319,7 +319,8 @@
       // Frame tagging creation: route through the same onShapeSelection flow as
       // shaped annotations (builds the shape, opens the popover when required
       // properties are missing, creates otherwise).
-      pendingValue = value;
+      pendingCategory = category;
+      if (properties) pendingValue = properties;
       onShapeSelection(VIDEO_FRAME, viewport.video.currentFrame.value);
     } else if (valueMode !== ENTRY_ROOT) {
       // Sidebar category click: store category and enter drawing mode
@@ -491,19 +492,19 @@
    *  at most one entry:root annotation may exist per entry — creating a second
    *  one updates the existing record instead of duplicating. Returns whether the
    *  change was persisted (false when a required field is missing). */
-  function onEntryRootChange(value: AnnotationValue): boolean {
+  function onEntryRootChange(value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+    if (!isTaggingValueComplete(value, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
-    const resolution = resolveEntryRoot(items, value as IVideoAnnotationValue);
+    const resolution = resolveEntryRoot(items, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation(entryRootFullRangeShape(), value);
+      addAnnotation(entryRootFullRangeShape(), value.category, value.properties);
     }
     return true;
   }
@@ -511,22 +512,23 @@
   /** Create a frame annotation from the given value. Uniqueness is enforced client-side
    *  per (frame, category): at most one frame annotation per category per frame.
    *  Returns whether the change was persisted (false when a required field is missing). */
-  function onFrameCreate(value: AnnotationValue): boolean {
+  function onFrameCreate(value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+    if (!isTaggingValueComplete(value, properties)) return false;
     const frame = viewport.video.currentFrame.value;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
-    const resolution = resolveFrame(items, frame, value.category, value as IVideoAnnotationValue);
+    const resolution = resolveFrame(items, frame, value.category, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
       addAnnotation(
         { type: VIDEO_FRAME, start: frame, end: frame, frames: [] },
-        value,
+        value.category,
+        value.properties,
       );
     }
     return true;
@@ -534,13 +536,13 @@
 
   /** Update an existing idah-video:frame tagging record. Returns whether the change
    *  was persisted (false when a required field is missing). */
-  function onFrameUpdate(ann: IVideoAnnotationRecord, value: AnnotationValue): boolean {
+  function onFrameUpdate(ann: IVideoAnnotationRecord, value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     // Editing must satisfy the same required-field gate as creation.
     const properties =
       getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
-    updateAnnotationValue(ann, value);
+    if (!isTaggingValueComplete(value, properties)) return false;
+    updateAnnotationValue(ann, value.category, value.properties);
     return true;
   }
 
@@ -687,7 +689,7 @@
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if pendingCategory || shapeSelectionArgs?.[0] === VIDEO_FRAME}
           <SelectionPanel
-            selectedCategory={pendingCategory}
+            selectedCategory={pendingCategory ?? ""}
             annotationValue={annotationValue}
             shapeTypeOverride={shapeSelectionArgs?.[0]}
             onSelectCategory={(selectedCategory) => {

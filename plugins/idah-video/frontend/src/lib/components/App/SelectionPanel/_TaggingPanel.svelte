@@ -191,7 +191,7 @@
           onValueChange={(property, v) =>
             onRootChange({
               ...rootDraft,
-              attributes: { ...(rootDraft.attributes ?? {}), [property.id]: v },
+              properties: { ...(rootDraft.properties ?? {}), [property.id]: v },
             })}
           {disabled}
         />
@@ -263,7 +263,7 @@
               onValueChange={(property, v) =>
                 handleFrameEdit({
                   ...frameEditDraft,
-                  attributes: { ...(frameEditDraft.attributes ?? {}), [property.id]: v },
+                  properties: { ...(frameEditDraft.properties ?? {}), [property.id]: v },
                 })}
               {disabled}
             />
@@ -294,7 +294,7 @@
               onValueChange={(property, v) =>
                 handleFrameCreate({
                   ...frameCreateDraft,
-                  attributes: { ...(frameCreateDraft.attributes ?? {}), [property.id]: v },
+                  properties: { ...(frameCreateDraft.properties ?? {}), [property.id]: v },
                 })}
               {disabled}
             />

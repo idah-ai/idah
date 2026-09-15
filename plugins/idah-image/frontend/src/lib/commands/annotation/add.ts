@@ -34,7 +34,7 @@ export const command = {
 
 export interface AnnotationAddProps {
   shape: IImageAnnotationShape;
-  shape_type?: string;
+  shape_type: string;
   category?: string;
   properties?: Record<string, unknown>;
   /** Optional pre-generated ID. If omitted, one is generated. */
@@ -54,7 +54,7 @@ export function register(driver: IIdahDriverV2): void {
       if (!props || !data.annotations) return noopAction(command);
 
       const createdId = props.id ?? uuidv7();
-      const shapeType = props.shape_type ?? (props.shape as any).type;
+      const shapeType = props.shape_type;
 
       // Capture the session's painted tiles NOW, not inside do(). do() runs
       // again on redo against the same action object, but maskSession.reset()

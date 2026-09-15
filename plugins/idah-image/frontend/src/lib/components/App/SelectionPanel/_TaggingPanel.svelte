@@ -98,7 +98,7 @@
         onValueChange={(property, v) =>
           onChange({
             ...draftValue,
-            attributes: { ...(draftValue.attributes ?? {}), [property.id]: v },
+            properties: { ...(draftValue.properties ?? {}), [property.id]: v },
           })}
         {disabled}
       />

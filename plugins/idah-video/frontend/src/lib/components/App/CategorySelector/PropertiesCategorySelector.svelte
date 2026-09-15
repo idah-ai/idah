@@ -105,7 +105,7 @@
     const sel = selection.value;
     if (!sel) return;
     if (sel.type === "annotation") {
-      const shapeType = (sel.annotation.shape as { type?: string })?.type;
+      const shapeType = (sel.annotation as any)?.shape_type;
       if (shapeType === VIDEO_FRAME) {
         sidebarTabs.rightTab = "tagging";
         sidebarTabs.taggingTab = "frame";

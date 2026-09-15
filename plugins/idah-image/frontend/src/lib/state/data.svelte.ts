@@ -72,7 +72,7 @@ export function computeMissingRanges(loaded: [number, number] | null, request: [
 // ---------------------------------------------------------------------------
 
 export interface AnnotationDataStore extends DataStore<AnnotationItem> {
-  restore(id: string): Promise<void>;
+  restore(record: AnnotationItem): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -256,15 +256,23 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       }
     },
 
-    async restore(id: string): Promise<void> {
-      // No optimistic local insert — rely on the backend's restore response
-      // (which carries the full record, including annotation_shape tiles) to
-      // repopulate. If it fails, nothing was changed locally.
+    async restore(record: AnnotationItem): Promise<void> {
+      // Optimistic: insert locally first so the annotation reappears immediately
+      // (the pre-delete snapshot carries everything needed to redisplay it,
+      // including mask tile data merged into shape_args).
+      originalUpsert(record);
+      markOccupancyDirty();
       try {
-        const restored = await driver.restore(id);
+        // Reconcile with the backend's authoritative response — replace the
+        // optimistic record with what the backend actually returned.
+        const restored = await driver.restore(record.id);
         originalUpsert(restored as AnnotationItem);
         markOccupancyDirty();
       } catch {
+        // Rollback on failure — remove the optimistically-inserted record so no
+        // phantom "restored" annotation lingers if the backend rejected it.
+        store.remove(record.id);
+        markOccupancyDirty();
         throw new Error("Failed to restore annotation");
       }
     },

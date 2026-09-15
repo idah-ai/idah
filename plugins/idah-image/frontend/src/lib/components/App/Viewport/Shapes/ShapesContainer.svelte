@@ -510,8 +510,8 @@
    * min/max over those raw entries treats a radius as a coordinate and yields a box
    * nowhere near the shape, so each needs its own corners.
    */
-  function getShapeOutline(shape: IImageAnnotationShape): Point[] | null {
-    if (shape.type === IMAGE_CIRCLE) {
+  function getShapeOutline(shape: IImageAnnotationShape, shapeType: string): Point[] | null {
+    if (shapeType === IMAGE_CIRCLE) {
       const c = shape.points?.[0] as Point | undefined;
       if (!c) return null;
       const r = (shape.radius as number | undefined) ?? 0;
@@ -521,7 +521,7 @@
       return ellipseAABB(c, rx, ry);
     }
 
-    if (shape.type === IMAGE_ELLIPSE) {
+    if (shapeType === IMAGE_ELLIPSE) {
       const c = shape.points?.[0] as Point | undefined;
       const r = shape.points?.[1] as Point | undefined;
       if (!c || !r) return null;
@@ -533,7 +533,7 @@
 
   /** Compute the AABB of an annotation's shape. Returns null if no geometry. */
   function getAnnotationAABB(ann: IAnnotationRecord): [number, number, number, number] | null {
-    const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+    const shape = (ann.shape_args ?? {}) as IImageAnnotationShape | undefined;
     if (!shape) return null;
 
     // `points` holds the unrotated corners — `angle` is applied as a render
@@ -543,7 +543,7 @@
     // the user sees it. rotatePointN does the math in pixel space, matching the
     // render; shapes with no angle skip this untouched.
     const angle = (shape.angle as number | undefined) ?? 0;
-    let pts = getShapeOutline(shape);
+    let pts = getShapeOutline(shape, (ann as any).shape_type ?? "");
     if (!pts?.length) return null;
     if (angle !== 0 && media.width > 0 && media.height > 0) {
       const center = centroidUtil(pts);
@@ -965,16 +965,16 @@
         const ann = visibleAnnotations[i];
         if (!selection.isAnnotationSelected(ann.id)) continue;
         if (ann.id === _draggedId) continue;
-        const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+        const shape = (ann.shape_args ?? {}) as IImageAnnotationShape | undefined;
         if (!shape?.points?.length) continue;
 
         // Shift points based on shape type — some shapes store radii
         // in points that must NOT be translated.
         let movedPoints: Point[];
-        if (shape.type === IMAGE_CIRCLE) {
+        if (ann.shape_type === IMAGE_CIRCLE) {
           // points = [[cx, cy]] — only centroid shifts, radius is separate
           movedPoints = [[shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]]];
-        } else if (shape.type === IMAGE_ELLIPSE) {
+        } else if (ann.shape_type === IMAGE_ELLIPSE) {
           // points = [[cx, cy], [rx, ry]] — only centroid shifts, radii are separate
           movedPoints = [
             [shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]],
@@ -1116,7 +1116,7 @@
       // below mutates the store). Undo restores this exact snapshot, so all
       // shapes return to their original positions in one Ctrl+Z.
       if (ann) {
-        const originalShape = ann.shape as IImageAnnotationShape | undefined;
+        const originalShape = ann.shape_args as IImageAnnotationShape | undefined;
         _commitBatch.push({
           annotationId: annId,
           // Spread the original shape, then apply extraProps (e.g., ellipse
@@ -1127,7 +1127,7 @@
           shape: { ...originalShape, ...extraProps, points } as IImageAnnotationShape,
           snapshot: {
             ...ann,
-            shape: { ...(ann.shape ?? {}) },
+            shape_args: { ...(ann.shape_args ?? {}) },
           } as AnnotationItem,
         });
       }
@@ -1147,12 +1147,12 @@
     // here keeps shapes at their new positions through the render that
     // follows, eliminating the blink.
     if (!ann) return;
-    const shape = ann.shape as IImageAnnotationShape | undefined;
+    const shape = ann.shape_args as IImageAnnotationShape | undefined;
     if (!shape) return;
 
     data.annotations!.upsert({
       ...ann,
-      shape: { ...shape, points },
+      shape_args: { ...shape, points },
     } as any);
   }
 
