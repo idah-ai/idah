@@ -289,15 +289,16 @@ module Entry
         end
 
         # Apply annotation updates from external app
-        (payload[:annotations] || []).each do |anno_data|
-          existing = entry.annotations.find { |a| a.id == anno_data["id"] }
+        (payload[:annotations] || []).each do |raw_anno|
+          anno_data = raw_anno.transform_keys(&:to_sym)
+          existing = entry.annotations.find { |a| a.id == anno_data[:id] }
           if existing
             system_annotations_repo.update!(
               existing.id,
               {
-                annotation: anno_data["annotation"] || existing.annotation,
-                dimensions: anno_data["dimensions"] || existing.dimensions,
-                metadata: (existing.metadata || {}).merge(anno_data["metadata"] || {})
+                annotation: anno_data[:annotation] || existing.annotation,
+                dimensions: anno_data[:dimensions] || existing.dimensions,
+                metadata: (existing.metadata || {}).merge(anno_data[:metadata] || {})
               }
             )
           else
@@ -306,26 +307,27 @@ module Entry
               entry_id: entry.id,
               project_id: entry.project_id,
               dataset_id: entry.dataset_id,
-              annotation: anno_data["annotation"] || {},
-              dimensions: anno_data["dimensions"] || {},
-              metadata: anno_data["metadata"] || {},
+              annotation: anno_data[:annotation] || {},
+              dimensions: anno_data[:dimensions] || {},
+              metadata: anno_data[:metadata] || {},
               created_by_email: "external-service@idah.local"
             )
           end
         end
 
         # Create note_feeds from external app feedback
-        (payload[:notes] || []).each do |note_data|
+        (payload[:notes] || []).each do |raw_note|
+          note_data = raw_note.transform_keys(&:to_sym)
           system_note_feeds_repo.create(
             id: UUIDv7.generate,
             entry_id: entry.id,
             project_id: entry.project_id,
             dataset_id: entry.dataset_id,
-            annotation_id: note_data["annotation_id"],
-            anchor_type: note_data["anchor_type"] || "entry",
-            position: note_data["position"],
+            annotation_id: note_data[:annotation_id],
+            anchor_type: note_data[:anchor_type] || "external",
+            position: note_data[:position],
             status: "pending",
-            content_md: note_data["body"] || note_data["content_md"] || "",
+            content_md: note_data[:body] || note_data[:content_md] || "",
             created_by_email: "external-service@idah.local"
           )
         end
