@@ -8,6 +8,12 @@
 # An on-premise install does not use these files. It uses the release bundle in
 # deploy/, which pulls published images and reads a single .env.
 
+# Stamped into the images and reported by /healthcheck. The release workflow
+# sets them; a local build leaves them empty and the services report 0.0.0-dev.
+x-version-args: &version-args
+  IDAH_VERSION: ${IDAH_VERSION:-}
+  IDAH_GIT_SHA: ${IDAH_GIT_SHA:-}
+
 services:
   nginx:
     image: nginx:alpine
@@ -29,6 +35,7 @@ services:
     build:
       context: .
       dockerfile: ./app/iam/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:
@@ -40,6 +47,7 @@ services:
     build:
       context: .
       dockerfile: ./app/media/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:
@@ -53,6 +61,7 @@ services:
     build:
       context: .
       dockerfile: ./app/dataset/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:
@@ -64,6 +73,7 @@ services:
     build:
       context: .
       dockerfile: ./app/setting/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:
@@ -75,6 +85,7 @@ services:
     build:
       context: .
       dockerfile: ./app/audit/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:
@@ -86,6 +97,7 @@ services:
     build:
       context: .
       dockerfile: ./app/sync/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:
@@ -97,6 +109,7 @@ services:
     build:
       context: .
       dockerfile: ./app/notification/Dockerfile
+      args: *version-args
     ports:
       - "3000"
     networks:

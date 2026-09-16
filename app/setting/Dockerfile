@@ -68,4 +68,10 @@ COPY app/setting/ .
 COPY --exclude=*/frontend plugins/ /plugins/
 COPY --from=plugin-frontends /out/ /plugins/
 
+# Stamped by the release workflow. Without them the service reports 0.0.0-dev.
+ARG IDAH_VERSION
+ARG IDAH_GIT_SHA
+ENV IDAH_VERSION="$IDAH_VERSION"
+ENV IDAH_GIT_SHA="$IDAH_GIT_SHA"
+
 CMD ["bundle", "exec", "puma"]

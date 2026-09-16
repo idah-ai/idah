@@ -572,6 +572,12 @@ For production plugins, place them in `plugins/` instead of `plugins_dev/`.
 | `PORT`                      | HTTP server port                     | `3000`            |
 | `PUMA_WORKERS`              | Puma worker count                    | `1`               |
 | `PUMA_THREADS`              | Puma threads per worker              | `16`              |
+| `IDAH_VERSION`              | Release the image was built from, reported by `/healthcheck` | `0.0.0-dev` |
+| `IDAH_GIT_SHA`              | Commit the image was built from, reported by `/healthcheck`  | `unknown`   |
+
+`IDAH_VERSION` and `IDAH_GIT_SHA` are build arguments stamped in by the release
+workflow, not settings you put in an env file. A local build leaves them empty
+and the service reports the defaults above.
 
 ### IAM-specific variables
 
