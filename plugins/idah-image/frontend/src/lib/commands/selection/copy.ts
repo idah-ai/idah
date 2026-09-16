@@ -46,7 +46,7 @@ export function register(driver: IIdahDriverV2): void {
           const entries: {
             shape_type: string;
             shape_args: Record<string, unknown>;
-            category: string | undefined;
+            category: string;
             properties: Record<string, unknown> | undefined;
             metadata: Record<string, unknown> | undefined;
             centroidOffset: [number, number];
@@ -56,11 +56,11 @@ export function register(driver: IIdahDriverV2): void {
             if (selectedIds.has(ann.id) && !copySet.has(ann.id)) {
               copySet.add(ann.id);
               entries.push({
-                shape_type: (ann as any).shape_type,
-                shape_args: { ...((ann as any).shape_args as any) },
-                category: (ann as any).category,
-                properties: (ann as any).properties ? { ...((ann as any).properties as any) } : undefined,
-                metadata: ann.metadata ? { ...(ann.metadata as any) } : undefined,
+                shape_type: ann.shape_type,
+                shape_args: { ...ann.shape_args },
+                category: ann.category,
+                properties: ann.properties ? { ...ann.properties } : undefined,
+                metadata: ann.metadata ? { ...ann.metadata } : undefined,
                 centroidOffset: [0, 0],
               });
             }
