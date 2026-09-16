@@ -28,6 +28,8 @@ module PluginSystem
     end
 
     def start(context_class)
+      warn_if_platform_too_old
+
       service_name = Verse.service_name
       service_class_name = service_name.split(/[-_]+/).map(&:capitalize).join
 
@@ -75,6 +77,33 @@ module PluginSystem
     ensure
       @loader&.unload
       @loader = nil
+    end
+
+    # `idahVersion` in the manifest is the oldest platform version the plugin
+    # works with. This warns rather than refuses to load: on 0.x any minor may
+    # break a plugin, and an operator is better served by a running platform
+    # with a loud log line than by a service that will not start.
+    def warn_if_platform_too_old
+      required = manifest.idah_version
+      return if required.nil?
+
+      # A build that was not stamped by the release workflow has no version to
+      # compare against.
+      current = IdahVersion.number
+      return if current == IdahVersion::DEV_VERSION
+
+      return if SemanticVersion[current] >= SemanticVersion[required]
+
+      Verse.logger.warn{
+        "[IDAH-PLUGIN] Plugin `#{manifest.name}` needs IDAH #{required} or later, " \
+        "this is #{current}. Loading it anyway."
+      }
+    rescue StandardError => e
+      # A malformed idahVersion, or any bug in this check, must never stop a
+      # plugin - let alone the service - from starting.
+      Verse.logger.warn{
+        "[IDAH-PLUGIN] Plugin `#{manifest.name}` compatibility check failed: #{e.message}"
+      }
     end
 
     def reload

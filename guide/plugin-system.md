@@ -17,6 +17,7 @@ Every plugin **must** have a `manifest.json` at its root. This JSON file declare
   "type": "idah-plugin",
   "name": "idah-video",
   "version": "0.1.0",
+  "idahVersion": "0.1.0",
   "title": "IDAH Video Annotation",
   "description": "Video annotation support",
   "modalities": [{
@@ -50,7 +51,8 @@ Every plugin **must** have a `manifest.json` at its root. This JSON file declare
 |---|---|---|
 | `type` | `string` | Always `"idah-plugin"` |
 | `name` | `string` | Unique plugin identifier (used as directory name convention) |
-| `version` | `string` | Semantic version |
+| `version` | `string` | Semantic version of the plugin itself |
+| `idahVersion` | `string` | Optional. Oldest platform version the plugin works with, e.g. `"0.1.0"`. A service older than this logs a warning and loads the plugin anyway |
 | `title` | `string` | Human-readable display name |
 | `description` | `string` | Short description of plugin functionality |
 | `modalities` | `array<object>` | Annotation modalities this plugin provides |
