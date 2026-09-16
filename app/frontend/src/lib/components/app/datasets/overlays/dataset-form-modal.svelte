@@ -106,7 +106,7 @@
           modality: draft.modality,
           workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
-          workflow_configuration: {},
+          workflow_configuration: draft.workflow_configuration ?? {},
         },
         relationships: {
           project: {
@@ -142,6 +142,7 @@
           modality: draft.modality,
           workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
+          workflow_configuration: draft.workflow_configuration ?? {},
         },
       },
       {
