@@ -61,20 +61,22 @@ RSpec.describe Plugin::Record, type: :model do
       end
 
       it "builds the path with default plugins directory" do
-        allow(Dir).to receive(:glob).with("plugins/**").and_return(
+        plugins_dir = File.join(PluginSystem::ROOT, "plugins")
+
+        allow(Dir).to receive(:glob).with(PluginSystem.default_path).and_return(
           [
-            "plugins/my-plugin-1.2.3",
-            "plugins/other-plugin-2.0.0"
+            File.join(plugins_dir, "my-plugin-1.2.3"),
+            File.join(plugins_dir, "other-plugin-2.0.0")
           ]
         )
 
-        expect(record.path).to eq("plugins/my-plugin-1.2.3")
+        expect(record.path).to eq(File.join(plugins_dir, "my-plugin-1.2.3"))
       end
 
       it "raises an error if plugin path is not found" do
-        allow(Dir).to receive(:glob).with("plugins/**").and_return(
+        allow(Dir).to receive(:glob).with(PluginSystem.default_path).and_return(
           [
-            "plugins/other-plugin-2.0.0"
+            File.join(PluginSystem::ROOT, "plugins", "other-plugin-2.0.0")
           ]
         )
 

@@ -4,7 +4,7 @@
 [![CI - Common](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml)
 [![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
 [![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
-[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](compose.yml)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
@@ -39,15 +39,16 @@
    cd idah
    ```
 
-2. **Start databases** (PostgreSQL & Redis)
-   ```bash
-   docker compose -f docker-compose-db.yml up -d
-   ```
+2. **Databases** (PostgreSQL & Redis)
+
+   They start with the stack as containers, so there is nothing to do. To use the ones on your machine instead, copy `.env.example` to `.env` and uncomment the local-database block.
 
 3. **Start IDAH services**
    ```bash
    docker compose up -d --build
    ```
+
+   `docker compose` merges [compose.override.yml](compose.override.yml) over [compose.yml](compose.yml) automatically: it mounts the source tree and loads the development settings from `config/development/`. These files are the developer setup; an on-premise install uses the release bundle in `deploy/` instead.
 
 4. **Initialize setup** (first time only)
    ```bash

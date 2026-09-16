@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM ruby:3.4.2-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -38,7 +40,14 @@ RUN bundle config set force_ruby_platform true
 RUN bundle config set --local without "$BUNDLE_WITHOUT"
 RUN bundle install --jobs 20 --retry 5
 
+# The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
+COPY common/ /common/
+
 COPY app/sync/ .
+
+# Plugins, minus their frontend sources, found in /plugins by
+# PluginSystem.default_path.
+COPY --exclude=*/frontend plugins/ /plugins/
 
 # Download and extract updcli binary based on architecture from the GitHub release
 RUN ARCH=${TARGETARCH} && \

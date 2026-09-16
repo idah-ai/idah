@@ -90,21 +90,28 @@ git clone https://github.com/idah-ai/idah.git
 cd idah
 ```
 
-### 2. Start the databases
+### 2. Databases
 
-```bash
-docker compose -f docker-compose-db.yml up -d
-```
-
-This starts:
+`docker compose up` starts them as containers along with the stack:
 - **PostgreSQL 17** on port `5432`
 - **Redis** on port `6379`
+
+To use the PostgreSQL and Redis on your machine instead, copy `.env.example` to `.env` and uncomment the local-database block:
+
+```bash
+IDAH_POSTGRES_HOST=host.docker.internal
+IDAH_POSTGRES_CONTAINER=0
+IDAH_REDIS_HOST=host.docker.internal
+IDAH_REDIS_CONTAINER=0
+```
 
 ### 3. Start IDAH services
 
 ```bash
 docker compose up -d --build
 ```
+
+`compose.yml` builds the images and wires the services together. `docker compose` automatically merges `compose.override.yml` on top of it, which adds the development setup: source, `common/` and plugin mounts, the settings in `config/development/`, Postgres and Redis, the dev entrypoints, the vite frontend, TLS on `idah.localhost` and MailHog. Together they are the developer environment; an on-premise install uses the release bundle in `deploy/`, which pulls published images and reads a single `.env`.
 
 This builds and starts all services:
 - `nginx` (reverse proxy, port 8080/8443)
@@ -348,7 +355,6 @@ app/<service>/
 │   ├── util/           # Utility classes
 │   ├── spec_data/      # Test fixtures and data
 │   └── spec_helper.rb  # RSpec helper
-├── common/             # Symlinked shared code
 ├── config/
 │   ├── boot.rb         # Application boot (Dotenv, Bundler, Zeitwerk)
 │   ├── config.yml      # Main config (plugins, DB, Redis, logging)
@@ -358,7 +364,6 @@ app/<service>/
 │   └── routes.rb       # Expo route registrations
 ├── db/
 │   └── migrations/     # Sequel migrations
-├── .env.development    # Development environment variables
 ├── .env.test           # Test environment variables
 ├── Gemfile
 ├── Rakefile
@@ -467,7 +472,6 @@ app/frontend/
 │   ├── routes/           # SvelteKit route pages
 │   └── app.html          # HTML template
 ├── static/               # Static assets
-├── build/plugins/        # Symlinked plugins directory
 ├── package.json
 ├── svelte.config.js
 └── vite.config.ts
@@ -549,8 +553,8 @@ For production plugins, place them in `plugins/` instead of `plugins_dev/`.
 
 ### Plugin activation
 
-- Backend plugins are auto-loaded from `app/<service>/plugins/` and `plugins/`
-- Frontend plugins are symlinked into `app/frontend/build/plugins/` via the dev entrypoint
+- Backend plugins are auto-loaded from `plugins/`, and from `plugins_dev/plugins/` in development (see `PluginSystem.default_path`)
+- Frontend plugin bundles are served by the setting service at `/api/v1/setting/plugins/<name>/files/plugin.js`. In development it serves them from the mounted `plugins/`, so build them with `pnpm run build` (or `pnpm run build:watch`) in `plugins/<name>/frontend`
 
 ---
 
@@ -600,8 +604,8 @@ docker compose up -d <service>
 ### 2. Database connection errors
 
 ```bash
-# Ensure databases are running
-docker compose -f docker-compose-db.yml ps
+# Ensure databases are running (skip if you use local ones, see step 2)
+docker compose ps postgres redis
 
 # Reset a specific service database
 ./bin/reset <service>
@@ -612,35 +616,33 @@ docker compose run --rm iam bundle exec rake db:reset db:migrate
 
 ### 3. SSL certificate issues
 
-The dev environment uses self-signed certificates in `dev/nginx/ssl/`. If missing:
+The dev environment uses self-signed certificates in `config/development/ssl/`. If missing:
 
 ```bash
-mkdir -p dev/nginx/ssl
+mkdir -p config/development/ssl
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout dev/nginx/ssl/key.pem \
-  -out dev/nginx/ssl/cert.pem \
+  -keyout config/development/ssl/key.pem \
+  -out config/development/ssl/cert.pem \
   -subj "/CN=idah.localhost" \
   -addext "subjectAltName=DNS:idah.localhost,DNS:localhost"
 ```
 
 ### 4. Port conflicts
 
-If ports 5432 or 6379 are already in use:
+If ports 5432 or 6379 are already in use, move the database containers to other host ports in your root `.env`. The services reach them over the Docker network, so nothing else changes:
 
 ```bash
-# Change PostgreSQL port in docker-compose-db.yml
-# Then update DATABASE_URI in .env.docker
+IDAH_POSTGRES_PORT=5433
+IDAH_REDIS_PORT=6380
 ```
 
 ### 5. Reset everything (clean slate)
 
 ```bash
-# Stop everything and remove volumes
+# Stop everything and remove volumes, including the database containers' data
 docker compose down -v
-docker compose -f docker-compose-db.yml down -v
 
 # Start fresh
-docker compose -f docker-compose-db.yml up -d
 docker compose up -d --build
 docker compose exec iam bundle exec rake dev:setup dev:users
 ```

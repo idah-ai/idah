@@ -28,12 +28,15 @@ RUN mkdir -p /app
 
 WORKDIR /app
 
-COPY Gemfile* .
+COPY app/notification/Gemfile* .
 
 RUN bundle config set force_ruby_platform true
 RUN bundle config set --local without "$BUNDLE_WITHOUT"
 RUN bundle install --jobs 20 --retry 5
 
-COPY . .
+# The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
+COPY common/ /common/
+
+COPY app/notification/ .
 
 CMD ["bundle", "exec", "puma"]

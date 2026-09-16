@@ -1,3 +1,22 @@
+# syntax=docker/dockerfile:1
+
+# Build the plugin frontend bundles this service serves (Plugins::Service#serve_file).
+FROM node:24-alpine AS plugin-frontends
+
+RUN npm install -g pnpm@10.15.1
+
+COPY --exclude=*/backends plugins/ /plugins/
+
+RUN set -e; \
+    for frontend in /plugins/*/frontend; do \
+      plugin="$(basename "$(dirname "$frontend")")"; \
+      cd "$frontend"; \
+      pnpm install --frozen-lockfile; \
+      pnpm run build; \
+      mkdir -p "/out/$plugin/frontend"; \
+      cp -r build "/out/$plugin/frontend/"; \
+    done
+
 FROM ruby:3.4.2-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -33,12 +52,20 @@ RUN mkdir -p /app
 
 WORKDIR /app
 
-COPY Gemfile* .
+COPY app/setting/Gemfile* .
 
 RUN bundle config set force_ruby_platform true
 RUN bundle config set --local without "$BUNDLE_WITHOUT"
 RUN bundle install --jobs 20 --retry 5
 
-COPY . .
+# The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
+COPY common/ /common/
+
+COPY app/setting/ .
+
+# Plugins, minus their frontend sources, plus the frontend bundles built
+# above, found in /plugins by PluginSystem.default_path.
+COPY --exclude=*/frontend plugins/ /plugins/
+COPY --from=plugin-frontends /out/ /plugins/
 
 CMD ["bundle", "exec", "puma"]
