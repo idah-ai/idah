@@ -6,8 +6,10 @@
 // ---------------------------------------------------------------------------
 
 interface ClipboardAnnotation {
-  shape: Record<string, unknown>;
-  value: Record<string, unknown> | undefined;
+  shape_type: string;
+  shape_args: Record<string, unknown>;
+  category: string | undefined;
+  properties: Record<string, unknown> | undefined;
   metadata: Record<string, unknown> | undefined;
   /** Centroid-relative offset in normalized coords. */
   centroidOffset: [number, number];

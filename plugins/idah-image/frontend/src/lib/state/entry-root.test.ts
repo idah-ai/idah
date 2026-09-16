@@ -37,7 +37,7 @@ describe("entryRoot state", () => {
   });
 
   it("holds arbitrary data", () => {
-    const data = { id: "x", shape: { type: "entry:root" }, value: { label: "test" } };
+    const data = { id: "x", shape_type: "entry:root", properties: { label: "test" } };
     entryRoot.value = data;
     expect(entryRoot.value).toEqual(data);
   });

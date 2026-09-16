@@ -41,8 +41,8 @@
 
 <div class="relative h-full w-full bg-transparent">
   {#if entryRootAnnotation}
-    {@const rootStart = entryRootAnnotation.shape.start}
-    {@const rootEnd = entryRootAnnotation.shape.end}
+    {@const rootStart = entryRootAnnotation.shape_args.start}
+    {@const rootEnd = entryRootAnnotation.shape_args.end}
     {@const rootPos = ((rootStart - startRange) / rangeSize) * 100}
     {@const rootWidth = ((rootEnd - rootStart + 1) / rangeSize) * 100}
     <div

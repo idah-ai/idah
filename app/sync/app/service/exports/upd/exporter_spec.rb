@@ -175,7 +175,8 @@ RSpec.describe Exports::Upd::Exporter do
             expect(args).to include("idah-video:bounding-box")
             expect(args).to include("--shape")
             expect(args.any? { |a| a.is_a?(String) && a.start_with?("@") }).to be(true)
-            expect(args).to include("--annotation")
+            expect(args).to include("--category")
+            expect(args).to include("--properties")
             expect(args).to include("--metadata")
           end
           true
@@ -295,6 +296,26 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     context "annotation dimensions handling" do
+      it "passes shape_args without type and category/properties separately" do
+        shape_valid = false
+        allow(exporter).to receive(:system) do |*args|
+          if args.include?("annotation") && args.include?("create")
+            type_idx = args.index("--type")
+            shape_idx = args.index("--shape")
+            if type_idx && shape_idx
+              # shape_type is passed as its own --type flag, not embedded in shape_args
+              shape_valid = args[type_idx + 1] == "idah-video:bounding-box" &&
+                            args[shape_idx + 1].is_a?(String) &&
+                            args[shape_idx + 1].start_with?("@")
+            end
+          end
+          true
+        end
+
+        exporter.export(context)
+        expect(shape_valid).to be(true)
+      end
+
       it "passes shape via @file syntax to avoid long arguments" do
         shape_via_file = false
         allow(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(
@@ -312,12 +333,11 @@ RSpec.describe Exports::Upd::Exporter do
         expect(shape_via_file).to be(true)
       end
 
-      it "writes dimensions JSON to the tempfile without type" do
+      it "writes shape_args JSON to the tempfile" do
         tempfile = instance_double(Tempfile, path: "/tmp/shape.json")
         expect(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(tempfile)
         expect(tempfile).to receive(:write) do |json|
           parsed = JSON.parse(json)
-          expect(parsed).not_to have_key("type")
           expect(parsed).to have_key("end")
           expect(parsed).to have_key("start")
         end
@@ -326,22 +346,45 @@ RSpec.describe Exports::Upd::Exporter do
         exporter.export(context)
       end
 
-      it "passes annotation data as JSON" do
-        annotation_valid = false
+      it "passes category and properties as their own flags" do
+        category_valid = false
+        properties_valid = false
         allow(exporter).to receive(:system) do |*args|
           if args.include?("annotation") && args.include?("create")
-            annotation_idx = args.index("--annotation")
+            category_idx = args.index("--category")
+            properties_idx = args.index("--properties")
             metadata_idx = args.index("--metadata")
-            if annotation_idx && metadata_idx
-              annotation = JSON.parse(args[annotation_idx + 1])
-              annotation_valid = (annotation == { "category" => "vehicles/car" })
+            if category_idx && properties_idx && metadata_idx
+              category_valid = args[category_idx + 1] == "vehicles/car"
+              properties_valid = args[properties_idx + 1] == "{}"
             end
           end
           true
         end
 
         exporter.export(context)
-        expect(annotation_valid).to be(true)
+        expect(category_valid).to be(true)
+        expect(properties_valid).to be(true)
+      end
+
+      it "skips soft-deleted annotations entirely" do
+        # Build a tombstoned annotation response (deleted_at set) and ensure no
+        # `annotation create` command is issued for it.
+        deleted_data = annotation_data[:data][0].dup
+        deleted_data[:attributes] = deleted_data[:attributes].dup
+        deleted_data[:attributes][:deleted_at] = "2026-08-10 08:00:00 +0000"
+        deleted_response = Verse::JsonApi::Struct.new deleted_data
+
+        allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([deleted_response])
+
+        annotation_created = false
+        allow(exporter).to receive(:system) do |*args|
+          annotation_created = true if args.include?("annotation") && args.include?("create")
+          true
+        end
+
+        exporter.export(context)
+        expect(annotation_created).to be(false)
       end
     end
 

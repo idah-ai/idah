@@ -53,8 +53,10 @@ export function rebuildOccupancy(annotations: AnnotationItem[]): boolean {
     // Skip hidden annotations — they shouldn't block painting
     if (annotation.isHidden(ann)) continue;
 
-    const shape = ann.shape as Record<string, unknown>;
-    if (shape?.type !== IMAGE_MASK) continue;
+    // Only mask annotations contribute to the occupancy grid
+    if (ann.shape_type !== IMAGE_MASK) continue;
+
+    const shape = ann.shape_args as Record<string, unknown>;
 
     for (const [key, val] of Object.entries(shape)) {
       if (!key.startsWith("tile-")) continue;

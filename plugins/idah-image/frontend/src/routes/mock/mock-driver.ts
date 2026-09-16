@@ -45,8 +45,8 @@ type SampleAnnotation = IAnnotationRecord<IImageAnnotationShape, IImageAnnotatio
 const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
   {
     id: uuidv7(),
-    shape: {
-      type: IMAGE_BOUNDING_BOX,
+    shape_type: IMAGE_BOUNDING_BOX,
+    shape_args: {
       points: [
         [0.030237486417802006, 0.2333274536145938],
         [0.03965013702021159, 0.2333274536145938],
@@ -55,12 +55,12 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
       ],
       angle: 0,
     } as IImageAnnotationShape,
-    value: { category: "vehicles/car", label: "car" },
+    category: "vehicles/car",
   },
   {
     id: uuidv7(),
-    shape: {
-      type: "idah-image:polygon",
+    shape_type: "idah-image:polygon",
+    shape_args: {
       points: [
         [0.39446366782006914, 0.6193771626297577],
         [0.3391003460207612, 0.6159169550173011],
@@ -70,7 +70,7 @@ const SAMPLE_ANNOTATIONS: SampleAnnotation[] = [
       ],
       angle: 0,
     } as IImageAnnotationShape,
-    value: { category: "pedestrian", label: "pedestrian" },
+    category: "pedestrian",
   },
 ];
 
@@ -233,6 +233,10 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
     return this.store.delete(id);
   }
 
+  async restore(id: string): Promise<Annot> {
+    return this.store.restore(id);
+  }
+
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
   }
@@ -317,7 +321,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
           required: true,
           visibility: [
             "in",
-            [["get", ["annotation.category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
+            [["get", ["category"]], [["vehicles/car", "vehicles/bus", "vehicles/van", "vehicles/truck"]]],
           ] as any,
           description: "How many wheels does the object have?",
         },
@@ -552,7 +556,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
   getFilteredConfig(
     shapeType: string,
     value: Record<string, unknown>,
-    objectName: string = "annotation",
+    objectName: string = "",
   ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;

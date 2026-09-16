@@ -161,23 +161,21 @@ module Exports
 
       def append_annotation(file_path, entry_id, annotation)
         attributes = annotation.record.data[:attributes]
-        metadata = attributes[:metadata] || {}
-        dimensions = annotation.record.dimensions
-        type = dimensions.delete(:type)
 
-        metadata = capitalized_dashed_keys(metadata).merge(
-          {
-            "Created-By" => attributes[:created_by_email],
-            "Created-At" => attributes[:created_at],
-            "Updated-At" => attributes[:updated_at]
-          }
+        # Skip soft-deleted annotations entirely — updcli has no tombstone concept.
+        return if attributes[:deleted_at]
+
+        metadata = capitalized_dashed_keys(attributes[:metadata] || {}).merge(
+          "Created-By" => attributes[:created_by_email],
+          "Created-At" => attributes[:created_at],
+          "Updated-At" => attributes[:updated_at],
         )
 
-        # Write dimensions to a temporary file and pass it via --shape @file
+        # Write shape_args to a temporary file and pass it via --shape @file
         # to avoid "Argument list too long" errors when the shape JSON is large.
         # The @filename prefix convention is the same as curl's -d @file.
         Tempfile.create(["shape", ".json"]) do |file|
-          file.write(dimensions.to_json)
+          file.write(annotation.record.shape_args.to_json)
           file.close
 
           # Create annotation in UPD
@@ -192,11 +190,13 @@ module Exports
             "--entry_id",
             entry_id,
             "--type",
-            type,
+            annotation.record.shape_type,
             "--shape",
             "@#{file.path}",
-            "--annotation",
-            annotation.record.annotation.to_json,
+            "--category",
+            annotation.record.category,
+            "--properties",
+            Hash(annotation.record.properties).to_json,
             "--metadata",
             metadata.to_json,
             exception: true

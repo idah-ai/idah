@@ -56,8 +56,10 @@ export function register(driver: IIdahDriverV2): void {
 
           const copySet = new Set<string>();
           const entries: {
-            shape: Record<string, unknown>;
-            value: Record<string, unknown> | undefined;
+            shape_type: string;
+            shape_args: Record<string, unknown>;
+            category: string | undefined;
+            properties: Record<string, unknown> | undefined;
             metadata: Record<string, unknown> | undefined;
             centroidOffset: [number, number];
             groupId: string;
@@ -68,10 +70,12 @@ export function register(driver: IIdahDriverV2): void {
             if ((selectedIds.has(ann.id) || selectedGids.has(gid)) && !copySet.has(ann.id)) {
               copySet.add(ann.id);
               entries.push({
-                shape: { ...(ann.shape as any) },
-                value: ann.value ? { ...(ann.value as any) } : undefined,
+                shape_type: (ann as any).shape_type,
+                shape_args: { ...((ann as any).shape_args as any) },
+                category: (ann as any).category,
+                properties: (ann as any).properties ? { ...((ann as any).properties as any) } : undefined,
                 metadata: ann.metadata ? { ...(ann.metadata as any) } : undefined,
-                centroidOffset: [0, 0], // computed below
+                centroidOffset: [0, 0],
                 groupId: gid,
               });
             }
@@ -81,7 +85,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // ── All-or-nothing validation ────────────────────────────────
           // Check 1: ENTRY_ROOT is never copyable.
-          if (entries.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+          if (entries.some((e) => e.shape_type === ENTRY_ROOT)) {
             clipboard.clear();
             showToast.error({
               title: "Copy failed",
@@ -102,7 +106,7 @@ export function register(driver: IIdahDriverV2): void {
           // their keyframes will be shifted by the same delta at paste
           // time, preserving relative timing within the track.
           const outOfRange = (e: (typeof entries)[number]) => {
-            const s = e.shape as any;
+            const s = e.shape_args as any;
             return (s.start as number) > copyFrame || (s.end as number) < copyFrame;
           };
 
@@ -135,7 +139,7 @@ export function register(driver: IIdahDriverV2): void {
           let cx = 0, cy = 0, count = 0;
 
           for (const entry of entries) {
-            const frame = getInterpolatedFrame(entry.shape as IVideoAnnotationShape, copyFrame);
+            const frame = getInterpolatedFrame(entry.shape_args as IVideoAnnotationShape, copyFrame, true, entry.shape_type);
             const pts = frame?.points as [number, number][] | undefined;
             if (!pts?.length) continue;
             for (const [px, py] of pts) { cx += px; cy += py; count++; }
@@ -149,7 +153,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Compute centroid-relative offset for each entry
           for (const entry of entries) {
-            const frame = getInterpolatedFrame(entry.shape as IVideoAnnotationShape, copyFrame);
+            const frame = getInterpolatedFrame(entry.shape_args as IVideoAnnotationShape, copyFrame, true, entry.shape_type);
             const pts = frame?.points as [number, number][] | undefined;
             if (pts?.length) {
               const ex = pts.reduce((s, p) => s + p[0], 0) / pts.length;

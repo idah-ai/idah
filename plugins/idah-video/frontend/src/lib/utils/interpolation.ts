@@ -59,6 +59,7 @@ export function getInterpolatedFrame(
   shape: IVideoAnnotationShape,
   current_frame: number,
   interpolate: boolean = true,
+  shape_type: string,
 ):
   | { points: Point[] | undefined; angle: number }
   | undefined {
@@ -78,7 +79,7 @@ export function getInterpolatedFrame(
   const angle = ((after.angle || 0) - (before.angle || 0)) * t + (before.angle || 0);
 
   let pts;
-  switch (shape.type) {
+  switch (shape_type) {
     case VIDEO_BOUNDING_BOX:
       pts = lerpPoints(before.points!, after.points!, t);
       return { points: pts, angle };
@@ -86,7 +87,7 @@ export function getInterpolatedFrame(
       pts = interpolatePolygon(before.points!, after.points!, t);
       return { points: pts, angle: 0 };
     default:
-      throw `Unsupported shape: ${shape.type}`
+      throw `Unsupported shape: ${shape_type}`
   }
 
 }

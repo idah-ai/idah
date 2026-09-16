@@ -76,19 +76,21 @@ export function register(driver: IIdahDriverV2): void {
             const dx = pastePos[0] - centroid[0];
             const dy = pastePos[1] - centroid[1];
 
-            const rawPoints = (entry.shape?.points ?? []) as [number, number][];
-            const newShape = {
-              ...entry.shape,
+            const rawPoints = (entry.shape_args?.points ?? []) as [number, number][];
+            const newShapeArgs = {
+              ...entry.shape_args,
               points: rawPoints.length > 0
                 ? rawPoints.map((p) => [p[0] + dx, p[1] + dy] as [number, number])
-                : entry.shape?.points,
+                : entry.shape_args?.points,
             };
 
             try {
               await data.annotations!.create({
                 id: newId,
-                shape: newShape,
-                value: entry.value ?? {},
+                shape_type: entry.shape_type,
+                shape_args: newShapeArgs,
+                category: entry.category,
+                properties: entry.properties ?? {},
                 metadata: entry.metadata,
               } as any);
               createdIds.push(newId);
