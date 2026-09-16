@@ -103,6 +103,7 @@ Sequel.migration do
   up do
     alter_table(:annotations) do
       set_column_allow_null :dimensions
+      set_column_allow_null :annotation
     end
 
     # datasets
@@ -127,6 +128,7 @@ Sequel.migration do
   down do
     alter_table(:annotations) do
       set_column_not_null :dimensions
+      set_column_not_null :annotation
     end
     # datasets
     from(:datasets).where(Sequel.~(labeling_configuration: nil)).each do |row|
