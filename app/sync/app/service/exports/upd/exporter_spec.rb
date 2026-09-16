@@ -355,8 +355,8 @@ RSpec.describe Exports::Upd::Exporter do
             properties_idx = args.index("--properties")
             metadata_idx = args.index("--metadata")
             if category_idx && properties_idx && metadata_idx
-              category_valid = args[category_idx + 1] == 'vehicles/car'
-              properties_valid = args[properties_idx + 1] == '{}'
+              category_valid = args[category_idx + 1] == "vehicles/car"
+              properties_valid = args[properties_idx + 1] == "{}"
             end
           end
           true
