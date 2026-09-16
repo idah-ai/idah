@@ -101,6 +101,10 @@ Sequel.migration do
   end
 
   up do
+    alter_table(:annotations) do
+      set_column_allow_null :dimensions
+    end
+
     # datasets
     from(:datasets).where(Sequel.~(labeling_configuration: nil)).each do |row|
       config = row[:labeling_configuration]
@@ -121,6 +125,9 @@ Sequel.migration do
   end
 
   down do
+    alter_table(:annotations) do
+      set_column_not_null :dimensions
+    end
     # datasets
     from(:datasets).where(Sequel.~(labeling_configuration: nil)).each do |row|
       config = row[:labeling_configuration]
