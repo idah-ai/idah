@@ -31,7 +31,11 @@ plugins:
   - name: shrine
     config:
       storages:
+        # MEDIAS_FILES_ADAPTER picks the storage: file_system (the default) keeps
+        # files on disk under MEDIAS_FILES_PATH; s3 uses the MEDIAS_FILES_* S3
+        # settings, which are only required in that case.
         - name: default
+<% if ENV.fetch("MEDIAS_FILES_ADAPTER", "file_system") == "s3" %>
           adapter: s3
           config:
             bucket: <%= ENV.fetch("MEDIAS_FILES_BUCKET") %>
@@ -41,11 +45,15 @@ plugins:
             region: <%= ENV.fetch("MEDIAS_FILES_REGION") %>
             prefix: files
             endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %> # https://storage.googleapis.com
+<% else %>
+          adapter: file_system
+          config:
+            path: <%= ENV.fetch("MEDIAS_FILES_PATH", "tmp/storage/production") %>
+<% end %>
   - name: redis
     config:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
       max_connections: 10
-  - name: periodic
 
 kv_store:
   adapter: Verse::Redis::KVStore

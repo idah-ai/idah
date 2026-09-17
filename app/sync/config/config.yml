@@ -35,7 +35,11 @@ plugins:
   - name: shrine
     config:
       storages:
+        # SYNC_FILES_ADAPTER picks the storage: file_system (the default) keeps
+        # files on disk under SYNC_FILES_PATH; s3 uses the SYNC_FILES_* S3
+        # settings, which are only required in that case.
         - name: default
+<% if ENV.fetch("SYNC_FILES_ADAPTER", "file_system") == "s3" %>
           adapter: s3
           config:
             bucket: <%= ENV.fetch("SYNC_FILES_BUCKET") %>
@@ -45,7 +49,11 @@ plugins:
             region: <%= ENV.fetch("SYNC_FILES_REGION") %>
             prefix: files
             endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
-  - name: periodic
+<% else %>
+          adapter: file_system
+          config:
+            path: <%= ENV.fetch("SYNC_FILES_PATH", "tmp/storage/production") %>
+<% end %>
 
 kv_store:
   adapter: Verse::Redis::KVStore

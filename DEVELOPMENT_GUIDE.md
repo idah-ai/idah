@@ -27,6 +27,7 @@ This guide covers everything you need to know to set up, run, test, and contribu
 - [Working on the Frontend](#working-on-the-frontend)
 - [Plugin Development](#plugin-development)
 - [Environment Variables](#environment-variables)
+- [Releasing](#releasing)
 - [Common Troubleshooting](#common-troubleshooting)
 
 ---
@@ -364,6 +365,7 @@ app/<service>/
 │   └── routes.rb       # Expo route registrations
 ├── db/
 │   └── migrations/     # Sequel migrations
+├── .env.development    # Development settings for this service
 ├── .env.test           # Test environment variables
 ├── Gemfile
 ├── Rakefile
@@ -586,11 +588,63 @@ and the service reports the defaults above.
 | `IDAH_SERVICE_ACCOUNT`     | Service account name for auth        |
 | `IDAH_SERVICE_PASSWORD`    | Service account password             |
 
+### Storage variables (media and sync)
+
+media reads `MEDIAS_FILES_*` and sync reads `SYNC_FILES_*`. Development and
+staging always store files on disk; these apply to production.
+
+| Variable                                  | Description                                   | Default                  |
+|-------------------------------------------|-----------------------------------------------|--------------------------|
+| `MEDIAS_FILES_ADAPTER` / `SYNC_FILES_ADAPTER` | `file_system` (files on disk) or `s3`     | `file_system`            |
+| `MEDIAS_FILES_PATH` / `SYNC_FILES_PATH`   | Where files go with `file_system`             | `tmp/storage/production` |
+| `…_BUCKET`, `…_REGION`, `…_ENDPOINT`, `…_ACCESS_KEY_ID`, `…_SECRET_ACCESS_KEY` | S3 settings, required only with `s3` | —            |
+
 ### Frontend variables
 
 | Variable              | Description                          | Default                               |
 |-----------------------|--------------------------------------|---------------------------------------|
 | `VITE_IDAH_HOST`      | Backend API host (used in dev mode)  | `https://idah.localhost:8443`         |
+
+---
+
+## Releasing
+
+Pushing a version tag publishes all eight images through
+`.github/workflows/cd-app.yml`:
+
+```bash
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+The workflow:
+
+1. Checks the tag is a version (`v0.4.0`, or `v0.4.0-rc.1` for a release
+   candidate) and that no image with that version exists yet. Published
+   versions are never overwritten: fix a bad release with the next patch.
+2. Builds every service for linux/amd64 and linux/arm64, stamping
+   `IDAH_VERSION` and `IDAH_GIT_SHA` into each image.
+3. Publishes `ghcr.io/idah-ai/idah-<service>:<version>`. Nothing is tagged `latest`.
+4. Smoke-tests every published image on both architectures with no source tree:
+   migrations run, `/healthcheck` reports the tagged version, and plugins load.
+
+The smoke test runs the same way locally, against the Postgres and Redis on your
+machine:
+
+```bash
+.github/scripts/smoke-image.sh media ghcr.io/idah-ai/idah-media:0.4.0 0.4.0
+```
+
+To try a branch without releasing it, run the workflow by hand from the Actions
+tab. It publishes `sha-<commit>` tags, and those images report `0.0.0-dev`.
+
+Two things to know:
+
+- **The frontend image is built for `http://localhost:8080`.** Its API URL is
+  baked in at build time until it becomes a run-time setting.
+- **Check package visibility after the first release.** New GHCR packages can
+  start private; make each `idah-*` package public in the organization's
+  package settings.
 
 ---
 

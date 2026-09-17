@@ -61,6 +61,24 @@ RSpec.describe PluginSystem::Plugin do
       plugin_requiring("0.2.0").warn_if_platform_too_old
     end
 
+    it "compares a release candidate as its release" do
+      ENV["IDAH_VERSION"] = "0.2.0-rc.1"
+
+      expect(logger).not_to receive(:warn)
+
+      plugin_requiring("0.2.0").warn_if_platform_too_old
+    end
+
+    it "still warns when a release candidate is older than the plugin needs" do
+      ENV["IDAH_VERSION"] = "0.1.0-rc.1"
+
+      expect(logger).to receive(:warn) do |&message|
+        expect(message.call).to include("needs IDAH 0.2.0 or later", "this is 0.1.0-rc.1")
+      end
+
+      plugin_requiring("0.2.0").warn_if_platform_too_old
+    end
+
     it "stays quiet when the plugin declares no requirement" do
       ENV["IDAH_VERSION"] = "0.1.0"
 

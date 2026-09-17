@@ -92,7 +92,7 @@ module PluginSystem
       current = IdahVersion.number
       return if current == IdahVersion::DEV_VERSION
 
-      return if SemanticVersion[current] >= SemanticVersion[required]
+      return if release_version(current) >= release_version(required)
 
       Verse.logger.warn{
         "[IDAH-PLUGIN] Plugin `#{manifest.name}` needs IDAH #{required} or later, " \
@@ -111,6 +111,14 @@ module PluginSystem
       stop
       start
       Verse.logger.info{ "Reload plugin #{manifest.name} done" }
+    end
+
+    private
+
+    # Release candidates and build metadata compare as their release:
+    # "0.4.0-rc.1" and "0.4.0+build.5" both count as "0.4.0".
+    def release_version(version)
+      SemanticVersion[version.sub(/[-+].*\z/, "")]
     end
   end
 end

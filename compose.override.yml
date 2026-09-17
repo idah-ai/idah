@@ -1,7 +1,8 @@
 # Development setup, merged over compose.yml automatically by `docker compose`.
 #
-# Settings come from config/development/: .env holds what every service shares,
-# <service>.env holds the rest. Source, common/ and plugins/ are mounted, and
+# config/development/.env says how the containers reach PostgreSQL and Redis;
+# each service reads its own settings from app/<service>/.env.development.
+# Source, common/ and plugins/ are mounted, and
 # Postgres, Redis, the vite frontend, TLS on idah.localhost and MailHog are
 # added here.
 #
@@ -75,7 +76,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/iam.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_IAM:-}
     depends_on: *dev-databases
@@ -97,7 +97,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/media.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
     depends_on: *dev-databases
@@ -120,7 +119,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/dataset.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_DATASET:-}
     depends_on: *dev-databases
@@ -144,7 +142,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/setting.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
     depends_on: *dev-databases
@@ -167,7 +164,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/audit.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_AUDIT:-}
     depends_on: *dev-databases
@@ -189,7 +185,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/sync.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
     depends_on: *dev-databases
@@ -213,7 +208,6 @@ services:
         APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
-      - config/development/notification.env
     environment:
       SENTRY_DSN: ${SENTRY_DSN_NOTIFICATION:-}
     depends_on: *dev-databases

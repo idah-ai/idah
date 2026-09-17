@@ -20,14 +20,16 @@ so an upgrade can replace `idah.yml` without touching them.
 
 ## Still needed before the one-line install works
 
-- **File storage without S3.** Outside development, media and sync require the
-  `s3` adapter and its settings. A `file_system` adapter on a Docker volume
-  already exists for development and should become the on-premise default.
+- **A volume for stored files.** media and sync store files on disk by default
+  (`MEDIAS_FILES_ADAPTER` / `SYNC_FILES_ADAPTER` is `file_system` unless set to
+  `s3`), under `tmp/storage/production`. `idah.yml` must mount a volume there, or
+  the files are lost whenever a container is replaced.
 - **A frontend URL set at run time.** `VITE_IDAH_HOST` is currently baked into
   the image at build time, so one published image cannot serve every customer's
   domain.
-- **Published images.** `idah.yml` pulls them, so it depends on the CD workflow
-  and the version scheme (§02 of the release policy).
+- **Published images.** The CD workflow (`.github/workflows/cd-app.yml`) now
+  publishes `ghcr.io/idah-ai/idah-<service>:<version>` for linux/amd64 and
+  linux/arm64 when a version tag is pushed. `idah.yml` will pin those tags.
 - **Migrations and first-run setup as a scripted step.** Including the service
   accounts: in `production`, iam's `service_accounts:create` gives each account a
   random password unless one is passed in, so `install.sh` must pass the
