@@ -274,7 +274,6 @@ RSpec.describe Exports::Upd::Exporter do
         expect(parsed["args"]["properties"]).to eq("{}")
       end
 
-
       it "passes category, properties, and metadata as their own JSONL args" do
         exporter.export(context)
 
