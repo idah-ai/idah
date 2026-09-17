@@ -47,7 +47,8 @@ module Exports
                 io.write_jsonl(build_entry_jsonl(dataset.record.id, entry, include_medias))
 
                 entry.annotations.each do |annotation|
-                  io.write_jsonl(build_annotation_jsonl(entry.record.id, annotation))
+                  jsonl = build_annotation_jsonl(entry.record.id, annotation)
+                  io.write_jsonl(jsonl) if jsonl
                 end
 
                 entry_medias(entry, include_medias, exported_resources).each do |media|
