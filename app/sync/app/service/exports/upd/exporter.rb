@@ -195,16 +195,14 @@ module Exports
 
       def build_annotation_jsonl(entry_id, annotation)
         attributes = annotation.record.data[:attributes]
-        metadata = attributes[:metadata]
-        dimensions = annotation.record.dimensions
-        type = dimensions.delete(:type)
 
-        metadata = capitalized_dashed_keys(metadata).merge(
-          {
-            "Created-By" => attributes[:created_by_email],
-            "Created-At" => attributes[:created_at],
-            "Updated-At" => attributes[:updated_at]
-          }
+        # Skip soft-deleted annotations entirely — updcli has no tombstone concept.
+        return if attributes[:deleted_at]
+
+        metadata = capitalized_dashed_keys(attributes[:metadata] || {}).merge(
+          "Created-By" => attributes[:created_by_email],
+          "Created-At" => attributes[:created_at],
+          "Updated-At" => attributes[:updated_at],
         )
 
         {
@@ -212,9 +210,10 @@ module Exports
           args: {
             id: annotation.record.id,
             entry_id: entry_id,
-            type: type,
-            shape: dimensions.to_json,
-            annotation: annotation.record.annotation.to_json,
+            type: annotation.record.shape_type,
+            shape: annotation.record.shape_args.to_json,
+            category: annotation.record.category,
+            properties: Hash(annotation.record.properties).to_json,
             metadata: metadata.to_json
           }
         }.to_json

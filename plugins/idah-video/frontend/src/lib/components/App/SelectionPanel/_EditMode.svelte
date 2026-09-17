@@ -95,10 +95,10 @@
   {/if}
 
   {#if annotation}
-    {@const shape = annotation.shape}
-    {@const interpolated = shape?.frames ? getInterpolatedFrame(shape, viewport.video.displayedFrame.value) : shape}
+    {@const shape = annotation.shape_args}
+    {@const interpolated = shape?.frames ? getInterpolatedFrame(shape, viewport.video.displayedFrame.value, true, annotation.shape_type) : shape}
     {@const virtualShape = interpolated ? { ...shape, points: interpolated.points ?? [] } : shape}
-    {@const entries = getShapeDimensions(virtualShape, media.width, media.height)}
+    {@const entries = getShapeDimensions(virtualShape, media.width, media.height, annotation.shape_type)}
     {#if entries}
       <Separator class="mt-3" />
       <section class="flex flex-col gap-2">

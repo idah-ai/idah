@@ -36,7 +36,7 @@
       if (!ann) return null;
       // Skip markers on hidden annotations
       if (annotation.isHidden(ann)) return null;
-      const shape = ann.shape as IImageAnnotationShape | undefined;
+      const shape = ann.shape_args as IImageAnnotationShape | undefined;
       if (!shape || !shape.points?.length) return null;
 
       // Compute centroid of the annotation shape points
@@ -83,7 +83,7 @@
     // Annotation: x/y are normalized offset from centroid
     const ann = data.annotations?.items?.find(a => a.id === p.annotationId);
     if (!ann) return null;
-    const shape = ann.shape as IImageAnnotationShape | undefined;
+    const shape = ann.shape_args as IImageAnnotationShape | undefined;
     if (!shape || !shape.points?.length) return null;
 
     const points = shape.points;

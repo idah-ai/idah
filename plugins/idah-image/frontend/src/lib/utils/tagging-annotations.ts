@@ -20,12 +20,12 @@ export function isTaggingValueComplete(
   value: IImageAnnotationValue,
   properties: IConfigProperty[] = [],
 ): boolean {
-  return requiredFullfilled(value as unknown as Record<string, unknown>, properties);
+  return requiredFullfilled(value.properties as Record<string, unknown> | undefined, properties);
 }
 
 /** Find the single entry:root annotation in a list of annotation items. */
 export function findEntryRootAnnotation(items: IImageAnnotationRecord[]): IImageAnnotationRecord | undefined {
-  return items.find((a) => (a.shape as { type?: string })?.type === ENTRY_ROOT);
+  return items.find((a) => a.shape_type === ENTRY_ROOT);
 }
 
 export type EntryResolution =

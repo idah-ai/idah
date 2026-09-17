@@ -9,9 +9,14 @@ module Annotation
     field :dataset_id, type: String, readonly: true
     field :entry_id, type: String, readonly: true
 
-    field :dimensions, type: Hash
-    field :annotation, type: Hash
+    field :shape_type, type: String
+    field :shape_args, type: Hash
+    field :category, type: String
+    field :properties, type: Hash
     field :metadata, type: Hash
+
+    field :deleted_at, type: Time
+    field :deleted_by_email, type: String
 
     field :created_by_email, type: String, readonly: true
     field :created_at, type: Time, readonly: true
@@ -26,9 +31,21 @@ module Annotation
     self.table = "annotations"
     self.resource = Resource::Dataset::Annotations
 
-    encoder :dimensions, Verse::Sequel::JsonEncoder
-    encoder :annotation, Verse::Sequel::JsonEncoder
+    encoder :shape_args, Verse::Sequel::JsonEncoder
+    encoder :properties, Verse::Sequel::JsonEncoder
     encoder :metadata, Verse::Sequel::JsonEncoder
+
+    # Soft-delete visibility filter. Deleted annotations are returned by default
+    # (matching how `disabled_at` works on project_members — no default exclusion).
+    # Consumers opt into filtering via `deleted: "true"/"false"`.
+    custom_filter :deleted do |collection, value|
+      enabled = value.to_s.downcase == "true"
+      if enabled
+        collection.where(Sequel.~(deleted_at: nil))
+      else
+        collection.where(deleted_at: nil)
+      end
+    end
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|

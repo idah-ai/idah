@@ -12,7 +12,7 @@ import type { IVideoAnnotationShape } from "$lib/types";
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;
   if (sel?.type !== "annotation") return false;
-  const shape = (sel.annotation as any).shape as { start?: number; end?: number; frames?: unknown[] } | undefined;
+  const shape = (sel.annotation as any).shape_args as { start?: number; end?: number; frames?: unknown[] } | undefined;
   if (!shape?.frames || shape.frames.length === 0) return false;
   const frame = viewport.video.currentFrame.value;
   return frame >= (shape.start ?? 0) && frame <= (shape.end ?? 0);
@@ -46,10 +46,10 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (sel?.type !== "annotation") return;
           const record = sel.annotation as any;
-          const shape = record.shape as IVideoAnnotationShape;
+          const shape = record.shape_args as IVideoAnnotationShape;
           if (!shape.frames || shape.frames.length === 0) return;
           const currentFrame = viewport.video.currentFrame.value;
-          const interpolated = getInterpolatedFrame(shape, currentFrame);
+          const interpolated = getInterpolatedFrame(shape, currentFrame, true, record.shape_type);
           if (!interpolated || !interpolated.points || interpolated.points.length === 0) return;
 
           // For rotated shapes (bounding box with angle), rotate points around

@@ -36,7 +36,7 @@
     view: "sidebar" | "popover";
     sidebarWidthRem: number;
     annotationValue: IVideoAnnotationValue;
-    onEditValue: (annotationValue: IVideoAnnotationValue, mode: string) => void;
+    onEditValue: (category: string | undefined, mode: string) => void;
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
     onSelectAnnotationGroup: (annotationGroup: { groupId: string; annotations: IVideoAnnotationRecord[] }) => void;
     onDeleteAnnotation: (annotation: IVideoAnnotationRecord) => void;
@@ -83,7 +83,7 @@
     if (category) {
       selection.deselect();
       onSelectAnnotation();
-      onEditValue({ category }, shape_type);
+      onEditValue(category, shape_type);
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),

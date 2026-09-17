@@ -72,12 +72,12 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
         const props = opts as unknown as AnnotationSplitProps;
         const record = all.find((r) => r.id === props.annotationId) as AnnotationItem | undefined;
         if (!record) return noopAction(command);
-        const shape = record.shape as IVideoAnnotationShape;
+        const shape = record.shape_args as IVideoAnnotationShape;
         const at = props.at;
         if (at <= 0) return noopAction(command);
         const splitAt = at - 1;
         const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-        const splitFrame = ensureSplitFrame(shape, frames, splitAt);
+        const splitFrame = ensureSplitFrame(shape, frames, splitAt, record.shape_type);
         if (!splitFrame) return noopAction(command);
         const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
         targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
@@ -110,11 +110,11 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
 
         for (const record of targetRecords) {
           if (annotation.isLocked(record)) continue;
-          const shape = record.shape as IVideoAnnotationShape;
+          const shape = record.shape_args as IVideoAnnotationShape;
           if (shape.start > at || shape.end < at) continue;
           const splitAt = at - 1;
           const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-          const splitFrame = ensureSplitFrame(shape, frames, splitAt);
+          const splitFrame = ensureSplitFrame(shape, frames, splitAt, record.shape_type);
           if (!splitFrame) continue;
           const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
           targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
@@ -130,7 +130,7 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
             // Update original annotation to left part
             await data.annotations!.update({
               ...t.record,
-              shape: {
+              shape_args: {
                 ...t.shape,
                 start: t.leftMin,
                 end: t.leftMax,
@@ -141,13 +141,15 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
             const groupId = (t.record.metadata?.group_id ?? t.record.id) as string;
             await data.annotations!.create({
               id: t.rightId,
-              shape: {
+              shape_args: {
                 ...t.shape,
                 start: t.rightMin,
                 end: t.rightMax,
                 frames: t.rightFrames,
               },
-              value: t.record.value ? { ...t.record.value } : undefined,
+              category: t.record.category,
+              properties: t.record.properties,
+              shape_type: t.record.shape_type,
               metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
             });
           }
@@ -176,10 +178,11 @@ function ensureSplitFrame(
   shape: IVideoAnnotationShape,
   frames: IVideoFrameSelection[],
   splitAt: number,
+  shapeType: string,
 ): IVideoFrameSelection | undefined {
   let splitFrame = frames.find((f) => f.frame === splitAt);
   if (!splitFrame) {
-    const interpolated = getInterpolatedFrame(shape, splitAt);
+    const interpolated = getInterpolatedFrame(shape, splitAt, true, shapeType);
     if (interpolated) {
       splitFrame = { frame: splitAt, angle: interpolated.angle, points: interpolated.points ?? [] };
     }

@@ -109,7 +109,7 @@ export function register(driver: IIdahDriverV2): void {
       // for idah-video:frame. If the selection isn't a tagging annotation (or there
       // is none), select the entry:root (root) annotation and land on the entry tab.
       const sel = selection.value;
-      const shapeType = sel?.type === "annotation" ? (sel.annotation.shape as { type?: string })?.type : undefined;
+      const shapeType = sel?.type === "annotation" ? (sel.annotation as any)?.shape_type : undefined;
       if (shapeType === ENTRY_ROOT) {
         sidebarTabs.rightTab = "tagging";
         sidebarTabs.taggingTab = "entry";
@@ -158,7 +158,7 @@ export function register(driver: IIdahDriverV2): void {
       // deselect so we land on the frame create + list view.
       const sel = selection.value;
       const isFrameAnnotation =
-        sel?.type === "annotation" && (sel.annotation.shape as { type?: string })?.type === VIDEO_FRAME;
+        sel?.type === "annotation" && (sel.annotation as any)?.shape_type === VIDEO_FRAME;
       if (!isFrameAnnotation) selection.deselect();
       sidebarTabs.rightTab = "tagging";
       sidebarTabs.taggingTab = "frame";

@@ -249,6 +249,136 @@ RSpec.describe Exports::Upd::Exporter do
         parsed = JSON.parse(annotation_line)
         annotation = JSON.parse(parsed["args"]["annotation"])
         expect(annotation).to eq({ "category" => "vehicles/car" })
+        # it "includes original media width and height in entry metadata" do
+        #   entry_metadata_valid = false
+        #   allow(exporter).to receive(:system) do |*args|
+        #     if args.include?("entry") && args.include?("create")
+        #       metadata_idx = args.index("--metadata")
+        #       if metadata_idx
+        #         metadata = JSON.parse(args[metadata_idx + 1])
+        #         entry_metadata_valid = metadata["Width"] == 1920 &&
+        #                                metadata["Height"] == 1080
+        #       end
+        #     end
+        #     true
+        #   end
+
+        #   exporter.export(context)
+        #   expect(entry_metadata_valid).to be(true)
+        # end
+
+        # it "transforms annotation metadata with special created-by field" do
+        #   annotation_metadata_valid = false
+        #   allow(exporter).to receive(:system) do |*args|
+        #     if args.include?("annotation") && args.include?("create")
+        #       metadata_idx = args.index("--metadata")
+        #       if metadata_idx
+        #         metadata = JSON.parse(args[metadata_idx + 1])
+        #         annotation_metadata_valid = metadata.key?("Created-By") &&
+        #                                     metadata["Created-By"] == "admin@idah.ai" &&
+        #                                     metadata.key?("Created-At") &&
+        #                                     metadata.key?("Updated-At")
+        #       end
+        #     end
+        #     true
+        #   end
+
+        #   exporter.export(context)
+        #   expect(annotation_metadata_valid).to be(true)
+        # end
+      end
+    end
+
+    context "annotation dimensions handling" do
+      it "passes shape_args without type and category/properties separately" do
+        shape_valid = false
+        allow(exporter).to receive(:system) do |*args|
+          if args.include?("annotation") && args.include?("create")
+            type_idx = args.index("--type")
+            shape_idx = args.index("--shape")
+            if type_idx && shape_idx
+              # shape_type is passed as its own --type flag, not embedded in shape_args
+              shape_valid = args[type_idx + 1] == "idah-video:bounding-box" &&
+                            args[shape_idx + 1].is_a?(String) &&
+                            args[shape_idx + 1].start_with?("@")
+            end
+          end
+          true
+        end
+
+        exporter.export(context)
+        expect(shape_valid).to be(true)
+      end
+
+      # it "passes shape via @file syntax to avoid long arguments" do
+      #   shape_via_file = false
+      #   allow(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(
+      #     instance_double(Tempfile, path: "/tmp/shape.json", close: true, write: true)
+      #   )
+      #   allow(exporter).to receive(:system) do |*args|
+      #     if args.include?("annotation") && args.include?("create")
+      #       shape_via_file = args.include?("--shape") &&
+      #                        args.any? { |a| a.is_a?(String) && a.start_with?("@") && a.include?("/tmp/shape.json") }
+      #     end
+      #     true
+      #   end
+
+      #   exporter.export(context)
+      #   expect(shape_via_file).to be(true)
+      # end
+
+      # it "writes shape_args JSON to the tempfile" do
+      #   tempfile = instance_double(Tempfile, path: "/tmp/shape.json")
+      #   expect(Tempfile).to receive(:create).with(["shape", ".json"]).and_yield(tempfile)
+      #   expect(tempfile).to receive(:write) do |json|
+      #     parsed = JSON.parse(json)
+      #     expect(parsed).to have_key("end")
+      #     expect(parsed).to have_key("start")
+      #   end
+      #   expect(tempfile).to receive(:close)
+
+      #   exporter.export(context)
+      # end
+
+      it "passes category and properties as their own flags" do
+        category_valid = false
+        properties_valid = false
+        allow(exporter).to receive(:system) do |*args|
+          if args.include?("annotation") && args.include?("create")
+            category_idx = args.index("--category")
+            properties_idx = args.index("--properties")
+            metadata_idx = args.index("--metadata")
+            if category_idx && properties_idx && metadata_idx
+              category_valid = args[category_idx + 1] == "vehicles/car"
+              properties_valid = args[properties_idx + 1] == "{}"
+            end
+          end
+          true
+        end
+
+        exporter.export(context)
+        expect(category_valid).to be(true)
+        expect(properties_valid).to be(true)
+      end
+
+      it "skips soft-deleted annotations entirely" do
+        # Build a tombstoned annotation response (deleted_at set) and ensure no
+        # `annotation create` command is issued for it.
+        deleted_data = annotation_data[:data][0].dup
+        deleted_data[:attributes] = deleted_data[:attributes].dup
+        deleted_data[:attributes][:deleted_at] = "2026-08-10 08:00:00 +0000"
+        deleted_response = Verse::JsonApi::Struct.new deleted_data
+
+        allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([deleted_response])
+
+        annotation_created = false
+        allow(exporter).to receive(:system) do |*args|
+          annotation_created = true if args.include?("annotation") && args.include?("create")
+          true
+        end
+
+        exporter.export(context)
+        expect(annotation_created).to be(false)
       end
     end
 

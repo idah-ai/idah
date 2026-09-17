@@ -72,6 +72,14 @@ export function computeMissingRanges(
 // DataStore factory
 // ---------------------------------------------------------------------------
 
+export interface AnnotationDataStore extends DataStore<AnnotationItem> {
+  /**
+   * Restore a soft-deleted annotation: insert the pre-delete snapshot locally
+   * first, then reconcile with the driver's authoritative response.
+   */
+  restore(record: AnnotationItem): Promise<void>;
+}
+
 export interface DataStore<T extends DataItem> {
   readonly items: T[];
   readonly loadedRange: [number, number] | null;
@@ -112,8 +120,10 @@ export interface DataStore<T extends DataItem> {
 
 export type AnnotationItem = {
   id: string;
-  shape: { type: string; start: number; end: number } & Record<string, unknown>;
-  value?: { category?: string; label?: string; attributes?: Record<string, unknown>; [key: string]: unknown };
+  shape_type: string;
+  shape_args: Record<string, unknown>;
+  category: string;
+  properties?: Record<string, unknown>;
   metadata?: { id: string; createdAt: Date; updatedAt: Date; metadata?: Record<string, unknown>; [key: string]: unknown };
   synced?: boolean;
   [key: string]: unknown;
@@ -134,6 +144,7 @@ export interface AnnotationDriver {
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
+  restore(id: string): Promise<{ id: string } & Record<string, unknown>>;
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
@@ -157,17 +168,17 @@ function syncSelectionOnDelete(deletedId: string): void {
   }
 }
 
-export function createAnnotationStore(driver: AnnotationDriver): DataStore<AnnotationItem> {
+export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataStore {
   const store = createDataStore<AnnotationItem>(async (rangeStart, rangeEnd) => {
     const items = await driver.fetch({
-      "shape.start": { lte: rangeEnd },
-      "shape.end": { gte: rangeStart },
+      "shape_args.start": { lte: rangeEnd },
+      "shape_args.end": { gte: rangeStart },
     });
     return items as AnnotationItem[];
   });
 
   store.getItemRange = (item) => {
-    const frame = item.shape as { start?: number; end?: number } | undefined;
+    const frame = item.shape_args as { start?: number; end?: number } | undefined;
     if (frame && typeof frame.start === "number" && typeof frame.end === "number") {
       return [frame.start, frame.end];
     }
@@ -225,6 +236,23 @@ export function createAnnotationStore(driver: AnnotationDriver): DataStore<Annot
         // Rollback
         if (item) originalUpsert(item);
         throw new Error("Failed to delete annotation");
+      }
+    },
+
+    async restore(record: AnnotationItem): Promise<void> {
+      // Optimistic: insert locally first so the annotation reappears immediately
+      // (the pre-delete snapshot carries everything needed to redisplay it).
+      originalUpsert(record);
+      try {
+        // Reconcile with the backend's authoritative response — replace the
+        // optimistic record with what the backend actually returned.
+        const restored = await driver.restore(record.id);
+        originalUpsert(restored as AnnotationItem);
+      } catch {
+        // Rollback on failure — remove the optimistically-inserted record so no
+        // phantom "restored" annotation lingers if the backend rejected it.
+        store.remove(record.id);
+        throw new Error("Failed to restore annotation");
       }
     },
 
@@ -512,7 +540,7 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { selection } from "$lib/state/selection.svelte";
 
-let _annotations: DataStore<AnnotationItem> | null = $state(null);
+let _annotations: AnnotationDataStore | null = $state(null);
 
 let _noteList: INoteRecord[] = $state([]);
 let _unsubNotes: (() => void) | null = null;
@@ -647,7 +675,7 @@ export function focusNote(note: INoteRecord): void {
 }
 
 export const data: {
-  annotations: DataStore<AnnotationItem> | null;
+  annotations: AnnotationDataStore | null;
 } = {
   get annotations() { return _annotations; },
 };

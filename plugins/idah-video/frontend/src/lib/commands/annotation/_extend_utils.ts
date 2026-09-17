@@ -9,50 +9,50 @@ import { nearestKeyframe } from "$lib/utils/interpolation";
 
 function findNext(group: any[], frame: number) {
   return group
-    .filter((a) => (a.shape.frames?.[0]?.frame ?? Infinity) > frame)
-    .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
+    .filter((a) => (a.shape_args.frames?.[0]?.frame ?? Infinity) > frame)
+    .sort((a, b) => (a.shape_args.frames?.[0]?.frame ?? Infinity) - (b.shape_args.frames?.[0]?.frame ?? Infinity))[0];
 }
 
 function findPrev(group: any[], frame: number) {
   return group
     .filter((a) => {
-      const last = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
+      const last = a.shape_args.frames?.[a.shape_args.frames.length - 1]?.frame ?? -1;
       return last < frame;
     })
     .sort((a, b) => {
-      const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-      const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
+      const aEnd = a.shape_args.frames?.[a.shape_args.frames.length - 1]?.frame ?? -1;
+      const bEnd = b.shape_args.frames?.[b.shape_args.frames.length - 1]?.frame ?? -1;
       return bEnd - aEnd;
     })[0];
 }
 
 // ── Overlap protection ─────────────────────────────────────────────────
 
-function capNext(group: any[], target: { id: string; shape: any }, frame: number) {
+function capNext(group: any[], target: { id: string; shape_args: any }, frame: number) {
   const prev = group
     .filter((a) => {
-      const last = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
+      const last = a.shape_args.frames?.[a.shape_args.frames.length - 1]?.frame ?? -1;
       return last < frame && a.id !== target.id;
     })
     .sort((a, b) => {
-      const aEnd = a.shape.frames?.[a.shape.frames.length - 1]?.frame ?? -1;
-      const bEnd = b.shape.frames?.[b.shape.frames.length - 1]?.frame ?? -1;
+      const aEnd = a.shape_args.frames?.[a.shape_args.frames.length - 1]?.frame ?? -1;
+      const bEnd = b.shape_args.frames?.[b.shape_args.frames.length - 1]?.frame ?? -1;
       return bEnd - aEnd;
     })[0];
   if (!prev) return frame;
-  const prevEnd = prev.shape.frames?.[prev.shape.frames.length - 1]?.frame ?? -Infinity;
+  const prevEnd = prev.shape_args.frames?.[prev.shape_args.frames.length - 1]?.frame ?? -Infinity;
   return frame <= prevEnd ? prevEnd + 1 : frame;
 }
 
-function capPrev(group: any[], target: { id: string; shape: any }, frame: number) {
+function capPrev(group: any[], target: { id: string; shape_args: any }, frame: number) {
   const next = group
     .filter((a) => {
-      const first = a.shape.frames?.[0]?.frame ?? Infinity;
+      const first = a.shape_args.frames?.[0]?.frame ?? Infinity;
       return first > frame && a.id !== target.id;
     })
-    .sort((a, b) => (a.shape.frames?.[0]?.frame ?? Infinity) - (b.shape.frames?.[0]?.frame ?? Infinity))[0];
+    .sort((a, b) => (a.shape_args.frames?.[0]?.frame ?? Infinity) - (b.shape_args.frames?.[0]?.frame ?? Infinity))[0];
   if (!next) return frame;
-  const nextStart = next.shape.frames?.[0]?.frame ?? Infinity;
+  const nextStart = next.shape_args.frames?.[0]?.frame ?? Infinity;
   return frame >= nextStart ? nextStart - 1 : frame;
 }
 
@@ -71,8 +71,8 @@ export const EXTEND_NEXT_CONFIG: ExtendConfig = {
   findTarget: findNext,
   capFrame: capNext,
   batchGuard: (group, frame) => {
-    const lastEnd = group.reduce((best, a) => {
-      const frames = (a.shape.frames as any[]) ?? [];
+    const lastEnd = group.reduce((best: number, a: any) => {
+      const frames = (a.shape_args.frames as any[]) ?? [];
       const last = frames.length > 0 ? (frames[frames.length - 1]?.frame as number) ?? -1 : -1;
       return last > best ? last : best;
     }, -1);
@@ -85,8 +85,8 @@ export const EXTEND_PREV_CONFIG: ExtendConfig = {
   findTarget: findPrev,
   capFrame: capPrev,
   batchGuard: (group, frame) => {
-    const firstStart = group.reduce((best, a) => {
-      const frames = (a.shape.frames as any[]) ?? [];
+    const firstStart = group.reduce((best: number, a: any) => {
+      const frames = (a.shape_args.frames as any[]) ?? [];
       const first = frames.length > 0 ? (frames[0]?.frame as number) ?? Infinity : Infinity;
       return first < best ? first : best;
     }, Infinity);
@@ -99,7 +99,7 @@ export const EXTEND_PREV_CONFIG: ExtendConfig = {
 /** Check if any annotation in the group already covers `frame`. */
 function hasCovering(group: any[], frame: number): boolean {
   return group.some((a) => {
-    const frames = (a.shape.frames as any[]) ?? [];
+    const frames = (a.shape_args.frames as any[]) ?? [];
     const first = frames.length > 0 ? (frames[0]?.frame as number) ?? Infinity : Infinity;
     const last = frames.length > 0 ? (frames[frames.length - 1]?.frame as number) ?? -1 : -1;
     return first <= frame && last >= frame;
@@ -139,10 +139,10 @@ export function planExtendSingleGroup(
   const target = config.findTarget(groupAnnotations, frame);
   if (!target) return null;
   const cappedFrame = config.capFrame(groupAnnotations, target, frame);
-  const nearest = nearestKeyframe(target.shape, cappedFrame);
+  const nearest = nearestKeyframe(target.shape_args, cappedFrame);
   if (!nearest) return null;
 
-  const existingFrames = [...((target.shape.frames as any[]) ?? [])];
+  const existingFrames = [...((target.shape_args.frames as any[]) ?? [])];
   const existingIdx = existingFrames.findIndex((f: any) => f.frame === cappedFrame);
   if (existingIdx >= 0) existingFrames[existingIdx] = { frame: cappedFrame, ...nearest };
   else existingFrames.push({ frame: cappedFrame, ...nearest });
@@ -153,12 +153,12 @@ export function planExtendSingleGroup(
 
   const snapshot = {
     ...target,
-    shape: { ...target.shape, frames: [...((target.shape.frames as any[]) ?? [])] },
+    shape_args: { ...target.shape_args, frames: [...((target.shape_args.frames as any[]) ?? [])] },
   };
 
   const updated = {
     ...target,
-    shape: { ...target.shape, start: min, end: max, frames: existingFrames },
+    shape_args: { ...target.shape_args, start: min, end: max, frames: existingFrames },
   };
 
   return { annotationId: target.id, snapshot, updated };

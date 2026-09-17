@@ -44,12 +44,12 @@
   // tab — it's edited through the Tagging tab instead. Treat it as no selection
   // here so the annotations list renders rather than the tagging form.
   let isTaggingAnnotation = $derived(
-    sel && NON_DRAWABLE_SHAPE_TYPES.has((sel.shape as { type?: string })?.type ?? ""),
+    sel && NON_DRAWABLE_SHAPE_TYPES.has((sel as any)?.shape_type ?? ""),
   );
 
   // The active shape type: from annotation, from the shapeTypeOverride prop, or from drawing mode
   let shapeType = $derived.by<string | undefined>(() => {
-    if (sel) return sel.shape.type as string;
+    if (sel) return (sel as any)?.shape_type as string;
     return shapeTypeOverride ?? viewport.mode;
   });
 
@@ -80,7 +80,7 @@
   let currentFrameAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
     return (data.annotations.items as unknown as IImageAnnotationRecord[]).filter(
-      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann as any)?.shape_type),
     );
   });
 
@@ -93,8 +93,8 @@
   let usedMaskCategories = $derived(
     new Set(
       currentFrameAnnotations
-        .filter((a) => a.shape?.type === IMAGE_MASK)
-        .map((a) => a.value?.category)
+        .filter((a) => a.shape_type === IMAGE_MASK)
+        .map((a) => a.category)
         .filter((c): c is string => Boolean(c)),
     ),
   );
@@ -105,8 +105,8 @@
   function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     const newValue = {
       ...annotationValue,
-      attributes: {
-        ...(annotationValue.attributes || {}),
+      properties: {
+        ...(annotationValue.properties || {}),
         [property.id]: v,
       },
     };

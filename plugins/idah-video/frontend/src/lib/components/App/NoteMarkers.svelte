@@ -40,12 +40,12 @@
       if (!ann) return null;
       // Skip markers on hidden annotations
       if (annotation.isHidden(ann)) return null;
-      const shape = ann.shape as IVideoAnnotationShape | undefined;
+      const shape = ann.shape_args as IVideoAnnotationShape | undefined;
       if (!shape || shape.start == null || shape.end == null) return null;
       if (currentFrame < shape.start || currentFrame > shape.end) return null;
       let centroid: [number, number];
       if (shape.frames && shape.frames.length > 0) {
-        const interp = getInterpolatedFrame(shape, currentFrame);
+        const interp = getInterpolatedFrame(shape, currentFrame, true, ann.shape_type);
         if (!interp || !interp.points?.length) return null;
         centroid = centroidUtil(interp.points);
       } else {
@@ -92,13 +92,13 @@
     // Annotation: x/y are normalized offset from centroid — tracks annotation across all frames
     const ann = data.annotations?.items?.find(a => a.id === p.annotationId);
     if (!ann) return null;
-    const shape = ann.shape as IVideoAnnotationShape | undefined;
+    const shape = ann.shape_args as IVideoAnnotationShape | undefined;
     if (!shape || shape.start == null || shape.end == null) return null;
     if (viewport.video.currentFrame.value < shape.start || viewport.video.currentFrame.value > shape.end) return null;
 
     let centroid: [number, number] = [0.5, 0.5];
     if (shape.frames?.length) {
-      const interp = getInterpolatedFrame(shape, viewport.video.currentFrame.value);
+      const interp = getInterpolatedFrame(shape, viewport.video.currentFrame.value, true, ann.shape_type);
       if (interp?.points?.length) centroid = centroidUtil(interp.points);
     }
 

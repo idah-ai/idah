@@ -41,7 +41,7 @@
     const ann = selection.value?.type === "annotation" ? (selection.value as any).annotation : undefined;
     if (!ann) return true;
     if (annotation.isLocked(ann)) return true;
-    if (ann.shape?.end < viewport.video.currentFrame.value) return true;
+    if (ann.shape_args?.end < viewport.video.currentFrame.value) return true;
   });
 
   // Sync frameInputValue from currentFrame (0→1 for display)
