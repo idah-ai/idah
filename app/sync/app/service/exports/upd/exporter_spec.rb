@@ -3,14 +3,6 @@
 require_relative "../../../spec_helper"
 
 RSpec.describe Exports::Upd::Exporter do
-  # let(:mock_executor) { instance_double(Executor) }
-  # let(:executor_result) { instance_double(Process::Status, success?: true) }
-
-  # before do
-  #   allow(Executor).to receive(:new).and_return(mock_executor)
-  #   allow(mock_executor).to receive(:call).and_return(executor_result)
-  # end
-
   subject(:exporter) { described_class.new }
 
   describe "metadata methods" do
@@ -75,11 +67,7 @@ RSpec.describe Exports::Upd::Exporter do
     end
 
     let(:media_binary_data) { "fake binary video data" }
-    # let(:streamed_chunks) { ["fake ", "binary ", "video ", "data"] }
     let(:mock_file) { instance_double(File, close: true) }
-
-    # # Track all updcli-static invocations for verification
-    # let(:updcli_calls) { [] }
 
     before do
       # Stub ENV
