@@ -13,8 +13,8 @@ module Exports
         Api[:idah].dataset.entries.index_all(
           filter: filter.merge(dataset_id: @record.id),
           included: []
-        ).each do |page|
-          page.each { |entry| yielder << EntryContext.new(entry) }
+        ).each do |entry|
+          yielder << EntryContext.new(entry)
         end
       end
     end
