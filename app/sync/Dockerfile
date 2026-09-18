@@ -25,7 +25,8 @@ RUN apt-get update && apt-get install -y \
 ARG TARGETARCH
 ARG UPDCLI_VERSION=v1.0.1
 ARG BUNDLE_WITHOUT="development test"
-ARG APP_ENVIRONMENT
+# Published images run in production; compose and staging pass their own value.
+ARG APP_ENVIRONMENT=production
 
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
 ENV PORT=3000
