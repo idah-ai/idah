@@ -310,7 +310,7 @@ docker compose run --rm frontend pnpm run check
 
 ### Running CI checks locally
 
-The CI pipeline (`.github/workflows/ci.yml`) runs the following for each service:
+The CI pipeline (`.github/workflows/ci-app.yml`) runs the following for each service. A change to `common/` runs it for every Ruby service, and `.github/workflows/ci-common.yml` also runs `common/`'s own specs (`cd common && bundle exec rspec`, needs Postgres and Redis).
 
 1. **Format check** (Ruby: Rubocop, JS/TS: Prettier + ESLint)
 2. **Database setup** (`bundle exec rake db:test:prepare`)

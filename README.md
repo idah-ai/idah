@@ -1,6 +1,7 @@
 # IDAH - Ingedata Annotation Hub
 
-[![CI](https://github.com/idah-ai/idah/actions/workflows/ci.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci.yml)
+[![CI - App](https://github.com/idah-ai/idah/actions/workflows/ci-app.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-app.yml)
+[![CI - Common](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml)
 [![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
 [![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
 [![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
