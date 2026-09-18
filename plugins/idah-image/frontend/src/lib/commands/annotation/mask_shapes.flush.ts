@@ -54,7 +54,7 @@ export function register(driver: IIdahDriverV2): void {
       const sessAnnId = maskSession.annotationId;
       const selAnnId = !sessAnnId ? (() => {
         const sel = selection.value;
-        return sel && (sel.shape as any)?.type === IMAGE_MASK ? sel.id : undefined;
+        return sel && sel.shape_type === IMAGE_MASK ? sel.id : undefined;
       })() : undefined;
 
       const annotationId = sessAnnId ?? selAnnId;
@@ -72,7 +72,7 @@ export function register(driver: IIdahDriverV2): void {
         for (const tileKey of dirtyTiles) {
           const [colStr, rowStr] = tileKey.split(":");
           const shapeKey = `tile-${colStr}x${rowStr}`;
-          const existingValue = (existingRecord.shape as Record<string, unknown>)[shapeKey];
+          const existingValue = (existingRecord.shape_args as Record<string, unknown>)[shapeKey];
           snapshot.set(tileKey, existingValue !== undefined ? (existingValue as object) : null);
         }
       }

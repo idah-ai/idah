@@ -17,7 +17,7 @@ vi.mock("$lib/state/data.svelte", () => ({
   },
 }));
 
-const mockAnn = (id: string) => ({ id, shape: {}, value: {} });
+const mockAnn = (id: string) => ({ id, shape_type: "idah-video:bounding-box", shape_args: {}, category: "person" });
 
 describe("selection state", () => {
   beforeEach(() => {

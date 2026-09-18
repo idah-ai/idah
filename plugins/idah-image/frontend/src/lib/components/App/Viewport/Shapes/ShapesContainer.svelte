@@ -200,7 +200,7 @@
         if (annotation.isHidden(ann)) return acc;
         // Skip non-drawable records (entry:root) — they are never rendered on
         // canvasand are only edited through the Tagging tab.
-        if (NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as { type?: string })?.type ?? "")) return acc;
+        if (NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type ?? "")) return acc;
         // Separate selected annotation (goes at end for z-order) from the rest
         if (selection.isAnnotationSelected(ann.id)) {
           acc.selected.push(ann);
@@ -413,8 +413,8 @@
     snapEngine.setTargets(
       anns.map((ann) => ({
         id: ann.id,
-        kind: (ann.shape as Record<string, unknown>)?.type as string ?? "",
-        data: ann.shape,
+        kind: ann.shape_type as string ?? "",
+        data: ann.shape_args,
       })),
       media.width,
       media.height,
@@ -510,8 +510,8 @@
    * min/max over those raw entries treats a radius as a coordinate and yields a box
    * nowhere near the shape, so each needs its own corners.
    */
-  function getShapeOutline(shape: IImageAnnotationShape): Point[] | null {
-    if (shape.type === IMAGE_CIRCLE) {
+  function getShapeOutline(shape: IImageAnnotationShape, shapeType: string): Point[] | null {
+    if (shapeType === IMAGE_CIRCLE) {
       const c = shape.points?.[0] as Point | undefined;
       if (!c) return null;
       const r = (shape.radius as number | undefined) ?? 0;
@@ -521,7 +521,7 @@
       return ellipseAABB(c, rx, ry);
     }
 
-    if (shape.type === IMAGE_ELLIPSE) {
+    if (shapeType === IMAGE_ELLIPSE) {
       const c = shape.points?.[0] as Point | undefined;
       const r = shape.points?.[1] as Point | undefined;
       if (!c || !r) return null;
@@ -533,7 +533,7 @@
 
   /** Compute the AABB of an annotation's shape. Returns null if no geometry. */
   function getAnnotationAABB(ann: IAnnotationRecord): [number, number, number, number] | null {
-    const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+    const shape = (ann.shape_args ?? {}) as IImageAnnotationShape | undefined;
     if (!shape) return null;
 
     // `points` holds the unrotated corners — `angle` is applied as a render
@@ -543,7 +543,7 @@
     // the user sees it. rotatePointN does the math in pixel space, matching the
     // render; shapes with no angle skip this untouched.
     const angle = (shape.angle as number | undefined) ?? 0;
-    let pts = getShapeOutline(shape);
+    let pts = getShapeOutline(shape, (ann as any).shape_type ?? "");
     if (!pts?.length) return null;
     if (angle !== 0 && media.width > 0 && media.height > 0) {
       const center = centroidUtil(pts);
@@ -768,9 +768,12 @@
       // If the selected annotation is a locked mask, refuse to paint at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
       const isLockedSelectedMask =
-        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
-      const maskAnnId = selAnnotation?.shape?.type === IMAGE_MASK ? selAnnotation.id : undefined;
+
+      const maskAnnId = selAnnotation?.shape_type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
+        ? selAnnotation.id
+        : undefined;
       maskBrushPointerDown(scenePixelCursor[0], scenePixelCursor[1], maskAnnId);
       return;
     }
@@ -781,8 +784,9 @@
       // If the selected annotation is a locked mask, refuse to draw at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
       const isLockedSelectedMask =
-        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
+
       maskPolygonCreateComp?.handleMouseDown(snappedCursor);
       return;
     }
@@ -825,8 +829,9 @@
       scenePixelCursor[1],
       (data.annotations?.items ?? []).map((a) => ({
         id: a.id,
-        shape: a.shape as Record<string, unknown>,
-        value: a.value as Record<string, unknown> | undefined,
+        shape_type: a.shape_type,
+        shape_args: a.shape_args as Record<string, unknown>,
+        properties: a.properties as Record<string, unknown> | undefined,
       })),
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
@@ -897,7 +902,7 @@
       // category popover — the mouse-down guard already refused to paint, so
       // there is no session to flush and no new mask to create.
       const isLockedSelectedMask =
-        selAnnotation?.shape?.type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
       // Save the annotationId BEFORE the flush resets it
       const hadAnnotation = !!maskSession.annotationId;
@@ -960,16 +965,16 @@
         const ann = visibleAnnotations[i];
         if (!selection.isAnnotationSelected(ann.id)) continue;
         if (ann.id === _draggedId) continue;
-        const shape = (ann.shape ?? {}) as IImageAnnotationShape | undefined;
+        const shape = (ann.shape_args ?? {}) as IImageAnnotationShape | undefined;
         if (!shape?.points?.length) continue;
 
         // Shift points based on shape type — some shapes store radii
         // in points that must NOT be translated.
         let movedPoints: Point[];
-        if (shape.type === IMAGE_CIRCLE) {
+        if (ann.shape_type === IMAGE_CIRCLE) {
           // points = [[cx, cy]] — only centroid shifts, radius is separate
           movedPoints = [[shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]]];
-        } else if (shape.type === IMAGE_ELLIPSE) {
+        } else if (ann.shape_type === IMAGE_ELLIPSE) {
           // points = [[cx, cy], [rx, ry]] — only centroid shifts, radii are separate
           movedPoints = [
             [shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]],
@@ -1024,7 +1029,7 @@
     } else {
       // Annotation note: position is normalized offset from annotation centroid,
       // so the note tracks the annotation when it moves.
-      const shape = annotation.shape as IImageAnnotationShape | undefined;
+      const shape = annotation.shape_args as IImageAnnotationShape | undefined;
       let centroidN: [number, number] = [0.5, 0.5];
       if (shape?.points?.length) {
         const pts = shape.points;
@@ -1072,8 +1077,9 @@
       scenePixelCursor[1],
       (data.annotations?.items ?? []).map((a) => ({
         id: a.id,
-        shape: a.shape as Record<string, unknown>,
-        value: a.value as Record<string, unknown> | undefined,
+        shape_type: a.shape_type,
+        shape_args: a.shape_args as Record<string, unknown>,
+        properties: a.properties as Record<string, unknown> | undefined,
       })),
       (ann) => annotation.isHidden({ id: ann.id } as any),
       resolveColorForAnnotation,
@@ -1110,7 +1116,7 @@
       // below mutates the store). Undo restores this exact snapshot, so all
       // shapes return to their original positions in one Ctrl+Z.
       if (ann) {
-        const originalShape = ann.shape as IImageAnnotationShape | undefined;
+        const originalShape = ann.shape_args as IImageAnnotationShape | undefined;
         _commitBatch.push({
           annotationId: annId,
           // Spread the original shape, then apply extraProps (e.g., ellipse
@@ -1121,7 +1127,7 @@
           shape: { ...originalShape, ...extraProps, points } as IImageAnnotationShape,
           snapshot: {
             ...ann,
-            shape: { ...(ann.shape ?? {}) },
+            shape_args: { ...(ann.shape_args ?? {}) },
           } as AnnotationItem,
         });
       }
@@ -1141,12 +1147,12 @@
     // here keeps shapes at their new positions through the render that
     // follows, eliminating the blink.
     if (!ann) return;
-    const shape = ann.shape as IImageAnnotationShape | undefined;
+    const shape = ann.shape_args as IImageAnnotationShape | undefined;
     if (!shape) return;
 
     data.annotations!.upsert({
       ...ann,
-      shape: { ...shape, points },
+      shape_args: { ...shape, points },
     } as any);
   }
 
@@ -1165,8 +1171,9 @@
         scenePixelCursor[1],
         (data.annotations?.items ?? []).map((a) => ({
           id: a.id,
-          shape: a.shape as Record<string, unknown>,
-          value: a.value as Record<string, unknown> | undefined,
+          shape_type: a.shape_type,
+          shape_args: a.shape_args as Record<string, unknown>,
+          properties: a.properties as Record<string, unknown> | undefined,
         })),
         (ann) => annotation.isHidden({ id: ann.id } as any),
         resolveColorForAnnotation,
@@ -1369,10 +1376,9 @@
             const sel = selection.value;
             // Defense-in-depth: never commit onto (or spin off a new mask
             // against) a locked mask annotation.
-            if (sel && (sel.shape as any)?.type === IMAGE_MASK && annotation.isLocked(sel)) {
-              return;
-            }
-            const existingId = sel && (sel.shape as any)?.type === IMAGE_MASK
+            if (sel && sel.shape_type === IMAGE_MASK && annotation.isLocked(sel)) return;
+
+            const existingId = sel && sel.shape_type === IMAGE_MASK
               ? sel.id
               : undefined;
             if (existingId) {

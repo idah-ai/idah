@@ -61,11 +61,11 @@
   <div class="flex flex-col gap-1">
     <Separator class="my-2" />
     {#each pagedAnnotations as ann (ann.id)}
-      {@const annShapeType = ann.shape.type as string}
+      {@const annShapeType = ann.shape_type as string}
       {@const annConfig = getDriver().config[annShapeType]}
-      {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
+      {@const annCategory = annConfig?.values?.find((v) => v.id === ann.category)}
       {@const annColor = annCategory?.color ?? null}
-      {@const annDisplayName = annCategory ? `${annCategory.label}` : (ann.value?.category ?? "Uncategorized")}
+      {@const annDisplayName = annCategory ? `${annCategory.label}` : (ann.category ?? "Uncategorized")}
       {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
       <div class="hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
         {#if annShapeType === IMAGE_POLYGON}

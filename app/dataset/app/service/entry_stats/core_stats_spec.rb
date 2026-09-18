@@ -8,8 +8,13 @@ RSpec.describe EntryStats::CoreStats do
     instance_double(Entry::Record, dataset: dataset, annotations: annotations)
   end
 
-  def make_annotation(category:, field: :category, type: nil)
-    instance_double(Annotation::Record, annotation: { field => category }, dimensions: type && { type: type })
+  def make_annotation(category:, type: nil, deleted: false)
+    instance_double(
+      Annotation::Record,
+      category: category,
+      shape_type: type,
+      deleted_at: deleted ? Time.now.utc : nil
+    )
   end
 
   describe ".call" do
@@ -34,7 +39,7 @@ RSpec.describe EntryStats::CoreStats do
       it "skips annotations that have no category value" do
         annotations = [
           make_annotation(category: "cat"),
-          instance_double(Annotation::Record, annotation: {}, dimensions: nil)
+          instance_double(Annotation::Record, category: nil, shape_type: nil, deleted_at: nil)
         ]
         result = described_class.call(make_entry(annotations: annotations))
 
@@ -78,21 +83,14 @@ RSpec.describe EntryStats::CoreStats do
       end
     end
 
-    context "with a custom category_field in the config" do
+    context "with a category_field override in the config" do
       let(:config) { { category_field: "label" } }
 
-      it "reads the category from the specified field" do
-        annotation = instance_double(Annotation::Record, annotation: { label: "cat" }, dimensions: nil)
+      it "ignores the override and always reads the canonical `category` field" do
+        annotation = instance_double(Annotation::Record, category: "cat", shape_type: nil, deleted_at: nil)
         result = described_class.call(make_entry(annotations: [annotation], config: config))
 
         expect(result["category.cat.count"]).to eq("1")
-      end
-
-      it "ignores annotations that use the default :category field instead" do
-        annotation = instance_double(Annotation::Record, annotation: { category: "cat" }, dimensions: nil)
-        result = described_class.call(make_entry(annotations: [annotation], config: config))
-
-        expect(result.keys.none? { |k| k.start_with?("category.") }).to be true
       end
     end
 
@@ -124,12 +122,30 @@ RSpec.describe EntryStats::CoreStats do
       end
 
       it "zero-fills shape types from tool-type config keys" do
-        config = { "idah-video:bounding-box" => {}, "idah-video:polygon" => {}, category_field: "category" }
+        config = { "idah-video:bounding-box" => {}, "idah-video:polygon" => {} }
         annotations = [make_annotation(category: "cat", type: "idah-video:bounding-box")]
         result = described_class.call(make_entry(annotations: annotations, config: config))
 
         expect(result["shape.bounding-box.count"]).to eq("1")
         expect(result["shape.polygon.count"]).to eq("0")
+      end
+    end
+
+    context "with soft-deleted annotations" do
+      it "excludes deleted annotations from all counts" do
+        annotations = [
+          make_annotation(category: "cat", type: "idah-video:bounding-box"),
+          make_annotation(category: "dog", type: "idah-video:polygon", deleted: true)
+        ]
+        result = described_class.call(make_entry(annotations: annotations))
+
+        expect(result["annotation.count"]).to eq("1")
+        expect(result["category.cat.count"]).to eq("1")
+        # dog was only present on the deleted annotation, so it is neither
+        # counted nor emitted (no config zero-fill for it).
+        expect(result["category.dog.count"]).to be_nil
+        expect(result["shape.bounding-box.count"]).to eq("1")
+        expect(result["shape.polygon.count"]).to be_nil
       end
     end
   end
