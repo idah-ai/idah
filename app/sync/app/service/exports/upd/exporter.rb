@@ -3,8 +3,6 @@
 module Exports
   module Upd
     class Exporter
-      # UPDCLI_TIMEOUT = 300 # 5 minutes per updcli-static invocation
-
       def name = "Universal Portable Dataset"
       def description = "Export to UPD file."
       def options = Verse::Schema.empty
@@ -14,7 +12,6 @@ module Exports
         file_path = File.join(tmpdir, "export.upd")
 
         # Init UPD file
-        # updcli("--input", file_path, "init")
         system("updcli-static --input #{file_path} init", exception: true)
 
         context.datasets.each do |dataset|
