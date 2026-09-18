@@ -108,14 +108,14 @@
           label: "Show/Hide All",
           icon: isAllHidden ? EyeOffIcon : EyeIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggle_visibility_all");
+            getDriver().command.call("idah-image:annotation.toggle-visibility-all");
           },
         },
         "editability-all": {
           label: "Lock/Unlock All",
           icon: isAllLocked ? LockIcon : LockOpenIcon,
           onClick: () => {
-            getDriver().command.call("annotation.toggle_editability_all");
+            getDriver().command.call("idah-image:annotation.toggle-editability-all");
           },
         },
         "delete-all": {
@@ -126,7 +126,7 @@
             showConfirmDialog({
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations?",
-              onConfirm: () => getDriver().command.call("annotation.delete_all"),
+              onConfirm: () => getDriver().command.call("idah-image:annotation.delete-all"),
             });
           },
         },
@@ -160,11 +160,11 @@
   <div class="flex flex-col gap-1">
     <Separator class="my-2" />
     {#each pagedAnnotations as ann (ann.id)}
-      {@const annShapeType = ann.shape.type as string}
+      {@const annShapeType = ann.shape_type as string}
       {@const annConfig = getDriver().config[annShapeType]}
-      {@const annCategory = annConfig?.values?.find((v) => v.id === ann.value?.category)}
+      {@const annCategory = annConfig?.values?.find((v) => v.id === ann.category)}
       {@const annColor = annCategory?.color ?? null}
-      {@const annDisplayName = annCategory?.label ?? ann.value?.category ?? "Uncategorized"}
+      {@const annDisplayName = annCategory?.label ?? ann.category ?? "Uncategorized"}
       {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
       <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
         <button

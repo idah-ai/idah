@@ -7,6 +7,7 @@ import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 import { mediaBasePath, MediaRecord } from "@/data/model/media/medias/medias-record";
+import { ExportRecord } from "@/data/model/sync/exports/record";
 
 import type { Hash } from "@/utils/types";
 
@@ -26,10 +27,11 @@ export function getLogResourceDetails(
     datasets: DatasetRecord[];
     entries: EntryRecord[];
     medias: MediaRecord[];
+    exports: ExportRecord[];
   },
 ) {
   const { action, resource_type, resource_id, project_id, dataset_id } = logRecord;
-  const { accounts, organizations, projects, projectMembers, datasets, entries, medias } = opts;
+  const { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports } = opts;
 
   /** 1. Construct resource hash */
   const resourceHash = logResourceTypes.reduce((acc, resourceType) => {
@@ -156,6 +158,11 @@ export function getLogResourceDetails(
        */
       resource.url = `${mediaBasePath}/files/${resource_id}`;
       resource.name = medias.find((media) => media.resource == String(resource_id))?.filename;
+      break;
+    }
+    case "exports": {
+      resource.name = exports.find((exportRecord) => exportRecord.id == String(resource_id))?.filename ?? undefined;
+      resource.url = `/projects/${project_id}/exports?filters[id]=${resource_id}`;
       break;
     }
     default: {

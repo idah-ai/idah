@@ -5,15 +5,19 @@
   import { SaveIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
-  import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
-  import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
   import LabelConfigTemplateDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/LabelConfigTemplateDropdownMenu.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
+  import { LabelConfigController } from "@/components/app/datasets/labels/label-config-controller.svelte";
+  import {
+    isConfirmModalActive,
+    showConfirmModal,
+  } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -22,8 +26,8 @@
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
-  import type { ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { Resource, Scope, ProjectMemberScope } from "@/security/types";
+  import type { ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
+  import type { ProjectMemberScope, Resource, Scope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -37,11 +41,17 @@
   let saving = $state(false);
   let modality = $state("");
   let shapes = $state<ModalityShapes>({});
+  let tagging = $state<ModalityTagging>({});
+  let modalityLabel = $state("");
   let loaded = $state(false);
-  let openUnsavedChangesModal = $state(false);
-  let pendingNavigationUrl = $state<URL | null>(null);
   // Set right before re-triggering goto() from the modal so beforeNavigate doesn't re-block it.
   let bypassNavigationGuard = false;
+
+  /** Outcomes of the unsaved-changes prompt, beyond the universal cancel. */
+  const UnsavedChangesChoice = {
+    Save: "save",
+    Discard: "discard",
+  } as const;
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -73,6 +83,8 @@
 
     const showModalityRes = await pluginsBackendDataSource.showModality(modality);
     shapes = showModalityRes.shapes;
+    tagging = showModalityRes.tagging;
+    modalityLabel = showModalityRes.label ?? "";
 
     controller.load(datasetRes.data.labeling_configuration);
     loaded = true;
@@ -105,11 +117,7 @@
     }
   }
 
-  function leaveWithoutSaving() {
-    openUnsavedChangesModal = false;
-    const url = pendingNavigationUrl;
-    pendingNavigationUrl = null;
-    if (!url) return;
+  function leaveTo(url: URL): void {
     bypassNavigationGuard = true;
     // destination captured from SvelteKit's own beforeNavigate event, not a static route pattern.
     // eslint-disable-next-line svelte/no-navigation-without-resolve -- url is already a resolved
@@ -118,18 +126,38 @@
     });
   }
 
-  async function saveAndLeave() {
-    await saveLabelConfigChanges();
-    if (controller.hasUnsavedChanges) return; // save failed, stay on the page
-    leaveWithoutSaving();
+  async function confirmUnsavedChanges(url: URL): Promise<void> {
+    const choice = await showConfirmModal({
+      title: "Unsaved changes",
+      description: "You have unsaved changes. Do you want to save them before leaving the page?",
+      actions: [
+        { id: UnsavedChangesChoice.Discard, label: "Don't Save", variant: "outline" },
+        {
+          id: UnsavedChangesChoice.Save,
+          label: "Save",
+          pendingLabel: "Saving",
+          run: async () => {
+            await saveLabelConfigChanges();
+            // Save failed: keep the prompt up so the user can retry or leave without saving.
+            if (controller.hasUnsavedChanges) return confirmModalResult.KeepOpen;
+          },
+        },
+      ],
+    });
+    if (choice === ConfirmModalChoice.Cancel) return;
+
+    // Navigating inside `run` would run while the modal is still open.
+    leaveTo(url);
   }
 
-  // In-app navigation (e.g. clicking to another dataset): cancel and ask via ConfirmModal.
+  // In-app navigation (e.g. clicking to another dataset): cancel and ask before leaving.
   beforeNavigate((navigation) => {
     if (bypassNavigationGuard || !loaded || !controller.hasUnsavedChanges || !navigation.to) return;
+    // Already asking. The overlay blocks clicks but not the browser's Back button, so this
+    // guard is re-entrant; showConfirmModal() throws if called while a modal is open.
+    if (isConfirmModalActive()) return;
     navigation.cancel();
-    pendingNavigationUrl = navigation.to.url;
-    openUnsavedChangesModal = true;
+    void confirmUnsavedChanges(navigation.to.url);
   });
 
   // Tab close / refresh / external navigation: browsers only allow their own generic prompt.
@@ -176,19 +204,14 @@
     {/snippet}
   </PageHeader>
 
-  <LabelConfigEditor {modality} {shapes} {controller} {permission} {datasetId} allowDuplicateToDatasets />
+  <LabelConfigEditor
+    {modality}
+    {shapes}
+    {tagging}
+    {modalityLabel}
+    {controller}
+    {permission}
+    {datasetId}
+    allowDuplicateToDatasets
+  />
 {/await}
-
-<ConfirmModal
-  title="Unsaved changes"
-  description="You have unsaved changes. Do you want to save them before leaving the page?"
-  onCancel={() => {
-    pendingNavigationUrl = null;
-  }}
-  bind:open={openUnsavedChangesModal}
->
-  {#snippet confirm()}
-    <Button variant="outline" onclick={leaveWithoutSaving}>Don't Save</Button>
-    <Button loading={saving} loadingLabel="Saving" onclick={saveAndLeave}>Save</Button>
-  {/snippet}
-</ConfirmModal>

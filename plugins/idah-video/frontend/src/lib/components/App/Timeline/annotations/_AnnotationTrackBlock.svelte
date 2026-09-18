@@ -34,7 +34,7 @@
           .filter((n) => n.anchor.anchor_type === "annotation" && n.anchor.annotation_id === annotation.id)
           .map((n) => {
             const pos = n.anchor.position as { frame?: number } | undefined;
-            return pos?.frame ?? annotation.shape.start;
+            return pos?.frame ?? annotation.shape_args.start;
           }),
       );
       // Add pending annotation-anchored note frame as a ghost keyframe
@@ -45,17 +45,14 @@
       return [...result].sort((a, b) => a - b);
     }
     // In editor workspace, show annotation keyframes
-    return annotation.shape.frames.map((f: { frame: number }) => f.frame);
+    return annotation.shape_args.frames.map((f: { frame: number }) => f.frame);
   });
 
   // Compute color using the same annotationColor() as the viewport shapes
   let color = $derived.by(() => resolveAnnotationColor(annotation));
 
-  // Check if this specific annotation is the selected one
-  let isSelected = $derived.by(() => {
-    const v = selection.value;
-    return v?.type === "annotation" && v.annotation.id === annotation.id;
-  });
+  // Check if this specific annotation is selected.
+   let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
 
   // Functions
   function handleOnContextMenu(e: MouseEvent) {
@@ -96,7 +93,7 @@
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         showContextMenu(
           NoteKeyframeContextMenu as unknown as ContextMenuComponent,
-          { annotationId: annotation.id, annotationStart: annotation.shape.start, frame: keyframe },
+          { annotationId: annotation.id, annotationStart: annotation.shape_args.start, frame: keyframe },
           e.clientX,
           rect.bottom,
         );

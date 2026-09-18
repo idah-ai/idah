@@ -35,6 +35,14 @@ export type RenderMode = "bilinear" | "nearest-neighbor";
 export type TimeDisplay = "frames" | "time";
 
 /**
+ * When the category label is drawn on an annotation.
+ *   "always" — always shown
+ *   "hover"  — shown only while the annotation is hovered or selected
+ *   "never"  — never shown (default)
+ */
+export type LabelVisibility = "always" | "hover" | "never";
+
+/**
  * UI state — dialogs, panels, etc.
  */
 class UIState {
@@ -42,6 +50,18 @@ class UIState {
   #colorMode = createLocalStorageStore<ColorMode>("idah-video:settings:color-mode", "category");
   #renderMode = createLocalStorageStore<RenderMode>("idah-video:settings:render-mode", "bilinear");
   #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-video:settings:time-display", "frames");
+
+  // Opacity is intentionally session-only (in-memory): it resets to the default
+  // on every plugin load/registration instead of persisting to localStorage.
+  // Plain reactive fields — no getter/setter needed since nothing is saved.
+  annotationOpacity = $state(100);
+  videoOpacity = $state(100);
+
+  // Persisted per-plugin to account settings (not localStorage): hydrated from
+  // the account setting on init via settings.ts#hydrateSettings, and written back
+  // on change via the settings descriptor's set() (upsert). "never" is the
+  // fallback used before load completes or when unauthenticated.
+  labelVisibility = $state<LabelVisibility>("never");
 
   isCommandDialogOpen = $state(false);
   isDebugConsoleOpen = $state(false);

@@ -38,6 +38,27 @@ export default defineConfig(
           ignoreLinks: true,
         },
       ],
+      // <ConfirmModal /> is rendered exactly once, from src/routes/+layout.svelte (see the
+      // override below). Everything else asks through the service.
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/overlays/modals/confirm-modal.svelte"],
+              message:
+                "Do not render <ConfirmModal /> yourself — it is mounted once in src/routes/+layout.svelte. Use showConfirmModal() from @/components/app/overlays/modals/confirm-modal.service.svelte instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The single legitimate mount point, plus the component's own test.
+    files: ["src/routes/+layout.svelte", "**/confirm-modal.svelte.test.ts"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
   {

@@ -55,9 +55,9 @@ export function initDriver(d: IIdahDriverV2): void {
 
 export function retrySync() {
   _syncError = null
-  getDriver().command.call("core.retry");
+  getDriver().command.call("core:sync.retry");
 }
 
 export function resetSync() {
-  getDriver().command.call("core.reset");
+  getDriver().command.call("core:sync.reset");
 }

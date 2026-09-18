@@ -4,10 +4,10 @@ import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } fr
  * Check that all required properties have values.
  * Properties are expected to already be filtered by visibility via the driver.
  */
-export function requiredFullfilled(value: { attributes?: Record<string, unknown>; [key: string]: unknown }, properties: IConfigProperty[] = []): boolean {
+export function requiredFullfilled(value: Record<string, unknown> | undefined, properties: IConfigProperty[] = []): boolean {
   return properties
     .filter((p) => p.required)
-    .every((p) => (value.attributes?.[p.id] as string | number | boolean | string[] | undefined) != undefined && conformToformat(value.attributes?.[p.id] as string | number | boolean | string[] | undefined, p));
+    .every((p) => (value?.[p.id] as string | number | boolean | string[] | undefined) != undefined && conformToformat(value?.[p.id] as string | number | boolean | string[] | undefined, p));
 }
 
 export function propertyFullfilled(value: string | number | string[] | boolean | undefined, property: IConfigProperty) {

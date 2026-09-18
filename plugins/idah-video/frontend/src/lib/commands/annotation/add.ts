@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.add — Create a new annotation (bounding box or polygon)
+// idah-video:annotation.add — Create a new annotation (bounding box or polygon)
 // Undoable: deletes the created annotation.
 //
 // Usage:
-//   driver.command.call("annotation.add", {
+//   driver.command.call("idah-video:annotation.add", {
 //     shape: { type: "idah-video:bounding-box", start: 1, end: 100, frames: [...] },
 //     value: { category: "car" }
 //   });
@@ -19,7 +19,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { uuidv7 } from "uuidv7";
 
 export const command = {
-  name: "annotation.add",
+  name: "idah-video:annotation.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -29,7 +29,10 @@ export const command = {
 
 export interface AnnotationAddProps {
   shape: IVideoAnnotationShape;
-  value?: { category?: string; label?: string; [key: string]: unknown };
+  shape_type: string;
+  category?: string;
+  properties?: Record<string, unknown>;
+  id?: string;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -45,21 +48,24 @@ export function register(driver: IIdahDriverV2): void {
       if (!props || !data.annotations) return noopAction(command);
 
       const createdId = uuidv7();
+      const shapeType = props.shape_type;
 
       return {
         command: { ...command },
         async do() {
           const created = await data.annotations!.create({
             id: createdId,
-            shape: props.shape,
-            value: props.value,
+            shape_type: shapeType,
+            shape_args: props.shape,
+            category: props.category ?? "",
+            properties: props.properties,
           });
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Seek to the frame the annotation was created on
           const firstFrame = (props.shape as any).frames?.[0];
           if (firstFrame) viewport.video.currentFrame.value = firstFrame.frame;
-          driver.command.call("timeline.scroll_to_annotation");
+          driver.command.call("idah-video:timeline.scroll-to-annotation");
           // Exit drawing mode after successful creation
           driver.setMode("editor");
         },
@@ -68,7 +74,7 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.delete(createdId);
           }
           // Restore draft and mode for multi-step shapes
-          if (props.shape.type === VIDEO_POLYGON) {
+          if (shapeType === VIDEO_POLYGON) {
             const firstFrame = (props.shape as any).frames?.[0];
             if (firstFrame?.points?.length) {
               viewport.video.currentFrame.value = firstFrame.frame;

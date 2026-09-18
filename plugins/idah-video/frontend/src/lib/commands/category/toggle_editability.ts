@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_category_editability
+// idah-video:annotation.category.toggle-editability
 // Toggle editability (lock) of annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.toggle_category_editability",
+//     "idah-video:annotation.category.toggle-editability",
 //     {
 //       category: "vehicle",
 //     },
@@ -27,7 +27,7 @@ import { isCategoryMatch } from "$lib/utils/category";
 import { noopAction } from "..";
 
 export const command = {
-  name: "annotation.toggle_category_editability",
+  name: "idah-video:annotation.category.toggle-editability",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -66,12 +66,12 @@ export function register(driver: IIdahDriverV2): void {
 
         if (props.category) {
           categoryAnnotations = categoryAnnotations.filter((ann) =>
-            isCategoryMatch(ann.value?.category, props.category),
+            isCategoryMatch(ann.category, props.category),
           );
         }
 
         if (props.shapeType) {
-          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape_type === props.shapeType);
         }
       } else {
         return noopAction(command);
@@ -81,11 +81,14 @@ export function register(driver: IIdahDriverV2): void {
         return noopAction(command);
       }
 
-      // Snapshot IDs and their current locked state from annotation module
-      const snapshot = categoryAnnotations.map((ann) => ({
-        id: ann.id,
-        locked: annotation.isLocked(ann),
-      }));
+      const lockKeys = new Map<string, boolean>();
+      for (const ann of categoryAnnotations) {
+        const key = ((ann as any)?.metadata?.group_id as string | undefined) ?? ann.id;
+        if (!lockKeys.has(key)) {
+          lockKeys.set(key, annotation.isLocked(key));
+        }
+      }
+      const snapshot = Array.from(lockKeys.entries()).map(([id, locked]) => ({ id, locked }));
 
       return {
         command: { ...command },

@@ -62,6 +62,7 @@
     ]
   },
   "dependencies": {
+    "@sentry/sveltekit": "^10.64.0",
     "date-fns": "^4.1.0",
     "marked": "^16.4.0",
     "mode-watcher": "^1.1.0",

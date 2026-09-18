@@ -11,7 +11,7 @@ module Exports
     def annotations(filter = {})
       Enumerator.new do |yielder|
         Api[:idah].dataset.annotations.index_all(
-          filter: filter.merge(entry_id: @record.id),
+          filter: filter.merge(entry_id: @record.id, deleted: "false"),
           included: ["project_members"]
         ).each do |annotation|
           yielder << AnnotationContext.new(annotation)

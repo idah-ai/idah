@@ -5,6 +5,8 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
@@ -27,6 +29,7 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
+  // Read-only seed for <ProjectForm>; never mutated here.
   let project: ProjectRecord = $derived(
     projectRecord
       ? projectRecord
@@ -39,33 +42,40 @@
           },
         }),
   );
+  // Local edit buffer holding the current form values.
+  let draft: Hash = $state({});
+
+  // Single source of truth for the dirty comparison. Keys MUST be limited to
+  // fields the form emits via onValueChange — used for BOTH the original-record
+  // snapshot and the current-value snapshot.
+  function serializeEditableFields(source: Hash): Hash {
+    return {
+      name: source.name,
+      description: source.description,
+      organization_id: source.organization_id,
+    };
+  }
+  const changeTracker = new FormChangeTracker(serializeEditableFields, () => projectRecord);
 
   // Functions
   function resetForm(): void {
     fieldErrors = {};
-    project = new ProjectRecord({
-      type: "datasets:projects",
-      attributes: {
-        name: null,
-        description: null,
-        organization_id: preSelectedOrganizationId || null,
-      },
-    });
+    changeTracker.reset();
+    draft = {};
   }
 
   function setValue(value: Hash): void {
-    project.name = value.name;
-    project.description = value.description;
-    project.organization_id = value.organization_id;
+    draft = { ...value };
+    changeTracker.update(value);
   }
 
   async function createProject() {
     const createdProjectRes = await projectsBackendDataSource.create(
       {
         attributes: {
-          name: project.name,
-          description: project.description,
-          organization_id: project.organization_id,
+          name: draft.name,
+          description: draft.description,
+          organization_id: draft.organization_id,
         },
       },
       {
@@ -78,18 +88,18 @@
     goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
     showToast.success({
       title: "Project created",
-      description: `The project "${project.name}" has been created.`,
+      description: `The project "${draft.name}" has been created.`,
     });
   }
 
   async function updateProject() {
     await projectsBackendDataSource.update(
-      project.id,
+      projectRecord!.id,
       {
         attributes: {
-          name: project.name,
-          description: project.description,
-          organization_id: project.organization_id,
+          name: draft.name,
+          description: draft.description,
+          organization_id: draft.organization_id,
         },
       },
       {
@@ -102,7 +112,7 @@
     $refetches.projects.get = new Date();
     showToast.success({
       title: "Project updated",
-      description: `The project "${project.name}" has been updated.`,
+      description: `The project "${draft.name}" has been updated.`,
     });
   }
 
@@ -113,9 +123,9 @@
 
     try {
       const validated = validateData(schema, {
-        name: project.name,
-        organization_id: Number(project.organization_id),
-        description: project.description,
+        name: draft.name,
+        organization_id: Number(draft.organization_id),
+        description: draft.description,
       });
 
       if (!validated.success) {
@@ -136,6 +146,14 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  loading={submitting}
+  disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
   <ProjectForm {project} {fieldErrors} {preSelectedOrganizationId} onValueChange={setValue}></ProjectForm>
 </FormModal>

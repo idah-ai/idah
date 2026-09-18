@@ -36,7 +36,7 @@
       if (!ann) return null;
       // Skip markers on hidden annotations
       if (annotation.isHidden(ann)) return null;
-      const shape = ann.shape as IImageAnnotationShape | undefined;
+      const shape = ann.shape_args as IImageAnnotationShape | undefined;
       if (!shape || !shape.points?.length) return null;
 
       // Compute centroid of the annotation shape points
@@ -83,7 +83,7 @@
     // Annotation: x/y are normalized offset from centroid
     const ann = data.annotations?.items?.find(a => a.id === p.annotationId);
     if (!ann) return null;
-    const shape = ann.shape as IImageAnnotationShape | undefined;
+    const shape = ann.shape_args as IImageAnnotationShape | undefined;
     if (!shape || !shape.points?.length) return null;
 
     const points = shape.points;
@@ -154,7 +154,7 @@
         const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
         if (ann) {
           selection.selectAnnotation(ann);
-          driver.command.call("selection.center");
+          driver.command.call("idah-image:selection.center");
         } else {
           // Annotations not loaded yet — defer until they are
           const stop = $effect.root(() => {
@@ -162,7 +162,7 @@
               const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
               if (!found) return;
               selection.selectAnnotation(found);
-              driver.command.call("selection.center");
+              driver.command.call("idah-image:selection.center");
               stop();
             });
           });

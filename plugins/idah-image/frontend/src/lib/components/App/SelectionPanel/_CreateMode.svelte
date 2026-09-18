@@ -19,6 +19,7 @@
     onSelectCategory: (selectedCategoryId?: string) => void;
     onValueChange: (property: IConfigProperty, value: string | number | string[] | boolean | undefined) => void;
     disabled: boolean;
+    usedMaskCategories?: Set<string>;
   };
 
   let {
@@ -32,6 +33,7 @@
     onSelectCategory,
     onValueChange,
     disabled,
+    usedMaskCategories = new Set<string>(),
   }: Props = $props();
 </script>
 
@@ -48,6 +50,7 @@
     {shapeType}
     onValueChange={onSelectCategory}
     {disabled}
+    {usedMaskCategories}
   />
 
   {#if properties.length > 0}

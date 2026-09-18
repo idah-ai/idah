@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.keyframe_add — Add a keyframe to an annotation
+// idah-video:annotation.keyframe.add — Add a keyframe to an annotation
 // Undoable: removes the keyframe.
 //
 // Usage:
-//   driver.command.call("annotation.keyframe_add", {
+//   driver.command.call("idah-video:annotation.keyframe.add", {
 //     annotationId: "...", selection: { frame, angle, points }
 //   });
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 
 export const command = {
-  name: "annotation.keyframe_add",
+  name: "idah-video:annotation.keyframe.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -47,14 +47,14 @@ export function register(driver: IIdahDriverV2): void {
 
       const snapshot: AnnotationItem = {
         ...record,
-        shape: { ...record.shape, frames: [...((record.shape.frames as any[]) ?? [])] },
+        shape_args: { ...record.shape_args, frames: [...((record.shape_args.frames as any[]) ?? [])] },
       };
 
       // If points are empty, interpolate from surrounding keyframes
       let selection = { ...props.selection };
       if (!selection.points || selection.points.length === 0) {
-        const existingShape = snapshot.shape as IVideoAnnotationShape;
-        const result = getInterpolatedFrame(existingShape, selection.frame);
+        const existingShape = snapshot.shape_args as IVideoAnnotationShape;
+        const result = getInterpolatedFrame(existingShape, selection.frame, true, snapshot.shape_type);
         if (result) {
           selection = { ...selection, angle: result.angle, points: result.points ?? [] };
         }
@@ -63,7 +63,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          const frames = [...((snapshot.shape.frames as IVideoFrameSelection[]) ?? [])];
+          const frames = [...((snapshot.shape_args.frames as IVideoFrameSelection[]) ?? [])];
           const existing = frames.findIndex((f) => f.frame === selection.frame);
           if (existing >= 0) frames[existing] = selection;
           else frames.push(selection);
@@ -74,7 +74,7 @@ export function register(driver: IIdahDriverV2): void {
 
           await data.annotations!.update({
             ...snapshot,
-            shape: { ...snapshot.shape, start: min, end: max, frames },
+            shape_args: { ...snapshot.shape_args, start: min, end: max, frames },
           });
           viewport.video.currentFrame.value = selection.frame;
         },

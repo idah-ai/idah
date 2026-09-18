@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.undo",
+    name: "core:history.undo",
     group: "General",
     modes: ["*"],
     shortcut: "Control+Z",
@@ -10,7 +10,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: "Undo the last action",
     callback: () => ({
       command: {
-        name: "core.undo",
+        name: "core:history.undo",
         group: "General",
         modes: [],
         shortcut: null,

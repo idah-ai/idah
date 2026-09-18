@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.toggle_editability_all — Toggle editability (lock) of all annotations
+// idah-image:annotation.toggle-editability-all — Toggle editability (lock) of all annotations
 // Undoable: restores the previous locked state.
 //
 // Usage:
-//   driver.command.call("annotation.toggle_editability_all");
+//   driver.command.call("idah-image:annotation.toggle-editability-all");
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
@@ -13,7 +13,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.toggle_editability_all",
+  name: "idah-image:annotation.toggle-editability-all",
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,
@@ -32,10 +32,13 @@ export function register(driver: IIdahDriverV2): void {
       if (!isEditable()) return noopAction(command);
       if (!data.annotations) return noopAction(command);
 
-      const snapshot: { id: string; locked: boolean }[] = data.annotations.items.map((ann) => ({
-        id: ann.id,
-        locked: annotation.isLocked(ann),
-      }));
+      const lockKeys = new Map<string, boolean>();
+      for (const ann of data.annotations.items) {
+        if (!lockKeys.has(ann.id)) {
+          lockKeys.set(ann.id, annotation.isLocked(ann.id));
+        }
+      }
+      const snapshot = Array.from(lockKeys.entries()).map(([id, locked]) => ({ id, locked }));
       if (snapshot.length === 0) return noopAction(command);
 
       return {

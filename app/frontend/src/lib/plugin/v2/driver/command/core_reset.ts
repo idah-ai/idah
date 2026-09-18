@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "core.reset",
+    name: "core:sync.reset",
     group: "General",
     // TODO modes ['*'] ?
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
@@ -11,7 +11,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: "Reset cache and reload",
     callback: () => ({
       command: {
-        name: "core.reset",
+        name: "core:sync.reset",
         group: "General",
         modes: [],
         shortcut: null,

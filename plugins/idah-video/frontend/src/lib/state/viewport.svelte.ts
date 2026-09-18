@@ -34,6 +34,13 @@ class Viewport {
   /** Reference to the SVG element for screen coordinate calculations */
   svgElement: SVGSVGElement | null = $state(null);
 
+  /**
+   * Last known mouse cursor position in normalized media coords (0-1).
+   * Updated by ShapesContainer on every mousemove so commands like
+   * selection.paste can target the current cursor position.
+   */
+  cursor: [number, number] = $state([0.5, 0.5]);
+
   timeline = $state({
     range: { startRange: 0, endRange: 0 },
     dimensions: [0, 0] as [number, number],
@@ -59,6 +66,9 @@ class Viewport {
       return this.status == "pause" && this.currentFrame.value !== this.displayedFrame.value;
     },
     status: "pause" as "play" | "pause",
+    // Set on the first frame drawn to the presentation canvas; VideoCanvas then
+    // drops its loading placeholder. Reset by Video.svelte on unmount.
+    hasRenderedFrame: false,
     // Set when navigation pauses active playback. Tells Video.svelte's play/pause $effect to skip syncPausedFrame() and let seek $effect drive to target.
     pauseForSeek: false,
     sound: { level: 0.0, muted: true },

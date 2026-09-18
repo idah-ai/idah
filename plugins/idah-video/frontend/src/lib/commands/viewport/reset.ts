@@ -1,11 +1,11 @@
 // ---------------------------------------------------------------------------
-// viewport.reset — Reset viewport zoom/pan to fit the video (non-undoable)
+// idah-video:viewport.reset — Reset viewport zoom/pan to fit the video (non-undoable)
 // ---------------------------------------------------------------------------
 import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "viewport.reset",
+  name: "idah-video:viewport.reset",
   group: "Viewport",
   modes: ["editor", "review"],
   shortcut: "Digit0",

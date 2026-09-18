@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// selection.center — Center viewport on the selected annotation's AABB
+// idah-image:selection.center — Center viewport on the selected annotation's AABB
 // Undoable: restores the previous viewport transform.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
@@ -11,12 +11,12 @@ import { DEFAULT_MODE, REVIEW_MODE, type IImageAnnotationShape } from "$lib/type
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;
   if (!sel) return false;
-  const shape = (sel as any).shape as { points?: [number, number][] } | undefined;
+  const shape = (sel as any).shape_args as { points?: [number, number][] } | undefined;
   return !!shape?.points?.length;
 }
 
 export const command = {
-  name: "selection.center",
+  name: "idah-image:selection.center",
   group: "Selection",
   modes: [DEFAULT_MODE, REVIEW_MODE],
   shortcut: "Control+Shift+C",
@@ -43,7 +43,7 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (!sel) return;
           const record = sel as any;
-          const shape = record.shape as IImageAnnotationShape;
+          const shape = record.shape_args as IImageAnnotationShape;
           if (!shape.points || shape.points.length === 0) return;
 
           // For rotated shapes (bounding box with angle), rotate points around
