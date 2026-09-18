@@ -239,7 +239,7 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile.dev
     environment:
-      VITE_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
+      PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     ports: !override
       - "5173"
     volumes:

@@ -26,9 +26,7 @@ x-service: &service
       condition: service_healthy
 
 # Settings shared by all seven Ruby services. IDAH_SERVICE_PASSWORD is one
-# generated secret for all service accounts: they live on this private network
-# and a single value keeps install.sh simple. Split it per service if your
-# threat model wants the blast radius smaller.
+# generated secret for all service accounts, which share this private network.
 x-service-env: &service-env
   REDIS_STREAM_URL: redis://redis:6379/0
   IDAH_URL: ${IDAH_URL:?set IDAH_URL to the public URL of this install}
@@ -186,10 +184,17 @@ services:
       - ./config/keys/public.pem:/keys/public.pem:ro
 
   # The frontend calls /api/v1/<service> on its own origin, so it needs no URL
-  # setting: nginx routes those paths to the services.
+  # setting: nginx routes those paths to the services. Sentry is read at run
+  # time, so this install reports to its own project or, with no DSN, to none.
   frontend:
     image: ghcr.io/idah-ai/idah-frontend:${IDAH_VERSION:?set IDAH_VERSION in .env}
     restart: always
+    environment:
+      PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
+      PUBLIC_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      PUBLIC_SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      PUBLIC_SENTRY_REPLAY_SAMPLE_RATE: ${SENTRY_REPLAY_SAMPLE_RATE:-0}
+      PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE: ${SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE:-0}
     networks:
       - app-network
 

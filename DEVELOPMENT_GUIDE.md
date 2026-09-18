@@ -604,12 +604,26 @@ staging always store files on disk; these apply to production.
 
 ### Frontend variables
 
-| Variable                  | Description                              | Default |
-|---------------------------|------------------------------------------|---------|
-| `VITE_SENTRY_DSN`         | Sentry DSN, compiled in; empty disables  | —       |
+| Variable                                    | Description                                   | Default      |
+|---------------------------------------------|-----------------------------------------------|--------------|
+| `PUBLIC_SENTRY_DSN`                         | Sentry DSN; empty disables reporting          | —            |
+| `PUBLIC_SENTRY_ENVIRONMENT`                 | Environment label on events                   | build mode   |
+| `PUBLIC_SENTRY_TRACES_SAMPLE_RATE`          | Fraction of transactions traced               | `1.0`        |
+| `PUBLIC_SENTRY_REPLAY_SAMPLE_RATE`          | Fraction of sessions recorded                 | `0.1`        |
+| `PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE` | Fraction of errored sessions recorded         | `1.0`        |
 
-The API base URL is not a variable. The app calls `/api/v1/<service>` on its own
-origin, which nginx routes to the services, so one image serves every domain.
+Nothing environment-specific is built into the frontend image, so one image
+serves every install:
+
+- **The API base URL is not a variable.** The app calls `/api/v1/<service>` on
+  its own origin, which nginx routes to the services.
+- **Sentry is read at run time** through `$env/dynamic/public`, so the settings
+  above are container environment variables, not build arguments. Never pass a
+  DSN as a build argument: a published image carrying ours would send every
+  customer's errors, and their session replays, to our Sentry project.
+
+In development, `compose.override.yml` passes `SENTRY_DSN_FRONTEND` from your
+root `.env` as `PUBLIC_SENTRY_DSN`.
 
 ---
 

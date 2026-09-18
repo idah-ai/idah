@@ -121,8 +121,8 @@ services:
     build:
       context: .
       dockerfile: ./app/frontend/Dockerfile
-      args:
-        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+    environment:
+      PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     ports:
       - "3000"
     networks:

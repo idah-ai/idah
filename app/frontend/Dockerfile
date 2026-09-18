@@ -23,19 +23,9 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm svelte-kit sync
 RUN pnpm run build:parser
 
-# Build SvelteKit app
-# The API base URL is not built in: the app calls /api/v1/<service> on its own
-# origin, which nginx routes to the services. One image serves every domain.
-# Sentry is compiled in at build time; an empty DSN disables it.
-ARG VITE_SENTRY_DSN=
-ARG VITE_SENTRY_TRACES_SAMPLE_RATE=1.0
-ARG VITE_SENTRY_REPLAY_SAMPLE_RATE=0.1
-ARG VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1.0
-RUN VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
-    VITE_SENTRY_TRACES_SAMPLE_RATE=${VITE_SENTRY_TRACES_SAMPLE_RATE} \
-    VITE_SENTRY_REPLAY_SAMPLE_RATE=${VITE_SENTRY_REPLAY_SAMPLE_RATE} \
-    VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=${VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE} \
-    pnpm run build --mode $NODE_ENV_ALIAS
+# Build SvelteKit app. Nothing environment-specific is compiled in: the API
+# base URL is relative and Sentry reads PUBLIC_SENTRY_* at run time.
+RUN pnpm run build --mode $NODE_ENV_ALIAS
 
 # Plugin frontend bundles are not built here: the setting service builds and
 # serves them (see app/setting/Dockerfile).
