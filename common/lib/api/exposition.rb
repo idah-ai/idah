@@ -22,19 +22,6 @@ class Api
       execute_request(:get, path, headers:, params:, options:)
     end
 
-    # # Streaming GET — yields response body chunks to the block without
-    # # loading the entire response into memory. Wraps the request in a
-    # # configurable timeout to prevent worker stalls.
-    # #
-    # # @param path [String] URL path with optional `:symbol` placeholders
-    # # @param headers [Hash] extra headers
-    # # @param params [Hash] query / path parameters
-    # # @param options [Hash] request options (auth, etc.)
-    # # @yield [String] response body chunk
-    # def get_stream(path, headers: {}, params: {}, options: {}, &block)
-    #   stream_request(:get, path, headers:, params:, options:, &block)
-    # end
-
     def post(path, headers: {}, params: {}, options: {})
       execute_request(:post, path, headers:, params:, options:)
     end
