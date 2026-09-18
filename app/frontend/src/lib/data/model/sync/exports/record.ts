@@ -27,7 +27,7 @@ export class ExportRecord extends Record {
 
 RecordFactory.registerTypes(ExportRecord);
 
-export const exportsBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/sync/exports`;
+export const exportsBasePath = `/api/v1/sync/exports`;
 
 export const ExportsBackendDataSource = createBackendDataSource(ExportRecord, exportsBasePath, {
   formats: async (params: { modalities: Array<string> }): Promise<Array<ExportFormat>> => {

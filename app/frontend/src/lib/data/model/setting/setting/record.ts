@@ -12,5 +12,5 @@ RecordFactory.registerTypes(SettingRecord);
 
 export const settingsBackendDataSource = createBackendDataSource(
   SettingRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/settings`,
+  `/api/v1/setting/settings`,
 );

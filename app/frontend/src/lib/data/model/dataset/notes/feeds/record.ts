@@ -42,7 +42,7 @@ export class NoteFeedRecord extends Record {
 
 RecordFactory.registerTypes(NoteFeedRecord);
 
-const noteFeedBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/note_feeds`;
+const noteFeedBasePath: string = `/api/v1/dataset/note_feeds`;
 
 export const noteFeedsBackendDataSource = createBackendDataSource(NoteFeedRecord, noteFeedBasePath, {
   markAsResolved: async (noteFeedId: string) => {

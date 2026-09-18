@@ -11,10 +11,10 @@ Sentry.init({
   environment: import.meta.env.MODE,
   tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || 1.0),
   integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration(), Sentry.browserProfilingIntegration()],
-  // Backend calls go to `${VITE_IDAH_HOST}/api/v1/<service>` through nginx;
+  // Backend calls go to `/api/v1/<service>` on this origin, through nginx;
   // matching them attaches sentry-trace/baggage headers so backend traces
   // continue the browser trace.
-  tracePropagationTargets: [/^\/api\//, import.meta.env.VITE_IDAH_HOST].filter(Boolean),
+  tracePropagationTargets: [/^\/api\//],
 
   // Session replay: sample a slice of normal sessions, keep every errored one.
   replaysSessionSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE || 0.1),

@@ -36,7 +36,7 @@
 | media | IDAH_FFMPEG_PATH, IDAH_FFPROBE_PATH | FFmpeg paths |
 | media | IDAH_DECODING_THREADS, IDAH_ENCODING_THREADS | Video processing threads |
 | notification | SMTP_* variables | SMTP server settings |
-| frontend | VITE_IDAH_HOST | Backend API base URL |
+| frontend | VITE_SENTRY_DSN | Sentry DSN, compiled in at build time |
 
 ## Configuration Pattern
 YAML config files use Verse's config system with environment overrides. Each service loads its config via `config/boot.rb`:

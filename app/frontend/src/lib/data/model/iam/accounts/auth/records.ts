@@ -19,7 +19,7 @@ export class AccountAuthRecord extends Record {
   @field() public exp!: number;
 }
 
-const accountAuthBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/auth`;
+const accountAuthBasePath: string = `/api/v1/iam/auth`;
 
 RecordFactory.registerTypes(AccountAuthRecord);
 

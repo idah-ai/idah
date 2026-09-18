@@ -14,11 +14,11 @@
   <link
     rel="stylesheet"
     type="text/css"
-    href="{import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/{pluginId}/files/plugin.css"
+    href="/api/v1/setting/plugins/{pluginId}/files/plugin.css"
     onload={() => (cssloaded = true)}
   />
   <script
-    src="{import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/{pluginId}/files/plugin.js"
+    src="/api/v1/setting/plugins/{pluginId}/files/plugin.js"
     onload={() => (jsloaded = true)}
   ></script>
 </svelte:head>

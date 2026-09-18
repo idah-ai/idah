@@ -135,7 +135,6 @@ jobs:
           build-args: |
             IDAH_VERSION=${{ needs.prepare.outputs.version }}
             IDAH_GIT_SHA=${{ needs.prepare.outputs.revision }}
-            ${{ matrix.service == 'frontend' && 'VITE_IDAH_HOST=http://localhost:8080' || '' }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}

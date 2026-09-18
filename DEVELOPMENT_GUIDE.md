@@ -498,9 +498,12 @@ docker compose logs -f frontend
 cd app/frontend
 pnpm install
 
-# Start the dev server directly (point to a running backend)
-VITE_IDAH_HOST=https://idah.localhost:8443 pnpm run dev
+# Start the dev server directly
+pnpm run dev
 ```
+
+The app calls `/api/v1/<service>` on its own origin, so it needs nginx in front
+of it to reach the backend. Use <https://idah.localhost:8443>, not the vite port.
 
 ### Running frontend tests
 
@@ -601,9 +604,12 @@ staging always store files on disk; these apply to production.
 
 ### Frontend variables
 
-| Variable              | Description                          | Default                               |
-|-----------------------|--------------------------------------|---------------------------------------|
-| `VITE_IDAH_HOST`      | Backend API host (used in dev mode)  | `https://idah.localhost:8443`         |
+| Variable                  | Description                              | Default |
+|---------------------------|------------------------------------------|---------|
+| `VITE_SENTRY_DSN`         | Sentry DSN, compiled in; empty disables  | —       |
+
+The API base URL is not a variable. The app calls `/api/v1/<service>` on its own
+origin, which nginx routes to the services, so one image serves every domain.
 
 ---
 

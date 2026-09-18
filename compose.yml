@@ -122,7 +122,6 @@ services:
       context: .
       dockerfile: ./app/frontend/Dockerfile
       args:
-        VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost:8080}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     ports:
       - "3000"

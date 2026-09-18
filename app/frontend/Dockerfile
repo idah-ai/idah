@@ -24,15 +24,14 @@ RUN pnpm svelte-kit sync
 RUN pnpm run build:parser
 
 # Build SvelteKit app
-# Accept VITE_IDAH_HOST as a build argument with a default value
-ARG VITE_IDAH_HOST=http://localhost:8080
+# The API base URL is not built in: the app calls /api/v1/<service> on its own
+# origin, which nginx routes to the services. One image serves every domain.
 # Sentry is compiled in at build time; an empty DSN disables it.
 ARG VITE_SENTRY_DSN=
 ARG VITE_SENTRY_TRACES_SAMPLE_RATE=1.0
 ARG VITE_SENTRY_REPLAY_SAMPLE_RATE=0.1
 ARG VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1.0
-RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} \
-    VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
+RUN VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
     VITE_SENTRY_TRACES_SAMPLE_RATE=${VITE_SENTRY_TRACES_SAMPLE_RATE} \
     VITE_SENTRY_REPLAY_SAMPLE_RATE=${VITE_SENTRY_REPLAY_SAMPLE_RATE} \
     VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=${VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE} \

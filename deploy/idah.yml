@@ -1,0 +1,205 @@
+# The IDAH stack for an on-premise install, staging and production alike.
+#
+# It pulls published images; nothing is built here. Every environment runs the
+# same images and differs only by the values in .env beside this file.
+#
+# Start:    docker compose -f idah.yml up -d
+# Upgrade:  edit IDAH_VERSION in .env, then the same command again.
+#
+# Your own changes belong in a compose.override.yml next to this file, so an
+# upgrade can replace idah.yml without touching them:
+#   docker compose -f idah.yml -f compose.override.yml up -d
+#
+# Developers do not use this file. They use compose.yml at the repository root.
+
+# Every Ruby service gets these. Service-specific values are set per service.
+x-service: &service
+  restart: always
+  env_file:
+    - .env
+  networks:
+    - app-network
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+# Settings shared by all seven Ruby services. IDAH_SERVICE_PASSWORD is one
+# generated secret for all service accounts: they live on this private network
+# and a single value keeps install.sh simple. Split it per service if your
+# threat model wants the blast radius smaller.
+x-service-env: &service-env
+  REDIS_STREAM_URL: redis://redis:6379/0
+  IDAH_URL: ${IDAH_URL:?set IDAH_URL to the public URL of this install}
+  IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD:?run install.sh to generate secrets}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  LOG_SHOW_ERROR_DETAILS: ${LOG_SHOW_ERROR_DETAILS:-false}
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "${IDAH_HTTP_PORT:-8080}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - iam
+      - media
+      - dataset
+      - setting
+      - audit
+      - sync
+      - notification
+    networks:
+      - app-network
+
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-idah}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run install.sh to generate secrets}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  # iam signs service tokens, so it is the one service with the private key.
+  iam:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-iam:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_iam
+      SERVICE_JWT_KEY: file:/keys/private.pem
+      IDAH_SERVICE_ACCOUNT: iam@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_IAM:-}
+    volumes:
+      - ./config/keys/private.pem:/keys/private.pem:ro
+
+  # media stores uploaded files. With the default file_system adapter they live
+  # on the media_files volume; set MEDIAS_FILES_ADAPTER=s3 in .env to use S3
+  # instead, which then requires the five MEDIAS_FILES_* settings.
+  media:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-media:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_media
+      SERVICE_JWT_KEY: file:/keys/public.pem
+      IDAH_SERVICE_ACCOUNT: media@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
+      MEDIAS_FILES_PATH: /data/files
+    volumes:
+      - ./config/keys/public.pem:/keys/public.pem:ro
+      - media_files:/data
+
+  dataset:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-dataset:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_dataset
+      SERVICE_JWT_KEY: file:/keys/public.pem
+      IDAH_SERVICE_ACCOUNT: dataset@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_DATASET:-}
+    volumes:
+      - ./config/keys/public.pem:/keys/public.pem:ro
+
+  setting:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-setting:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_setting
+      SERVICE_JWT_KEY: file:/keys/public.pem
+      IDAH_SERVICE_ACCOUNT: setting@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
+    volumes:
+      - ./config/keys/public.pem:/keys/public.pem:ro
+
+  audit:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-audit:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_audit
+      SERVICE_JWT_KEY: file:/keys/public.pem
+      IDAH_SERVICE_ACCOUNT: audit@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_AUDIT:-}
+    volumes:
+      - ./config/keys/public.pem:/keys/public.pem:ro
+
+  # sync writes export files, on the sync_files volume by default.
+  sync:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-sync:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_sync
+      SERVICE_JWT_KEY: file:/keys/public.pem
+      IDAH_SERVICE_ACCOUNT: sync@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
+      SYNC_FILES_PATH: /data/files
+    volumes:
+      - ./config/keys/public.pem:/keys/public.pem:ro
+      - sync_files:/data
+
+  notification:
+    <<: *service
+    image: ghcr.io/idah-ai/idah-notification:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    environment:
+      <<: *service-env
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_notification
+      SERVICE_JWT_KEY: file:/keys/public.pem
+      IDAH_SERVICE_ACCOUNT: notification@services.idah.ai
+      SENTRY_DSN: ${SENTRY_DSN_NOTIFICATION:-}
+      # The service will not boot without a reachable SMTP server.
+      MAIL_SMTP_HOST: ${MAIL_SMTP_HOST:?set your SMTP server in .env}
+      MAIL_SMTP_PORT: ${MAIL_SMTP_PORT:-587}
+      MAIL_SMTP_USER: ${MAIL_SMTP_USER:?set your SMTP user in .env}
+      MAIL_SMTP_PASSWORD: ${MAIL_SMTP_PASSWORD:?set your SMTP password in .env}
+    volumes:
+      - ./config/keys/public.pem:/keys/public.pem:ro
+
+  # The frontend calls /api/v1/<service> on its own origin, so it needs no URL
+  # setting: nginx routes those paths to the services.
+  frontend:
+    image: ghcr.io/idah-ai/idah-frontend:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    restart: always
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  # Uploaded media and generated exports. Back these up.
+  media_files:
+  sync_files:
+
+networks:
+  app-network:
+    driver: bridge

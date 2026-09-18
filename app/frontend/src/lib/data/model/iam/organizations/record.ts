@@ -13,5 +13,5 @@ RecordFactory.registerTypes(OrganizationRecord);
 
 export const organizationsBackendDataSource = createBackendDataSource(
   OrganizationRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/organizations`,
+  `/api/v1/iam/organizations`,
 );

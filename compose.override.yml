@@ -239,7 +239,6 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile.dev
     environment:
-      VITE_IDAH_HOST: https://idah.localhost:8443
       VITE_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     ports: !override
       - "5173"

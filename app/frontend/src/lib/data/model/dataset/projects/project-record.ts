@@ -29,5 +29,5 @@ RecordFactory.registerTypes(ProjectRecord);
 
 export const projectsBackendDataSource = createBackendDataSource(
   ProjectRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/projects`,
+  `/api/v1/dataset/projects`,
 );
