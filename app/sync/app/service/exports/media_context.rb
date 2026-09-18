@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
+require "tempfile"
+require "timeout"
+
 module Exports
   class MediaContext
     attr_reader :record
+
+    # Timeout for media download (in seconds)
+    DOWNLOAD_TIMEOUT = 300
 
     def initialize(media)
       @record = media

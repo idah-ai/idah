@@ -11,12 +11,12 @@ module Exports
     # @param klass Class
     # The export class
     def register(plugin_name, modalities, klass)
-      modalities = [modalities] unless modalities in Array
+      modalities = Array(modalities)
 
       @registry ||= {}
 
       modalities.each do |modality|
-        unless modality in String | Regexp
+        unless modality.is_a?(String) || modality.is_a?(Regexp)
           raise ArgumentError, "modality selector must be String or Regexp; #{modality.class} given"
         end
 
