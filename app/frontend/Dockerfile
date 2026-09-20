@@ -33,6 +33,12 @@ RUN pnpm run build --mode $NODE_ENV_ALIAS
 # Delete source code files that were used to build the app that are no longer needed
 RUN rm -rf static/ emailTemplates/ docker-compose.yml
 
+# Stamped by the release workflow. Without them /healthcheck reports 0.0.0-dev.
+ARG IDAH_VERSION
+ARG IDAH_GIT_SHA
+ENV IDAH_VERSION="$IDAH_VERSION"
+ENV IDAH_GIT_SHA="$IDAH_GIT_SHA"
+
 # The USER instruction sets the user name to use as the default user for the remainder of the current stage
 USER node:node
 

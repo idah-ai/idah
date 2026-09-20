@@ -62,6 +62,14 @@ if [ "$service" = frontend ]; then
   status=$(http_status /) || true
   [ "$status" = 200 ] || fail "GET / answered $status"
   pass "serves / with 200"
+
+  body=$(curl --silent --show-error --fail-with-body \
+    --retry 30 --retry-delay 2 --retry-all-errors "http://localhost:$port/healthcheck") \
+    || fail "/healthcheck did not answer 200: ${body:-no response}"
+
+  version=$(jq -r .version <<< "$body")
+  [ "$version" = "$expected_version" ] || fail "reports version $version, expected $expected_version"
+  pass "healthcheck reports version $version ($(jq -r .revision <<< "$body"))"
   exit 0
 fi
 
