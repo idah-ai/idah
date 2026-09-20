@@ -49,17 +49,17 @@
   // in the Annotations tab — it's edited through the Tagging tab instead. Treat it
   // as no selection here so the annotations list renders rather than the tagging form.
   let isTaggingAnnotation = $derived(
-    sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation.shape as { type?: string })?.type ?? ""),
+    sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation as any)?.shape_type ?? ""),
   );
 
   // The active shape type: from annotation, from group (via first annotation), from
   // the shapeTypeOverride prop, or from drawing mode.
   let shapeType = $derived.by<string | undefined>(() => {
-    if (sel?.type === "annotation") return sel.annotation.shape.type as string;
+    if (sel?.type === "annotation") return sel.annotation.shape_type as string;
     if (sel?.type === "group" && data.annotations) {
       const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
       const groupAnn = items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-      if (groupAnn) return groupAnn.shape.type as string;
+      if (groupAnn) return groupAnn.shape_type as string;
     }
     return shapeTypeOverride ?? viewport.mode;
   });
@@ -84,17 +84,17 @@
   let groupAnnDisplayName = $derived.by<string>(() => {
     if (!groupAnnotation || !sel || sel.type !== "group") return "";
     const gAnn = groupAnnotation;
-    const gShapeType = gAnn.shape.type as string;
+    const gShapeType = gAnn.shape_type as string;
     const gConfig = getDriver().config[gShapeType];
-    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.value?.category);
+    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.category);
     const lastPart = sel.groupId.split("-").pop() ?? "";
-    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.value?.category ?? "Uncategorized");
+    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.category ?? "Uncategorized");
   });
 
   // When a group is selected, always use the annotation's current category from the data store,
   // so it stays in sync even when the parent doesn't update the selectedCategory prop.
   let effectiveSelectedCategory = $derived(
-    sel?.type === "group" ? groupAnnotation?.value?.category || "" : selectedCategory,
+    sel?.type === "group" ? groupAnnotation?.category || "" : selectedCategory,
   );
 
   let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
@@ -129,14 +129,11 @@
     const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
     const frame = currentFrame;
 
-    // Filter to current frame. Non-drawable records (entry:root spanning the
-    // whole video, and per-frame idah-video:frame) are excluded — they are not
-    // drawable shapes and are only ever created/edited through the Tagging tab.
     const onFrame = items.filter(
       (ann) =>
-        ann.shape.start <= frame &&
-        ann.shape.end >= frame &&
-        !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+        ann.shape_args.start <= frame &&
+        ann.shape_args.end >= frame &&
+        !NON_DRAWABLE_SHAPE_TYPES.has((ann as any)?.shape_type),
     );
 
     // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
@@ -149,7 +146,7 @@
 
     const groups = Array.from(map.entries()).map(([groupId, anns]) => ({
       groupId,
-      annotations: anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end),
+      annotations: anns.sort((a, b) => a.shape_args.start - b.shape_args.start || a.shape_args.end - b.shape_args.end),
     }));
     groups.sort(compareGroups);
 
@@ -175,8 +172,8 @@
   function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     const newValue = {
       ...annotationValue,
-      attributes: {
-        ...(annotationValue.attributes || {}),
+      properties: {
+        ...(annotationValue.properties || {}),
         [property.id]: v,
       },
     };

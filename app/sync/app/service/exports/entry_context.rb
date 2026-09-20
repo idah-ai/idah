@@ -10,7 +10,7 @@ module Exports
 
     def annotations(filter = {})
       Api[:idah].dataset.annotations.index_all(
-        filter: filter.merge(entry_id: @record.id),
+        filter: filter.merge(entry_id: @record.id, deleted: "false"),
         included: ["project_members"]
       ).map do |annotation|
         AnnotationContext.new(annotation)

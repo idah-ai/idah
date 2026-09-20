@@ -41,6 +41,7 @@ export function shiftAndClampShape(
   delta: number,
   minFrame: number,
   maxFrame: number,
+  shape_type: string,
 ): ShiftAndClampResult {
   const shiftedStart = shape.start + delta;
   const shiftedEnd = shape.end + delta;
@@ -62,13 +63,13 @@ export function shiftAndClampShape(
   if (lowClip && !frames.some((f) => f.frame === minFrame)) {
     // Map the bound back into the ORIGINAL (unshifted) timeline to sample
     // the shape's geometry there, then re-tag it at the bound frame.
-    const interpolated = getInterpolatedFrame(shape, minFrame - delta);
+    const interpolated = getInterpolatedFrame(shape, minFrame - delta, true, shape_type);
     if (interpolated) {
       frames.unshift({ frame: minFrame, angle: interpolated.angle ?? 0, points: interpolated.points ?? [] });
     }
   }
   if (highClip && !frames.some((f) => f.frame === maxFrame)) {
-    const interpolated = getInterpolatedFrame(shape, maxFrame - delta);
+    const interpolated = getInterpolatedFrame(shape, maxFrame - delta, true, shape_type);
     if (interpolated) {
       frames.push({ frame: maxFrame, angle: interpolated.angle ?? 0, points: interpolated.points ?? [] });
     }

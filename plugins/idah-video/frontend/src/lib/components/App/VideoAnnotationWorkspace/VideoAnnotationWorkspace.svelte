@@ -49,7 +49,7 @@
 
   // Local type aliases for V1-compatible annotation shapes/values
   type AnnotationShape = Record<string, unknown> & { type: string; start?: number; end?: number; frames?: IVideoFrameSelection[] };
-  type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
+  type AnnotationAttributes = Record<string, unknown>;
   interface AnnotationGroup<T> {
     groupId: string;
     annotations: T[];
@@ -81,18 +81,29 @@
 
   let annotationId = $derived<string | undefined>(selAnnotation?.id);
 
-  /** Mutable value used during annotation creation (popover category/property selection).
-   *  Once confirmed, this is merged into the final annotation. */
-  let pendingValue: AnnotationValue = $state({});
-  let annotationValue: AnnotationValue = $derived.by(() => selAnnotation?.value || pendingValue || {});
+  /** Mutable category used during annotation creation/edit (popover category selection). */
+  let pendingCategory: string | undefined = $state(undefined);
+  /** Mutable open-ended properties used during annotation creation/edit. */
+  let pendingValue: AnnotationAttributes = $state({}); // this IS attributes now, nothing else
+
+  let annotationValue = $derived.by(() => ({
+    category: selAnnotation?.category ?? pendingCategory,
+    properties: selAnnotation?.properties ?? pendingValue ?? {},
+  }));
+
+  function resetPending() {
+    pendingCategory = undefined;
+    pendingValue = {};
+  }
 
   /** Whether the user can confirm the current annotation creation (has category + all required properties filled). */
   let canConfirm = $derived.by(() => {
     if (!editable || isNoteMode) return false;
+
     if (!shapeSelectionArgs) return false;
-    if (!pendingValue.category || pendingValue.category === "") return false;
+    if (!pendingCategory || pendingCategory === "") return false;
     const properties =
-      getDriver().getFilteredConfig(shapeSelectionArgs[0], pendingValue as unknown as Record<string, unknown>)
+      getDriver().getFilteredConfig(shapeSelectionArgs[0], { category: pendingCategory, properties: pendingValue })
         ?.properties ?? [];
 
     return requiredFullfilled(pendingValue, properties);
@@ -118,10 +129,13 @@
       default:
         return undefined;
     }
+    const { type: _t, ...shapeArgs } = shape;
     return {
       id: "pending",
-      shape: shape as IVideoAnnotationShape,
-      value: { ...pendingValue },
+      shape_type: type,
+      shape_args: shapeArgs as IVideoAnnotationShape,
+      category: pendingCategory,
+      properties: { ...pendingValue },
       metadata: {},
       synced: true,
     } as unknown as IVideoAnnotationRecord;
@@ -129,10 +143,10 @@
 
   /** Category color for the create-shape previews. */
   let categoryColor = $derived.by<string | undefined>(() => {
-    if (!pendingValue.category) return undefined;
+    if (!pendingCategory) return undefined;
     const shapeType = shapeSelectionArgs?.[0] ?? viewport.mode;
     const config = getDriver().config[shapeType];
-    const cat = config?.values?.find((v) => v.id === pendingValue.category);
+    const cat = config?.values?.find((v) => v.id === pendingCategory);
     return cat?.color ?? undefined;
   });
   $effect(() => {
@@ -175,7 +189,7 @@
     // Reset pendingValue when getting out of drawing modes,
     // to avoid stale pendingValue when user switches back to drawing mode later
     if (viewportMode !== BOUNDING_BOX_MODE && viewportMode !== POLYGON_MODE) {
-      pendingValue = {};
+      resetPending();
     }
 
     // Deselect group or annotation when switching to drawing modes
@@ -197,7 +211,7 @@
     // The store is already preloaded in initDataStores()
 
     // Find entry-root annotation from the global store
-    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => (ann.shape as any).type === ENTRY_ROOT);
+    const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => ann.shape_type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
   });
 
@@ -205,18 +219,17 @@
     player?.seekToFrame(frame);
   }
 
-  async function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+  async function addAnnotation(shape: AnnotationShape, category?: string, properties: AnnotationAttributes = {}) {
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
     const videoShape: IVideoAnnotationShape = {
-      type,
       start: start!,
       end: end!,
       frames: frames as IVideoFrameSelection[],
     };
 
-    getDriver().command.call("idah-video:annotation.add", { shape: videoShape, value });
+    getDriver().command.call("idah-video:annotation.add", { shape: videoShape, shape_type: type, category, properties });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -264,20 +277,13 @@
     | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
     | undefined = $state();
 
-  function onEditValue(value: AnnotationValue, valueMode: string) {
+  function onEditValue(category: string | undefined, valueMode: string, properties?: AnnotationAttributes) {
     if (!editable) return;
 
-    // When a shaped annotation is selected, validate against its real shape type
-    // (box/polygon), not the sidebar's fallback mode, so required properties are
-    // evaluated against the correct config. entry:root is edited only through the
-    // Tagging tab and never reaches here as a selected shape.
-    const gateShapeType = selAnnotation
-      ? (selAnnotation.shape as { type?: string })?.type ?? valueMode
-      : valueMode;
-
+    const effectiveProperties = properties ?? annotationValue.properties;
     let requirementFullfilled = requiredFullfilled(
-      value,
-      getDriver().getFilteredConfig(gateShapeType, value as unknown as Record<string, unknown>)?.properties,
+      effectiveProperties,
+      getDriver().getFilteredConfig(valueMode, { category, properties: effectiveProperties })?.properties,
     );
 
     if (valueMode == ENTRY_ROOT && !selAnnotation && entryRoot.value?.metadata?.id)
@@ -288,34 +294,38 @@
       // During creation (no selected annotation), store the value in pendingValue so
       // the SelectionPanel can display it and the Confirm button can read it.
       if (!selAnnotation) {
-        pendingValue = value;
+        pendingCategory = category;
+        if (properties) pendingValue = properties;
       } else {
-        selection.selectAnnotation({ ...selAnnotation, value } as any);
+        selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       }
       return;
     }
 
-    if (valueMode == ENTRY_ROOT && !selAnnotation) {
-      if (value.category && value.category != "" && requirementFullfilled)
-        addAnnotation(entryRootFullRangeShape(), $state.snapshot(value));
+    if (valueMode == "entry:root" && !selAnnotation) {
+      if (category && category != "" && requirementFullfilled)
+        addAnnotation({ type: valueMode }, category, $state.snapshot(effectiveProperties));
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, value } as any);
-      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selAnnotation), $state.snapshot(value));
+      selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
+      if (requirementFullfilled)
+        updateAnnotationValue($state.snapshot(selAnnotation), category, $state.snapshot(effectiveProperties));
     } else if (selGroup) {
       // Update category for all annotations in the group
       getDriver().command.call("idah-video:annotation.update-group-category", {
         groupId: selGroup.groupId,
-        categoryIdToBeUpdate: value.category,
+        categoryIdToBeUpdate: category,
       });
     } else if (valueMode === VIDEO_FRAME) {
       // Frame tagging creation: route through the same onShapeSelection flow as
       // shaped annotations (builds the shape, opens the popover when required
       // properties are missing, creates otherwise).
-      pendingValue = value;
+      pendingCategory = category;
+      if (properties) pendingValue = properties;
       onShapeSelection(VIDEO_FRAME, viewport.video.currentFrame.value);
     } else if (valueMode !== ENTRY_ROOT) {
       // Sidebar category click: store category and enter drawing mode
-      pendingValue = value;
+      pendingCategory = category;
+      if (properties) pendingValue = properties;
       viewport.mode = valueMode;
     } else if (shapeSelectionArgs && requirementFullfilled) {
       showPopOver = false;
@@ -335,7 +345,8 @@
     if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
-    let value = $state.snapshot(pendingValue) as AnnotationValue;
+    let attributes = $state.snapshot(pendingValue) as AnnotationAttributes;
+    let category = pendingCategory;
 
     let shape: AnnotationShape = { type };
     switch (type) {
@@ -358,8 +369,8 @@
     }
 
     shapeSelectionArgs = undefined;
-    pendingValue = {};
-    addAnnotation(shape, value);
+    resetPending();
+    addAnnotation(shape, category, attributes);
   }
 
   function onShapeSelection(
@@ -373,7 +384,8 @@
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
-      let annotation_value_from = $state.snapshot(pendingValue) as AnnotationValue;
+      let annotation_category_from = $state.snapshot(pendingCategory);
+      let annotation_properties_from = $state.snapshot(pendingValue) as AnnotationAttributes;
 
       // todo proper validation
       let shape: AnnotationShape = { type };
@@ -412,15 +424,18 @@
       }
 
       if (
-        getDriver().config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
+        getDriver().config[type]?.values.some((v) => v.id == annotation_category_from) &&
         requiredFullfilled(
-          annotation_value_from,
-          getDriver().getFilteredConfig(type, annotation_value_from as unknown as Record<string, unknown>)?.properties,
+          annotation_properties_from,
+          getDriver().getFilteredConfig(type, {
+            category: annotation_category_from,
+            properties: annotation_properties_from,
+          })?.properties,
         )
       ) {
         shapeSelectionArgs = undefined;
-        pendingValue = {};
-        addAnnotation(shape, annotation_value_from);
+        resetPending();
+        addAnnotation(shape, annotation_category_from, annotation_properties_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, angle, selectedId];
         // Keep pendingValue so the popover shows the selected category
@@ -431,11 +446,11 @@
     }
   }
 
-  function updateAnnotationValue(ann: IVideoAnnotationRecord, value: AnnotationValue) {
+  function updateAnnotationValue(ann: IVideoAnnotationRecord, category?: string, properties?: AnnotationAttributes) {
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    getDriver().command.call("idah-video:annotation.update", { annotation: ann, value });
+    getDriver().command.call("idah-video:annotation.update", { annotation: ann, category, properties });
   }
 
   /** Full-length frame range for the entry:root annotation so it survives the
@@ -449,7 +464,7 @@
   // The entry:root annotation for this entry, derived reactively from the live
   // store (never a stale singleton) so the Tagging tab always reflects reality.
   let entryRootAnnotation = $derived<IVideoAnnotationRecord | undefined>(
-    data.annotations?.items.find((a) => (a.shape as any).type === ENTRY_ROOT) as IVideoAnnotationRecord | undefined,
+    data.annotations?.items.find((a) => a.shape_type === ENTRY_ROOT) as IVideoAnnotationRecord | undefined,
   );
 
   // All idah-video:frame annotations for the CURRENT frame (one per category),
@@ -458,7 +473,7 @@
     if (!data.annotations) return [];
     const frame = viewport.video.currentFrame.value;
     return (data.annotations.items as unknown as IVideoAnnotationRecord[]).filter(
-      (a) => (a.shape as any).type === VIDEO_FRAME && a.shape.start === frame && a.shape.end === frame,
+      (a) => a.shape_type === VIDEO_FRAME && a.shape_args.start === frame && a.shape_args.end === frame,
     );
   });
 
@@ -468,8 +483,8 @@
   let frameAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     if (!data.annotations) return [];
     return (data.annotations.items as unknown as IVideoAnnotationRecord[])
-      .filter((a) => (a.shape as any).type === VIDEO_FRAME)
-      .sort((a, b) => a.shape.start - b.shape.start);
+      .filter((a) => a.shape_type === VIDEO_FRAME)
+      .sort((a, b) => a.shape_args.start - b.shape_args.start);
   });
 
   // Frame tagging config (values + properties) for the create popover.
@@ -477,19 +492,19 @@
    *  at most one entry:root annotation may exist per entry — creating a second
    *  one updates the existing record instead of duplicating. Returns whether the
    *  change was persisted (false when a required field is missing). */
-  function onEntryRootChange(value: AnnotationValue): boolean {
+  function onEntryRootChange(value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+    if (!isTaggingValueComplete(value, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
-    const resolution = resolveEntryRoot(items, value as IVideoAnnotationValue);
+    const resolution = resolveEntryRoot(items, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation(entryRootFullRangeShape(), value);
+      addAnnotation(entryRootFullRangeShape(), value.category, value.properties);
     }
     return true;
   }
@@ -497,22 +512,23 @@
   /** Create a frame annotation from the given value. Uniqueness is enforced client-side
    *  per (frame, category): at most one frame annotation per category per frame.
    *  Returns whether the change was persisted (false when a required field is missing). */
-  function onFrameCreate(value: AnnotationValue): boolean {
+  function onFrameCreate(value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
     // Only create/update when the category + required properties are valid.
     const properties =
       getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
+    if (!isTaggingValueComplete(value, properties)) return false;
     const frame = viewport.video.currentFrame.value;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
-    const resolution = resolveFrame(items, frame, value.category, value as IVideoAnnotationValue);
+    const resolution = resolveFrame(items, frame, value.category, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
       addAnnotation(
         { type: VIDEO_FRAME, start: frame, end: frame, frames: [] },
-        value,
+        value.category,
+        value.properties,
       );
     }
     return true;
@@ -520,13 +536,13 @@
 
   /** Update an existing idah-video:frame tagging record. Returns whether the change
    *  was persisted (false when a required field is missing). */
-  function onFrameUpdate(ann: IVideoAnnotationRecord, value: AnnotationValue): boolean {
+  function onFrameUpdate(ann: IVideoAnnotationRecord, value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     // Editing must satisfy the same required-field gate as creation.
     const properties =
       getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
-    if (!isTaggingValueComplete(value as IVideoAnnotationValue, properties)) return false;
-    updateAnnotationValue(ann, value);
+    if (!isTaggingValueComplete(value, properties)) return false;
+    updateAnnotationValue(ann, value.category, value.properties);
     return true;
   }
 
@@ -591,15 +607,14 @@
   // appear in the annotation sidebar, or reach the per-shape timeline tracks.
   let viewportAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
     const raw = (data.annotations?.items ?? []).filter(
-      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type),
     );
     return raw.map((ann) => ({
       id: ann.id,
-      shape: ann.shape as IVideoAnnotationShape,
-      value: {
-        category: ann.value?.category || "null",
-        attributes: ann.value?.attributes ?? {},
-      },
+      shape_type: ann.shape_type,
+      shape_args: ann.shape_args as IVideoAnnotationShape,
+      category: ann.category || "null",
+      properties: ann.properties ?? {},
       metadata: ann.metadata ?? {},
       synced: ann.synced ?? true,
     })) as IVideoAnnotationRecord[];
@@ -630,7 +645,7 @@
 
   async function reSelectCategory(reselectedCategoryId: string) {
     // onEditValue handles the update for both selAnnotation and selGroup cases
-    onEditValue({ category: reselectedCategoryId }, mode);
+    onEditValue(reselectedCategoryId, mode);
   }
 </script>
 
@@ -640,8 +655,7 @@
     onOpenChange={(open: boolean) => {
       if (!open && showPopOver) {
         // Popover closed via Escape/click-outside — restore drawing state
-        annotationValue = {};
-        pendingValue = {};
+        resetPending();
         const args = shapeSelectionArgs;
         shapeSelectionArgs = undefined;
         if (args) {
@@ -673,20 +687,18 @@
       }}
     >
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        {#if pendingValue.category || shapeSelectionArgs?.[0] === VIDEO_FRAME}
+        {#if pendingCategory || shapeSelectionArgs?.[0] === VIDEO_FRAME}
           <SelectionPanel
-            selectedCategory={pendingValue.category ?? ""}
-            annotationValue={pendingValue}
+            selectedCategory={pendingCategory ?? ""}
+            annotationValue={annotationValue}
             shapeTypeOverride={shapeSelectionArgs?.[0]}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
-              pendingValue = {
-                ...pendingValue,
-                category: selectedCategory,
-              };
-              onEditValue({ category: pendingValue.category }, shapeSelectionArgs?.[0] ?? mode);
+              pendingCategory = selectedCategory;
+              onEditValue(pendingCategory, mode);
             }}
-            onEditValue={(value) => value && onEditValue(value, shapeSelectionArgs?.[0] ?? mode)}
+            onEditValue={(value) =>
+              value && onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
             disabled={false}
           />
         {:else}
@@ -711,8 +723,7 @@
           variant="outline"
           onclick={() => {
             showPopOver = false;
-            annotationValue = {};
-            pendingValue = {};
+            resetPending();
             const args = shapeSelectionArgs;
             shapeSelectionArgs = undefined;
             if (args) {
@@ -730,7 +741,7 @@
         <Button
           size="sm"
           onclick={() => {
-            if (shapeSelectionArgs && pendingValue.category) {
+          if (shapeSelectionArgs && pendingCategory) {
               showPopOver = false;
               confirmCreateAnnotation(...shapeSelectionArgs);
             }

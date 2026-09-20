@@ -20,8 +20,8 @@ import { polygonVisualCenter } from "$lib/utils/math/polylabel";
 /** Minimal structural view of an annotation — avoids coupling to the full record type. */
 type LabelAnnotation = {
   id?: string;
-  value?: { category?: string };
-  shape?: { type?: string };
+  category?: string;
+  shape_type?: string;
 };
 
 /** A resolved category label. `unresolved` means the id is not in the label config. */
@@ -54,7 +54,7 @@ export function annotationLabel(
   annotation: LabelAnnotation,
   getCategory: (categoryId: string) => { id: string; label?: string | null } | null | undefined,
 ): AnnotationLabel | null {
-  const raw = annotation?.value?.category;
+  const raw = annotation?.category;
   if (!raw) return null;
 
   const category = getCategory(raw);
@@ -76,7 +76,7 @@ export function annotationLabel(
 /** Convenience wrapper resolving the category against the driver's label config. */
 export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationLabel | null {
   return annotationLabel(annotation, (categoryId: string) => {
-    const config = getDriver().config[annotation?.shape?.type ?? ""];
+    const config = getDriver().config[annotation?.shape_type ?? ""];
     return config?.values?.find((v) => v.id === categoryId) ?? null;
   });
 }
@@ -97,19 +97,19 @@ export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationL
  * start/end range, or a keyframe with no points), and for unrecognised shapes.
  */
 export function labelCenterPx(
-  annotation: { shape?: unknown },
+  annotation: { shape_args?: unknown; shape_type?: string },
   w: number,
   h: number,
   frame: number,
 ): Point | null {
-  const shape = annotation?.shape as (IVideoAnnotationShape & { type?: string }) | undefined;
+  const shape = annotation?.shape_args as IVideoAnnotationShape | undefined;
   if (!shape) return null;
 
-  const frameData = getInterpolatedFrame(shape, frame);
+  const frameData = getInterpolatedFrame(shape, frame, true, annotation?.shape_type ?? "");
   const points = (frameData?.points ?? []) as Point[];
   if (points.length === 0) return null;
 
-  switch (shape.type) {
+  switch (annotation?.shape_type) {
     case VIDEO_BOUNDING_BOX: {
       // 4 unrotated AABB corners per keyframe, plus a per-frame angle. Rotation
       // is about the pixel centroid, which leaves the centroid fixed — so the

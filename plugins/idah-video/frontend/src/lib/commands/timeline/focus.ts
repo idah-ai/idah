@@ -50,7 +50,7 @@ export function register(driver: IIdahDriverV2): void {
       let end: number | undefined;
 
       if (sel.type === "annotation") {
-        const shape = (sel.annotation as any).shape as IVideoAnnotationShape | undefined;
+        const shape = (sel.annotation as any).shape_args as IVideoAnnotationShape | undefined;
         if (shape) {
           start = shape.start;
           end = shape.end;
@@ -60,7 +60,7 @@ export function register(driver: IIdahDriverV2): void {
         for (const ann of data.annotations?.items ?? []) {
           const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
           if (annGroupId !== groupId) continue;
-          const shape = ann.shape as IVideoAnnotationShape | undefined;
+          const shape = ann.shape_args as IVideoAnnotationShape | undefined;
           if (!shape) continue;
           if (start === undefined || shape.start < start) start = shape.start;
           if (end === undefined || shape.end > end) end = shape.end;

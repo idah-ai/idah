@@ -141,8 +141,8 @@
         top: 0,
         items: [{
           trackId: "__entry_tag__",
-          startRange: entryRootAnnotation.shape.start,
-          endRange: entryRootAnnotation.shape.end,
+          startRange: entryRootAnnotation.shape_args.start,
+          endRange: entryRootAnnotation.shape_args.end,
           rawData: { type: "entry" as TaggingRowKind, annotations: [entryRootAnnotation] },
           component: EntryTaggingTrackBlock,
         }],
@@ -152,7 +152,7 @@
     // One row per frame-annotation category present.
     const byCategory = new Map<string, IVideoAnnotationRecord[]>();
     for (const ann of frameAnnotations) {
-      const cat = ann.value?.category ?? "uncategorized";
+      const cat = ann.category ?? "uncategorized";
       if (!byCategory.has(cat)) byCategory.set(cat, []);
       byCategory.get(cat)!.push(ann);
     }
@@ -165,8 +165,8 @@
         top: 0,
         items: [{
           trackId: `__frame_tag:${category}`,
-          startRange: anns[0]?.shape.start ?? 0,
-          endRange: anns[anns.length - 1]?.shape.start ?? 0,
+          startRange: anns[0]?.shape_args.start ?? 0,
+          endRange: anns[anns.length - 1]?.shape_args.start ?? 0,
           rawData: { type: "frame" as TaggingRowKind, category, annotations: anns },
           component: FrameCategoryTrackBlock,
         }],

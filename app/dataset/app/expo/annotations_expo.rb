@@ -8,12 +8,15 @@ class AnnotationsExpo < BaseExpo
   desc <<~MD
     Annotations capture labeled data or markups on entries,
     supporting both JSON:API and JSON-RPC interfaces for flexible batch operations.
+
+    NOTE: Deleted (soft-deleted) annotations are returned by default by `index`/`show`.
+    Use the `deleted` filter ("true"/"false") to narrow results explicitly.
   MD
 
   json_api Annotation::Record do
     show
     index do
-      allowed_filters :updated_at__gt
+      allowed_filters :updated_at__gt, :deleted
     end
     create do
       authorized_relationships entry: [:link]
@@ -38,14 +41,22 @@ class AnnotationsExpo < BaseExpo
   RpcCreateSchema = Verse::Schema.define do
     field(:id, String).default { UUIDv7.generate }
     field(:entry_id, String)
-    field(:dimensions, Hash) # Open Hash
-    field(:annotation, Hash) # Open Hash
+    field(:shape_type, String)
+    field(:shape_args, Hash) # Open Hash
+    field(:category, String) # required
+    field?(:properties, Hash) # Open Hash, optional
     field?(:metadata, Hash) # Open Hash
   end
 
-  # Add the id as a required field for the update method
+  # Add the id as a required field for the update method.
+  # All mutable fields are omittable on update — omitted means "leave
+  # unchanged", never "clear it".
   RpcUpdateSchema = Verse::Schema.define(RpcCreateSchema) do
     field(:id, String)
+    field?(:shape_type, String)
+    field?(:shape_args, Hash)
+    field?(:category, String)
+    field?(:properties, Hash)
   end
 
   expose json_rpc_method(:create) do
@@ -86,6 +97,15 @@ class AnnotationsExpo < BaseExpo
   end
   def rpc_delete
     service.delete(params[:id])
+  end
+
+  expose json_rpc_method(:restore) do
+    input do
+      field(:id, String)
+    end
+  end
+  def rpc_restore
+    service.restore(params[:id])
   end
 
   expose json_rpc_method(:write_shape) do

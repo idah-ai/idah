@@ -77,7 +77,7 @@ export function register(driver: IIdahDriverV2): void {
           // ── Defensive: reject ENTRY_ROOT in clipboard ────────────────
           // This should be unreachable given copy-time rejection, but paste
           // must never create a second ENTRY_ROOT.
-          if (clipboardData.some((e) => (e.shape as any)?.type === ENTRY_ROOT)) {
+          if (clipboardData.some((e) => e.shape_type === ENTRY_ROOT)) {
             clipboard.clear();
             showToast.error({
               title: "Paste failed",
@@ -117,10 +117,11 @@ export function register(driver: IIdahDriverV2): void {
 
             // Shift and clamp the annotation's keyframes along the timeline.
             const shifted = shiftAndClampShape(
-              entry.shape as IVideoAnnotationShape,
+              entry.shape_args as IVideoAnnotationShape,
               delta,
               MIN_FRAME,
               MAX_FRAME,
+              entry.shape_type,
             );
 
             // Non-anchor group members may land entirely outside the video
@@ -135,8 +136,8 @@ export function register(driver: IIdahDriverV2): void {
             // At most one idah-video:frame annotation per (frame, category).
             // If a tag of the same category already exists at the target frame,
             // skip creating a duplicate rather than silently overwriting.
-            if ((entry.shape as any)?.type === VIDEO_FRAME) {
-              const category = (entry.value as any)?.category as string | undefined;
+            if (entry.shape_type === VIDEO_FRAME) {
+              const category = entry.category as string | undefined;
               if (category) {
                 const conflict = findFrameAnnotation(
                   (data.annotations?.items ?? []) as IVideoAnnotationRecord[],
@@ -156,8 +157,8 @@ export function register(driver: IIdahDriverV2): void {
               points: f.points.map((p: [number, number]) => [p[0] + dx, p[1] + dy]),
             }));
 
-            const newShape = {
-              ...entry.shape,
+            const newShapeArgs = {
+              ...entry.shape_args,
               start: shifted.start,
               end: shifted.end,
               frames: newFrames,
@@ -168,8 +169,10 @@ export function register(driver: IIdahDriverV2): void {
             try {
               await data.annotations!.create({
                 id: newId,
-                shape: newShape,
-                value: entry.value ?? {},
+                shape_type: entry.shape_type,
+                shape_args: newShapeArgs,
+                category: entry.category,
+                properties: entry.properties ?? {},
                 metadata: newMetadata,
               } as any);
               createdIds.push(newId);

@@ -47,8 +47,10 @@ RSpec.describe Annotation::Service, database: true do
       project_id:,
       dataset_id:,
       entry_id:,
-      dimensions: { x: 10, y: 20, width: 30, height: 40 },
-      annotation: { label: "cat" },
+      shape_type: "bounding-box",
+      shape_args: { x: 10, y: 20, width: 30, height: 40 },
+      category: "cat",
+      properties: { label: "cat" },
       created_by_email: "user@example.com"
     }
   end
@@ -76,8 +78,8 @@ RSpec.describe Annotation::Service, database: true do
         )
 
         annotation = subject.create(record)
-        expect(annotation.annotation).to eq({ label: "cat" })
-        expect(annotation.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(annotation.category).to eq("cat")
+        expect(annotation.shape_args).to eq({ x: 10, y: 20, width: 30, height: 40 })
         expect(annotation.entry_id).to eq(entry_id)
         expect(annotation.dataset_id).to eq(dataset_id)
         expect(annotation.project_id).to eq(project_id)
@@ -133,7 +135,7 @@ RSpec.describe Annotation::Service, database: true do
               type: "annotations",
               id: annotation_id,
               attributes: {
-                annotation: { label: "dog" },
+                properties: { label: "dog" },
               }
             }
           }
@@ -142,7 +144,7 @@ RSpec.describe Annotation::Service, database: true do
         subject.update(record)
 
         updated_annotation = repo.find!(annotation_id)
-        expect(updated_annotation.annotation).to eq({ label: "dog" })
+        expect(updated_annotation.properties).to eq({ label: "dog" })
       end
 
       it "raises error when annotation belongs to a completed entry" do
@@ -163,7 +165,7 @@ RSpec.describe Annotation::Service, database: true do
               type: "annotations",
               id: annotation_id,
               attributes: {
-                annotation: { label: "dog" },
+                properties: { label: "dog" },
               }
             }
           }
@@ -174,22 +176,22 @@ RSpec.describe Annotation::Service, database: true do
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
       end
 
-      it "strips annotation_shape keys from dimensions before persisting to parent record" do
+      it "strips annotation_shape keys from shape_args before persisting to parent record" do
         annotation_id = repo.create(attributes)
 
         # Write shape rows so the keys exist in annotation_shape
         subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
         subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
 
-        # Simulate an update where dimensions includes the shape keys (as it would
-        # after a read that merged shapes into dimensions)
+        # Simulate an update where shape_args includes the shape keys (as it would
+        # after a read that merged shapes into shape_args)
         record = deserialize(
           {
             data: {
               type: "annotations",
               id: annotation_id,
               attributes: {
-                dimensions: {
+                shape_args: {
                   x: 10,
                   y: 20,
                   width: 30,
@@ -197,7 +199,7 @@ RSpec.describe Annotation::Service, database: true do
                   "tile-0x0" => { "rle" => "ABC" },
                   "tile-0x1" => { "rle" => "DEF" }
                 },
-                annotation: { label: "dog" }
+                properties: { label: "dog" }
               }
             }
           }
@@ -205,12 +207,12 @@ RSpec.describe Annotation::Service, database: true do
 
         subject.update(record)
 
-        # The shape keys must NOT appear in the parent annotations.dimensions column
-        raw_dimensions = nil
+        # The shape keys must NOT appear in the parent annotations.shape_args column
+        raw_shape_args = nil
         subject.annotations.client do |db|
-          raw_dimensions = db[:annotations].where(id: annotation_id).get(:dimensions)
+          raw_shape_args = db[:annotations].where(id: annotation_id).get(:shape_args)
         end
-        raw = raw_dimensions.respond_to?(:to_h) ? raw_dimensions.to_h : raw_dimensions
+        raw = raw_shape_args.respond_to?(:to_h) ? raw_shape_args.to_h : raw_shape_args
 
         expect(raw).to include("x" => 10, "y" => 20, "width" => 30, "height" => 40)
         expect(raw).not_to have_key("tile-0x0")
@@ -226,7 +228,7 @@ RSpec.describe Annotation::Service, database: true do
         expect(shape_rows.find { |r| r[:key] == "tile-0x1" }[:value]).to eq({ "rle" => "DEF" })
       end
 
-      it "leaves dimensions unchanged when there are no annotation_shape keys" do
+      it "leaves shape_args unchanged when there are no annotation_shape keys" do
         annotation_id = repo.create(attributes)
 
         record = deserialize(
@@ -235,13 +237,13 @@ RSpec.describe Annotation::Service, database: true do
               type: "annotations",
               id: annotation_id,
               attributes: {
-                dimensions: {
+                shape_args: {
                   x: 10,
                   y: 20,
                   width: 50,
                   height: 60
                 },
-                annotation: { label: "dog" }
+                properties: { label: "dog" }
               }
             }
           }
@@ -249,14 +251,14 @@ RSpec.describe Annotation::Service, database: true do
 
         subject.update(record)
 
-        raw_dimensions = nil
+        raw_shape_args = nil
         subject.annotations.client do |db|
-          raw_dimensions = db[:annotations].where(id: annotation_id).get(:dimensions)
+          raw_shape_args = db[:annotations].where(id: annotation_id).get(:shape_args)
         end
-        raw = raw_dimensions.respond_to?(:to_h) ? raw_dimensions.to_h : raw_dimensions
+        raw = raw_shape_args.respond_to?(:to_h) ? raw_shape_args.to_h : raw_shape_args
 
         expect(raw).to include("x" => 10, "y" => 20, "width" => 50, "height" => 60)
-        expect(raw_dimensions).not_to have_key("tile-0x0")
+        expect(raw).not_to have_key("tile-0x0")
       end
 
       it "works normally for a non-mask annotation (no shape rows at all)" do
@@ -268,7 +270,7 @@ RSpec.describe Annotation::Service, database: true do
               type: "annotations",
               id: annotation_id,
               attributes: {
-                annotation: { label: "dog" },
+                properties: { label: "dog" },
               }
             }
           }
@@ -277,8 +279,8 @@ RSpec.describe Annotation::Service, database: true do
         subject.update(record)
 
         updated_annotation = repo.find!(annotation_id)
-        expect(updated_annotation.annotation).to eq({ label: "dog" })
-        expect(updated_annotation.dimensions).to include(x: 10, y: 20)
+        expect(updated_annotation.properties).to eq({ label: "dog" })
+        expect(updated_annotation.shape_args).to include(x: 10, y: 20)
       end
     end
 
@@ -296,16 +298,20 @@ RSpec.describe Annotation::Service, database: true do
         annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
 
         expect {
-          subject.update_attr(annotation_id, { annotation: { label: "dog" } })
+          subject.update_attr(annotation_id, { properties: { label: "dog" } })
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
       end
     end
 
     describe "#delete" do
-      it "deletes an annotation" do
+      it "soft-deletes an annotation (sets deleted_at/deleted_by_email, keeps the row)" do
         annotation_id = repo.create(attributes)
         subject.delete(annotation_id)
-        expect { repo.find!(annotation_id) }.to raise_error(Verse::Error::NotFound)
+
+        # The row still exists — it is tombstoned, not removed.
+        tombstoned = repo.find!(annotation_id)
+        expect(tombstoned.deleted_at).not_to be_nil
+        expect(tombstoned.deleted_by_email).to eq("admin@example.com")
       end
 
       it "raises error when annotation belongs to a completed entry" do
@@ -323,6 +329,50 @@ RSpec.describe Annotation::Service, database: true do
         expect {
           subject.delete(annotation_id)
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot delete annotations on a completed entry/)
+      end
+    end
+
+    describe "#restore" do
+      it "clears both deleted_at and deleted_by_email" do
+        annotation_id = repo.create(attributes)
+        subject.delete(annotation_id)
+
+        restored = subject.restore(annotation_id)
+        expect(restored.deleted_at).to be_nil
+        expect(restored.deleted_by_email).to be_nil
+      end
+
+      it "respects the same completed-entry guard as update" do
+        completed_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "done",
+          status: "pending",
+          assigned_to_id: 1,
+          project_id:,
+          dataset_id:
+        )
+
+        annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
+        subject.delete(annotation_id)
+        entry_repo.update!(completed_entry_id, { status: "completed" })
+
+        expect {
+          subject.restore(annotation_id)
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
+      end
+
+      it "round-trips a delete → restore → delete → restore cycle without error" do
+        annotation_id = repo.create(attributes)
+
+        2.times do
+          subject.delete(annotation_id)
+          expect(repo.find!(annotation_id).deleted_at).not_to be_nil
+
+          # restore() must never attempt a duplicate-id create() — it only
+          # clears the tombstone on the still-present row.
+          subject.restore(annotation_id)
+          expect(repo.find!(annotation_id).deleted_at).to be_nil
+        end
       end
     end
 
@@ -423,7 +473,7 @@ RSpec.describe Annotation::Service, database: true do
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
       end
 
-      it "deleting the parent annotation cascades to shape rows" do
+      it "soft-deleting the parent annotation keeps its shape rows" do
         subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
         subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
 
@@ -431,20 +481,21 @@ RSpec.describe Annotation::Service, database: true do
 
         subject.delete(annotation_id)
 
-        expect(shape_rows).to be_empty
+        # Soft delete never removes the row, so annotation_shape rows survive.
+        expect(shape_rows.size).to eq(2)
       end
     end
 
     describe "#show with annotation_shape aggregation" do
       let!(:annotation_id) { repo.create(attributes) }
 
-      it "merges shape rows into dimensions on single fetch" do
+      it "merges shape rows into shape_args on single fetch" do
         subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
         subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
 
         record = subject.show(annotation_id)
 
-        expect(record.dimensions).to include(
+        expect(record.shape_args).to include(
           x: 10,
           y: 20,
           width: 30,
@@ -454,10 +505,10 @@ RSpec.describe Annotation::Service, database: true do
         )
       end
 
-      it "returns dimensions unchanged when there are no shape rows" do
+      it "returns shape_args unchanged when there are no shape rows" do
         record = subject.show(annotation_id)
 
-        expect(record.dimensions).to eq(
+        expect(record.shape_args).to eq(
           {
             x: 10, y: 20, width: 30, height: 40
           }
@@ -466,9 +517,9 @@ RSpec.describe Annotation::Service, database: true do
     end
 
     describe "#index with annotation_shape aggregation" do
-      it "merges shape rows into dimensions for all annotations in the page" do
-        annotation1_id = repo.create(attributes.merge(annotation: { label: "cat" }))
-        annotation2_id = repo.create(attributes.merge(annotation: { label: "dog" }))
+      it "merges shape rows into shape_args for all annotations in the page" do
+        annotation1_id = repo.create(attributes.merge(properties: { label: "cat" }))
+        annotation2_id = repo.create(attributes.merge(properties: { label: "dog" }))
 
         subject.write_shape(annotation1_id, "tile-0x0", { rle: "ALPHA" })
         subject.write_shape(annotation2_id, "tile-0x0", { rle: "BETA" })
@@ -479,36 +530,36 @@ RSpec.describe Annotation::Service, database: true do
         ann1 = results.find { |r| r.id == annotation1_id }
         ann2 = results.find { |r| r.id == annotation2_id }
 
-        expect(ann1.dimensions["tile-0x0"]).to eq({ "rle" => "ALPHA" })
-        expect(ann2.dimensions["tile-0x0"]).to eq({ "rle" => "BETA" })
-        expect(ann2.dimensions["tile-0x1"]).to eq({ "rle" => "GAMMA" })
+        expect(ann1.shape_args["tile-0x0"]).to eq({ "rle" => "ALPHA" })
+        expect(ann2.shape_args["tile-0x0"]).to eq({ "rle" => "BETA" })
+        expect(ann2.shape_args["tile-0x1"]).to eq({ "rle" => "GAMMA" })
 
-        # Each annotation's original dimensions are preserved
-        expect(ann1.dimensions).to include(x: 10, y: 20)
-        expect(ann2.dimensions).to include(x: 10, y: 20)
+        # Each annotation's original shape_args are preserved
+        expect(ann1.shape_args).to include(x: 10, y: 20)
+        expect(ann2.shape_args).to include(x: 10, y: 20)
 
         # No cross-contamination
-        expect(ann1.dimensions).not_to have_key("tile-0x1")
+        expect(ann1.shape_args).not_to have_key("tile-0x1")
       end
 
       it "does not add shape rows for annotations with none" do
-        annotation1_id = repo.create(attributes.merge(annotation: { label: "cat" }))
-        annotation2_id = repo.create(attributes.merge(annotation: { label: "dog" }))
+        annotation1_id = repo.create(attributes.merge(properties: { label: "cat" }))
+        annotation2_id = repo.create(attributes.merge(properties: { label: "dog" }))
 
         subject.write_shape(annotation1_id, "tile-0x0", { rle: "ALPHA" })
 
         results = subject.index
 
         ann2 = results.find { |r| r.id == annotation2_id }
-        expect(ann2.dimensions).not_to have_key("tile-0x0")
+        expect(ann2.shape_args).not_to have_key("tile-0x0")
       end
 
       it "issues exactly one shape query per index/show call, regardless of annotation count" do
         # Create multiple annotations with shape rows
         ids = [
-          repo.create(attributes.merge(annotation: { label: "a" })),
-          repo.create(attributes.merge(annotation: { label: "b" })),
-          repo.create(attributes.merge(annotation: { label: "c" })),
+          repo.create(attributes.merge(properties: { label: "a" })),
+          repo.create(attributes.merge(properties: { label: "b" })),
+          repo.create(attributes.merge(properties: { label: "c" })),
         ]
 
         ids.each_with_index do |id, idx|
@@ -533,9 +584,20 @@ RSpec.describe Annotation::Service, database: true do
           results = subject.index
           expect(results.size).to eq(3)
 
-          results.each_with_index do |r, idx|
-            expect(r.dimensions["tile-0x0"]).to eq({ "rle" => "VAL#{idx}" })
-            expect(r.dimensions["tile-0x1"]).to eq({ "rle" => "VAL#{idx}b" })
+          # index returns annotations ordered by id ASC; UUIDv7 ids generated in
+          # the same millisecond have no guaranteed creation order, so look each
+          # result up by id instead of relying on positional order.
+          expected = {}
+          ids.each_with_index do |id, idx|
+            expected[id] = {
+              "tile-0x0" => { "rle" => "VAL#{idx}" },
+              "tile-0x1" => { "rle" => "VAL#{idx}b" },
+            }
+          end
+
+          results.each do |r|
+            expect(r.shape_args["tile-0x0"]).to eq(expected[r.id]["tile-0x0"])
+            expect(r.shape_args["tile-0x1"]).to eq(expected[r.id]["tile-0x1"])
           end
 
           # merge_annotation_shapes should have fired exactly one query
@@ -546,8 +608,8 @@ RSpec.describe Annotation::Service, database: true do
           # Also verify show issues a single shape query
           shape_query_count = 0
           record = subject.show(ids.first)
-          expect(record.dimensions["tile-0x0"]).to eq({ "rle" => "VAL0" })
-          expect(record.dimensions["tile-0x1"]).to eq({ "rle" => "VAL0b" })
+          expect(record.shape_args["tile-0x0"]).to eq({ "rle" => "VAL0" })
+          expect(record.shape_args["tile-0x1"]).to eq({ "rle" => "VAL0b" })
           expect(shape_query_count).to eq(1),
                                        "Expected exactly 1 annotation_shape query for show, got #{shape_query_count}"
         ensure
@@ -587,8 +649,10 @@ RSpec.describe Annotation::Service, database: true do
           project_id: other_project_id,
           dataset_id: other_dataset_id,
           entry_id: other_entry_id,
-          dimensions: { x: 1, y: 2, width: 3, height: 4 },
-          annotation: { label: "other" },
+          shape_type: "bounding-box",
+          shape_args: { x: 1, y: 2, width: 3, height: 4 },
+          category: "other",
+          properties: { label: "other" },
           created_by_email: "other@example.com"
         )
 
@@ -601,13 +665,13 @@ RSpec.describe Annotation::Service, database: true do
         my_annotation_id = repo.create(attributes)
 
         my_record = subject.show(my_annotation_id)
-        expect(my_record.dimensions).not_to have_key("tile-0x0")
-        expect(my_record.dimensions).to include(x: 10, y: 20, width: 30, height: 40)
+        expect(my_record.shape_args).not_to have_key("tile-0x0")
+        expect(my_record.shape_args).to include(x: 10, y: 20, width: 30, height: 40)
       end
     end
 
-    describe "#full_cycle — create, write_shape, update, delete, recreate with same id" do
-      it "never stores tile keys in the parent annotations.dimensions column at any point" do
+    describe "#full_cycle — create, write_shape, update, delete, restore" do
+      it "never stores tile keys in the parent annotations.shape_args column at any point" do
         # Step 1: Create the annotation
         record = deserialize(
           {
@@ -625,10 +689,10 @@ RSpec.describe Annotation::Service, database: true do
         created = subject.create(record)
         annotation_id = created.id
 
-        # Helper to read raw dimensions from the DB
-        raw_dims = -> {
+        # Helper to read raw shape_args from the DB
+        raw_shape_args = -> {
           result = nil
-          subject.annotations.client { |db| result = db[:annotations].where(id: annotation_id).get(:dimensions) }
+          subject.annotations.client { |db| result = db[:annotations].where(id: annotation_id).get(:shape_args) }
           result
         }
 
@@ -636,33 +700,33 @@ RSpec.describe Annotation::Service, database: true do
         subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
         subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
 
-        # Raw dimensions must NOT contain tile keys
-        expect(raw_dims.call).not_to have_key("tile-0x0")
-        expect(raw_dims.call).not_to have_key("tile-0x1")
+        # Raw shape_args must NOT contain tile keys
+        expect(raw_shape_args.call).not_to have_key("tile-0x0")
+        expect(raw_shape_args.call).not_to have_key("tile-0x1")
 
-        # Step 3: Update the annotation with aggregated dimensions (as a frontend
-        # would send after a read that merged shapes into dimensions)
+        # Step 3: Update the annotation with aggregated shape_args (as a frontend
+        # would send after a read that merged shapes into shape_args)
         update_record = deserialize(
           {
             data: {
               type: "annotations",
               id: annotation_id,
               attributes: {
-                dimensions: {
+                shape_args: {
                   x: 10, y: 20, width: 30, height: 40,
                   "tile-0x0" => { "rle" => "ABC" },
                   "tile-0x1" => { "rle" => "DEF" }
                 },
-                annotation: { label: "dog" }
+                properties: { label: "dog" }
               }
             }
           }
         )
         subject.update(update_record)
 
-        # Raw dimensions must still NOT contain tile keys (guard stripped them)
-        expect(raw_dims.call).not_to have_key("tile-0x0")
-        expect(raw_dims.call).not_to have_key("tile-0x1")
+        # Raw shape_args must still NOT contain tile keys (guard stripped them)
+        expect(raw_shape_args.call).not_to have_key("tile-0x0")
+        expect(raw_shape_args.call).not_to have_key("tile-0x1")
         # annotation_shape rows must be unaffected
         shape_rows = nil
         subject.annotations.client do |db|
@@ -670,58 +734,38 @@ RSpec.describe Annotation::Service, database: true do
         end
         expect(shape_rows.size).to eq(2)
 
-        # Step 4: Delete the annotation
+        # Step 4: Delete the annotation (soft delete)
         subject.delete(annotation_id)
 
-        # annotation_shape rows must be cascade-deleted
+        # annotation_shape rows must survive soft delete
         subject.annotations.client do |db|
           shape_rows = db[:annotation_shape].where(annotation_id:).all
         end
-        expect(shape_rows).to be_empty
+        expect(shape_rows.size).to eq(2)
 
-        # Step 5: Recreate with the same id (simulating undo-of-delete)
-        # At this point annotation_shape is empty for this id, so the backend
-        # guard can't help — frontend discipline is required. This test verifies
-        # that the raw dimensions don't contain tile keys (the frontend must
-        # strip them before calling create). We simulate that by passing clean
-        # dimensions.
-        recreated = subject.create(
-          deserialize(
-            {
-              data: {
-                type: "dataset:annotations",
-                id: annotation_id,
-                attributes: attributes.merge(
-                  dimensions: { x: 10, y: 20, width: 30, height: 40 },
-                  annotation: { label: "cat" }
-                ),
-                relationships: {
-                  entry: {
-                    data: { type: "dataset:entries", id: entry_id }
-                  }
-                }
-              }
-            }
-          )
-        )
-        expect(recreated.id).to eq(annotation_id)
+        # Step 5: Restore (simulating undo-of-delete). restore() only clears the
+        # tombstone on the still-present row — it never attempts a duplicate-id
+        # create, and the annotation_shape rows are already intact.
+        restored = subject.restore(annotation_id)
+        expect(restored.id).to eq(annotation_id)
+        expect(restored.deleted_at).to be_nil
 
-        # Raw dimensions must not contain tile keys
-        expect(raw_dims.call).not_to have_key("tile-0x0")
-        expect(raw_dims.call).not_to have_key("tile-0x1")
+        # Raw shape_args must not contain tile keys
+        expect(raw_shape_args.call).not_to have_key("tile-0x0")
+        expect(raw_shape_args.call).not_to have_key("tile-0x1")
 
-        # Write shapes back (simulating frontend's setShape/setShapes after recreate)
+        # Write shapes back (simulating frontend setShape/setShapes after restore)
         subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
         subject.write_shape(annotation_id, "tile-0x1", { rle: "DEF" })
 
-        # Final assertion: raw dimensions still clean
-        expect(raw_dims.call).not_to have_key("tile-0x0")
-        expect(raw_dims.call).not_to have_key("tile-0x1")
+        # Final assertion: raw shape_args still clean
+        expect(raw_shape_args.call).not_to have_key("tile-0x0")
+        expect(raw_shape_args.call).not_to have_key("tile-0x1")
 
         # The aggregated read should show tiles merged in
         fetched = subject.show(annotation_id)
-        expect(fetched.dimensions["tile-0x0"]).to eq({ "rle" => "ABC" })
-        expect(fetched.dimensions["tile-0x1"]).to eq({ "rle" => "DEF" })
+        expect(fetched.shape_args["tile-0x0"]).to eq({ "rle" => "ABC" })
+        expect(fetched.shape_args["tile-0x1"]).to eq({ "rle" => "DEF" })
       end
     end
   end
