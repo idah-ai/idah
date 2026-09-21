@@ -43,6 +43,26 @@ RSpec.describe Account::Service, database: true do
         expect(created_account.email).to eq("test@example.com")
         expect(created_account.enabled).to eq(true)
       end
+
+      it "rejects creating an account with an already-registered email" do
+        account_repo.create(attributes)
+
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes:,
+            }
+          }
+        )
+
+        expect {
+          subject.create(record)
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "An account with this email already exists"
+        )
+      end
     end
 
     describe "#show" do
