@@ -10,48 +10,62 @@ at the repository root, with settings in `config/development/`.
 
 | File | Purpose |
 |---|---|
-| `idah.yml` | The stack, pulling published images pinned to one release. Gives each service only the variables it needs, so customers never edit per-service files. |
-| `.env.example` | The settings a customer may change. Copy to `.env` beside `idah.yml`. |
+| `install.sh` | The installer. Generates every secret, prepares the databases and starts the stack. |
+| `compose.yml` | The stack, pulling published images pinned to one release. Gives each service only the variables it needs. |
+| `.env.example` | Every setting a customer may change, documented. `install.sh` copies it to `.env` and fills in the values. |
 | `nginx.conf` | The reverse proxy in front of the services. |
-| `install.sh` | The one-line install. **Not written yet** — see below. |
 
-Customers keep their own changes in a `compose.override.yml` next to `idah.yml`,
-so an upgrade can replace `idah.yml` without touching them.
+Customers keep their own changes in a `compose.override.yml` next to
+`compose.yml`. Compose merges it automatically, so an upgrade can replace
+`compose.yml` without touching it.
 
-## Running it by hand
-
-Until `install.sh` exists:
+## Installing
 
 ```bash
-cp .env.example .env          # then fill in IDAH_VERSION, IDAH_URL and the secrets
-mkdir -p config/keys          # put private.pem and public.pem here (EC keys)
-docker compose -f idah.yml run --rm iam bundle exec rake db:setup db:migrate
-docker compose -f idah.yml up -d
+./install.sh
 ```
 
-Repeat the migration line for each of the seven Ruby services; each one owns its
-own database.
+It asks for the public URL, the administrator's email, the version, SMTP
+(optional) and which database to use. It then generates the signing key pair and
+every password — one per internal service account — creates the databases, runs
+the migrations, creates the accounts and starts the stack. The administrator's
+password is printed once and stored nowhere.
 
-Uploaded files live on the `media_files` and `sync_files` volumes. **Back those
-up** — they hold customer data that is not in PostgreSQL.
+Every question has a flag, so it also runs unattended; `./install.sh --help`
+lists them. The images and the database connection are checked before anything
+is written, so a failed install leaves nothing behind.
 
-## Still needed before the one-line install works
+## Using your own PostgreSQL
 
-- **`install.sh` itself.** Checks Docker, downloads the files here, generates the
-  EC key pair and every secret, asks for the public URL, runs the migrations,
-  creates the admin account and starts the stack.
-- **First-run setup as a scripted step.** Including the service accounts: in
-  `production`, iam's `service_accounts:create` gives each account a random
-  password unless one is passed in, so `install.sh` must pass the
-  `IDAH_SERVICE_PASSWORD` it generated.
-- **A proven upgrade path.** Changing `IDAH_VERSION` pulls new images, but
-  nothing runs the new migrations yet.
-- ~~**A volume for stored files.**~~ Done: `media_files` and `sync_files`, with
-  `MEDIAS_FILES_PATH` and `SYNC_FILES_PATH` pointing at `/data/files` so durable
-  data does not live under a directory named `tmp`.
-- ~~**A frontend URL set at run time.**~~ Done: the app calls `/api/v1/<service>`
-  on its own origin, so one image serves every domain. nginx must front both the
-  frontend and the services, which `nginx.conf` already does.
-- ~~**Published images.**~~ Done: `.github/workflows/cd-app.yml` publishes
-  `ghcr.io/idah-ai/idah-<service>:<version>` for linux/amd64 and linux/arm64 when
-  a version tag is pushed, and `idah.yml` pins them through `IDAH_VERSION`.
+```bash
+./install.sh --postgres-host db.example.com --postgres-user idah \
+             --postgres-password '...' --postgres-sslmode require
+```
+
+Or answer "no" to "Use the bundled PostgreSQL?". Requirements:
+
+- **PostgreSQL 13 or later.** IDAH creates `pg_trgm`, `pgcrypto` and `uuid-ossp`,
+  which from 13 on the database owner may create without being a superuser —
+  so managed services such as RDS or Cloud SQL work.
+- **`CREATEDB` for the user**, or the seven `idah_*` databases created in
+  advance and owned by it.
+- **For a server on the same machine, use `host.docker.internal`.** Inside a
+  container `localhost` is the container itself; the installer refuses it.
+- **TLS:** `require` encrypts the connection. `verify-full`, which also checks
+  the server's identity, needs the server's CA certificate, which the stack
+  cannot be given yet.
+
+## Backups
+
+Back up the database and the `media_files` and `sync_files` volumes. The volumes
+hold uploaded media and generated exports, which are not in PostgreSQL.
+
+## Still needed
+
+- **An upgrade path.** Changing `IDAH_VERSION` and running
+  `docker compose up -d` pulls the new images, but nothing runs the new
+  migrations.
+- **`verify-full` for external databases**, by mounting a CA certificate and
+  passing `sslrootcert`.
+- **Publishing these files as release assets**, so the install really is one
+  line: download, then run `install.sh`.

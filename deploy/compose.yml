@@ -3,14 +3,16 @@
 # It pulls published images; nothing is built here. Every environment runs the
 # same images and differs only by the values in .env beside this file.
 #
-# Start:    docker compose -f idah.yml up -d
+# Start:    docker compose up -d
 # Upgrade:  edit IDAH_VERSION in .env, then the same command again.
 #
-# Your own changes belong in a compose.override.yml next to this file, so an
-# upgrade can replace idah.yml without touching them:
-#   docker compose -f idah.yml -f compose.override.yml up -d
+# Your own changes belong in a compose.override.yml next to this file. Compose
+# merges it automatically, and an upgrade can replace this file without
+# touching it.
 #
-# Developers do not use this file. They use compose.yml at the repository root.
+# This is not the compose.yml at the repository root, which is the developer
+# stack. To install images built from source, set IDAH_IMAGE_PREFIX (for
+# example `idah-`) alongside IDAH_VERSION.
 
 # Every Ruby service gets these. Service-specific values are set per service.
 x-service: &service
@@ -19,18 +21,27 @@ x-service: &service
     - .env
   networks:
     - app-network
+  # Lets POSTGRES_HOST=host.docker.internal reach a database on this machine,
+  # on Linux as well as Docker Desktop.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
   depends_on:
+    # Not required: with an external database the bundled one is not started.
     postgres:
       condition: service_healthy
+      required: false
     redis:
       condition: service_healthy
 
-# Settings shared by all seven Ruby services. IDAH_SERVICE_PASSWORD is one
-# generated secret for all service accounts, which share this private network.
+# Settings shared by all seven Ruby services. Each service authenticates with
+# its own generated password, set per service below.
 x-service-env: &service-env
   REDIS_STREAM_URL: redis://redis:6379/0
   IDAH_URL: ${IDAH_URL:?set IDAH_URL to the public URL of this install}
-  IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD:?run install.sh to generate secrets}
+  # Services call each other through nginx on this network, not through the
+  # public URL, which may not resolve (or may be `localhost`) inside a container.
+  IDAH_INTERNAL_URL: http://nginx
+  PGPASSWORD: ${POSTGRES_PASSWORD:?run install.sh to generate secrets}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   LOG_SHOW_ERROR_DETAILS: ${LOG_SHOW_ERROR_DETAILS:-false}
 
@@ -54,8 +65,11 @@ services:
     networks:
       - app-network
 
+  # The bundled database. Set IDAH_POSTGRES_CONTAINER=0 and the POSTGRES_HOST
+  # settings in .env to use an external PostgreSQL instead.
   postgres:
     image: pgvector/pgvector:0.8.0-pg17
+    scale: ${IDAH_POSTGRES_CONTAINER:-1}
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-idah}
@@ -64,7 +78,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -88,12 +102,13 @@ services:
   # iam signs service tokens, so it is the one service with the private key.
   iam:
     <<: *service
-    image: ghcr.io/idah-ai/idah-iam:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}iam:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_iam
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_iam?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/private.pem
       IDAH_SERVICE_ACCOUNT: iam@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_IAM:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_IAM:-}
     volumes:
       - ./config/keys/private.pem:/keys/private.pem:ro
@@ -103,12 +118,13 @@ services:
   # instead, which then requires the five MEDIAS_FILES_* settings.
   media:
     <<: *service
-    image: ghcr.io/idah-ai/idah-media:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}media:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_media
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_media?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: media@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_MEDIA:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
       MEDIAS_FILES_PATH: /data/files
     volumes:
@@ -117,36 +133,39 @@ services:
 
   dataset:
     <<: *service
-    image: ghcr.io/idah-ai/idah-dataset:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}dataset:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_dataset
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_dataset?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: dataset@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_DATASET:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_DATASET:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
 
   setting:
     <<: *service
-    image: ghcr.io/idah-ai/idah-setting:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}setting:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_setting
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_setting?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: setting@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_SETTING:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
 
   audit:
     <<: *service
-    image: ghcr.io/idah-ai/idah-audit:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}audit:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_audit
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_audit?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: audit@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_AUDIT:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_AUDIT:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
@@ -154,12 +173,13 @@ services:
   # sync writes export files, on the sync_files volume by default.
   sync:
     <<: *service
-    image: ghcr.io/idah-ai/idah-sync:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}sync:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_sync
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_sync?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: sync@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_SYNC:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
       SYNC_FILES_PATH: /data/files
     volumes:
@@ -168,18 +188,19 @@ services:
 
   notification:
     <<: *service
-    image: ghcr.io/idah-ai/idah-notification:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}notification:${IDAH_VERSION:?set IDAH_VERSION in .env}
     environment:
       <<: *service-env
-      DATABASE_URI: postgres://${POSTGRES_USER:-idah}:${POSTGRES_PASSWORD}@postgres:5432/idah_notification
+      DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_notification?sslmode=${POSTGRES_SSLMODE:-prefer}
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: notification@services.idah.ai
+      IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_NOTIFICATION:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_NOTIFICATION:-}
-      # The service will not boot without a reachable SMTP server.
-      MAIL_SMTP_HOST: ${MAIL_SMTP_HOST:?set your SMTP server in .env}
+      # Leave MAIL_SMTP_HOST empty to disable email notifications.
+      MAIL_SMTP_HOST: ${MAIL_SMTP_HOST:-}
       MAIL_SMTP_PORT: ${MAIL_SMTP_PORT:-587}
-      MAIL_SMTP_USER: ${MAIL_SMTP_USER:?set your SMTP user in .env}
-      MAIL_SMTP_PASSWORD: ${MAIL_SMTP_PASSWORD:?set your SMTP password in .env}
+      MAIL_SMTP_USER: ${MAIL_SMTP_USER:-}
+      MAIL_SMTP_PASSWORD: ${MAIL_SMTP_PASSWORD:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
 
@@ -187,7 +208,7 @@ services:
   # setting: nginx routes those paths to the services. Sentry is read at run
   # time, so this install reports to its own project or, with no DSN, to none.
   frontend:
-    image: ghcr.io/idah-ai/idah-frontend:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}frontend:${IDAH_VERSION:?set IDAH_VERSION in .env}
     restart: always
     environment:
       PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
