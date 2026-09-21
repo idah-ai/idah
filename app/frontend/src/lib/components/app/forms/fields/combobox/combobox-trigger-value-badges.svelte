@@ -33,11 +33,11 @@
 <div class="flex w-full gap-1">
   {#if !dataSource}
     {#each values.slice(0, maxShown) as value, index (index)}
-      <Badge>{humanize(truncate(String(value), truncateLength))}</Badge>
+      <Badge variant="outline" rounded="full">{humanize(truncate(String(value), truncateLength))}</Badge>
     {/each}
 
     {#if values.slice(maxShown).length}
-      <Badge>+{values.slice(maxShown).length} more...</Badge>
+      <Badge variant="outline" rounded="full">+{values.slice(maxShown).length} more...</Badge>
     {/if}
   {/if}
 
@@ -46,11 +46,11 @@
       <Spinner size="sm"></Spinner>
     {:then _}
       {#each records.slice(0, maxShown) as record, index (index)}
-        <Badge>{humanize(truncate(record[displayKey], truncateLength))}</Badge>
+        <Badge variant="outline" rounded="full">{humanize(truncate(record[displayKey], truncateLength))}</Badge>
       {/each}
 
       {#if records.length > maxShown}
-        <Badge>+{records.length - maxShown} more...</Badge>
+        <Badge variant="outline" rounded="full">+{records.length - maxShown} more...</Badge>
       {/if}
     {/await}
   {/if}

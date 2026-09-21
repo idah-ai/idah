@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ComboboxTriggerValueBadges from "@/components/app/forms/fields/combobox/combobox-trigger-value-badges.svelte";
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
@@ -76,8 +77,8 @@
     {#if role_name === "org_owner"}
       <MultipleSelectDatasourceField
         name="{resource}/role_scope"
-        label="Organization scopes"
-        placeholder="Select organization scopes"
+        label="Organization"
+        placeholder="Select organization"
         dataSource={organizationsBackendDataSource}
         displayKey="name"
         searchKeyWithOperation="id"
@@ -88,7 +89,16 @@
             org: selectedValues.map((item) => item.value),
           };
         }}
-      />
+      >
+        {#snippet slotTriggerValues({ selectedChoices })}
+          <ComboboxTriggerValueBadges
+            values={selectedChoices.map((choice) => choice.value)}
+            dataSource={organizationsBackendDataSource}
+            displayKey="name"
+            maxShown={2}
+          />
+        {/snippet}
+      </MultipleSelectDatasourceField>
     {/if}
 
     <!-- ACCOUNT::ENABLED -->
