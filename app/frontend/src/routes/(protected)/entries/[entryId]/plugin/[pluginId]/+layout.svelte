@@ -17,10 +17,7 @@
     href="/api/v1/setting/plugins/{pluginId}/files/plugin.css"
     onload={() => (cssloaded = true)}
   />
-  <script
-    src="/api/v1/setting/plugins/{pluginId}/files/plugin.js"
-    onload={() => (jsloaded = true)}
-  ></script>
+  <script src="/api/v1/setting/plugins/{pluginId}/files/plugin.js" onload={() => (jsloaded = true)}></script>
 </svelte:head>
 
 {#if loaded}

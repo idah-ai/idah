@@ -24,7 +24,4 @@ export class AnnotationRecord extends Record {
 
 RecordFactory.registerTypes(AnnotationRecord);
 
-export const annotationsBackendDataSource = createBackendDataSource(
-  AnnotationRecord,
-  `/api/v1/dataset/annotations`,
-);
+export const annotationsBackendDataSource = createBackendDataSource(AnnotationRecord, `/api/v1/dataset/annotations`);

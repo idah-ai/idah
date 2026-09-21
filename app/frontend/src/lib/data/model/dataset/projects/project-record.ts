@@ -27,7 +27,4 @@ export class ProjectRecord extends Record {
 
 RecordFactory.registerTypes(ProjectRecord);
 
-export const projectsBackendDataSource = createBackendDataSource(
-  ProjectRecord,
-  `/api/v1/dataset/projects`,
-);
+export const projectsBackendDataSource = createBackendDataSource(ProjectRecord, `/api/v1/dataset/projects`);

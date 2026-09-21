@@ -11,7 +11,4 @@ export class OrganizationRecord extends Record {
 
 RecordFactory.registerTypes(OrganizationRecord);
 
-export const organizationsBackendDataSource = createBackendDataSource(
-  OrganizationRecord,
-  `/api/v1/iam/organizations`,
-);
+export const organizationsBackendDataSource = createBackendDataSource(OrganizationRecord, `/api/v1/iam/organizations`);

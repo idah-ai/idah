@@ -9,8 +9,7 @@ const DEV_VERSION = "0.0.0-dev";
 const UNKNOWN_REVISION = "unknown";
 
 // A build argument that is declared but never set arrives as an empty string.
-const presence = (value: string | undefined): string | undefined =>
-  value && value.trim() !== "" ? value : undefined;
+const presence = (value: string | undefined): string | undefined => (value && value.trim() !== "" ? value : undefined);
 
 export const GET = () =>
   json({
