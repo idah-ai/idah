@@ -333,12 +333,29 @@ echo "   administrator $admin_email"
 say "Starting IDAH"
 dc up -d
 
-printf "   waiting for the stack"
-for _ in $(seq 1 60); do
-  if curl -fsS --max-time 2 "http://localhost:$http_port/health" > /dev/null 2>&1; then break; fi
+# Not /health: nginx answers that itself. iam answering through nginx means
+# both are up, and every service's own check below needs it.
+printf "   waiting for iam"
+for _ in $(seq 1 90); do
+  if curl -fsS --max-time 2 "http://localhost:$http_port/api/v1/iam/healthcheck" > /dev/null 2>&1; then break; fi
   printf "."; sleep 2
 done
-echo
+curl -fsS --max-time 2 "http://localhost:$http_port/api/v1/iam/healthcheck" > /dev/null 2>&1 \
+  || die "iam did not come up. See: docker compose logs iam"
+echo " ready"
+
+# Each service logs in to iam with its own account, through the address its
+# service-to-service calls use. Catches a wrong internal URL or password here
+# instead of at the first upload.
+say "Checking service-to-service calls"
+for svc in $services; do
+  printf "   %-13s" "$svc"
+  if ! out=$(dc exec -T "$svc" bundle exec rake api:check < /dev/null 2>&1); then
+    die "the stack is running, but $svc cannot reach the other services:
+       $(printf '%s\n' "$out" | grep -E '^FAILED' | tail -1)"
+  fi
+  echo "ok"
+done
 
 cat <<SUMMARY
 

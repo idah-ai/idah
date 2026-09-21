@@ -271,7 +271,9 @@ RSpec.describe Api::Exposition do
       http_mock = double("http")
       allow(Net::HTTP).to receive(:new).and_return(http_mock)
       allow(http_mock).to receive(:use_ssl=).with(true)
-      allow(http_mock).to receive(:verify_mode=)
+      allow(http_mock).to receive(:open_timeout=)
+      allow(http_mock).to receive(:read_timeout=)
+      allow(http_mock).to receive(:write_timeout=)
       allow(http_mock).to receive(:request).and_return(
         double("response", code: "200", body: '{"secure": true}')
       )
@@ -292,7 +294,9 @@ RSpec.describe Api::Exposition do
       http_mock = double("http")
       allow(Net::HTTP).to receive(:new).and_return(http_mock)
       allow(http_mock).to receive(:use_ssl=).with(false)
-      allow(http_mock).to receive(:verify_mode=)
+      allow(http_mock).to receive(:open_timeout=)
+      allow(http_mock).to receive(:read_timeout=)
+      allow(http_mock).to receive(:write_timeout=)
       allow(http_mock).to receive(:request).and_return(
         double("response", code: "200", body: '{"secure": false}')
       )
@@ -300,6 +304,33 @@ RSpec.describe Api::Exposition do
       exposition.get("/insecure")
 
       expect(http_mock).to have_received(:use_ssl=).with(false)
+    end
+
+    it "never disables certificate verification" do
+      http_mock = double("http", "use_ssl=": nil, "open_timeout=": nil, "read_timeout=": nil, "write_timeout=": nil)
+      allow(Net::HTTP).to receive(:new).and_return(http_mock)
+      allow(http_mock).to receive(:request).and_return(double("response", code: "200", body: "{}"))
+      expect(http_mock).not_to receive(:verify_mode=)
+
+      exposition.get("/secure")
+    end
+  end
+
+  describe "timeouts" do
+    it "bounds how long a call can wait for another service" do
+      http_mock = double("http", "use_ssl=": nil)
+      allow(Net::HTTP).to receive(:new).and_return(http_mock)
+      allow(http_mock).to receive(:request).and_return(double("response", code: "200", body: "{}"))
+      expect(http_mock).to receive(:open_timeout=).with(Api::Exposition::OPEN_TIMEOUT)
+      expect(http_mock).to receive(:read_timeout=).with(Api::Exposition::READ_TIMEOUT)
+      expect(http_mock).to receive(:write_timeout=).with(Api::Exposition::READ_TIMEOUT)
+
+      exposition.get("/slow")
+    end
+
+    it "defaults to 5 seconds to connect and 30 to read" do
+      expect(Api::Exposition::OPEN_TIMEOUT).to eq(5.0)
+      expect(Api::Exposition::READ_TIMEOUT).to eq(30.0)
     end
   end
 
@@ -319,6 +350,44 @@ RSpec.describe Api::Exposition do
       expect {
         exposition.get("/error")
       }.to raise_error(StandardError, "Network error")
+    end
+
+    it "raises an Api::HTTPError that keeps the status and the body" do
+      body = '{"status":"404","type":"Verse::Error::NotFound","detail":"verse.errors.not_found"}'
+      stub_request(:get, "https://api.example.com/missing").to_return(status: [404, "Not Found"], body:)
+
+      expect { exposition.get("/missing") }.to raise_error(Api::HTTPError) { |error|
+        expect(error.status).to eq(404)
+        expect(error.body).to eq(body)
+        expect(error.message).to eq("HTTP Error: 404 - Not Found: #{body}")
+      }
+    end
+
+    it "puts a multi-line body on one line in the message, keeping it intact on the error" do
+      body = "{\n  \"status\": \"401\",\n  \"detail\": \"invalid credentials\"\n}"
+      stub_request(:post, "https://api.example.com/login").to_return(status: [401, "Unauthorized"], body:)
+
+      expect { exposition.post("/login") }.to raise_error(Api::HTTPError) { |error|
+        expect(error.message).to eq('HTTP Error: 401 - Unauthorized: { "status": "401", "detail": "invalid credentials" }')
+        expect(error.body).to eq(body)
+      }
+    end
+
+    it "is still a RuntimeError, so existing rescues keep catching it" do
+      stub_request(:get, "https://api.example.com/broken").to_return(status: [500, "Internal Server Error"], body: "")
+
+      expect { exposition.get("/broken") }.to raise_error(RuntimeError, "HTTP Error: 500 - Internal Server Error")
+    end
+
+    it "shortens a long body in the message but keeps it whole on the error" do
+      body = "x" * 2_000
+      stub_request(:get, "https://api.example.com/huge").to_return(status: [502, "Bad Gateway"], body:)
+
+      expect { exposition.get("/huge") }.to raise_error(Api::HTTPError) { |error|
+        expect(error.body.length).to eq(2_000)
+        expect(error.message.length).to be < 600
+        expect(error.message).to end_with("...")
+      }
     end
   end
 

@@ -579,10 +579,33 @@ For production plugins, place them in `plugins/` instead of `plugins_dev/`.
 | `PUMA_THREADS`              | Puma threads per worker              | `16`              |
 | `IDAH_VERSION`              | Release the image was built from, reported by `/healthcheck` | `0.0.0-dev` |
 | `IDAH_GIT_SHA`              | Commit the image was built from, reported by `/healthcheck`  | `unknown`   |
+| `IDAH_URL`                  | Public address, used for links handed to people (e.g. in exports) | — |
+| `IDAH_INTERNAL_URL`         | Address for service-to-service calls  | `IDAH_URL`        |
+| `IDAH_API_OPEN_TIMEOUT`     | Seconds to connect to another service | `5`               |
+| `IDAH_API_READ_TIMEOUT`     | Seconds to wait for each read from another service | `30` |
 
 `IDAH_VERSION` and `IDAH_GIT_SHA` are build arguments stamped in by the release
 workflow, not settings you put in an env file. A local build leaves them empty
 and the service reports the defaults above.
+
+### Service-to-service calls
+
+Services call each other through nginx, at `/api/v1/<service>`, never through
+the public URL: inside a container `localhost` is the container itself, and a
+public domain may not resolve or route from there. Development sets
+`IDAH_INTERNAL_URL=http://nginx:8081` in each service's `.env.development`
+(8081 is an internal plain-HTTP port on the dev nginx); a deployment sets
+`http://nginx`. Tests leave it unset, so the client falls back to `IDAH_URL`,
+which the specs stub.
+
+To check a service can reach the others, logging in to iam with its own account:
+
+```bash
+docker compose exec media bundle exec rake api:check
+```
+
+A failed call raises `Api::HTTPError`, which carries the `status` and the
+response `body`. Certificates are always verified.
 
 ### IAM-specific variables
 
