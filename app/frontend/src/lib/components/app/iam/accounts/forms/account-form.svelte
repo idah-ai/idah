@@ -1,14 +1,16 @@
 <script lang="ts">
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { roles } from "@/data/model/iam/accounts/constants";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
+  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
-  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
 
   // Props
   interface Props extends FormBaseProps {
@@ -21,11 +23,11 @@
   let resource: string = AccountRecord.type;
 
   // Variables::Reactive
-  let { name, email, role_name, enabled } = $derived(account);
+  let { name, email, role_name, role_scope, enabled } = $derived(account);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, email, role_name, enabled });
+    onValueChange({ name, email, role_name, role_scope, enabled });
   });
 </script>
 
@@ -70,6 +72,24 @@
       }}
     />
     <!-- {/if} -->
+
+    {#if role_name === "org_owner"}
+      <MultipleSelectDatasourceField
+        name="{resource}/role_scope"
+        label="Organization scopes"
+        placeholder="Select organization scopes"
+        dataSource={organizationsBackendDataSource}
+        displayKey="name"
+        searchKeyWithOperation="id"
+        errors={fieldErrors["role_scope"]}
+        values={role_scope?.org ?? []}
+        onSelected={(selectedValues) => {
+          role_scope = {
+            org: selectedValues.map((item) => item.value),
+          };
+        }}
+      />
+    {/if}
 
     <!-- ACCOUNT::ENABLED -->
     <CheckboxField

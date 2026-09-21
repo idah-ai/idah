@@ -55,6 +55,10 @@ module Account
           invitation_expired_at:
         )
 
+        # Ensure role_scope is stored as JSON
+        role_scope = attr[:role_scope]
+        attr[:role_scope] = role_scope.to_json if role_scope&.any?
+
         id = accounts.create(attr)
 
         # Use the system repository to avoid permission issues
