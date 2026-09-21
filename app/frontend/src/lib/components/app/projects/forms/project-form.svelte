@@ -17,11 +17,12 @@
   interface Props extends FormBaseProps {
     project: ProjectRecord;
     preSelectedOrganizationId?: string;
-    action: FormModalAction;
   }
-  let { project, preSelectedOrganizationId, fieldErrors, onValueChange, action }: Props = $props();
+  let { project, preSelectedOrganizationId, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
+  const isNewRecord = !project.id;
+
   let resource: string = ProjectRecord.type;
   let canReadOrganizationAsOrgOwner = $state(false);
 
@@ -70,7 +71,7 @@
           organization_id = (value == null ? null : Number(value)) as number;
         }}
         searchKeyWithOperation="name__match"
-        disabled={action === "update"}
+        disabled={!isNewRecord}
       />
     {/if}
 

@@ -155,5 +155,5 @@
   onConfirm={submit}
   bind:open
 >
-  <ProjectForm {project} {fieldErrors} {preSelectedOrganizationId} {action} onValueChange={setValue}></ProjectForm>
+  <ProjectForm {project} {fieldErrors} {preSelectedOrganizationId} onValueChange={setValue}></ProjectForm>
 </FormModal>
