@@ -18,7 +18,7 @@ module Exports
 
       def export(context)
         tmpdir = Dir.mktmpdir("idah-export-")
-        file_path = File.join(tmpdir, "export.upd")
+        file_path = File.join(tmpdir, "export-#{Time.now.to_i}.upd")
 
         # Duplicated entries share the same media resource, but medias are
         # unique in a UPD file: keep track of the resources already appended.

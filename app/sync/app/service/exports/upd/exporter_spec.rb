@@ -130,7 +130,7 @@ RSpec.describe Exports::Upd::Exporter do
 
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
-      allow(File).to receive(:open).with("/tmp/idah-export-dir/export.upd").and_return(mock_file)
+      allow(File).to receive(:open).with(%r{/tmp/idah-export-dir/export-\d+\.upd$}).and_return(mock_file)
       allow(File).to receive(:extname).and_call_original
       allow(File).to receive(:basename).and_call_original
 
@@ -245,7 +245,7 @@ RSpec.describe Exports::Upd::Exporter do
 
         # Open3 was called with the temp file path
         expect(Open3).to have_received(:popen3).with(
-          "updcli-static", "--input", "/tmp/idah-export-dir/export.upd", "append"
+          "updcli-static", "--input", a_string_matching(%r{idah-export-.*/export-\d+\.upd$}), "append"
         )
       end
 
