@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Reusable labeling configuration templates.
 Sequel.migration do
   change do
     create_table(:label_config_templates) do

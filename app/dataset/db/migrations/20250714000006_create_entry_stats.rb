@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Per-entry statistics.
 Sequel.migration do
   change do
     create_table(:entry_stats) do
@@ -20,7 +21,6 @@ Sequel.migration do
       index [:entry_id, :key], unique: true, name: :idx_entry_stats_entry_key
       index :key, name: :idx_entry_stats_key
     end
-
     Migration::Timestamps.trg_updated_at(self, :entry_stats)
   end
 end

@@ -1,11 +1,8 @@
 # frozen_string_literal: true
 
+# Accounts and their sessions.
 Sequel.migration do
   change do
-    execute(%(CREATE EXTENSION IF NOT EXISTS "pg_trgm"))
-
-    Migration::Timestamps.install_updated_at_function
-
     create_table(:accounts) do
       primary_key :id, :bigserial
 
@@ -28,16 +25,12 @@ Sequel.migration do
       column :invitation_expired_at, Time, null: true
 
       Migration::Timestamps.timestamps(self)
+
+      # Added after the timestamps so the column order matches databases that
+      # migrated through 20260114000000_add_invitation_token_to_accounts.
+      column :invitation_token, String, null: true, index: true
     end
     Migration::Timestamps.trg_updated_at(self, :accounts)
-
-    create_table(:organizations) do
-      primary_key :id, :bigserial
-      column :name, String
-
-      Migration::Timestamps.timestamps(self)
-    end
-    Migration::Timestamps.trg_updated_at(self, :organizations)
 
     create_table(:account_sessions) do
       primary_key :id

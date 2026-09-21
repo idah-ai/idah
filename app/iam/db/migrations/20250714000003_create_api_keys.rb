@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# API keys, which belong to an account.
 Sequel.migration do
   change do
     create_table(:api_keys) do

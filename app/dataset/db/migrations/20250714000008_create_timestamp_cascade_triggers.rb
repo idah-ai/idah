@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Touch the parent's updated_at when a child row changes: annotation ->
+# entry -> dataset -> project. Defined last, once every table exists.
 Sequel.migration do
   change do
     # Trigger updated_at on entries whenever an annotation is inserted or updated:
