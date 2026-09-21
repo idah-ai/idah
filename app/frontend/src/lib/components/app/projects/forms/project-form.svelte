@@ -11,7 +11,6 @@
   import { authStatus } from "@/security/AuthContext";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
-  import type { FormModalAction } from "@/components/app/projects/overlays/modals/form-modal.types";
 
   // Props
   interface Props extends FormBaseProps {
