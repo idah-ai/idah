@@ -7,9 +7,9 @@
         "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
         "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
         "entry_id": "019bba87-9818-7967-8233-35fa9807d8fa",
-        "dimensions": {
+        "shape_type": "idah-video:bounding-box",
+        "shape_args": {
           "end": 119,
-          "type": "idah-video:bounding-box",
           "range": [1, 1],
           "start": 1,
           "frames": [
@@ -231,9 +231,8 @@
             }
           ]
         },
-        "annotation": {
-          "category": "vehicles/car"
-        },
+        "category": "vehicles/car",
+        "properties": {},
         "metadata": {
           "confidence": 0.92
         },

@@ -17,9 +17,6 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   const annotations = await driver.annotations.fetch();
   const rawConfig = driver.config as Record<string, unknown>;
 
-  // Category field can be overridden at the top level of labeling_configuration
-  const categoryField = typeof rawConfig.category_field === "string" ? rawConfig.category_field : "category";
-
   // Zero-fill all configured category ids
   const categoryCounts = new Map<string, number>();
   for (const shapeConfig of Object.values(rawConfig)) {
@@ -47,14 +44,17 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   }
 
   for (const ann of representativeByGroup.values()) {
-    // Category — read from annotation.value[categoryField]
-    const category = (ann.value as Record<string, unknown> | undefined)?.[categoryField];
+    // Skip soft-deleted annotations (mirrors backend CoreStats)
+    if (ann.deleted_at) continue;
+
+    // Category — read from ann.category
+    const category = ann.category;
     if (typeof category === "string") {
       categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
     }
 
     // Shape type — strip "<modality>:" prefix (mirrors backend CoreStats)
-    const rawType = (ann.shape as Record<string, unknown> | undefined)?.type;
+    const rawType = ann.shape_type;
     if (typeof rawType === "string") {
       const colonIdx = rawType.indexOf(":");
       const shapeKey = colonIdx >= 0 ? rawType.slice(colonIdx + 1) : rawType;
@@ -62,8 +62,11 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
     }
   }
 
+  // Total count of live (non-deleted) representative annotations
+  const liveCount = [...representativeByGroup.values()].filter((a) => !a.deleted_at).length;
+
   const stats: IStatEntry[] = [
-    { ...ANNOTATION_SECTION, key: "annotation.count", value: String(representativeByGroup.size), label: "Total" },
+    { ...ANNOTATION_SECTION, key: "annotation.count", value: String(liveCount), label: "Total" },
   ];
 
   for (const [id, count] of categoryCounts) {

@@ -11,7 +11,6 @@ import { noopAction } from "..";
 import { DEFAULT_MODE, IMAGE_MASK } from "$lib/types";
 import { viewport } from "$lib/state/viewport.svelte";
 import { invalidateAll } from "$lib/mask/tile-cache";
-import { recreateAnnotationWithTiles } from "$lib/mask/recreate-annotation";
 
 export const command = {
   name: "idah-image:selection.delete",
@@ -42,8 +41,7 @@ export function register(driver: IIdahDriverV2): void {
           selection.deselect();
           // Free cached mask bitmaps if any are mask annotations
           for (const record of records) {
-            const shape = record.shape as Record<string, unknown> | undefined;
-            if (shape?.type === IMAGE_MASK) {
+            if (record.shape_type === IMAGE_MASK) {
               invalidateAll(record.id);
             }
           }
@@ -52,7 +50,7 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!data.annotations) return;
-          await Promise.all(records.map((record) => recreateAnnotationWithTiles(data.annotations!, record)));
+          await Promise.all(records.map((record) => data.annotations!.restore(record)));
         },
         isCombinable() { return false; },
         combine(p) { return p; },

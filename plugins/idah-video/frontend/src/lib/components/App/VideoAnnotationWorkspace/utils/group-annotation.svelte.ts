@@ -27,17 +27,17 @@ export function groupAnnotations(annotations: IVideoAnnotationRecord[]): Annotat
 
     map.get(gid)!.push({
       ...ann,
-      shape: { ...ann.shape },
+      shape_args: { ...ann.shape_args },
     });
   }
 
   const groups = Array.from(map.entries()).map(([groupId, list]) => ({
     groupId,
     annotations: list
-      .map((a) => ({ ...a, shape: { ...a.shape } }))
+      .map((a) => ({ ...a, shape_args: { ...a.shape_args } }))
       .sort((a, b) => {
-        const diff = a.shape.start - b.shape.start;
-        return diff !== 0 ? diff : a.shape.end - b.shape.end;
+        const diff = a.shape_args.start - b.shape_args.start;
+        return diff !== 0 ? diff : a.shape_args.end - b.shape_args.end;
       }),
   }));
 
@@ -59,8 +59,8 @@ export function findClosestAnnotationInGroup(props: {
   let minDiff = Infinity;
 
   for (const annotation of annotations) {
-    const start = annotation.shape.start;
-    const end = annotation.shape.end;
+    const start = annotation.shape_args.start;
+    const end = annotation.shape_args.end;
 
     // If frame is within an annotation, that's the one
     if (frame >= start && frame <= end) {
@@ -92,13 +92,13 @@ export function getGroupTitle(props: {
   const fallbackGroupTitle = `Group-${lastPartOfGroupId}`;
 
   const firstAnnotationInGroup = anns[0];
-  const firstAnnotationCategoryId = firstAnnotationInGroup.value?.category;
+  const firstAnnotationCategoryId = firstAnnotationInGroup.category;
   if (!firstAnnotationCategoryId) return ["", fallbackGroupTitle];
 
   const foundCategory = findCategory({
     labelConfig: labelConfig,
     categoryId: firstAnnotationCategoryId,
-    shapeType: firstAnnotationInGroup.shape.type,
+    shapeType: firstAnnotationInGroup.shape_type,
   });
 
   if (!foundCategory) return ["", fallbackGroupTitle];
@@ -125,8 +125,8 @@ export function transformAnnotationsToTracks(props: {
       top: (tracks.length) * TRACK_HEIGHT,
       items: group.annotations.map((annotation) => ({
         trackId: (annotation.metadata?.id ?? annotation.id) as string,
-        startRange: annotation.shape.start,
-        endRange: annotation.shape.end,
+        startRange: annotation.shape_args.start,
+        endRange: annotation.shape_args.end,
         rawData: annotation,
         component: AnnotationTrackBlock,
       })),

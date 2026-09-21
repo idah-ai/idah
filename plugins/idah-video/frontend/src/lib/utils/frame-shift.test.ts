@@ -7,9 +7,11 @@ import type { IVideoAnnotationShape } from "$lib/types";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
+const SHAPE_TYPE = "idah-video:bounding-box";
+
 function makeShape(overrides: Partial<IVideoAnnotationShape> = {}): IVideoAnnotationShape {
   return {
-    type: "idah-video:bounding-box",
+    type: SHAPE_TYPE,
     start: 10,
     end: 20,
     frames: [
@@ -29,7 +31,7 @@ const MAX = 100;
 describe("shiftAndClampShape", () => {
   it("no shift (delta=0) returns identical frames/start/end", () => {
     const shape = makeShape();
-    const result = shiftAndClampShape(shape, 0, MIN, MAX);
+    const result = shiftAndClampShape(shape, 0, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(shape.start);
@@ -45,7 +47,7 @@ describe("shiftAndClampShape", () => {
   it("shift fully inside bounds shifts all frames by delta", () => {
     const shape = makeShape();
     const delta = 5;
-    const result = shiftAndClampShape(shape, delta, MIN, MAX);
+    const result = shiftAndClampShape(shape, delta, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(shape.start + delta);   // 15
@@ -61,7 +63,7 @@ describe("shiftAndClampShape", () => {
     // shape starts at 10, shift by -15 → shiftedStart = -5 (clips)
     const shape = makeShape();
     const delta = -15;
-    const result = shiftAndClampShape(shape, delta, MIN, MAX);
+    const result = shiftAndClampShape(shape, delta, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(0); // clamped to minFrame
@@ -83,7 +85,7 @@ describe("shiftAndClampShape", () => {
     // shape ends at 20, shift by 90 → shiftedEnd = 110 (clips past MAX=100)
     const shape = makeShape();
     const delta = 90;
-    const result = shiftAndClampShape(shape, delta, MIN, MAX);
+    const result = shiftAndClampShape(shape, delta, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.end).toBe(MAX);
@@ -103,12 +105,12 @@ describe("shiftAndClampShape", () => {
   it("entirely out of bounds returns outOfBounds: true", () => {
     const shape = makeShape({ start: 10, end: 20 });
     // Shift far negative so the whole range is < 0
-    const result = shiftAndClampShape(shape, -50, MIN, MAX);
+    const result = shiftAndClampShape(shape, -50, MIN, MAX, SHAPE_TYPE);
     expect(result.outOfBounds).toBe(true);
     expect(result.frames).toHaveLength(0);
 
     // Shift far positive so the whole range is > MAX
-    const result2 = shiftAndClampShape(shape, 200, MIN, MAX);
+    const result2 = shiftAndClampShape(shape, 200, MIN, MAX, SHAPE_TYPE);
     expect(result2.outOfBounds).toBe(true);
     expect(result2.frames).toHaveLength(0);
   });
@@ -120,7 +122,7 @@ describe("shiftAndClampShape", () => {
       end: 10,
       frames: [{ frame: 10, angle: 0, points: [[50, 50]] }],
     });
-    const result = shiftAndClampShape(shape, -10, MIN, MAX);
+    const result = shiftAndClampShape(shape, -10, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(0);
@@ -137,7 +139,7 @@ describe("shiftAndClampShape", () => {
       end: 10,
       frames: [{ frame: 10, angle: 0, points: [[50, 50]] }],
     });
-    const result = shiftAndClampShape(shape, -20, MIN, MAX);
+    const result = shiftAndClampShape(shape, -20, MIN, MAX, SHAPE_TYPE);
     expect(result.outOfBounds).toBe(true);
     expect(result.frames).toHaveLength(0);
   });
@@ -155,7 +157,7 @@ describe("shiftAndClampShape", () => {
         { frame: 20, angle: 0, points: [[100, 100]] },
       ],
     });
-    const result = shiftAndClampShape(shape, -10, MIN, MAX);
+    const result = shiftAndClampShape(shape, -10, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(0);
@@ -179,7 +181,7 @@ describe("shiftAndClampShape", () => {
         { frame: 200, angle: 0, points: [[100, 100]] },
       ],
     });
-    const result = shiftAndClampShape(shape, 0, MIN, MAX);
+    const result = shiftAndClampShape(shape, 0, MIN, MAX, SHAPE_TYPE);
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(0);
@@ -206,7 +208,7 @@ describe("shiftAndClampShape", () => {
     });
     // Shift so low end clips, forcing interpolation
     const delta = -15;
-    const result = shiftAndClampShape(shape, delta, MIN, MAX);
+    const result = shiftAndClampShape(shape, delta, MIN, MAX, "idah-video:polygon");
 
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(0);
@@ -218,7 +220,7 @@ describe("shiftAndClampShape", () => {
 
   it("empty frames array (e.g. an idah-video:frame tag) is NOT out of bounds when start/end are in range", () => {
     const shape = makeShape({ start: 12, end: 12, frames: [] });
-    const result = shiftAndClampShape(shape, 5, MIN, MAX);
+    const result = shiftAndClampShape(shape, 5, MIN, MAX, SHAPE_TYPE);
     expect(result.outOfBounds).toBe(false);
     expect(result.start).toBe(17);
     expect(result.end).toBe(17);
@@ -227,7 +229,7 @@ describe("shiftAndClampShape", () => {
 
   it("empty frames array IS out of bounds when the shift genuinely pushes start/end outside the range", () => {
     const shape = makeShape({ start: 12, end: 12, frames: [] });
-    const result = shiftAndClampShape(shape, -50, MIN, MAX); // 12 - 50 = -38
+    const result = shiftAndClampShape(shape, -50, MIN, MAX, SHAPE_TYPE); // 12 - 50 = -38
     expect(result.outOfBounds).toBe(true);
     expect(result.frames).toHaveLength(0);
   });

@@ -68,7 +68,7 @@ export function register(driver: IIdahDriverV2): void {
           for (const u of updates) {
             await data.annotations!.update({
               ...u.snapshot,
-              shape: { ...u.shape },
+              shape_args: u.shape as Record<string, unknown>,
             } as any);
           }
         },
