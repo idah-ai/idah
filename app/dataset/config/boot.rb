@@ -4,15 +4,14 @@ current_env = ENV["APP_ENVIRONMENT"] ||= "development"
 require "dotenv"
 require "pry"
 
-# COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../../common", __dir__)
-
 puts "Loading \"#{current_env}\" environment..."
 Dotenv.load(".env", ".env.#{current_env}")
 
 require "bundler"
 Bundler.require(:default, current_env)
 
-COMMON_PATH = File.expand_path("../../../common", __dir__)
+# The Rakefile defines it first when running a task, with the same logic.
+COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../common", __dir__) unless defined?(COMMON_PATH)
 
 ENV["APP_PATH"] = File.expand_path("..", __dir__)
 
