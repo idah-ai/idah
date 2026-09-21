@@ -22,12 +22,20 @@
 #   --postgres-user USER
 #   --postgres-password PASSWORD
 #   --postgres-sslmode MODE       disable, prefer, require (default), verify-full
+#   --redis-host HOST             use this Redis instead of the bundled one
+#   --redis-port PORT             default 6379
+#   --redis-password PASSWORD     omit if the server needs none
+#   --redis-tls                   connect with TLS (rediss://)
+#   --ca-cert FILE                CA certificates (PEM) your own PostgreSQL or
+#                                 Redis certificates are signed by, if not a
+#                                 public CA; required for verify-ca/verify-full
 #   -y, --yes
 #
 # Requires docker, docker compose and openssl.
 set -euo pipefail
 
 self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+caller_dir=$PWD # file options are relative to where the installer was run from
 cd "$(dirname "$0")"
 
 compose_file=compose.yml
@@ -38,6 +46,8 @@ url=""; admin_email=""; admin_name="Administrator"
 smtp_host=""; smtp_port=587; smtp_user=""; smtp_password=""
 version=""; image_prefix=""; http_port=8080
 pg_host=""; pg_port=5432; pg_user=""; pg_password=""; pg_sslmode=""
+redis_host=""; redis_port=6379; redis_password=""; redis_tls=""
+ca_cert=""
 assume_yes=false
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -60,6 +70,11 @@ while [ $# -gt 0 ]; do
     --postgres-user) pg_user=${2:?}; shift 2 ;;
     --postgres-password) pg_password=${2:?}; shift 2 ;;
     --postgres-sslmode) pg_sslmode=${2:?}; shift 2 ;;
+    --redis-host) redis_host=${2:?}; shift 2 ;;
+    --redis-port) redis_port=${2:?}; shift 2 ;;
+    --redis-password) redis_password=${2:?}; shift 2 ;;
+    --redis-tls) redis_tls=yes; shift ;;
+    --ca-cert) ca_cert=${2:?}; shift 2 ;;
     -y|--yes) assume_yes=true; shift ;;
     -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$self"; exit 0 ;;
     *) die "unknown argument: $1" ;;
@@ -154,6 +169,71 @@ if $external; then
 fi
 pg_user=${pg_user:-idah}
 
+# --- Redis settings --------------------------------------------------------
+
+# Percent-encodes every byte outside the RFC 3986 unreserved set. Byte by byte
+# through od: bash's printf "'c" mangles bytes above 127, differently per version.
+urlencode() {
+  local out="" h
+  for h in $(printf '%s' "$1" | od -An -v -tx1); do
+    case "$h" in
+      3[0-9]|4[1-9a-f]|5[0-9a]|6[1-9a-f]|7[0-9a]|2d|2e|5f|7e) out="$out$(printf "\\x$h")" ;;
+      *) out="$out%$(printf '%s' "$h" | tr 'a-f' 'A-F')" ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+if [ -z "$redis_host" ] && ! $assume_yes; then
+  case $(ask "Use the bundled Redis? (yes/no)" "yes") in
+    n|N|no|No|NO)
+      redis_host=$(ask "Redis host" "")
+      [ -n "$redis_host" ] || die "a Redis host is required"
+      redis_port=$(ask "Redis port" "$redis_port")
+      redis_password=$(ask "Redis password (leave empty if none)" "")
+      case $(ask "Connect with TLS? (yes/no)" "yes") in y|Y|yes|Yes|YES) redis_tls=yes ;; esac ;;
+  esac
+fi
+
+external_redis=false
+[ -n "$redis_host" ] && external_redis=true
+
+if $external_redis; then
+  case "$redis_host" in
+    localhost|127.*|::1|0.0.0.0)
+      die "Redis host '$redis_host' would make every container connect to itself.
+       For a Redis running on this machine, use host.docker.internal." ;;
+  esac
+  # The client takes a single URL, so the password must be percent-encoded in it.
+  redis_url="$([ "$redis_tls" = yes ] && echo rediss || echo redis)://"
+  [ -n "$redis_password" ] && redis_url="$redis_url:$(urlencode "$redis_password")@"
+  redis_url="$redis_url$redis_host:$redis_port/0"
+fi
+
+# --- CA certificate ---------------------------------------------------------
+
+pg_verifies=false
+case "$pg_sslmode" in verify-ca|verify-full) pg_verifies=true ;; esac
+
+if [ -z "$ca_cert" ] && ! $assume_yes && { $pg_verifies || [ "$redis_tls" = yes ]; }; then
+  ca_cert=$(ask "CA certificate file your servers' certificates are signed by (leave empty if a public CA)" "")
+fi
+
+# libpq has no system trust store to fall back on, so verification needs a file.
+if $pg_verifies && [ -z "$ca_cert" ]; then
+  die "sslmode=$pg_sslmode needs the CA certificate the PostgreSQL server's certificate is
+       signed by. Pass it with --ca-cert FILE (for a managed database, your provider's CA bundle)."
+fi
+
+ca_abs=""
+ca_mount=()
+if [ -n "$ca_cert" ]; then
+  case "$ca_cert" in /*) ca_abs=$ca_cert ;; *) ca_abs="$caller_dir/$ca_cert" ;; esac
+  [ -r "$ca_abs" ] || die "cannot read the CA certificate file: $ca_cert"
+  openssl x509 -in "$ca_abs" -noout 2> /dev/null || die "$ca_cert is not a PEM certificate"
+  ca_mount=(-v "$ca_abs:/certs/ca.pem:ro" -e SSL_CERT_FILE=/certs/ca.pem)
+fi
+
 # --- images ----------------------------------------------------------------
 
 # Before anything is written, so a wrong version or an unreachable registry
@@ -179,13 +259,25 @@ for svc in $services frontend; do
 done
 echo "   all eight present"
 
+# What to do about a certificate the server presents but we cannot verify.
+tls_hint() { # <reason>
+  case "$1" in
+    *"certificate verify failed"*)
+      if [ -n "$ca_cert" ]; then
+        printf '\n       Check that %s includes the CA that signed the server'"'"'s certificate.' "$ca_cert"
+      else
+        printf '\n       If the server'"'"'s certificate is signed by your own CA, pass it with --ca-cert FILE.'
+      fi ;;
+  esac
+}
+
 # Also before anything is written: wrong credentials, TLS or an unreachable host
 # fail here with nothing left behind. Runs in a service image, so it tests what
 # the services will use.
 if $external; then
   say "Connecting to PostgreSQL at $pg_host:$pg_port"
-  if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway \
-      -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode" \
+  if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
+      -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode${ca_abs:+&sslrootcert=/certs/ca.pem}" \
       -e "PGPASSWORD=$pg_password" "${prefix}iam:$version" ruby -e '
         require "sequel"
         begin
@@ -195,9 +287,34 @@ if $external; then
           exit 1
         end' 2>&1 < /dev/null); then
     die "cannot connect to PostgreSQL at $pg_host:$pg_port as $pg_user:
-       $(printf '%s\n' "$reason" | tail -1)"
+       $(printf '%s\n' "$reason" | tail -1)$(tls_hint "$reason")"
   fi
   echo "   connected (sslmode=$pg_sslmode)"
+fi
+
+if $external_redis; then
+  say "Connecting to Redis at $redis_host:$redis_port"
+  if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
+      -e "REDIS_URL=$redis_url" "${prefix}iam:$version" ruby -e '
+        require "redis"
+        begin
+          Redis.new(url: ENV.fetch("REDIS_URL")).ping
+        rescue StandardError => e
+          # A failed TLS handshake comes back with an empty message.
+          message = e.message.lines.first.to_s.strip
+          message = "no answer to the TLS handshake #{message}" if message.start_with?("(")
+          warn message
+          exit 1
+        end' 2>&1 < /dev/null); then
+    hint=""
+    case "$reason" in
+      *"TLS handshake"*) hint="
+       Does the server accept TLS on port $redis_port? Without --redis-tls the connection is plain." ;;
+    esac
+    die "cannot connect to Redis at $redis_host:$redis_port:
+       $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"
+  fi
+  echo "   connected$([ "$redis_tls" = yes ] && echo " over TLS")"
 fi
 
 # --- secrets ---------------------------------------------------------------
@@ -269,6 +386,15 @@ if $external; then
   set_env POSTGRES_PORT "$pg_port"
   set_env POSTGRES_SSLMODE "$pg_sslmode"
 fi
+if $external_redis; then
+  set_env IDAH_REDIS_CONTAINER 0
+  set_env REDIS_URL "$redis_url"
+fi
+mkdir -p config/certs
+if [ -n "$ca_abs" ]; then
+  cp "$ca_abs" config/certs/ca.pem
+  set_env IDAH_CA_CERT /certs/ca.pem
+fi
 
 printf '%s' "$service_env" | while IFS='=' read -r key value; do set_env "$key" "$value"; done
 
@@ -284,13 +410,16 @@ dc() { docker compose "$@"; }
 
 # --- databases -------------------------------------------------------------
 
-if $external; then
-  say "Starting Redis"
-  dc up -d redis
-else
-  say "Starting PostgreSQL and Redis"
-  dc up -d postgres redis
+# Only the bundled services this install uses.
+bundled=""
+$external || bundled="postgres"
+$external_redis || bundled="$bundled redis"
+if [ -n "$bundled" ]; then
+  say "Starting the bundled services:$(printf ' %s' $bundled)"
+  dc up -d $bundled
+fi
 
+if ! $external; then
   printf "   waiting for PostgreSQL"
   for _ in $(seq 1 60); do
     if dc exec -T postgres pg_isready -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then break; fi
@@ -365,6 +494,7 @@ IDAH $version is installed.
   Login     $admin_email
   Password  $admin_password
   Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the postgres_data volume")
+  Redis     $($external_redis && echo "$redis_host:$redis_port$([ "$redis_tls" = yes ] && echo " over TLS")" || echo "bundled, in the redis_data volume")$([ -n "$ca_abs" ] && printf '\n  CA        config/certs/ca.pem, trusted for your own servers')
 
 Write the password down now: it is not stored anywhere and cannot be recovered.
 Change it after the first login.

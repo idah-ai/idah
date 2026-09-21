@@ -26,7 +26,7 @@ Customers keep their own changes in a `compose.override.yml` next to
 ```
 
 It asks for the public URL, the administrator's email, the version, SMTP
-(optional) and which database to use. It then generates the signing key pair and
+(optional), and whether to use the bundled PostgreSQL and Redis or your own. It then generates the signing key pair and
 every password — one per internal service account — creates the databases, runs
 the migrations, creates the accounts and starts the stack. The administrator's
 password is printed once and stored nowhere.
@@ -51,9 +51,25 @@ Or answer "no" to "Use the bundled PostgreSQL?". Requirements:
   advance and owned by it.
 - **For a server on the same machine, use `host.docker.internal`.** Inside a
   container `localhost` is the container itself; the installer refuses it.
-- **TLS:** `require` encrypts the connection. `verify-full`, which also checks
-  the server's identity, needs the server's CA certificate, which the stack
-  cannot be given yet.
+- **TLS:** `require` encrypts the connection. `verify-full` also checks the
+  server's identity — its certificate and host name — and needs the CA that
+  signed that certificate: `--ca-cert FILE`. For a managed database, that is
+  your provider's CA bundle.
+
+## Using your own Redis
+
+```bash
+./install.sh --redis-host redis.example.com --redis-password '...' --redis-tls
+```
+
+Or answer "no" to "Use the bundled Redis?". Every service must use the same
+Redis, since it carries the events they send each other. The installer
+percent-encodes the password into `REDIS_URL`, so any character works.
+`--redis-tls` (`rediss://`) verifies the server's certificate: managed services
+work as they are, and for a certificate from your own CA pass it with
+`--ca-cert FILE`.
+As with PostgreSQL, use `host.docker.internal` for a server on the same
+machine; `localhost` is refused.
 
 ## Backups
 
@@ -65,7 +81,5 @@ hold uploaded media and generated exports, which are not in PostgreSQL.
 - **An upgrade path.** Changing `IDAH_VERSION` and running
   `docker compose up -d` pulls the new images, but nothing runs the new
   migrations.
-- **`verify-full` for external databases**, by mounting a CA certificate and
-  passing `sslrootcert`.
 - **Publishing these files as release assets**, so the install really is one
   line: download, then run `install.sh`.
