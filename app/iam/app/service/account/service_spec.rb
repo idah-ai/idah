@@ -94,7 +94,7 @@ RSpec.describe Account::Service, database: true do
       end
 
       it "updates role_scope from a hash" do
-        account_id = account_repo.create(attributes.merge(role_name: "user", role_scope: {}))
+        account_id = account_repo.create(attributes.merge(role_name: "user", role_scope: {}.to_json))
 
         record = deserialize(
           {
