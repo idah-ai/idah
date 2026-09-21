@@ -42,7 +42,10 @@ module RefreshToken
 
   protected
 
+  # Construct a fresh repository on every call rather than memoizing it: this
+  # module is `extend self` and shared across every thread in the process, so a
+  # memoized @account_sessions would be unsynchronized shared state.
   def account_sessions
-    @account_sessions ||= AccountSession::Repository.new(Verse::Auth::Context[:system])
+    AccountSession::Repository.new(Verse::Auth::Context[:system])
   end
 end

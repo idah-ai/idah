@@ -9,6 +9,16 @@ RSpec.describe RefreshToken, database: true do
   let(:seq_id) { Time.now.to_i }
   let(:exp_time) { Time.now.to_i + 3600 }
 
+  describe ".account_sessions" do
+    it "returns a fresh repository instance on every call (no shared memoization)" do
+      first  = described_class.send(:account_sessions)
+      second = described_class.send(:account_sessions)
+
+      expect(first).not_to be_nil
+      expect(first.equal?(second)).to be(false)
+    end
+  end
+
   describe ".validate" do
     let(:valid_token) do
       described_class.encode(account_id, session_id, nonce, seq_id, exp: exp_time)
@@ -17,7 +27,6 @@ RSpec.describe RefreshToken, database: true do
     let(:account_session_repo) { instance_double(AccountSession::Repository) }
 
     before do
-      described_class.instance_variable_set(:@account_sessions, nil)
       allow(AccountSession::Repository).to receive(:new).and_return(account_session_repo)
     end
 
