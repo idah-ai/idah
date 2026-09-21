@@ -61,7 +61,14 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
         post "/auth/login", login_params
 
         expect(last_response.status).to eq 200
-        # Cookies would be set in the response headers
+
+        set_cookie_headers = Array(last_response.headers["Set-Cookie"])
+        expect(set_cookie_headers).not_to be_empty
+
+        # Both the auth and refresh cookies must be SameSite=Lax
+        expect(set_cookie_headers.join("\n").downcase).to include("samesite=lax")
+        expect(set_cookie_headers.join("\n")).to include("auth-token=")
+        expect(set_cookie_headers.join("\n")).to include("refresh-token=")
       end
 
       it "includes auth token in meta" do

@@ -32,7 +32,8 @@ module Auth
           path: REFRESH_TOKEN_PATH,
           expires: Time.now + REFRESH_TOKEN_LIFETIME,
           http_only: true,
-          secure: true
+          secure: true,
+          same_site: :lax
         )
       else
         # Force expiration of the cookie as we can't delete a cookie
@@ -42,7 +43,8 @@ module Auth
           path: REFRESH_TOKEN_PATH,
           expires: Time.now - 600, # 10 minutes ago
           http_only: true,
-          secure: true
+          secure: true,
+          same_site: :lax
         )
       end
     end
@@ -55,7 +57,8 @@ module Auth
           path: AUTH_TOKEN_PATH,
           expires: Time.now + AUTH_TOKEN_LIFETIME,
           http_only: true,
-          secure: true
+          secure: true,
+          same_site: :lax
         )
       else
         # Force expiration of the cookie as we can't delete a cookie
@@ -65,7 +68,8 @@ module Auth
           path: AUTH_TOKEN_PATH,
           expires: Time.now - 600,
           http_only: true,
-          secure: true
+          secure: true,
+          same_site: :lax
         )
       end
     end
