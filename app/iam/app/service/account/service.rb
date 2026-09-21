@@ -36,10 +36,10 @@ module Account
         # We use the system repository to check for existing accounts
         account = accounts_system.find_by({ email: attr[:email] })
 
-        # If account with the email already exists, return it
+        # If account with the email already exists, reject the request rather than
+        # silently returning the existing record
         if account
-          auth_context.mark_as_checked!
-          return account
+          raise Verse::Error::ValidationFailed, "An account with this email already exists"
         end
 
         # Set a default random password for the account if none is provided
