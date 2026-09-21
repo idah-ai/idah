@@ -3,7 +3,13 @@ import { clearCache } from "@/data/Cache";
 import { parseSingleElementError } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 
-import type { Modalities, ModalityShapes, ModalityTagging, Plugins } from "@/data/model/setting/plugin/types";
+import type {
+  DatasetConfigSchema,
+  Modalities,
+  ModalityShapes,
+  ModalityTagging,
+  Plugins,
+} from "@/data/model/setting/plugin/types";
 import type { Hash } from "@/utils/types";
 
 @type("setting:plugins")
@@ -86,5 +92,13 @@ export const pluginsBackendDataSource = createBackendDataSource(PluginRecord, ba
     }
 
     return asset;
+  },
+  datasetConfig: async (pluginName: string): Promise<DatasetConfigSchema | null> => {
+    const res = await fetch(`${base_path}/${pluginName}/files/dataset_config.json`);
+
+    if (res.status === 404) return null;
+    if (!res.ok) throw `Error fetching dataset config: ${res.status} ${res.statusText}`;
+
+    return res.json();
   },
 });

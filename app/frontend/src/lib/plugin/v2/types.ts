@@ -884,6 +884,14 @@ export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties =
    */
   readonly allowedNoteFeed: string[];
 
+  /**
+   * List of workflow step names that are managed by an external process.
+   * When the entry is in one of these steps, the annotation UI is locked
+   * and shows a message indicating the entry is being processed externally.
+   * Populated from the workflow definition's `external_steps` config.
+   */
+  readonly externalSteps: string[];
+
   setMode(mode: string): void;
   onModeChange(cb: (event: IModeEvent) => void): Unsubscribe;
 

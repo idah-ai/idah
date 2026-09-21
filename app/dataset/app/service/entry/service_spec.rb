@@ -888,4 +888,171 @@ RSpec.describe Entry::Service, database: true do
       end
     end
   end
+
+  describe "#workflow_callback" do
+    # Define a minimal test workflow class for testing
+    let(:test_workflow_class) do
+      Class.new(Workflow::Base) do
+        aasm do
+          state :start, initial: true
+          state :qc
+          state :review
+          state :done
+          state :error
+
+          event :resolve_external, after: :on_submit do
+            transitions from: :qc, to: :review
+          end
+
+          event :submit, after: :on_submit do
+            transitions from: :start, to: :qc
+          end
+
+          event :error do
+            transitions from: [:qc, :review], to: :error
+          end
+        end
+
+        def on_submit
+          entries.submit(
+            entry.id,
+            {
+              wf_step: aasm.current_state.to_s,
+              status: aasm.current_state == :done ? "completed" : "in_progress"
+            }
+          )
+        end
+
+        def self.definition
+          # Minimal definition — external_steps is tested via workflows expo
+          Class.new do
+            def self.name = "test-qc-workflow"
+            def self.label = "Test QC"
+            def self.description = "Test"
+            def self.steps = []
+            def self.allowed_note_feed = %w[qc review]
+            def self.external_steps = %w[qc]
+          end
+        end
+      end
+    end
+
+    let(:qc_dataset_id) do
+      # Register the test workflow
+      Workflow::Registry.register(:test, "test-qc-workflow", klass: test_workflow_class)
+
+      dataset_repo.create(
+        modality: "image",
+        labels: ["cat"],
+        labeling_configuration: {},
+        workflow_name: "test-qc-workflow",
+        workflow_configuration: {
+          "qc" => { "callback_token" => "test-token" }
+        },
+        project_id:
+      )
+    end
+
+    let(:qc_entry) do
+      repo.create(
+        priority: 1,
+        resource: "http://example.com/img.jpg",
+        name: "img.jpg",
+        project_id:,
+        wf_step: "qc",
+        status: "in_progress",
+        assigned_to_id: 1,
+        dataset_id: qc_dataset_id
+      )
+
+      repo.find_by!({ dataset_id: qc_dataset_id })
+    end
+
+    let!(:qc_annotation_id) do
+      annotation_repo = Annotation::Repository.new(auth_context)
+      annotation_repo.create(
+        id: UUIDv7.generate,
+        entry_id: qc_entry.id,
+        project_id:,
+        dataset_id: qc_dataset_id,
+        created_by_email: "user@example.com",
+        annotation: { label: "cat" },
+        dimensions: { type: "rectangle", x: 10, y: 20, width: 50, height: 50 },
+        metadata: {}
+      )
+    end
+
+    after do
+      Workflow::Registry.clear(:test)
+    end
+
+    it "updates annotations, creates note_feeds, and advances to review" do
+      payload = {
+        token: "test-token",
+        annotations: [
+          {
+            id: qc_annotation_id,
+            annotation: { label: "cat" },
+            dimensions: { type: "rectangle", x: 10, y: 20, width: 50, height: 50 },
+            metadata: { qc_score: 0.95 }
+          }
+        ],
+        notes: [
+          {
+            body: "QC check passed",
+            annotation_id: nil,
+            anchor_type: "entry",
+            position: nil
+          }
+        ]
+      }
+
+      result = subject.workflow_callback(qc_entry.id, payload)
+
+      expect(result.wf_step).to eq("review")
+      expect(result.status).to eq("in_progress")
+
+      # Check annotation was updated
+      annotation_repo = Annotation::Repository.new(auth_context)
+      updated_anno = annotation_repo.find!(qc_annotation_id)
+
+      expect(updated_anno.metadata).not_to be_empty
+      expect(updated_anno.metadata.to_s).to include("qc_score")
+
+      # Check note feed was created
+      note_feed_repo = NoteFeed::Repository.new(auth_context)
+      feeds = note_feed_repo.index({ entry_id: qc_entry.id })
+      expect(feeds.count).to eq(1)
+      expect(feeds.first.content_md).to eq("QC check passed")
+    end
+
+    it "raises error if callback token does not match" do
+      payload = {
+        token: "wrong-token",
+        annotations: []
+      }
+
+      expect {
+        subject.workflow_callback(qc_entry.id, payload)
+      }.to raise_error(Verse::Error::Unauthorized)
+    end
+
+    it "raises error if entry is not in qc step" do
+      entry_in_start = repo.create(
+        priority: 1,
+        resource: "http://example.com/other.jpg",
+        name: "other.jpg",
+        project_id:,
+        wf_step: "start",
+        status: "pending",
+        dataset_id: qc_dataset_id
+      )
+
+      payload = { token: "test-token", annotations: [] }
+
+      expect {
+        subject.workflow_callback(entry_in_start, payload)
+      }.to raise_error(AASM::InvalidTransition)
+    end
+  end
 end

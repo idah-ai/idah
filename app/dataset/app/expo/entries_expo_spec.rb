@@ -263,4 +263,62 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       )
     end
   end
+
+  describe "#workflow_callback" do
+    let(:callback_attributes) do
+      {
+        token: "test-token",
+        annotations: [
+          {
+            id: "anno-1",
+            annotation: { label: "cat" },
+            dimensions: { type: "rectangle", x: 10, y: 20, width: 50, height: 50 },
+            metadata: { qc_score: 0.95 }
+          }
+        ],
+        notes: [
+          {
+            body: "QC check completed",
+            annotation_id: nil,
+            anchor_type: "entry",
+            position: nil
+          }
+        ]
+      }
+    end
+
+    let(:callback_payload) do
+      {
+        data: {
+          attributes: callback_attributes
+        }
+      }
+    end
+
+    it "calls service.workflow_callback with entry_id and attributes" do
+      expect(
+        service
+      ).to receive(
+        :workflow_callback
+      ).with(
+        uuid,
+        hash_including(:token, :annotations, :notes)
+      ).and_return(entry_record)
+
+      post "/entries/#{uuid}/workflow_callback", callback_payload
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+    end
+
+    it "works without authentication (auth: nil)" do
+      expect(service).to receive(:workflow_callback).with(uuid, hash_including(:token)).and_return(entry_record)
+
+      post "/entries/#{uuid}/workflow_callback", callback_payload
+
+      expect(last_response.status).to eq 200
+    end
+  end
 end
