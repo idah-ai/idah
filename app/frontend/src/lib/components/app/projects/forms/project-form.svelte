@@ -11,13 +11,15 @@
   import { authStatus } from "@/security/AuthContext";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { FormModalAction } from "@/components/app/projects/overlays/modals/form-modal.types";
 
   // Props
   interface Props extends FormBaseProps {
     project: ProjectRecord;
     preSelectedOrganizationId?: string;
+    action: FormModalAction;
   }
-  let { project, preSelectedOrganizationId, fieldErrors, onValueChange }: Props = $props();
+  let { project, preSelectedOrganizationId, fieldErrors, onValueChange, action }: Props = $props();
 
   // Variables
   let resource: string = ProjectRecord.type;
@@ -68,6 +70,7 @@
           organization_id = (value == null ? null : Number(value)) as number;
         }}
         searchKeyWithOperation="name__match"
+        disabled={action === "update"}
       />
     {/if}
 
