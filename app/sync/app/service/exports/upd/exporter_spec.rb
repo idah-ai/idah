@@ -125,12 +125,9 @@ RSpec.describe Exports::Upd::Exporter do
       # Stub streaming media download to yield chunks
       allow(exporter).to receive(:system).and_return(true)
 
-      # Stub Dir.mktmpdir to return a predictable path
-      allow(Dir).to receive(:mktmpdir).with("idah-export-").and_return("/tmp/idah-export-dir")
-
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
-      allow(File).to receive(:open).with(%r{/tmp/idah-export-dir/export-\d+\.upd$}).and_return(mock_file)
+      allow(File).to receive(:open).with(%r{/tmp/tempfile_media$}).and_return(mock_file)
       allow(File).to receive(:extname).and_call_original
       allow(File).to receive(:basename).and_call_original
 
@@ -245,7 +242,7 @@ RSpec.describe Exports::Upd::Exporter do
 
         # Open3 was called with the temp file path
         expect(Open3).to have_received(:popen3).with(
-          "updcli-static", "--input", a_string_matching(%r{idah-export-.*/export-\d+\.upd$}), "append"
+          "updcli-static", "--input", "/tmp/tempfile_media", "append"
         )
       end
 

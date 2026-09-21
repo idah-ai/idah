@@ -17,8 +17,11 @@ module Exports
       def options = Verse::Schema.empty
 
       def export(context)
-        tmpdir = Dir.mktmpdir("idah-export-")
-        file_path = File.join(tmpdir, "export-#{Time.now.to_i}.upd")
+        # Use Tempfile.new to generate a secure random path (with O_EXCL, immune
+        # to symlink attacks), then close/unlink so updcli-static creates the file.
+        tempfile = Tempfile.new(["idah-export-#{Time.now.to_i}-", ".upd"])
+        file_path = tempfile.path
+        tempfile.close!
 
         # Duplicated entries share the same media resource, but medias are
         # unique in a UPD file: keep track of the resources already appended.
