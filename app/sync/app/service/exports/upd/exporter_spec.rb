@@ -233,40 +233,22 @@ RSpec.describe Exports::Upd::Exporter do
         expect(context.io.file).to eq(mock_file)
       end
 
-      it "creates a temporary UPD file in a temp directory" do
-        init_called = false
-        allow(exporter).to receive(:system) do |cmd, _options|
-          if cmd.include?("init")
-            init_called = cmd.include?("/tmp/idah-export-dir/export.upd")
-          end
-          true
-        end
+      it "creates a temporary UPD file and sends init JSONL command" do
         exporter.export(context)
 
-        expect(init_called).to be(true)
-        expect(Dir).to have_received(:mktmpdir).with("idah-export-")
-      end
-    end
+        # First JSONL line is the init command
+        first_line = @jsonl_writes.first
+        expect(first_line).not_to be_nil
+        parsed = JSON.parse(first_line)
+        expect(parsed["command"]).to eq("init")
+        expect(parsed["args"]).to eq({})
 
-    # context "metadata transformation" do
-    #   it "transforms dataset metadata keys to capitalized-dashed format" do
-    #     dataset_metadata_valid = false
-    #     allow(exporter).to receive(:system) do |cmd, _options|
-    #       if cmd.include?("dataset create")
-    #         json_match = cmd.match(/--metadata '({.*})'/)
-    #         if json_match
-    #           metadata = JSON.parse(json_match[1])
-    #           dataset_metadata_valid = metadata.key?("Labeling-Configuration") &&
-    #                                    metadata.key?("Workflow-Configuration") &&
-    #                                    metadata.key?("Status") &&
-    #                                    metadata.key?("Progress") &&
-    #                                    metadata.key?("Entries-Total-Count") &&
-    #                                    metadata.key?("Created-At") &&
-    #                                    metadata.key?("Updated-At")
-    #         end
-    #       end
-    #       true
-    #     end
+        # Open3 was called with the temp file path
+        expect(Open3).to have_received(:popen3).with(
+          "updcli-static", "--input", "/tmp/idah-export-dir/export.upd", "append"
+        )
+      end
+
       it "does not include media when include_medias option is absent" do
         exporter.export(context)
 
