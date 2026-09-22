@@ -43,6 +43,20 @@ RSpec.describe Account::Service, database: true do
         expect(created_account.email).to eq("test@example.com")
         expect(created_account.enabled).to eq(true)
       end
+
+      it "allows an admin to create an account with role_name 'admin'" do
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: attributes.merge(role_name: "admin"),
+            }
+          }
+        )
+
+        created_account = subject.create(record)
+        expect(created_account.role_name).to eq("admin")
+      end
     end
 
     describe "#show" do
@@ -492,6 +506,50 @@ RSpec.describe Account::Service, database: true do
 
         expect(subject.show(@org_owner_account1.id).role_scope.to_json).to eq ({ "org": [] }).to_json
         expect(subject.show(@org_owner_account2.id).role_scope.to_json).to eq ({ "org": ["111"] }).to_json
+      end
+    end
+  end
+
+  context "As Anonymous (no create rights)", as: :anonymous do
+    subject { described_class.new(current_auth_context) }
+
+    describe "#create" do
+      let(:attributes) do
+        {
+          name: "Test Account Name",
+          email: "test@example.com",
+          enabled: true
+        }
+      end
+
+      it "rejects creating an account with role_name 'system'" do
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: attributes.merge(role_name: "system"),
+            }
+          }
+        )
+
+        expect {
+          subject.create(record)
+        }.to raise_error(Verse::Error::ValidationFailed, "System account can't be created")
+      end
+
+      it "rejects creating an account with role_name 'admin'" do
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: attributes.merge(role_name: "admin"),
+            }
+          }
+        )
+
+        expect {
+          subject.create(record)
+        }.to raise_error(Verse::Error::ValidationFailed, "System account can't be created")
       end
     end
   end
