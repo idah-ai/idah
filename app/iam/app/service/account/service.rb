@@ -24,8 +24,10 @@ module Account
     end
 
     def create(record)
-      if record.attributes[:role_name] == ("system" || "admin") &&
-         auth_context.can?(:create, projects.class.resource) != :all
+      if %w[system admin].include?(record.attributes[:role_name]) &&
+         # check on role for now (todo review rights and scopes)
+         # auth_context.can?(:create, accounts.class.resource) != :all
+         !%w[system admin].include?(auth_context.role)
 
         raise Verse::Error::ValidationFailed, "System account can't be created"
       end
