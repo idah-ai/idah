@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    CalendarDate,
-    DateFormatter,
-    getLocalTimeZone,
-    type DateValue,
-  } from "@internationalized/date";
+  import { CalendarDate, DateFormatter, getLocalTimeZone, type DateValue } from "@internationalized/date";
   import { CalendarIcon } from "@lucide/svelte";
   import { format } from "date-fns";
 
@@ -14,11 +9,7 @@
   import FormField from "$lib/components/ui/Forms/FormField.svelte";
   import Button from "$lib/components/ui/Button/Button.svelte";
   import Calendar from "$lib/components/ui/Calendar/Calendar.svelte";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "$lib/components/ui/Popover";
+  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/Popover";
 
   import { cn } from "$lib/utils";
 
@@ -53,9 +44,7 @@
 
   // Functions
   function handleValueChange(date: DateValue | undefined) {
-    const formattedDate = date
-      ? format(df.format(date.toDate(getLocalTimeZone())), "yyyy-MM-dd")
-      : null;
+    const formattedDate = date ? format(df.format(date.toDate(getLocalTimeZone())), "yyyy-MM-dd") : null;
     onDateSelected?.(formattedDate);
   }
 
@@ -65,11 +54,7 @@
     } else if (value) {
       value = value;
       const dateValue = new Date(value);
-      calendarValue = new CalendarDate(
-        dateValue.getFullYear(),
-        dateValue.getMonth() + 1,
-        dateValue.getDate(),
-      );
+      calendarValue = new CalendarDate(dateValue.getFullYear(), dateValue.getMonth() + 1, dateValue.getDate());
     } else {
       value = null;
       calendarValue = undefined;
@@ -96,20 +81,13 @@
           {...props}
         >
           <CalendarIcon class="size-4"></CalendarIcon>
-          {value
-            ? format(value, placeholderDateFormat || "MMM dd, yyyy")
-            : placeholder}
+          {value ? format(value, placeholderDateFormat || "MMM dd, yyyy") : placeholder}
         </Button>
       {/snippet}
     </PopoverTrigger>
 
     <PopoverContent class="w-auto p-0">
-      <Calendar
-        type="single"
-        initialFocus
-        onValueChange={handleValueChange}
-        bind:value={calendarValue}
-      ></Calendar>
+      <Calendar type="single" initialFocus onValueChange={handleValueChange} bind:value={calendarValue}></Calendar>
     </PopoverContent>
   </Popover>
 

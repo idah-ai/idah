@@ -2,7 +2,7 @@ import type { IdahDriverV2 } from "..";
 
 export function register(driver: IdahDriverV2) {
   driver.command.register({
-    name: "mode.note",
+    name: "core:tool.note",
     group: "Tools",
     modes: ["review", "note"],
     shortcut: "N",
@@ -10,7 +10,7 @@ export function register(driver: IdahDriverV2) {
     longDescription: "Note Tool",
     callback: () => ({
       command: {
-        name: "mode.note",
+        name: "core:tool.note",
         group: "Tools",
         modes: ["review", "note"],
         shortcut: "N",

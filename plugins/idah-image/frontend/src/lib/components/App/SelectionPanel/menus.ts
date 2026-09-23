@@ -3,7 +3,7 @@ import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as I
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
-
+import { isEditable } from "$lib/state/editor.svelte";
 import type { IImageAnnotationRecord } from "$lib/types";
 import { viewport } from "$lib/state/viewport.svelte";
 
@@ -70,13 +70,13 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
     label: "Delete annotation",
     icon: Trash2Icon,
     destructive: true,
-    disabled: viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
+    disabled: !isEditable() || viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
     onClick: () => {
       showConfirmDialog({
         title: "Delete annotation",
         description: "Are you sure you want to delete this annotation?",
         onConfirm: () => {
-          getDriver().command.call("annotation.delete", { annotationId });
+          getDriver().command.call("idah-image:annotation.delete", { annotationId });
         },
       });
     },

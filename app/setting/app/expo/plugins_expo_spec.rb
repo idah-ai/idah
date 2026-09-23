@@ -112,7 +112,11 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
       expected_shapes = {
         "shapes": {
           "bounding-box" => { "label" => "Bounding Box", "icon" => "icon.svg" }
-        }
+        },
+        "tagging": {
+          "frame" => { "label" => "Frame", "icon" => "frame.svg" }
+        },
+        "label": "Video"
       }
 
       expect(modality_service).to receive(:show_modality).with(modality_name).and_return(
@@ -131,7 +135,14 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
                 label: "Bounding Box",
                 icon: "icon.svg"
               }
-            }
+            },
+            tagging: {
+              frame: {
+                label: "Frame",
+                icon: "frame.svg"
+              }
+            },
+            label: "Video"
           }
         }
       )

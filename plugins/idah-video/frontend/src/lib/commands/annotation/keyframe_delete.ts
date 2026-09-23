@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.keyframe_delete — Remove a keyframe from an annotation
+// idah-video:annotation.keyframe.delete — Remove a keyframe from an annotation
 // Undoable: restores the keyframe.
 //
 // Usage:
-//   driver.command.call("annotation.keyframe_delete", { annotationId: "...", frame: 42 });
+//   driver.command.call("idah-video:annotation.keyframe.delete", { annotationId: "...", frame: 42 });
 //
 // Shortcut: Delete
 // Active only when there's a selected annotation and the current frame
@@ -19,7 +19,7 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
-  name: "annotation.keyframe_delete",
+  name: "idah-video:annotation.keyframe.delete",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "Control+Delete",
@@ -35,7 +35,7 @@ export interface KeyframeDeleteProps {
 function isCurrentFrameKeyframe(): boolean {
   const sel = selection.value;
   if (!sel || sel.type !== "annotation") return false;
-  const frames = (sel.annotation.shape?.frames as IVideoFrameSelection[]) ?? [];
+  const frames = (sel.annotation.shape_args?.frames as IVideoFrameSelection[]) ?? [];
   const currentFrame = viewport.video.currentFrame.value;
   return frames.some((f) => f.frame === currentFrame);
 }
@@ -72,28 +72,46 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === annotationId);
       if (!record) return noopAction(command);
 
-      const frames = (record.shape.frames as IVideoFrameSelection[]) ?? [];
+      const frames = (record.shape_args.frames as IVideoFrameSelection[]) ?? [];
       const idx = frames.findIndex((f) => f.frame === frame);
       if (idx === -1) return noopAction(command);
 
-      const snapshot: AnnotationItem = { ...record, shape: { ...record.shape, frames: [...frames] } };
+      const snapshot: AnnotationItem = { ...record, shape_args: { ...record.shape_args, frames: [...frames] } };
+      // Removing the last remaining keyframe must delete the whole annotation —
+      // an annotation with zero keyframes is invalid and must never persist.
+      const isLastKeyframe = frames.length === 1;
 
       return {
         command: { ...command },
         async do() {
+          if (isLastKeyframe) {
+            // Deselect first if this annotation is the current selection, then delete it.
+            if (selection.isAnnotationSelected(annotationId!)) {
+              selection.deselect();
+            }
+            await data.annotations!.delete(annotationId!);
+            viewport.video.currentFrame.value = frame;
+            return;
+          }
+
           const newFrames = frames.filter((f) => f.frame !== frame);
-          const min = newFrames.length > 0 ? newFrames.reduce((m, f) => Math.min(m, f.frame), Infinity) : 0;
-          const max = newFrames.length > 0 ? newFrames.reduce((m, f) => Math.max(m, f.frame), -Infinity) : 0;
+          const min = newFrames.reduce((m, f) => Math.min(m, f.frame), Infinity);
+          const max = newFrames.reduce((m, f) => Math.max(m, f.frame), -Infinity);
 
           await data.annotations!.update({
             ...snapshot,
-            shape: { ...snapshot.shape, start: min, end: max, frames: newFrames },
+            shape_args: { ...snapshot.shape_args, start: min, end: max, frames: newFrames },
           });
           viewport.video.currentFrame.value = frame;
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations.update(snapshot);
+          if (isLastKeyframe) {
+            // Restore the annotation that `do()` soft-deleted (mirrors annotation.delete's undo).
+            await data.annotations.restore(snapshot);
+          } else {
+            await data.annotations.update(snapshot);
+          }
           viewport.video.currentFrame.value = frame;
         },
         isCombinable() {

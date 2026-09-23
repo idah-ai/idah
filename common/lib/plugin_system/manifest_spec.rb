@@ -59,5 +59,24 @@ RSpec.describe PluginSystem::Manifest do
         :entryPoints, :type, :name, :version, :title, :entryPoints
       )
     end
+
+    it "accepts a tagging field alongside shapes in a modality" do
+      data = JSON.parse(valid_manifest)
+      data["modalities"] = [
+        {
+          "id" => "idah-video",
+          "label" => "Video",
+          "shapes" => {
+            "bounding-box" => { "label" => "Bounding Box", "icon" => "box.svg" }
+          },
+          "tagging" => {
+            "frame" => { "label" => "Frame", "icon" => "frame.svg" }
+          }
+        }
+      ]
+
+      result = PluginSystem::ManifestSchema.validate(data)
+      expect(result.errors).to be_empty
+    end
   end
 end

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// annotation.go_to_next_keyframe — Jump to the next keyframe in the
+// idah-video:annotation.go-to-next-keyframe — Jump to the next keyframe in the
 // currently selected group.
 //
 // If an annotation is selected, uses its group. If a group is selected,
@@ -14,7 +14,7 @@ import type { IIdahDriverV2, ICommandAction } from "$idah/v2/types";
 import type { IVideoAnnotationShape } from "$lib/types";
 
 export const command = {
-  name: "annotation.go_to_next_keyframe",
+  name: "idah-video:annotation.go-to-next-keyframe",
   group: "Annotation",
   modes: ["editor"],
   shortcut: "Control+ArrowRight",
@@ -28,7 +28,7 @@ function getGroupKeyframes(groupId: string): number[] {
   for (const ann of data.annotations.items) {
     const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
     if (annGroupId !== groupId) continue;
-    const shape = ann.shape as IVideoAnnotationShape;
+    const shape = ann.shape_args as IVideoAnnotationShape;
     if (!shape.frames) continue;
     for (const f of shape.frames) frames.add(f.frame);
   }
@@ -88,7 +88,7 @@ export function register(driver: IIdahDriverV2): void {
       for (const ann of data.annotations?.items ?? []) {
         const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
         if (annGroupId !== groupId) continue;
-        const shape = ann.shape as IVideoAnnotationShape;
+        const shape = ann.shape_args as IVideoAnnotationShape;
         if (!shape.frames) continue;
         if (shape.frames.some((f) => f.frame === target)) {
           targetAnnotation = ann;

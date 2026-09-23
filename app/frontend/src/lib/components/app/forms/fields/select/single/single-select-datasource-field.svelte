@@ -75,6 +75,7 @@
   let itemsPerPage = $state(10);
   let hasMore = $state(true);
   let selectedChoice = $derived(choices.find((choice) => choice.value == value));
+  let showClearButton = $derived(clearable && !!selectedChoice);
 
   // Lifecycle
   onMount(async () => {
@@ -187,6 +188,7 @@
       class={cn("w-full justify-between", {
         "border-destructive border-1": errors,
       })}
+      {disabled}
     >
       {#if slotTrigger}
         {@render slotTrigger({ selectedChoice, clearable, disabled })}
@@ -212,7 +214,9 @@
           <div class="ml-auto inline-flex items-center gap-2">
             <button
               type="button"
-              class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
+              class={cn("cursor-pointer", showClearButton ? "opacity-50" : "pointer-events-none opacity-0")}
+              tabindex={showClearButton ? 0 : -1}
+              aria-hidden={!showClearButton}
               onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>

@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// annotation.delete_category
+// idah-image:annotation.category.delete
 // Delete all annotations inside a category tree.
 //
 // Usage:
 //   driver.command.call(
-//     "annotation.delete_category",
+//     "idah-image:annotation.category.delete",
 //     {
 //       category: "vehicle",
 //     },
@@ -29,7 +29,7 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 
 export const command = {
-  name: "annotation.delete_category",
+  name: "idah-image:annotation.category.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -67,12 +67,12 @@ export function register(driver: IIdahDriverV2): void {
 
         if (props.category) {
           categoryAnnotations = categoryAnnotations.filter((ann) =>
-            isCategoryMatch(ann.value?.category, props.category),
+            isCategoryMatch(ann.category, props.category),
           );
         }
 
         if (props.shapeType) {
-          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+          categoryAnnotations = categoryAnnotations.filter((ann) => ann.shape_type === props.shapeType);
         }
       } else {
         return noopAction(command);
@@ -102,10 +102,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Restore deleted annotations
           for (const ann of snapshot) {
-            await data.annotations!.create({
-              ...ann,
-              id: ann.id,
-            });
+            await data.annotations!.restore(ann);
           }
         },
 

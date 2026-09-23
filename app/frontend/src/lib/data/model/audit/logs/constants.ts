@@ -14,6 +14,9 @@ export const logResourceTypes: LabelValue<string>[] = [
 
   /** MEDIA */
   { label: "Medias", value: "medias" },
+
+  /** SYNC */
+  { label: "Exports", value: "exports" },
 ];
 
 export type LogAction =
@@ -28,7 +31,8 @@ export type LogAction =
   | "start"
   | "annotate"
   | "review"
-  | "failed_log_in_attempt";
+  | "failed_log_in_attempt"
+  | "exported";
 
 export const logActions: LabelValue<LogAction>[] = [
   { label: "Created", value: "created" },
@@ -47,4 +51,6 @@ export const logActions: LabelValue<LogAction>[] = [
   { label: "Review", value: "review" },
 
   { label: "Failed Login Attempt", value: "failed_log_in_attempt" },
+
+  { label: "Exported", value: "exported" },
 ];

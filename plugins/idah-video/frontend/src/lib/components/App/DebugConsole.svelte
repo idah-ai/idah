@@ -2,7 +2,7 @@
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { ui } from "$lib/state/ui.svelte";
+  import { ui, snapDebug } from "$lib/state/ui.svelte";
 </script>
 
 {#if ui.isDebugConsoleOpen}
@@ -32,6 +32,16 @@ duration   {media.duration.toFixed(1)}s
 {:else if selection.value?.type === "group"}
 {selection.value.groupId}
 {/if}
+
+
+<span class="section">── SNAP ──</span>
+enabled    {snapDebug.enabled}
+threshold  {snapDebug.threshold.toFixed(4)}
+targets    {snapDebug.targetCount}
+cursor     [{snapDebug.cursor[0].toFixed(4)}, {snapDebug.cursor[1].toFixed(4)}]
+snapped    {snapDebug.snapped ? `[${snapDebug.snapped[0].toFixed(4)}, ${snapDebug.snapped[1].toFixed(4)}]` : "—"}
+kind       {snapDebug.kind ?? "—"}
+candidates {snapDebug.candidates}
 </pre>
   </div>
 {/if}

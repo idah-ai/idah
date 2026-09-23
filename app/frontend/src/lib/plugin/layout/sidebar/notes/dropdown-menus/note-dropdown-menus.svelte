@@ -3,9 +3,9 @@
   import { SvelteURL } from "svelte/reactivity";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { showToast } from "@/components/ui/toast/index.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -33,7 +33,6 @@
   }: Props = $props();
 
   // Variables
-  let openConfirmDeleteModal = $state(false);
 
   const menus: IDropdownMenus = $derived({
     actions: {
@@ -68,21 +67,29 @@
           icon: Trash2Icon,
           destructive: true,
           disabled: !deletable,
-          action: () => {
-            openConfirmDeleteModal = true;
-          },
+          action: confirmDeleteNote,
         },
       ],
     },
   });
 
   // Functions
-  async function deleteNote() {
-    try {
-      await onDelete?.();
-    } finally {
-      openConfirmDeleteModal = false;
-    }
+  async function confirmDeleteNote(): Promise<void> {
+    await showConfirmModal({
+      title: noteCommentId ? "Delete Note Comment" : "Delete Note Feed",
+      description: "Are you sure you want to delete this note? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await onDelete?.();
+        } catch {
+          /**
+           * Deliberately does NOT return confirmModalResult.KeepOpen: the parent owns error
+           * reporting and this modal closed on failure before the migration too (it used
+           * try/finally). Keeping that behaviour is intentional.
+           */
+        }
+      },
+    });
   }
 </script>
 
@@ -93,10 +100,3 @@
     </Button>
   {/snippet}
 </DropdownMenus>
-
-<ConfirmModal
-  title={noteCommentId ? "Delete Note Comment" : "Delete Note Feed"}
-  description="Are you sure you want to delete this note? This action cannot be undone."
-  onConfirm={deleteNote}
-  bind:open={openConfirmDeleteModal}
-></ConfirmModal>

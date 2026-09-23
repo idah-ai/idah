@@ -2,6 +2,8 @@
 // V2 Driver — Type definitions
 // ---------------------------------------------------------------------------
 
+import type { AccountSettingValue } from "@/data/model/setting/account_setting/types";
+
 /**
  * A keyboard shortcut expressed as a canonical key-combination string.
  *
@@ -202,7 +204,13 @@ export interface IToolbarItem {
   label: string;
   /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
   mode: string;
-  /** Optional group name (items in the same group are rendered together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path render inside
+   * the same dropdown — e.g. `mode.mask_brush` and `mode.mask_polygon` both use `"mask"` to
+   * collapse under one brush button. A deeper path like `"mask:brush"` nests a `brush`
+   * subgroup under a top-level `mask` group. `null` (or omitted) renders the item as a
+   * standalone button.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
@@ -222,6 +230,29 @@ export interface IToolbarItem {
    */
   whenToggled?: () => boolean;
 }
+
+/**
+ * A group of toolbar items rendered as a single collapsed button + chevron that opens a
+ * dropdown. Produced by the manager from item `group` paths — plugins never construct these
+ * directly. Groups may nest (a group's children can themselves be groups).
+ */
+export interface IToolbarGroupNode {
+  kind: "group";
+  /** Full colon path, e.g. "mask". */
+  path: string;
+  /** Last path segment, used for the tooltip label. */
+  segment: string;
+  children: IToolbarNode[];
+}
+
+/** A single standalone toolbar item (leaf). */
+export interface IToolbarLeafNode {
+  kind: "item";
+  item: IToolbarItem;
+}
+
+/** Either a standalone item or a nested group, as consumed by the toolbar renderer. */
+export type IToolbarNode = IToolbarLeafNode | IToolbarGroupNode;
 
 // ─── Annotation / Notes ───────────────────────────────────────────────────
 
@@ -258,7 +289,7 @@ export interface IAnnotationMetadata {
 // ─── Annotation value ──────────────────────────────────────────────────
 
 /**
- * Base annotation value payload (maps to DB `annotation` JSONB column).
+ * Base annotation properties payload (maps to DB `properties` JSONB column).
  * This is a generic base; specific modalities extend it
  * (e.g. IVideoAnnotationValue for video).
  */
@@ -272,28 +303,42 @@ export interface IAnnotationValue {
  * A raw annotation record as stored and returned by the driver.
  *
  * Generic over two type parameters to mirror the DB structure:
- * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
- * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
+ * - `ShapeArgs`  – the `shape_args` JSONB column (polygon, bbox, …)
+ * - `Properties` – the `properties` JSONB column (property values, …)
  */
-export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IAnnotationRecord<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   id: string;
 
   /**
-   * Shape geometry — corresponds to the DB `dimensions` JSONB column.
+   * Shape type — corresponds to the DB `shape_type` text column.
    * Type-specific (e.g. IVideoAnnotationShape for video).
    */
-  shape: Shape;
+  shape_type: string;
 
   /**
-   * The annotation payload — corresponds to the DB `annotation` JSONB column.
-   * Contains category, label, attributes, etc.
+   * Shape geometry — corresponds to the DB `shape_args` JSONB column.
+   * Type-specific (e.g. IVideoAnnotationShape for video).
    */
-  value?: Annotation;
+  shape_args: ShapeArgs;
+
+  /**
+   * The annotation category — corresponds to the DB `category` text column.
+   */
+  category: string;
+
+  /**
+   * The annotation properties — corresponds to the DB `properties` JSONB column.
+   * Contains property values, etc.
+   */
+  properties?: Properties;
 
   /**
    * Annotation metadata — corresponds to the DB `metadata` JSONB column.
    */
   metadata?: IAnnotationMetadata;
+
+  deleted_at?: Date | null;
+  deleted_by_id?: string | null;
 
   created_by_id?: string;
   created_at?: Date;
@@ -381,24 +426,39 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
    */
-  registerField(name: string, fn: (ann: IAnnotationRecord<Shape, Annotation>) => unknown): void;
+  registerField(name: string, fn: (ann: IAnnotationRecord<ShapeArgs, Properties>) => unknown): void;
 
   /** Fetch annotations, optionally filtered. */
-  fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]>;
+  fetch(filter?: IFilter): Promise<IAnnotationRecord<ShapeArgs, Properties>[]>;
 
   /** Update a single annotation. */
-  update(id: string, data: Partial<IAnnotationRecord<Shape, Annotation>>): Promise<void>;
+  update(id: string, data: Partial<IAnnotationRecord<ShapeArgs, Properties>>): Promise<void>;
 
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
+  /** Restore a soft-deleted annotation; resolves with the restored record. */
+  restore(id: string): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+
   /** Create a new annotation (id is auto-generated via uuidv7). */
-  create(data: IAnnotationRecord<Shape, Annotation>): Promise<IAnnotationRecord<Shape, Annotation>>;
+  create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+
+  /**
+   * Write (upsert) or delete a single child-record (annotation_shape) row.
+   *
+   * `value` must be a non-null object (upsert) or `null` (delete).  A null
+   * value is idempotent — deleting a non-existent key succeeds silently.
+   *
+   * This is a generic keyed-child-record capability, not tied to any specific
+   * plugin.  Any plugin may use it (e.g. idah-video for per-frame data).
+   */
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -576,7 +636,11 @@ export interface ToolbarItemOptions {
    * The item will be visible in any matching mode.
    */
   modes: string | string[];
-  /** Optional group name (items in the same group render together; `null` => always first). */
+  /**
+   * Colon-delimited path to the item's flyout container. Items sharing a path collapse into
+   * one dropdown button; a deeper path nests subgroups. `null` (or omitted) renders a
+   * standalone button. See {@link IToolbarItem.group}.
+   */
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
@@ -605,9 +669,23 @@ export interface IToolbarDriverV2 {
 
   /** Define the display order of groups for a given mode. */
   orderGroups(mode: string, groups: string[]): void;
+
+  /**
+   * Return the toolbar as a node tree for the given mode — standalone items as leaves,
+   * colon-path items folded into nested group nodes. Consumed by the header renderer.
+   */
+  getNodesForMode(mode: string): IToolbarNode[];
+
+  /** Monotonically increasing counter for toggle state invalidation. */
+  readonly revision: number;
+
+  /** Notify that toggle states may have changed. */
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
+
+export type { AccountSettingValue } from "@/data/model/setting/account_setting/types";
 
 /**
  * Loads & persists the current user's account settings. A generic store
@@ -617,8 +695,17 @@ export interface IAccountSettingsDriverV2 {
   /** Load all of the current user's account settings into memory. */
   load(accountId: string): Promise<void>;
 
-  /** Read a raw setting value by key, or undefined if not loaded. */
-  get(key: string): unknown;
+  /**
+   * Read a setting in the active plugin's namespace, or undefined if not
+   * loaded.
+   */
+  get<T extends AccountSettingValue>(key: string): T | undefined;
+
+  /**
+   * Create-or-update a setting in the active plugin's namespace. The row is
+   * created on first write and updated afterward.
+   */
+  upsert(key: string, value: AccountSettingValue): Promise<void>;
 
   /**
    * The live command-name → shortcut override map. Stable reference, mutated
@@ -634,6 +721,108 @@ export interface IAccountSettingsDriverV2 {
 
   /** Clear (and persist) all overrides, reverting every command to default. */
   resetAll(): Promise<void>;
+}
+
+// ─── V2 Driver — Settings submodule ───────────────────────────────────────
+
+/**
+ * A single plugin-defined setting exposed in the core topbar Settings menu.
+ *
+ * The value lives entirely in the plugin (state + persistence + how it's
+ * applied to rendering). Core is a dumb renderer: it maps the declared `type`
+ * to one of the controls it makes available, reads via `get`, writes via
+ * `set` — it never learns what the setting means.
+ *
+ * ── ADDING A NEW CONTROL TYPE ──────────────────────────────────────────────
+ * Core owns the widgets, so a new control is a small, three-step change:
+ *   1. Add a `IXxxSetting extends ISettingItemBase` interface here, with its
+ *      own `type` literal, its render fields, and `get()`/`set()` (the value
+ *      shape is per-control — slider is number, options is string, …).
+ *   2. Add it to the `ISettingItem` union below.
+ *   3. Add a matching `{#if item.type === "xxx"}` branch in the renderer
+ *      (annotation-header-bar-actions.svelte) — see the note there.
+ * Plugins do NOT keep a typed copy of these descriptor types (see the "lean
+ * by choice" note in each plugin's `src/idah/v2/types.ts`) — they pass plain
+ * objects and opt in to a control simply by declaring that `type`.
+ * ───────────────────────────────────────────────────────────────────────────
+ */
+
+/** Fields shared by every setting control. */
+export interface ISettingItemBase {
+  /** Stable key within the group (e.g. "video-opacity"). */
+  key: string;
+  /** Display label for the control. */
+  label: string;
+  /** Optional description shown behind a hover "?" icon next to the label. */
+  description?: string;
+}
+
+/** A slider control (continuous numeric value). */
+export interface ISliderSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "slider";
+  /** Slider bounds — required because core renders the widget. */
+  min: number;
+  max: number;
+  step: number;
+  /** Read the current value (plugin-owned). */
+  get(): number;
+  /** Write a new value (plugin-owned). */
+  set(value: number): void;
+}
+
+/** A segmented single-choice control (N options rendered as buttons). */
+export interface IOptionsSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "options";
+  /** The selectable options, rendered as a segmented button group. */
+  options: { value: string; label: string }[];
+  /** Read the currently-selected option value (plugin-owned). */
+  get(): string;
+  /** Write the selected option value (plugin-owned). */
+  set(value: string): void;
+}
+
+/** What consumers hold and the renderer narrows on `type`. Grows per control. */
+export type ISettingItem = ISliderSetting | IOptionsSetting;
+
+/**
+ * A group of settings under one section. `section` is a raw key (e.g.
+ * "idah-video") that core humanizes for the menu header.
+ */
+export interface ISettingGroup {
+  section: string;
+  items: ISettingItem[];
+}
+
+/** Contributes setting groups. Registered by plugins via `driver.settings.register`. */
+export interface ISettingProvider {
+  collect(): ISettingGroup[];
+}
+
+/**
+ * The PLUGIN-FACING settings contract — exactly what `driver.settings` exposes
+ * to a plugin, and nothing more.
+ *
+ * Core-only capabilities (`collect`, `revision` — used by the topbar renderer)
+ * deliberately live on the concrete `SettingsDriverAdapter` instead, reached by
+ * core via `driver.settingsAdapter`. This mirrors how `notes` splits the narrow
+ * `INotesDriverV2` (handed to plugins via `sealed()`) from the full
+ * `NotesDriverAdapter` (kept for core).
+ */
+export interface ISettingsDriverV2 {
+  /** Register a setting provider (e.g. a plugin's opacity settings). */
+  register(provider: ISettingProvider): void;
+  /**
+   * Notify core that a setting value changed from ANY source (a keyboard
+   * shortcut, the command palette, or the settings UI itself). The plugin calls
+   * this after mutating a setting; core — which cannot reactively read the
+   * plugin's own reactive state across the bundle boundary — re-reads the
+   * affected values while its settings menu is open.
+   * Bumps the adapter's `revision` counter — the same mechanism and name as
+   * `toolbar.invalidate()`.
+   */
+  invalidate(): void;
 }
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
@@ -675,7 +864,7 @@ export interface IStatsDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
   readonly dataset: IDatasetInfo;
@@ -705,10 +894,11 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
   readonly toolbar: IToolbarDriverV2;
-  readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
+  readonly annotations: IAnnotationsDriverV2<ShapeArgs, Properties>;
   readonly notes: INotesDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
   readonly stats: IStatsDriverV2;
+  readonly settings: ISettingsDriverV2;
 
   // ── Keyboard dispatch ──────────────────────────────────────────────────
 

@@ -30,7 +30,10 @@
   // Variables
   let { trackId, startRange, endRange, rawData } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
-  let isKeyframe = $derived(rawData.shape.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
+  let isKeyframe = $derived(rawData.shape_args.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
+  // When this is the annotation's only keyframe, deleting it would empty the annotation.
+  // Hide the "Delete keyframe" action and steer the user to "Delete annotation" instead.
+  let isLastKeyframe = $derived(isKeyframe && rawData.shape_args.frames.length <= 1);
   let annotationIsLocked = $derived(annotation.isLocked(rawData));
 
   let menus = $derived<Menus>({
@@ -42,14 +45,16 @@
           onClick: () => {
             /** Select an annotation before focus it */
             selection.selectAnnotation(rawData);
-            getDriver().command.call("timeline.focus");
+            getDriver().command.call("idah-video:timeline.focus");
           },
         },
       },
     },
     edit: {
       items: {
-        ...(isKeyframe
+        ...(isLastKeyframe
+          ? {}
+          : isKeyframe
           ? {
               deleteKeyframe: {
                 label: `Delete keyframe`,
@@ -57,7 +62,7 @@
                 disabled: annotationIsLocked || !isEditable(),
                 destructive: true,
                 onClick: () => {
-                  getDriver().command.call("annotation.keyframe_delete", {
+                  getDriver().command.call("idah-video:annotation.keyframe.delete", {
                     annotationId: rawData.id,
                     frame,
                   });
@@ -70,7 +75,7 @@
                 icon: FramerIcon,
                 disabled: annotationIsLocked || !isEditable(),
                 onClick: () => {
-                  getDriver().command.call("annotation.keyframe_add", {
+                  getDriver().command.call("idah-video:annotation.keyframe.add", {
                     annotationId: rawData.id,
                     selection: {
                       frame,
@@ -86,7 +91,7 @@
           icon: SquareSplitHorizontalIcon,
           disabled: annotationIsLocked || !isEditable(),
           onClick: () => {
-            getDriver().command.call("annotation.split", {
+            getDriver().command.call("idah-video:annotation.split", {
               annotationId: rawData.id,
               at: frame,
             });
@@ -103,7 +108,7 @@
           destructive: true,
           onClick: () => {
             selection.selectAnnotation(rawData);
-            getDriver().command.call("selection.delete", {});
+            getDriver().command.call("idah-video:selection.delete", {});
           },
         },
       },

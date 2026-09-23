@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.delete — Delete a specific annotation
+// idah-image:annotation.delete — Delete a specific annotation
 // Undoable: restores the annotation.
 //
 // Usage:
-//   driver.command.call("annotation.delete", {
+//   driver.command.call("idah-image:annotation.delete", {
 //     annotationId: "some-id"
 //   });
 // ---------------------------------------------------------------------------
@@ -11,9 +11,14 @@ import { data, type AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { noopAction } from "..";
+import { isEditable } from "$lib/state/editor.svelte";
+import { IMAGE_MASK } from "$lib/types";
+import { invalidateAll } from "$lib/mask/tile-cache";
+import { showToast } from "$lib/components/ui/Toast/index.svelte"
+import { annotation } from "$lib/state/annotation.svelte";
 
 export const command = {
-  name: "annotation.delete",
+  name: "idah-image:annotation.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -34,10 +39,19 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: (opts?: Record<string, unknown>) => {
       const props = opts as unknown as AnnotationDeleteProps | undefined;
+      if (!isEditable()) return noopAction(command);
       if (!props || !props.annotationId || !data.annotations) return noopAction(command);
 
       const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
       if (!record) return noopAction(command);
+
+      if (annotation.isLocked(record)) {
+        showToast.warning({
+          title: "Cannot delete annotation",
+          description: "This annotation is locked.",
+        });
+        return noopAction(command);
+      }
 
       return {
         command: { ...command },
@@ -47,11 +61,17 @@ export function register(driver: IIdahDriverV2): void {
             selection.deselect();
           }
 
+          // Free cached mask bitmaps if this is a mask annotation
+          const shape = record.shape_args as Record<string, unknown> | undefined;
+          if (record.shape_type === IMAGE_MASK) {
+            invalidateAll(props.annotationId);
+          }
+
           await data.annotations!.delete(props.annotationId);
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await data.annotations!.restore(record);
         },
         isCombinable() { return false; },
         combine(p) { return p; },

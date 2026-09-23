@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// note.add — Add a note (to the entry or to an annotation)
+// idah-image:note.add — Add a note (to the entry or to an annotation)
 // Undoable: deletes the created note.
 //
 // Usage:
-//   driver.command.call("note.add", {
+//   driver.command.call("idah-image:note.add", {
 //     contentMd: "Look here", anchor: { anchor_type: "entry", position: {...} }
 //   });
 // ---------------------------------------------------------------------------
@@ -11,7 +11,7 @@ import type { IIdahDriverV2, INoteAnchor } from "$idah/v2/types";
 import { noopAction } from "..";
 
 export const command = {
-  name: "note.add",
+  name: "idah-image:note.add",
   group: undefined,
   modes: [] as string[],
   shortcut: null,

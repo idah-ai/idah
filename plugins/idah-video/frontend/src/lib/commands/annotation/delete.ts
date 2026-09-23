@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// annotation.delete — Delete a specific annotation
+// idah-video:annotation.delete — Delete a specific annotation
 // Undoable: restores the annotation.
 //
 // Usage:
-//   driver.command.call("annotation.delete", {
+//   driver.command.call("idah-video:annotation.delete", {
 //     annotationId: "some-id"
 //   });
 // ---------------------------------------------------------------------------
@@ -14,9 +14,10 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
-  name: "annotation.delete",
+  name: "idah-video:annotation.delete",
   group: undefined,
   modes: [] as string[],
   shortcut: null,
@@ -43,7 +44,13 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((a) => a.id === props.annotationId) as AnnotationItem;
       if (!record) return noopAction(command);
       // Locked annotations (or those belonging to a locked group) must not be deletable.
-      if (annotation.isLocked(record)) return noopAction(command);
+      if (annotation.isLocked(record)) {
+        showToast.warning({
+          title: "Cannot delete annotation",
+          description: "This annotation is locked.",
+        });
+        return noopAction(command);
+      }
 
       return {
         command: { ...command },
@@ -55,14 +62,14 @@ export function register(driver: IIdahDriverV2): void {
 
           await data.annotations!.delete(props.annotationId);
           // Seek to the annotation's start frame
-          const deletedFrame = (record.shape as any)?.start;
+          const deletedFrame = (record.shape_args as any)?.start;
           if (deletedFrame !== undefined) viewport.video.currentFrame.value = deletedFrame;
         },
         async undo() {
           if (!data.annotations) return;
-          await data.annotations!.create({ ...record, id: record.id });
+          await data.annotations!.restore(record);
           // Seek to the annotation's start frame
-          const restoredFrame = (record.shape as any)?.start;
+          const restoredFrame = (record.shape_args as any)?.start;
           if (restoredFrame !== undefined) viewport.video.currentFrame.value = restoredFrame;
         },
         isCombinable() {

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timeline.go_to_first — Jump to the first frame
+// idah-video:timeline.go-to-first — Jump to the first frame
 // Shortcut: Ctrl+Shift+ArrowLeft
 // Not undoable.
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export const command = {
-  name: "timeline.go_to_first",
+  name: "idah-video:timeline.go-to-first",
   group: "Timeline",
   modes: ["editor", "review"],
   shortcut: "Control+Shift+ArrowLeft",

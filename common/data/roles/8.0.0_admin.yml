@@ -26,6 +26,7 @@ admin:
     - "dataset:note_feeds.*.*"
     - "dataset:note_comments.*.*"
     - "dataset:entry_stats.read.*"
+    - "dataset:label_config_templates.*.*"
 
     # Media Service
     - "media:medias.*.*"

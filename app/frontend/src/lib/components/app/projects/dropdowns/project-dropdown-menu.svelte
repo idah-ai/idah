@@ -5,9 +5,10 @@
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
@@ -45,9 +46,7 @@
           icon: Trash2Icon,
           destructive: true,
           hidden: !canDeleteProject,
-          action: () => {
-            openConfirmDeleteProjectModal = true;
-          },
+          action: confirmDeleteProject,
         },
       ],
     },
@@ -55,7 +54,6 @@
 
   let projectRecord: ProjectRecord | undefined = $state(undefined);
   let openEditProjectFormModal: boolean = $state(false);
-  let openConfirmDeleteProjectModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -87,23 +85,32 @@
     });
   }
 
-  async function deleteProject(): Promise<void> {
-    try {
-      await projectsBackendDataSource.delete(projectId, { showErrorToast: false });
+  async function confirmDeleteProject(): Promise<void> {
+    const choice = await showConfirmModal({
+      title: "Delete Project",
+      description: `Are you sure you want to delete this project "${projectRecord?.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await projectsBackendDataSource.delete(projectId, { showErrorToast: false });
 
-      openConfirmDeleteProjectModal = false;
-      $refetches.projects.list = new Date();
-      goto(resolve("/projects"));
-      showToast.success({
-        title: "Project deleted",
-        description: `The project "${projectRecord?.name}" has been deleted.`,
-      });
-    } catch (error) {
-      showToast.error({
-        title: "Unable to delete project",
-        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
-      });
-    }
+          $refetches.projects.list = new Date();
+          showToast.success({
+            title: "Project deleted",
+            description: `The project "${projectRecord?.name}" has been deleted.`,
+          });
+        } catch (error) {
+          showToast.error({
+            title: "Unable to delete project",
+            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+          });
+          return confirmModalResult.KeepOpen;
+        }
+      },
+    });
+    if (choice === ConfirmModalChoice.Cancel) return;
+
+    // Navigating inside `onConfirm` would run while the modal is still open.
+    goto(resolve("/projects"));
   }
 </script>
 
@@ -111,11 +118,4 @@
   <DropdownMenus {menus} {align} />
 
   <ProjectFormModal title="Project" action="update" {projectRecord} bind:open={openEditProjectFormModal} />
-
-  <ConfirmModal
-    title="Delete Project"
-    description="Are you sure you want to delete this project?"
-    onConfirm={deleteProject}
-    bind:open={openConfirmDeleteProjectModal}
-  />
 {/if}

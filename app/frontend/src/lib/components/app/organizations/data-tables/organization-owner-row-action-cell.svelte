@@ -2,11 +2,12 @@
   import { page } from "$app/state";
   import { UserRoundXIcon } from "@lucide/svelte";
 
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
+  import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
+  import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { refetches } from "@/utils/refetch";
@@ -18,10 +19,17 @@
 
   // Variables
   let organizationId = page.params.organizationId as string;
-  let openConfirmRemoveOrgOwnerModal: boolean = $state(false);
   let { id: accountId, email } = $derived(accountRecord);
 
   // Functions
+  async function confirmRemoveOrgOwner(): Promise<void> {
+    await showConfirmModal({
+      title: "Remove Organization Owner",
+      description: `Are you sure you want to remove ${email} from the organization owner? This action cannot be undone.`,
+      onConfirm: removeOrgOwner,
+    });
+  }
+
   async function removeOrgOwner() {
     try {
       const { data: account } = await accountsBackendDataSource.get(accountId, {
@@ -62,6 +70,7 @@
     } catch (error) {
       console.error(error);
       showToast.error({ title: "Failed to remove organization owner." });
+      return confirmModalResult.KeepOpen;
     }
   }
 </script>
@@ -69,7 +78,7 @@
 <Can action="delete" resource="iam:organizations" scopes={["as_org_owner"]}>
   <Tooltips align="center">
     {#snippet trigger()}
-      <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
+      <Button variant="ghost" size="icon-sm" onclick={confirmRemoveOrgOwner}>
         <UserRoundXIcon />
       </Button>
     {/snippet}
@@ -79,11 +88,4 @@
       from organization owner
     {/snippet}
   </Tooltips>
-
-  <ConfirmModal
-    title="Remove Organization Owner"
-    description="Are you sure you want to remove {email} from the organization owner? This action cannot be undone."
-    onConfirm={removeOrgOwner}
-    bind:open={openConfirmRemoveOrgOwnerModal}
-  />
 </Can>

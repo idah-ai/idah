@@ -5,12 +5,15 @@ import type { ICommandDescriptor, ICommandAction, ICommandStackEntry, IShortcut 
 import { buildKeyCombination } from "../../utils/shortcut-utils";
 import { isMac } from "../../utils/browser";
 
+/** A fully-resolved command entry as stored in the registry. */
+type RegistryEntry = ICommandDescriptor & {
+  callback: (opts?: Record<string, unknown>) => ICommandAction;
+  activeWhen?: () => boolean;
+};
+
 export class CommandManagerV2 {
-  /** Registered commands keyed by name. */
-  private registry = new Map<
-    string,
-    ICommandDescriptor & { callback: (opts?: Record<string, unknown>) => ICommandAction; activeWhen?: () => boolean }
-  >();
+  /** Registered commands keyed by fully-qualified name (`origin:category.action`). */
+  private registry = new Map<string, RegistryEntry>();
 
   /** Undo stack (most recent at end). */
   private undoStack: ICommandStackEntry[] = [];
@@ -21,6 +24,9 @@ export class CommandManagerV2 {
   private maxStack = 200;
   /** Time window (ms) for auto-combine. */
   private combineWindow = 5000;
+
+  /** Serial chain — ensures async do/undo never run concurrently. */
+  private _chain: Promise<unknown> = Promise.resolve();
 
   /** Current driver mode, used by getActiveCommands(). Updated externally. */
   currentMode: string = "editor";
@@ -121,8 +127,10 @@ export class CommandManagerV2 {
             action: combined,
             timestamp: Date.now(),
           };
-          combined.do();
-          this.notifyStackChanged();
+          this._chain = this._chain
+            .then(() => combined.do())
+            .then(() => this.notifyStackChanged())
+            .catch((e) => console.error("[cmd]", e));
           return;
         }
       }
@@ -134,8 +142,10 @@ export class CommandManagerV2 {
       }
     }
 
-    action.do();
-    this.notifyStackChanged();
+    this._chain = this._chain
+      .then(() => action.do())
+      .then(() => this.notifyStackChanged())
+      .catch((e) => console.error("[cmd]", e));
   }
 
   // ── Undo / Redo ────────────────────────────────────────────────────────
@@ -153,11 +163,22 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.undoStack.pop();
       if (!entry) break;
-      entry.action.undo?.();
-      this.redoStack.push(entry);
+
+      this._chain = this._chain
+        .then(async () => {
+          try {
+            await entry.action.undo?.();
+            this.redoStack.push(entry);
+          } catch (e) {
+            this.undoStack.push(entry);
+            throw e;
+          }
+        })
+        .then(() => this.notifyStackChanged())
+        .catch((e) => console.error("[cmd] undo error:", e));
+
       did = true;
     }
-    if (did) this.notifyStackChanged();
     return did;
   }
 
@@ -166,11 +187,22 @@ export class CommandManagerV2 {
     for (let i = 0; i < count; i++) {
       const entry = this.redoStack.pop();
       if (!entry) break;
-      entry.action.do();
-      this.undoStack.push(entry);
+
+      this._chain = this._chain
+        .then(async () => {
+          try {
+            await entry.action.do();
+            this.undoStack.push(entry);
+          } catch (e) {
+            this.redoStack.push(entry);
+            throw e;
+          }
+        })
+        .then(() => this.notifyStackChanged())
+        .catch((e) => console.error("[cmd] redo error:", e));
+
       did = true;
     }
-    if (did) this.notifyStackChanged();
     return did;
   }
 

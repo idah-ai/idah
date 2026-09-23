@@ -1,8 +1,17 @@
 # frozen_string_literal: true
 
+require "json"
+require "tempfile"
+require "open3"
+require_relative "subprocess_io"
+
 module Exports
   module Upd
     class Exporter
+      # Raised internally when updcli-static closes its stdin pipe while we
+      # are still streaming commands (usually because it crashed mid-append).
+      class StreamClosed < StandardError; end
+
       def name = "Universal Portable Dataset"
       def description = "Export to UPD file."
       def options = Verse::Schema.empty
@@ -10,39 +19,71 @@ module Exports
       def export(context)
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
-        # Init UPD file
-        system("updcli-static --input #{file_path} init", exception: true)
+        # Duplicated entries share the same media resource, but medias are
+        # unique in a UPD file: keep track of the resources already appended.
+        exported_resources = Set.new
 
-        context.datasets.each do |dataset|
-          append_dataset(file_path, dataset)
+        # Export only the completed entries unless explicitly told otherwise.
+        entries_filter =
+          context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
 
-          dataset.entries.each do |entry|
-            include_medias = context.options[:include_medias]
+        # Keep references to media tempfiles so they are not garbage collected
+        # before updcli-static reads them during the append call.
+        media_tempfiles = []
 
-            append_entry(file_path, dataset.record.id, entry, include_medias)
+        Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
+          io = SubprocessIO.new(stdin, stdout, stderr)
 
-            entry.annotations.each do |annotation|
-              append_annotation(file_path, entry.record.id, annotation)
-            end
+          begin
+            # Initialise UPD file via stdin — avoids a separate system("... init") call
+            io.write_jsonl(build_init_jsonl)
 
-            # Determine which medias to include based on the option:
-            # - "original": only include original media (key: "")
-            # - "all": include all medias (original and processed)
-            # - otherwise: do not include any media
-            medias =
-              case include_medias
-              when "original"
-                entry.medias({ key: "" })
-              when "all"
-                entry.medias
-              else
-                []
+            context.datasets.each do |dataset|
+              io.write_jsonl(build_dataset_jsonl(dataset))
+
+              include_medias = context.options[:include_medias]
+
+              dataset.entries(entries_filter).each do |entry|
+                io.write_jsonl(build_entry_jsonl(dataset.record.id, entry, include_medias))
+
+                entry.annotations.each do |annotation|
+                  jsonl = build_annotation_jsonl(entry.record.id, annotation)
+                  io.write_jsonl(jsonl) if jsonl
+                end
+
+                entry_medias(entry, include_medias, exported_resources).each do |media|
+                  tempfile = download_media(media)
+                  media_tempfiles << tempfile
+                  io.write_jsonl(build_media_jsonl(media, tempfile.path))
+                end
               end
-
-            medias.each do |media|
-              append_media(file_path, media)
             end
+          rescue SubprocessIO::StreamClosed => e
+            # updcli-static stopped reading stdin (usually a crash mid-append).
+            # Skip further generation; the ensure block drains its output and
+            # wait_thr reports the actual exit failure.
+            Verse.logger&.warn { "Subprocess communication failed: #{e.message}" }
+          ensure
+            begin
+              stdin.close
+            rescue IOError, Errno::EPIPE
+              # stdin already closed by the subprocess
+            end
+
+            # Read everything the subprocess still emits, as it comes.
+            # Drain both streams together via IO.select so neither pipe can
+            # fill up while the other is being drained (avoiding deadlock).
+            io.read_remaining_output
           end
+
+          exit_status = wait_thr.value
+
+          unless exit_status.success?
+            raise "updcli-static append failed: #{io.err_lines.join}"
+          end
+        ensure
+          # Clean up media tempfiles
+          media_tempfiles.each(&:close!)
         end
 
         context.io.file = File.open(file_path)
@@ -50,13 +91,38 @@ module Exports
 
       private
 
+      def include_medias?(include_medias)
+        ["original", "all"].include?(include_medias)
+      end
+
+      # Determine which medias to include based on the option:
+      # - "original": only include original media (key: "")
+      # - "all": include all medias (original and processed)
+      # - otherwise: do not include any media
+      #
+      # Entries can be duplicated and then point to the same media resource.
+      # Since a media can only be added once to a UPD file, the medias of a
+      # resource are returned only for the first entry using it.
+      def entry_medias(entry, include_medias, exported_resources)
+        return [] unless include_medias?(include_medias)
+        return [] unless exported_resources.add?(entry.record.resource)
+
+        include_medias == "original" ? entry.medias({ key: "" }) : entry.medias
+      end
+
       def capitalized_dashed_keys(hash)
+        return {} if hash.nil?
+
         hash.transform_keys do |key|
           key.to_s.split("_").map(&:capitalize).join("-")
         end
       end
 
-      def append_dataset(file_path, dataset)
+      def build_init_jsonl
+        { command: "init", args: {} }.to_json
+      end
+
+      def build_dataset_jsonl(dataset)
         metadata = capitalized_dashed_keys(
           dataset.record.data[:attributes].slice(
             :labeling_configuration,
@@ -72,22 +138,20 @@ module Exports
           )
         )
 
-        # Create dataset in UPD
-        system(
-          "updcli-static --input #{file_path} " \
-          "dataset create --id \"#{dataset.record.id}\" "\
-          "--name \"#{dataset.record.name}\" "\
-          "--modality #{dataset.record.modality} "\
-          "--metadata '#{metadata.to_json}'",
-          exception: true
-        )
+        {
+          command: "dataset:create",
+          args: {
+            id: dataset.record.id,
+            name: dataset.record.name,
+            modality: dataset.record.modality,
+            metadata: metadata.to_json
+          }
+        }.to_json
       end
 
-      def append_entry(file_path, dataset_id, entry, include_medias)
-        # Use local file URL if original media is included,
-        # otherwise use external URL of Media service of IDAH
+      def build_entry_jsonl(dataset_id, entry, include_medias)
         media_url =
-          if ["original", "all"].include?(include_medias)
+          if include_medias?(include_medias)
             "local:#{entry.record.resource}"
           else
             URI.join(
@@ -111,48 +175,54 @@ module Exports
           )
         )
 
-        # Create entry in UPD
-        system(
-          "updcli-static --input #{file_path} " \
-          "entry create --id \"#{entry.record.id}\" "\
-          "--dataset_id \"#{dataset_id}\" "\
-          "--url \"#{media_url}\" "\
-          "--metadata '#{metadata.to_json}'",
-          exception: true
-        )
-      end
+        # Fetch original media metadata to get original width and height
+        original_media = entry.medias({ key: "" }).first
+        if original_media
+          media_meta = original_media.record.data[:attributes][:meta]
+          normalized_meta = capitalized_dashed_keys(media_meta)
+          normalized_meta.each { |meta_key, meta_value| metadata[meta_key] = meta_value }
+        end
 
-      def append_annotation(file_path, entry_id, annotation)
-        attributes = annotation.record.data[:attributes]
-        metadata = attributes[:metadata] || {}
-        dimensions = annotation.record.dimensions
-        type = dimensions.delete(:type)
-
-        metadata = capitalized_dashed_keys(metadata).merge(
-          {
-            "Created-By" => attributes[:created_by_email],
-            "Created-At" => attributes[:created_at],
-            "Updated-At" => attributes[:updated_at]
+        {
+          command: "entry:create",
+          args: {
+            id: entry.record.id,
+            dataset_id: dataset_id,
+            url: media_url.to_s,
+            metadata: metadata.to_json
           }
-        )
-
-        # Create annotation in UPD
-        system(
-          "updcli-static --input #{file_path} " \
-          "annotation create --id \"#{annotation.record.id}\" "\
-          "--entry_id \"#{entry_id}\" "\
-          "--type \"#{type}\" "\
-          "--shape '#{dimensions.to_json}' "\
-          "--annotation '#{annotation.record.annotation.to_json}' "\
-          "--metadata '#{metadata.to_json}'",
-          exception: true
-        )
+        }.to_json
       end
 
-      def append_media(file_path, media)
+      def build_annotation_jsonl(entry_id, annotation)
+        attributes = annotation.record.data[:attributes]
+
+        # Skip soft-deleted annotations entirely — updcli has no tombstone concept.
+        return if attributes[:deleted_at]
+
+        metadata = capitalized_dashed_keys(attributes[:metadata] || {}).merge(
+          "Created-By" => attributes[:created_by_email],
+          "Created-At" => attributes[:created_at],
+          "Updated-At" => attributes[:updated_at],
+        )
+
+        {
+          command: "annotation:create",
+          args: {
+            id: annotation.record.id,
+            entry_id: entry_id,
+            type: annotation.record.shape_type,
+            shape: annotation.record.shape_args.to_json,
+            category: annotation.record.category,
+            properties: Hash(annotation.record.properties).to_json,
+            metadata: metadata.to_json
+          }
+        }.to_json
+      end
+
+      def download_media(media)
         filename = media.record.filename
         extension = File.extname(filename)
-
         base_name = File.basename(filename, extension)
         bin_data = media.download
 
@@ -160,16 +230,28 @@ module Exports
         tempfile.binmode
         tempfile.write(bin_data)
         tempfile.rewind
+        tempfile
+      end
 
-        # Create media in UPD
-        system(
-          "updcli-static --input #{file_path} " \
-          "media create --id \"#{media.record.resource}\" "\
-          "--file \"#{tempfile.path}\" "\
-          "--key \"#{media.record.key}\" "\
-          "--mimetype \"#{media.record.mime_type}\"",
-          exception: true
+      def build_media_jsonl(media, file_path)
+        attributes = media.record.data[:attributes]
+        metadata = capitalized_dashed_keys(attributes[:meta]).merge(
+          {
+            "Created-By" => attributes[:created_by],
+            "Created-At" => attributes[:created_at]
+          }
         )
+
+        {
+          command: "media:create",
+          args: {
+            id: media.record.resource,
+            file: file_path,
+            key: media.record.key,
+            mimetype: media.record.mime_type,
+            metadata: metadata.to_json
+          }
+        }.to_json
       end
     end
   end

@@ -164,6 +164,18 @@ class LogsExpo < BaseExpo
     end
   end
 
+  # Sync events
+  expose on_resource_event(Resource::Sync::Exports, "created")
+  def on_exported
+    service.create(
+      log_attributes(
+        message:,
+        action: "exported",
+        project_id: message.content[:metadata][:project_id],
+      )
+    )
+  end
+
   # rubocop:enable Style/CombinableLoops
 
   private
