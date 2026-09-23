@@ -104,6 +104,7 @@
         attributes: {
           name: draft.name,
           modality: draft.modality,
+          workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
           workflow_configuration: {},
         },
@@ -139,6 +140,7 @@
         attributes: {
           name: draft.name,
           modality: draft.modality,
+          workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
         },
       },
@@ -165,6 +167,7 @@
       const validated = validateData(schema, {
         name: draft.name,
         modality: draft.modality,
+        workflow_name: draft.workflow_name,
       });
 
       if (!validated.success) {
