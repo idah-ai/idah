@@ -20,6 +20,8 @@
   let { project, preSelectedOrganizationId, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
+  const isNewRecord = !project.id;
+
   let resource: string = ProjectRecord.type;
   let canReadOrganizationAsOrgOwner = $state(false);
 
@@ -68,6 +70,7 @@
           organization_id = (value == null ? null : Number(value)) as number;
         }}
         searchKeyWithOperation="name__match"
+        disabled={!isNewRecord}
       />
     {/if}
 
