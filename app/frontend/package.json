@@ -64,6 +64,7 @@
   "dependencies": {
     "@sentry/sveltekit": "^10.64.0",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.4.11",
     "marked": "^16.4.0",
     "mode-watcher": "^1.1.0",
     "uuidv7": "^1.0.2",

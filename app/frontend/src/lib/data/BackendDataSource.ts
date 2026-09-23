@@ -48,6 +48,43 @@ export function resourcePath(basePath: string, id: string | null, queryPath?: Ha
   return uri;
 }
 
+type JsonResponse = { status: number; ok: boolean; body: Hash | null };
+
+// Wraps fetch so callers never hit an unstructured error from out.json():
+// the body is parsed defensively (a non-JSON 500/502/204 yields body: null),
+// and failure is decided from `ok`/`body.errors` rather than a thrown parse.
+async function requestJson(url: string, init?: RequestInit): Promise<JsonResponse> {
+  const out = await fetch(url, init);
+
+  let body: Hash | null = null;
+  try {
+    body = await out.json();
+  } catch {
+    // Non-JSON body (HTML error page, empty 204, proxy error, ...).
+    body = null;
+  }
+
+  return { status: out.status, ok: out.ok, body };
+}
+
+// Returns the JsonApiError to reject with when a response failed (non-2xx or a
+// JSON:API errors payload), or null on success. Optionally surfaces each error
+// as a toast. Synthesises an error when the response failed with no JSON body.
+function rejectionFor(res: JsonResponse, showToast: boolean): JsonApiErrorResponse | null {
+  const errors: Hash<string>[] | undefined = res.body?.errors;
+  if (res.ok && !errors) return null;
+
+  const errorList: Hash<string>[] = errors ?? [{ title: "Request failed", detail: `HTTP ${res.status}` }];
+
+  if (showToast && errorList.length > 0) {
+    errorList.forEach((err) => {
+      showErrorToast({ title: err.title, message: err.detail, error: err });
+    });
+  }
+
+  return parseSingleElementError({ status: res.status, errors: errorList });
+}
+
 export interface BackendDataSource<T extends Record> extends DataSource<T> {
   recordClass: RecordClass<T>;
   basePath: string;
@@ -63,36 +100,27 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
     basePath: basePath,
 
     async create(data: DataParams<T>, options?: DataSourceOptions): Promise<RecordResponse<T> | JsonApiErrorResponse> {
-      const out = await fetch(this.basePath, {
+      const res = await requestJson(this.basePath, {
         method: "POST",
         body: encodeModel(this.recordClass, data),
         headers: { "Content-Type": "application/vnd.api+json" },
       });
 
-      const body = await out.json();
-
       // Cache Management
       const cacheIndexKey = resourcePath(this.basePath, null, undefined);
       clearCache(cacheIndexKey);
 
-      if (body && body.errors) {
-        if (body.errors.length > 0 && options?.showErrorToast !== false) {
-          body.errors.forEach((err: Hash<string>) => {
-            showErrorToast({ title: err.title, message: err.detail, error: err });
-          });
-        }
+      const rejection = rejectionFor(res, options?.showErrorToast !== false);
+      if (rejection) return Promise.reject(rejection);
 
-        return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
-      }
-
-      if (body && body.data) return Promise.resolve(parseSingleElementReturn<T>(body));
+      if (res.body && res.body.data) return Promise.resolve(parseSingleElementReturn<T>(res.body));
 
       throw "No id returned";
     },
 
     async get(id: string, options: GetOptions = {}): Promise<RecordResponse<T>> {
       const params = <Hash>{};
-      let body: Hash;
+      let body: Hash | null = null;
 
       // Params Management
       if (options.included) params["included"] = options.included;
@@ -115,18 +143,17 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       if (cacheValue) {
         body = cacheValue;
       } else {
-        const out = await fetch(resourcePath(this.basePath, id, params), {
+        const res = await requestJson(resourcePath(this.basePath, id, params), {
           method: "GET",
         });
 
-        body = await out.json();
+        const rejection = rejectionFor(res, false);
+        if (rejection) return Promise.reject(rejection);
 
-        if (body && body.errors) {
-          return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
-        }
+        body = res.body;
       }
 
-      if (useCache) {
+      if (useCache && body) {
         setCache(cacheIdKey, cacheSignature, body);
       }
 
@@ -140,7 +167,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       nextBody: CollectionResponse<T> = { data: [], meta: {} },
     ): Promise<CollectionResponse<T>> {
       const params = <Hash>{};
-      let body: Hash;
+      let body: Hash | null = null;
 
       // Params Management
       if (options.filters) params["filter"] = filtersToHash(options.filters);
@@ -172,32 +199,37 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       if (cacheValue) {
         body = cacheValue;
       } else {
-        const out = await fetch(resourcePath(this.basePath, null, params), {
+        const res = await requestJson(resourcePath(this.basePath, null, params), {
           method: "GET",
         });
 
-        body = await out.json();
+        const rejection = rejectionFor(res, false);
+        if (rejection) return Promise.reject(rejection);
 
-        if (nextBody.data.length > 0) {
-          body.data = nextBody.data.concat(body.data);
-        }
+        body = res.body;
 
-        if (options.all) {
-          const nextPage = body.links?.next;
-
-          if (nextPage && options.pagination) {
-            return await this.list({
-              ...options,
-              pagination: {
-                page: options.pagination.page + 1,
-                itemsPerPage: options.pagination.itemsPerPage,
-              },
-            });
+        if (body) {
+          if (nextBody.data.length > 0) {
+            body.data = nextBody.data.concat(body.data);
           }
-        }
 
-        if (useCache) {
-          setCache(cacheIndexKey, cacheSignature, body);
+          if (options.all) {
+            const nextPage = body.links?.next;
+
+            if (nextPage && options.pagination) {
+              return await this.list({
+                ...options,
+                pagination: {
+                  page: options.pagination.page + 1,
+                  itemsPerPage: options.pagination.itemsPerPage,
+                },
+              });
+            }
+          }
+
+          if (useCache) {
+            setCache(cacheIndexKey, cacheSignature, body);
+          }
         }
       }
 
@@ -217,45 +249,25 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       clearCache(cacheIndexKey);
       clearCache(cacheIdKey);
 
-      const out = await fetch(resourcePath(this.basePath, id), {
+      const res = await requestJson(resourcePath(this.basePath, id), {
         method: "PATCH",
         body: encodeModel(this.recordClass, data),
         headers: { "Content-Type": "application/vnd.api+json" },
       });
 
-      const body = await out.json();
+      const rejection = rejectionFor(res, options?.showErrorToast !== false);
+      if (rejection) return Promise.reject(rejection);
 
-      if (body && body.errors) {
-        if (body.errors.length > 0 && options?.showErrorToast !== false) {
-          body.errors.forEach((err: Hash<string>) => {
-            showErrorToast({ title: err.title, message: err.detail, error: err });
-          });
-        }
-
-        return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
-      }
-
-      if (body && body.data) return Promise.resolve(parseSingleElementReturn<T>(body));
+      if (res.body && res.body.data) return Promise.resolve(parseSingleElementReturn<T>(res.body));
 
       throw "No body returned";
     },
 
     async delete(id: string, options?: DataSourceOptions): Promise<boolean> {
-      const response = await fetch(resourcePath(this.basePath, id), { method: "DELETE" });
+      const res = await requestJson(resourcePath(this.basePath, id), { method: "DELETE" });
 
-      if (!response.ok) {
-        const body = await response.json();
-
-        if (body && body.errors) {
-          if (body.errors.length > 0 && options?.showErrorToast !== false) {
-            body.errors.forEach((err: Hash<string>) => {
-              showErrorToast({ title: err.title, message: err.detail, error: err });
-            });
-          }
-
-          return Promise.reject(parseSingleElementError({ status: response.status, errors: body.errors }));
-        }
-      }
+      const rejection = rejectionFor(res, options?.showErrorToast !== false);
+      if (rejection) return Promise.reject(rejection);
 
       // Cache Management
       const cacheIndexKey = resourcePath(this.basePath, null, undefined);

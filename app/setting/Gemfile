@@ -26,8 +26,6 @@ gem "sinatra-contrib"
 
 gem "bootsnap", "~> 1.16"
 
-gem "rmagick", "~> 6.0.1"
-
 # --- Observability (see common/gems/verse-otel and verse-sentry) ---
 gem "sentry-opentelemetry" # verse-sentry `tracing: otel` bridge
 gem "stackprof" # Sentry Profiles backend
