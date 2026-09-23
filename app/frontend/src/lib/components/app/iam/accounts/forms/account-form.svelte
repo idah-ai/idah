@@ -26,6 +26,8 @@
   // Variables::Reactive
   let { name, email, role_name, role_scope, enabled } = $derived(account);
 
+  let isOrgOwner = $derived(role_name === "org_owner");
+
   // Functions
   $effect(() => {
     onValueChange({ name, email, role_name, role_scope, enabled });
@@ -74,7 +76,7 @@
     />
     <!-- {/if} -->
 
-    {#if role_name === "org_owner"}
+    {#if isOrgOwner}
       <MultipleSelectDatasourceField
         name="{resource}/role_scope"
         label="Organization"
