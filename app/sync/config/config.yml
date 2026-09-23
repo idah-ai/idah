@@ -40,15 +40,17 @@ plugins:
         # settings, which are only required in that case.
         - name: default
 <% if ENV.fetch("SYNC_FILES_ADAPTER", "file_system") == "s3" %>
+<%   # Empty counts as missing: compose passes unset settings as empty strings.
+      s3 = ->(key) { ENV[key].to_s.empty? ? raise(KeyError, "#{key} is required when SYNC_FILES_ADAPTER=s3") : ENV[key] } %>
           adapter: s3
           config:
-            bucket: <%= ENV.fetch("SYNC_FILES_BUCKET") %>
-            access_key_id: <%= ENV.fetch("SYNC_FILES_ACCESS_KEY_ID") %>
-            secret_access_key: <%= ENV.fetch("SYNC_FILES_SECRET_ACCESS_KEY") %>
+            bucket: <%= s3.("SYNC_FILES_BUCKET") %>
+            access_key_id: <%= s3.("SYNC_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= s3.("SYNC_FILES_SECRET_ACCESS_KEY") %>
             public: false
-            region: <%= ENV.fetch("SYNC_FILES_REGION") %>
+            region: <%= s3.("SYNC_FILES_REGION") %>
             prefix: files
-            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
+            endpoint: <%= s3.("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
 <% else %>
           adapter: file_system
           config:

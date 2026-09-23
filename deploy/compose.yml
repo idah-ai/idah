@@ -15,10 +15,12 @@
 # example `idah-`) alongside IDAH_VERSION.
 
 # Every Ruby service gets these. Service-specific values are set per service.
+#
+# No env_file: .env is read only to fill in the ${...} below, so each service
+# sees the settings it uses and nothing else — not the others' secrets — and a
+# changed setting restarts only the services that use it.
 x-service: &service
   restart: always
-  env_file:
-    - .env
   networks:
     - app-network
   # Lets POSTGRES_HOST=host.docker.internal reach a database on this machine,
@@ -47,6 +49,8 @@ x-service-env: &service-env
   # IDAH_CA_CERT: extra certificate authorities (config/certs/ca.pem, mounted at
   # /certs) for TLS to your own servers. Public CAs stay trusted.
   SSL_CERT_FILE: ${IDAH_CA_CERT:-/etc/ssl/certs/ca-certificates.crt}
+  IDAH_API_OPEN_TIMEOUT: ${IDAH_API_OPEN_TIMEOUT:-5}
+  IDAH_API_READ_TIMEOUT: ${IDAH_API_READ_TIMEOUT:-30}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   LOG_SHOW_ERROR_DETAILS: ${LOG_SHOW_ERROR_DETAILS:-false}
 
@@ -136,6 +140,12 @@ services:
       IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_MEDIA:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
       MEDIAS_FILES_PATH: /data/files
+      MEDIAS_FILES_ADAPTER: ${MEDIAS_FILES_ADAPTER:-file_system}
+      MEDIAS_FILES_BUCKET: ${MEDIAS_FILES_BUCKET:-}
+      MEDIAS_FILES_REGION: ${MEDIAS_FILES_REGION:-}
+      MEDIAS_FILES_ENDPOINT: ${MEDIAS_FILES_ENDPOINT:-}
+      MEDIAS_FILES_ACCESS_KEY_ID: ${MEDIAS_FILES_ACCESS_KEY_ID:-}
+      MEDIAS_FILES_SECRET_ACCESS_KEY: ${MEDIAS_FILES_SECRET_ACCESS_KEY:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro
@@ -183,7 +193,8 @@ services:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro
 
-  # sync writes export files, on the sync_files volume by default.
+  # sync writes export files, on the sync_files volume by default; set
+  # SYNC_FILES_ADAPTER=s3 in .env to use S3, as for media.
   sync:
     <<: *service
     image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}sync:${IDAH_VERSION:?set IDAH_VERSION in .env}
@@ -195,6 +206,12 @@ services:
       IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_SYNC:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
       SYNC_FILES_PATH: /data/files
+      SYNC_FILES_ADAPTER: ${SYNC_FILES_ADAPTER:-file_system}
+      SYNC_FILES_BUCKET: ${SYNC_FILES_BUCKET:-}
+      SYNC_FILES_REGION: ${SYNC_FILES_REGION:-}
+      SYNC_FILES_ENDPOINT: ${SYNC_FILES_ENDPOINT:-}
+      SYNC_FILES_ACCESS_KEY_ID: ${SYNC_FILES_ACCESS_KEY_ID:-}
+      SYNC_FILES_SECRET_ACCESS_KEY: ${SYNC_FILES_SECRET_ACCESS_KEY:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro

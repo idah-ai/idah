@@ -1,107 +1,59 @@
 #!/usr/bin/env bash
 #
-# Install IDAH. Generates every secret, prepares the databases and starts the
-# stack. Refuses to run over an existing install (a .env already present).
+# Install IDAH: generates every secret, prepares the databases, creates the
+# accounts and starts the stack.
 #
-#   ./install.sh              asks for anything not given as an option
-#   ./install.sh --yes ...    asks nothing; defaults for anything not given
+#   ./install.sh
 #
-# Options:
-#   --url URL                     public URL users open
-#   --port PORT                   port nginx listens on (default 8080)
-#   --admin-email EMAIL           administrator login
-#   --admin-name NAME
-#   --version VERSION             release to install
-#   --image-prefix PREFIX         images built from source, e.g. idah-
-#   --smtp-host HOST              omit to disable email notifications
-#   --smtp-port PORT              default 587
-#   --smtp-user USER
-#   --smtp-password PASSWORD
-#   --postgres-host HOST          use this PostgreSQL instead of the bundled one
-#   --postgres-port PORT          default 5432
-#   --postgres-user USER
-#   --postgres-password PASSWORD
-#   --postgres-sslmode MODE       disable, prefer, require (default), verify-full
-#   --redis-host HOST             use this Redis instead of the bundled one
-#   --redis-port PORT             default 6379
-#   --redis-password PASSWORD     omit if the server needs none
-#   --redis-tls                   connect with TLS (rediss://)
-#   --ca-cert FILE                CA certificates (PEM) your own PostgreSQL or
-#                                 Redis certificates are signed by, if not a
-#                                 public CA; required for verify-ca/verify-full
-#   -y, --yes
+# Settings come from .env. Without one it is created from .env.example, and
+# IDAH runs with its own PostgreSQL and Redis. To change that or anything else,
+# create .env first (cp .env.example .env), edit it, then run this; see
+# README.md. Values already in .env are kept: only empty secrets are generated.
 #
-# Requires docker, docker compose and openssl.
+# A setting .env leaves empty may also be given in the environment, which is
+# written into .env:
+#
+#   IDAH_VERSION=0.0.0-local IDAH_IMAGE_PREFIX=idah- ./install.sh
+#
+# It asks for the public URL (unless IDAH_URL is set) and the administrator's
+# email.
+#
+#   --admin-email EMAIL    administrator login, instead of asking
+#   --admin-name NAME      default Administrator
+#   -y, --yes              ask nothing; defaults for anything not set
+#   --encode               percent-encode a password for REDIS_URL, then exit
+#
+# Requires docker, docker compose, openssl and curl.
 set -euo pipefail
 
 self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-caller_dir=$PWD # file options are relative to where the installer was run from
 cd "$(dirname "$0")"
 
-compose_file=compose.yml
 env_file=.env
 keys_dir=config/keys
+certs_dir=config/certs
+services="iam dataset media setting notification sync audit"
+default_prefix=ghcr.io/idah-ai/idah-
 
-url=""; admin_email=""; admin_name="Administrator"
-smtp_host=""; smtp_port=587; smtp_user=""; smtp_password=""
-version=""; image_prefix=""; http_port=8080
-pg_host=""; pg_port=5432; pg_user=""; pg_password=""; pg_sslmode=""
-redis_host=""; redis_port=6379; redis_password=""; redis_tls=""
-ca_cert=""
-assume_yes=false
+# The release this installer belongs to, filled in when the release is published.
+release_version=""
+
+admin_email=""; admin_name="Administrator"
+assume_yes=false; encode=false
 
 die() { echo "error: $*" >&2; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --url) url=${2:?}; shift 2 ;;
     --admin-email) admin_email=${2:?}; shift 2 ;;
     --admin-name) admin_name=${2:?}; shift 2 ;;
-    --smtp-host) smtp_host=${2:?}; shift 2 ;;
-    --smtp-port) smtp_port=${2:?}; shift 2 ;;
-    --smtp-user) smtp_user=${2:?}; shift 2 ;;
-    --smtp-password) smtp_password=${2:?}; shift 2 ;;
-    --version) version=${2:?}; shift 2 ;;
-    --image-prefix) image_prefix=${2:?}; shift 2 ;;
-    --port) http_port=${2:?}; shift 2 ;;
-    --postgres-host) pg_host=${2:?}; shift 2 ;;
-    --postgres-port) pg_port=${2:?}; shift 2 ;;
-    --postgres-user) pg_user=${2:?}; shift 2 ;;
-    --postgres-password) pg_password=${2:?}; shift 2 ;;
-    --postgres-sslmode) pg_sslmode=${2:?}; shift 2 ;;
-    --redis-host) redis_host=${2:?}; shift 2 ;;
-    --redis-port) redis_port=${2:?}; shift 2 ;;
-    --redis-password) redis_password=${2:?}; shift 2 ;;
-    --redis-tls) redis_tls=yes; shift ;;
-    --ca-cert) ca_cert=${2:?}; shift 2 ;;
     -y|--yes) assume_yes=true; shift ;;
+    --encode) encode=true; shift ;;
     -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$self"; exit 0 ;;
-    *) die "unknown argument: $1" ;;
+    *) die "unknown argument: $1 (settings go in .env; see --help)" ;;
   esac
 done
-
-# --- checks ----------------------------------------------------------------
-
-for tool in docker openssl; do
-  command -v "$tool" > /dev/null || die "$tool is required but not installed"
-done
-docker compose version > /dev/null 2>&1 || die "docker compose (v2) is required"
-docker info > /dev/null 2>&1 || die "cannot talk to the Docker daemon; is it running?"
-[ -f "$compose_file" ] || die "$compose_file not found; run this from the directory it lives in"
-[ -f nginx.conf ] || die "nginx.conf not found next to $compose_file"
-[ -f .env.example ] || die ".env.example not found next to $compose_file"
-
-if [ -f "$env_file" ]; then
-  die "$env_file already exists. This installer only creates a new install.
-
-       To change a setting:   edit $env_file, then
-                              docker compose up -d
-
-       To start over:         docker compose down -v
-                              rm -f $env_file && rm -rf $keys_dir
-                              (this deletes the databases and uploaded files)"
-fi
 
 ask() { # <prompt> <default>
   local answer
@@ -116,61 +68,6 @@ ask() { # <prompt> <default>
   echo "${answer:-${2:-}}"
 }
 
-default_prefix=ghcr.io/idah-ai/idah-
-
-[ -n "$url" ]          || url=$(ask "Public URL users will open" "http://localhost:$http_port")
-[ -n "$admin_email" ]  || admin_email=$(ask "Administrator email" "admin@example.com")
-[ -n "$version" ]      || version=$(ask "IDAH version to install" "")
-[ -n "$version" ]      || die "a version is required (--version)"
-[ -n "$image_prefix" ] || image_prefix=$(ask "Image source (change only if you built the images yourself)" "$default_prefix")
-[ -n "$smtp_host" ]    || smtp_host=$(ask "SMTP host (leave empty to disable email notifications)" "")
-if [ -n "$smtp_host" ]; then
-  [ -n "$smtp_user" ]     || smtp_user=$(ask "SMTP user (leave empty if none)" "")
-  if [ -n "$smtp_user" ] && [ -z "$smtp_password" ]; then
-    smtp_password=$(ask "SMTP password" "")
-  fi
-fi
-case "$smtp_user$smtp_password" in
-  *"'"*) die "the SMTP user and password cannot contain a single quote (')" ;;
-esac
-
-# --- database settings -----------------------------------------------------
-
-if [ -z "$pg_host" ] && ! $assume_yes; then
-  case $(ask "Use the bundled PostgreSQL? (yes/no)" "yes") in
-    n|N|no|No|NO)
-      pg_host=$(ask "PostgreSQL host" "")
-      [ -n "$pg_host" ] || die "a PostgreSQL host is required"
-      pg_port=$(ask "PostgreSQL port" "$pg_port") ;;
-  esac
-fi
-
-external=false
-[ -n "$pg_host" ] && external=true
-
-if $external; then
-  case "$pg_host" in
-    localhost|127.*|::1|0.0.0.0)
-      die "PostgreSQL host '$pg_host' would make every container connect to itself.
-       For a PostgreSQL running on this machine, use host.docker.internal." ;;
-  esac
-  [ -n "$pg_user" ]     || pg_user=$(ask "PostgreSQL user" "idah")
-  [ -n "$pg_password" ] || pg_password=$(ask "PostgreSQL password" "")
-  [ -n "$pg_password" ] || die "a PostgreSQL password is required (--postgres-password)"
-  [ -n "$pg_sslmode" ]  || pg_sslmode=$(ask "PostgreSQL SSL mode (disable, prefer, require, verify-full)" "require")
-  case "$pg_sslmode" in
-    disable|allow|prefer|require|verify-ca|verify-full) ;;
-    *) die "unknown SSL mode '$pg_sslmode'" ;;
-  esac
-  # .env stores it single-quoted, so every other character is taken literally.
-  case "$pg_password" in
-    *"'"*) die "the PostgreSQL password cannot contain a single quote (')" ;;
-  esac
-fi
-pg_user=${pg_user:-idah}
-
-# --- Redis settings --------------------------------------------------------
-
 # Percent-encodes every byte outside the RFC 3986 unreserved set. Byte by byte
 # through od: bash's printf "'c" mangles bytes above 127, differently per version.
 urlencode() {
@@ -184,62 +81,160 @@ urlencode() {
   printf '%s' "$out"
 }
 
-if [ -z "$redis_host" ] && ! $assume_yes; then
-  case $(ask "Use the bundled Redis? (yes/no)" "yes") in
-    n|N|no|No|NO)
-      redis_host=$(ask "Redis host" "")
-      [ -n "$redis_host" ] || die "a Redis host is required"
-      redis_port=$(ask "Redis port" "$redis_port")
-      redis_password=$(ask "Redis password (leave empty if none)" "")
-      case $(ask "Connect with TLS? (yes/no)" "yes") in y|Y|yes|Yes|YES) redis_tls=yes ;; esac ;;
-  esac
+if $encode; then
+  # Read without echo, so the password stays off the screen and out of the history.
+  if [ -t 0 ]; then IFS= read -r -s -p "Password to encode: " value; echo >&2; else IFS= read -r value; fi
+  urlencode "$value"; echo
+  exit 0
 fi
 
+# --- checks ----------------------------------------------------------------
+
+for tool in docker openssl curl; do
+  command -v "$tool" > /dev/null || die "$tool is required but not installed"
+done
+docker compose version > /dev/null 2>&1 || die "docker compose (v2) is required"
+docker info > /dev/null 2>&1 || die "cannot talk to the Docker daemon; is it running?"
+for file in compose.yml nginx.conf .env.example; do
+  [ -f "$file" ] || die "$file not found; run this from the directory it lives in"
+done
+
+if [ -f "$keys_dir/private.pem" ]; then
+  die "IDAH is already installed here ($keys_dir/private.pem exists).
+
+       To change a setting:   edit $env_file, then
+                              docker compose up -d
+
+       To start over:         docker compose down -v
+                              rm -rf $keys_dir
+                              (this deletes the databases and uploaded files)"
+fi
+
+# --- settings --------------------------------------------------------------
+
+# Nothing is written until every check below has passed, so a failed check
+# leaves nothing behind. Until then settings are read from .env, or from the
+# template when there is none.
+settings=$env_file
+[ -f "$settings" ] || settings=.env.example
+
+# The value of KEY in this shell, empty if unset. eval rather than ${!KEY},
+# which bash 3 (macOS) handles differently; every key here comes from the
+# template, so it is a plain name.
+from_env() { # <key>
+  eval "printf '%s' \"\${$1:-}\""
+}
+
+# The value of KEY in the settings file: the last KEY= line, one layer of
+# surrounding quotes removed. Commented-out lines are not settings.
+from_file() { # <key>
+  local v
+  v=$(sed -n "s/^$1=//p" "$settings" | tail -1)
+  case "$v" in
+    \'*\') v=${v#\'}; v=${v%\'} ;;
+    \"*\") v=${v#\"}; v=${v%\"} ;;
+  esac
+  printf '%s' "$v"
+}
+
+# What the install will use: the file, and the environment for what it leaves
+# empty (IDAH_VERSION=0.0.0-local ./install.sh). Anything taken from the
+# environment is written into .env below, so later docker compose commands see
+# it without it being set again.
+get() { # <key>
+  local v
+  v=$(from_file "$1")
+  [ -n "$v" ] || v=$(from_env "$1")
+  printf '%s' "$v"
+}
+
+# Which settings this run takes from the environment: those the template
+# documents that .env leaves empty. Collected here, written in below, so a bad
+# value stops the install before anything is written.
+env_keys=""
+for key in $(sed -n 's/^#* *\([A-Z][A-Z_0-9]*\)=.*/\1/p' .env.example | sort -u); do
+  value=$(from_env "$key")
+  [ -n "$value" ] || continue
+  [ -n "$(from_file "$key")" ] && continue
+  case "$value" in *"'"*) die "$key cannot contain a single quote (')" ;; esac
+  env_keys="${env_keys:+$env_keys }$key"
+done
+
+version=$(get IDAH_VERSION); version=${version:-$release_version}
+[ -n "$version" ] || version=$(ask "IDAH version to install" "")
+[ -n "$version" ] || die "a version is required: set IDAH_VERSION in $env_file"
+
+http_port=$(get IDAH_HTTP_PORT); http_port=${http_port:-8080}
+prefix=$(get IDAH_IMAGE_PREFIX); prefix=${prefix:-$default_prefix}
+
+url=$(get IDAH_URL)
+[ -n "$url" ] || url=$(ask "Public URL users will open" "http://localhost:$http_port")
+[ -n "$admin_email" ] || admin_email=$(ask "Administrator email" "admin@example.com")
+
+refuse_localhost() { # <what> <host>
+  case "$2" in
+    localhost|127.*|::1|\[::1\]|0.0.0.0)
+      die "$1 host '$2' would make every container connect to itself.
+       For a server running on this machine, use host.docker.internal." ;;
+  esac
+}
+
+# PostgreSQL: the bundled one unless POSTGRES_HOST names another.
+pg_host=$(get POSTGRES_HOST)
+external=false
+[ -n "$pg_host" ] && [ "$pg_host" != postgres ] && external=true
+pg_port=$(get POSTGRES_PORT); pg_port=${pg_port:-5432}
+pg_user=$(get POSTGRES_USER); pg_user=${pg_user:-idah}
+pg_password=$(get POSTGRES_PASSWORD)
+pg_sslmode=$(get POSTGRES_SSLMODE)
+
+if $external; then
+  refuse_localhost PostgreSQL "$pg_host"
+  [ -n "$pg_password" ] || die "POSTGRES_HOST is set, so POSTGRES_PASSWORD must be too: the password of $pg_user on $pg_host"
+  # Encrypted unless the setting says otherwise; require needs no CA.
+  pg_sslmode=${pg_sslmode:-require}
+fi
+case "${pg_sslmode:-prefer}" in
+  disable|allow|prefer|require|verify-ca|verify-full) ;;
+  *) die "unknown POSTGRES_SSLMODE '$pg_sslmode'" ;;
+esac
+
+# Redis: the bundled one unless REDIS_URL names another.
+redis_url=$(get REDIS_URL)
 external_redis=false
-[ -n "$redis_host" ] && external_redis=true
-
-if $external_redis; then
-  case "$redis_host" in
-    localhost|127.*|::1|0.0.0.0)
-      die "Redis host '$redis_host' would make every container connect to itself.
-       For a Redis running on this machine, use host.docker.internal." ;;
+if [ -n "$redis_url" ]; then
+  external_redis=true
+  case "$redis_url" in
+    redis://*|rediss://*) ;;
+    *) die "REDIS_URL must start with redis:// or rediss:// (TLS)" ;;
   esac
-  # The client takes a single URL, so the password must be percent-encoded in it.
-  redis_url="$([ "$redis_tls" = yes ] && echo rediss || echo redis)://"
-  [ -n "$redis_password" ] && redis_url="$redis_url:$(urlencode "$redis_password")@"
-  redis_url="$redis_url$redis_host:$redis_port/0"
+  redis_addr=${redis_url#*://}; redis_addr=${redis_addr##*@}; redis_addr=${redis_addr%%/*}
+  refuse_localhost Redis "${redis_addr%%:*}"
 fi
 
-# --- CA certificate ---------------------------------------------------------
-
-pg_verifies=false
-case "$pg_sslmode" in verify-ca|verify-full) pg_verifies=true ;; esac
-
-if [ -z "$ca_cert" ] && ! $assume_yes && { $pg_verifies || [ "$redis_tls" = yes ]; }; then
-  ca_cert=$(ask "CA certificate file your servers' certificates are signed by (leave empty if a public CA)" "")
+# A CA certificate, given as its path inside the containers: config/certs here.
+ca=$(get IDAH_CA_CERT)
+ca_file=""
+ca_mount=()
+if [ -n "$ca" ]; then
+  case "$ca" in
+    /certs/*) ca_file="$certs_dir/${ca#/certs/}" ;;
+    *) die "IDAH_CA_CERT must be a path under /certs, which is $certs_dir on this machine" ;;
+  esac
+  [ -r "$ca_file" ] || die "IDAH_CA_CERT is $ca, but $ca_file does not exist"
+  openssl x509 -in "$ca_file" -noout 2> /dev/null || die "$ca_file is not a PEM certificate"
+  ca_mount=(-v "$PWD/$certs_dir:/certs:ro" -e "SSL_CERT_FILE=$ca")
 fi
 
 # libpq has no system trust store to fall back on, so verification needs a file.
-if $pg_verifies && [ -z "$ca_cert" ]; then
-  die "sslmode=$pg_sslmode needs the CA certificate the PostgreSQL server's certificate is
-       signed by. Pass it with --ca-cert FILE (for a managed database, your provider's CA bundle)."
-fi
-
-ca_abs=""
-ca_mount=()
-if [ -n "$ca_cert" ]; then
-  case "$ca_cert" in /*) ca_abs=$ca_cert ;; *) ca_abs="$caller_dir/$ca_cert" ;; esac
-  [ -r "$ca_abs" ] || die "cannot read the CA certificate file: $ca_cert"
-  openssl x509 -in "$ca_abs" -noout 2> /dev/null || die "$ca_cert is not a PEM certificate"
-  ca_mount=(-v "$ca_abs:/certs/ca.pem:ro" -e SSL_CERT_FILE=/certs/ca.pem)
-fi
+case "$pg_sslmode" in
+  verify-ca|verify-full)
+    [ -n "$ca" ] || die "POSTGRES_SSLMODE=$pg_sslmode needs the CA certificate the PostgreSQL
+       server's certificate is signed by: put it in $certs_dir/ca.pem and set
+       IDAH_CA_CERT=/certs/ca.pem (for a managed database, your provider's CA bundle)." ;;
+esac
 
 # --- images ----------------------------------------------------------------
-
-# Before anything is written, so a wrong version or an unreachable registry
-# fails with nothing left behind.
-services="iam dataset media setting notification sync audit"
-prefix=${image_prefix:-$default_prefix}
 
 say "Checking images"
 for svc in $services frontend; do
@@ -249,35 +244,36 @@ for svc in $services frontend; do
   printf "   pulling %s\n" "$image"
   docker pull -q "$image" > /dev/null 2>&1 || die "cannot get $image
 
-       If these images are built from source rather than published, pass the
-       prefix they were tagged with, for example:
+       If these images are built from source rather than published, set the
+       prefix they were tagged with in $env_file, for example:
 
-           --image-prefix idah- --version local
+           IDAH_IMAGE_PREFIX=idah-
+           IDAH_VERSION=local
 
        Otherwise check that $version is a published version and that this
        machine can reach the registry."
 done
 echo "   all eight present"
 
+# --- external servers --------------------------------------------------------
+
 # What to do about a certificate the server presents but we cannot verify.
 tls_hint() { # <reason>
   case "$1" in
     *"certificate verify failed"*)
-      if [ -n "$ca_cert" ]; then
-        printf '\n       Check that %s includes the CA that signed the server'"'"'s certificate.' "$ca_cert"
+      if [ -n "$ca" ]; then
+        printf '\n       Check that %s includes the CA that signed the server'"'"'s certificate.' "$ca_file"
       else
-        printf '\n       If the server'"'"'s certificate is signed by your own CA, pass it with --ca-cert FILE.'
+        printf '\n       If the server'"'"'s certificate is signed by your own CA, see IDAH_CA_CERT in %s.' "$env_file"
       fi ;;
   esac
 }
 
-# Also before anything is written: wrong credentials, TLS or an unreachable host
-# fail here with nothing left behind. Runs in a service image, so it tests what
-# the services will use.
+# Run in a service image, so they test what the services will use.
 if $external; then
   say "Connecting to PostgreSQL at $pg_host:$pg_port"
   if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
-      -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode${ca_abs:+&sslrootcert=/certs/ca.pem}" \
+      -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode${ca:+&sslrootcert=$ca}" \
       -e "PGPASSWORD=$pg_password" "${prefix}iam:$version" ruby -e '
         require "sequel"
         begin
@@ -286,14 +282,19 @@ if $external; then
           warn e.message.lines.first.strip
           exit 1
         end' 2>&1 < /dev/null); then
+    hint=""
+    case "$reason" in
+      *"does not support SSL"*) hint="
+       Set POSTGRES_SSLMODE=disable in $env_file for a server without TLS." ;;
+    esac
     die "cannot connect to PostgreSQL at $pg_host:$pg_port as $pg_user:
-       $(printf '%s\n' "$reason" | tail -1)$(tls_hint "$reason")"
+       $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"
   fi
   echo "   connected (sslmode=$pg_sslmode)"
 fi
 
 if $external_redis; then
-  say "Connecting to Redis at $redis_host:$redis_port"
+  say "Connecting to Redis at $redis_addr"
   if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
       -e "REDIS_URL=$redis_url" "${prefix}iam:$version" ruby -e '
         require "redis"
@@ -309,12 +310,15 @@ if $external_redis; then
     hint=""
     case "$reason" in
       *"TLS handshake"*) hint="
-       Does the server accept TLS on port $redis_port? Without --redis-tls the connection is plain." ;;
+       Does the server accept TLS? rediss:// connects with TLS, redis:// without." ;;
+      *WRONGPASS*|*NOAUTH*|*"invalid password"*|*"bad URI"*) hint="
+       A password with characters other than letters, digits and - . _ ~ must be
+       percent-encoded in REDIS_URL: ./install.sh --encode" ;;
     esac
-    die "cannot connect to Redis at $redis_host:$redis_port:
+    die "cannot connect to Redis at $redis_addr:
        $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"
   fi
-  echo "   connected$([ "$redis_tls" = yes ] && echo " over TLS")"
+  case "$redis_url" in rediss://*) echo "   connected over TLS" ;; *) echo "   connected" ;; esac
 fi
 
 # --- secrets ---------------------------------------------------------------
@@ -327,35 +331,6 @@ secret() {
   openssl rand -base64 $((n * 3)) | LC_ALL=C tr -dc 'A-Za-z0-9' | cut -c1-"$n"
 }
 
-say "Generating secrets"
-if $external; then postgres_password=$pg_password; else postgres_password=$(secret 32); fi
-admin_password=$(secret 20)
-
-# Each service account gets its own password. Generated once here, then used
-# both in .env and in the credentials handed to service_accounts:create.
-# Plain strings rather than an associative array, so this runs on bash 3.
-service_env=""
-service_list=""
-for svc in $services; do
-  pw=$(secret 32)
-  service_env="${service_env}IDAH_SERVICE_PASSWORD_$(echo "$svc" | tr '[:lower:]' '[:upper:]')=$pw
-"
-  service_list="${service_list:+$service_list,}$svc:$pw"
-done
-
-say "Generating the signing key pair"
-mkdir -p "$keys_dir"
-openssl ecparam -name prime256v1 -genkey -noout -out "$keys_dir/private.pem" 2> /dev/null
-openssl ec -in "$keys_dir/private.pem" -pubout -out "$keys_dir/public.pem" 2> /dev/null
-chmod 600 "$keys_dir/private.pem"
-echo "   $keys_dir/private.pem (iam signs tokens with it)"
-echo "   $keys_dir/public.pem  (the other services verify with it)"
-
-# --- .env ------------------------------------------------------------------
-
-# Built from .env.example, so the customer's file carries every optional
-# setting, documented and commented out, and the two can never drift apart.
-
 # Sets KEY, replacing its line or uncommenting "# KEY=" from the template, and
 # appends it if the template has no such line. The value goes through ENVIRON,
 # not awk -v, which would interpret backslashes in it.
@@ -367,50 +342,75 @@ set_env() { # <key> <value>
     END { if (!done) print line }
   ' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
 }
-quote() { printf "'%s'" "$1"; } # single-quoted: every character taken literally
 
 say "Writing $env_file"
 saved_umask=$(umask); umask 077 # secrets: never readable by other users
-{ echo "# Generated by install.sh on $(date -u '+%Y-%m-%d %H:%M:%S UTC')."; cat .env.example; } > "$env_file"
+if [ ! -f "$env_file" ]; then
+  { echo "# Created by install.sh on $(date -u '+%Y-%m-%d %H:%M:%S UTC')."; cat .env.example; } > "$env_file"
+fi
+chmod 600 "$env_file"
+settings=$env_file
 
-set_env IDAH_VERSION "$version"
-[ "$prefix" != "$default_prefix" ] && set_env IDAH_IMAGE_PREFIX "$prefix"
-set_env IDAH_URL "$url"
-set_env IDAH_HTTP_PORT "$http_port"
+# A value is single-quoted unless it is plain enough to stand on its own, so
+# spaces and shell characters survive compose reading the file back.
+quote() { # <value>
+  case "$1" in
+    *[!A-Za-z0-9_.:/@=+-]*) printf "'%s'" "$1" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
 
-set_env POSTGRES_USER "$pg_user"
-set_env POSTGRES_PASSWORD "$(quote "$postgres_password")"
+# The settings collected from the environment, written in so docker compose
+# sees them later without them being set again.
+for key in $env_keys; do
+  set_env "$key" "$(quote "$(from_env "$key")")"
+  echo "   $key from the environment"
+done
+
+[ -n "$(from_file IDAH_VERSION)" ] || set_env IDAH_VERSION "$version"
+[ -n "$(from_file IDAH_URL)" ]     || set_env IDAH_URL "$url"
+
+if [ -z "$pg_password" ]; then
+  pg_password=$(secret 32)
+  set_env POSTGRES_PASSWORD "'$pg_password'"
+fi
 if $external; then
-  set_env IDAH_POSTGRES_CONTAINER 0
-  set_env POSTGRES_HOST "$pg_host"
-  set_env POSTGRES_PORT "$pg_port"
-  set_env POSTGRES_SSLMODE "$pg_sslmode"
+  [ -n "$(from_file IDAH_POSTGRES_CONTAINER)" ] || set_env IDAH_POSTGRES_CONTAINER 0
+  [ -n "$(from_file POSTGRES_SSLMODE)" ]        || set_env POSTGRES_SSLMODE "$pg_sslmode"
 fi
 if $external_redis; then
-  set_env IDAH_REDIS_CONTAINER 0
-  set_env REDIS_URL "$redis_url"
-fi
-mkdir -p config/certs
-if [ -n "$ca_abs" ]; then
-  cp "$ca_abs" config/certs/ca.pem
-  set_env IDAH_CA_CERT /certs/ca.pem
+  [ -n "$(from_file IDAH_REDIS_CONTAINER)" ] || set_env IDAH_REDIS_CONTAINER 0
 fi
 
-printf '%s' "$service_env" | while IFS='=' read -r key value; do set_env "$key" "$value"; done
+# Each service account gets its own password, kept if .env already has one, and
+# handed to service_accounts:create as svc:password pairs.
+service_list=""
+for svc in $services; do
+  key="IDAH_SERVICE_PASSWORD_$(echo "$svc" | tr '[:lower:]' '[:upper:]')"
+  pw=$(from_file "$key")
+  if [ -z "$pw" ]; then pw=$(secret 32); set_env "$key" "$pw"; fi
+  service_list="${service_list:+$service_list,}$svc:$pw"
+done
+echo "   your settings kept, missing secrets generated"
 
-set_env MAIL_SMTP_HOST "$smtp_host"
-set_env MAIL_SMTP_PORT "$smtp_port"
-set_env MAIL_SMTP_USER "$(quote "$smtp_user")"
-set_env MAIL_SMTP_PASSWORD "$(quote "$smtp_password")"
+mkdir -p "$keys_dir" "$certs_dir"
+openssl ecparam -name prime256v1 -genkey -noout -out "$keys_dir/private.pem" 2> /dev/null
+openssl ec -in "$keys_dir/private.pem" -pubout -out "$keys_dir/public.pem" 2> /dev/null
 umask "$saved_umask"
+chmod 644 "$keys_dir/public.pem"
+echo "   $keys_dir/private.pem (iam signs tokens with it)"
+echo "   $keys_dir/public.pem  (the other services verify with it)"
 
 # No -f: under its default name compose.yml, compose also merges the
 # customer's compose.override.yml, which naming the file explicitly would skip.
 dc() { docker compose "$@"; }
 
+# From here on a failure leaves a partial install. Settings and secrets stay in
+# .env, so after fixing the cause the installer can simply run again.
+retry="After fixing it: rm -rf $keys_dir && ./install.sh (the settings and secrets in $env_file are kept)"
+
 # --- databases -------------------------------------------------------------
 
-# Only the bundled services this install uses.
 bundled=""
 $external || bundled="postgres"
 $external_redis || bundled="$bundled redis"
@@ -425,7 +425,9 @@ if ! $external; then
     if dc exec -T postgres pg_isready -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then break; fi
     printf "."; sleep 2
   done
-  dc exec -T postgres pg_isready -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 || die "PostgreSQL did not become ready"
+  dc exec -T postgres pg_isready -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 \
+    || die "PostgreSQL did not become ready. See: docker compose logs postgres
+       $retry"
   echo " ready"
 fi
 
@@ -433,34 +435,39 @@ say "Creating databases and running migrations"
 for svc in $services; do
   printf "   %-13s" "$svc"
   dc run --rm "$svc" bundle exec rake db:setup db:migrate < /dev/null > /dev/null 2>&1 \
-    || die "migrations failed for $svc. Re-run without redirecting output to see why:
+    || die "migrations failed for $svc. To see why:
        docker compose run --rm $svc bundle exec rake db:setup db:migrate
 $($external && printf '%s' "
        With an external database, $pg_user needs the CREATEDB privilege, or the
-       idah_* databases must be created in advance and owned by $pg_user.")"
+       idah_* databases must be created in advance and owned by $pg_user.")
+       $retry"
   echo "ok"
 done
 
 # --- accounts --------------------------------------------------------------
 
 say "Creating accounts"
-dc run --rm -e "SERVICES=$service_list" iam bundle exec rake service_accounts:create < /dev/null > /dev/null \
-  || die "could not create the service accounts"
+admin_password=$(secret 20)
+
+dc run --rm -e "SERVICES=$service_list" iam bundle exec rake service_accounts:create < /dev/null > /dev/null 2>&1 \
+  || die "could not create the service accounts. $retry"
 echo "   seven service accounts, each with its own password"
 
-dc run --rm iam bundle exec rake api_key_service_account:create < /dev/null > /dev/null \
-  || die "could not create the API service account"
+dc run --rm iam bundle exec rake api_key_service_account:create < /dev/null > /dev/null 2>&1 \
+  || die "could not create the API service account. $retry"
 echo "   API service account"
 
 dc run --rm -e "ADMIN_EMAIL=$admin_email" -e "ADMIN_PASSWORD=$admin_password" \
-  -e "ADMIN_NAME=$admin_name" iam bundle exec rake admin:create < /dev/null > /dev/null \
-  || die "could not create the administrator account"
+  -e "ADMIN_NAME=$admin_name" iam bundle exec rake admin:create < /dev/null > /dev/null 2>&1 \
+  || die "could not create the administrator account. $retry"
 echo "   administrator $admin_email"
 
 # --- start -----------------------------------------------------------------
 
 say "Starting IDAH"
-dc up -d
+# Recreated even if unchanged: after a retry, containers from the failed run
+# would still hold the key files that were replaced.
+dc up -d --force-recreate
 
 # Not /health: nginx answers that itself. iam answering through nginx means
 # both are up, and every service's own check below needs it.
@@ -481,10 +488,13 @@ for svc in $services; do
   printf "   %-13s" "$svc"
   if ! out=$(dc exec -T "$svc" bundle exec rake api:check < /dev/null 2>&1); then
     die "the stack is running, but $svc cannot reach the other services:
-       $(printf '%s\n' "$out" | grep -E '^FAILED' | tail -1)"
+       $( { printf '%s\n' "$out" | grep -E '^FAILED' || printf '%s\n' "$out" | grep -v -e COMMON_PATH -e '^/' -e '^Tasks:' -e '^(See'; } | tail -1)
+       See: docker compose logs $svc"
   fi
   echo "ok"
 done
+
+smtp_host=$(get MAIL_SMTP_HOST)
 
 cat <<SUMMARY
 
@@ -494,13 +504,15 @@ IDAH $version is installed.
   Login     $admin_email
   Password  $admin_password
   Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the postgres_data volume")
-  Redis     $($external_redis && echo "$redis_host:$redis_port$([ "$redis_tls" = yes ] && echo " over TLS")" || echo "bundled, in the redis_data volume")$([ -n "$ca_abs" ] && printf '\n  CA        config/certs/ca.pem, trusted for your own servers')
+  Redis     $($external_redis && echo "$redis_addr" || echo "bundled, in the redis_data volume")
+  Email     $([ -n "$smtp_host" ] && echo "via $smtp_host" || echo "off until MAIL_SMTP_HOST is set")
 
 Write the password down now: it is not stored anywhere and cannot be recovered.
 Change it after the first login.
 
-Settings live in $env_file. Uploaded files live in the media_files and
-sync_files volumes — include them in your backups, along with the database.
+Settings live in $env_file and README.md describes them. After changing one:
+docker compose up -d. Uploaded files live in the media_files and sync_files
+volumes — include them in your backups, along with the database.
 
   Status    docker compose ps
   Logs      docker compose logs -f
