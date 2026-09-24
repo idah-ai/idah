@@ -22,6 +22,23 @@
 #   --admin-name NAME      default Administrator
 #   -y, --yes              ask nothing; defaults for anything not set
 #   --encode               percent-encode a password for REDIS_URL, then exit
+# Two flags continue an install that already exists. Both keep .env, its
+# secrets and the signing key, and neither ever drops a database.
+#
+#   --provision            set up the database .env now points at, after
+#                          switching to your own PostgreSQL. It creates the
+#                          databases and the schema there, and refuses a
+#                          database that already has IDAH data in it.
+#                          A bundled database with data in it is copied to the
+#                          new server first, and its volume is left untouched,
+#                          so you can go back to it.
+#   --start-empty          with --provision: do not copy anything, start with
+#                          empty databases and a new administrator password.
+#                          The old database is still left untouched.
+#   --upgrade              run the migrations the images bring, then restart:
+#                          after changing IDAH_VERSION. Keeps every row and
+#                          every account, and touches no administrator.
+#                          Refuses a database with no IDAH data in it.
 #
 # Requires docker, docker compose, openssl and curl.
 set -euo pipefail
@@ -39,7 +56,7 @@ default_prefix=ghcr.io/idah-ai/idah-
 release_version=""
 
 admin_email=""; admin_name="Administrator"
-assume_yes=false; encode=false
+assume_yes=false; encode=false; provision=false; upgrade=false; start_empty=false
 
 die() { echo "error: $*" >&2; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
@@ -50,6 +67,9 @@ while [ $# -gt 0 ]; do
     --admin-name) admin_name=${2:?}; shift 2 ;;
     -y|--yes) assume_yes=true; shift ;;
     --encode) encode=true; shift ;;
+    --provision) provision=true; shift ;;
+    --upgrade) upgrade=true; shift ;;
+    --start-empty) start_empty=true; shift ;;
     -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$self"; exit 0 ;;
     *) die "unknown argument: $1 (settings go in .env; see --help)" ;;
   esac
@@ -99,15 +119,39 @@ for file in compose.yml nginx.conf routes.conf tls-disabled.conf .env.example; d
   [ -f "$file" ] || die "$file not found; run this from the directory it lives in"
 done
 
-if [ -f "$keys_dir/private.pem" ]; then
+if $provision && $upgrade; then
+  die "--provision sets up a database with no IDAH data in it, --upgrade migrates one that has it. Pass one."
+fi
+if $start_empty && ! $provision; then
+  die "--start-empty says what --provision should put in the new database. Pass both, or leave it out to keep the data you have."
+fi
+
+# Either flag continues an install rather than making one: everything generated
+# the first time is kept, so the service accounts still match the services.
+continuing=false
+if $provision || $upgrade; then continuing=true; fi
+
+if $continuing; then
+  flag=$($provision && echo --provision || echo --upgrade)
+  [ -f "$env_file" ] || die "$flag continues an install, and there is no $env_file here.
+       For a new install, run ./install.sh"
+  [ -f "$keys_dir/private.pem" ] || die "$flag keeps the existing signing key, and $keys_dir/private.pem is missing.
+       Restore it, or start a new install: docker compose down -v && rm -f $env_file"
+elif [ -f "$keys_dir/private.pem" ]; then
   die "IDAH is already installed here ($keys_dir/private.pem exists).
 
-       To change a setting:   edit $env_file, then
-                              docker compose up -d
+       To change a setting:      edit $env_file, then
+                                 docker compose up -d
 
-       To start over:         docker compose down -v
-                              rm -rf $keys_dir
-                              (this deletes the databases and uploaded files)"
+       After changing            ./install.sh --upgrade
+       IDAH_VERSION:             (runs the new migrations, keeps your data)
+
+       After pointing .env at    ./install.sh --provision
+       an empty database:        (sets it up; the old one is left untouched)
+
+       To start over:            docker compose down -v
+                                 rm -f $env_file && rm -rf $keys_dir
+                                 (this deletes the databases and uploaded files)"
 fi
 
 # --- settings --------------------------------------------------------------
@@ -234,6 +278,28 @@ case "$pg_sslmode" in
        server's certificate is signed by: put it in $certs_dir/ca.pem and set
        IDAH_CA_CERT=/certs/ca.pem (for a managed database, your provider's CA bundle)." ;;
 esac
+
+# --- ports -----------------------------------------------------------------
+
+# Both ports are published, the HTTPS one even with no TLS configured, so a
+# port another program holds would stop the stack at the very end. Checked
+# here instead, before anything is written. A port this install already holds
+# is fine: that is its own nginx, on a re-run.
+port_taken() { # <port>
+  (exec 3<> "/dev/tcp/127.0.0.1/$1") 2> /dev/null || return 1
+  exec 3<&- 3>&-
+  docker compose ps --format '{{.Ports}}' 2> /dev/null | grep -q ":$1->" && return 1
+  return 0
+}
+
+for port_pair in "HTTP:$http_port:IDAH_HTTP_PORT" "HTTPS:$https_port:IDAH_HTTPS_PORT"; do
+  what=${port_pair%%:*}; rest=${port_pair#*:}; port=${rest%%:*}; setting=${rest#*:}
+  if port_taken "$port"; then
+    die "port $port is already in use, and IDAH publishes its $what port there.
+       Set $setting in $env_file to a free port, or stop what is holding it:
+           lsof -nP -iTCP:$port -sTCP:LISTEN"
+  fi
+done
 
 # --- images ----------------------------------------------------------------
 
@@ -366,7 +432,7 @@ set_env() { # <key> <value>
   ' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
 }
 
-say "Writing $env_file"
+$provision && say "Checking $env_file" || say "Writing $env_file"
 saved_umask=$(umask); umask 077 # secrets: never readable by other users
 if [ ! -f "$env_file" ]; then
   { echo "# Created by install.sh on $(date -u '+%Y-%m-%d %H:%M:%S UTC')."; cat .env.example; } > "$env_file"
@@ -417,12 +483,17 @@ done
 echo "   your settings kept, missing secrets generated"
 
 mkdir -p "$keys_dir" "$certs_dir"
-openssl ecparam -name prime256v1 -genkey -noout -out "$keys_dir/private.pem" 2> /dev/null
-openssl ec -in "$keys_dir/private.pem" -pubout -out "$keys_dir/public.pem" 2> /dev/null
-umask "$saved_umask"
-chmod 644 "$keys_dir/public.pem"
-echo "   $keys_dir/private.pem (iam signs tokens with it)"
-echo "   $keys_dir/public.pem  (the other services verify with it)"
+if $provision; then
+  umask "$saved_umask"
+  echo "   the signing key in $keys_dir is kept"
+else
+  openssl ecparam -name prime256v1 -genkey -noout -out "$keys_dir/private.pem" 2> /dev/null
+  openssl ec -in "$keys_dir/private.pem" -pubout -out "$keys_dir/public.pem" 2> /dev/null
+  umask "$saved_umask"
+  chmod 644 "$keys_dir/public.pem"
+  echo "   $keys_dir/private.pem (iam signs tokens with it)"
+  echo "   $keys_dir/public.pem  (the other services verify with it)"
+fi
 
 # No -f: under its default name compose.yml, compose also merges the
 # customer's compose.override.yml, which naming the file explicitly would skip.
@@ -454,6 +525,97 @@ if ! $external; then
   echo " ready"
 fi
 
+# Which of the two situations this is: a database with IDAH's schema in it, or
+# one without. Asked in the iam image, so it uses the same connection settings
+# the services will.
+if $continuing; then
+  say "Looking at the database"
+  if dc run --rm iam bundle exec ruby -e '
+        require "sequel"
+        begin
+          Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| exit db.table_exists?(:schema_migrations) ? 0 : 1 }
+        rescue Sequel::DatabaseConnectionError
+          exit 1 # no database yet, so nothing in it
+        end' < /dev/null > /dev/null 2>&1; then
+    $upgrade || die "the database at $($external && echo "$pg_host:$pg_port" || echo "the bundled postgres") already has IDAH data in it.
+
+       To run the migrations a new IDAH_VERSION brings, keeping every row:
+           ./install.sh --upgrade
+
+       --provision is for a database with no IDAH data in it. Moving an install
+       that has data to another server means dumping and restoring it first;
+       see \"Moving to your own PostgreSQL later\" in README.md."
+    echo "   IDAH's schema is there; the data in it is kept"
+  else
+    $provision || die "there is no IDAH data in the database at $($external && echo "$pg_host:$pg_port" || echo "the bundled postgres").
+
+       --upgrade migrates a database that already has it. To set this one up
+       from scratch, with fresh databases and accounts:
+           ./install.sh --provision"
+    echo "   empty, ready to be set up"
+  fi
+fi
+
+# Moving to your own server keeps what the install already has: the bundled
+# database is copied over unless --start-empty says otherwise. The target is
+# empty (the check above insisted on it) and the bundled volume is only read,
+# so this can be undone by putting the old POSTGRES_* settings back.
+copied=false
+if $provision && $start_empty; then
+  say "Starting with empty databases"
+  echo "   --start-empty: nothing is copied from the database this install used"
+elif $provision && $external; then
+  # Its volume was created with the credentials of the first install, which may
+  # not be the ones .env now holds. Local connections in that image are trusted,
+  # so any role that exists will do.
+  say "Looking for data to copy over"
+  dc stop $services frontend > /dev/null 2>&1 || true
+  dc up -d --scale postgres=1 postgres > /dev/null 2>&1 \
+    || die "could not start the bundled database to look in it"
+  for _ in $(seq 1 30); do
+    dc exec -T postgres pg_isready -d postgres < /dev/null > /dev/null 2>&1 && break
+    sleep 2
+  done
+
+  src_user=""
+  for candidate in "$pg_user" idah postgres; do
+    if dc exec -T postgres psql -U "$candidate" -Atqc "select 1" postgres < /dev/null > /dev/null 2>&1; then
+      src_user=$candidate; break
+    fi
+  done
+
+  if [ -n "$src_user" ] && dc exec -T postgres psql -U "$src_user" -Atqc \
+      "select 1 from information_schema.tables where table_name = 'schema_migrations'" idah_iam \
+      < /dev/null 2>/dev/null | grep -q 1; then
+    echo "   the bundled database has IDAH's data; copying it over"
+    echo "   (--start-empty leaves it behind and starts with empty databases)"
+
+    # pg_restore and psql for the target come from the image the bundled
+    # database uses, so the tools match the dumps.
+    pg_image=$(sed -n 's/^ *image: *\(pgvector[^ ]*\)/\1/p' compose.yml | head -1)
+    target() { # <database>
+      printf 'postgres://%s@%s:%s/%s?sslmode=%s%s' "$pg_user" "$pg_host" "$pg_port" "$1" "$pg_sslmode" "${ca:+&sslrootcert=$ca}"
+    }
+    run_pg() { # <command...> against the target
+      docker run --rm -i -e "PGPASSWORD=$pg_password" --add-host=host.docker.internal:host-gateway \
+        ${ca_mount[@]+"${ca_mount[@]}"} "$pg_image" "$@"
+    }
+
+    for db in $services; do
+      printf "   %-13s" "$db"
+      run_pg psql -q "$(target postgres)" -c "CREATE DATABASE idah_$db" < /dev/null > /dev/null 2>&1 \
+        || die "could not create idah_$db on $pg_host. Does $pg_user have the CREATEDB privilege?"
+      dc exec -T postgres pg_dump -U "$src_user" -Fc "idah_$db" 2> /dev/null \
+        | run_pg pg_restore --no-owner --exit-on-error -d "$(target "idah_$db")" > /dev/null 2>&1 \
+        || die "copying idah_$db failed. The bundled database is untouched; put the old POSTGRES_* settings back in $env_file to return to it."
+      echo "copied"
+    done
+    copied=true
+  else
+    echo "   none: the new databases will start empty"
+  fi
+fi
+
 say "Creating databases and running migrations"
 for svc in $services; do
   printf "   %-13s" "$svc"
@@ -469,21 +631,31 @@ done
 
 # --- accounts --------------------------------------------------------------
 
-say "Creating accounts"
-admin_password=$(secret 20)
+# An upgrade leaves every account as it is: the accounts are already there,
+# with the passwords in .env, and creating an administrator again would reset
+# the password of the one already in use.
+admin_password=""
+if $upgrade || $copied; then
+  say "Accounts"
+  echo "   left as they are"
+else
+  say "Creating accounts"
 
-dc run --rm -e "SERVICES=$service_list" iam bundle exec rake service_accounts:create < /dev/null > /dev/null 2>&1 \
-  || die "could not create the service accounts. $retry"
-echo "   seven service accounts, each with its own password"
+  # Both tasks set the account to the password in .env, so they can run again.
+  dc run --rm -e "SERVICES=$service_list" iam bundle exec rake service_accounts:create < /dev/null > /dev/null 2>&1 \
+    || die "could not create the service accounts. $retry"
+  echo "   seven service accounts, each with its own password"
 
-dc run --rm iam bundle exec rake api_key_service_account:create < /dev/null > /dev/null 2>&1 \
-  || die "could not create the API service account. $retry"
-echo "   API service account"
+  dc run --rm iam bundle exec rake api_key_service_account:create < /dev/null > /dev/null 2>&1 \
+    || die "could not create the API service account. $retry"
+  echo "   API service account"
 
-dc run --rm -e "ADMIN_EMAIL=$admin_email" -e "ADMIN_PASSWORD=$admin_password" \
-  -e "ADMIN_NAME=$admin_name" iam bundle exec rake admin:create < /dev/null > /dev/null 2>&1 \
-  || die "could not create the administrator account. $retry"
-echo "   administrator $admin_email"
+  admin_password=$(secret 20)
+  dc run --rm -e "ADMIN_EMAIL=$admin_email" -e "ADMIN_PASSWORD=$admin_password" \
+    -e "ADMIN_NAME=$admin_name" iam bundle exec rake admin:create < /dev/null > /dev/null 2>&1 \
+    || die "could not create the administrator account. $retry"
+  echo "   administrator $admin_email"
+fi
 
 # --- start -----------------------------------------------------------------
 
@@ -527,19 +699,29 @@ else
   case "$url" in https://*) tls_note=" (TLS terminated in front of port $http_port)" ;; esac
 fi
 
+# An administrator that was left alone keeps a password we do not know, so the
+# lines about writing it down would be wrong.
+if [ -n "$admin_password" ]; then
+  password_line="  Password  $admin_password"
+  password_note="Write the password down now: it is not stored anywhere and cannot be recovered.
+Change it after the first login."
+else
+  password_line="  Password  unchanged"
+  password_note="Accounts, and every row in the database, are as they were."
+fi
+
 cat <<SUMMARY
 
-IDAH $version is installed.
+IDAH $version is $($continuing && echo "ready" || echo "installed").$($copied && printf '\n\nThe bundled database was copied to %s, and its volume is untouched:\nput the old POSTGRES_* settings back in %s to return to it.' "$pg_host:$pg_port" "$env_file")
 
   URL       $url$tls_note
   Login     $admin_email
-  Password  $admin_password
+$password_line
   Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the postgres_data volume")
   Redis     $($external_redis && echo "$redis_addr" || echo "bundled, in the redis_data volume")
   Email     $([ -n "$smtp_host" ] && echo "via $smtp_host" || echo "off until MAIL_SMTP_HOST is set")
 
-Write the password down now: it is not stored anywhere and cannot be recovered.
-Change it after the first login.
+$password_note
 
 Settings live in $env_file and README.md describes them. After changing one:
 docker compose up -d. Uploaded files live in the media_files and sync_files

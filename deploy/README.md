@@ -61,10 +61,10 @@ change one and apply it:
 docker compose up -d
 ```
 
-Nearly everything can also be changed after the install, including TLS and
-Redis. The exception is PostgreSQL: pointing IDAH at an empty server leaves it
-with no data, so moving there later means dumping and restoring first. See
-"Moving to your own PostgreSQL later".
+Everything can also be changed after the install. Moving to your own
+PostgreSQL is the one that is more than a setting, because the data has to come
+along: `./install.sh --provision` does that, and "Moving to your own
+PostgreSQL" covers it.
 
 | To | Set in `.env` | When |
 |---|---|---|
@@ -74,7 +74,7 @@ with no data, so moving there later means dumping and restoring first. See
 | Send email notifications | `MAIL_SMTP_*` | any time |
 | Store files in S3 | `MEDIAS_FILES_*`, `SYNC_FILES_*` | before files are uploaded |
 | Report errors to your own Sentry | `SENTRY_*` | any time |
-| Use your own PostgreSQL | `POSTGRES_*` | at install, or with a migration |
+| Use your own PostgreSQL | `POSTGRES_*` | at install, or with `--provision` |
 | Use your own Redis | `REDIS_URL` | any time, when quiet |
 | Trust your own certificate authority | `IDAH_CA_CERT` | any time |
 | Run images built from source | `IDAH_IMAGE_PREFIX`, `IDAH_VERSION` | any time |
@@ -162,44 +162,6 @@ The installer turns off the bundled database and checks the connection.
   certificate (see below). For a managed database, that is your provider's CA
   bundle.
 
-### Moving to your own PostgreSQL later
-
-Setting `POSTGRES_HOST` on an install that already has data does not move it.
-IDAH stops with `database "idah_iam" does not exist` until the databases are
-there. Copy them across first, with IDAH stopped so nothing writes during the
-dump:
-
-```bash
-docker compose stop iam dataset media setting notification sync audit frontend
-docker compose up -d --scale postgres=1 postgres
-
-for db in iam dataset media setting notification sync audit; do
-  docker compose exec -T postgres pg_dump -U idah -Fc "idah_$db" > "$db.dump"
-done
-```
-
-On the new server, create the role and the seven databases, then restore each
-one. `--no-owner` matters: the objects belong to the old role, which does not
-exist there, and without it every object reports an error.
-
-```bash
-for db in iam dataset media setting notification sync audit; do
-  psql "postgres://idah@db.example.com/postgres?sslmode=require" -c "CREATE DATABASE idah_$db"
-  pg_restore --no-owner -d "postgres://idah@db.example.com/idah_$db?sslmode=require" < "$db.dump"
-done
-```
-
-Then set `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
-`POSTGRES_SSLMODE` and `IDAH_POSTGRES_CONTAINER=0` in `.env`, and:
-
-```bash
-docker compose up -d
-```
-
-The bundled database stops being started, and its volume stays untouched — keep
-it until you are satisfied, then remove it with
-`docker volume rm <project>_postgres_data`.
-
 ### Your own Redis
 
 ```bash
@@ -255,16 +217,94 @@ Nothing is reported by default. `SENTRY_DSN_FRONTEND` and the per-service
 `SENTRY_DSN_*` send errors to your own Sentry project. Session replay records
 your users' screens and stays off unless you set its sample rates.
 
+## Upgrading
+
+```bash
+# change IDAH_VERSION in .env, then
+./install.sh --upgrade
+```
+
+It pulls the new images, runs the migrations they bring and restarts the stack.
+Every row and every account is kept, and no administrator is touched — it
+refuses outright if the database holds no IDAH data. `docker compose up -d`
+alone would pull the images but never run the migrations, and the services
+would then run against a schema they do not expect.
+
+**Back up first** (see Backups): migrations are not reversible, so going back
+to the previous `IDAH_VERSION` afterwards is not supported — the old code would
+be running against the new schema. The stack is down while it runs, usually
+under a minute.
+
+## Moving to your own PostgreSQL
+
+```bash
+# set POSTGRES_HOST and the rest in .env, then
+./install.sh --provision
+```
+
+It sets up the new server and brings your data with it: the bundled database is
+copied over, database by database, before the migrations run. Accounts,
+passwords and uploaded files stay as they are — the administrator keeps the
+password they already had.
+
+```bash
+./install.sh --provision --start-empty   # start empty instead
+```
+
+`--start-empty` skips the copy, creates empty databases and prints a new
+administrator password. Use it when the install has nothing worth keeping. It
+leaves the old database alone too — it simply does not read it.
+
+Either way:
+
+- **The old database is left exactly as it was.** It is only read. Putting the
+  previous `POSTGRES_*` settings back and running `docker compose up -d`
+  returns you to it, data and all.
+- **Nothing is dropped**, and a database that already holds IDAH data is
+  refused. That is `--upgrade`'s job, or a manual move (below).
+- **`.env`, its secrets and the signing key are kept**, so the service accounts
+  still match the running services.
+- **Uploaded files are not part of this.** They live in the `media_files` and
+  `sync_files` volumes and stay where they are, which is what you want when
+  copying. After `--start-empty` they are orphans, so remove those volumes too
+  for a completely clean start.
+
+### Between two servers of your own
+
+The copy reads the bundled database, so a move from one server of yours to
+another is a manual one: stop the seven services and the frontend, `pg_dump`
+each `idah_*` database and restore it with `pg_restore --no-owner` (without
+that, every object reports an error, since the objects belong to a role the new
+server may not have), then point `.env` at the new server and run
+`docker compose up -d`.
+
 ## Backups
 
-Back up the database and the `media_files` and `sync_files` volumes. The volumes
-hold uploaded media and generated exports, which are not in PostgreSQL.
+Four things, not one:
+
+- **The seven `idah_*` databases.**
+- **The `media_files` and `sync_files` volumes**, which hold uploaded media and
+  generated exports. They are not in PostgreSQL. (With S3 storage, your bucket
+  holds them instead.)
+- **`.env`.** It holds the password of the bundled database, which exists
+  nowhere else: lose the file and the data in that volume cannot be read.
+- **`config/`**, which holds the signing key and any certificates.
+
+With the bundled database, a dump of everything looks like this:
+
+```bash
+for db in iam dataset media setting notification sync audit; do
+  docker compose exec -T postgres pg_dump -U idah -Fc "idah_$db" > "$db.dump"
+done
+cp .env env.backup && tar czf config.tar.gz config
+```
+
+To restore into a new install, put `.env` and `config/` back, run
+`./install.sh --provision --start-empty` to create the databases, then
+`pg_restore --no-owner` each dump into them.
 
 ## Still needed
 
-- **An upgrade path.** Changing `IDAH_VERSION` and running
-  `docker compose up -d` pulls the new images, but nothing runs the new
-  migrations.
 - **Publishing these files as release assets**, so the install really is one
   line: download, then run `install.sh`. Publishing sets `release_version` in
   `install.sh` to the release's version; until then the installer asks for it.
