@@ -16,7 +16,7 @@ x-version-args: &version-args
 
 services:
   nginx:
-    image: nginx:alpine
+    image: nginx:1.30.5-alpine
     ports:
       - "8080:80"
     depends_on:

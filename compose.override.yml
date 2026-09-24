@@ -54,7 +54,7 @@ services:
       - app-network
 
   redis:
-    image: redis:latest
+    image: redis:8.10.2
     scale: ${IDAH_REDIS_CONTAINER:-1}
     command: redis-server --appendonly yes
     ports:

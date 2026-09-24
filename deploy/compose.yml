@@ -1,7 +1,9 @@
 # The IDAH stack for an on-premise install, staging and production alike.
 #
 # It pulls published images; nothing is built here. Every environment runs the
-# same images and differs only by the values in .env beside this file.
+# same images and differs only by the values in .env beside this file. The
+# nginx, PostgreSQL and Redis versions are pinned exactly, so two installs of
+# one IDAH version are the same stack.
 #
 # Start:    docker compose up -d
 # Upgrade:  edit IDAH_VERSION in .env, then the same command again.
@@ -60,7 +62,7 @@ services:
   # port answers nothing. IDAH_HTTP_BIND=127.0.0.1 keeps the HTTP port off the
   # network for a terminator running on this machine.
   nginx:
-    image: nginx:alpine
+    image: nginx:1.30.5-alpine
     restart: always
     ports:
       - "${IDAH_HTTP_BIND:-0.0.0.0}:${IDAH_HTTP_PORT:-8080}:80"
@@ -85,7 +87,7 @@ services:
   # The bundled database. Set IDAH_POSTGRES_CONTAINER=0 and the POSTGRES_HOST
   # settings in .env to use an external PostgreSQL instead.
   postgres:
-    image: pgvector/pgvector:0.8.0-pg17
+    image: pgvector/pgvector:0.8.6-pg17
     scale: ${IDAH_POSTGRES_CONTAINER:-1}
     restart: always
     environment:
@@ -105,7 +107,7 @@ services:
   # The bundled Redis. Set IDAH_REDIS_CONTAINER=0 and REDIS_URL in .env to use
   # an external one instead.
   redis:
-    image: redis:latest
+    image: redis:8.10.2
     scale: ${IDAH_REDIS_CONTAINER:-1}
     restart: always
     command: redis-server --appendonly yes

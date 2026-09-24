@@ -11,7 +11,7 @@ at the repository root, with settings in `config/development/`.
 | File | Purpose |
 |---|---|
 | `install.sh` | The installer. Generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
-| `compose.yml` | The stack, pulling published images pinned to one release. |
+| `compose.yml` | The stack, pulling published images pinned to one release. nginx, PostgreSQL and Redis are pinned to exact versions too. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
 | `nginx.conf` | The reverse proxy in front of the services, with `routes.conf` for the routes it serves. |
 | `tls.conf` | An HTTPS server for `nginx.conf`, from your own certificate. Off unless `IDAH_TLS_CONF` names it. |
@@ -284,6 +284,18 @@ each `idah_*` database and restore it with `pg_restore --no-owner` (without
 that, every object reports an error, since the objects belong to a role the new
 server may not have), then point `.env` at the new server and run
 `docker compose up -d`.
+
+## Changing an infrastructure version
+
+`nginx`, `postgres` and `redis` are pinned to exact versions in `compose.yml`,
+so every install of one IDAH release runs the same stack. A new IDAH release
+may raise them; `docker compose up -d` applies the change.
+
+Replacing the database container drops the connections the services hold, so a
+request in flight at that moment fails with `PG::ConnectionBad` and the next
+one succeeds — the services reconnect by themselves. Upgrading PostgreSQL
+within a major version (17.6 to 17.11, say) needs nothing else: the existing
+volume is used as it is.
 
 ## Backups
 
