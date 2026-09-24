@@ -366,7 +366,7 @@ if $external; then
       -e "PGPASSWORD=$pg_password" "${prefix}iam:$version" ruby -e '
         require "sequel"
         begin
-          Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| db.test_connection }
+          Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| puts db.fetch("show server_version_num").single_value }
         rescue StandardError => e
           warn e.message.lines.first.strip
           exit 1
@@ -379,7 +379,14 @@ if $external; then
     die "cannot connect to PostgreSQL at $pg_host:$pg_port as $pg_user:
        $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"
   fi
-  echo "   connected (sslmode=$pg_sslmode)"
+
+  # IDAH needs 13 or later: from 13 on, the database owner may create the
+  # extensions it uses without being a superuser, which is what makes a managed
+  # database work at all.
+  pg_server_major=$(( $(printf '%s' "$reason" | tail -1 | tr -dc '0-9' || echo 0) / 10000 ))
+  [ "$pg_server_major" -ge 13 ] || die "PostgreSQL at $pg_host:$pg_port is version ${pg_server_major:-unknown}, and IDAH needs 13 or later.
+       Older versions cannot create pg_trgm, pgcrypto and uuid-ossp without a superuser."
+  echo "   connected (PostgreSQL $pg_server_major, sslmode=$pg_sslmode)"
 fi
 
 if $external_redis; then
@@ -542,9 +549,9 @@ if $continuing; then
        To run the migrations a new IDAH_VERSION brings, keeping every row:
            ./install.sh --upgrade
 
-       --provision is for a database with no IDAH data in it. Moving an install
-       that has data to another server means dumping and restoring it first;
-       see \"Moving to your own PostgreSQL later\" in README.md."
+       --provision is for a database with no IDAH data in it, and it brings the
+       data of this install with it; see \"Moving to your own PostgreSQL\" in
+       README.md."
     echo "   IDAH's schema is there; the data in it is kept"
   else
     $provision || die "there is no IDAH data in the database at $($external && echo "$pg_host:$pg_port" || echo "the bundled postgres").
@@ -590,8 +597,8 @@ elif $provision && $external; then
     echo "   the bundled database has IDAH's data; copying it over"
     echo "   (--start-empty leaves it behind and starts with empty databases)"
 
-    # pg_restore and psql for the target come from the image the bundled
-    # database uses, so the tools match the dumps.
+    # The client tools come from the image the bundled database uses, so they
+    # can always read what it holds.
     pg_image=$(sed -n 's/^ *image: *\(pgvector[^ ]*\)/\1/p' compose.yml | head -1)
     target() { # <database>
       printf 'postgres://%s@%s:%s/%s?sslmode=%s%s' "$pg_user" "$pg_host" "$pg_port" "$1" "$pg_sslmode" "${ca:+&sslrootcert=$ca}"
@@ -601,15 +608,71 @@ elif $provision && $external; then
         ${ca_mount[@]+"${ca_mount[@]}"} "$pg_image" "$@"
     }
 
+    # Major versions of both ends. A dump restored into an older server fails on
+    # settings that version does not have (PostgreSQL 17 writes
+    # `SET transaction_timeout`, which 16 rejects), so that case is copied as
+    # plain SQL with those lines left out instead.
+    major() { # <server_version_num>
+      echo $(( ${1:-0} / 10000 ))
+    }
+    src_major=$(major "$(dc exec -T postgres psql -U "$src_user" -Atqc "show server_version_num" postgres < /dev/null 2>/dev/null | tr -d '\r')")
+    tgt_major=$(major "$(run_pg psql -Atqc "show server_version_num" "$(target postgres)" < /dev/null 2>/dev/null | tr -d '\r')")
+    older_target=false
+    if [ "$tgt_major" -gt 0 ] && [ "$src_major" -gt 0 ] && [ "$tgt_major" -lt "$src_major" ]; then
+      older_target=true
+      echo "   your server is PostgreSQL $tgt_major, the bundled one is $src_major: copying in a form $tgt_major accepts"
+    fi
+
+    copy_log=$(mktemp)
     for db in $services; do
       printf "   %-13s" "$db"
-      run_pg psql -q "$(target postgres)" -c "CREATE DATABASE idah_$db" < /dev/null > /dev/null 2>&1 \
-        || die "could not create idah_$db on $pg_host. Does $pg_user have the CREATEDB privilege?"
-      dc exec -T postgres pg_dump -U "$src_user" -Fc "idah_$db" 2> /dev/null \
-        | run_pg pg_restore --no-owner --exit-on-error -d "$(target "idah_$db")" > /dev/null 2>&1 \
-        || die "copying idah_$db failed. The bundled database is untouched; put the old POSTGRES_* settings back in $env_file to return to it."
-      echo "copied"
+      run_pg psql -q "$(target postgres)" -c "CREATE DATABASE idah_$db" < /dev/null > "$copy_log" 2>&1 \
+        || die "could not create idah_$db on $pg_host:
+       $(tail -2 "$copy_log")
+       Does $pg_user have the CREATEDB privilege?"
+
+      if $older_target; then
+        dc exec -T postgres pg_dump -U "$src_user" --format=plain --no-owner --no-acl "idah_$db" 2> "$copy_log" \
+          | grep -v '^SET transaction_timeout' \
+          | run_pg psql -v ON_ERROR_STOP=1 -q "$(target "idah_$db")" >> "$copy_log" 2>&1 \
+          || copy_failed=true
+      else
+        dc exec -T postgres pg_dump -U "$src_user" -Fc "idah_$db" 2> "$copy_log" \
+          | run_pg pg_restore --no-owner --no-acl --exit-on-error -d "$(target "idah_$db")" >> "$copy_log" 2>&1 \
+          || copy_failed=true
+      fi
+      # What the copy is checked against: every table and how many rows it has.
+      row_counts="select table_name || ':' || (xpath('/row/c/text()',
+          query_to_xml(format('select count(*) as c from public.%I', table_name), false, true, '')))[1]::text::bigint
+        from information_schema.tables
+        where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name"
+
+      if [ "${copy_failed:-false}" = true ]; then
+        die "copying idah_$db failed:
+
+$(sed 's/^/       /' "$copy_log" | tail -6)
+
+       The bundled database is untouched: put the old POSTGRES_* settings back
+       in $env_file to return to it. To set the new server up without the old
+       data instead, add --start-empty."
+      fi
+      # A restore that reported no error can still have landed short; compare
+      # both ends rather than trusting it.
+      before=$(dc exec -T postgres psql -U "$src_user" -Atqc "$row_counts" "idah_$db" < /dev/null 2>> "$copy_log")
+      after=$(run_pg psql -Atqc "$row_counts" "$(target "idah_$db")" < /dev/null 2>> "$copy_log")
+      if [ "$before" != "$after" ]; then
+        die "idah_$db did not copy completely. Tables and row counts differ:
+
+       bundled: $(printf '%s' "$before" | tr '\n' ' ')
+       copied:  $(printf '%s' "$after" | tr '\n' ' ')
+
+       The bundled database is untouched: put the old POSTGRES_* settings back
+       in $env_file to return to it."
+      fi
+      tables=$(printf '%s' "$before" | grep -c .)
+      echo "copied, $tables table$([ "$tables" = 1 ] || echo s) verified"
     done
+    rm -f "$copy_log"
     copied=true
   else
     echo "   none: the new databases will start empty"

@@ -148,9 +148,11 @@ POSTGRES_PASSWORD='...'
 
 The installer turns off the bundled database and checks the connection.
 
-- **PostgreSQL 13 or later.** IDAH creates `pg_trgm`, `pgcrypto` and `uuid-ossp`,
-  which from 13 on the database owner may create without being a superuser —
-  so managed services such as RDS or Cloud SQL work.
+- **PostgreSQL 13 or later**, which the installer checks and refuses below.
+  IDAH creates `pg_trgm`, `pgcrypto` and `uuid-ossp`, which from 13 on the
+  database owner may create without being a superuser — so managed services
+  such as RDS or Cloud SQL work. The bundled database is 17, which is the
+  version IDAH is tested against.
 - **`CREATEDB` for the user**, or the seven `idah_*` databases created in
   advance and owned by it.
 - **For a server on the same machine, use `host.docker.internal`.** Inside a
@@ -246,6 +248,11 @@ It sets up the new server and brings your data with it: the bundled database is
 copied over, database by database, before the migrations run. Accounts,
 passwords and uploaded files stay as they are — the administrator keeps the
 password they already had.
+
+Each database is verified once copied, table by table and row count by row
+count, so a copy that lands short stops the move instead of going unnoticed. A
+server older than the bundled 17 is handled too: the copy is then made in a
+form that version accepts, down to the PostgreSQL 13 the rest of IDAH needs.
 
 ```bash
 ./install.sh --provision --start-empty   # start empty instead
