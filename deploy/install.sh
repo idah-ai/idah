@@ -95,7 +95,7 @@ for tool in docker openssl curl; do
 done
 docker compose version > /dev/null 2>&1 || die "docker compose (v2) is required"
 docker info > /dev/null 2>&1 || die "cannot talk to the Docker daemon; is it running?"
-for file in compose.yml nginx.conf .env.example; do
+for file in compose.yml nginx.conf routes.conf tls-disabled.conf .env.example; do
   [ -f "$file" ] || die "$file not found; run this from the directory it lives in"
 done
 
@@ -165,6 +165,7 @@ version=$(get IDAH_VERSION); version=${version:-$release_version}
 [ -n "$version" ] || die "a version is required: set IDAH_VERSION in $env_file"
 
 http_port=$(get IDAH_HTTP_PORT); http_port=${http_port:-8080}
+https_port=$(get IDAH_HTTPS_PORT); https_port=${https_port:-8443}
 prefix=$(get IDAH_IMAGE_PREFIX); prefix=${prefix:-$default_prefix}
 
 url=$(get IDAH_URL)
@@ -235,6 +236,28 @@ case "$pg_sslmode" in
 esac
 
 # --- images ----------------------------------------------------------------
+
+# HTTPS served by IDAH's own nginx: the certificate and its key must be there,
+# match each other, and the key must not need a passphrase, or nginx fails to
+# start after everything else has been set up.
+tls_conf=$(get IDAH_TLS_CONF)
+if [ -n "$tls_conf" ]; then
+  [ -f "$tls_conf" ] || die "IDAH_TLS_CONF is $tls_conf, which does not exist next to compose.yml"
+  for f in "$certs_dir/idah.crt" "$certs_dir/idah.key"; do
+    [ -r "$f" ] || die "$tls_conf serves HTTPS from $certs_dir/idah.crt and $certs_dir/idah.key. Missing: $f"
+  done
+  openssl x509 -in "$certs_dir/idah.crt" -noout 2> /dev/null \
+    || die "$certs_dir/idah.crt is not a PEM certificate"
+  openssl pkey -in "$certs_dir/idah.key" -noout 2> /dev/null \
+    || die "$certs_dir/idah.key is not a PEM private key, or it needs a passphrase, which nginx cannot supply"
+  crt_key=$(openssl x509 -in "$certs_dir/idah.crt" -noout -pubkey 2> /dev/null)
+  key_key=$(openssl pkey -in "$certs_dir/idah.key" -pubout 2> /dev/null)
+  [ "$crt_key" = "$key_key" ] || die "$certs_dir/idah.key is not the key of $certs_dir/idah.crt"
+elif [ "${url#https://}" != "$url" ]; then
+  # An https:// address with no TLS here only works behind a terminator, which
+  # is not something this installer can check for.
+  printf '\n   note: IDAH serves plain HTTP on port %s. %s expects TLS to be terminated\n   in front of it, or IDAH_TLS_CONF set — see "Serving HTTPS" in README.md.\n' "$http_port" "$url"
+fi
 
 say "Checking images"
 for svc in $services frontend; do
@@ -496,11 +519,19 @@ done
 
 smtp_host=$(get MAIL_SMTP_HOST)
 
+# bash 3 (macOS) cannot parse a case inside $(...), so build this beforehand.
+tls_note=""
+if [ -n "$tls_conf" ]; then
+  tls_note=" (HTTPS on port $https_port, from $certs_dir/idah.crt)"
+else
+  case "$url" in https://*) tls_note=" (TLS terminated in front of port $http_port)" ;; esac
+fi
+
 cat <<SUMMARY
 
 IDAH $version is installed.
 
-  URL       $url
+  URL       $url$tls_note
   Login     $admin_email
   Password  $admin_password
   Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the postgres_data volume")

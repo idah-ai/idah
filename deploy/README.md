@@ -13,7 +13,8 @@ at the repository root, with settings in `config/development/`.
 | `install.sh` | The installer. Generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
 | `compose.yml` | The stack, pulling published images pinned to one release. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
-| `nginx.conf` | The reverse proxy in front of the services. |
+| `nginx.conf` | The reverse proxy in front of the services, with `routes.conf` for the routes it serves. |
+| `tls.conf` | An HTTPS server for `nginx.conf`, from your own certificate. Off unless `IDAH_TLS_CONF` names it. |
 
 Customers keep their own changes in a `compose.override.yml` next to
 `compose.yml`. Compose merges it automatically, so an upgrade can replace
@@ -60,19 +61,22 @@ change one and apply it:
 docker compose up -d
 ```
 
-The exception is where the data lives. Choose your own PostgreSQL or Redis
-before the install, since moving later means migrating the data.
+Nearly everything can also be changed after the install, including TLS and
+Redis. The exception is PostgreSQL: pointing IDAH at an empty server leaves it
+with no data, so moving there later means dumping and restoring first. See
+"Moving to your own PostgreSQL later".
 
 | To | Set in `.env` | When |
 |---|---|---|
 | Change the public URL | `IDAH_URL` | any time |
 | Change the port nginx listens on | `IDAH_HTTP_PORT` (default 8080) | any time |
+| Serve HTTPS | `IDAH_URL`, `IDAH_TLS_CONF`, `IDAH_HTTPS_PORT` | any time |
 | Send email notifications | `MAIL_SMTP_*` | any time |
 | Store files in S3 | `MEDIAS_FILES_*`, `SYNC_FILES_*` | before files are uploaded |
 | Report errors to your own Sentry | `SENTRY_*` | any time |
-| Use your own PostgreSQL | `POSTGRES_*` | before the install |
-| Use your own Redis | `REDIS_URL` | before the install |
-| Trust your own certificate authority | `IDAH_CA_CERT` | with the two above |
+| Use your own PostgreSQL | `POSTGRES_*` | at install, or with a migration |
+| Use your own Redis | `REDIS_URL` | any time, when quiet |
+| Trust your own certificate authority | `IDAH_CA_CERT` | any time |
 | Run images built from source | `IDAH_IMAGE_PREFIX`, `IDAH_VERSION` | any time |
 
 ### Email
@@ -80,6 +84,59 @@ before the install, since moving later means migrating the data.
 Off after an install. Uncomment `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`,
 `MAIL_SMTP_USER` and `MAIL_SMTP_PASSWORD` and fill them in, then
 `docker compose up -d`.
+
+### Serving HTTPS
+
+IDAH serves plain HTTP on `IDAH_HTTP_PORT`, and can serve HTTPS itself from a
+certificate you supply. Either way, set `IDAH_URL` to the `https://` address:
+the browser app calls its own origin, so `IDAH_URL` is what email links and the
+API documentation use.
+
+Browsers treat plain HTTP as an insecure context outside `localhost`, which
+disables the Web Crypto and clipboard APIs the frontend uses. Any install
+customers reach by host name needs HTTPS, one way or the other.
+
+**With your own certificate**, served by IDAH's nginx. Put the two files in
+`config/certs`:
+
+```
+config/certs/idah.crt   the certificate, followed by any intermediates
+config/certs/idah.key   its private key, not password-protected
+```
+
+Then in `.env`:
+
+```bash
+IDAH_URL=https://idah.example.com
+IDAH_TLS_CONF=./tls.conf
+IDAH_HTTPS_PORT=443      # default 8443
+IDAH_HTTP_BIND=127.0.0.1 # optional: keep plain HTTP off the network
+```
+
+`docker compose up -d` applies it. The installer checks, before writing
+anything, that both files are readable, that the certificate and key match, and
+that the key needs no passphrase — nginx cannot be prompted for one. Renewal is
+yours: replace the two files and run `docker compose restart nginx`.
+
+`tls.conf` holds the nginx TLS settings (TLS 1.2 and 1.3, sessions, the two
+file paths). To change them, copy it, edit your copy, and point
+`IDAH_TLS_CONF` at that instead — an upgrade replaces `tls.conf` but not your
+file.
+
+**With a load balancer or reverse proxy you already have**, leave
+`IDAH_TLS_CONF` unset, point the proxy at `http://<host>:8080`, and set:
+
+```bash
+IDAH_URL=https://idah.example.com
+IDAH_HTTP_BIND=127.0.0.1   # only if the proxy runs on this machine
+```
+
+`IDAH_HTTP_BIND` matters: by default the HTTP port accepts connections from
+anywhere, so anyone who can reach the machine can bypass your TLS. Bound to
+`127.0.0.1` it is reachable only from the machine itself.
+
+nginx forwards `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-For`,
+and sends HSTS, so a proxy in front is understood.
 
 ### Your own PostgreSQL
 
@@ -105,6 +162,44 @@ The installer turns off the bundled database and checks the connection.
   certificate (see below). For a managed database, that is your provider's CA
   bundle.
 
+### Moving to your own PostgreSQL later
+
+Setting `POSTGRES_HOST` on an install that already has data does not move it.
+IDAH stops with `database "idah_iam" does not exist` until the databases are
+there. Copy them across first, with IDAH stopped so nothing writes during the
+dump:
+
+```bash
+docker compose stop iam dataset media setting notification sync audit frontend
+docker compose up -d --scale postgres=1 postgres
+
+for db in iam dataset media setting notification sync audit; do
+  docker compose exec -T postgres pg_dump -U idah -Fc "idah_$db" > "$db.dump"
+done
+```
+
+On the new server, create the role and the seven databases, then restore each
+one. `--no-owner` matters: the objects belong to the old role, which does not
+exist there, and without it every object reports an error.
+
+```bash
+for db in iam dataset media setting notification sync audit; do
+  psql "postgres://idah@db.example.com/postgres?sslmode=require" -c "CREATE DATABASE idah_$db"
+  pg_restore --no-owner -d "postgres://idah@db.example.com/idah_$db?sslmode=require" < "$db.dump"
+done
+```
+
+Then set `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
+`POSTGRES_SSLMODE` and `IDAH_POSTGRES_CONTAINER=0` in `.env`, and:
+
+```bash
+docker compose up -d
+```
+
+The bundled database stops being started, and its volume stays untouched — keep
+it until you are satisfied, then remove it with
+`docker volume rm <project>_postgres_data`.
+
 ### Your own Redis
 
 ```bash
@@ -113,6 +208,11 @@ REDIS_URL=rediss://:password@redis.example.com:6379/0
 
 The installer turns off the bundled Redis and checks the connection. Every
 service uses the same Redis, since it carries the events they send each other.
+
+This can also be changed after the install: set `REDIS_URL` and
+`IDAH_REDIS_CONTAINER=0`, then `docker compose up -d`. Nothing needs copying,
+since Redis holds cached values and events rather than records, but events in
+flight at that moment are lost — do it while the system is quiet.
 
 - **TLS:** `rediss://` connects with TLS and verifies the server's certificate;
   `redis://` is plain, for the many self-hosted servers without TLS.
@@ -135,6 +235,12 @@ IDAH_CA_CERT=/certs/ca.pem
 PostgreSQL then trusts only this file, so it must include that server's CA.
 Everything else, Redis and public HTTPS alike, keeps trusting the public CAs
 too.
+
+TLS to either server can be turned on after the install: change
+`POSTGRES_SSLMODE`, or the scheme in `REDIS_URL`, add `IDAH_CA_CERT` if the
+certificates are not from a public CA, then `docker compose up -d`. The
+installer's connection checks only run at install time, so if a service cannot
+connect afterwards, `docker compose logs <service>` says why.
 
 ### S3 instead of local storage
 

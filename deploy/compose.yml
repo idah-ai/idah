@@ -55,13 +55,21 @@ x-service-env: &service-env
   LOG_SHOW_ERROR_DETAILS: ${LOG_SHOW_ERROR_DETAILS:-false}
 
 services:
+  # HTTP, and HTTPS when IDAH_TLS_CONF points at tls.conf. Otherwise TLS
+  # belongs to whatever terminates it in front of the HTTP port, and the HTTPS
+  # port answers nothing. IDAH_HTTP_BIND=127.0.0.1 keeps the HTTP port off the
+  # network for a terminator running on this machine.
   nginx:
     image: nginx:alpine
     restart: always
     ports:
-      - "${IDAH_HTTP_PORT:-8080}:80"
+      - "${IDAH_HTTP_BIND:-0.0.0.0}:${IDAH_HTTP_PORT:-8080}:80"
+      - "${IDAH_HTTPS_BIND:-0.0.0.0}:${IDAH_HTTPS_PORT:-8443}:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./routes.conf:/etc/nginx/routes.conf:ro
+      - ${IDAH_TLS_CONF:-./tls-disabled.conf}:/etc/nginx/tls/tls.conf:ro
+      - ./config/certs:/certs:ro
     depends_on:
       - frontend
       - iam
