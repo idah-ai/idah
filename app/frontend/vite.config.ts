@@ -12,11 +12,6 @@ export default defineConfig({
     fs: {
       allow: ["/app/frontend/build"],
     },
-    watch: {
-      // use polling if file system events don’t trigger (Docker, WSL, NFS)
-      usePolling: true,
-      interval: 100,
-    },
   },
   test: {
     workspace: [
