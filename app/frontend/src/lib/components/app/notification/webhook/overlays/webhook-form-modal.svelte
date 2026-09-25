@@ -35,7 +35,7 @@
           attributes: {
             name: null,
             url: null,
-            event_type: null,
+            event_types: [],
             secret_key: null,
             enabled: false,
           },
@@ -51,7 +51,7 @@
     return {
       name: source.name,
       url: source.url,
-      event_type: source.event_type,
+      event_types: source.event_types,
       secret_key: source.secret_key,
       enabled: source.enabled,
     };
@@ -79,7 +79,7 @@
         attributes: {
           name: draft.name,
           url: draft.url,
-          event_type: draft.event_type,
+          event_types: draft.event_types,
           secret_key: draft.secret_key,
           enabled: draft.enabled,
         },
@@ -104,7 +104,7 @@
         attributes: {
           name: draft.name,
           url: draft.url,
-          event_type: draft.event_type,
+          event_types: draft.event_types,
           secret_key: draft.secret_key,
           enabled: draft.enabled,
         },
@@ -131,7 +131,7 @@
       const validated = validateData(schema, {
         name: draft.name,
         url: draft.url,
-        event_type: draft.event_type,
+        event_types: draft.event_types,
         secret_key: draft.secret_key,
         enabled: draft.enabled,
       });

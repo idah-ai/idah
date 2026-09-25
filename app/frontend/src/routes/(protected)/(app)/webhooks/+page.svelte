@@ -65,7 +65,7 @@
       dataSource={webhooksMemoryDataSource}
       listOptions={{
         fields: {
-          ["webhooks"]: ["id", "name", "url", "event_type", "secret_key", "enabled", "created_at"],
+          ["webhooks"]: ["id", "name", "url", "event_types", "enabled", "created_at"],
         },
       }}
     >

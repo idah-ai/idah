@@ -1,4 +1,5 @@
 import WebhookEnabledCell from "@/components/app/notification/webhook/data-tables/webhook-enabled-cell.svelte";
+import WebhookEventTypesCell from "@/components/app/notification/webhook/data-tables/webhook-event-types-cell.svelte";
 import WebhookNameCell from "@/components/app/notification/webhook/data-tables/webhook-name-cell.svelte";
 import WebhookRowActionCell from "@/components/app/notification/webhook/data-tables/webhook-row-action-cell.svelte";
 import WebhookUrlCell from "@/components/app/notification/webhook/data-tables/webhook-url-cell.svelte";
@@ -51,6 +52,7 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
     },
     visible: true,
     hidable: false,
+    cellComponent: WebhookEventTypesCell,
   },
   created_at: {
     label: "Created At",
