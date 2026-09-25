@@ -1,5 +1,6 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import Switch from "@/components/ui/switch/switch.svelte";
 
   import { FieldGroup, FieldSet } from "@/components/ui/field";
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
@@ -16,11 +17,11 @@
   let resource: string = WebhookRecord.type;
 
   // Variables::Reactive
-  let {name, url, event_type, secret_key} = $derived(webhook);
+  let { name, url, event_type, secret_key, enabled } = $derived(webhook);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, url, event_type, secret_key });
+    onValueChange({ name, url, event_type, secret_key, enabled });
   });
 </script>
 
@@ -67,6 +68,8 @@
       errors={fieldErrors["secret_key"]}
       value={secret_key}
       oninput={(e) => (secret_key = e.currentTarget.value)}
-    />  
+    />
+
+    <Switch id="enabled-webhook" checked={enabled} onCheckedChange={(checkedValue) => (enabled = checkedValue)} />
   </FieldGroup>
 </FieldSet>

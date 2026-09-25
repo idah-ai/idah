@@ -1,21 +1,21 @@
 <script lang="ts">
-    import WebhookForm from "@/components/app/notification/webhook/forms/webhook-form.svelte";
-    import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-    
-    import { showToast } from "@/components/ui/toast/index.svelte";
-    import { showActionFailedToast } from "@/utils/error/error.toasts";
-    import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
-    import { refetches } from "@/utils/refetch";
-    
-    import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
-    import { createWebhookSchema, updateWebhookSchema } from "@/data/model/notification/webhooks/schema";
-    import { getFieldErrors, validateData } from "@/utils/validate";
+  import WebhookForm from "@/components/app/notification/webhook/forms/webhook-form.svelte";
+  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
-    import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-    import type { Hash } from "@/utils/types";
-    import type { ZodSchema } from "zod";
+  import { showToast } from "@/components/ui/toast/index.svelte";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
+  import { refetches } from "@/utils/refetch";
 
- // Props
+  import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
+  import { createWebhookSchema, updateWebhookSchema } from "@/data/model/notification/webhooks/schema";
+  import { getFieldErrors, validateData } from "@/utils/validate";
+
+  import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { Hash } from "@/utils/types";
+  import type { ZodSchema } from "zod";
+
+  // Props
   interface Props extends FormModalBaseProps {
     webhookRecord?: WebhookRecord;
   }
@@ -73,7 +73,7 @@
     draft = { ...value };
     changeTracker.update(value);
   }
- async function createWebhook(): Promise<void> {
+  async function createWebhook(): Promise<void> {
     await webhooksBackendDataSource.create(
       {
         attributes: {

@@ -9,7 +9,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
-  import { organizationColumns } from "@/components/app/organizations/data-tables/organization-columns";
+  import { webhookColumns } from "@/components/app/notification/webhook/data-tables/webhook-columns";
   import { webhookBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
 
@@ -22,7 +22,7 @@
   // Variables
   let currentAccount = $authStatus.authContext;
   let openNewWebhookFormModal: boolean = $state(false);
-  let columns = $state(organizationColumns);
+  let columns = $state(webhookColumns);
   let canUpdateWebhook = $state(false);
   let canDeleteWebhook = $state(false);
 
