@@ -188,6 +188,7 @@
       class={cn("w-full justify-between", {
         "border-destructive border-1": errors,
       })}
+      {disabled}
     >
       {#if slotTrigger}
         {@render slotTrigger({ selectedChoice, clearable, disabled })}
