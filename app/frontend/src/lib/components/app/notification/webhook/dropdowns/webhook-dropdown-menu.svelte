@@ -10,7 +10,7 @@
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
-  import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
+  import { WebhookRecord, webhooksMemoryDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -65,7 +65,7 @@
   }
 
   async function fetchWebhook() {
-    const webhookRes = await webhooksBackendDataSource.get(webhookId, {
+    const webhookRes = await webhooksMemoryDataSource.get(webhookId, {
       fields: {
         [WebhookRecord.type]: ["name", "url", "event_type", "secret_key"],
       },
@@ -81,7 +81,7 @@
       description: `Are you sure you want to delete this webhook "${webhookRecord?.name}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          await webhooksBackendDataSource.delete(webhookId, { showErrorToast: false });
+          await webhooksMemoryDataSource.delete(webhookId, { showErrorToast: false });
           $refetches.webhooks.list = new Date();
           showToast.success({
             title: "Webhook deleted",

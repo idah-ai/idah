@@ -12,8 +12,8 @@
   import { webhookColumns } from "@/components/app/notification/webhook/data-tables/webhook-columns";
   import { webhookBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-
-  import { webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
+  // import { webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
+  import { webhooksMemoryDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
@@ -62,7 +62,7 @@
       name="webhooks"
       refetchKey="webhooks"
       {columns}
-      dataSource={webhooksBackendDataSource}
+      dataSource={webhooksMemoryDataSource}
       listOptions={{
         fields: {
           ["webhooks"]: ["id", "name", "url", "event_type", "secret_key", "enabled", "created_at"],
