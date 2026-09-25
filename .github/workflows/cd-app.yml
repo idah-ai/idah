@@ -254,3 +254,48 @@ jobs:
           IMAGE: ${{ env.IMAGE_PREFIX }}${{ matrix.service }}:${{ needs.prepare.outputs.image_tag }}
           EXPECTED_VERSION: ${{ needs.prepare.outputs.version || '0.0.0-dev' }}
         run: .github/scripts/smoke-image.sh "$SERVICE" "$IMAGE" "$EXPECTED_VERSION"
+
+  # The files a customer installs with, published beside the images so the
+  # install is one command. Only for a version tag: a dispatched run publishes
+  # sha- images that no release points at.
+  release:
+    name: Publish the installer
+    if: github.ref_type == 'tag'
+    needs: [prepare, smoke]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build the bundle
+        run: |
+          set -euo pipefail
+          bundle="idah-$VERSION"
+          mkdir -p "dist/$bundle"
+          cp deploy/install.sh deploy/compose.yml deploy/.env.example deploy/nginx.conf \
+             deploy/routes.conf deploy/tls.conf deploy/tls-disabled.conf deploy/README.md "dist/$bundle/"
+
+          # The installer knows which release it belongs to, so it installs that
+          # version and downloads the matching bundle when run on its own.
+          sed -i "s/^release_version=\"\"/release_version=\"$VERSION\"/" "dist/$bundle/install.sh"
+          grep -q "^release_version=\"$VERSION\"$" "dist/$bundle/install.sh" \
+            || { echo "::error::could not stamp the version into install.sh"; exit 1; }
+          chmod +x "dist/$bundle/install.sh"
+
+          tar -czf "dist/$bundle.tar.gz" -C dist "$bundle"
+          cp "dist/$bundle/install.sh" dist/install.sh
+          cd dist && sha256sum "$bundle.tar.gz" install.sh > SHA256SUMS
+          cat SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach it to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/idah-${{ env.VERSION }}.tar.gz
+            dist/install.sh
+            dist/SHA256SUMS
+          fail_on_unmatched_files: true

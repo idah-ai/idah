@@ -10,7 +10,7 @@ at the repository root, with settings in `config/development/`.
 
 | File | Purpose |
 |---|---|
-| `install.sh` | The installer. Generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
+| `install.sh` | The installer. Downloads the release when run on its own, generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
 | `compose.yml` | The stack, pulling published images pinned to one release. nginx, PostgreSQL and Redis are pinned to exact versions too. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
 | `nginx.conf` | The reverse proxy in front of the services, with `routes.conf` for the routes it serves. |
@@ -23,14 +23,37 @@ Customers keep their own changes in a `compose.override.yml` next to
 ## Installing
 
 ```bash
+curl -fsSL https://github.com/idah-ai/idah/releases/latest/download/install.sh | bash
+```
+
+The installer downloads the rest of the release it belongs to, checks it
+against the published `SHA256SUMS`, unpacks it into `./idah` and installs from
+there. It asks two things, the public URL and the administrator's email, then
+generates the signing key pair and every password — one per internal service
+account — creates the databases, runs the migrations, creates the accounts and
+starts the stack. The administrator's password is printed once and stored
+nowhere.
+
+That line installs the newest release. To install a particular one, name it —
+the version pins the files and the images alike:
+
+```bash
+IDAH_VERSION=0.5.0 curl -fsSL https://github.com/idah-ai/idah/releases/latest/download/install.sh | bash
+```
+
+To read it before running it, or to install on a machine that cannot reach
+GitHub, take the bundle instead:
+
+```bash
+curl -fsSLO https://github.com/idah-ai/idah/releases/latest/download/idah-<version>.tar.gz
+curl -fsSLO https://github.com/idah-ai/idah/releases/latest/download/SHA256SUMS
+shasum -a 256 -c SHA256SUMS --ignore-missing
+tar -xzf idah-<version>.tar.gz && cd idah-<version>
 ./install.sh
 ```
 
-It asks two things, the public URL and the administrator's email, and installs
-the release it came with, running its own PostgreSQL and Redis. It generates
-the signing key pair and every password — one per internal service account —
-creates the databases, runs the migrations, creates the accounts and starts the
-stack. The administrator's password is printed once and stored nowhere.
+An install on a machine with no internet also needs the eight images mirrored
+into a registry it can reach, with `IDAH_IMAGE_PREFIX` pointed at it.
 
 To configure anything before installing, create `.env` first and edit it:
 
@@ -48,9 +71,9 @@ handy for scripted installs; the installer writes it into `.env`, so later
 IDAH_VERSION=0.0.0-local IDAH_IMAGE_PREFIX=idah- ./install.sh --yes --admin-email you@example.com
 ```
 
-It checks the images and any server you configured before writing anything,
-so a failed check leaves nothing behind. `--yes` asks nothing, for unattended
-installs: set `IDAH_URL` in `.env` and pass `--admin-email`.
+It checks the images, the ports and any server you configured before writing
+anything, so a failed check leaves nothing behind. `--yes` asks nothing, for
+unattended installs: set `IDAH_URL` in `.env` and pass `--admin-email`.
 
 ## Configuration
 

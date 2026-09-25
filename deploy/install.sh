@@ -70,7 +70,10 @@ while [ $# -gt 0 ]; do
     --provision) provision=true; shift ;;
     --upgrade) upgrade=true; shift ;;
     --start-empty) start_empty=true; shift ;;
-    -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$self"; exit 0 ;;
+    -h|--help)
+      [ -r "$self" ] || die "--help reads this file, which is not on disk when the installer arrives through a pipe.
+       Download it first: curl -fsSLO ${IDAH_RELEASE_BASE:-https://github.com/idah-ai/idah/releases/latest/download}/install.sh"
+      awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$self"; exit 0 ;;
     *) die "unknown argument: $1 (settings go in .env; see --help)" ;;
   esac
 done
@@ -115,6 +118,57 @@ for tool in docker openssl curl; do
 done
 docker compose version > /dev/null 2>&1 || die "docker compose (v2) is required"
 docker info > /dev/null 2>&1 || die "cannot talk to the Docker daemon; is it running?"
+# --- the files this installs with --------------------------------------------
+
+# Run on its own (curl ... | bash), the installer fetches the rest of the
+# release it belongs to. Next to them already — the unpacked bundle, or a
+# checkout — it uses those and downloads nothing.
+release_base=${IDAH_RELEASE_BASE:-https://github.com/idah-ai/idah/releases/download}
+
+checksum() { # <file> -> its sha256
+  if command -v sha256sum > /dev/null; then sha256sum "$1" | cut -d' ' -f1
+  else shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+if [ ! -f compose.yml ]; then
+  # IDAH_VERSION pins the whole install, files and images alike; without it the
+  # release this installer came from is what gets installed.
+  bundle_version=${IDAH_VERSION:-$release_version}
+  [ -n "$bundle_version" ] || die "this installer does not carry a release, so there is nothing to download.
+       Run it from an unpacked release bundle, or from deploy/ in a checkout,
+       or name the release to install: IDAH_VERSION=0.5.0"
+  command -v tar > /dev/null || die "tar is required to unpack the release"
+
+  target=${IDAH_DIR:-idah}
+  [ -f "$target/compose.yml" ] && die "$target already holds an install. Run ./install.sh from inside it."
+
+  say "Downloading IDAH $bundle_version"
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  bundle="idah-$bundle_version.tar.gz"
+  url="$release_base/v$bundle_version/$bundle"
+  curl -fsSL -o "$tmp/$bundle" "$url" || die "could not download $url
+       Check that this machine can reach it, or download the bundle by hand and run ./install.sh from it."
+
+  # The checksums are published beside the bundle; a mismatch means the file is
+  # not the one that release built.
+  if curl -fsSL -o "$tmp/SHA256SUMS" "$release_base/v$bundle_version/SHA256SUMS"; then
+    expected=$(grep " $bundle\$" "$tmp/SHA256SUMS" | cut -d' ' -f1)
+    [ -n "$expected" ] || die "SHA256SUMS for $bundle_version does not mention $bundle"
+    [ "$expected" = "$(checksum "$tmp/$bundle")" ] || die "$bundle does not match its published checksum. Downloaded from: $url"
+    echo "   checksum verified"
+  else
+    die "could not fetch the checksums for $bundle_version, so the download cannot be verified"
+  fi
+
+  # Only now, with a verified bundle in hand, is anything created here.
+  mkdir -p "$target"
+  tar -xzf "$tmp/$bundle" --strip-components=1 -C "$target"
+  cd "$target"
+  echo "   unpacked into $PWD"
+fi
+
 for file in compose.yml nginx.conf routes.conf tls-disabled.conf .env.example; do
   [ -f "$file" ] || die "$file not found; run this from the directory it lives in"
 done
