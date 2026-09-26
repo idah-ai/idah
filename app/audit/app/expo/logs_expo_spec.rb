@@ -257,5 +257,29 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
         )
       end
     end
+
+    it "ignores entry submitted event without submission_type" do
+      @content[:metadata].delete(:submission_type)
+      expect(service).not_to receive(:create)
+
+      Verse.publish_resource_event(
+        resource_type: @resource_type,
+        resource_id: @resource_id,
+        event: "submitted",
+        payload: @content
+      )
+    end
+
+    it "ignores entry submitted event with start submission_type" do
+      @content[:metadata][:submission_type] = "start"
+      expect(service).not_to receive(:create)
+
+      Verse.publish_resource_event(
+        resource_type: @resource_type,
+        resource_id: @resource_id,
+        event: "submitted",
+        payload: @content
+      )
+    end
   end
 end
