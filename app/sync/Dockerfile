@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM ruby:3.4.2-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,7 +25,8 @@ RUN apt-get update && apt-get install -y \
 ARG TARGETARCH
 ARG UPDCLI_VERSION=v1.1.0
 ARG BUNDLE_WITHOUT="development test"
-ARG APP_ENVIRONMENT
+# Published images run in production; compose and staging pass their own value.
+ARG APP_ENVIRONMENT=production
 
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
 ENV PORT=3000
@@ -38,7 +41,14 @@ RUN bundle config set force_ruby_platform true
 RUN bundle config set --local without "$BUNDLE_WITHOUT"
 RUN bundle install --jobs 20 --retry 5
 
+# The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
+COPY common/ /common/
+
 COPY app/sync/ .
+
+# Plugins, minus their frontend sources, found in /plugins by
+# PluginSystem.default_path.
+COPY --exclude=*/frontend plugins/ /plugins/
 
 # Download and extract updcli binary based on architecture from the GitHub release
 RUN ARCH=${TARGETARCH} && \
@@ -53,5 +63,11 @@ RUN ARCH=${TARGETARCH} && \
     mv /usr/local/bin/updcli-linux-${ARCH_SUFFIX} /usr/local/bin/updcli-static && \
     chmod +x /usr/local/bin/updcli-static && \
     rm -rf /tmp/updcli-tars
+
+# Stamped by the release workflow. Without them the service reports 0.0.0-dev.
+ARG IDAH_VERSION
+ARG IDAH_GIT_SHA
+ENV IDAH_VERSION="$IDAH_VERSION"
+ENV IDAH_GIT_SHA="$IDAH_GIT_SHA"
 
 CMD ["bundle", "exec", "puma"]

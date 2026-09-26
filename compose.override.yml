@@ -1,0 +1,264 @@
+# Development setup, merged over compose.yml automatically by `docker compose`.
+#
+# config/development/.env says how the containers reach PostgreSQL and Redis;
+# each service reads its own settings from app/<service>/.env.development.
+# Source, common/ and plugins/ are mounted, and
+# Postgres, Redis, the vite frontend, TLS on idah.localhost and MailHog are
+# added here.
+#
+# Postgres and Redis run as containers by default. To use the ones on your
+# machine instead, set these in a root .env file (see .env.example):
+#   IDAH_POSTGRES_HOST=host.docker.internal
+#   IDAH_POSTGRES_CONTAINER=0
+#   IDAH_REDIS_HOST=host.docker.internal
+#   IDAH_REDIS_CONTAINER=0
+
+# The Ruby services wait for the database containers when they run, and start
+# without them when they are switched off.
+x-dev-databases: &dev-databases
+  postgres:
+    condition: service_healthy
+    required: false
+  redis:
+    condition: service_healthy
+    required: false
+
+services:
+  nginx:
+    ports:
+      - "8443:443"
+    volumes:
+      - ./config/development/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/development/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - mails
+
+  postgres:
+    image: postgres:17
+    scale: ${IDAH_POSTGRES_CONTAINER:-1}
+    # POSTGRES_USER and POSTGRES_PASSWORD, shared with the services.
+    env_file:
+      - config/development/.env
+    environment:
+      POSTGRES_DB: postgres
+    ports:
+      - "${IDAH_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  redis:
+    image: redis:8.10.2
+    scale: ${IDAH_REDIS_CONTAINER:-1}
+    command: redis-server --appendonly yes
+    ports:
+      - "${IDAH_REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  iam:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_IAM:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/iam:/app
+      - ./common:/common
+      - ./config/development/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - iam_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  media:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/media:/app
+      - ./common:/common
+      - ./plugins:/plugins
+      - ./plugins_dev:/plugins_dev
+      - media_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  dataset:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_DATASET:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/dataset:/app
+      - ./common:/common
+      - ./plugins:/plugins
+      - ./plugins_dev:/plugins_dev
+      - ./config/development/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - dataset_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  setting:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/setting:/app
+      - ./common:/common
+      - ./plugins:/plugins
+      - ./plugins_dev:/plugins_dev
+      - setting_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  audit:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_AUDIT:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/audit:/app
+      - ./common:/common
+      - ./config/development/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - audit_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  sync:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/sync:/app
+      - ./common:/common
+      - ./plugins:/plugins
+      - ./plugins_dev:/plugins_dev
+      - ./config/development/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - sync_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  notification:
+    build:
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    env_file:
+      - config/development/.env
+    environment:
+      SENTRY_DSN: ${SENTRY_DSN_NOTIFICATION:-}
+    depends_on: *dev-databases
+    volumes:
+      - ./app/notification:/app
+      - ./common:/common
+      - ./config/development/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - notification_bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "idah.localhost:host-gateway"
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  mails:
+    image: mailhog/mailhog
+    platform: linux/amd64
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app-network
+
+  frontend:
+    build: !override
+      context: ./app/frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
+    ports: !override
+      - "5173"
+    volumes:
+      - ./app/frontend:/app/frontend
+      - node_modules:/app/frontend/node_modules
+    entrypoint: ./dev-entrypoint.sh
+    command: pnpm run dev
+    stdin_open: true
+    tty: true
+
+volumes:
+  # Same names as the former docker-compose-db.yml, so existing data is kept.
+  postgres_data:
+  redis_data:
+  iam_bundler_cache:
+  media_bundler_cache:
+  dataset_bundler_cache:
+  setting_bundler_cache:
+  audit_bundler_cache:
+  sync_bundler_cache:
+  notification_bundler_cache:
+  node_modules:

@@ -6,6 +6,10 @@ module PluginSystem
     field :name, String
     field :version, String
 
+    # Oldest platform version this plugin works with, e.g. "0.1.0". Optional:
+    # a plugin without it is loaded without a compatibility check.
+    field? :idah_version, String, key: :idahVersion
+
     field :title, String
     field(:description, String).default("no description provided")
 

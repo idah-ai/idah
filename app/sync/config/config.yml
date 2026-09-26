@@ -35,17 +35,27 @@ plugins:
   - name: shrine
     config:
       storages:
+        # SYNC_FILES_ADAPTER picks the storage: file_system (the default) keeps
+        # files on disk under SYNC_FILES_PATH; s3 uses the SYNC_FILES_* S3
+        # settings, which are only required in that case.
         - name: default
+<% if ENV.fetch("SYNC_FILES_ADAPTER", "file_system") == "s3" %>
+<%   # Empty counts as missing: compose passes unset settings as empty strings.
+      s3 = ->(key) { ENV[key].to_s.empty? ? raise(KeyError, "#{key} is required when SYNC_FILES_ADAPTER=s3") : ENV[key] } %>
           adapter: s3
           config:
-            bucket: <%= ENV.fetch("SYNC_FILES_BUCKET") %>
-            access_key_id: <%= ENV.fetch("SYNC_FILES_ACCESS_KEY_ID") %>
-            secret_access_key: <%= ENV.fetch("SYNC_FILES_SECRET_ACCESS_KEY") %>
+            bucket: <%= s3.("SYNC_FILES_BUCKET") %>
+            access_key_id: <%= s3.("SYNC_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= s3.("SYNC_FILES_SECRET_ACCESS_KEY") %>
             public: false
-            region: <%= ENV.fetch("SYNC_FILES_REGION") %>
+            region: <%= s3.("SYNC_FILES_REGION") %>
             prefix: files
-            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
-  - name: periodic
+            endpoint: <%= s3.("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
+<% else %>
+          adapter: file_system
+          config:
+            path: <%= ENV.fetch("SYNC_FILES_PATH", "tmp/storage/production") %>
+<% end %>
 
 kv_store:
   adapter: Verse::Redis::KVStore
@@ -78,7 +88,8 @@ idah:
   plugins:
     # Path to load plugins from, supports glob patterns.
     # Will autoload plugins from this path
-    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins/**") %>
+    # Defaults to plugins/ at the repository root (see PluginSystem.default_path).
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH"){ PluginSystem.default_path } %>
 
     # Auto reload modules when files change (only manual plugins)
     # True if the IDAH_DEV_PLUGIN env var is set to any value

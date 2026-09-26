@@ -19,7 +19,7 @@ export class PluginRecord extends Record {
 
 RecordFactory.registerTypes(PluginRecord);
 
-const base_path = `${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins`;
+const base_path = `/api/v1/setting/plugins`;
 
 export const pluginsBackendDataSource = createBackendDataSource(PluginRecord, base_path, {
   modalities: async (): Promise<{ modalities: Modalities; plugins: Plugins }> => {

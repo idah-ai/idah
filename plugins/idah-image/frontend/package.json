@@ -3,7 +3,7 @@
   "displayName": "IDAH Image Annotation",
   "description": "A module for annotating image.",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

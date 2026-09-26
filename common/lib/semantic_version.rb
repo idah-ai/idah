@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class SemanticVersion
+  # Gives <, <=, >, >= and between? on top of the <=> defined below.
+  include Comparable
+
   attr_reader :major, :minor, :patch
 
   def initialize(str)

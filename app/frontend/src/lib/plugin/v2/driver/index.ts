@@ -57,7 +57,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
   private readonly accountSettingsMgr: AccountSettingsManager;
-  private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
+  private readonly rpc = new JsonRpcDatasource(`/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
 
@@ -442,8 +442,8 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
       // TODO: this is a hack to get the correct media URL for video vs image.
       // We should have a better way to determine the media type and URL.
       entry.dataset.modality === "idah-video"
-        ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
-        : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+        ? `/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+        : `/api/v1/media/medias/files/${entry.resource}/processed.webp`,
   };
 
   const driver = new IdahDriverV2({

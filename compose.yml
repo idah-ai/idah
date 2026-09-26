@@ -1,0 +1,133 @@
+# The IDAH stack, built from source: the developer and CI base.
+#
+# `docker compose` merges compose.override.yml over this file automatically,
+# which adds the development setup and the settings in config/development/.
+# On its own this file only builds and wires the services; it carries no
+# settings, so `docker compose -f compose.yml up` does not start a usable stack.
+#
+# An on-premise install does not use these files. It uses the release bundle in
+# deploy/, which pulls published images and reads a single .env.
+
+# Stamped into the images and reported by /healthcheck. The release workflow
+# sets them; a local build leaves them empty and the services report 0.0.0-dev.
+x-version-args: &version-args
+  IDAH_VERSION: ${IDAH_VERSION:-}
+  IDAH_GIT_SHA: ${IDAH_GIT_SHA:-}
+
+services:
+  nginx:
+    image: nginx:1.30.5-alpine
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend
+      - media
+      - dataset
+      - iam
+      - setting
+      - audit
+      - sync
+      - notification
+    networks:
+      - app-network
+
+  iam:
+    build:
+      context: .
+      dockerfile: ./app/iam/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  media:
+    build:
+      context: .
+      dockerfile: ./app/media/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - dataset
+
+  dataset:
+    build:
+      context: .
+      dockerfile: ./app/dataset/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  setting:
+    build:
+      context: .
+      dockerfile: ./app/setting/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  audit:
+    build:
+      context: .
+      dockerfile: ./app/audit/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  sync:
+    build:
+      context: .
+      dockerfile: ./app/sync/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  notification:
+    build:
+      context: .
+      dockerfile: ./app/notification/Dockerfile
+      args: *version-args
+    ports:
+      - "3000"
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./app/frontend/Dockerfile
+    environment:
+      PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
+    ports:
+      - "3000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

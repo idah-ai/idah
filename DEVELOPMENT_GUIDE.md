@@ -27,6 +27,7 @@ This guide covers everything you need to know to set up, run, test, and contribu
 - [Working on the Frontend](#working-on-the-frontend)
 - [Plugin Development](#plugin-development)
 - [Environment Variables](#environment-variables)
+- [Releasing](#releasing)
 - [Common Troubleshooting](#common-troubleshooting)
 
 ---
@@ -90,21 +91,28 @@ git clone https://github.com/idah-ai/idah.git
 cd idah
 ```
 
-### 2. Start the databases
+### 2. Databases
 
-```bash
-docker compose -f docker-compose-db.yml up -d
-```
-
-This starts:
+`docker compose up` starts them as containers along with the stack:
 - **PostgreSQL 17** on port `5432`
 - **Redis** on port `6379`
+
+To use the PostgreSQL and Redis on your machine instead, copy `.env.example` to `.env` and uncomment the local-database block:
+
+```bash
+IDAH_POSTGRES_HOST=host.docker.internal
+IDAH_POSTGRES_CONTAINER=0
+IDAH_REDIS_HOST=host.docker.internal
+IDAH_REDIS_CONTAINER=0
+```
 
 ### 3. Start IDAH services
 
 ```bash
 docker compose up -d --build
 ```
+
+`compose.yml` builds the images and wires the services together. `docker compose` automatically merges `compose.override.yml` on top of it, which adds the development setup: source, `common/` and plugin mounts, the settings in `config/development/`, Postgres and Redis, the dev entrypoints, the vite frontend, TLS on `idah.localhost` and MailHog. Together they are the developer environment; an on-premise install uses the release bundle in `deploy/`, which pulls published images and reads a single `.env`.
 
 This builds and starts all services:
 - `nginx` (reverse proxy, port 8080/8443)
@@ -310,7 +318,7 @@ docker compose run --rm frontend pnpm run check
 
 ### Running CI checks locally
 
-The CI pipeline (`.github/workflows/ci.yml`) runs the following for each service:
+The CI pipeline (`.github/workflows/ci-app.yml`) runs the following for each service. A change to `common/` runs it for every Ruby service, and `.github/workflows/ci-common.yml` also runs `common/`'s own specs (`cd common && bundle exec rspec`, needs Postgres and Redis).
 
 1. **Format check** (Ruby: Rubocop, JS/TS: Prettier + ESLint)
 2. **Database setup** (`bundle exec rake db:test:prepare`)
@@ -348,7 +356,6 @@ app/<service>/
 │   ├── util/           # Utility classes
 │   ├── spec_data/      # Test fixtures and data
 │   └── spec_helper.rb  # RSpec helper
-├── common/             # Symlinked shared code
 ├── config/
 │   ├── boot.rb         # Application boot (Dotenv, Bundler, Zeitwerk)
 │   ├── config.yml      # Main config (plugins, DB, Redis, logging)
@@ -358,7 +365,7 @@ app/<service>/
 │   └── routes.rb       # Expo route registrations
 ├── db/
 │   └── migrations/     # Sequel migrations
-├── .env.development    # Development environment variables
+├── .env.development    # Development settings for this service
 ├── .env.test           # Test environment variables
 ├── Gemfile
 ├── Rakefile
@@ -467,7 +474,6 @@ app/frontend/
 │   ├── routes/           # SvelteKit route pages
 │   └── app.html          # HTML template
 ├── static/               # Static assets
-├── build/plugins/        # Symlinked plugins directory
 ├── package.json
 ├── svelte.config.js
 └── vite.config.ts
@@ -492,9 +498,12 @@ docker compose logs -f frontend
 cd app/frontend
 pnpm install
 
-# Start the dev server directly (point to a running backend)
-VITE_IDAH_HOST=https://idah.localhost:8443 pnpm run dev
+# Start the dev server directly
+pnpm run dev
 ```
+
+The app calls `/api/v1/<service>` on its own origin, so it needs nginx in front
+of it to reach the backend. Use <https://idah.localhost:8443>, not the vite port.
 
 ### Running frontend tests
 
@@ -549,8 +558,8 @@ For production plugins, place them in `plugins/` instead of `plugins_dev/`.
 
 ### Plugin activation
 
-- Backend plugins are auto-loaded from `app/<service>/plugins/` and `plugins/`
-- Frontend plugins are symlinked into `app/frontend/build/plugins/` via the dev entrypoint
+- Backend plugins are auto-loaded from `plugins/`, and from `plugins_dev/plugins/` in development (see `PluginSystem.default_path`)
+- Frontend plugin bundles are served by the setting service at `/api/v1/setting/plugins/<name>/files/plugin.js`. In development it serves them from the mounted `plugins/`, so build them with `pnpm run build` (or `pnpm run build:watch`) in `plugins/<name>/frontend`
 
 ---
 
@@ -568,6 +577,35 @@ For production plugins, place them in `plugins/` instead of `plugins_dev/`.
 | `PORT`                      | HTTP server port                     | `3000`            |
 | `PUMA_WORKERS`              | Puma worker count                    | `1`               |
 | `PUMA_THREADS`              | Puma threads per worker              | `16`              |
+| `IDAH_VERSION`              | Release the image was built from, reported by `/healthcheck` | `0.0.0-dev` |
+| `IDAH_GIT_SHA`              | Commit the image was built from, reported by `/healthcheck`  | `unknown`   |
+| `IDAH_URL`                  | Public address, used for links handed to people (e.g. in exports) | — |
+| `IDAH_INTERNAL_URL`         | Address for service-to-service calls  | `IDAH_URL`        |
+| `IDAH_API_OPEN_TIMEOUT`     | Seconds to connect to another service | `5`               |
+| `IDAH_API_READ_TIMEOUT`     | Seconds to wait for each read from another service | `30` |
+
+`IDAH_VERSION` and `IDAH_GIT_SHA` are build arguments stamped in by the release
+workflow, not settings you put in an env file. A local build leaves them empty
+and the service reports the defaults above.
+
+### Service-to-service calls
+
+Services call each other through nginx, at `/api/v1/<service>`, never through
+the public URL: inside a container `localhost` is the container itself, and a
+public domain may not resolve or route from there. Development sets
+`IDAH_INTERNAL_URL=http://nginx:8081` in each service's `.env.development`
+(8081 is an internal plain-HTTP port on the dev nginx); a deployment sets
+`http://nginx`. Tests leave it unset, so the client falls back to `IDAH_URL`,
+which the specs stub.
+
+To check a service can reach the others, logging in to iam with its own account:
+
+```bash
+docker compose exec media bundle exec rake api:check
+```
+
+A failed call raises `Api::HTTPError`, which carries the `status` and the
+response `body`. Certificates are always verified.
 
 ### IAM-specific variables
 
@@ -576,11 +614,80 @@ For production plugins, place them in `plugins/` instead of `plugins_dev/`.
 | `IDAH_SERVICE_ACCOUNT`     | Service account name for auth        |
 | `IDAH_SERVICE_PASSWORD`    | Service account password             |
 
+### Storage variables (media and sync)
+
+media reads `MEDIAS_FILES_*` and sync reads `SYNC_FILES_*`. Development and
+staging always store files on disk; these apply to production.
+
+| Variable                                  | Description                                   | Default                  |
+|-------------------------------------------|-----------------------------------------------|--------------------------|
+| `MEDIAS_FILES_ADAPTER` / `SYNC_FILES_ADAPTER` | `file_system` (files on disk) or `s3`     | `file_system`            |
+| `MEDIAS_FILES_PATH` / `SYNC_FILES_PATH`   | Where files go with `file_system`             | `tmp/storage/production` |
+| `…_BUCKET`, `…_REGION`, `…_ENDPOINT`, `…_ACCESS_KEY_ID`, `…_SECRET_ACCESS_KEY` | S3 settings, required only with `s3` | —            |
+
 ### Frontend variables
 
-| Variable              | Description                          | Default                               |
-|-----------------------|--------------------------------------|---------------------------------------|
-| `VITE_IDAH_HOST`      | Backend API host (used in dev mode)  | `https://idah.localhost:8443`         |
+| Variable                                    | Description                                   | Default      |
+|---------------------------------------------|-----------------------------------------------|--------------|
+| `PUBLIC_SENTRY_DSN`                         | Sentry DSN; empty disables reporting          | —            |
+| `PUBLIC_SENTRY_ENVIRONMENT`                 | Environment label on events                   | build mode   |
+| `PUBLIC_SENTRY_TRACES_SAMPLE_RATE`          | Fraction of transactions traced               | `1.0`        |
+| `PUBLIC_SENTRY_REPLAY_SAMPLE_RATE`          | Fraction of sessions recorded                 | `0.1`        |
+| `PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE` | Fraction of errored sessions recorded         | `1.0`        |
+
+Nothing environment-specific is built into the frontend image, so one image
+serves every install:
+
+- **The API base URL is not a variable.** The app calls `/api/v1/<service>` on
+  its own origin, which nginx routes to the services.
+- **Sentry is read at run time** through `$env/dynamic/public`, so the settings
+  above are container environment variables, not build arguments. Never pass a
+  DSN as a build argument: a published image carrying ours would send every
+  customer's errors, and their session replays, to our Sentry project.
+
+In development, `compose.override.yml` passes `SENTRY_DSN_FRONTEND` from your
+root `.env` as `PUBLIC_SENTRY_DSN`.
+
+---
+
+## Releasing
+
+Pushing a version tag publishes all eight images through
+`.github/workflows/cd-app.yml`:
+
+```bash
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+The workflow:
+
+1. Checks the tag is a version (`v0.4.0`, or `v0.4.0-rc.1` for a release
+   candidate) and that no image with that version exists yet. Published
+   versions are never overwritten: fix a bad release with the next patch.
+2. Builds every service for linux/amd64 and linux/arm64, stamping
+   `IDAH_VERSION` and `IDAH_GIT_SHA` into each image.
+3. Publishes `ghcr.io/idah-ai/idah-<service>:<version>`. Nothing is tagged `latest`.
+4. Smoke-tests every published image on both architectures with no source tree:
+   migrations run, `/healthcheck` reports the tagged version, and plugins load.
+
+The smoke test runs the same way locally, against the Postgres and Redis on your
+machine:
+
+```bash
+.github/scripts/smoke-image.sh media ghcr.io/idah-ai/idah-media:0.4.0 0.4.0
+```
+
+To try a branch without releasing it, run the workflow by hand from the Actions
+tab. It publishes `sha-<commit>` tags, and those images report `0.0.0-dev`.
+
+Two things to know:
+
+- **The frontend image is built for `http://localhost:8080`.** Its API URL is
+  baked in at build time until it becomes a run-time setting.
+- **Check package visibility after the first release.** New GHCR packages can
+  start private; make each `idah-*` package public in the organization's
+  package settings.
 
 ---
 
@@ -600,8 +707,8 @@ docker compose up -d <service>
 ### 2. Database connection errors
 
 ```bash
-# Ensure databases are running
-docker compose -f docker-compose-db.yml ps
+# Ensure databases are running (skip if you use local ones, see step 2)
+docker compose ps postgres redis
 
 # Reset a specific service database
 ./bin/reset <service>
@@ -612,35 +719,33 @@ docker compose run --rm iam bundle exec rake db:reset db:migrate
 
 ### 3. SSL certificate issues
 
-The dev environment uses self-signed certificates in `dev/nginx/ssl/`. If missing:
+The dev environment uses self-signed certificates in `config/development/ssl/`. If missing:
 
 ```bash
-mkdir -p dev/nginx/ssl
+mkdir -p config/development/ssl
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout dev/nginx/ssl/key.pem \
-  -out dev/nginx/ssl/cert.pem \
+  -keyout config/development/ssl/key.pem \
+  -out config/development/ssl/cert.pem \
   -subj "/CN=idah.localhost" \
   -addext "subjectAltName=DNS:idah.localhost,DNS:localhost"
 ```
 
 ### 4. Port conflicts
 
-If ports 5432 or 6379 are already in use:
+If ports 5432 or 6379 are already in use, move the database containers to other host ports in your root `.env`. The services reach them over the Docker network, so nothing else changes:
 
 ```bash
-# Change PostgreSQL port in docker-compose-db.yml
-# Then update DATABASE_URI in .env.docker
+IDAH_POSTGRES_PORT=5433
+IDAH_REDIS_PORT=6380
 ```
 
 ### 5. Reset everything (clean slate)
 
 ```bash
-# Stop everything and remove volumes
+# Stop everything and remove volumes, including the database containers' data
 docker compose down -v
-docker compose -f docker-compose-db.yml down -v
 
 # Start fresh
-docker compose -f docker-compose-db.yml up -d
 docker compose up -d --build
 docker compose exec iam bundle exec rake dev:setup dev:users
 ```
