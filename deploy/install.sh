@@ -169,7 +169,8 @@ if [ ! -f compose.yml ]; then
   echo "   unpacked into $PWD"
 fi
 
-for file in compose.yml nginx.conf routes.conf tls-disabled.conf .env.example; do
+for file in compose.yml .env.example config/nginx/nginx.conf config/nginx/routes.conf \
+            config/nginx/tls-disabled.conf; do
   [ -f "$file" ] || die "$file not found; run this from the directory it lives in"
 done
 
@@ -333,6 +334,35 @@ case "$pg_sslmode" in
        IDAH_CA_CERT=/certs/ca.pem (for a managed database, your provider's CA bundle)." ;;
 esac
 
+# --- the compose project ---------------------------------------------------
+
+# Compose takes the project name from this directory unless COMPOSE_PROJECT_NAME
+# says otherwise, and that name is the namespace for its containers and volumes.
+# A project of that name belonging to another directory would be shared: this
+# install would start that project's database and then fail to authenticate
+# against it, several steps from here, with nothing pointing at the cause.
+project=$(get COMPOSE_PROJECT_NAME)
+[ -n "$project" ] || project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
+
+# No match means no such project, which is the normal case: grep says so by
+# failing, and pipefail would take the whole installer down with it.
+elsewhere=$(docker ps -a --filter "label=com.docker.compose.project=$project" \
+  --format '{{.Label "com.docker.compose.project.working_dir"}}' 2> /dev/null \
+  | sort -u | grep -v "^$PWD\$" | head -1 || true)
+if [ -n "$elsewhere" ]; then
+  # Something unlike the taken name: what the directory above this one is called.
+  suggestion=$(basename "$(dirname "$PWD")" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
+  [ -n "$suggestion" ] && [ "$suggestion" != "$project" ] || suggestion="$project-2"
+
+  die "a compose project named '$project' already exists, belonging to
+       $elsewhere
+
+       Installing here would share its containers and volumes, including its
+       database. Give this install a project of its own and run this again:
+
+           echo \"COMPOSE_PROJECT_NAME=$suggestion\" >> $env_file"
+fi
+
 # --- ports -----------------------------------------------------------------
 
 # Both ports are published, the HTTPS one even with no TLS configured, so a
@@ -362,7 +392,8 @@ done
 # start after everything else has been set up.
 tls_conf=$(get IDAH_TLS_CONF)
 if [ -n "$tls_conf" ]; then
-  [ -f "$tls_conf" ] || die "IDAH_TLS_CONF is $tls_conf, which does not exist next to compose.yml"
+  [ -f "$tls_conf" ] || die "IDAH_TLS_CONF is $tls_conf, which does not exist. The one this release
+       ships is ./config/nginx/tls.conf"
   for f in "$certs_dir/idah.crt" "$certs_dir/idah.key"; do
     [ -r "$f" ] || die "$tls_conf serves HTTPS from $certs_dir/idah.crt and $certs_dir/idah.key. Missing: $f"
   done
@@ -516,6 +547,9 @@ for key in $env_keys; do
   set_env "$key" "$(quote "$(from_env "$key")")"
   echo "   $key from the environment"
 done
+
+# Written in, so renaming the directory later cannot detach the volumes.
+[ -n "$(from_file COMPOSE_PROJECT_NAME)" ] || set_env COMPOSE_PROJECT_NAME "$project"
 
 [ -n "$(from_file IDAH_VERSION)" ] || set_env IDAH_VERSION "$version"
 [ -n "$(from_file IDAH_URL)" ]     || set_env IDAH_URL "$url"
@@ -834,7 +868,8 @@ IDAH $version is $($continuing && echo "ready" || echo "installed").$($copied &&
   URL       $url$tls_note
   Login     $admin_email
 $password_line
-  Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the postgres_data volume")
+  Project   $project (its containers and volumes carry this name)
+  Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the ${project}_postgres_data volume")
   Redis     $($external_redis && echo "$redis_addr" || echo "bundled, in the redis_data volume")
   Email     $([ -n "$smtp_host" ] && echo "via $smtp_host" || echo "off until MAIL_SMTP_HOST is set")
 
