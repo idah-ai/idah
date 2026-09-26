@@ -114,15 +114,22 @@ RSpec.describe Exports::Upd::Exporter do
       allow(ENV).to receive(:fetch).with("IDAH_URL").and_return("http://localhost:3000/")
 
       # Stub API calls
+      # index_all returns a paginated enumerator that yields pages (arrays of items).
+      # Each stub returns an array of pages: [[item]].
       allow(Api[:idah].dataset.datasets).to receive(:show).with(id: dataset_id).and_return(dataset_response)
       allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([entry_response])
       allow(Api[:idah].dataset.annotations).to receive(:index_all).and_return([annotation_response])
       allow(Api[:idah].media.medias).to receive(:index_all).and_return([media_response])
       allow(Api[:idah].media.medias).to receive(:files).and_return(media_binary_data)
 
+      # Stub streaming media download to yield chunks
+      allow(exporter).to receive(:system).and_return(true)
+
       # Stub File operations - prevent actual file opening
       allow(File).to receive(:open).and_call_original
-      allow(File).to receive(:open).with(%r{/tmp/idah-export-\d+\.upd}).and_return(mock_file)
+      allow(File).to receive(:open).with(%r{/tmp/tempfile_media$}).and_return(mock_file)
+      allow(File).to receive(:extname).and_call_original
+      allow(File).to receive(:basename).and_call_original
 
       # -- IO.select stubs for SubprocessIO --
       #
@@ -223,6 +230,22 @@ RSpec.describe Exports::Upd::Exporter do
         expect(context.io.file).to eq(mock_file)
       end
 
+      it "creates a temporary UPD file and sends init JSONL command" do
+        exporter.export(context)
+
+        # First JSONL line is the init command
+        first_line = @jsonl_writes.first
+        expect(first_line).not_to be_nil
+        parsed = JSON.parse(first_line)
+        expect(parsed["command"]).to eq("init")
+        expect(parsed["args"]).to eq({})
+
+        # Open3 was called with the temp file path
+        expect(Open3).to have_received(:popen3).with(
+          "updcli-static", "--input", "/tmp/tempfile_media", "append"
+        )
+      end
+
       it "does not include media when include_medias option is absent" do
         exporter.export(context)
 
@@ -307,7 +330,6 @@ RSpec.describe Exports::Upd::Exporter do
           annotation_created = true if args.include?("annotation") && args.include?("create")
           true
         end
-
         exporter.export(context)
         expect(annotation_created).to be(false)
       end
@@ -390,7 +412,7 @@ RSpec.describe Exports::Upd::Exporter do
           ).and_return([media_response])
         end
 
-        it "downloads media binary data" do
+        it "downloads media binary data via files_stream" do
           expect(Api[:idah].media.medias).to receive(:files).with(
             resource: "4c2052a1475842e9.mov",
             key: ""
