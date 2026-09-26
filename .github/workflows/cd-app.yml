@@ -294,6 +294,11 @@ jobs:
       - name: Attach it to the release
         uses: softprops/action-gh-release@v2
         with:
+          # A version with a suffix — 0.1.0-rc.1 — is a candidate, so it is
+          # published as a pre-release and releases/latest keeps pointing at the
+          # newest stable one. The installer's one-line form downloads from
+          # latest, and a customer running it must not land on a candidate.
+          prerelease: ${{ contains(needs.prepare.outputs.version, '-') }}
           files: |
             dist/idah-${{ env.VERSION }}.tar.gz
             dist/install.sh
