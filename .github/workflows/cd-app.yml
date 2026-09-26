@@ -276,8 +276,9 @@ jobs:
           set -euo pipefail
           bundle="idah-$VERSION"
           mkdir -p "dist/$bundle"
-          cp deploy/install.sh deploy/compose.yml deploy/.env.example deploy/nginx.conf \
-             deploy/routes.conf deploy/tls.conf deploy/tls-disabled.conf deploy/README.md "dist/$bundle/"
+          cp deploy/install.sh deploy/compose.yml deploy/.env.example deploy/README.md "dist/$bundle/"
+          mkdir -p "dist/$bundle/config/nginx"
+          cp deploy/config/nginx/*.conf "dist/$bundle/config/nginx/"
 
           # The installer knows which release it belongs to, so it installs that
           # version and downloads the matching bundle when run on its own.

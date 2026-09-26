@@ -13,8 +13,8 @@ at the repository root, with settings in `config/development/`.
 | `install.sh` | The installer. Downloads the release when run on its own, generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
 | `compose.yml` | The stack, pulling published images pinned to one release. nginx, PostgreSQL and Redis are pinned to exact versions too. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
-| `nginx.conf` | The reverse proxy in front of the services, with `routes.conf` for the routes it serves. |
-| `tls.conf` | An HTTPS server for `nginx.conf`, from your own certificate. Off unless `IDAH_TLS_CONF` names it. |
+| `config/nginx/` | The reverse proxy: `nginx.conf`, `routes.conf` for the routes it serves, and `tls.conf` for an HTTPS server from your own certificate (off unless `IDAH_TLS_CONF` names it). |
+| `config/` | Also where the install keeps its signing key (`keys/`) and any certificates (`certs/`). |
 
 Customers keep their own changes in a `compose.override.yml` next to
 `compose.yml`. Compose merges it automatically, so an upgrade can replace
@@ -131,7 +131,7 @@ Then in `.env`:
 
 ```bash
 IDAH_URL=https://idah.example.com
-IDAH_TLS_CONF=./tls.conf
+IDAH_TLS_CONF=./config/nginx/tls.conf
 IDAH_HTTPS_PORT=443      # default 8443
 IDAH_HTTP_BIND=127.0.0.1 # optional: keep plain HTTP off the network
 ```
@@ -141,10 +141,10 @@ anything, that both files are readable, that the certificate and key match, and
 that the key needs no passphrase — nginx cannot be prompted for one. Renewal is
 yours: replace the two files and run `docker compose restart nginx`.
 
-`tls.conf` holds the nginx TLS settings (TLS 1.2 and 1.3, sessions, the two
-file paths). To change them, copy it, edit your copy, and point
-`IDAH_TLS_CONF` at that instead — an upgrade replaces `tls.conf` but not your
-file.
+`config/nginx/tls.conf` holds the nginx TLS settings (TLS 1.2 and 1.3,
+sessions, the two file paths). To change them, copy it, edit your copy, and
+point `IDAH_TLS_CONF` at that instead — an upgrade replaces the shipped file
+but not yours.
 
 **With a load balancer or reverse proxy you already have**, leave
 `IDAH_TLS_CONF` unset, point the proxy at `http://<host>:8080`, and set:
