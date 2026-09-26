@@ -136,7 +136,7 @@ if [ ! -f compose.yml ]; then
   # release this installer came from is what gets installed.
   bundle_version=${IDAH_VERSION:-$release_version}
   [ -n "$bundle_version" ] || die "this installer does not carry a release, so there is nothing to download.
-       Run it from an unpacked release bundle, or from deploy/ in a checkout,
+       Run it from an unpacked release bundle, or from deploy/compose/ in a checkout,
        or name the release to install: IDAH_VERSION=0.5.0"
   command -v tar > /dev/null || die "tar is required to unpack the release"
 

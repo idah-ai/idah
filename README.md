@@ -48,7 +48,7 @@
    docker compose up -d --build
    ```
 
-   `docker compose` merges [compose.override.yml](compose.override.yml) over [compose.yml](compose.yml) automatically: it mounts the source tree and loads the development settings from `config/development/`. These files are the developer setup; an on-premise install uses the release bundle in `deploy/` instead.
+   `docker compose` merges [compose.override.yml](compose.override.yml) over [compose.yml](compose.yml) automatically: it mounts the source tree and loads the development settings from `config/development/`. These files are the developer setup; an on-premise install uses the release bundle in [deploy/compose/](deploy/compose/) instead.
 
 4. **Initialize setup** (first time only)
    ```bash

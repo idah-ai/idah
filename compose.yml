@@ -6,7 +6,7 @@
 # settings, so `docker compose -f compose.yml up` does not start a usable stack.
 #
 # An on-premise install does not use these files. It uses the release bundle in
-# deploy/, which pulls published images and reads a single .env.
+# deploy/compose/, which pulls published images and reads a single .env.
 
 # Stamped into the images and reported by /healthcheck. The release workflow
 # sets them; a local build leaves them empty and the services report 0.0.0-dev.
