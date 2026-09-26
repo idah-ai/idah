@@ -97,7 +97,11 @@ RSpec.describe ApiKey::Service, database: true do
         expect(created_api_key.status).to eq("active")
         expect(created_api_key.key).to start_with("IDAH_")
         expect(created_api_key.key.length).to eq(69)
-        expect(created_api_key.key_label).to match(/^IDAH_\w+\.\.\.\w{4}$/)
+
+        # Label reveals only the fixed "IDAH_" prefix and the last 4 chars of the
+        # random portion.
+        expect(created_api_key.key_label).to match(/^IDAH_\.\.\.\w{4}$/)
+        expect(created_api_key.key_label).to end_with(created_api_key.key[-4..])
       end
 
       it "validates scope_type" do
