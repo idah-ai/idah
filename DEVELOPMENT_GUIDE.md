@@ -112,7 +112,7 @@ IDAH_REDIS_CONTAINER=0
 docker compose up -d --build
 ```
 
-`compose.yml` builds the images and wires the services together. `docker compose` automatically merges `compose.override.yml` on top of it, which adds the development setup: source, `common/` and plugin mounts, the settings in `config/development/`, Postgres and Redis, the dev entrypoints, the vite frontend, TLS on `idah.localhost` and MailHog. Together they are the developer environment; an on-premise install uses the release bundle in `deploy/`, which pulls published images and reads a single `.env`.
+`compose.yml` builds the images and wires the services together. `docker compose` automatically merges `compose.override.yml` on top of it, which adds the development setup: source, `common/` and plugin mounts, the settings in `config/development/`, Postgres and Redis, the dev entrypoints, the vite frontend, TLS on `idah.localhost` and MailHog. Together they are the developer environment; an on-premise install uses the release bundle in `deploy/compose/`, which pulls published images and reads a single `.env`.
 
 This builds and starts all services:
 - `nginx` (reverse proxy, port 8080/8443)
