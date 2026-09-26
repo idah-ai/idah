@@ -55,6 +55,10 @@ module Account
           invitation_expired_at:
         )
 
+        # Ensure role_scope is stored as JSON
+        role_scope = attr[:role_scope]
+        attr[:role_scope] = role_scope.to_json if role_scope && !role_scope.is_a?(String)
+
         id = accounts.create(attr)
 
         # Use the system repository to avoid permission issues
@@ -82,7 +86,7 @@ module Account
 
         # Ensure role_scope is stored as JSON
         role_scope = record.attributes[:role_scope]
-        record.attributes[:role_scope] = role_scope.to_json if role_scope&.any?
+        record.attributes[:role_scope] = role_scope.to_json if role_scope && !role_scope.is_a?(String)
 
         accounts.update!(record.id, record.attributes)
         updated_account = accounts.find!(record.id)
