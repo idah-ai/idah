@@ -342,6 +342,13 @@ esac
 # install would start that project's database and then fail to authenticate
 # against it, several steps from here, with nothing pointing at the cause.
 
+# Volumes a project left behind. Their containers may be long gone, and an
+# install that adopted one would meet a database whose password it does not know.
+project_volumes() { # <name>
+  docker volume ls --filter "label=com.docker.compose.project=$1" \
+    --format '{{.Name}}' 2> /dev/null | head -1 || true
+}
+
 # Which directory owns a project, when it is not this one.
 project_owner() { # <name>
   docker ps -a --filter "label=com.docker.compose.project=$1" \
@@ -363,23 +370,40 @@ elif [ -n "$project" ]; then
 
        Sharing it would mean sharing that project's containers and volumes,
        including its database. Choose another name in $env_file."
+
+  leftover=$(project_volumes "$project")
+  [ -z "$leftover" ] || die "volumes of a project named '$project' are still here, such as
+       $leftover
+
+       A new install would adopt that database and fail to authenticate against
+       it, since its password is not the one generated here. Remove them, or
+       choose another name in $env_file:
+
+           docker volume ls --filter label=com.docker.compose.project=$project"
 else
   # Taken by something else: take the next free name rather than stopping. An
   # install that already exists here is caught by the check further up.
   project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
   [ -n "$project" ] || project=idah
-  taken_by=$(project_owner "$project")
-  if [ -n "$taken_by" ]; then
+  owner=$(project_owner "$project")
+  if [ -n "$owner" ]; then
+    reason="belongs to $owner"
+  elif [ -n "$(project_volumes "$project")" ]; then
+    reason="still has volumes from an earlier install"
+  else
+    reason=""
+  fi
+  if [ -n "$reason" ]; then
     base=$project
     n=2
-    while [ -n "$(project_owner "$base-$n")" ]; do
+    while [ -n "$(project_owner "$base-$n")" ] || [ -n "$(project_volumes "$base-$n")" ]; do
       n=$((n + 1))
       [ "$n" -le 20 ] || die "every name from $base-2 to $base-20 belongs to another directory.
        Set COMPOSE_PROJECT_NAME in $env_file to one of your own."
     done
     project="$base-$n"
-    printf '\n   note: the project name %s belongs to %s,\n   so this install uses %s for its containers and volumes.\n' \
-      "$base" "$taken_by" "$project"
+    printf '\n   note: the project name %s %s,\n   so this install uses %s for its containers and volumes.\n' \
+      "$base" "$reason" "$project"
   fi
 fi
 
