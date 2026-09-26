@@ -341,26 +341,46 @@ esac
 # A project of that name belonging to another directory would be shared: this
 # install would start that project's database and then fail to authenticate
 # against it, several steps from here, with nothing pointing at the cause.
+
+# Which directory owns a project, when it is not this one.
+project_owner() { # <name>
+  docker ps -a --filter "label=com.docker.compose.project=$1" \
+    --format '{{.Label "com.docker.compose.project.working_dir"}}' 2> /dev/null \
+    | sort -u | grep -v "^$PWD\$" | head -1 || true
+}
+
 project=$(get COMPOSE_PROJECT_NAME)
-[ -n "$project" ] || project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
+if $continuing; then
+  # Continuing an install, so the project is whatever it already uses: the name
+  # .env records, or the directory's. Its own containers may carry a working
+  # directory from before a move, which is not a clash with anything.
+  [ -n "$project" ] || project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
+elif [ -n "$project" ]; then
+  # Named on purpose, so a clash is a mistake to point out rather than work around.
+  owner=$(project_owner "$project")
+  [ -z "$owner" ] || die "COMPOSE_PROJECT_NAME is '$project', which belongs to
+       $owner
 
-# No match means no such project, which is the normal case: grep says so by
-# failing, and pipefail would take the whole installer down with it.
-elsewhere=$(docker ps -a --filter "label=com.docker.compose.project=$project" \
-  --format '{{.Label "com.docker.compose.project.working_dir"}}' 2> /dev/null \
-  | sort -u | grep -v "^$PWD\$" | head -1 || true)
-if [ -n "$elsewhere" ]; then
-  # Something unlike the taken name: what the directory above this one is called.
-  suggestion=$(basename "$(dirname "$PWD")" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
-  [ -n "$suggestion" ] && [ "$suggestion" != "$project" ] || suggestion="$project-2"
-
-  die "a compose project named '$project' already exists, belonging to
-       $elsewhere
-
-       Installing here would share its containers and volumes, including its
-       database. Give this install a project of its own and run this again:
-
-           echo \"COMPOSE_PROJECT_NAME=$suggestion\" >> $env_file"
+       Sharing it would mean sharing that project's containers and volumes,
+       including its database. Choose another name in $env_file."
+else
+  # Taken by something else: take the next free name rather than stopping. An
+  # install that already exists here is caught by the check further up.
+  project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
+  [ -n "$project" ] || project=idah
+  taken_by=$(project_owner "$project")
+  if [ -n "$taken_by" ]; then
+    base=$project
+    n=2
+    while [ -n "$(project_owner "$base-$n")" ]; do
+      n=$((n + 1))
+      [ "$n" -le 20 ] || die "every name from $base-2 to $base-20 belongs to another directory.
+       Set COMPOSE_PROJECT_NAME in $env_file to one of your own."
+    done
+    project="$base-$n"
+    printf '\n   note: the project name %s belongs to %s,\n   so this install uses %s for its containers and volumes.\n' \
+      "$base" "$taken_by" "$project"
+  fi
 fi
 
 # --- ports -----------------------------------------------------------------
