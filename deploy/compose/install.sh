@@ -965,20 +965,23 @@ fi
 
 # Where uploaded files are, which is what a backup has to cover: S3, a
 # directory compose.override.yml mounts over the volume, or the volume itself.
-files_where() { # <service> <adapter key> <volume>
+files_where() { # <service> <adapter key> <volume> <path>: the path is the
+                 # folder, both in the volume and under the bucket by default
+  local prefix
   if [ "$(get "$2")" = s3 ]; then
-    echo "S3 ($(get "${2%_ADAPTER}_BUCKET"))"
-  elif [ -f compose.override.yml ] && grep -q ':/data/files' compose.override.yml; then
-    dc config 2> /dev/null | awk -v svc="$1" '
+    prefix=$(get "${2%_ADAPTER}_PREFIX"); prefix=${prefix:-${4#/data/}}
+    echo "S3, $(get "${2%_ADAPTER}_BUCKET")/$prefix"
+  elif [ -f compose.override.yml ] && grep -q ":$4" compose.override.yml; then
+    dc config 2> /dev/null | awk -v svc="$1" -v target="$4" '
       /^  [a-z]/ { in_svc = ($1 == svc ":") }
       in_svc && /source:/ { src = $2 }
-      in_svc && /target: \/data\/files$/ { print src; exit }' | grep . || echo "the ${project}_$3 volume"
+      in_svc && $1 == "target:" && $2 == target { print src; exit }' | grep . || echo "the ${project}_$3 volume"
   else
     echo "the ${project}_$3 volume"
   fi
 }
-media_where=$(files_where media MEDIAS_FILES_ADAPTER media_files)
-sync_where=$(files_where sync SYNC_FILES_ADAPTER sync_files)
+media_where=$(files_where media MEDIAS_FILES_ADAPTER media_files /data/media/files)
+sync_where=$(files_where sync SYNC_FILES_ADAPTER sync_files /data/sync/files)
 
 cat <<SUMMARY
 

@@ -238,6 +238,13 @@ Setting `MEDIAS_FILES_ADAPTER=s3` (or `SYNC_FILES_ADAPTER=s3`) makes all five of
 its settings required; a missing one stops that service at boot with the
 variable named. Files already on the volume are not moved.
 
+Files keep the same folders in both: `media/files` for uploads and
+`sync/files` for exports, in the volume or under the bucket. So one bucket can
+hold both, and a lifecycle rule can treat exports, which can be generated
+again, differently from uploads. `MEDIAS_FILES_PREFIX` and `SYNC_FILES_PREFIX`
+change the bucket's folders; set them before the first upload, since a file
+keeps the prefix it was stored under.
+
 ### Processing load
 
 Video is the heavy part: media runs ffmpeg on every uploaded video, encoding
