@@ -16,6 +16,17 @@
 # stack. To install images built from source, set IDAH_IMAGE_PREFIX (for
 # example `idah-`) alongside IDAH_VERSION.
 
+# Every container logs through this. Docker's default keeps every line until the
+# disk is full; this rotates at IDAH_LOG_MAX_SIZE and keeps IDAH_LOG_MAX_FILES
+# files, older ones compressed, so each container holds about 50 MB at most.
+# json-file, so `docker compose logs` and log shippers read it as before.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${IDAH_LOG_MAX_SIZE:-10m}
+    max-file: "${IDAH_LOG_MAX_FILES:-5}"
+    compress: "true"
+
 # Every Ruby service gets these. Service-specific values are set per service.
 #
 # No env_file: .env is read only to fill in the ${...} below, so each service
@@ -23,6 +34,7 @@
 # changed setting restarts only the services that use it.
 x-service: &service
   restart: always
+  logging: *logging
   networks:
     - app-network
   # Lets POSTGRES_HOST=host.docker.internal reach a database on this machine,
@@ -65,6 +77,7 @@ services:
   nginx:
     image: nginx:1.30.5-alpine
     restart: always
+    logging: *logging
     ports:
       - "${IDAH_HTTP_BIND:-0.0.0.0}:${IDAH_HTTP_PORT:-8080}:80"
       - "${IDAH_HTTPS_BIND:-0.0.0.0}:${IDAH_HTTPS_PORT:-8443}:443"
@@ -91,6 +104,7 @@ services:
     image: pgvector/pgvector:0.8.6-pg17
     scale: ${IDAH_POSTGRES_CONTAINER:-1}
     restart: always
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-idah}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run install.sh to generate secrets}
@@ -111,6 +125,7 @@ services:
     image: redis:8.10.2
     scale: ${IDAH_REDIS_CONTAINER:-1}
     restart: always
+    logging: *logging
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -259,6 +274,7 @@ services:
   frontend:
     image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}frontend:${IDAH_VERSION:?set IDAH_VERSION in .env}
     restart: always
+    logging: *logging
     environment:
       PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
       PUBLIC_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}

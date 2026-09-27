@@ -96,6 +96,7 @@ PostgreSQL" covers it.
 | Serve HTTPS | `IDAH_URL`, `IDAH_TLS_CONF`, `IDAH_HTTPS_PORT` | any time |
 | Send email notifications | `MAIL_SMTP_*` | any time |
 | Store files in S3 | `MEDIAS_FILES_*`, `SYNC_FILES_*` | before files are uploaded |
+| Keep more or less log per container | `IDAH_LOG_MAX_SIZE`, `IDAH_LOG_MAX_FILES` (10m × 5) | any time |
 | Process more uploads or exports at once | `IDAH_MEDIA_JOBS_CONCURRENCY`, `IDAH_VIDEO_*_THREADS`, `IDAH_SYNC_JOBS_CONCURRENCY` | any time |
 | Report errors to your own Sentry | `SENTRY_*` | any time |
 | Use your own PostgreSQL | `POSTGRES_*` | at install, or with `--provision` |
