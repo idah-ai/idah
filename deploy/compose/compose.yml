@@ -19,13 +19,16 @@
 # Every container logs through this. Docker's default keeps every line until the
 # disk is full; this rotates at IDAH_LOG_MAX_SIZE and keeps IDAH_LOG_MAX_FILES
 # files, older ones compressed, so each container holds about 50 MB at most.
-# json-file, so `docker compose logs` and log shippers read it as before.
+# json-file, so `docker compose logs` and log shippers read it as before. The
+# tag stamps each line with its container's name (attrs.tag), since the files
+# are named after container IDs, which change on every recreate.
 x-logging: &logging
   driver: json-file
   options:
     max-size: ${IDAH_LOG_MAX_SIZE:-10m}
     max-file: "${IDAH_LOG_MAX_FILES:-5}"
     compress: "true"
+    tag: "{{.Name}}"
 
 # Every Ruby service gets these. Service-specific values are set per service.
 #
