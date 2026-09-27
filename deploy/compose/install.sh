@@ -503,12 +503,24 @@ elif [ "${url#https://}" != "$url" ]; then
 fi
 
 say "Checking images"
+# The missing ones pulled side by side rather than one after another: most of
+# an install's time is the download, and one pull alone rarely fills the line.
+# Not docker compose pull, which cannot read compose.yml before .env exists.
+pulls=""
 for svc in $services frontend; do
   image="$prefix$svc:$version"
   docker image inspect "$image" > /dev/null 2>&1 && continue
 
   printf "   pulling %s\n" "$image"
-  docker pull -q "$image" > /dev/null 2>&1 || die "cannot get $image
+  docker pull -q "$image" > /dev/null 2>&1 &
+  pulls="$pulls $!:$image"
+done
+
+missing=""
+for pull in $pulls; do
+  wait "${pull%%:*}" || missing="${missing:+$missing, }${pull#*:}"
+done
+[ -z "$missing" ] || die "cannot get $missing
 
        If these images are built from source rather than published, set the
        prefix they were tagged with in $env_file, for example:
@@ -518,7 +530,6 @@ for svc in $services frontend; do
 
        Otherwise check that $version is a published version and that this
        machine can reach the registry."
-done
 echo "   all eight present"
 
 # --- external servers --------------------------------------------------------
