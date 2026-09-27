@@ -1,46 +1,64 @@
 # syntax=docker/dockerfile:1
 
-FROM ruby:3.4.2-slim
+# What the service needs to run, and nothing it only needs to build: the
+# published image is this plus the gems and the code.
+FROM ruby:3.4.2-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 
-RUN apt-get update && apt-get install -y \
-    # Basic build tools
-    build-essential \
-    pkg-config \
-    # FFmpeg and its dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # PostgreSQL client library, for the pg gem
+    libpq5 \
+    # Shrine's determine_mime_type runs `file` on every upload
+    file \
+    # The video plugin runs ffmpeg and ffprobe
     ffmpeg \
-    # ImageMagick and its dependencies
-    imagemagick \
-    libmagickwand-dev \
-    # pgSQL client libraries
-    libpq-dev \
-    # Additional useful packages
-    curl \
-    wget \
-    git \
-    # Clean up apt cache to reduce image size
-    && apt-get clean \
+    # ImageMagick, which the rmagick gem links against for the image plugin,
+    # and its coders for SVG, DJVU, OpenEXR and WMF: the image plugin takes
+    # any image/* upload
+    libmagickwand-6.q16-6 \
+    libmagickcore-6.q16-6-extra \
     && rm -rf /var/lib/apt/lists/*
 
-# Build arguments
-ARG BUNDLE_WITHOUT="development test"
 # Published images run in production; compose and staging pass their own value.
 ARG APP_ENVIRONMENT=production
 
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
 ENV PORT=3000
 
-RUN mkdir -p /app
-
 WORKDIR /app
+
+# Compilers and headers for the native gems. Development runs this stage
+# (target: build in compose.override.yml), since it installs gems when the
+# container starts.
+FROM base AS build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    libpq-dev \
+    # ImageMagick's headers, to compile the rmagick gem
+    libmagickwand-dev \
+    # Gems fetched from GitHub
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG BUNDLE_WITHOUT="development test"
 
 COPY app/media/Gemfile* .
 
-RUN bundle config set force_ruby_platform true
-RUN bundle config set --local without "$BUNDLE_WITHOUT"
-RUN bundle install --jobs 20 --retry 5
+RUN bundle config set force_ruby_platform true \
+    && bundle config set --local without "$BUNDLE_WITHOUT" \
+    && bundle install --jobs 20 --retry 5 \
+    # The downloaded .gem archives; the installed gems are what runs.
+    && rm -rf /usr/local/bundle/cache/*.gem
+
+FROM base
+
+# The gems and bundler's configuration: the ruby image keeps both here.
+COPY --from=build /usr/local/bundle /usr/local/bundle
 
 # The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
 COPY common/ /common/

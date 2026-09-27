@@ -141,7 +141,13 @@ jobs:
             org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
             org.opencontainers.image.title=idah-${{ matrix.service }}
           outputs: type=image,name=${{ env.IMAGE_PREFIX }}${{ matrix.service }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.service }}-${{ matrix.arch }}
+          # iam's cache as well: the services whose runtime stage is iam's reuse
+          # its layer rather than building an identical one, so an install
+          # downloads it once instead of once per image. It takes from the
+          # release after the stage last changed, since the jobs run side by side.
+          cache-from: |
+            type=gha,scope=${{ matrix.service }}-${{ matrix.arch }}
+            type=gha,scope=iam-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ matrix.arch }}
 
       - name: Record the digest

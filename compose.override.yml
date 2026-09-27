@@ -71,6 +71,8 @@ services:
 
   iam:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -92,6 +94,8 @@ services:
 
   media:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -114,6 +118,8 @@ services:
 
   dataset:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -137,6 +143,8 @@ services:
 
   setting:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -159,6 +167,8 @@ services:
 
   audit:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -180,6 +190,8 @@ services:
 
   sync:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -203,6 +215,8 @@ services:
 
   notification:
     build:
+      # The stage with compilers: dev-entrypoint.sh installs gems at start.
+      target: build
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
