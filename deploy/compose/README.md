@@ -285,7 +285,17 @@ your users' screens and stays off unless you set its sample rates.
 ./install.sh --upgrade
 ```
 
-It pulls the new images, runs the migrations they bring and restarts the stack.
+It takes the new release's files first — `compose.yml`, the nginx configuration,
+this README, `.env.example` and the installer itself — downloaded and checked
+against the release's published checksums, and hands over to the new installer.
+That then pulls the new images, runs the migrations they bring and restarts the
+stack. Your own files are not in a release and stay as they are: `.env`,
+`compose.override.yml`, `config/keys` and `config/certs`. Each file it replaces
+is kept under `.previous-files/<time>/`.
+
+Upgrading from 0.1.0, whose installer does not take the new files yet, first
+fetch the new release's installer: `curl -fsSLO
+https://github.com/idah-ai/idah/releases/download/v<version>/install.sh`.
 Every row and every account is kept, and no administrator is touched — it
 refuses outright if the database holds no IDAH data. `docker compose up -d`
 alone would pull the images but never run the migrations, and the services

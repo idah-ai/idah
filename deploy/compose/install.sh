@@ -35,10 +35,12 @@
 #   --start-empty          with --provision: do not copy anything, start with
 #                          empty databases and a new administrator password.
 #                          The old database is still left untouched.
-#   --upgrade              run the migrations the images bring, then restart:
-#                          after changing IDAH_VERSION. Keeps every row and
-#                          every account, and touches no administrator.
-#                          Refuses a database with no IDAH data in it.
+#   --upgrade              after changing IDAH_VERSION: take that release's
+#                          files (compose.yml, nginx's configuration, this
+#                          installer), then run the migrations its images
+#                          bring and restart. Keeps every row and every
+#                          account, and touches no administrator. Refuses a
+#                          database with no IDAH data in it.
 #
 # Requires docker, docker compose, openssl and curl.
 set -euo pipefail
@@ -60,6 +62,9 @@ assume_yes=false; encode=false; provision=false; upgrade=false; start_empty=fals
 
 die() { echo "error: $*" >&2; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
+
+# As given, for the newer installer an upgrade hands over to.
+args=("$@")
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -131,6 +136,30 @@ checksum() { # <file> -> its sha256
   fi
 }
 
+# Downloads a release's bundle, checks it against the checksums published beside
+# it, and unpacks it into a directory. Nothing is unpacked unless the check
+# passes: a mismatch means the file is not the one that release built.
+fetch_bundle() { # <version> <directory>
+  local bundle="idah-$1.tar.gz" dl expected url
+  url="$release_base/v$1/$bundle"
+  command -v tar > /dev/null || die "tar is required to unpack the release"
+  dl=$(mktemp -d)
+
+  curl -fsSL -o "$dl/$bundle" "$url" || { rm -rf "$dl"; die "could not download $url
+       Check that this machine can reach it, or download the bundle by hand and run ./install.sh from it."; }
+  curl -fsSL -o "$dl/SHA256SUMS" "$release_base/v$1/SHA256SUMS" \
+    || { rm -rf "$dl"; die "could not fetch the checksums for $1, so the download cannot be verified"; }
+  expected=$(grep " $bundle\$" "$dl/SHA256SUMS" | cut -d' ' -f1)
+  [ -n "$expected" ] || { rm -rf "$dl"; die "SHA256SUMS for $1 does not mention $bundle"; }
+  [ "$expected" = "$(checksum "$dl/$bundle")" ] \
+    || { rm -rf "$dl"; die "$bundle does not match its published checksum. Downloaded from: $url"; }
+  echo "   checksum verified"
+
+  mkdir -p "$2"
+  tar -xzf "$dl/$bundle" --strip-components=1 -C "$2"
+  rm -rf "$dl"
+}
+
 if [ ! -f compose.yml ]; then
   # IDAH_VERSION pins the whole install, files and images alike; without it the
   # release this installer came from is what gets installed.
@@ -138,33 +167,13 @@ if [ ! -f compose.yml ]; then
   [ -n "$bundle_version" ] || die "this installer does not carry a release, so there is nothing to download.
        Run it from an unpacked release bundle, or from deploy/compose/ in a checkout,
        or name the release to install: IDAH_VERSION=0.5.0"
-  command -v tar > /dev/null || die "tar is required to unpack the release"
 
   target=${IDAH_DIR:-idah}
   [ -f "$target/compose.yml" ] && die "$target already holds an install. Run ./install.sh from inside it."
 
   say "Downloading IDAH $bundle_version"
-  tmp=$(mktemp -d)
-  trap 'rm -rf "$tmp"' EXIT
-  bundle="idah-$bundle_version.tar.gz"
-  url="$release_base/v$bundle_version/$bundle"
-  curl -fsSL -o "$tmp/$bundle" "$url" || die "could not download $url
-       Check that this machine can reach it, or download the bundle by hand and run ./install.sh from it."
-
-  # The checksums are published beside the bundle; a mismatch means the file is
-  # not the one that release built.
-  if curl -fsSL -o "$tmp/SHA256SUMS" "$release_base/v$bundle_version/SHA256SUMS"; then
-    expected=$(grep " $bundle\$" "$tmp/SHA256SUMS" | cut -d' ' -f1)
-    [ -n "$expected" ] || die "SHA256SUMS for $bundle_version does not mention $bundle"
-    [ "$expected" = "$(checksum "$tmp/$bundle")" ] || die "$bundle does not match its published checksum. Downloaded from: $url"
-    echo "   checksum verified"
-  else
-    die "could not fetch the checksums for $bundle_version, so the download cannot be verified"
-  fi
-
-  # Only now, with a verified bundle in hand, is anything created here.
-  mkdir -p "$target"
-  tar -xzf "$tmp/$bundle" --strip-components=1 -C "$target"
+  # Only once the bundle is verified is anything created here.
+  fetch_bundle "$bundle_version" "$target"
   cd "$target"
   echo "   unpacked into $PWD"
 fi
@@ -207,6 +216,64 @@ elif [ -f "$keys_dir/private.pem" ]; then
        To start over:            docker compose down -v
                                  rm -f $env_file && rm -rf $keys_dir
                                  (this deletes the databases and uploaded files)"
+fi
+
+# --- the release's files, on --upgrade ---------------------------------------
+
+# An upgrade takes the files of the release it upgrades to, not only its images:
+# compose.yml, nginx's configuration and this installer change between releases,
+# and the new images expect the new files. The release is the one .env names;
+# its bundle is fetched and verified, its files replace these, and its installer
+# carries on with the upgrade, since a newer release may upgrade differently.
+#
+# Only for an install unpacked from a release: this installer then knows the
+# release it came from. In a checkout the files are the checkout's.
+if $upgrade && [ -n "$release_version" ]; then
+  to_version=$(sed -n 's/^IDAH_VERSION=//p' "$env_file" | tail -1 | tr -d "'\"")
+  [ -n "$to_version" ] || die "--upgrade upgrades to the release IDAH_VERSION names, and $env_file sets none.
+       Set it to the release to upgrade to, e.g. IDAH_VERSION=$release_version"
+
+  # Handed over already: the files are this release's.
+  if [ "${IDAH_UPGRADE_FILES:-}" != "$to_version" ]; then
+    older() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]; }
+    older "$to_version" "$release_version" && die "IDAH_VERSION is $to_version in $env_file, older than this installer ($release_version).
+       To upgrade to $release_version, set IDAH_VERSION=$release_version. Going back to an older
+       release is not supported: its code would run against the newer schema."
+
+    say "Fetching the files of IDAH $to_version"
+    new=$(mktemp -d)
+    trap 'rm -rf "$new"' EXIT
+    fetch_bundle "$to_version" "$new"
+
+    # The replaced files are kept, so they can be put back by hand. .env,
+    # compose.override.yml, config/keys and config/certs are not in a bundle,
+    # and stay as they are.
+    kept=".previous-files/$(date -u +%Y%m%dT%H%M%SZ)"
+    changed=0
+    while IFS= read -r file; do
+      if [ -f "$file" ] && cmp -s "$new/$file" "$file"; then continue; fi
+      if [ -f "$file" ]; then
+        mkdir -p "$kept/$(dirname "$file")"
+        cp -p "$file" "$kept/$file"
+      fi
+      mkdir -p "$(dirname "$file")"
+      # A new file moved into place rather than written over: this installer is
+      # one of them, and bash reads the script it runs as it goes.
+      cp -p "$new/$file" "$file.new" && mv -f "$file.new" "$file"
+      echo "   $file"
+      changed=$((changed + 1))
+    done < <(cd "$new" && find . -type f | sed 's|^\./||' | sort)
+
+    if [ "$changed" = 0 ]; then
+      echo "   already this release's"
+    else
+      echo "   the previous versions are in $kept/"
+    fi
+
+    # exec replaces this process, so its EXIT trap would not clean up.
+    rm -rf "$new"; trap - EXIT
+    exec env IDAH_UPGRADE_FILES="$to_version" bash ./install.sh ${args[@]+"${args[@]}"}
+  fi
 fi
 
 # --- settings --------------------------------------------------------------
