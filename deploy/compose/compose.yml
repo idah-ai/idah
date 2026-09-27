@@ -157,6 +157,11 @@ services:
       MEDIAS_FILES_ENDPOINT: ${MEDIAS_FILES_ENDPOINT:-}
       MEDIAS_FILES_ACCESS_KEY_ID: ${MEDIAS_FILES_ACCESS_KEY_ID:-}
       MEDIAS_FILES_SECRET_ACCESS_KEY: ${MEDIAS_FILES_SECRET_ACCESS_KEY:-}
+      # Defaulted here rather than left empty: an empty thread count would reach
+      # ffmpeg as `-threads ""`.
+      IDAH_JOBS_CONCURRENCY: ${IDAH_MEDIA_JOBS_CONCURRENCY:-1}
+      IDAH_VIDEO_DECODING_THREADS: ${IDAH_VIDEO_DECODING_THREADS:-1}
+      IDAH_VIDEO_ENCODING_THREADS: ${IDAH_VIDEO_ENCODING_THREADS:-1}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro
@@ -223,6 +228,7 @@ services:
       SYNC_FILES_ENDPOINT: ${SYNC_FILES_ENDPOINT:-}
       SYNC_FILES_ACCESS_KEY_ID: ${SYNC_FILES_ACCESS_KEY_ID:-}
       SYNC_FILES_SECRET_ACCESS_KEY: ${SYNC_FILES_SECRET_ACCESS_KEY:-}
+      IDAH_JOBS_CONCURRENCY: ${IDAH_SYNC_JOBS_CONCURRENCY:-1}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro
