@@ -16,6 +16,20 @@
 # stack. To install images built from source, set IDAH_IMAGE_PREFIX (for
 # example `idah-`) alongside IDAH_VERSION.
 
+# Every container logs through this. Docker's default keeps every line until the
+# disk is full; this rotates at IDAH_LOG_MAX_SIZE and keeps IDAH_LOG_MAX_FILES
+# files, older ones compressed, so each container holds about 50 MB at most.
+# json-file, so `docker compose logs` and log shippers read it as before. The
+# tag stamps each line with its container's name (attrs.tag), since the files
+# are named after container IDs, which change on every recreate.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${IDAH_LOG_MAX_SIZE:-10m}
+    max-file: "${IDAH_LOG_MAX_FILES:-5}"
+    compress: "true"
+    tag: "{{.Name}}"
+
 # Every Ruby service gets these. Service-specific values are set per service.
 #
 # No env_file: .env is read only to fill in the ${...} below, so each service
@@ -23,6 +37,7 @@
 # changed setting restarts only the services that use it.
 x-service: &service
   restart: always
+  logging: *logging
   networks:
     - app-network
   # Lets POSTGRES_HOST=host.docker.internal reach a database on this machine,
@@ -65,6 +80,7 @@ services:
   nginx:
     image: nginx:1.30.5-alpine
     restart: always
+    logging: *logging
     ports:
       - "${IDAH_HTTP_BIND:-0.0.0.0}:${IDAH_HTTP_PORT:-8080}:80"
       - "${IDAH_HTTPS_BIND:-0.0.0.0}:${IDAH_HTTPS_PORT:-8443}:443"
@@ -91,6 +107,7 @@ services:
     image: pgvector/pgvector:0.8.6-pg17
     scale: ${IDAH_POSTGRES_CONTAINER:-1}
     restart: always
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-idah}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run install.sh to generate secrets}
@@ -111,6 +128,7 @@ services:
     image: redis:8.10.2
     scale: ${IDAH_REDIS_CONTAINER:-1}
     restart: always
+    logging: *logging
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -150,13 +168,19 @@ services:
       IDAH_SERVICE_ACCOUNT: media@services.idah.ai
       IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_MEDIA:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_MEDIA:-}
-      MEDIAS_FILES_PATH: /data/files
+      MEDIAS_FILES_PATH: /data/media/files
       MEDIAS_FILES_ADAPTER: ${MEDIAS_FILES_ADAPTER:-file_system}
       MEDIAS_FILES_BUCKET: ${MEDIAS_FILES_BUCKET:-}
+      MEDIAS_FILES_PREFIX: ${MEDIAS_FILES_PREFIX:-}
       MEDIAS_FILES_REGION: ${MEDIAS_FILES_REGION:-}
       MEDIAS_FILES_ENDPOINT: ${MEDIAS_FILES_ENDPOINT:-}
       MEDIAS_FILES_ACCESS_KEY_ID: ${MEDIAS_FILES_ACCESS_KEY_ID:-}
       MEDIAS_FILES_SECRET_ACCESS_KEY: ${MEDIAS_FILES_SECRET_ACCESS_KEY:-}
+      # Defaulted here rather than left empty: an empty thread count would reach
+      # ffmpeg as `-threads ""`.
+      IDAH_JOBS_CONCURRENCY: ${IDAH_MEDIA_JOBS_CONCURRENCY:-1}
+      IDAH_VIDEO_DECODING_THREADS: ${IDAH_VIDEO_DECODING_THREADS:-1}
+      IDAH_VIDEO_ENCODING_THREADS: ${IDAH_VIDEO_ENCODING_THREADS:-1}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro
@@ -216,13 +240,15 @@ services:
       IDAH_SERVICE_ACCOUNT: sync@services.idah.ai
       IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_SYNC:?run install.sh to generate secrets}
       SENTRY_DSN: ${SENTRY_DSN_SYNC:-}
-      SYNC_FILES_PATH: /data/files
+      SYNC_FILES_PATH: /data/sync/files
       SYNC_FILES_ADAPTER: ${SYNC_FILES_ADAPTER:-file_system}
       SYNC_FILES_BUCKET: ${SYNC_FILES_BUCKET:-}
+      SYNC_FILES_PREFIX: ${SYNC_FILES_PREFIX:-}
       SYNC_FILES_REGION: ${SYNC_FILES_REGION:-}
       SYNC_FILES_ENDPOINT: ${SYNC_FILES_ENDPOINT:-}
       SYNC_FILES_ACCESS_KEY_ID: ${SYNC_FILES_ACCESS_KEY_ID:-}
       SYNC_FILES_SECRET_ACCESS_KEY: ${SYNC_FILES_SECRET_ACCESS_KEY:-}
+      IDAH_JOBS_CONCURRENCY: ${IDAH_SYNC_JOBS_CONCURRENCY:-1}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
       - ./config/certs:/certs:ro
@@ -253,6 +279,7 @@ services:
   frontend:
     image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}frontend:${IDAH_VERSION:?set IDAH_VERSION in .env}
     restart: always
+    logging: *logging
     environment:
       PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
       PUBLIC_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}

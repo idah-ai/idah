@@ -259,6 +259,21 @@ for key in $(sed -n 's/^#* *\([A-Z][A-Z_0-9]*\)=.*/\1/p' .env.example | sort -u)
   env_keys="${env_keys:+$env_keys }$key"
 done
 
+# A setting both .env and the environment give, differently. docker compose
+# takes the environment's, this installer the file's, so the two would build
+# different things: an exported POSTGRES_USER creates the database with one
+# user while .env tells the services to log in as another, which breaks as soon
+# as the variable is gone.
+for key in $(sed -n 's/^#* *\([A-Z][A-Z_0-9]*\)=.*/\1/p' .env.example | sort -u); do
+  value=$(from_env "$key")
+  [ -n "$value" ] || continue
+  in_file=$(from_file "$key")
+  [ -n "$in_file" ] && [ "$in_file" != "$value" ] || continue
+  die "$key is '$in_file' in $settings, but '$value' in this shell.
+       docker compose would use the shell's, and this installer the file's.
+       Unset it (unset $key), or put the value you want in $env_file."
+done
+
 version=$(get IDAH_VERSION); version=${version:-$release_version}
 [ -n "$version" ] || version=$(ask "IDAH version to install" "")
 [ -n "$version" ] || die "a version is required: set IDAH_VERSION in $env_file"
@@ -267,9 +282,42 @@ http_port=$(get IDAH_HTTP_PORT); http_port=${http_port:-8080}
 https_port=$(get IDAH_HTTPS_PORT); https_port=${https_port:-8443}
 prefix=$(get IDAH_IMAGE_PREFIX); prefix=${prefix:-$default_prefix}
 
+# A URL, not a port or a bare host: it ends up in email links, in the API
+# documentation and in the check for whether TLS is terminated in front of IDAH.
+# A trailing slash would double up in every link built from it.
+check_url() { # <value> -> the reason it is not a URL, or nothing
+  case "$1" in
+    http://*|https://*) ;;
+    [0-9]*) echo "a URL, not just a port: http://localhost:$1" ; return ;;
+    *) echo "a URL with a scheme: http://$1 or https://$1" ; return ;;
+  esac
+  case "$1" in
+    http://|https://) echo "the address too, not only the scheme" ;;
+  esac
+}
+
 url=$(get IDAH_URL)
-[ -n "$url" ] || url=$(ask "Public URL users will open" "http://localhost:$http_port")
-[ -n "$admin_email" ] || admin_email=$(ask "Administrator email" "admin@example.com")
+if [ -n "$url" ]; then
+  url=${url%/}
+  reason=$(check_url "$url")
+  [ -z "$reason" ] || die "IDAH_URL is '$url'. It needs $reason"
+else
+  # Asked rather than taken as given, so a slip can be corrected on the spot.
+  tries=0
+  while :; do
+    url=$(ask "Public URL users will open" "http://localhost:$http_port")
+    url=${url%/}
+    reason=$(check_url "$url")
+    [ -n "$reason" ] || break
+    tries=$((tries + 1))
+    [ "$tries" -lt 3 ] || die "'$url' is not a URL. It needs $reason"
+    echo "   '$url' is not a URL. It needs $reason"
+  done
+fi
+# Only a new install creates an administrator; continuing one touches none.
+if ! $continuing && [ -z "$admin_email" ]; then
+  admin_email=$(ask "Administrator email" "admin@example.com")
+fi
 
 refuse_localhost() { # <what> <host>
   case "$2" in
@@ -596,7 +644,9 @@ done
 [ -n "$(from_file COMPOSE_PROJECT_NAME)" ] || set_env COMPOSE_PROJECT_NAME "$project"
 
 [ -n "$(from_file IDAH_VERSION)" ] || set_env IDAH_VERSION "$version"
-[ -n "$(from_file IDAH_URL)" ]     || set_env IDAH_URL "$url"
+# The normalised one, whatever .env or the environment carried: a trailing
+# slash would double up in every link built from it.
+[ "$(from_file IDAH_URL)" = "$url" ] || set_env IDAH_URL "$url"
 
 if [ -z "$pg_password" ]; then
   pg_password=$(secret 32)
@@ -622,7 +672,8 @@ done
 echo "   your settings kept, missing secrets generated"
 
 mkdir -p "$keys_dir" "$certs_dir"
-if $provision; then
+if $continuing; then
+  # A new key would sign everyone out on every upgrade.
   umask "$saved_umask"
   echo "   the signing key in $keys_dir is kept"
 else
@@ -640,7 +691,11 @@ dc() { docker compose "$@"; }
 
 # From here on a failure leaves a partial install. Settings and secrets stay in
 # .env, so after fixing the cause the installer can simply run again.
-retry="After fixing it: rm -rf $keys_dir && ./install.sh (the settings and secrets in $env_file are kept)"
+if $continuing; then
+  retry="After fixing it: ./install.sh $flag (it can simply run again)"
+else
+  retry="After fixing it: rm -rf $keys_dir && ./install.sh (the settings and secrets in $env_file are kept)"
+fi
 
 # --- databases -------------------------------------------------------------
 
@@ -653,12 +708,14 @@ if [ -n "$bundled" ]; then
 fi
 
 if ! $external; then
+  # Over TCP: on a new volume the image first runs a temporary server on the
+  # socket only, and a socket check would pass against it just before the restart.
   printf "   waiting for PostgreSQL"
   for _ in $(seq 1 60); do
-    if dc exec -T postgres pg_isready -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then break; fi
+    if dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then break; fi
     printf "."; sleep 2
   done
-  dc exec -T postgres pg_isready -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 \
+  dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 \
     || die "PostgreSQL did not become ready. See: docker compose logs postgres
        $retry"
   echo " ready"
@@ -712,7 +769,7 @@ elif $provision && $external; then
   dc up -d --scale postgres=1 postgres > /dev/null 2>&1 \
     || die "could not start the bundled database to look in it"
   for _ in $(seq 1 30); do
-    dc exec -T postgres pg_isready -d postgres < /dev/null > /dev/null 2>&1 && break
+    dc exec -T postgres pg_isready -h 127.0.0.1 -d postgres < /dev/null > /dev/null 2>&1 && break
     sleep 2
   done
 
@@ -894,34 +951,56 @@ else
   case "$url" in https://*) tls_note=" (TLS terminated in front of port $http_port)" ;; esac
 fi
 
-# An administrator that was left alone keeps a password we do not know, so the
-# lines about writing it down would be wrong.
+# An administrator that was left alone keeps a login and a password we do not
+# know, so neither is printed.
 if [ -n "$admin_password" ]; then
-  password_line="  Password  $admin_password"
+  account_lines="  Login     $admin_email
+  Password  $admin_password"
   password_note="Write the password down now: it is not stored anywhere and cannot be recovered.
 Change it after the first login."
 else
-  password_line="  Password  unchanged"
+  account_lines="  Accounts  unchanged: log in as before"
   password_note="Accounts, and every row in the database, are as they were."
 fi
+
+# Where uploaded files are, which is what a backup has to cover: S3, a
+# directory compose.override.yml mounts over the volume, or the volume itself.
+files_where() { # <service> <adapter key> <volume> <path>: the path is the
+                 # folder, both in the volume and under the bucket by default
+  local prefix
+  if [ "$(get "$2")" = s3 ]; then
+    prefix=$(get "${2%_ADAPTER}_PREFIX"); prefix=${prefix:-${4#/data/}}
+    echo "S3, $(get "${2%_ADAPTER}_BUCKET")/$prefix"
+  elif [ -f compose.override.yml ] && grep -q ":$4" compose.override.yml; then
+    dc config 2> /dev/null | awk -v svc="$1" -v target="$4" '
+      /^  [a-z]/ { in_svc = ($1 == svc ":") }
+      in_svc && /source:/ { src = $2 }
+      in_svc && $1 == "target:" && $2 == target { print src; exit }' | grep . || echo "the ${project}_$3 volume"
+  else
+    echo "the ${project}_$3 volume"
+  fi
+}
+media_where=$(files_where media MEDIAS_FILES_ADAPTER media_files /data/media/files)
+sync_where=$(files_where sync SYNC_FILES_ADAPTER sync_files /data/sync/files)
 
 cat <<SUMMARY
 
 IDAH $version is $($continuing && echo "ready" || echo "installed").$($copied && printf '\n\nThe bundled database was copied to %s, and its volume is untouched:\nput the old POSTGRES_* settings back in %s to return to it.' "$pg_host:$pg_port" "$env_file")
 
   URL       $url$tls_note
-  Login     $admin_email
-$password_line
+$account_lines
   Project   $project (its containers and volumes carry this name)
   Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the ${project}_postgres_data volume")
-  Redis     $($external_redis && echo "$redis_addr" || echo "bundled, in the redis_data volume")
+  Redis     $($external_redis && echo "$redis_addr" || echo "bundled, in the ${project}_redis_data volume")
   Email     $([ -n "$smtp_host" ] && echo "via $smtp_host" || echo "off until MAIL_SMTP_HOST is set")
+  Uploads   $media_where
+  Exports   $sync_where
 
 $password_note
 
 Settings live in $env_file and README.md describes them. After changing one:
-docker compose up -d. Uploaded files live in the media_files and sync_files
-volumes — include them in your backups, along with the database.
+docker compose up -d. Back up the uploads and exports above along with the
+database, $env_file and config/.
 
   Status    docker compose ps
   Logs      docker compose logs -f

@@ -96,6 +96,8 @@ PostgreSQL" covers it.
 | Serve HTTPS | `IDAH_URL`, `IDAH_TLS_CONF`, `IDAH_HTTPS_PORT` | any time |
 | Send email notifications | `MAIL_SMTP_*` | any time |
 | Store files in S3 | `MEDIAS_FILES_*`, `SYNC_FILES_*` | before files are uploaded |
+| Keep more or less log per container | `IDAH_LOG_MAX_SIZE`, `IDAH_LOG_MAX_FILES` (10m × 5) | any time |
+| Process more uploads or exports at once | `IDAH_MEDIA_JOBS_CONCURRENCY`, `IDAH_VIDEO_*_THREADS`, `IDAH_SYNC_JOBS_CONCURRENCY` | any time |
 | Report errors to your own Sentry | `SENTRY_*` | any time |
 | Use your own PostgreSQL | `POSTGRES_*` | at install, or with `--provision` |
 | Use your own Redis | `REDIS_URL` | any time, when quiet |
@@ -235,6 +237,40 @@ Uploaded media and exports go to the `media_files` and `sync_files` volumes.
 Setting `MEDIAS_FILES_ADAPTER=s3` (or `SYNC_FILES_ADAPTER=s3`) makes all five of
 its settings required; a missing one stops that service at boot with the
 variable named. Files already on the volume are not moved.
+
+Files keep the same folders in both: `media/files` for uploads and
+`sync/files` for exports, in the volume or under the bucket. So one bucket can
+hold both, and a lifecycle rule can treat exports, which can be generated
+again, differently from uploads. `MEDIAS_FILES_PREFIX` and `SYNC_FILES_PREFIX`
+change the bucket's folders; set them before the first upload, since a file
+keeps the prefix it was stored under.
+
+### Processing load
+
+Video is the heavy part: media runs ffmpeg on every uploaded video, encoding
+all its streaming variants in one pass. By default it takes one upload at a
+time with one decoding and one encoding thread, and sync one export at a time;
+`IDAH_MEDIA_JOBS_CONCURRENCY`, `IDAH_VIDEO_DECODING_THREADS`,
+`IDAH_VIDEO_ENCODING_THREADS` and `IDAH_SYNC_JOBS_CONCURRENCY` raise that.
+
+Memory is not bounded by those settings: one encoding pass holds frames for
+every variant, so a large source can take several gigabytes. To keep a video
+from starving the database and the API on a small machine, cap media alone in
+`compose.override.yml`, which upgrades never replace:
+
+```yaml
+services:
+  media:
+    cpus: 1.5
+    mem_limit: 3g
+    memswap_limit: 3g
+```
+
+Those figures suit 2 CPUs and 8 GB. A video that needs more than the cap fails
+its processing job, rather than the host's out-of-memory killer picking another
+process — possibly PostgreSQL. `docker stats` during a large upload shows how
+close media comes. Limiting the other services gains nothing and slows every
+request.
 
 ### Error reporting
 
