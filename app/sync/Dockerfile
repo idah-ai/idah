@@ -1,57 +1,86 @@
-FROM ruby:3.4.2-slim
+# syntax=docker/dockerfile:1
+
+# What the service needs to run, and nothing it only needs to build: the
+# published image is this plus the gems, updcli and the code.
+FROM ruby:3.4.2-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 
-RUN apt-get update && apt-get install -y \
-    # Basic build tools
-    build-essential \
-    pkg-config \
-    # Handle media processing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # PostgreSQL client library, for the pg gem
+    libpq5 \
+    # Shrine's determine_mime_type runs `file` on every stored export
     file \
-    # pgSQL client libraries
-    libpq-dev \
-    # Additional useful packages
-    curl \
-    git \
-    tar \
-    # Clean up apt cache to reduce image size
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Build arguments
-ARG TARGETARCH
-ARG UPDCLI_VERSION=v1.1.0
-ARG BUNDLE_WITHOUT="development test"
-ARG APP_ENVIRONMENT
+# Published images run in production; compose and staging pass their own value.
+ARG APP_ENVIRONMENT=production
 
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
 ENV PORT=3000
 
-RUN mkdir -p /app
-
 WORKDIR /app
+
+# Compilers and headers for the native gems. Development runs this stage
+# (target: build in compose.override.yml), since it installs gems when the
+# container starts.
+FROM base AS build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    libpq-dev \
+    # Gems fetched from GitHub
+    git \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG TARGETARCH
+ARG UPDCLI_VERSION=v1.1.0
+
+# updcli writes the UPD export format; a static binary from its GitHub release.
+RUN case "$TARGETARCH" in \
+      amd64|arm64) ;; \
+      *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
+    esac \
+    && mkdir -p /tmp/updcli \
+    && curl -fsSL -o /tmp/updcli/updcli.tar.gz \
+       "https://github.com/idah-ai/updcli/releases/download/${UPDCLI_VERSION}/updcli-linux-${TARGETARCH}.tar.gz" \
+    && tar -xf /tmp/updcli/updcli.tar.gz -C /tmp/updcli \
+    && install -m 755 "/tmp/updcli/updcli-linux-${TARGETARCH}" /usr/local/bin/updcli-static \
+    && rm -rf /tmp/updcli
+
+ARG BUNDLE_WITHOUT="development test"
 
 COPY app/sync/Gemfile* .
 
-RUN bundle config set force_ruby_platform true
-RUN bundle config set --local without "$BUNDLE_WITHOUT"
-RUN bundle install --jobs 20 --retry 5
+RUN bundle config set force_ruby_platform true \
+    && bundle config set --local without "$BUNDLE_WITHOUT" \
+    && bundle install --jobs 20 --retry 5 \
+    # The downloaded .gem archives; the installed gems are what runs.
+    && rm -rf /usr/local/bundle/cache/*.gem
+
+FROM base
+
+# The gems and bundler's configuration: the ruby image keeps both here.
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /usr/local/bin/updcli-static /usr/local/bin/updcli-static
+
+# The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
+COPY common/ /common/
 
 COPY app/sync/ .
 
-# Download and extract updcli binary based on architecture from the GitHub release
-RUN ARCH=${TARGETARCH} && \
-    if [ "$ARCH" = "amd64" ]; then ARCH_SUFFIX="amd64"; \
-    elif [ "$ARCH" = "arm64" ]; then ARCH_SUFFIX="arm64"; \
-    else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
-    echo "Downloading updcli-linux-${ARCH_SUFFIX}.tar.gz (${UPDCLI_VERSION})..." && \
-    mkdir -p /usr/local/bin /tmp/updcli-tars && \
-    curl -fsSL -o /tmp/updcli-tars/updcli-linux-${ARCH_SUFFIX}.tar.gz \
-        "https://github.com/idah-ai/updcli/releases/download/${UPDCLI_VERSION}/updcli-linux-${ARCH_SUFFIX}.tar.gz" && \
-    tar -xf /tmp/updcli-tars/updcli-linux-${ARCH_SUFFIX}.tar.gz -C /usr/local/bin && \
-    mv /usr/local/bin/updcli-linux-${ARCH_SUFFIX} /usr/local/bin/updcli-static && \
-    chmod +x /usr/local/bin/updcli-static && \
-    rm -rf /tmp/updcli-tars
+# Plugins, minus their frontend sources, found in /plugins by
+# PluginSystem.default_path.
+COPY --exclude=*/frontend plugins/ /plugins/
+
+# Stamped by the release workflow. Without them the service reports 0.0.0-dev.
+ARG IDAH_VERSION
+ARG IDAH_GIT_SHA
+ENV IDAH_VERSION="$IDAH_VERSION"
+ENV IDAH_GIT_SHA="$IDAH_GIT_SHA"
 
 CMD ["bundle", "exec", "puma"]

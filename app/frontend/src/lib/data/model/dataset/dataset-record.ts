@@ -45,7 +45,7 @@ export class DatasetRecord extends Record {
 
 RecordFactory.registerTypes(DatasetRecord);
 
-export const datasetBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`;
+export const datasetBasePath: string = `/api/v1/dataset/datasets`;
 
 interface DatasetsCustomMethods {
   duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>>;

@@ -4,14 +4,13 @@ current_env = ENV["APP_ENVIRONMENT"] ||= "development"
 require "dotenv"
 require "pry"
 
-# COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../../common", __dir__)
-
 Dotenv.load(".env", ".env.#{current_env}")
 
 require "bundler"
 Bundler.require(:default, current_env)
 
-COMMON_PATH = File.expand_path("../../../common", __dir__)
+# The Rakefile defines it first when running a task, with the same logic.
+COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../common", __dir__) unless defined?(COMMON_PATH)
 
 ENV["APP_PATH"] = File.expand_path("..", __dir__)
 
@@ -22,7 +21,7 @@ loader.push_dir(File.join(ENV["APP_PATH"], "app", "expo"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "model"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "service"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "util"))
-loader.push_dir(File.join(ENV["APP_PATH"], "common", "lib"))
+loader.push_dir(File.join(COMMON_PATH, "lib"))
 
 loader.inflector.inflect("uuid_v7" => "UUIDv7")
 

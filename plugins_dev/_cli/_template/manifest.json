@@ -3,6 +3,8 @@
   "name": "{{pluginName}}",
   "version": "{{pluginVersion}}",
 
+  "idahVersion": "{{idahVersion}}",
+
   "title": "{{pluginDisplayName}}",
   "description": "{{pluginDescription}}",
 

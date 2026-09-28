@@ -8,7 +8,32 @@ require "pry"
 require_relative "./multipart_stream"
 
 class Api
+  # An error status from another service. Keeps the response body, which says
+  # why; the status alone does not tell a missing record from a bad route.
+  class HTTPError < RuntimeError
+    BODY_LIMIT = 500
+
+    attr_reader :status, :body
+
+    def initialize(status, reason, body)
+      @status = status.to_i
+      @body = body.to_s.dup.force_encoding(Encoding::UTF_8).scrub
+
+      # One line, so a pretty-printed JSON body survives log lines and callers
+      # that keep only the first line of an error.
+      detail = @body.gsub(/\s+/, " ").strip
+      detail = "#{detail[0, BODY_LIMIT]}..." if detail.length > BODY_LIMIT
+      super(["HTTP Error: #{status} - #{reason}", detail].reject(&:empty?).join(": "))
+    end
+  end
+
   class Exposition
+    # Seconds. Net::HTTP's default of 60 lets one slow service hold its callers'
+    # threads for a minute per call. The read timeout applies to each read, so a
+    # large file keeps streaming as long as data keeps arriving.
+    OPEN_TIMEOUT = Float(ENV.fetch("IDAH_API_OPEN_TIMEOUT", 5))
+    READ_TIMEOUT = Float(ENV.fetch("IDAH_API_READ_TIMEOUT", 30))
+
     attr_reader :parent, :name
 
     def initialize(parent, name)
@@ -66,20 +91,18 @@ class Api
         parent.auth(options[:auth], request)
       end
 
-      # Execute request
+      # Execute request. Certificates are verified: internal calls use plain
+      # HTTP on the private network (IDAH_INTERNAL_URL), so HTTPS here is a
+      # public address, whose certificate must be genuine.
       http = Net::HTTP.new(uri.host, uri.port)
-      use_ssl = uri.scheme == "https"
-      http.use_ssl = use_ssl
-
-      # TODO: It's probably better to generate a set of self-signed authority
-      # internally to the cluster., rather than disabling verification.
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE if use_ssl
+      http.use_ssl = uri.scheme == "https"
+      http.open_timeout = OPEN_TIMEOUT
+      http.read_timeout = READ_TIMEOUT
+      http.write_timeout = READ_TIMEOUT
 
       response = http.request(request)
 
-      if response.code.to_i >= 400
-        raise "HTTP Error: #{response.code} - #{response.message}"
-      end
+      raise HTTPError.new(response.code, response.message, response.body) if response.code.to_i >= 400
 
       response
     end

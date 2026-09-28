@@ -4,8 +4,11 @@ require "verse/json_api"
 
 Api::Exposition.include(Verse::JsonApi::Deserializer)
 
+# Service-to-service calls. IDAH_URL is the public address, which is not always
+# reachable from inside a container (`localhost` there is the container itself),
+# so a deployment points IDAH_INTERNAL_URL at the proxy on the private network.
 Api[:idah].base_url = \
-  [ENV.fetch("IDAH_URL"), "api/v1/"].join("/")
+  [ENV.fetch("IDAH_INTERNAL_URL") { ENV.fetch("IDAH_URL") }, "api/v1/"].join("/")
 
 Api[:idah].register_service(:media).base_path = "media"
 Api[:idah].register_service(:iam).base_path = "iam"

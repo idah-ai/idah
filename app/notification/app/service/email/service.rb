@@ -5,6 +5,8 @@ require "mail"
 module Email
   class Service < Verse::Service::Base
     def send_email(to_email, notification)
+      return unless Email.enabled?
+
       account = Api[:idah].iam.accounts.index(
         {
           filter: { email: to_email }

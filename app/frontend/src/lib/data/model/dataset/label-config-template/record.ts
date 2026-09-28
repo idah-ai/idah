@@ -20,7 +20,7 @@ export class LabelConfigTemplateRecord extends Record {
 
 RecordFactory.registerTypes(LabelConfigTemplateRecord);
 
-export const labelConfigTemplateBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/label_config_templates`;
+export const labelConfigTemplateBasePath: string = `/api/v1/dataset/label_config_templates`;
 
 export const labelConfigTemplateDataSource = createBackendDataSource(
   LabelConfigTemplateRecord,

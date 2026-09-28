@@ -62,7 +62,8 @@ idah:
   plugins:
     # Path to load plugins from, supports glob patterns.
     # Will autoload plugins from this path
-    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins/**") %>
+    # Defaults to plugins/ at the repository root (see PluginSystem.default_path).
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH"){ PluginSystem.default_path } %>
 
     # Auto reload modules when files change (only manual plugins)
     # True if the IDAH_DEV_PLUGIN env var is set to any value

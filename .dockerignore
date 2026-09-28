@@ -1,0 +1,47 @@
+# Every service image (and the docs site) builds from the repository root.
+# Keep the context small, and keep local secrets and test artefacts out of images.
+
+# VCS and OS noise
+.git
+**/.DS_Store
+
+# Dependencies and build output: images install and build their own
+**/node_modules
+**/.pnpm-store
+**/.svelte-kit
+**/.bundle
+app/frontend/build
+plugins/*/frontend/build
+doc/frontend/dist
+
+# Test artefacts
+**/coverage
+**/.rspec_status
+
+# Local environment files and secrets. Only the committed dev keys may ship;
+# staging and production keys are mounted at runtime.
+**/.env
+**/.env.*
+config/
+deploy/
+staging/config
+staging/storage
+app/*/config/keys/*
+!app/*/config/keys/*.dev.pem
+!app/*/config/keys/README.md
+
+# Runtime scratch space (local uploads and storage live here)
+app/*/tmp/*
+common/tmp/*
+plugins/*/backends/tmp
+
+# Plugin sample media for local development, and backend test data
+plugins/*/frontend/static/**/*.mp4
+plugins/*/frontend/static/**/*.m3u8
+plugins/*/frontend/static/**/*.ts
+plugins/*/frontend/static/medias
+plugins/*/frontend/static/segments
+plugins/*/backends/spec_data
+
+# Local clones of the verse gems: the Gemfiles fetch them from GitHub
+common/gems

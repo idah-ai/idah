@@ -73,7 +73,7 @@ export class EntryRecord extends Record {
   }
 }
 
-export const entriesBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/entries`;
+export const entriesBasePath: string = `/api/v1/dataset/entries`;
 
 RecordFactory.registerTypes(EntryRecord);
 
