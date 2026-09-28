@@ -9,12 +9,14 @@
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
   import type { IDropdownMenuItem } from "@/components/app/dropdown-menus/types";
+  import WebhookCallLogsContentModal from "../call/overlays/webhook-call-logs-content-modal.svelte";
 
   // Props
   let { record: webhookRecord }: DataTableCellBaseProps<WebhookRecord> = $props();
 
   // Variables
   let openEditWebhookFormModal: boolean = $state(false);
+  let openCallLogsModal: boolean = $state(false);
   let actions = [
     {
       label: "Test webhook",
@@ -27,7 +29,7 @@
       label: "Call logs",
       icon: ClockIcon,
       action: () => {
-        console.log("Call logs clicked for webhook:", webhookRecord.id);
+        openCallLogsModal = true;
       },
     },
     {
@@ -74,3 +76,5 @@
 {/each}
 
 <WebhookFormModal title="Webhook" action="update" {webhookRecord} bind:open={openEditWebhookFormModal} />
+
+<WebhookCallLogsContentModal {webhookRecord} bind:open={openCallLogsModal} />
