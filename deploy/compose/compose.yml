@@ -70,6 +70,8 @@ x-service-env: &service-env
   IDAH_API_READ_TIMEOUT: ${IDAH_API_READ_TIMEOUT:-30}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   LOG_SHOW_ERROR_DETAILS: ${LOG_SHOW_ERROR_DETAILS:-false}
+  # Empty reports the image's APP_ENVIRONMENT, production, as the frontend does.
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-}
 
 services:
   # HTTP, and HTTPS when IDAH_TLS_CONF points at config/nginx/tls.conf.
