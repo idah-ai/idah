@@ -26,13 +26,22 @@ Customers keep their own changes in a `compose.override.yml` next to
 curl -fsSL https://github.com/idah-ai/idah/releases/latest/download/install.sh | bash
 ```
 
-The installer downloads the rest of the release it belongs to, checks it
-against the published `SHA256SUMS`, unpacks it into `./idah` and installs from
-there. It asks two things, the public URL and the administrator's email, then
-generates the signing key pair and every password — one per internal service
+The installer first asks where to install IDAH: the current directory unless
+you name another, which it creates if needed. It then downloads the rest of the
+release it belongs to, checks it against the published `SHA256SUMS`, unpacks
+it there and installs from there. It refuses a directory that already holds
+files of the same names, so nothing of yours is overwritten. It asks two more
+things, the public URL and the administrator's email, then generates the signing key pair and every password — one per internal service
 account — creates the databases, runs the migrations, creates the accounts and
 starts the stack. The administrator's password is printed once and stored
 nowhere.
+
+`IDAH_DIR` sets the directory offered, and with `--yes` it is used without
+asking, for a scripted install:
+
+```bash
+curl -fsSL https://github.com/idah-ai/idah/releases/latest/download/install.sh | IDAH_DIR=/home/apps/idah bash -s -- --yes --admin-email you@example.com
+```
 
 That line installs the newest release. To install a particular one, name it —
 the version pins the files and the images alike:
@@ -52,8 +61,9 @@ tar -xzf idah-<version>.tar.gz && cd idah-<version>
 ./install.sh
 ```
 
-An install on a machine with no internet also needs the eight images mirrored
-into a registry it can reach, with `IDAH_IMAGE_PREFIX` pointed at it.
+An install on a machine with no internet also needs the three images
+(`service`, which six of the services run, `media` and `frontend`) mirrored into
+a registry it can reach, with `IDAH_IMAGE_PREFIX` pointed at it.
 
 To configure anything before installing, create `.env` first and edit it:
 

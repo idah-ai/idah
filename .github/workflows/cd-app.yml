@@ -1,12 +1,16 @@
 name: CD - App
 
-# Builds, publishes and smoke-tests the eight service images.
+# Builds, publishes and smoke-tests the three images the eight services run:
+#
+#   service   iam, audit, dataset, notification, setting and sync (docker/Dockerfile.service)
+#   media     media: the service image plus ffmpeg and ImageMagick (docker/Dockerfile.media)
+#   frontend  the SvelteKit app (docker/Dockerfile.frontend)
 #
 # Pushing a version tag (v0.4.0, v0.4.0-rc.1) publishes
-#   ghcr.io/idah-ai/idah-<service>:<version>
+#   ghcr.io/idah-ai/idah-<image>:<version>
 # for linux/amd64 and linux/arm64, with IDAH_VERSION and IDAH_GIT_SHA stamped in.
 #
-# Running the workflow by hand publishes ghcr.io/idah-ai/idah-<service>:sha-<commit>
+# Running the workflow by hand publishes ghcr.io/idah-ai/idah-<image>:sha-<commit>
 # instead, for testing a branch. Those images report 0.0.0-dev: a manual run is
 # never a release.
 #
@@ -39,6 +43,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       image_tag: ${{ steps.version.outputs.image_tag }}
       revision: ${{ steps.version.outputs.revision }}
+      images: ${{ steps.version.outputs.images }}
       services: ${{ steps.version.outputs.services }}
     steps:
       - name: Work out the version
@@ -66,6 +71,7 @@ jobs:
             echo "version=$version"
             echo "image_tag=$image_tag"
             echo "revision=$revision"
+            echo 'images=["service","media","frontend"]'
             echo 'services=["iam","audit","dataset","media","notification","setting","sync","frontend"]'
           } >> "$GITHUB_OUTPUT"
 
@@ -83,18 +89,21 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           IMAGE_TAG: ${{ steps.version.outputs.image_tag }}
-          SERVICES: ${{ steps.version.outputs.services }}
+          IMAGES: ${{ steps.version.outputs.images }}
         run: |
-          for service in $(jq -r '.[]' <<< "$SERVICES"); do
-            image="${IMAGE_PREFIX}${service}:${IMAGE_TAG}"
+          for name in $(jq -r '.[]' <<< "$IMAGES"); do
+            image="${IMAGE_PREFIX}${name}:${IMAGE_TAG}"
             if docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
               echo "::error::$image already exists. Version tags are immutable: publish the next patch instead."
               exit 1
             fi
           done
 
+  # media is built from the service image the same job has just pushed, named
+  # by its digest, so media has every one of its layers as they are: an install
+  # downloads them once, and media's own layer on top.
   build:
-    name: Build ${{ matrix.service }} (${{ matrix.arch }})
+    name: Build ${{ matrix.group }} (${{ matrix.arch }})
     needs: prepare
     runs-on: ${{ matrix.runner }}
     permissions:
@@ -103,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJSON(needs.prepare.outputs.services) }}
+        group: [ruby, frontend]
         arch: [amd64, arm64]
         include:
           - arch: amd64
@@ -125,12 +134,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Pushed by digest only; the merge job tags the combined image.
-      - name: Build and push
-        id: build
+      - name: Build and push service
+        id: service
+        if: matrix.group == 'ruby'
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: app/${{ matrix.service }}/Dockerfile
+          file: docker/Dockerfile.service
           platforms: linux/${{ matrix.arch }}
           build-args: |
             IDAH_VERSION=${{ needs.prepare.outputs.version }}
@@ -139,37 +149,78 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
-            org.opencontainers.image.title=idah-${{ matrix.service }}
-          outputs: type=image,name=${{ env.IMAGE_PREFIX }}${{ matrix.service }},push-by-digest=true,name-canonical=true,push=true
-          # iam's cache as well: the services whose runtime stage is iam's reuse
-          # its layer rather than building an identical one, so an install
-          # downloads it once instead of once per image. It takes from the
-          # release after the stage last changed, since the jobs run side by side.
-          cache-from: |
-            type=gha,scope=${{ matrix.service }}-${{ matrix.arch }}
-            type=gha,scope=iam-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ matrix.arch }}
+            org.opencontainers.image.title=idah-service
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}service,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=ruby-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=ruby-${{ matrix.arch }}
 
-      - name: Record the digest
+      # No cache: its one layer sits on a service image that is new with every
+      # build, so it is rebuilt every time. IDAH_VERSION and IDAH_GIT_SHA come
+      # with the service image.
+      - name: Build and push media
+        id: media
+        if: matrix.group == 'ruby'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.media
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            SERVICE_IMAGE=${{ env.IMAGE_PREFIX }}service@${{ steps.service.outputs.digest }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.title=idah-media
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}media,push-by-digest=true,name-canonical=true,push=true
+
+      - name: Build and push frontend
+        id: frontend
+        if: matrix.group == 'frontend'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.frontend
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            IDAH_VERSION=${{ needs.prepare.outputs.version }}
+            IDAH_GIT_SHA=${{ needs.prepare.outputs.revision }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.title=idah-frontend
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}frontend,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=frontend-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.arch }}
+
+      # One directory per image, one file per digest in it.
+      - name: Record the digests
         env:
-          DIGEST: ${{ steps.build.outputs.digest }}
+          SERVICE: ${{ steps.service.outputs.digest }}
+          MEDIA: ${{ steps.media.outputs.digest }}
+          FRONTEND: ${{ steps.frontend.outputs.digest }}
           DIGESTS_DIR: ${{ runner.temp }}/digests
         run: |
-          mkdir -p "$DIGESTS_DIR"
-          touch "$DIGESTS_DIR/${DIGEST#sha256:}"
+          for pair in "service:$SERVICE" "media:$MEDIA" "frontend:$FRONTEND"; do
+            name=${pair%%:*}; digest=${pair#*:}
+            [ -n "$digest" ] || continue
+            mkdir -p "$DIGESTS_DIR/$name"
+            touch "$DIGESTS_DIR/$name/${digest#sha256:}"
+          done
 
-      - name: Upload the digest
+      - name: Upload the digests
         uses: actions/upload-artifact@v4
         with:
-          name: digest-${{ matrix.service }}-${{ matrix.arch }}
-          path: ${{ runner.temp }}/digests/*
+          name: digests-${{ matrix.group }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/
           if-no-files-found: error
           retention-days: 1
 
-  # A service is only tagged when both of its architectures built, so a failed
+  # An image is only tagged when both of its architectures built, so a failed
   # build never leaves a half-published release.
   merge:
-    name: Publish ${{ matrix.service }}
+    name: Publish ${{ matrix.image }}
     needs: [prepare, build]
     runs-on: ubuntu-24.04
     permissions:
@@ -178,13 +229,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJSON(needs.prepare.outputs.services) }}
+        image: ${{ fromJSON(needs.prepare.outputs.images) }}
     steps:
       - name: Download the digests
         uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: digest-${{ matrix.service }}-*
+          pattern: digests-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -198,9 +249,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag the multi-arch image
-        working-directory: ${{ runner.temp }}/digests
+        working-directory: ${{ runner.temp }}/digests/${{ matrix.image }}
         env:
-          IMAGE: ${{ env.IMAGE_PREFIX }}${{ matrix.service }}
+          IMAGE: ${{ env.IMAGE_PREFIX }}${{ matrix.image }}
           IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
         run: |
           sources=()
@@ -254,10 +305,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Each service in the image it runs: six of them share the service image.
       - name: Run the image with no source tree
         env:
           SERVICE: ${{ matrix.service }}
-          IMAGE: ${{ env.IMAGE_PREFIX }}${{ matrix.service }}:${{ needs.prepare.outputs.image_tag }}
+          IMAGE: ${{ env.IMAGE_PREFIX }}${{ contains(fromJSON('["media","frontend"]'), matrix.service) && matrix.service || 'service' }}:${{ needs.prepare.outputs.image_tag }}
           EXPECTED_VERSION: ${{ needs.prepare.outputs.version || '0.0.0-dev' }}
         run: .github/scripts/smoke-image.sh "$SERVICE" "$IMAGE" "$EXPECTED_VERSION"
 
