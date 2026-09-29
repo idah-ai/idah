@@ -2,14 +2,14 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
-      KeyIcon,
-      LogOutIcon,
-      MoonIcon,
-      SettingsIcon,
-      SunIcon,
-      SunMoonIcon,
-      TabletSmartphoneIcon,
-      WebhookIcon,
+    KeyIcon,
+    LogOutIcon,
+    MoonIcon,
+    SettingsIcon,
+    SunIcon,
+    SunMoonIcon,
+    TabletSmartphoneIcon,
+    WebhookIcon,
   } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
 
