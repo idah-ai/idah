@@ -98,7 +98,7 @@ module Medias
           result = store_media(
             io: file.tempfile,
             filename: file.filename,
-            mime_type: upload_mime_type(file),
+            mime_type: file.type,
             resource:,
             key:,
             project_id:,
