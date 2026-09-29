@@ -54,6 +54,21 @@ class DatasetsExpo < BaseExpo
     )
   end
 
+  # Feedback Configuration Management
+  expose on_http(:patch, "/:id/feedback_configuration") do
+    desc "Update the feedback configuration for a dataset (add/update/delete items)"
+    input do
+      field :id, String
+      field :feedback_configuration, Hash
+    end
+  end
+  def update_feedback_configuration
+    service.update_feedback_configuration(
+      params[:id],
+      params[:feedback_configuration]
+    )
+  end
+
   expose on_resource_event(Resource::Dataset::Datasets, "completed")
   def on_dataset_completed
     dataset_id = message.content[:resource_id]

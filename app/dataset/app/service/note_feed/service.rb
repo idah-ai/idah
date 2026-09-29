@@ -79,6 +79,16 @@ module NoteFeed
               "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
+      # Validate that the feedback_key exists in the dataset's feedback configuration
+      if attributes[:feedback_key]
+        feedback_config = entry.dataset.feedback_configuration || {}
+
+        unless feedback_config.key?(attributes[:feedback_key].to_sym)
+          raise Verse::Error::ValidationFailed,
+                "Feedback key '#{attributes[:feedback_key]}' does not exist in the dataset's feedback configuration"
+        end
+      end
+
       if attributes[:annotation_id] && attributes[:anchor_type] == "annotation"
         annotation_id = attributes[:annotation_id]
         annotations.find!(annotation_id)

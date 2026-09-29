@@ -6,7 +6,8 @@ module Dataset
         projects: Project::Repository,
         entries: Entry::Repository,
         annotations: Annotation::Repository
-    use_system project_members: ProjectMember::Repository
+    use_system project_members: ProjectMember::Repository,
+               note_feeds: NoteFeed::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -119,7 +120,37 @@ module Dataset
       end
     end
 
-    private def authorize_creation(project_id)
+    # Feedback Configuration Management
+    def update_feedback_configuration(dataset_id, new_config)
+      dataset = datasets.find!(dataset_id)
+      old_config = dataset.feedback_configuration || {}
+
+      old_keys = old_config.keys.map(&:to_s)
+      new_keys = new_config.keys.map(&:to_s)
+
+      removed_keys = old_keys - new_keys
+
+      removed_keys.each do |key|
+        if note_feed_uses_feedback_key?(dataset_id, key)
+          raise Verse::Error::ValidationFailed,
+                "Cannot remove feedback item '#{key}': it is already used by a note"
+        end
+      end
+
+      datasets.transaction do
+        datasets.update!(dataset_id, { feedback_configuration: new_config })
+        datasets.find!(dataset_id).feedback_configuration
+      end
+    end
+
+    private
+
+    def note_feed_uses_feedback_key?(dataset_id, key)
+      # Use the system-scoped note_feed repository to bypass auth scoping
+      note_feeds.feedback_key_in_use?(dataset_id, key)
+    end
+
+    def authorize_creation(project_id)
       access = auth_context.can?(:create, datasets.class.resource)
 
       if access == :as_org_owner

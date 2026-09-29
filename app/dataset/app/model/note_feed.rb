@@ -15,6 +15,7 @@ module NoteFeed
     field :position, type: Hash
     field :status, type: String, readonly: true
     field :content_md, type: String
+    field :feedback_key, type: String
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -214,6 +215,23 @@ module NoteFeed
     def resolve!(id)
       update!(id, { status: "resolved" }, scope: scoped(:resolve))
       find!(id)
+    end
+
+    def feedback_key_in_use?(dataset_id, key)
+      table.where(
+        Sequel.lit(
+          <<~SQL,
+            EXISTS (
+              SELECT 1
+              FROM note_feeds
+              WHERE dataset_id = :dataset_id
+                AND feedback_key = :key
+            )
+          SQL
+          dataset_id: dataset_id,
+          key: key.to_s
+        )
+      ).any?
     end
   end
 end
