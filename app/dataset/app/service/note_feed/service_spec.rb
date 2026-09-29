@@ -114,9 +114,12 @@ RSpec.describe NoteFeed::Service, database: true do
         let(:system_dataset_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
 
         before do
-          system_dataset_repo.update!(dataset_id, { feedback_configuration: {
-            "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
-          } })
+          system_dataset_repo.update!(
+            dataset_id,
+            { feedback_configuration: {
+              "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
+            } }
+          )
         end
 
         it "creates a note feed with feedback_key and no content_md" do

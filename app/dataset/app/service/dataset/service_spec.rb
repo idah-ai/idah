@@ -286,10 +286,13 @@ RSpec.describe Dataset::Service, database: true do
     let!(:dataset_id) { repo.create(attributes) }
 
     before do
-      system_repo.update!(dataset_id, { feedback_configuration: {
-        "keep_key" => { label: "Keep me" },
-        "delete_key" => { label: "Delete me" }
-      } })
+      system_repo.update!(
+        dataset_id,
+        { feedback_configuration: {
+          "keep_key" => { label: "Keep me" },
+          "delete_key" => { label: "Delete me" }
+        } }
+      )
     end
 
     it "adds new items and keeps existing ones" do
@@ -301,8 +304,8 @@ RSpec.describe Dataset::Service, database: true do
 
       result = subject.update_feedback_configuration(dataset_id, new_config)
 
-      expect(result.keys).to match_array(%w[keep_key new_key delete_key])
-      expect(result["new_key"]["label"]).to eq("New item")
+      expect(result.keys).to match_array(%i[keep_key new_key delete_key])
+      expect(result[:new_key][:label]).to eq("New item")
     end
 
     it "deletes an item that is not referenced by any note" do
@@ -310,7 +313,7 @@ RSpec.describe Dataset::Service, database: true do
 
       result = subject.update_feedback_configuration(dataset_id, new_config)
 
-      expect(result.key?("delete_key")).to be false
+      expect(result.key?(:delete_key)).to be false
     end
 
     it "raises error when a deleted key is used by a note" do
@@ -350,7 +353,7 @@ RSpec.describe Dataset::Service, database: true do
 
       result = subject.update_feedback_configuration(dataset_id, new_config)
 
-      expect(result["keep_key"]["label"]).to eq("Updated label")
+      expect(result[:keep_key][:label]).to eq("Updated label")
     end
   end
 end
