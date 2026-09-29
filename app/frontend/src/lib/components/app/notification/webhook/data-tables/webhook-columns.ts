@@ -78,6 +78,10 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
       filterKey: "enabled",
       filterBy: "boolean",
       filterOperation: "eq",
+      choices: [
+        { label: "Enabled", value: true },
+        { label: "Disabled", value: false },
+      ],
     },
     visible: true,
     hidable: false,
