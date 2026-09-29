@@ -54,7 +54,7 @@
   const acceptedFileTypes = $derived.by(() => {
     switch (modality) {
       case "idah-video": {
-        return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"];
+        return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".ts"];
       }
       case "idah-image": {
         return [".zip", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"];
