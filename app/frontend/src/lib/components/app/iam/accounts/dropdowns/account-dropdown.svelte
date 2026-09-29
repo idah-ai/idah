@@ -2,13 +2,14 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
-    KeyIcon,
-    LogOutIcon,
-    MoonIcon,
-    SettingsIcon,
-    SunIcon,
-    SunMoonIcon,
-    TabletSmartphoneIcon,
+      KeyIcon,
+      LogOutIcon,
+      MoonIcon,
+      SettingsIcon,
+      SunIcon,
+      SunMoonIcon,
+      TabletSmartphoneIcon,
+      WebhookIcon,
   } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
 
@@ -79,6 +80,14 @@
           icon: SettingsIcon,
           action: () => {
             goto(resolve("/settings/notifications"));
+          },
+        },
+        {
+          label: "Webhooks",
+          icon: WebhookIcon,
+          visibleIfRoles: ["admin", "org_owner"],
+          action: () => {
+            goto(resolve("/webhooks"));
           },
         },
         {
