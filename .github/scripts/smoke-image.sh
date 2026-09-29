@@ -5,6 +5,9 @@
 #
 #   .github/scripts/smoke-image.sh <service> <image> [expected-version]
 #
+# <image> is the one the service runs: service for six of the Ruby services,
+# media for media, frontend for the frontend.
+#
 # expected-version defaults to 0.0.0-dev, what an unstamped build reports.
 #
 # Ruby services need PostgreSQL (postgres/postgres) on port 5432 and Redis on
@@ -77,6 +80,8 @@ key=public.dev.pem
 [ "$service" = iam ] && key=private.dev.pem
 
 env_args=(
+  # The Ruby services share an image; the working directory picks the service.
+  -w "/app/$service"
   -e APP_ENVIRONMENT=production
   -e LOG_SHOW_ERROR_DETAILS=false
   -e "DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_${service}_smoke"

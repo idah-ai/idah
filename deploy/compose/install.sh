@@ -52,6 +52,8 @@ env_file=.env
 keys_dir=config/keys
 certs_dir=config/certs
 services="iam dataset media setting notification sync audit"
+# The images they run: every service but media runs the service image.
+images="service media frontend"
 default_prefix=ghcr.io/idah-ai/idah-
 
 # The release this installer belongs to, filled in when the release is published.
@@ -574,8 +576,8 @@ say "Checking images"
 # an install's time is the download, and one pull alone rarely fills the line.
 # Not docker compose pull, which cannot read compose.yml before .env exists.
 pulls=""
-for svc in $services frontend; do
-  image="$prefix$svc:$version"
+for name in $images; do
+  image="$prefix$name:$version"
   docker image inspect "$image" > /dev/null 2>&1 && continue
 
   printf "   pulling %s\n" "$image"
@@ -597,7 +599,7 @@ done
 
        Otherwise check that $version is a published version and that this
        machine can reach the registry."
-echo "   all eight present"
+echo "   all three present"
 
 # --- external servers --------------------------------------------------------
 
@@ -618,7 +620,7 @@ if $external; then
   say "Connecting to PostgreSQL at $pg_host:$pg_port"
   if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
       -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode${ca:+&sslrootcert=$ca}" \
-      -e "PGPASSWORD=$pg_password" "${prefix}iam:$version" ruby -e '
+      -e "PGPASSWORD=$pg_password" "${prefix}service:$version" ruby -e '
         require "sequel"
         begin
           Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| puts db.fetch("show server_version_num").single_value }
@@ -647,7 +649,7 @@ fi
 if $external_redis; then
   say "Connecting to Redis at $redis_addr"
   if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
-      -e "REDIS_URL=$redis_url" "${prefix}iam:$version" ruby -e '
+      -e "REDIS_URL=$redis_url" "${prefix}service:$version" ruby -e '
         require "redis"
         begin
           Redis.new(url: ENV.fetch("REDIS_URL")).ping
