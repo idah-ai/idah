@@ -124,13 +124,6 @@ module Medias
         File.extname(file.filename.to_s).downcase == ".zip"
     end
 
-    def upload_mime_type(file)
-      provided = file.type.to_s
-      return provided unless provided.empty? || provided == "application/octet-stream"
-
-      Rack::Mime.mime_type(File.extname(file.filename.to_s).downcase, "application/octet-stream")
-    end
-
     # Pass 1: inspect entry headers only (no decompression) to reject zip bombs
     # before extracting anything. The compression-ratio and total-uncompressed
     # guards reject the whole archive (raise); a single oversized entry is added
