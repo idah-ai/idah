@@ -10,17 +10,17 @@
   import PreviewUploadMediaItem from "./_PreviewUploadMediaItem.svelte";
   import UploadMediaItem from "./_UploadMediaItem.svelte";
 
+  import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource, type ZipFileReport } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
-  import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
-  import type { JsonApiErrorResponse } from "@/data/model/types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { JsonApiErrorResponse } from "@/data/model/types";
 
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
@@ -57,7 +57,7 @@
         return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"];
       }
       case "idah-image": {
-        return [".zip", ".jpg", ".jpeg", ".png"];
+        return [".zip", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"];
       }
       default: {
         return [];
