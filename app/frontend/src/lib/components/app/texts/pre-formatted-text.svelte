@@ -1,3 +1,4 @@
-<pre class="bg-secondary border border-primary rounded-[8px] p-3 text-sm leading-5 whitespace-pre-wrap break-all font-mono">
+<pre
+  class="bg-secondary border-primary rounded-[8px] border p-3 font-mono text-sm leading-5 break-all whitespace-pre-wrap">
   <slot />
 </pre>

@@ -2,7 +2,7 @@
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import { webhookCallLogsColumns } from "@/components/app/notification/webhook/call/data-tables/webhook-call-logs-columns";
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-  
+
   import { webhookCallBackendDataSource } from "@/data/model/notification/webhooks/call/record";
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
   import { refetches } from "@/utils/refetch";

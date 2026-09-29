@@ -1,15 +1,15 @@
 <script lang="ts">
   import { Icon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
-  
+
   import DateText from "@/components/app/texts/date-text.svelte";
   import PreFormattedText from "@/components/app/texts/pre-formatted-text.svelte";
   import { Button } from "@/components/ui/button";
   import Label from "@/components/ui/label/label.svelte";
 
-	import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";
+  import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";
 
-    import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
   let { record: webhookCall }: DataTableCellBaseProps<WebhookCallRecord> = $props();
