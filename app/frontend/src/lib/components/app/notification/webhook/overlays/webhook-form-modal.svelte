@@ -37,7 +37,7 @@
             url: null,
             event_types: [],
             secret_key: null,
-            enabled: false,
+            enabled: true,
           },
         }),
   );

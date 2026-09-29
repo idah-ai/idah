@@ -8,9 +8,6 @@
 
   // Props
   let { record: webhook }: DataTableCellBaseProps<WebhookRecord> = $props();
-  $effect(() => {
-    console.log(webhook.event_types);
-  });
 </script>
 
 {#each webhook.event_types as eventType (eventType)}

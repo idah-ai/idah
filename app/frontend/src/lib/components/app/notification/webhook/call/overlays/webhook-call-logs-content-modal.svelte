@@ -2,7 +2,9 @@
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import { webhookCallLogsColumns } from "@/components/app/notification/webhook/call/data-tables/webhook-call-logs-columns";
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-  import { WebhookRecord, webhooksMemoryDataSource } from "@/data/model/notification/webhooks/record";
+  
+  import { webhookCallBackendDataSource } from "@/data/model/notification/webhooks/call/record";
+  import { WebhookRecord } from "@/data/model/notification/webhooks/record";
   import { refetches } from "@/utils/refetch";
 
   import type { ModalBaseProps } from "@/components/app/overlays/modals/Modal.types";
@@ -26,14 +28,14 @@
     <div class="w-full overflow-auto">
       {#key $refetches.webhooks.list}
         <DatasourceTable
-          id="webhooks"
-          name="webhooks"
-          refetchKey="webhooks"
+          id="webhook-calls"
+          name="webhook-calls"
+          refetchKey="webhookCalls"
           {columns}
-          dataSource={webhooksMemoryDataSource}
+          dataSource={webhookCallBackendDataSource(webhookRecord.id)}
           listOptions={{
             fields: {
-              ["webhooks"]: ["id", "name", "url", "event_types", "enabled", "created_at"],
+              ["webhookCalls"]: ["id", "http_status", "created_at"],
             },
             filters: {
               id: webhookRecord.id,
