@@ -43,7 +43,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-sentry
-  revision: 1e952cee33063356a33f8b4e32e85afebf786a30
+  revision: fd485a65d7bb1d3991bb9e65b6d71fa765315129
   branch: master
   specs:
     verse-sentry (0.1.0)
