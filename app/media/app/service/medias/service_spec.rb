@@ -208,6 +208,47 @@ RSpec.describe Medias::Service, as: :system, database: true do
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
 
+    it "streams entries with their real size when the zip uses data descriptors" do
+      require "zip"
+
+      zip_path = Tempfile.create(["descriptor", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("clip.mp4")
+        zip.write("fake-video-content")
+      end
+
+      # Zippers that stream (macOS Finder, `zip -fd`) leave CRC and sizes at zero
+      # in the local header and write them after the data; only the central
+      # directory holds the real size.
+      bytes = File.binread(zip_path)
+      bytes.setbyte(6, bytes.getbyte(6) | 0x08) # general purpose flag bit 3
+      bytes[14, 12] = "\0" * 12                 # CRC-32, compressed and uncompressed sizes
+      File.binwrite(zip_path, bytes)
+
+      streamed = []
+      allow(subject).to receive(:store_media).and_wrap_original do |original, **kwargs|
+        streamed << [kwargs[:io].size, kwargs[:io].read]
+        kwargs[:io].rewind
+
+        original.call(**kwargs)
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "descriptor.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      expect(result[:processed].map(&:filename)).to eq(["clip.mp4"])
+      expect(streamed).to eq([[18, "fake-video-content"]])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
     it "raises validation error for a corrupted zip file" do
       corrupt_path = Tempfile.create(["corrupt", ".zip"]).path
       File.write(corrupt_path, "this is not a zip archive")
@@ -539,5 +580,17 @@ RSpec.describe Medias::Service, as: :system, database: true do
         subject.delete("nonexistent_resource", "nonexistent_key")
       end.to raise_error(Verse::Error::NotFound)
     end
+  end
+end
+
+RSpec.describe Medias::StreamWithPath do
+  # S3 storage sends exactly `io.size` bytes of the stream, so size must be the
+  # one given, not the wrapper's own nor the wrapped stream's.
+  it "reports the given size and delegates reads to the stream" do
+    stream = described_class.new(StringIO.new("fake-video-content"), "clip.mp4", 18)
+
+    expect(stream.size).to eq(18)
+    expect(stream.path).to eq("clip.mp4")
+    expect(stream.read).to eq("fake-video-content")
   end
 end
