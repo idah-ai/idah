@@ -98,7 +98,7 @@ module Medias
           result = store_media(
             io: file.tempfile,
             filename: file.filename,
-            mime_type: file.type,
+            mime_type: upload_mime_type(file),
             resource:,
             key:,
             project_id:,
@@ -122,6 +122,13 @@ module Medias
     def zip_file?(file)
       ["application/zip", "application/x-zip-compressed"].include?(file.type.to_s) ||
         File.extname(file.filename.to_s).downcase == ".zip"
+    end
+
+    def upload_mime_type(file)
+      provided = file.type.to_s
+      return provided unless provided.empty? || provided == "application/octet-stream"
+
+      Rack::Mime.mime_type(File.extname(file.filename.to_s).downcase, "application/octet-stream")
     end
 
     # Pass 1: inspect entry headers only (no decompression) to reject zip bombs
