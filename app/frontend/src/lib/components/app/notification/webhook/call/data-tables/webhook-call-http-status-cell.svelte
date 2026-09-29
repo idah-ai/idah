@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { DotIcon } from "@lucide/svelte";
+  
   import Text from "@/components/ui/text/Text.svelte";
   
   import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";
@@ -10,3 +12,7 @@
 </script>
 
 <Text>{WebhookCall.http_status}</Text>
+<div class="flex items-center gap-2" >
+  <DotIcon size="xl" color={WebhookCall.http_status.bgColor} />
+  <Text>{WebhookCall.http_status.label}</Text>
+</div>
