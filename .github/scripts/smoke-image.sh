@@ -27,6 +27,9 @@ cleanup() {
   if [ -n "$container" ]; then
     if [ "$failed" = 1 ]; then
       echo "--- last container logs"
+      # The plugin lines come early in the boot, above what the tail shows.
+      echo "--- plugin lines"
+      docker logs "$container" 2>&1 | grep -F "[IDAH-PLUGIN]" || echo "(none)"
       docker logs "$container" 2>&1 | tail -40 || true
     fi
     docker rm -f "$container" > /dev/null 2>&1 || true
@@ -126,9 +129,18 @@ pass "database and redis are reachable"
 # 3. Plugins shipped inside the image load, and setting serves their bundles.
 # Ruby buffers its log output when it is not writing to a terminal, so a line
 # can reach `docker logs` a little after the service already answers requests.
+# The log is read whole, then searched, never piped into grep -q: grep stops
+# at the first match, the writer still feeding the pipe is killed by SIGPIPE,
+# and pipefail then reports a line that is there as missing.
+logged() { # <text>
+  local logs
+  logs=$(docker logs "$container" 2>&1)
+  grep -qF "$1" <<< "$logs"
+}
+
 expect_log() {
   for _ in $(seq 1 30); do
-    if docker logs "$container" 2>&1 | grep -qF "$1"; then
+    if logged "$1"; then
       pass "logged: $1"
       return
     fi
@@ -138,8 +150,8 @@ expect_log() {
 }
 
 expect_no_log() {
-  if docker logs "$container" 2>&1 | grep -qF "$1"; then
-    fail "unexpected log line: $(docker logs "$container" 2>&1 | grep -F "$1" | head -1)"
+  if logged "$1"; then
+    fail "unexpected log line: $1"
   fi
   pass "did not log: $1"
 }
