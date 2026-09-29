@@ -18,6 +18,8 @@
 | REDIS_STREAM_URL | Redis connection string |
 | LOG_LEVEL | Logging level (info/debug) |
 | LOG_SHOW_ERROR_DETAILS | Detailed errors in HTTP responses |
+| SENTRY_DSN | Sentry DSN; empty disables reporting |
+| SENTRY_ENVIRONMENT | Sentry environment label; empty uses APP_ENVIRONMENT |
 | PORT | HTTP port (default: 3000) |
 | PUMA_WORKERS | Puma worker count |
 | PUMA_THREADS | Puma thread count |
