@@ -17,6 +17,9 @@
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
+  import { datasetBasePath } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -112,6 +115,7 @@
           await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 
           $refetches.entries.list = new Date();
+          clearCache(resourcePath(datasetBasePath, null, undefined));
           showToast.success({
             title: "Entry deleted",
             description: `The entry "${entry.name || entry.id}" has been deleted.`,

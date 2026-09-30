@@ -164,7 +164,7 @@ module Dataset
 
       total_entries = dataset[:entries_total_count]
 
-      return if total_entries.zero?
+      return pending!(dataset_id, 0.0) if total_entries.zero?
 
       completed_entries = dataset[:entries_completed_count]
       in_progress_entries = dataset[:entries_in_progress_count]

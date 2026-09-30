@@ -95,12 +95,16 @@ module Entry
     end
 
     def delete(id)
-      entry = entries.find!(id)
-      if %w[in_progress completed].include?(entry.status)
-        raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
-      end
+      entries.transaction do
+        entry = entries.find!(id)
+        if %w[in_progress completed].include?(entry.status)
+          raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
+        end
 
-      entries.delete!(id)
+        dataset_id = entry.dataset_id
+        entries.delete!(id)
+        system_datasets_repo.update_progress!(dataset_id)
+      end
     end
 
     def assign_member(id, assigned_to_id)

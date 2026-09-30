@@ -395,6 +395,20 @@ RSpec.describe Entry::Service, database: true do
       expect { repo.find!(entry.id) }.to raise_error(Verse::Error::NotFound)
     end
 
+    it "refreshes dataset progress after deleting an entry" do
+      completed_entry_id = repo.create({ project_id:, dataset_id:, resource: "completed.mp4", status: "pending" })
+      repo.update!(completed_entry_id, { status: "completed" })
+      dataset_repo.update_progress!(dataset_id)
+
+      expect(dataset_repo.find!(dataset_id).progress).to eq(0.5)
+
+      subject.delete(entry.id)
+
+      dataset = dataset_repo.find!(dataset_id)
+      expect(dataset.progress).to eq(1.0)
+      expect(dataset.status).to eq("completed")
+    end
+
     it "cannot delete an entry with in_progress or completed status" do
       updating_record = deserialize(
         {

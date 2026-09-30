@@ -79,6 +79,29 @@ RSpec.describe Dataset, database: true do
       expect(subject.find!(dataset_id).status).to eq("completed")
     end
 
+    it "does not count errored entries as completed progress" do
+      add_entry("errored")
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(0)
+      expect(dataset.progress).to eq(0.0)
+      expect(dataset.status).to eq("pending")
+    end
+
+    it "resets to pending with zero progress when the last entry is deleted" do
+      entry_id = add_entry("completed")
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("completed")
+
+      entry_repo.delete!(entry_id)
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.status).to eq("pending")
+      expect(dataset.progress).to eq(0.0)
+    end
+
     it "reopens a completed dataset to in_progress when a new unassigned entry is added" do
       add_entry("completed")
       subject.update_progress!(dataset_id)
