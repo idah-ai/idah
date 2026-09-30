@@ -755,6 +755,12 @@ export interface ISettingItemBase {
   label: string;
   /** Optional description shown behind a hover "?" icon next to the label. */
   description?: string;
+  /**
+   * Optional sub-section header within the section. Items sharing the same
+   * `subSection` value are rendered under a sub-header; items without one
+   * are shown directly under the section header with no sub-header.
+   */
+  subSection?: string;
 }
 
 /** A slider control (continuous numeric value). */
@@ -765,6 +771,8 @@ export interface ISliderSetting extends ISettingItemBase {
   min: number;
   max: number;
   step: number;
+  /** Optional default value — used by the "Reset all" button in the settings popover. */
+  default?: number;
   /** Read the current value (plugin-owned). */
   get(): number;
   /** Write a new value (plugin-owned). */
@@ -777,6 +785,8 @@ export interface IOptionsSetting extends ISettingItemBase {
   type: "options";
   /** The selectable options, rendered as a segmented button group. */
   options: { value: string; label: string }[];
+  /** Optional default value — used by the "Reset all" button in the settings popover. */
+  default?: string;
   /** Read the currently-selected option value (plugin-owned). */
   get(): string;
   /** Write the selected option value (plugin-owned). */

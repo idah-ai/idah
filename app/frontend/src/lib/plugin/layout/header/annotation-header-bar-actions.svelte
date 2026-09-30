@@ -5,6 +5,7 @@
     FileTextIcon,
     KeyboardIcon,
     MoonIcon,
+    RotateCcwIcon,
     Settings2Icon,
     SlidersHorizontalIcon,
     SquareCheckIcon,
@@ -44,6 +45,8 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { EntryWorkflowStep } from "@/data/model/dataset/entries/constants";
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
+  import type { ISettingItem } from "@/plugin/v2/types";
+  import { SvelteMap } from "svelte/reactivity";
 
   // Props
   interface Props {
@@ -76,6 +79,59 @@
     return `${section}:${key}`;
   }
 
+  // ── Sub-section grouping for rendering ─────────────────────────────
+  //
+  // Items within a section are grouped by subSection so the template can
+  // render sub-headers. Items without a subSection land in a single
+  // unnamed group rendered last (no header).
+  type SubSectionGroup = {
+    subSection: string;
+    items: ISettingItem[];
+  };
+
+  // type RenderedGroup = {
+  //   section: string;
+  //   subGroups: SubSectionGroup[];
+  // };
+
+  function groupBySubSection(items: ISettingItem[]): SubSectionGroup[] {
+    const map = new SvelteMap<string, ISettingItem[]>();
+    for (const item of items) {
+      const key = item.subSection ?? "";
+      const list = map.get(key);
+      if (list) {
+        list.push(item);
+      } else {
+        map.set(key, [item]);
+      }
+    }
+    // Named sub-sections first (in registration order), then fallback.
+    const named: SubSectionGroup[] = [];
+    let fallback: SubSectionGroup | undefined;
+    for (const [key, list] of map) {
+      if (key === "") {
+        fallback = { subSection: "", items: list };
+      } else {
+        named.push({ subSection: key, items: list });
+      }
+    }
+    return fallback ? [...named, fallback] : named;
+  }
+
+  let renderedGroups = $derived(
+    openSettingsPopover
+      ? settingGroups.map((g) => ({
+          section: g.section,
+          subGroups: groupBySubSection(g.items),
+        }))
+      : [],
+  );
+
+  /** Sections that contain at least one item with a declared `default`. */
+  let sectionHasDefaults = $derived(
+    new Map(settingGroups.map((g) => [g.section, g.items.some((i) => i.default !== undefined)])),
+  );
+
   // Core-owned value mirror keyed by "section:key". The plugin's value is a
   // $state inside the plugin bundle, so reading it across the bundle boundary
   // (item.get()) registers no dependency here and the control would go stale.
@@ -103,6 +159,20 @@
   function commitSetting(write: () => void): void {
     write();
     driver.settingsAdapter?.invalidate();
+  }
+
+  /** Reset every item in a section that has a declared default back to that default. */
+  function resetSection(items: ISettingItem[]): void {
+    let changed = false;
+    for (const item of items) {
+      if (item.default !== undefined && item.get() !== item.default) {
+        item.set(item.default as never);
+        changed = true;
+      }
+    }
+    if (changed) {
+      driver.settingsAdapter?.invalidate();
+    }
   }
 
   // "idah-video" → "Idah Video". The menu appends " Settings".
@@ -325,7 +395,7 @@
       <PopoverContent
         align="start"
         side="bottom"
-        class="w-64"
+        class="w-96"
         onOpenAutoFocus={(e) => {
           // FocusScope's default behavior focuses the first tabbable element on
           // open — which is the first item's "?" description icon, not the
@@ -335,39 +405,45 @@
           e.preventDefault();
         }}
       >
-        <!-- Plugin-contributed settings (e.g. opacity), one section per plugin -->
-        {#each settingGroups as group, groupIndex (group.section)}
+        <!-- Plugin-contributed settings, one section per plugin, with sub-sections -->
+        {#each renderedGroups as group, groupIndex (group.section)}
           <div class={groupIndex === 0 ? "flex flex-col gap-3" : "mt-3 flex flex-col gap-3"}>
             <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
               <SlidersHorizontalIcon class="size-3.5" />
               {humanizeSection(group.section)} Settings
+              {#if sectionHasDefaults.get(group.section)}
+                <button
+                  class="hover:bg-muted ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 font-normal transition-colors"
+                  onclick={() => resetSection(group.subGroups.flatMap((sg) => sg.items))}
+                  title="Reset all"
+                >
+                  <RotateCcwIcon class="size-3" />
+                  Reset
+                </button>
+              {/if}
             </span>
-            {#each group.items as item (item.key)}
-              {@const key = settingKey(group.section, item.key)}
-              <!--
-                Map the plugin-declared control `type` to one of core's own
-                components. TO ADD A NEW CONTROL TYPE: after adding its interface
-                + union member in types.ts (core only), add a branch here that
-                narrows on `item.type`, renders the matching core component,
-                reads its value from `settingValues[key]`, and writes back via
-                `commitSetting(() => item.set(v))`. No sync wiring is needed —
-                commitSetting and the settingValues mirror are type-agnostic.
-              -->
-              {#if item.type === "slider"}
-                <div class="flex flex-col gap-1.5">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2 text-sm">
+            {#each group.subGroups as subGroup, i (subGroup.subSection || "")}
+              {#if i > 0}
+                <hr class="border-muted my-1 border-t" />
+              {/if}
+              {#if subGroup.subSection}
+                <span class="text-muted-foreground text-xs font-medium">{subGroup.subSection}</span>
+              {/if}
+              {#each subGroup.items as item (item.key)}
+                {@const key = settingKey(group.section, item.key)}
+                <!--
+                  Two-column row: label (+ tooltip) on the left, control on the right.
+                  TO ADD A NEW CONTROL TYPE: after adding its interface + union member
+                  in types.ts (core only), add a branch here that narrows on `item.type`,
+                  reads its value from `settingValues[key]`, and writes back via
+                  `commitSetting(() => item.set(v))`. No sync wiring is needed —
+                  commitSetting and the settingValues mirror are type-agnostic.
+                -->
+                {#if item.type === "slider"}
+                  <div class="grid grid-cols-[110px_1fr] items-center gap-3">
+                    <span class="flex items-center gap-2 text-sm whitespace-nowrap">
                       {item.label}
                       {#if item.description}
-                        <!--
-                          avoidCollisions={false} forces side="right": the Popover already sits near
-                          the screen's right edge, so collision-flip would otherwise reverse this
-                          to the left. ignoreNonKeyboardFocus prevents this tooltip from popping
-                          open the instant the Settings menu opens — bits-ui's Tooltip opens on ANY
-                          focus by default (including the Popover's auto-focus-on-open landing on
-                          this trigger since it's the first focusable element), and this restricts
-                          opening to genuine keyboard (:focus-visible) navigation.
-                        -->
                         <TooltipProvider ignoreNonKeyboardFocus>
                           <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
                             <TooltipTrigger>
@@ -380,59 +456,55 @@
                         </TooltipProvider>
                       {/if}
                     </span>
-                    <span class="text-muted-foreground text-xs tabular-nums">{settingValues[key]}</span>
-                  </div>
-                  <Slider
-                    type="single"
-                    min={item.min}
-                    max={item.max}
-                    step={item.step}
-                    value={settingValues[key] as number}
-                    onValueChange={(v) => commitSetting(() => item.set(v))}
-                  />
-                </div>
-              {:else if item.type === "options"}
-                <div class="flex flex-col gap-1.5">
-                  <span class="flex items-center gap-2 text-sm">
-                    {item.label}
-                    {#if item.description}
-                      <!--
-                        avoidCollisions={false} forces side="right": the Popover already sits near
-                        the screen's right edge, so collision-flip would otherwise reverse this
-                        to the left. ignoreNonKeyboardFocus prevents this tooltip from popping
-                        open the instant the Settings menu opens — bits-ui's Tooltip opens on ANY
-                        focus by default (including the Popover's auto-focus-on-open landing on
-                        this trigger since it's the first focusable element), and this restricts
-                        opening to genuine keyboard (:focus-visible) navigation.
-                      -->
-                      <TooltipProvider ignoreNonKeyboardFocus>
-                        <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
-                          <TooltipTrigger>
-                            <CircleHelpIcon class="text-muted-foreground size-3.5" />
-                          </TooltipTrigger>
-                          <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
-                            {item.description}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    {/if}
-                  </span>
-                  <div
-                    class="bg-muted grid gap-0.5 rounded-lg border p-0.5"
-                    style="grid-template-columns: repeat({item.options.length}, minmax(0, 1fr));"
-                  >
-                    {#each item.options as opt (opt.value)}
-                      <Button
-                        variant={settingValues[key] === opt.value ? "default" : "ghost"}
-                        size="sm"
-                        onclick={() => commitSetting(() => item.set(opt.value))}
+                    <div class="flex items-center gap-2">
+                      <Slider
+                        type="single"
+                        min={item.min}
+                        max={item.max}
+                        step={item.step}
+                        value={settingValues[key] as number}
+                        onValueChange={(v) => commitSetting(() => item.set(v))}
+                        class={item.key === "video-hue" ? "flex-1 hue-slider" : "flex-1"}
+                      />
+                      <span class="text-muted-foreground w-8 shrink-0 text-right text-xs tabular-nums"
+                        >{settingValues[key]}</span
                       >
-                        {opt.label}
-                      </Button>
-                    {/each}
+                    </div>
                   </div>
-                </div>
-              {/if}
+                {:else if item.type === "options"}
+                  <div class="grid grid-cols-[110px_1fr] items-center gap-3">
+                    <span class="flex items-center gap-2 text-sm whitespace-nowrap">
+                      {item.label}
+                      {#if item.description}
+                        <TooltipProvider ignoreNonKeyboardFocus>
+                          <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
+                            <TooltipTrigger>
+                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
+                              {item.description}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      {/if}
+                    </span>
+                    <div
+                      class="bg-muted grid gap-0.5 rounded-lg border p-0.5"
+                      style="grid-template-columns: repeat({item.options.length}, minmax(0, 1fr));"
+                    >
+                      {#each item.options as opt (opt.value)}
+                        <Button
+                          variant={settingValues[key] === opt.value ? "default" : "ghost"}
+                          size="sm"
+                          onclick={() => commitSetting(() => item.set(opt.value))}
+                        >
+                          {opt.label}
+                        </Button>
+                      {/each}
+                    </div>
+                  </div>
+                {/if}
+              {/each}
             {/each}
           </div>
         {/each}
@@ -579,3 +651,26 @@
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
+
+<style>
+  :global(.hue-slider [data-slot="slider-track"]) {
+    background: linear-gradient(
+      to right,
+      hsl(0, 80%, 50%),
+      hsl(36, 80%, 50%),
+      hsl(72, 80%, 50%),
+      hsl(108, 80%, 50%),
+      hsl(144, 80%, 50%),
+      hsl(180, 80%, 50%),
+      hsl(216, 80%, 50%),
+      hsl(252, 80%, 50%),
+      hsl(288, 80%, 50%),
+      hsl(324, 80%, 50%),
+      hsl(360, 80%, 50%)
+    ) !important;
+  }
+
+  :global(.hue-slider [data-slot="slider-range"]) {
+    display: none !important;
+  }
+</style>
