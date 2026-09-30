@@ -15,7 +15,7 @@ module NoteFeed
     field :position, type: Hash
     field :status, type: String, readonly: true
     field :content_md, type: String
-    field :feedback_key, type: String
+    field :feedback_key, type: Array
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -34,6 +34,7 @@ module NoteFeed
     self.resource = Resource::Dataset::NoteFeeds
 
     encoder :position, Verse::Sequel::JsonEncoder
+    encoder :feedback_key, Verse::Sequel::PgArrayEncoder
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
@@ -225,7 +226,7 @@ module NoteFeed
               SELECT 1
               FROM note_feeds
               WHERE dataset_id = :dataset_id
-                AND feedback_key = :key
+                AND :key = ANY(feedback_key)
             )
           SQL
           dataset_id: dataset_id,

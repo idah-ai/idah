@@ -333,7 +333,7 @@ RSpec.describe Dataset::Service, database: true do
         dataset_id: dataset_id,
         entry_id: entry_id,
         anchor_type: "entry",
-        feedback_key: "delete_key",
+        feedback_key: ["delete_key"],
         content_md: nil,
         created_by_email: "user@example.com"
       )

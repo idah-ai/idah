@@ -79,13 +79,15 @@ module NoteFeed
               "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
-      # Validate that the feedback_key exists in the dataset's feedback configuration
-      if attributes[:feedback_key]
+      # Validate that all feedback_keys exist in the dataset's feedback configuration
+      if attributes[:feedback_key].is_a?(Array) && attributes[:feedback_key].any?
         feedback_config = entry.dataset.feedback_configuration || {}
 
-        unless feedback_config.key?(attributes[:feedback_key].to_sym)
+        missing = attributes[:feedback_key].reject { |k| feedback_config.key?(k.to_sym) }
+
+        if missing.any?
           raise Verse::Error::ValidationFailed,
-                "Feedback key '#{attributes[:feedback_key]}' does not exist in the dataset's feedback configuration"
+                "Feedback keys #{missing.inspect} do not exist in the dataset's feedback configuration"
         end
       end
 

@@ -124,24 +124,24 @@ RSpec.describe NoteFeed::Service, database: true do
 
         it "creates a note feed with feedback_key and no content_md" do
           params = note_feed_attributes.merge(
-            feedback_key: "aB3kF9mN2q",
+            feedback_key: ["aB3kF9mN2q"],
             content_md: nil
           )
 
           result = subject.create_from_params(params)
 
-          expect(result.feedback_key).to eq("aB3kF9mN2q")
+          expect(result.feedback_key).to eq(["aB3kF9mN2q"])
           expect(result.content_md).to be_nil
         end
 
-        it "raises error when feedback_key does not exist in dataset config" do
+        it "raises error when a feedback_key does not exist in dataset config" do
           params = note_feed_attributes.merge(
-            feedback_key: "nonexistent",
+            feedback_key: ["nonexistent"],
             content_md: nil
           )
 
           expect { subject.create_from_params(params) }
-            .to raise_error(Verse::Error::ValidationFailed, /does not exist/)
+            .to raise_error(Verse::Error::ValidationFailed, /do not exist/)
         end
       end
 
