@@ -14,7 +14,7 @@
 
   $effect(() => {
     if (!gammaFilter) return;
-    const exp = ui.videoGamma / 100;
+    const exp = Math.max(0.05, ui.videoGamma) / 100;
     const funcs = gammaFilter.querySelectorAll<SVGElement>("feFuncR, feFuncG, feFuncB");
     for (const fn of funcs) {
       fn.setAttribute("exponent", String(exp));
