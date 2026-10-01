@@ -113,7 +113,6 @@ export function registerSettings(driver: IIdahDriverV2): void {
             label: "Render Mode",
             description: "Switch between bilinear (smooth) and nearest-neighbor (pixelated) rendering for the video.",
             subSection: "Video",
-            default: "bilinear",
             options: [
               { value: "bilinear", label: "Smooth" },
               { value: "nearest-neighbor", label: "Pixelated" },
@@ -129,7 +128,6 @@ export function registerSettings(driver: IIdahDriverV2): void {
             label: "Time Display",
             description: "Switch between showing frame numbers and time (m:ss.ff) on the timeline ruler.",
             subSection: "Timeline",
-            default: "frames",
             options: [
               { value: "frames", label: "Frames" },
               { value: "time", label: "Time" },
@@ -145,7 +143,6 @@ export function registerSettings(driver: IIdahDriverV2): void {
             description:
               "Fade the fill of annotations — the border stroke stays fully visible. Resets to 100 each time the plugin loads.",
             subSection: "Annotations",
-            default: 100,
             min: 0,
             max: 100,
             step: 1,
@@ -158,7 +155,6 @@ export function registerSettings(driver: IIdahDriverV2): void {
             label: "Color Mode",
             description: "Switch between category-based colors and random colors for annotations.",
             subSection: "Annotations",
-            default: "category",
             options: [
               { value: "category", label: "Category" },
               { value: "random", label: "Random" },
@@ -173,7 +169,6 @@ export function registerSettings(driver: IIdahDriverV2): void {
             description:
               "Show each annotation's category name on the canvas — always, only while hovered or selected, or never. Saved to your account.",
             subSection: "Annotations",
-            default: "never",
             options: [
               { value: "always", label: "On" },
               { value: "hover", label: "On hover" },

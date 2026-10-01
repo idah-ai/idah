@@ -771,7 +771,8 @@ export interface ISliderSetting extends ISettingItemBase {
   min: number;
   max: number;
   step: number;
-  /** Optional default value — used by the "Reset all" button in the settings popover. */
+  /** Optional default value — when set, the sub-section header shows a "Reset"
+   * button that restores every item in that sub-section to its declared default. */
   default?: number;
   /** Read the current value (plugin-owned). */
   get(): number;
@@ -785,7 +786,8 @@ export interface IOptionsSetting extends ISettingItemBase {
   type: "options";
   /** The selectable options, rendered as a segmented button group. */
   options: { value: string; label: string }[];
-  /** Optional default value — used by the "Reset all" button in the settings popover. */
+  /** Optional default value — when set, the sub-section header shows a "Reset"
+   * button that restores every item in that sub-section to its declared default. */
   default?: string;
   /** Read the currently-selected option value (plugin-owned). */
   get(): string;

@@ -89,11 +89,6 @@
     items: ISettingItem[];
   };
 
-  // type RenderedGroup = {
-  //   section: string;
-  //   subGroups: SubSectionGroup[];
-  // };
-
   function groupBySubSection(items: ISettingItem[]): SubSectionGroup[] {
     const map = new SvelteMap<string, ISettingItem[]>();
     for (const item of items) {
@@ -125,11 +120,6 @@
           subGroups: groupBySubSection(g.items),
         }))
       : [],
-  );
-
-  /** Sections that contain at least one item with a declared `default`. */
-  let sectionHasDefaults = $derived(
-    new Map(settingGroups.map((g) => [g.section, g.items.some((i) => i.default !== undefined)])),
   );
 
   // Core-owned value mirror keyed by "section:key". The plugin's value is a
@@ -411,23 +401,25 @@
             <span class="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
               <SlidersHorizontalIcon class="size-3.5" />
               {humanizeSection(group.section)} Settings
-              {#if sectionHasDefaults.get(group.section)}
-                <button
-                  class="hover:bg-muted ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 font-normal transition-colors"
-                  onclick={() => resetSection(group.subGroups.flatMap((sg) => sg.items))}
-                  title="Reset all"
-                >
-                  <RotateCcwIcon class="size-3" />
-                  Reset
-                </button>
-              {/if}
             </span>
             {#each group.subGroups as subGroup, i (subGroup.subSection || "")}
               {#if i > 0}
                 <hr class="border-muted my-1 border-t" />
               {/if}
               {#if subGroup.subSection}
-                <span class="text-muted-foreground text-xs font-medium">{subGroup.subSection}</span>
+                <span class="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+                  {subGroup.subSection}
+                  {#if subGroup.items.some((i) => i.default !== undefined)}
+                    <button
+                      class="hover:bg-muted ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 font-normal transition-colors"
+                      onclick={() => resetSection(subGroup.items)}
+                      title="Reset to defaults"
+                    >
+                      <RotateCcwIcon class="size-3" />
+                      Reset all
+                    </button>
+                  {/if}
+                </span>
               {/if}
               {#each subGroup.items as item (item.key)}
                 {@const key = settingKey(group.section, item.key)}
