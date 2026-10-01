@@ -456,7 +456,7 @@
                         step={item.step}
                         value={settingValues[key] as number}
                         onValueChange={(v) => commitSetting(() => item.set(v))}
-                        class={item.key === "video-hue" ? "hue-slider flex-1" : "flex-1"}
+                        class={item.key.endsWith("-hue") ? "hue-slider flex-1" : "flex-1"}
                       />
                       <span class="text-muted-foreground w-8 shrink-0 text-right text-xs tabular-nums"
                         >{settingValues[key]}</span
