@@ -74,9 +74,22 @@ module Annotation
       attributes[:entry_id] = entry.id
       attributes[:created_by_email] = auth_context.metadata[:email]
 
-      annotations.transaction do
-        id = annotations.create(attributes)
-        annotations.find!(id)
+      begin
+        annotations.transaction do
+          id = annotations.create(attributes)
+          annotations.find!(id)
+        end
+      # Rescue Verse::Error::CannotCreateRecord to catch retry create on slow client that may have hang up on previous response
+      # PS: it only solve for create with no further updates in the same rpc batch
+      rescue Verse::Error::CannotCreateRecord => e
+        annotation = annotations.find(attributes[:id])
+        raise e unless annotation
+
+        annotation_h = annotation.to_h
+        sliced_annotation = annotation_h.except(*(annotation_h.keys - attributes.keys))
+        raise e unless sliced_annotation == attributes
+
+        annotation
       end
     end
 

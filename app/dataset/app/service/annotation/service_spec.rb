@@ -116,6 +116,95 @@ RSpec.describe Annotation::Service, database: true do
           subject.create(record)
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot create annotations on a completed entry/)
       end
+
+      describe "retry idempotency (slow client re-sends a create that already succeeded)" do
+        let(:annotation_id) { UUIDv7.generate }
+
+        def build_record(overrides = {})
+          deserialize(
+            {
+              data: {
+                type: "dataset:annotations",
+                id: annotation_id,
+                attributes: attributes.merge(id: annotation_id).merge(overrides),
+                relationships: {
+                  entry: {
+                    data: { type: "dataset:entries", id: entry_id }
+                  }
+                }
+              }
+            }
+          )
+        end
+
+        # The spec harness wraps each example in an outer `db.transaction`
+        # (without auto_savepoint), so the service's inner `annotations.transaction`
+        # would be a no-op that reuses the outer transaction. Wrapping each create
+        # in its own savepoint makes the service's transaction a real savepoint,
+        # so a duplicate key rolls back only that savepoint — mirroring production,
+        # where the service's transaction is a real transaction.
+        def in_savepoint
+          subject.annotations.client do |db|
+            db.transaction(savepoint: true, auto_savepoint: true) do
+              yield
+            end
+          end
+        end
+
+        # The spec harness wraps each example in an outer `db.transaction`
+        # (without auto_savepoint), so the service's inner `annotations.transaction`
+        # would be a no-op that reuses the outer transaction. Wrapping each create
+        # in its own savepoint makes the service's transaction a real savepoint,
+        # so a duplicate key rolls back only that savepoint — mirroring production,
+        # where the service's transaction is a real transaction.
+        def in_savepoint
+          subject.annotations.client do |db|
+            db.transaction(savepoint: true, auto_savepoint: true) do
+              yield
+            end
+          end
+        end
+
+        it "returns the existing annotation when a duplicate create matches the stored row" do
+          # First create persists the row; the re-send hits the duplicate key.
+          in_savepoint { subject.create(build_record) }
+          duplicate = in_savepoint { subject.create(build_record) }
+
+          expect(duplicate.id).to eq(annotation_id)
+          expect(duplicate.category).to eq("cat")
+          expect(subject.index.size).to eq(1)
+        end
+
+        it "reraises CannotCreateRecord when a nested shape_args value differs" do
+          in_savepoint { subject.create(build_record) }
+
+          expect {
+            in_savepoint {
+              subject.create(build_record(shape_args: { points: [[0, 0], [1, 1]], angle: 0 }))
+            }
+          }.to raise_error(Verse::Error::CannotCreateRecord)
+        end
+
+        it "reraises CannotCreateRecord when a nested properties value differs" do
+          in_savepoint { subject.create(build_record) }
+
+          expect {
+            in_savepoint {
+              subject.create(build_record(properties: { "property-1790676027338" => "different" }))
+            }
+          }.to raise_error(Verse::Error::CannotCreateRecord)
+        end
+
+        it "reraises CannotCreateRecord when the insert failed but no row was persisted" do
+          # Can't arise from a duplicate key (if the id existed, the dedup lookup
+          # would find it), so simulate the insert failure directly.
+          allow(subject.annotations).to receive(:create).and_raise(Verse::Error::CannotCreateRecord)
+
+          expect {
+            in_savepoint { subject.create(build_record) }
+          }.to raise_error(Verse::Error::CannotCreateRecord)
+        end
+      end
     end
 
     describe "#show" do
