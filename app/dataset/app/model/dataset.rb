@@ -12,6 +12,7 @@ module Dataset
     field :modality, type: String, readonly: true
 
     field :labeling_configuration, type: Hash
+    field :feedback_configuration, type: Hash
     field :workflow_configuration, type: Hash
 
     field :status, type: String, readonly: true
@@ -40,6 +41,7 @@ module Dataset
     self.resource = Resource::Dataset::Datasets
 
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
+    encoder :feedback_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
