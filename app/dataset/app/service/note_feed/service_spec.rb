@@ -110,7 +110,7 @@ RSpec.describe NoteFeed::Service, database: true do
           expect(result.anchor_type).to eq("annotation")
         end
       end
-      context "when feedback_key is provided" do
+      context "when feedback_keys is provided" do
         let(:system_dataset_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
 
         before do
@@ -122,21 +122,21 @@ RSpec.describe NoteFeed::Service, database: true do
           )
         end
 
-        it "creates a note feed with feedback_key and no content_md" do
+        it "creates a note feed with feedback_keys and no content_md" do
           params = note_feed_attributes.merge(
-            feedback_key: ["aB3kF9mN2q"],
+            feedback_keys: ["aB3kF9mN2q"],
             content_md: nil
           )
 
           result = subject.create_from_params(params)
 
-          expect(result.feedback_key).to eq(["aB3kF9mN2q"])
+          expect(result.feedback_keys).to eq(["aB3kF9mN2q"])
           expect(result.content_md).to be_nil
         end
 
         it "raises error when a feedback_key does not exist in dataset config" do
           params = note_feed_attributes.merge(
-            feedback_key: ["nonexistent"],
+            feedback_keys: ["nonexistent"],
             content_md: nil
           )
 
@@ -145,7 +145,7 @@ RSpec.describe NoteFeed::Service, database: true do
         end
       end
 
-      context "when neither feedback_key nor content_md is provided" do
+      context "when neither feedback_keys nor content_md is provided" do
         it "does not raise service-level error (validation is at expo layer)" do
           params = note_feed_attributes.reject { |k, _| k == :content_md }
 

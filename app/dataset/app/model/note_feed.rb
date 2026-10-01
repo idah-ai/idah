@@ -15,7 +15,7 @@ module NoteFeed
     field :position, type: Hash
     field :status, type: String, readonly: true
     field :content_md, type: String
-    field :feedback_key, type: Array
+    field :feedback_keys, type: Array
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -34,7 +34,7 @@ module NoteFeed
     self.resource = Resource::Dataset::NoteFeeds
 
     encoder :position, Verse::Sequel::JsonEncoder
-    encoder :feedback_key, Verse::Sequel::PgArrayEncoder
+    encoder :feedback_keys, Verse::Sequel::PgArrayEncoder
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
@@ -226,13 +226,32 @@ module NoteFeed
               SELECT 1
               FROM note_feeds
               WHERE dataset_id = :dataset_id
-                AND :key = ANY(feedback_key)
+                AND :key = ANY(feedback_keys)
             )
           SQL
           dataset_id: dataset_id,
           key: key.to_s
         )
       ).any?
+    end
+
+    def feedback_keys_in_use(dataset_id)
+      rows = table.where(
+        Sequel.lit(
+          <<~SQL,
+            dataset_id = :dataset_id
+            AND feedback_keys IS NOT NULL
+          SQL
+          dataset_id: dataset_id
+        )
+      ).select(
+        Sequel.lit(
+          <<~SQL
+            DISTINCT unnest(feedback_keys) AS key
+          SQL
+        )
+      ).all
+      rows.map { |r| r[:key].to_s }
     end
   end
 end

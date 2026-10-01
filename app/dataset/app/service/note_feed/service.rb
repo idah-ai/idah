@@ -80,10 +80,10 @@ module NoteFeed
       end
 
       # Validate that all feedback_keys exist in the dataset's feedback configuration
-      if attributes[:feedback_key].is_a?(Array) && attributes[:feedback_key].any?
+      if attributes[:feedback_keys].is_a?(Array) && attributes[:feedback_keys].any?
         feedback_config = entry.dataset.feedback_configuration || {}
 
-        missing = attributes[:feedback_key].reject { |k| feedback_config.key?(k.to_sym) }
+        missing = attributes[:feedback_keys].reject { |k| feedback_config.key?(k.to_sym) }
 
         if missing.any?
           raise Verse::Error::ValidationFailed,

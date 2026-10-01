@@ -333,7 +333,7 @@ RSpec.describe Dataset::Service, database: true do
         dataset_id: dataset_id,
         entry_id: entry_id,
         anchor_type: "entry",
-        feedback_key: ["delete_key"],
+        feedback_keys: ["delete_key"],
         content_md: nil,
         created_by_email: "user@example.com"
       )
@@ -354,6 +354,15 @@ RSpec.describe Dataset::Service, database: true do
       result = subject.update_feedback_configuration(dataset_id, new_config)
 
       expect(result[:keep_key][:label]).to eq("Updated label")
+    end
+  end
+
+  describe "#feedback_keys_in_use" do
+    let!(:dataset_id) { repo.create(attributes) }
+
+    it "returns an empty array when no notes use feedback keys" do
+      result = subject.feedback_keys_in_use(dataset_id)
+      expect(result[:keys]).to eq([])
     end
   end
 end
