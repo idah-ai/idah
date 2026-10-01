@@ -22,6 +22,7 @@ export class NoteFeedRecord extends Record {
   @field() public readonly status!: "pending" | "resolved";
 
   @field() public content_md!: string;
+  @field() public feedback_keys!: string[];
 
   @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
   @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;

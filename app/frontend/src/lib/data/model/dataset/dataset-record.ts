@@ -13,6 +13,7 @@ import type { RecordResponse } from "@/data/model/types";
 
 import type { Hash } from "@/utils/types";
 import type { IConfig } from "@/plugin/v2/types";
+import type { IFeedbackConfig } from "@/data/model/dataset/feedback-config-templates/record";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -20,6 +21,7 @@ export class DatasetRecord extends Record {
   @field() public labels!: Array<string>;
   @field() public modality!: string;
   @field() public labeling_configuration!: IConfig;
+  @field() public feedback_configuration!: IFeedbackConfig;
   @field() public workflow_configuration!: Hash;
   @field() public status!: string;
   @field() public progress!: number;
@@ -41,6 +43,12 @@ export class DatasetRecord extends Record {
 
     return foundDatasetStatus ?? defaultBadgeProps;
   }
+
+  public get totalFeedbackConfig(): number {
+    if (!this.feedback_configuration) return 0;
+
+    return Object.keys(this.feedback_configuration).length;
+  }
 }
 
 RecordFactory.registerTypes(DatasetRecord);
@@ -49,6 +57,10 @@ export const datasetBasePath: string = `/api/v1/dataset/datasets`;
 
 interface DatasetsCustomMethods {
   duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>>;
+  updateFeedbackConfiguration(params: {
+    id: string;
+    feedbackConfiguration: IFeedbackConfig;
+  }): Promise<{ data: IFeedbackConfig }>;
 }
 
 export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, DatasetsCustomMethods>(
@@ -81,6 +93,39 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
       if (body && body.data) return Promise.resolve(parseSingleElementReturn<DatasetRecord>(body));
 
       throw "No body returned";
+    },
+
+    updateFeedbackConfiguration: async (params: { id: string; feedbackConfiguration: IFeedbackConfig }) => {
+      const { id, feedbackConfiguration } = params;
+
+      const res = await fetch(`${datasetBasePath}/${id}/feedback_configuration`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/vnd.api+json",
+        },
+        body: JSON.stringify({
+          feedback_configuration: feedbackConfiguration,
+        }),
+      });
+
+      const body = await res.json();
+
+      const datasetIdKey = resourcePath(datasetBasePath, id, undefined);
+      clearCache(datasetIdKey);
+
+      if (body && body.errors) {
+        if (body.errors.length > 0) {
+          body.errors.forEach((err: Hash) => {
+            console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+          });
+        }
+
+        return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+      }
+
+      if (body && body.data) return Promise.resolve(body as { data: IFeedbackConfig });
+
+      throw "No data returned";
     },
   },
 );
