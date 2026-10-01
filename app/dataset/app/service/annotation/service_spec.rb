@@ -143,25 +143,9 @@ RSpec.describe Annotation::Service, database: true do
         # in its own savepoint makes the service's transaction a real savepoint,
         # so a duplicate key rolls back only that savepoint — mirroring production,
         # where the service's transaction is a real transaction.
-        def in_savepoint
+        def in_savepoint(&block)
           subject.annotations.client do |db|
-            db.transaction(savepoint: true, auto_savepoint: true) do
-              yield
-            end
-          end
-        end
-
-        # The spec harness wraps each example in an outer `db.transaction`
-        # (without auto_savepoint), so the service's inner `annotations.transaction`
-        # would be a no-op that reuses the outer transaction. Wrapping each create
-        # in its own savepoint makes the service's transaction a real savepoint,
-        # so a duplicate key rolls back only that savepoint — mirroring production,
-        # where the service's transaction is a real transaction.
-        def in_savepoint
-          subject.annotations.client do |db|
-            db.transaction(savepoint: true, auto_savepoint: true) do
-              yield
-            end
+            db.transaction(savepoint: true, auto_savepoint: true, &block)
           end
         end
 
