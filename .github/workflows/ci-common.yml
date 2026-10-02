@@ -1,15 +1,12 @@
 # Common library CI workflow
 #
-# Runs the specs of the shared library in common/. The services that load
-# common/ are re-tested by ci-app.yml, which also triggers on common/**.
+# Runs the specs of the shared library when common/ changes. The services that
+# load common/ are re-tested by ci-app.yml, which also watches common/**.
 
 name: CI - Common
 
 on:
   pull_request:
-    paths:
-      - "common/**"
-      - ".github/workflows/ci-common.yml"
     types:
       - ready_for_review
       - synchronize
@@ -24,8 +21,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      common: ${{ steps.filter.outputs.common }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            common:
+              - '${{ env.COMMON_DIR }}/**'
+              - .github/workflows/ci-common.yml
+
   common:
     name: Common Library
+    if: ${{ needs.changes.outputs.common == 'true' }}
+    needs: changes
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -67,3 +81,22 @@ jobs:
         with:
           name: common-code-coverage
           path: ${{ env.COMMON_DIR }}/coverage
+
+  # The one check branch protection requires. The workflow runs on every PR and
+  # the jobs above skip themselves when their paths did not change, so this job
+  # always reports: skipped counts as passed, failed or cancelled does not.
+  passed:
+    name: Common CI passed
+    if: ${{ always() }}
+    needs: [changes, common]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every job's result
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if jq -e 'any(.[]; . == "failure" or . == "cancelled")' <<< "$RESULTS" > /dev/null; then
+            echo "::error::A job failed or was cancelled."
+            exit 1
+          fi

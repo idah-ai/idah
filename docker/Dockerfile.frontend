@@ -3,7 +3,6 @@ FROM node:24-alpine AS external-website
 RUN npm install -g pnpm@10.15.1
 
 ENV NODE_ENV production
-ENV NODE_ENV_ALIAS staging
 
 ENV APP_PATH /app/frontend
 ENV LOCAL_APP_PATH ./app/frontend
@@ -25,7 +24,7 @@ RUN pnpm run build:parser
 
 # Build SvelteKit app. Nothing environment-specific is compiled in: the API
 # base URL is relative and Sentry reads PUBLIC_SENTRY_* at run time.
-RUN pnpm run build --mode $NODE_ENV_ALIAS
+RUN pnpm run build
 
 # Plugin frontend bundles are not built here: the setting service builds and
 # serves them (see app/setting/Dockerfile).
