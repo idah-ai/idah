@@ -66,6 +66,10 @@ export class FeedBackConfigController {
     this.savedSnapshot = JSON.stringify(Object.fromEntries(this.config.entries()));
   }
 
+  public async loadKeysInUse(datasetId: string) {
+    return await datasetsBackendDataSource.feedbackKeysInUse(datasetId);
+  }
+
   public async updateConfiguration(datasetId: string) {
     this.isUpdating = true;
 

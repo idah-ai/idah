@@ -14,16 +14,17 @@
   interface Props {
     feedbackItemKey: string;
     feedbackItem: IFeedbackItem;
+    isTemplate?: boolean;
+    keysInUse: string[];
   }
-  let { feedbackItemKey, feedbackItem }: Props = $props();
+  let { feedbackItemKey, feedbackItem, isTemplate = false, keysInUse }: Props = $props();
 
   const key: symbol = getContext("key");
   const controller = getFeedbackConfigController(key);
 
-  const isTemplate = false;
-  const alreadyInUsed = false; // TODO:: Implement note_feed.feedback_key_in_use
+  const alreadyInUsed = $derived(keysInUse.includes(feedbackItemKey));
 
-  const menus: IDropdownMenus = {
+  const menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
@@ -51,7 +52,7 @@
         },
       ],
     },
-  };
+  });
 </script>
 
 <Item.Root

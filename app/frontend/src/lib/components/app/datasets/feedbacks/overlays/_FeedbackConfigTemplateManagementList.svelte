@@ -98,6 +98,9 @@
       </div>
     </section>
 
-    <FeedbackList description={`Items included in the "${feedbackConfigTemplate.selection.name}" template`} />
+    <FeedbackList
+      description={`Items included in the "${feedbackConfigTemplate.selection.name}" template`}
+      isTemplate
+    />
   </div>
 {/if}

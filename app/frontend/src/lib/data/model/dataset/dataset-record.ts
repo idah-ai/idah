@@ -61,6 +61,7 @@ interface DatasetsCustomMethods {
     id: string;
     feedbackConfiguration: IFeedbackConfig;
   }): Promise<{ data: IFeedbackConfig }>;
+  feedbackKeysInUse(datasetId: string): Promise<{ keys: string[] }>;
 }
 
 export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, DatasetsCustomMethods>(
@@ -124,6 +125,28 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
       }
 
       if (body && body.data) return Promise.resolve(body as { data: IFeedbackConfig });
+
+      throw "No data returned";
+    },
+
+    feedbackKeysInUse: async (datasetId: string) => {
+      const res = await fetch(`${datasetBasePath}/${datasetId}/feedback_keys_in_use`, {
+        method: "GET",
+      });
+
+      const body = await res.json();
+
+      if (body && body.errors) {
+        if (body.errors.length > 0) {
+          body.errors.forEach((err: Hash) => {
+            console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+          });
+        }
+
+        return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+      }
+
+      if (body && body.data) return Promise.resolve(body.data as { keys: string[] });
 
       throw "No data returned";
     },
