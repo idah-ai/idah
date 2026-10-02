@@ -411,7 +411,7 @@
                   {subGroup.subSection}
                   {#if subGroup.items.some((i) => i.default !== undefined)}
                     <button
-                      class="hover:bg-muted ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 font-normal transition-colors"
+                      class="hover:bg-blue-100 ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 font-normal transition-colors cursor-pointer"
                       onclick={() => resetSection(subGroup.items)}
                       title="Reset to defaults"
                     >
