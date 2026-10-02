@@ -99,7 +99,7 @@
 <div class="relative">
   {#if initialized}
     {#if notesReady && (currentMode === "review" || currentMode === "note")}
-      <NoteOverlay notesAdapter={driver.notesAdapter} />
+      <NoteOverlay {driver} notesAdapter={driver.notesAdapter} />
     {/if}
 
     <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />

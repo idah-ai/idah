@@ -8,7 +8,7 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { SvelteURL } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 
@@ -40,6 +40,8 @@
     onSidebarClose: () => void;
   }
   let { driver, open, onSidebarClose }: Props = $props();
+
+  setContext("driver", driver);
 
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
@@ -120,6 +122,7 @@
                 position: feed.position,
               },
               content_md: feed.content_md,
+              feedback_keys: feed.feedback_keys,
               status: feed.status,
               resolved: feed.status === "resolved",
               created_by_email: feed.created_by_email,
@@ -157,6 +160,7 @@
               position: noteFeed.position,
             },
             content_md: noteFeed.content_md,
+            feedback_keys: noteFeed.feedback_keys,
             status: noteFeed.status,
             resolved: noteFeed.status === "resolved",
             created_by_email: noteFeed.created_by_email,

@@ -3,15 +3,17 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import { Textarea } from "@/components/ui/textarea";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
   import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
+  import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
+  import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { cn } from "@/utils";
   import { truncate, truncateEmail } from "@/utils/string";
+  import type { Resource } from "@/security/types";
 
   // Props
   interface Props {
@@ -55,7 +57,10 @@
   }: Props = $props();
 
   // Variables
+  const resource: Resource = "dataset:note_feeds";
+
   let editedContentMd = $state<string>(content_md);
+  let editedFeedbackKeys = $state<string[]>(feedbackKeys);
   let mode = $state<"view" | "edit">("view");
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
@@ -109,7 +114,7 @@
       <!-- HEADER::ICON -->
       {@render headerIcon?.()}
 
-      <!-- HEADER::CREATED BY & CREATED AT -->
+      <!-- HEADER::CREATED BY & CREATED AT & FEEDBACKS -->
       <div class="flex min-w-0 flex-1 flex-col text-left text-xs">
         <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
         <div>
@@ -153,7 +158,7 @@
   </div>
 
   <!-- CONTENT -->
-  <div class="flex flex-1 flex-col items-start gap-1 text-xs">
+  <div class="flex flex-1 flex-col items-start gap-1 overflow-x-hidden text-xs">
     {#if isViewMode}
       <MarkdownPreview value={truncate(content_md, 140)} />
 
@@ -161,7 +166,19 @@
     {/if}
 
     {#if isEditMode}
-      <Textarea value={editedContentMd} oninput={(e) => (editedContentMd = e.currentTarget.value)} />
+      <div class="grid w-full gap-2">
+        <MultipleSelectFeedbacksField
+          values={editedFeedbackKeys}
+          onSelected={(selected) => (editedFeedbackKeys = selected)}
+        />
+
+        <TextareaField
+          name="{resource}/content_md"
+          label="Comment"
+          value={editedContentMd}
+          oninput={(e) => (editedContentMd = e.currentTarget.value)}
+        />
+      </div>
 
       <div class="mt-2 ml-auto flex items-center gap-2">
         <Button
