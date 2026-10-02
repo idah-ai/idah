@@ -70,12 +70,6 @@ services:
       - app-network
 
   iam:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -88,17 +82,10 @@ services:
       - iam_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
   media:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -112,17 +99,10 @@ services:
       - media_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
   dataset:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -137,17 +117,10 @@ services:
       - dataset_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
   setting:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -161,17 +134,10 @@ services:
       - setting_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
   audit:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -184,17 +150,10 @@ services:
       - audit_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
   sync:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -209,17 +168,10 @@ services:
       - sync_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
   notification:
-    build:
-      # The stage with compilers: dev-entrypoint.sh installs gems at start.
-      target: build
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
     env_file:
       - config/development/.env
     environment:
@@ -232,7 +184,6 @@ services:
       - notification_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "idah.localhost:host-gateway"
-    command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
 
@@ -249,9 +200,6 @@ services:
       - app-network
 
   frontend:
-    build: !override
-      context: ./app/frontend
-      dockerfile: Dockerfile.dev
     environment:
       PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     ports: !override
@@ -259,8 +207,6 @@ services:
     volumes:
       - ./app/frontend:/app/frontend
       - node_modules:/app/frontend/node_modules
-    entrypoint: ./dev-entrypoint.sh
-    command: pnpm run dev
     stdin_open: true
     tty: true
 

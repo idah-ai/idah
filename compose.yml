@@ -1,18 +1,22 @@
-# The IDAH stack, built from source: the developer and CI base.
+# The IDAH development stack.
 #
 # `docker compose` merges compose.override.yml over this file automatically,
 # which adds the development setup and the settings in config/development/.
 # On its own this file only builds and wires the services; it carries no
 # settings, so `docker compose -f compose.yml up` does not start a usable stack.
 #
+# The seven Ruby services all run one image: the `dev` stage of
+# docker/Dockerfile.service, the Dockerfile the published images are built from.
+# Each service mounts its own directory and gems over it. The frontend runs the
+# `dev` stage of docker/Dockerfile.frontend the same way.
+#
 # An on-premise install does not use these files. It uses the release bundle in
 # deploy/compose/, which pulls published images and reads a single .env.
 
-# Stamped into the images and reported by /healthcheck. The release workflow
-# sets them; a local build leaves them empty and the services report 0.0.0-dev.
-x-version-args: &version-args
-  IDAH_VERSION: ${IDAH_VERSION:-}
-  IDAH_GIT_SHA: ${IDAH_GIT_SHA:-}
+x-service-build: &service-build
+  context: .
+  dockerfile: ./docker/Dockerfile.service
+  target: dev
 
 services:
   nginx:
@@ -32,10 +36,8 @@ services:
       - app-network
 
   iam:
-    build:
-      context: .
-      dockerfile: ./app/iam/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -44,10 +46,8 @@ services:
       - "host.docker.internal:host-gateway"
 
   media:
-    build:
-      context: .
-      dockerfile: ./app/media/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -58,10 +58,8 @@ services:
       - dataset
 
   dataset:
-    build:
-      context: .
-      dockerfile: ./app/dataset/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -70,10 +68,8 @@ services:
       - "host.docker.internal:host-gateway"
 
   setting:
-    build:
-      context: .
-      dockerfile: ./app/setting/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -82,10 +78,8 @@ services:
       - "host.docker.internal:host-gateway"
 
   audit:
-    build:
-      context: .
-      dockerfile: ./app/audit/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -94,10 +88,8 @@ services:
       - "host.docker.internal:host-gateway"
 
   sync:
-    build:
-      context: .
-      dockerfile: ./app/sync/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -106,10 +98,8 @@ services:
       - "host.docker.internal:host-gateway"
 
   notification:
-    build:
-      context: .
-      dockerfile: ./app/notification/Dockerfile
-      args: *version-args
+    image: idah-service:dev
+    build: *service-build
     ports:
       - "3000"
     networks:
@@ -120,7 +110,8 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: ./app/frontend/Dockerfile
+      dockerfile: ./docker/Dockerfile.frontend
+      target: dev
     environment:
       PUBLIC_SENTRY_DSN: ${SENTRY_DSN_FRONTEND:-}
     ports:
