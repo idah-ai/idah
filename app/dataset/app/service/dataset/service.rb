@@ -143,10 +143,18 @@ module Dataset
       end
     end
 
+    def feedback_keys_in_use(dataset_id)
+      datasets.transaction do
+        # scope the transaction to the dataset
+        datasets.find!(dataset_id)
+        keys = note_feeds.feedback_keys_in_use(dataset_id)
+        { keys: keys }
+      end
+    end
+
     private
 
     def note_feed_uses_feedback_key?(dataset_id, key)
-      # Use the system-scoped note_feed repository to bypass auth scoping
       note_feeds.feedback_key_in_use?(dataset_id, key)
     end
 

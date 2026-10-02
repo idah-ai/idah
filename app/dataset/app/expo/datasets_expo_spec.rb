@@ -111,4 +111,18 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
       expect(last_response.status).to eq 200
     end
   end
+
+  describe "GET /datasets/:id/feedback_keys_in_use" do
+    it "returns keys referenced by notes" do
+      expect(service).to receive(:feedback_keys_in_use)
+        .with(uuid)
+        .and_return({ keys: ["key1", "key3"] })
+
+      get "/datasets/#{uuid}/feedback_keys_in_use"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data][:keys]).to match_array(%w[key1 key3])
+    end
+  end
 end

@@ -69,6 +69,16 @@ class DatasetsExpo < BaseExpo
     )
   end
 
+  expose on_http(:get, "/:id/feedback_keys_in_use") do
+    desc "Return which feedback keys are currently referenced by notes"
+    input do
+      field :id, String
+    end
+  end
+  def feedback_keys_in_use
+    service.feedback_keys_in_use(params[:id])
+  end
+
   expose on_resource_event(Resource::Dataset::Datasets, "completed")
   def on_dataset_completed
     dataset_id = message.content[:resource_id]
