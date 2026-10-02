@@ -9,7 +9,7 @@
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IFeedbackItem } from "@/data/model/dataset/feedback-config-templates/record";
+  import type { IFeedbackItem } from "@/plugin/v2/types";
 
   interface Props {
     feedbackItemKey: string;

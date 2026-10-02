@@ -1,15 +1,7 @@
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { Transformers } from "@/data/model/transformers";
-
-export interface IFeedbackItem {
-  label: string;
-  description: string | null;
-}
-
-export interface IFeedbackConfig {
-  [key: string]: IFeedbackItem;
-}
+import type { IFeedbackConfig } from "@/plugin/v2/types";
 
 @type("dataset:feedback_config_templates")
 export class FeedbackConfigTemplateRecord extends Record {

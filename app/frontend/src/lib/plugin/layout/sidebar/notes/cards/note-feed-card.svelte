@@ -32,7 +32,7 @@
   }: Props = $props();
 
   // Variables
-  let { id, content_md, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
+  let { id, content_md, feedback_keys, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
 
   let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
@@ -63,6 +63,7 @@
 <NoteCard
   noteFeedId={id}
   {content_md}
+  feedbackKeys={feedback_keys}
   {created_by_email}
   {created_at}
   {edited_at}

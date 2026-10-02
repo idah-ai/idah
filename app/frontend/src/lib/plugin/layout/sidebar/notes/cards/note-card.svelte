@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
-  import DateText from "@/components/app/texts/date-text.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import DateText from "@/components/app/texts/date-text.svelte";
   import { Textarea } from "@/components/ui/textarea";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
+  import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
+  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -17,6 +18,7 @@
     noteFeedId: string;
     noteCommentId?: string;
     content_md: string;
+    feedbackKeys: string[];
     edited_at?: Date | string | null;
     created_by_email: string;
     created_at: Date | string;
@@ -37,6 +39,7 @@
     noteFeedId,
     noteCommentId,
     content_md,
+    feedbackKeys,
     edited_at,
     created_by_email,
     created_at,
@@ -102,12 +105,12 @@
 >
   <!-- HEADER -->
   <div class="flex w-full gap-2">
-    <div class="flex flex-1 items-center gap-2">
+    <div class="flex flex-1 items-start gap-2">
       <!-- HEADER::ICON -->
       {@render headerIcon?.()}
 
       <!-- HEADER::CREATED BY & CREATED AT -->
-      <div class="flex flex-col text-left text-xs">
+      <div class="flex min-w-0 flex-1 flex-col text-left text-xs">
         <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
         <div>
           <DateText
@@ -129,6 +132,8 @@
             </TooltipProvider>
           {/if}
         </div>
+
+        <NoteFeedbackBadges {feedbackKeys} />
       </div>
 
       <!-- HEADER::ACTIONS -->

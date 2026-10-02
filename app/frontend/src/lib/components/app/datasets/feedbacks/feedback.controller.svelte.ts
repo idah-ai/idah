@@ -4,8 +4,6 @@ import { SvelteMap } from "svelte/reactivity";
 import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import {
   FeedbackConfigTemplateRecord,
-  type IFeedbackItem,
-  type IFeedbackConfig,
   feedbackConfigTemplateDataSource,
 } from "@/data/model/dataset/feedback-config-templates/record";
 import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -13,6 +11,7 @@ import { showToast } from "@/components/ui/toast/index.svelte";
 
 import type { FormModalAction } from "@/components/app/overlays/modals/form-modal.types";
 import type { Hash } from "@/utils/types";
+import type { IFeedbackConfig, IFeedbackItem } from "@/plugin/v2/types";
 
 export const FEEDBACK_CONFIG_CONTROLLER_KEY = Symbol("feedback-config-controller");
 export const FEEDBACK_CONFIG_TEMPLATE_CONTROLLER_KEY = Symbol("feedback-config-template-controller");
