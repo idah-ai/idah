@@ -47,7 +47,6 @@ module Exports
             options:
           }
         )
-
         export_id = exports.create(
           {
             job_id: job.id,
@@ -55,6 +54,11 @@ module Exports
             created_by_id: auth_context.metadata[:id]
           }
         )
+
+        # Store export_id in job arguments for deterministic lookup
+        # in Exports::Job#run_impl
+        job_system_repo = Jobs::Repository.new(Verse::Auth::Context[:system])
+        job_system_repo.update!(job.id, { arguments: job.arguments.merge(export_id: export_id) })
 
         exports.find!(export_id, included: [:job])
       end
@@ -68,7 +72,7 @@ module Exports
       Verse::Plugin[:shrine].with_storage do |storage|
         file = storage.upload(file)
 
-        exports.table.db.after_rollback do
+        exports.on_rollback do
           Verse.logger.warn{
             "Rollback called, deleting `#{file.id}` from storage"
           }
@@ -105,16 +109,24 @@ module Exports
           scope.all? { dataset_ids }
           scope.as_org_owner? {
             org_ids = auth_context.custom_scopes[:org]
+            project_id_scope = auth_context.custom_scopes[:project]
 
-            # Ensure that the project belongs to the organization the user has access to
-            project_ids = Api[:idah].dataset.projects.index_all(
-              filter: { id: project_id, organization_id: org_ids },
-              fields: { "dataset:projects": ["id"] }
-            ).map(&:id)
-
-            if project_ids.empty?
+            if org_ids.nil? && project_id_scope.nil?
               raise Verse::Error::Authorization,
-                    "You do not have access to the project provided"
+                    "Org-owner scope requires either :org or :project custom scope, but neither was set"
+            end
+
+            if org_ids
+              # Ensure that the project belongs to the organization the user has access to
+              project_ids = Api[:idah].dataset.projects.index_all(
+                filter: { id: project_id, organization_id: org_ids },
+                fields: { "dataset:projects": ["id"] }
+              ).map(&:id)
+
+              if project_ids.empty?
+                raise Verse::Error::Authorization,
+                      "You do not have access to the project provided"
+              end
             end
 
             # Ensure that datasets belong to the project and organization the user has access to
