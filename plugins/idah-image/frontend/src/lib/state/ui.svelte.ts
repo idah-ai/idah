@@ -59,11 +59,11 @@ class UIState {
   // is saved.
   annotationOpacity = $state(100);
   imageOpacity = $state(100);
-  imageContrast = $state(100);
-  imageBrightness = $state(100);
-  imageSaturation = $state(100);
-  imageGamma = $state(100);
-  imageHue = $state(100);
+  imageContrast = $state(0);
+  imageBrightness = $state(0);
+  imageSaturation = $state(0);
+  imageGamma = $state(0);
+  imageHue = $state(0);
 
   // Persisted per-plugin to account settings (not localStorage): hydrated from
   // the account setting on init via settings.ts#hydrateSettings, and written back

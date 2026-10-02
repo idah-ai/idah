@@ -14,7 +14,7 @@
 
   $effect(() => {
     if (!gammaFilter) return;
-    const exp = Math.max(0.05, ui.videoGamma) / 100;
+    const exp = Math.max(0.05, 1 + ui.videoGamma / 100);
     const funcs = gammaFilter.querySelectorAll<SVGElement>("feFuncR, feFuncG, feFuncB");
     for (const fn of funcs) {
       fn.setAttribute("exponent", String(exp));
@@ -58,7 +58,7 @@
 
   <canvas
     class={["video-canvas", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-    style="opacity: {ui.videoOpacity / 100}; filter: contrast({ui.videoContrast / 100}) brightness({ui.videoBrightness / 100}) saturate({ui.videoSaturation / 100}) hue-rotate({(ui.videoHue - 100) * 1.8}deg) url(#video-gamma);"
+    style="opacity: {ui.videoOpacity / 100}; filter: contrast({1 + ui.videoContrast / 100}) brightness({1 + ui.videoBrightness / 100}) saturate({1 + ui.videoSaturation / 100}) hue-rotate({ui.videoHue * 1.8}deg) url(#video-gamma);"
     width={media.width}
     height={media.height}
     bind:this={canvas}

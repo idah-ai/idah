@@ -57,11 +57,11 @@ class UIState {
   // is saved.
   annotationOpacity = $state(100);
   videoOpacity = $state(100);
-  videoContrast = $state(100);
-  videoBrightness = $state(100);
-  videoSaturation = $state(100);
-  videoGamma = $state(100);
-  videoHue = $state(100);
+  videoContrast = $state(0);
+  videoBrightness = $state(0);
+  videoSaturation = $state(0);
+  videoGamma = $state(0);
+  videoHue = $state(0);
 
   // Persisted per-plugin to account settings (not localStorage): hydrated from
   // the account setting on init via settings.ts#hydrateSettings, and written back

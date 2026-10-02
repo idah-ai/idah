@@ -18,7 +18,7 @@
 
   $effect(() => {
     if (!gammaFilter) return;
-    const exp = Math.max(0.05, ui.imageGamma) / 100;
+    const exp = Math.max(0.05, 1 + ui.imageGamma / 100);
     const funcs = gammaFilter.querySelectorAll<SVGElement>("feFuncR, feFuncG, feFuncB");
     for (const fn of funcs) {
       fn.setAttribute("exponent", String(exp));
@@ -50,7 +50,7 @@
     {src}
     alt=""
     class={["image-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-    style="opacity: {ui.imageOpacity / 100}; filter: contrast({ui.imageContrast / 100}) brightness({ui.imageBrightness / 100}) saturate({ui.imageSaturation / 100}) hue-rotate({(ui.imageHue - 100) * 1.8}deg) url(#image-gamma);"
+    style="opacity: {ui.imageOpacity / 100}; filter: contrast({1 + ui.imageContrast / 100}) brightness({1 + ui.imageBrightness / 100}) saturate({1 + ui.imageSaturation / 100}) hue-rotate({ui.imageHue * 1.8}deg) url(#image-gamma);"
     onload={() => {
       // Image loaded — container layout is now final. Re-fit.
       requestAnimationFrame(() => {
