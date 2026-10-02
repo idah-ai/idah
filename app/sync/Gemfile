@@ -12,6 +12,8 @@ gem "verse-redis", github: "verse-rb/verse-redis", branch: "master"
 gem "verse-schema", "~> 1.2.4"
 gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
 gem "verse-shrine", github: "verse-rb/verse-shrine", branch: "master"
+# S3 storage, used when SYNC_FILES_ADAPTER=s3. Shrine requires it only then.
+gem "aws-sdk-s3", "~> 1.14", require: false
 
 gem "pg"
 

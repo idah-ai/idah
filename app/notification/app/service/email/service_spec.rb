@@ -65,6 +65,17 @@ RSpec.describe Email::Service, database: true do
       )
     end
 
+    context "when SMTP is not configured" do
+      before { allow(Email).to receive(:enabled?).and_return(false) }
+
+      it "skips the email without calling other services" do
+        subject.send_email(to_email, notification)
+
+        expect(Api[:idah].iam.accounts).not_to have_received(:index)
+        expect(Mail).not_to have_received(:deliver)
+      end
+    end
+
     context "when account is not found" do
       before do
         allow(Api[:idah].iam.accounts).to receive(:index).and_return(

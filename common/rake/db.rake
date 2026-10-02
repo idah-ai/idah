@@ -25,6 +25,15 @@ namespace :db do
 
     uri = URI.parse(ENV.fetch("DATABASE_URI"))
     db_to_create = uri.path[1..]
+
+    # A test run only ever resets a test database. Any other name means
+    # DATABASE_URI points somewhere it should not - for example a development
+    # database passed in by a dev container - and dropping it would lose data.
+    if ENV["APP_ENVIRONMENT"] == "test" && !db_to_create.end_with?("_test")
+      raise "Refusing to reset `#{db_to_create}`: with APP_ENVIRONMENT=test only databases " \
+            "named *_test are reset. Check where DATABASE_URI comes from."
+    end
+
     uri.path = "/postgres"
 
     Sequel.connect(uri.to_s, logger: Logger.new($stdout)) do |db|

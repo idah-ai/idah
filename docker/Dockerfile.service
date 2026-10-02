@@ -1,0 +1,136 @@
+# syntax=docker/dockerfile:1
+
+# One image for the seven Ruby services. Each service's code is in
+# /app/<service>, and its gems are installed into the one /usr/local/bundle,
+# where a gem every service uses is stored once: the services share nearly all
+# of their gems, so seven images would download nearly the same gems seven
+# times. A container runs the service whose directory is its working directory:
+#
+#   docker run -w /app/iam ghcr.io/idah-ai/idah-service:<version>
+#
+# Every service but media runs this image as it is. media runs
+# docker/Dockerfile.media, which is this image plus ffmpeg and ImageMagick, so it
+# holds media's gems and code already. Built from the repository root:
+#
+#   docker build -f docker/Dockerfile.service -t idah-service .
+
+# Build the plugin frontend bundles setting serves (Plugins::Service#serve_file).
+FROM node:24-alpine AS plugin-frontends
+
+RUN npm install -g pnpm@10.15.1
+
+COPY --exclude=*/backends plugins/ /plugins/
+
+RUN set -e; \
+    for frontend in /plugins/*/frontend; do \
+      plugin="$(basename "$(dirname "$frontend")")"; \
+      cd "$frontend"; \
+      pnpm install --frozen-lockfile; \
+      pnpm run build; \
+      mkdir -p "/out/$plugin/frontend"; \
+      cp -r build "/out/$plugin/frontend/"; \
+    done
+
+# What the services need to run, and nothing they only need to build.
+FROM ruby:3.4.2-slim AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # PostgreSQL client library, for the pg gem
+    libpq5 \
+    # Shrine's determine_mime_type runs `file` on every upload and export
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+# Published images run in production; compose and staging pass their own value.
+ARG APP_ENVIRONMENT=production
+
+ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
+ENV PORT=3000
+
+WORKDIR /app
+
+# Compilers and headers for the native gems.
+FROM base AS build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    libpq-dev \
+    # ImageMagick's headers, to compile media's rmagick gem (its libraries are
+    # in docker/Dockerfile.media)
+    libmagickwand-dev \
+    # Gems fetched from GitHub
+    git \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG TARGETARCH
+ARG UPDCLI_VERSION=v1.1.0
+
+# updcli writes sync's UPD export format; a static binary from its GitHub release.
+RUN case "$TARGETARCH" in \
+      amd64|arm64) ;; \
+      *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
+    esac \
+    && mkdir -p /tmp/updcli \
+    && curl -fsSL -o /tmp/updcli/updcli.tar.gz \
+       "https://github.com/idah-ai/updcli/releases/download/${UPDCLI_VERSION}/updcli-linux-${TARGETARCH}.tar.gz" \
+    && tar -xf /tmp/updcli/updcli.tar.gz -C /tmp/updcli \
+    && install -m 755 "/tmp/updcli/updcli-linux-${TARGETARCH}" /usr/local/bin/updcli-static \
+    && rm -rf /tmp/updcli
+
+ARG BUNDLE_WITHOUT="development test"
+
+# Every service's Gemfile, and nothing else, so a code change reuses the gems.
+COPY app/iam/Gemfile app/iam/Gemfile.lock /app/iam/
+COPY app/audit/Gemfile app/audit/Gemfile.lock /app/audit/
+COPY app/dataset/Gemfile app/dataset/Gemfile.lock /app/dataset/
+COPY app/media/Gemfile app/media/Gemfile.lock /app/media/
+COPY app/notification/Gemfile app/notification/Gemfile.lock /app/notification/
+COPY app/setting/Gemfile app/setting/Gemfile.lock /app/setting/
+COPY app/sync/Gemfile app/sync/Gemfile.lock /app/sync/
+
+# One bundle install per service, all into /usr/local/bundle: a version already
+# installed by an earlier service is not installed again. --local writes to
+# BUNDLE_APP_CONFIG, which the ruby image sets to /usr/local/bundle whatever
+# the Gemfile, so the configuration ships with the gems and holds for every
+# service. (Without --local it would go to ~/.bundle, which is not copied.)
+RUN bundle config set --local force_ruby_platform true \
+    && bundle config set --local without "$BUNDLE_WITHOUT" \
+    && for service in iam audit dataset media notification setting sync; do \
+         BUNDLE_GEMFILE="/app/$service/Gemfile" bundle install --jobs 20 --retry 5 || exit 1; \
+       done \
+    # The downloaded .gem archives; the installed gems are what runs.
+    && rm -rf /usr/local/bundle/cache/*.gem
+
+FROM base
+
+# The gems and bundler's configuration: the ruby image keeps both here.
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /usr/local/bin/updcli-static /usr/local/bin/updcli-static
+
+# The shared library, loaded from /common by config/boot.rb (COMMON_PATH).
+COPY common/ /common/
+
+# Plugins, minus their frontend sources, plus the frontend bundles built
+# above, found in /plugins by PluginSystem.default_path.
+COPY --exclude=*/frontend plugins/ /plugins/
+COPY --from=plugin-frontends /out/ /plugins/
+
+# The seven services, each in /app/<service>. Not the frontend, which is its
+# own image.
+COPY --exclude=frontend app/ /app/
+
+# Stamped by the release workflow. Without them the service reports 0.0.0-dev.
+ARG IDAH_VERSION
+ARG IDAH_GIT_SHA
+ENV IDAH_VERSION="$IDAH_VERSION"
+ENV IDAH_GIT_SHA="$IDAH_GIT_SHA"
+
+# Needs a service's directory as the working directory (-w /app/<service>,
+# working_dir in compose): that is where bundler finds its Gemfile.
+CMD ["bundle", "exec", "puma"]

@@ -10,7 +10,4 @@ export class SettingRecord extends Record {
 
 RecordFactory.registerTypes(SettingRecord);
 
-export const settingsBackendDataSource = createBackendDataSource(
-  SettingRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/settings`,
-);
+export const settingsBackendDataSource = createBackendDataSource(SettingRecord, `/api/v1/setting/settings`);

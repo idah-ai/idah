@@ -116,7 +116,7 @@ app/<service>/
 
 ## Shared Library (`common/`)
 
-Mounted at `/app/common` in every Ruby service container. Key modules:
+Lives only at the repository root. Every Ruby service loads it through `COMMON_PATH` in `config/boot.rb`, which is `/common` in the containers. Key modules:
 
 | Module | Purpose |
 |--------|---------|
@@ -151,12 +151,11 @@ Mounted at `/app/common` in every Ruby service container. Key modules:
 - **Event channels**: Use `Resource::Service::Entity` for resource events, custom channels for everything else.
 - **Sequel vs ActiveRecord**: Use `Sequel.lit()`, `DB.execute()`, and Sequel migration DSL.
 - **Thread safety**: `MonitorMixin` for scheduler and thread pool synchronization.
-- **Plugin directory symlinks**: `plugins/<name>/` is the only canonical source tree for a plugin.
-  `app/media/plugins`, `app/setting/plugins`, and `app/sync/plugins` are symlinks to `../../plugins` —
-  any file under one of those paths is the exact same file as its `plugins/<name>/...` counterpart, not a
-  copy. Always read/edit via the canonical `plugins/<name>/` path; never treat the symlinked paths as a
-  second source of truth to explore or reconcile separately. `app/dataset/plugins` is the one exception —
-  not currently a symlink, see [`guide/plugin-system.md`](guide/plugin-system.md) for detail.
+- **Shared code and plugin locations**: `common/` and `plugins/<name>/` exist only at the repository root;
+  services have no `common` or `plugins` link or copy inside `app/<service>/`. Services load `common/lib`
+  through `COMMON_PATH` in `config/boot.rb`, and find plugins through `PluginSystem.default_path`
+  (`plugins/` at the repository root, `/plugins` in the container images). See
+  [`guide/plugin-system.md`](guide/plugin-system.md).
 
 ---
 

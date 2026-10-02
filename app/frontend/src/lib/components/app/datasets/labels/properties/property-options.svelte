@@ -301,8 +301,8 @@
 
                 <p>
                   To target a specific category, enter a condition:<br />
-                  <code class="bg-secondary/20 rounded">annotation.category = "[category_id]"</code><br />
-                  Example: <code class="bg-secondary/20 rounded">annotation.category = "vehicles/car"</code>
+                  <code class="bg-secondary/20 rounded">category = "[category_id]"</code><br />
+                  Example: <code class="bg-secondary/20 rounded">category = "vehicles/car"</code>
                 </p>
                 <br />
 
@@ -310,7 +310,7 @@
                   To target multiple categories, combine conditions using "or":<br />
                   Example:
                   <code class="bg-secondary/20 rounded"
-                    >(annotation.category = "vehicles/car") or (annotation.category = "traffic-light")</code
+                    >(category = "vehicles/car") or (category = "traffic-light")</code
                   >
                 </p>
                 <br />

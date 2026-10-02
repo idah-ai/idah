@@ -6,6 +6,7 @@ plugins:
   - name: sentry
     config:
       dsn: <%= ENV["SENTRY_DSN"] %>
+      environment: <%= ENV["SENTRY_ENVIRONMENT"] %> # empty: APP_ENVIRONMENT
       tracing: otel
       traces_sample_rate: <%= ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", 0.0) %>
       profiles_sample_rate: <%= ENV.fetch("SENTRY_PROFILES_SAMPLE_RATE", 0.0) %>
@@ -62,7 +63,8 @@ idah:
   plugins:
     # Path to load plugins from, supports glob patterns.
     # Will autoload plugins from this path
-    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins/**") %>
+    # Defaults to plugins/ at the repository root (see PluginSystem.default_path).
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH"){ PluginSystem.default_path } %>
 
     # Auto reload modules when files change (only manual plugins)
     # True if the IDAH_DEV_PLUGIN env var is set to any value

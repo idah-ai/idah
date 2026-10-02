@@ -12,7 +12,11 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export async function createProject({ pluginName, pluginDisplayName, pluginDescription, pluginVersion, pluginBackendServices, outputPath }) {
+// Oldest platform version a generated plugin declares support for. Bump it when
+// the plugin contract changes in a way older platforms cannot serve.
+export const DEFAULT_IDAH_VERSION = "0.1.0"
+
+export async function createProject({ pluginName, pluginDisplayName, pluginDescription, pluginVersion, pluginBackendServices, outputPath, idahVersion = DEFAULT_IDAH_VERSION }) {
   // Determine base directory - use outputPath if provided, otherwise current directory
   const baseDir = outputPath ? path.resolve(process.cwd(), outputPath) : process.cwd()
   const targetDir = path.join(baseDir, pluginName)
@@ -59,6 +63,7 @@ export async function createProject({ pluginName, pluginDisplayName, pluginDescr
     "{{pluginDisplayName}}": pluginDisplayName,
     "{{pluginDescription}}": pluginDescription,
     "{{pluginVersion}}": pluginVersion,
+    "{{idahVersion}}": idahVersion,
     "{{pluginModule}}": pluginModule,
     "{{pluginRubyFilename}}": pluginRubyFilename
   }

@@ -54,7 +54,8 @@ module Medias
 
               entry_io = StreamWithPath.new(
                 zip_entry.get_input_stream,
-                File.basename(zip_entry.name)
+                File.basename(zip_entry.name),
+                zip_entry.size # from the central directory, always filled in
               )
 
               begin
@@ -212,17 +213,15 @@ module Medias
   end
 
   # Wrapper to provide path metadata for streams (Shrine needs this to determine file extension)
-  StreamWithPath = Struct.new(:io, :path) do
-    def respond_to_missing?(method, include_all = false)
-      io.respond_to?(method, include_all) || super
-    end
+  # and their size: S3 storage uploads exactly `io.size` bytes, and a zip entry stream reports
+  # the size from its local header, which is 0 when the zip uses data descriptors.
+  class StreamWithPath < SimpleDelegator
+    attr_reader :path, :size
 
-    def method_missing(method, *args, &block)
-      if io.respond_to?(method)
-        io.send(method, *args, &block)
-      else
-        super
-      end
+    def initialize(io, path, size)
+      super(io)
+      @path = path
+      @size = size
     end
   end
 end

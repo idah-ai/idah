@@ -30,7 +30,7 @@ export class AccountRecord extends Record {
 
 RecordFactory.registerTypes(AccountRecord);
 
-const accountBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/accounts`;
+const accountBasePath: string = `/api/v1/iam/accounts`;
 
 export const accountsBackendDataSource = createBackendDataSource(AccountRecord, accountBasePath, {
   join: async (params: { token: string }): Promise<RecordResponse<AccountRecord> | { data: null; meta?: Hash }> => {

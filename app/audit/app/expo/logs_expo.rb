@@ -119,8 +119,10 @@ class LogsExpo < BaseExpo
 
   expose on_resource_event(Resource::Dataset::Entries, "submitted")
   def on_entry_submitted
-    # process only actual submission from annotation/review
-    return unless message.content&.dig(:metadata, :submission_type)
+    submission_type = message.content[:metadata][:submission_type]
+
+    return unless submission_type # process only actual submission from annotation/review
+    return if submission_type == "start" # initial stage of the entry, not an actual submission
 
     service.create_from_message(
       message:,

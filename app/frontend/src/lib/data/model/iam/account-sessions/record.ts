@@ -15,7 +15,7 @@ export class AccountSessionRecord extends Record {
 
 RecordFactory.registerTypes(AccountSessionRecord);
 
-const accountSessionBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/account_sessions`;
+const accountSessionBasePath: string = `/api/v1/iam/account_sessions`;
 
 export const accountSessionsBackendDataSource = createBackendDataSource(
   AccountSessionRecord,

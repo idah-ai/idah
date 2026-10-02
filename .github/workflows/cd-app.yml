@@ -1,0 +1,366 @@
+name: CD - App
+
+# Builds, publishes and smoke-tests the three images the eight services run:
+#
+#   service   iam, audit, dataset, notification, setting and sync (docker/Dockerfile.service)
+#   media     media: the service image plus ffmpeg and ImageMagick (docker/Dockerfile.media)
+#   frontend  the SvelteKit app (docker/Dockerfile.frontend)
+#
+# Pushing a version tag (v0.4.0, v0.4.0-rc.1) publishes
+#   ghcr.io/idah-ai/idah-<image>:<version>
+# for linux/amd64 and linux/arm64, with IDAH_VERSION and IDAH_GIT_SHA stamped in.
+#
+# Running the workflow by hand publishes ghcr.io/idah-ai/idah-<image>:sha-<commit>
+# instead, for testing a branch. Those images report 0.0.0-dev: a manual run is
+# never a release.
+#
+# Version tags are never overwritten, and nothing is tagged `latest`.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+concurrency:
+  group: cd-app-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_PREFIX: ghcr.io/idah-ai/idah-
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image_tag: ${{ steps.version.outputs.image_tag }}
+      revision: ${{ steps.version.outputs.revision }}
+      images: ${{ steps.version.outputs.images }}
+      services: ${{ steps.version.outputs.services }}
+    steps:
+      - name: Work out the version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          revision="${SHA::7}"
+
+          if [ "$REF_TYPE" = tag ]; then
+            if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Tag $REF_NAME is not a version such as v0.4.0 or v0.4.0-rc.1"
+              exit 1
+            fi
+            version="${REF_NAME#v}"
+            image_tag="$version"
+          else
+            version=""
+            image_tag="sha-$revision"
+          fi
+
+          {
+            echo "version=$version"
+            echo "image_tag=$image_tag"
+            echo "revision=$revision"
+            echo 'images=["service","media","frontend"]'
+            echo 'services=["iam","audit","dataset","media","notification","setting","sync","frontend"]'
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Publishing \`$image_tag\` (reports version ${version:-0.0.0-dev}, revision $revision)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log in to GHCR
+        if: github.ref_type == 'tag'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse to overwrite a published version
+        if: github.ref_type == 'tag'
+        env:
+          IMAGE_TAG: ${{ steps.version.outputs.image_tag }}
+          IMAGES: ${{ steps.version.outputs.images }}
+        run: |
+          for name in $(jq -r '.[]' <<< "$IMAGES"); do
+            image="${IMAGE_PREFIX}${name}:${IMAGE_TAG}"
+            if docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
+              echo "::error::$image already exists. Version tags are immutable: publish the next patch instead."
+              exit 1
+            fi
+          done
+
+  # media is built from the service image the same job has just pushed, named
+  # by its digest, so media has every one of its layers as they are: an install
+  # downloads them once, and media's own layer on top.
+  build:
+    name: Build ${{ matrix.group }} (${{ matrix.arch }})
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [ruby, frontend]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pushed by digest only; the merge job tags the combined image.
+      - name: Build and push service
+        id: service
+        if: matrix.group == 'ruby'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.service
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            IDAH_VERSION=${{ needs.prepare.outputs.version }}
+            IDAH_GIT_SHA=${{ needs.prepare.outputs.revision }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.title=idah-service
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}service,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=ruby-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=ruby-${{ matrix.arch }}
+
+      # No cache: its one layer sits on a service image that is new with every
+      # build, so it is rebuilt every time. IDAH_VERSION and IDAH_GIT_SHA come
+      # with the service image.
+      - name: Build and push media
+        id: media
+        if: matrix.group == 'ruby'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.media
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            SERVICE_IMAGE=${{ env.IMAGE_PREFIX }}service@${{ steps.service.outputs.digest }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.title=idah-media
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}media,push-by-digest=true,name-canonical=true,push=true
+
+      - name: Build and push frontend
+        id: frontend
+        if: matrix.group == 'frontend'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.frontend
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            IDAH_VERSION=${{ needs.prepare.outputs.version }}
+            IDAH_GIT_SHA=${{ needs.prepare.outputs.revision }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.title=idah-frontend
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}frontend,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=frontend-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.arch }}
+
+      # One directory per image, one file per digest in it.
+      - name: Record the digests
+        env:
+          SERVICE: ${{ steps.service.outputs.digest }}
+          MEDIA: ${{ steps.media.outputs.digest }}
+          FRONTEND: ${{ steps.frontend.outputs.digest }}
+          DIGESTS_DIR: ${{ runner.temp }}/digests
+        run: |
+          for pair in "service:$SERVICE" "media:$MEDIA" "frontend:$FRONTEND"; do
+            name=${pair%%:*}; digest=${pair#*:}
+            [ -n "$digest" ] || continue
+            mkdir -p "$DIGESTS_DIR/$name"
+            touch "$DIGESTS_DIR/$name/${digest#sha256:}"
+          done
+
+      - name: Upload the digests
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.group }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/
+          if-no-files-found: error
+          retention-days: 1
+
+  # An image is only tagged when both of its architectures built, so a failed
+  # build never leaves a half-published release.
+  merge:
+    name: Publish ${{ matrix.image }}
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.prepare.outputs.images) }}
+    steps:
+      - name: Download the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the multi-arch image
+        working-directory: ${{ runner.temp }}/digests/${{ matrix.image }}
+        env:
+          IMAGE: ${{ env.IMAGE_PREFIX }}${{ matrix.image }}
+          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
+        run: |
+          sources=()
+          for digest in *; do
+            sources+=("$IMAGE@sha256:$digest")
+          done
+          docker buildx imagetools create --tag "$IMAGE:$IMAGE_TAG" "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE:$IMAGE_TAG"
+
+  # The release gate: every published image runs with no source tree, on both
+  # architectures.
+  smoke:
+    name: Smoke test ${{ matrix.service }} (${{ matrix.arch }})
+    needs: [prepare, merge]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.prepare.outputs.services) }}
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Each service in the image it runs: six of them share the service image.
+      - name: Run the image with no source tree
+        env:
+          SERVICE: ${{ matrix.service }}
+          IMAGE: ${{ env.IMAGE_PREFIX }}${{ contains(fromJSON('["media","frontend"]'), matrix.service) && matrix.service || 'service' }}:${{ needs.prepare.outputs.image_tag }}
+          EXPECTED_VERSION: ${{ needs.prepare.outputs.version || '0.0.0-dev' }}
+        run: .github/scripts/smoke-image.sh "$SERVICE" "$IMAGE" "$EXPECTED_VERSION"
+
+  # The files a customer installs with, published beside the images so the
+  # install is one command. Only for a version tag: a dispatched run publishes
+  # sha- images that no release points at.
+  release:
+    name: Publish the installer
+    if: github.ref_type == 'tag'
+    needs: [prepare, smoke]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build the bundle
+        run: |
+          set -euo pipefail
+          bundle="idah-$VERSION"
+          mkdir -p "dist/$bundle"
+          cp deploy/compose/install.sh deploy/compose/compose.yml deploy/compose/.env.example \
+             deploy/compose/README.md "dist/$bundle/"
+          mkdir -p "dist/$bundle/config/nginx"
+          cp deploy/compose/config/nginx/*.conf "dist/$bundle/config/nginx/"
+
+          # The installer knows which release it belongs to, so it installs that
+          # version and downloads the matching bundle when run on its own.
+          sed -i "s/^release_version=\"\"/release_version=\"$VERSION\"/" "dist/$bundle/install.sh"
+          grep -q "^release_version=\"$VERSION\"$" "dist/$bundle/install.sh" \
+            || { echo "::error::could not stamp the version into install.sh"; exit 1; }
+          chmod +x "dist/$bundle/install.sh"
+
+          tar -czf "dist/$bundle.tar.gz" -C dist "$bundle"
+          cp "dist/$bundle/install.sh" dist/install.sh
+          cd dist && sha256sum "$bundle.tar.gz" install.sh > SHA256SUMS
+          cat SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach it to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          # A version with a suffix — 0.1.0-rc.1 — is a candidate, so it is
+          # published as a pre-release and releases/latest keeps pointing at the
+          # newest stable one. The installer's one-line form downloads from
+          # latest, and a customer running it must not land on a candidate.
+          prerelease: ${{ contains(needs.prepare.outputs.version, '-') }}
+          files: |
+            dist/idah-${{ env.VERSION }}.tar.gz
+            dist/install.sh
+            dist/SHA256SUMS
+          fail_on_unmatched_files: true
