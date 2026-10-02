@@ -1,39 +1,49 @@
 <script lang="ts">
-  import { SendHorizontalIcon } from "@lucide/svelte";
-  import MarkdownEditor from "@/components/app/markdown/markdown-editor.svelte";
-  import { InputGroupButton } from "@/components/ui/input-group";
-  import { Kbd, KbdGroup } from "@/components/ui/kbd";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, setContext } from "svelte";
   import { page } from "$app/state";
+  import { XIcon } from "@lucide/svelte";
 
-  import type { INoteAnchor, INoteComment, INoteRecord, INoteScreenPosition } from "@/plugin/v2/types";
-  import type { NotesDriverAdapter } from "@/plugin/v2/driver/adapter/notes";
-  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
-  import DateText from "@/components/app/texts/date-text.svelte";
-  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
-  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import DateText from "@/components/app/texts/date-text.svelte";
+  import { Kbd, KbdGroup } from "@/components/ui/kbd";
+  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
+  import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
+  import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
+  import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+  import { AuthContext } from "@/security/AuthContext";
+  import { modKeyLabel } from "@/plugin/v2/utils/browser";
   import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
-  import { AuthContext } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
-  import { modKeyLabel } from "@/plugin/v2/utils/browser";
+  import type { INoteAnchor, INoteComment, INoteRecord, INoteScreenPosition } from "@/plugin/v2/types";
+  import type { NotesDriverAdapter } from "@/plugin/v2/driver/adapter/notes";
+  import type { Resource } from "@/security/types";
+  import type { IdahDriverV2 } from "@/plugin/v2/driver";
 
   interface Props {
+    driver: IdahDriverV2;
     notesAdapter: NotesDriverAdapter | null;
   }
-  let { notesAdapter }: Props = $props();
+  let { driver, notesAdapter }: Props = $props();
+
+  setContext("driver", driver);
+  const resource: Resource = "dataset:note_feeds";
 
   let x: number | undefined = $state(undefined);
   let y: number | undefined = $state(undefined);
   let selectedNote: INoteRecord | null = $state(null);
   let pendingAnchor: INoteAnchor | null = $state(null);
+  let selectedFeedbackKeys = $state<string[]>([]);
   let contentMd = $state("");
   let loading = $state(false);
 
   let comments: INoteComment[] = $state([]);
   let editingContentMd = $state("");
+  let editingFeedbackKeys = $state<string[]>([]);
   let editingCommentId: string | null = $state(null);
   let editingFeedContent = $state(false);
 
@@ -48,6 +58,8 @@
   let unsubFns: Array<() => void> = [];
 
   let modKey = $derived(modKeyLabel());
+  let disableSubmitButton = $derived(selectedFeedbackKeys.length === 0 && !contentMd.trim());
+  let disableUpdateButton = $derived(editingFeedbackKeys.length === 0 && !editingContentMd.trim());
 
   // Owner checks
   let isSelectedNoteOwner = $derived(AuthContext.currentAuthContext?.email === selectedNote?.created_by_email);
@@ -83,10 +95,12 @@
     x = undefined;
     y = undefined;
     contentMd = "";
+    selectedFeedbackKeys = [];
     comments = [];
     editingCommentId = null;
     editingFeedContent = false;
     editingContentMd = "";
+    editingFeedbackKeys = [];
     highlightedCommentId = null;
     highlightedFeedId = null;
 
@@ -117,9 +131,11 @@
             selectedNote = found;
             pendingAnchor = null;
             contentMd = "";
+            selectedFeedbackKeys = found.feedback_keys ?? [];
             editingCommentId = null;
             editingFeedContent = false;
             editingContentMd = "";
+            editingFeedbackKeys = [];
           }
         }
       }),
@@ -127,6 +143,7 @@
         selectedNote = null;
         pendingAnchor = anchor;
         contentMd = "";
+        selectedFeedbackKeys = [];
         comments = [];
         editingCommentId = null;
         editingFeedContent = false;
@@ -184,15 +201,20 @@
 
   async function handleSubmit(): Promise<void> {
     const na = notesAdapter;
-    if (!na || !contentMd.trim()) return;
+    if (!na || disableSubmitButton) return;
     loading = true;
     try {
       if (isCreating && pendingAnchor) {
-        const note = await na.createNote({ content_md: contentMd, anchor: pendingAnchor });
+        const note = await na.createNote({
+          content_md: contentMd,
+          feedbackKeys: selectedFeedbackKeys,
+          anchor: pendingAnchor,
+        });
         // Clear creating state and switch to viewing the newly created note
         pendingAnchor = null;
         selectedNote = note;
         contentMd = "";
+        selectedFeedbackKeys = [];
         comments = [];
         na.focusNote(note);
         na.selectNote(note.id);
@@ -210,15 +232,21 @@
     }
   }
 
-  async function handleUpdateFeedContent(newMd: string): Promise<void> {
+  async function handleUpdateFeedContent(params: { newMd: string; newFeedbackKeys: string[] }): Promise<void> {
     const na = notesAdapter;
     if (!na || !selectedNote) return;
     try {
-      await na.updateNote(selectedNote.id, { content_md: newMd });
+      const { newMd, newFeedbackKeys } = params;
+      await na.updateNote(selectedNote.id, {
+        content_md: newMd,
+        feedback_keys: newFeedbackKeys,
+      });
       selectedNote.content_md = newMd;
+      selectedNote.feedback_keys = newFeedbackKeys;
       selectedNote.edited_at = new Date().toISOString();
       editingFeedContent = false;
       editingContentMd = "";
+      editingFeedbackKeys = [];
     } catch (e) {
       console.error("Failed to update note:", e);
     }
@@ -233,6 +261,7 @@
       comments = na.getComments(selectedNote.id);
       editingCommentId = null;
       editingContentMd = "";
+      editingFeedbackKeys = [];
     } catch (e) {
       console.error("Failed to update comment:", e);
     }
@@ -264,6 +293,7 @@
 
   function startEditFeed(): void {
     editingContentMd = selectedNote?.content_md ?? "";
+    editingFeedbackKeys = selectedNote?.feedback_keys ?? [];
     editingFeedContent = true;
     editingCommentId = null;
   }
@@ -278,6 +308,7 @@
     editingFeedContent = false;
     editingCommentId = null;
     editingContentMd = "";
+    editingFeedbackKeys = [];
   }
 
   async function handleResolve(): Promise<void> {
@@ -318,12 +349,20 @@
     role="dialog"
     aria-label={isCreating ? "New note" : "Note details"}
   >
-    <div class="bg-background border-border w-80 rounded-lg border shadow-lg">
+    <div class="bg-background border-border min-w-80 rounded-lg border shadow-lg">
       <!-- HEADER -->
       <div class="flex items-center gap-1 border-b px-3 py-2">
-        <span class="text-sm font-semibold">
-          {isCreating ? "New Note" : "Note"}
-        </span>
+        <div class="flex flex-col">
+          <p class="text-sm font-semibold">
+            {isCreating ? "New Note" : "Note"}
+          </p>
+
+          {#if isCreating}
+            <span class="text-muted-foreground text-xs">
+              Attaching note to {pendingAnchor?.anchor_type === "annotation" ? "annotation" : "entry"}
+            </span>
+          {/if}
+        </div>
 
         <div class="ml-auto flex items-center gap-1">
           {#if !isCreating && selectedNote}
@@ -368,39 +407,22 @@
           {/if}
 
           <!-- Close button -->
-          <button
-            class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex size-5 items-center justify-center rounded"
-            onclick={close}
-            aria-label="Close"
-            type="button"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-3.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg
-            >
-          </button>
+          <Button variant="ghost" size="icon-xs" onclick={close}>
+            <XIcon />
+          </Button>
         </div>
       </div>
 
       <!-- BODY -->
-      <div bind:this={scrollContainer} class="max-h-80 space-y-2 overflow-y-auto px-3 py-2">
-        {#if isCreating}
-          <p class="text-muted-foreground px-1 text-xs">
-            Attaching note to {pendingAnchor?.anchor_type === "annotation" ? "annotation" : "entry"}
-          </p>
-        {:else if selectedNote}
+      <div bind:this={scrollContainer} class="grid max-h-80 overflow-y-auto">
+        {#if selectedNote}
           <!-- Original note feed -->
-          <div
+          <section
             data-feed-id={selectedNote.id}
-            class={["bg-muted/30 rounded px-2 py-1.5", highlightedFeedId === selectedNote.id ? "bg-muted" : ""].join(
-              " ",
-            )}
+            class={[
+              "bg-muted/30 hover:bg-secondary border-b px-3 py-2",
+              highlightedFeedId === selectedNote.id ? "bg-muted" : "",
+            ].join(" ")}
           >
             <div class="flex items-center gap-1.5 text-xs">
               <span class="text-sm font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
@@ -414,6 +436,7 @@
                 />
               </div>
             </div>
+
             <div class="flex items-center gap-1.5 text-xs">
               <DateText
                 class="text-muted-foreground text-xs"
@@ -435,134 +458,152 @@
               {/if}
             </div>
 
+            <NoteFeedbackBadges feedbackKeys={selectedNote.feedback_keys ?? []} />
+
             {#if editingFeedContent}
+              <MultipleSelectFeedbacksField
+                values={editingFeedbackKeys}
+                onSelected={(selected) => (editingFeedbackKeys = selected)}
+              />
+
               <textarea
                 class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
                 rows="3"
                 bind:value={editingContentMd}
               ></textarea>
+
               <div class="mt-2 ml-auto flex w-fit items-center gap-2">
                 <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
+
                 <Button
                   size="sm"
-                  onclick={() => handleUpdateFeedContent(editingContentMd)}
-                  disabled={!editingContentMd.trim()}>Save</Button
+                  onclick={() =>
+                    handleUpdateFeedContent({ newMd: editingContentMd, newFeedbackKeys: editingFeedbackKeys })}
+                  disabled={disableUpdateButton}
                 >
+                  Save
+                </Button>
               </div>
             {:else}
               <div class="mt-2 text-sm"><MarkdownPreview value={selectedNote.content_md ?? ""} /></div>
             {/if}
-          </div>
+          </section>
 
           <!-- Comments -->
-          {#each comments as comment (comment.id)}
-            <hr />
-            <div
-              data-comment-id={comment.id}
-              class={["rounded px-2 py-1.5", highlightedCommentId === comment.id ? "bg-muted" : ""].join(" ")}
-            >
-              <div class="flex items-center gap-1.5 text-sm">
-                <span class="font-semibold">{comment.created_by_email}</span>
-                <div class="ml-auto flex items-center">
-                  <NoteDropdownMenus
-                    noteFeedId={selectedNote.id}
-                    noteCommentId={comment.id}
-                    editable={isCommentOwner(comment)}
-                    deletable={isCommentOwner(comment)}
-                    onSwitchToEditMode={() => startEditComment(comment)}
-                    onDelete={() => handleDeleteComment(comment.id)}
-                  />
+          <section class="grid pb-2">
+            {#each comments as comment (comment.id)}
+              <div
+                data-comment-id={comment.id}
+                class={["rounded border-b px-3 py-2", highlightedCommentId === comment.id ? "bg-muted" : ""].join(" ")}
+              >
+                <div class="flex items-center gap-1.5 text-sm">
+                  <span class="font-semibold">{comment.created_by_email}</span>
+                  <div class="ml-auto flex items-center">
+                    <NoteDropdownMenus
+                      noteFeedId={selectedNote.id}
+                      noteCommentId={comment.id}
+                      editable={isCommentOwner(comment)}
+                      deletable={isCommentOwner(comment)}
+                      onSwitchToEditMode={() => startEditComment(comment)}
+                      onDelete={() => handleDeleteComment(comment.id)}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div class="flex items-center gap-1.5 text-xs">
-                <DateText
-                  class="text-muted-foreground"
-                  datetime={new Date(comment.created_at)}
-                  datetimeFormat="MMM dd, yyyy HH:mm:ss"
-                  size="xs"
-                  weight="normal"
-                  showDistance
-                />
-                {#if comment.edited_at}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger class="inline-block">
-                        <span class="text-muted-foreground text-xs">• Edited</span>
-                      </TooltipTrigger>
-                      <TooltipContent>{formatEditedTooltip(comment.edited_at)}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <div class="flex items-center gap-1.5 text-xs">
+                  <DateText
+                    class="text-muted-foreground"
+                    datetime={new Date(comment.created_at)}
+                    datetimeFormat="MMM dd, yyyy HH:mm:ss"
+                    size="xs"
+                    weight="normal"
+                    showDistance
+                  />
+                  {#if comment.edited_at}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger class="inline-block">
+                          <span class="text-muted-foreground text-xs">• Edited</span>
+                        </TooltipTrigger>
+                        <TooltipContent>{formatEditedTooltip(comment.edited_at)}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  {/if}
+                </div>
+
+                {#if editingCommentId === comment.id}
+                  <textarea
+                    class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
+                    rows="2"
+                    bind:value={editingContentMd}
+                  ></textarea>
+                  <div class="mt-2 ml-auto flex w-fit items-center gap-2">
+                    <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
+                    <Button
+                      size="sm"
+                      onclick={() => handleUpdateComment(comment.id, editingContentMd)}
+                      disabled={!editingContentMd.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                {:else}
+                  <div class="mt-2 text-sm">
+                    <MarkdownPreview value={comment.content_md} />
+                  </div>
                 {/if}
               </div>
-
-              {#if editingCommentId === comment.id}
-                <textarea
-                  class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
-                  rows="2"
-                  bind:value={editingContentMd}
-                ></textarea>
-                <div class="mt-2 ml-auto flex w-fit items-center gap-2">
-                  <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
-                  <Button
-                    size="sm"
-                    onclick={() => handleUpdateComment(comment.id, editingContentMd)}
-                    disabled={!editingContentMd.trim()}>Save</Button
-                  >
-                </div>
-              {:else}
-                <div class="mt-2 text-sm"><MarkdownPreview value={comment.content_md} /></div>
-              {/if}
-            </div>
-          {/each}
+            {/each}
+          </section>
         {/if}
+
+        <section class="grid gap-4 p-3">
+          {#if isCreating}
+            <MultipleSelectFeedbacksField
+              values={selectedFeedbackKeys}
+              onSelected={(selected) => (selectedFeedbackKeys = selected)}
+            />
+          {/if}
+
+          <TextareaField
+            name="{resource}/contentMd"
+            label={isCreating ? "Comment" : "Reply"}
+            placeholder={isCreating ? "Leave a comment here (optional)" : "Leave a reply here"}
+            value={contentMd}
+            disabled={loading}
+            oninput={(e) => (contentMd = e.currentTarget.value)}
+          />
+        </section>
       </div>
 
       <!-- FOOTER -->
-      <div class="border-t px-3 py-2">
-        <div
-          onkeydown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
-        >
-          <MarkdownEditor
-            disabled={loading}
-            placeholder={isCreating ? "Write your note..." : "Reply..."}
-            value={contentMd}
-            onInput={(e) => (contentMd = e.currentTarget.value)}
-          >
-            {#snippet actions()}
-              <Tooltips class="ml-auto" align="center">
-                {#snippet trigger()}
-                  <InputGroupButton
-                    aria-label="Send"
-                    class="rounded-full"
-                    variant="default"
-                    size="icon-xs"
-                    disabled={!contentMd.trim() || loading}
-                    onclick={handleSubmit}
-                  >
-                    <SendHorizontalIcon class="size-3" />
-                    <span class="sr-only"> Send </span>
-                  </InputGroupButton>
-                {/snippet}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="flex justify-end border-t px-3 py-2"
+        onkeydown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+      >
+        <Tooltips class="ml-auto" align="center">
+          {#snippet trigger()}
+            <Button disabled={disableSubmitButton || loading} onclick={handleSubmit}>
+              {isCreating ? "Add Note" : "Reply"}
+            </Button>
+          {/snippet}
 
-                {#snippet content()}
-                  <div class="flex items-center gap-2">
-                    <KbdGroup>
-                      <Kbd>{modKey}</Kbd>
-                      <Kbd>Enter</Kbd>
-                    </KbdGroup>
+          {#snippet content()}
+            <div class="flex items-center gap-2">
+              <KbdGroup>
+                <Kbd>{modKey}</Kbd>
+                <Kbd>Enter</Kbd>
+              </KbdGroup>
 
-                    <span>to submit</span>
-                  </div>
-                {/snippet}
-              </Tooltips>
-            {/snippet}
-          </MarkdownEditor>
-        </div>
+              <span>to submit</span>
+            </div>
+          {/snippet}
+        </Tooltips>
       </div>
     </div>
   </div>

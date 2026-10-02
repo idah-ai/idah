@@ -26,8 +26,16 @@ import type {
   IToolbarDriverV2,
   ToolbarItemOptions,
   Unsubscribe,
+  IFeedbackConfig,
 } from "$idah/v2/types";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationValue } from "$lib/types";
+import {
+  DEFAULT_MODE,
+  IMAGE_BOUNDING_BOX,
+  IMAGE_POLYGON,
+  REVIEW_MODE,
+  type IImageAnnotationShape,
+  type IImageAnnotationValue,
+} from "$lib/types";
 
 import { modKey } from "$lib/utils/browser";
 import { uuidv7 } from "uuidv7";
@@ -370,6 +378,30 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
     },
   };
 
+  // ── Default feedback config ──────────────────────────────────────────
+  private _feedbackConfig: IFeedbackConfig = {
+    "1790828241408": {
+      label: "Bounding box is inaccurate — adjust to fit object edges",
+      description: "Use when the drawn box doesn't tightly match the object's visible edges.",
+    },
+    "1790828274075": {
+      label: "Missing label on a visible object",
+      description: "Use when an object clearly visible in the frame has no label at all.",
+    },
+    "1790832229955": {
+      label: "Object occluded — re-check next keyframe",
+      description: "Use when part of the object is hidden needs re-checking on a later frame.",
+    },
+    "1790833411909": {
+      label: "Duplicate annotation on the same object",
+      description: "Use when the same object has more than one overlapping annotation.",
+    },
+    "1790833866791": {
+      label: "Annotation extends outside the frame boundary",
+      description: "Use when the box or polygon extends past the visible video frame.",
+    },
+  };
+
   // ── Adapters exposed to the user ──────────────────────────────────────
 
   readonly command: ICommandDriverV2;
@@ -551,6 +583,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   get config(): IConfig {
     return this._config;
+  }
+
+  get feedbackConfig(): IFeedbackConfig {
+    return this._feedbackConfig;
   }
 
   getFilteredConfig(

@@ -82,10 +82,11 @@
     await onSelected?.(selectedChoices);
   }
 
-  function clearSelection(event: MouseEvent): void {
+  async function clearSelection(event: MouseEvent): Promise<void> {
     event.stopPropagation();
     values = [];
     allChoicesSelected = false;
+    await onSelected?.(selectedChoices);
     closePopover();
   }
 </script>
@@ -163,7 +164,14 @@
                       "opacity-0": !values.includes(choice.value),
                     })}
                   />
-                  {choice.label}
+
+                  <div class="flex flex-col gap-0">
+                    <p>{choice.label}</p>
+
+                    {#if choice.description}
+                      <small class="text-muted-foreground">{choice.description}</small>
+                    {/if}
+                  </div>
                 </CommandItem>
               {/if}
             {/each}
