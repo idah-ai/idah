@@ -22,13 +22,16 @@ Pushing a `v*.*.*` tag is what triggers a release. Nothing else does.
 ## 1. What a release is
 
 - **One version for the whole platform.** A release is a commit, not a service. One git tag
-  (`v0.4.0`) produces all eight images at the same version:
+  (`v0.4.0`) produces three images at the same version, which run the eight services:
 
   ```
-  ghcr.io/idah-ai/idah-{iam,audit,dataset,media,notification,setting,sync,frontend}:0.4.0
+  ghcr.io/idah-ai/idah-service:0.4.0    iam, audit, dataset, notification, setting, sync
+  ghcr.io/idah-ai/idah-media:0.4.0      media: the service image plus ffmpeg and ImageMagick
+  ghcr.io/idah-ai/idah-frontend:0.4.0   the SvelteKit app
   ```
 
-  Every service gets every tag, even when it did not change.
+  Each Ruby service runs `idah-service` from its own directory (`/app/<service>`). Every image
+  gets every tag, even when it did not change.
 - **Plugins version independently** (`plugins/*/manifest.json` → `version`), and declare the
   platform they target in `idahVersion`.
 - **`common/` is never versioned on its own.** It ships inside every image.
@@ -177,7 +180,7 @@ Always use **annotated** tags (`-a`). The tag date matters legally — see §8.
 [`cd-app.yml`](.github/workflows/cd-app.yml) then:
 
 1. Refuses to run if any image at that version already exists (tags are immutable).
-2. Builds all eight services for `linux/amd64` and `linux/arm64`.
+2. Builds the three images for `linux/amd64` and `linux/arm64`.
 3. Publishes each multi-arch image only when both architectures built.
 4. Smoke-tests every image with no source tree mounted, and checks it reports the expected
    version ([`.github/scripts/smoke-image.sh`](.github/scripts/smoke-image.sh)).
