@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Published images run in production; compose and staging pass their own value.
+# Published images run in production; the dev compose passes its own value.
 ARG APP_ENVIRONMENT=production
 
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
