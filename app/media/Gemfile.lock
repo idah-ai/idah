@@ -10,11 +10,11 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-http
-  revision: e8f6c545cff3507f815ed4b7bece8c541973a6e1
+  revision: c51ca5ed3b5f25d94bb7861bf1bce7dfe0c9fcae
   branch: master
   specs:
     verse-http (0.1.0)
-      jwt (~> 2.7.1)
+      jwt (~> 2.10, >= 2.10.3)
       sinatra (~> 4.0)
 
 GIT
@@ -118,7 +118,8 @@ GEM
     hashdiff (1.2.0)
     jmespath (1.6.2)
     json (2.21.2)
-    jwt (2.7.1)
+    jwt (2.10.3)
+      base64
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     listen (3.9.0)
