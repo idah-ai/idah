@@ -8,11 +8,10 @@
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
-  let { record: WebhookCall }: DataTableCellBaseProps<WebhookCallRecord> = $props();
+  let { record: webhookCall }: DataTableCellBaseProps<WebhookCallRecord> = $props();
 </script>
 
-<Text>{WebhookCall.http_status}</Text>
 <div class="flex items-center gap-2">
-  <DotIcon size="xl" color={WebhookCall.http_status.bgColor} />
-  <Text>{WebhookCall.http_status.label}</Text>
+  <DotIcon size="xl" color={webhookCall.httpStatus.bgColor} />
+  <Text>{webhookCall.http_code} {webhookCall.httpStatus.label}</Text>
 </div>

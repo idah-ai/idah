@@ -1,7 +1,6 @@
 import WebhookCallCreatedAtCell from "@/components/app/notification/webhook/call/data-tables/webhook-call-created-at-cell.svelte";
 import WebhookCallHttpStatusCell from "@/components/app/notification/webhook/call/data-tables/webhook-call-http-status-cell.svelte";
 
-import { webhookCallHttpStatuses } from "@/data/model/notification/webhooks/call/constants";
 import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
@@ -22,18 +21,12 @@ export const webhookCallLogsColumns: ColumnsSettings<WebhookCallRecord> = {
     hidable: false,
     cellComponent: WebhookCallCreatedAtCell,
   },
-  http_status: {
+  http_code: {
     label: "HTTP Status",
-    dataType: "string",
+    dataType: "number",
     clickable: true,
     sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "http_status",
-      filterBy: "multiple-select",
-      filterOperation: "match",
-      choices: webhookCallHttpStatuses,
-    },
+    filterable: false,
     visible: true,
     hidable: false,
     cellComponent: WebhookCallHttpStatusCell,

@@ -39,6 +39,7 @@ export const resources = [
 
   /** NOTIFICATION */
   "notification:webhooks",
+  "notification:webhook:calls",
 ] as const;
 
 export type Resource = (typeof resources)[number];

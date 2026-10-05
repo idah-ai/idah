@@ -1,12 +1,11 @@
 <script lang="ts">
-  import ComboboxTriggerValueBadges from "@/components/app/forms/fields/combobox/combobox-trigger-value-badges.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
+  import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
 
-  import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
+  import { WebhookRecord } from "@/data/model/notification/webhooks/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
@@ -18,6 +17,15 @@
 
   // Variables
   let resource: string = WebhookRecord.type;
+  const eventTypeChoices = [
+    { label: "Annotation created", value: "annotation.created" },
+    { label: "Dataset export ready", value: "dataset.export.ready" },
+    { label: "Entry review completed", value: "entry.review.completed" },
+    { label: "Project member changed", value: "project.member.changed" },
+    { label: "Sync completed", value: "sync.completed" },
+    { label: "Sync failed", value: "sync.failed" },
+    { label: "Sync started", value: "sync.started" },
+  ];
 
   // Variables::Reactive
   let { name, url, event_types, secret_key, enabled } = $derived(webhook);
@@ -52,32 +60,21 @@
     />
 
     <!-- WEBHOOK::EVENT_TYPES -->
-    <MultipleSelectDatasourceField
+    <MultipleSelectField
       name="{resource}/event_types"
       values={event_types}
-      dataSource={webhooksBackendDataSource}
+      choices={eventTypeChoices}
       label="Event Types"
       placeholder="Select Event Types"
       required
-      displayKey="name"
       clearable
       searchable
-      searchKeyWithOperation="name__match"
       searchPlaceholder="Search event types by name"
       errors={fieldErrors["event_types"]}
       onSelected={(selectedChoice) => {
         event_types = selectedChoice.map((choice) => String(choice.value));
       }}
-    >
-      {#snippet slotTriggerValues({ selectedChoices })}
-        <ComboboxTriggerValueBadges
-          values={selectedChoices.map((choice) => choice.value)}
-          dataSource={webhooksBackendDataSource}
-          displayKey="name"
-          maxShown={2}
-        />
-      {/snippet}
-    </MultipleSelectDatasourceField>
+    />
 
     <!-- WEBHOOK::SECRET_KEY -->
     <InputField

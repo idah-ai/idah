@@ -7,7 +7,7 @@
   import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
   import { refetches } from "@/utils/refetch";
 
-  import { WebhookRecord, webhooksMemoryDataSource } from "@/data/model/notification/webhooks/record";
+  import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { createWebhookSchema, updateWebhookSchema } from "@/data/model/notification/webhooks/schema";
   import { getFieldErrors, validateData } from "@/utils/validate";
 
@@ -74,7 +74,7 @@
     changeTracker.update(value);
   }
   async function createWebhook(): Promise<void> {
-    await webhooksMemoryDataSource.create(
+    await webhooksBackendDataSource.create(
       {
         attributes: {
           name: draft.name,
@@ -98,7 +98,7 @@
   }
 
   async function updateWebhook(): Promise<void> {
-    await webhooksMemoryDataSource.update(
+    await webhooksBackendDataSource.update(
       webhookRecord!.id,
       {
         attributes: {

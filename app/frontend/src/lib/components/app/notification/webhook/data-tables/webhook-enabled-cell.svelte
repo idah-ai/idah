@@ -2,7 +2,9 @@
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
 
-  import { WebhookRecord } from "@/data/model/notification/webhooks/record";
+  import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
@@ -13,7 +15,26 @@
   let resource: string = WebhookRecord.type;
 
   // Functions
-  async function updateWebhookStatus(): Promise<void> {}
+  async function updateWebhookStatus(checkedValue: boolean): Promise<void> {
+    const previousValue = webhook.enabled;
+    webhook.enabled = checkedValue;
+
+    try {
+      await webhooksBackendDataSource.update(
+        webhook.id,
+        {
+          attributes: {
+            enabled: checkedValue,
+          },
+        },
+        { showErrorToast: false },
+      );
+      $refetches.webhooks.list = new Date();
+    } catch (error) {
+      webhook.enabled = previousValue;
+      showActionFailedToast(error);
+    }
+  }
 </script>
 
 <div class="flex items-center gap-2">
@@ -21,8 +42,7 @@
     id="{resource}/enabled"
     checked={webhook.enabled}
     onCheckedChange={async (checkedValue) => {
-      webhook.enabled = checkedValue;
-      await updateWebhookStatus();
+      await updateWebhookStatus(checkedValue);
     }}
   />
 

@@ -12,8 +12,7 @@
   import { webhookColumns } from "@/components/app/notification/webhook/data-tables/webhook-columns";
   import { webhookBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-  // import { webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
-  import { webhooksMemoryDataSource } from "@/data/model/notification/webhooks/record";
+  import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
@@ -32,14 +31,14 @@
   }
 
   onMount(async () => {
-    canUpdateWebhook = (await currentAccount?.can("update", "iam:organizations")) || false;
-    canDeleteWebhook = (await currentAccount?.can("delete", "iam:organizations")) || false;
+    canUpdateWebhook = (await currentAccount?.can("update", webhookResource)) || false;
+    canDeleteWebhook = (await currentAccount?.can("delete", webhookResource)) || false;
     columns.action.visible = canUpdateWebhook || canDeleteWebhook;
   });
 </script>
 
 {#snippet AddNewWebhookButton()}
-  <Can action="create" resource="iam:organizations">
+  <Can action="create" resource={webhookResource}>
     <Button onclick={openNewWebhookModal}>
       <PlusIcon />
       New Webhook
@@ -49,7 +48,7 @@
   </Can>
 {/snippet}
 
-<PageProvider name="Webhooks" roles={["admin", "org_owner"]} action="read" resource="iam:organizations">
+<PageProvider name="Webhooks" roles={["admin", "org_owner"]} action="read" resource={webhookResource}>
   <PageHeader title="Webhooks">
     {#snippet actions()}
       {@render AddNewWebhookButton()}
@@ -62,10 +61,10 @@
       name="webhooks"
       refetchKey="webhooks"
       {columns}
-      dataSource={webhooksMemoryDataSource}
+      dataSource={webhooksBackendDataSource}
       listOptions={{
         fields: {
-          ["webhooks"]: ["id", "name", "url", "event_types", "enabled", "created_at"],
+          [WebhookRecord.type]: ["id", "name", "url", "event_types", "enabled", "created_at"],
         },
       }}
     >

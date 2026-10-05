@@ -14,31 +14,28 @@
     webhookRecord: WebhookRecord;
   }
   let { open = $bindable(), webhookRecord }: Props = $props();
-
-  // Variables
-  let columns = $state(webhookCallLogsColumns);
 </script>
 
 <Dialog bind:open>
-  <DialogContent>
+  <DialogContent class="max-w-3xl">
     <DialogHeader>
       <DialogTitle>Call logs of webhook</DialogTitle>
     </DialogHeader>
 
     <div class="w-full overflow-auto">
-      {#key $refetches.webhooks.list}
+      {#key $refetches.webhookCalls.list}
         <DatasourceTable
           id="webhook-calls"
           name="webhook-calls"
           refetchKey="webhookCalls"
-          {columns}
+          columns={webhookCallLogsColumns}
           dataSource={webhookCallBackendDataSource(webhookRecord.id)}
           listOptions={{
             fields: {
-              ["webhookCalls"]: ["id", "http_status", "created_at"],
+              ["notification:webhook:calls"]: ["id", "http_code", "created_at"],
             },
             filters: {
-              id: webhookRecord.id,
+              webhook_id: webhookRecord.id,
             },
           }}
         ></DatasourceTable>
