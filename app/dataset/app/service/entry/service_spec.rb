@@ -242,7 +242,9 @@ RSpec.describe Entry::Service, database: true do
     it "does not count an errored processing entry when a later entry completes" do
       subject.mark_entries_status_as(job_id, "errored")
 
-      completed_entry_id = repo.create({ project_id:, dataset_id:, resource: "completed-after-error.mp4", status: "pending" })
+      completed_entry_id = repo.create(
+        { project_id:, dataset_id:, resource: "completed-after-error.mp4", status: "pending" }
+      )
       repo.update!(completed_entry_id, { status: "completed" })
       dataset_repo.update_progress!(dataset_id)
 
