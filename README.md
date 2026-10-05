@@ -181,7 +181,7 @@ We welcome contributions from the community!
 
 ## 📄 License
 
-This project is licensed under the **[Functional Source License (FSL)](LICENSE)**.
+This project is licensed under the **[Functional Source License (FSL)](LICENSE.md)**.
 
 ---
 
