@@ -1,20 +1,20 @@
 <script lang="ts">
   import Button from "@/components/ui/button/button.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuItem,
+      DropdownMenuLabel,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNextButton,
-    PaginationPrevButton,
+      Pagination,
+      PaginationContent,
+      PaginationEllipsis,
+      PaginationItem,
+      PaginationLink,
+      PaginationNextButton,
+      PaginationPrevButton,
   } from "@/components/ui/pagination";
   import Text from "@/components/ui/text/Text.svelte";
 
@@ -84,13 +84,13 @@
 
   <!-- DATA TABLE::PAGINATION CONTROLS -->
   <div id="data-table-paginator-controls" class="flex items-center justify-end gap-2">
-    <Pagination class="justify-end" {count} bind:page perPage={Number(itemsPerPage)}>
+    <Pagination class="justify-end" {count} {page} perPage={Number(itemsPerPage)} {onPageChange}>
       {#snippet children({ pages, currentPage })}
         <PaginationContent>
           <!-- PREVIOUS BUTTON -->
           {#if currentPage > 1}
             <PaginationItem>
-              <PaginationPrevButton onclick={() => onPageChange(currentPage - 1)}></PaginationPrevButton>
+              <PaginationPrevButton></PaginationPrevButton>
             </PaginationItem>
           {/if}
 
@@ -100,7 +100,7 @@
                 <PaginationEllipsis></PaginationEllipsis>
               </PaginationItem>
             {:else}
-              <PaginationItem onclick={() => onPageChange(page.value)}>
+              <PaginationItem>
                 <PaginationLink {page} isActive={currentPage === page.value}>
                   {#if Math.floor(lastPage) === page.value && hasMore}
                     {page.value}+
@@ -115,7 +115,7 @@
           <!-- NEXT BUTTON -->
           {#if currentPage < Math.ceil(lastPage)}
             <PaginationItem>
-              <PaginationNextButton onclick={() => onPageChange(currentPage + 1)}></PaginationNextButton>
+              <PaginationNextButton></PaginationNextButton>
             </PaginationItem>
           {/if}
         </PaginationContent>
