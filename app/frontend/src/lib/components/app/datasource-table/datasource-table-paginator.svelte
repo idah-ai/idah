@@ -1,20 +1,20 @@
 <script lang="ts">
   import Button from "@/components/ui/button/button.svelte";
   import {
-      DropdownMenu,
-      DropdownMenuContent,
-      DropdownMenuItem,
-      DropdownMenuLabel,
-      DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import {
-      Pagination,
-      PaginationContent,
-      PaginationEllipsis,
-      PaginationItem,
-      PaginationLink,
-      PaginationNextButton,
-      PaginationPrevButton,
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNextButton,
+    PaginationPrevButton,
   } from "@/components/ui/pagination";
   import Text from "@/components/ui/text/Text.svelte";
 
