@@ -114,8 +114,9 @@
         try {
           await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 
-          $refetches.entries.list = new Date();
           clearCache(resourcePath(datasetBasePath, null, undefined));
+          $refetches.entries.list = new Date();
+          $refetches.datasets.list = new Date();
           showToast.success({
             title: "Entry deleted",
             description: `The entry "${entry.name || entry.id}" has been deleted.`,
