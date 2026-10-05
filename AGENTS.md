@@ -87,7 +87,6 @@ Services communicate via **Redis pub/sub** (events) or **HTTP** (internal API cl
 
 ```
 app/<service>/
-├── Dockerfile
 ├── Gemfile + Gemfile.lock
 ├── config.ru                     ← Rack entry point
 ├── config/

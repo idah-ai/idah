@@ -3,8 +3,8 @@
 What an on-premise install uses. These files are published as release assets, so
 a customer never clones the repository.
 
-The developer environment is separate: `compose.yml` and `compose.override.yml`
-at the repository root, with settings in `config/development/`.
+The developer environment is separate: `compose.yml` at the repository root,
+with settings in `config/development/`.
 
 ## Contents
 
