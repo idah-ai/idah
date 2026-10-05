@@ -69,7 +69,7 @@ export class FeedBackConfigController {
     return await datasetsBackendDataSource.feedbackKeysInUse(datasetId);
   }
 
-  public async updateConfiguration(datasetId: string) {
+  public async updateConfiguration(datasetId: string): Promise<IFeedbackConfig | undefined> {
     this.isUpdating = true;
 
     try {
@@ -80,8 +80,11 @@ export class FeedBackConfigController {
 
       this.setConfig(updated.data);
       this.setSavedSnapshot(this.config);
+
+      return updated.data;
     } catch (err) {
       showActionFailedToast(err);
+      return undefined;
     } finally {
       this.isUpdating = false;
     }

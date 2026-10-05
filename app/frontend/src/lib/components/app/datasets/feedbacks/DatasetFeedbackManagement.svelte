@@ -13,18 +13,31 @@
     FeedBackConfigController,
     setFeedbackConfigController,
   } from "@/components/app/datasets/feedbacks/feedback.controller.svelte";
+  import type { IFeedbackConfig } from "@/plugin/v2/types";
 
   const dataset: DatasetRecord = getContext("dataset");
 
   const controller = new FeedBackConfigController(dataset.feedback_configuration);
   setContext("key", FEEDBACK_CONFIG_CONTROLLER_KEY);
   setFeedbackConfigController(FEEDBACK_CONFIG_CONTROLLER_KEY, controller);
+
+  function syncSavedConfiguration(config: IFeedbackConfig): void {
+    dataset.feedback_configuration = config;
+  }
+
+  async function saveChanges(): Promise<void> {
+    const savedConfig = await controller.updateConfiguration(dataset.id);
+
+    if (savedConfig) {
+      syncSavedConfiguration(savedConfig);
+    }
+  }
 </script>
 
 <PageHeader title="Feedback Configuration">
   {#snippet slotTitle()}
     <div class="flex flex-col gap-2">
-      <FeedbackConfigurationDropdownMenu />
+      <FeedbackConfigurationDropdownMenu onConfigurationSaved={syncSavedConfiguration} />
     </div>
   {/snippet}
 
@@ -33,7 +46,7 @@
       loading={controller.isUpdating}
       loadingLabel="Saving..."
       disabled={!controller.hasUnsavedChanges}
-      onclick={() => controller.updateConfiguration(dataset.id)}
+      onclick={saveChanges}
     >
       {#if controller.hasUnsavedChanges}
         <SaveIcon />

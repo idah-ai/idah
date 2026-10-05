@@ -18,14 +18,20 @@
   import FeedbackTemplateManagementSheet from "@/components/app/datasets/feedbacks/overlays/FeedbackTemplateManagementSheet.svelte";
 
   import { ConfirmModalChoice } from "@/components/app/overlays/modals/confirm-modal.types";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import {
     feedbackConfigTemplate,
     getFeedbackConfigController,
   } from "@/components/app/datasets/feedbacks/feedback.controller.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import type { IDropdownMenuItem, IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { IFeedbackConfig } from "@/plugin/v2/types";
   import type { FeedbackConfigTemplateRecord } from "@/data/model/dataset/feedback-config-templates/record";
+
+  interface Props {
+    onConfigurationSaved: (config: IFeedbackConfig) => void;
+  }
+
+  let { onConfigurationSaved }: Props = $props();
 
   const datasetId = page.params.datasetId as string;
   const key: symbol = getContext("key");
@@ -96,23 +102,22 @@
 
     if (choice === ConfirmModalChoice.Cancel) return;
 
+    const config = datasetFeedbackConfigController.getConfigHash();
+
     /**
      * Actions once confirm
      * 1. Replace current config to selected template
      * 2. Update current config to current dataset
      * 3. Mark current config as saved
      */
-    await Promise.all([
-      feedbackConfigTemplate.replace({
-        templateId: template.id,
-        config: datasetFeedbackConfigController.getConfigHash(),
-      }),
-      datasetsBackendDataSource.updateFeedbackConfiguration({
-        id: datasetId,
-        feedbackConfiguration: datasetFeedbackConfigController.getConfigHash(),
-      }),
-      datasetFeedbackConfigController.markCurrentAsSaved(),
+    const [, savedConfig] = await Promise.all([
+      feedbackConfigTemplate.replace({ templateId: template.id, config }),
+      datasetFeedbackConfigController.updateConfiguration(datasetId),
     ]);
+
+    if (savedConfig) {
+      onConfigurationSaved(savedConfig);
+    }
   }
 </script>
 
