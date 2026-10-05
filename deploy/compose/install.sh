@@ -16,7 +16,8 @@
 #   IDAH_VERSION=0.0.0-local IDAH_IMAGE_PREFIX=idah- ./install.sh
 #
 # It asks for the public URL (unless IDAH_URL is set) and the administrator's
-# email.
+# email. Run on its own (curl ... | bash), it first asks where to install,
+# the current directory by default (IDAH_DIR sets the default).
 #
 #   --admin-email EMAIL    administrator login, instead of asking
 #   --admin-name NAME      default Administrator
@@ -52,6 +53,8 @@ env_file=.env
 keys_dir=config/keys
 certs_dir=config/certs
 services="iam dataset media setting notification sync audit"
+# The images they run: every service but media runs the service image.
+images="service media frontend"
 default_prefix=ghcr.io/idah-ai/idah-
 
 # The release this installer belongs to, filled in when the release is published.
@@ -168,12 +171,37 @@ if [ ! -f compose.yml ]; then
        Run it from an unpacked release bundle, or from deploy/compose/ in a checkout,
        or name the release to install: IDAH_VERSION=0.5.0"
 
-  target=${IDAH_DIR:-idah}
-  [ -f "$target/compose.yml" ] && die "$target already holds an install. Run ./install.sh from inside it."
+  # Where the install lives: its files, .env, the keys, and the compose project
+  # named after it. Asked, since it cannot be moved lightly afterwards; the
+  # current directory unless IDAH_DIR or the answer names another.
+  target=$(ask "Install IDAH into" "${IDAH_DIR:-$PWD}")
+  case "$target" in
+    "~") target=$HOME ;;
+    "~/"*) target="$HOME/${target#\~/}" ;;
+  esac
+  case "$target" in /*) ;; *) target="$PWD/${target#./}" ;; esac
+  target=${target%/}; target=${target:-/}
+  [ -f "$target/compose.yml" ] && die "$target already holds an install.
+       To upgrade it: cd $target && ./install.sh --upgrade"
 
   say "Downloading IDAH $bundle_version"
-  # Only once the bundle is verified is anything created here.
-  fetch_bundle "$bundle_version" "$target"
+  # Unpacked aside first: only once the bundle is verified, and none of its
+  # files would overwrite one already in the directory, is anything created
+  # there. install.sh may be, when it was downloaded there to run.
+  unpacked=$(mktemp -d)
+  trap 'rm -rf "$unpacked"' EXIT
+  fetch_bundle "$bundle_version" "$unpacked"
+
+  clashes=$(cd "$unpacked" && find . -type f ! -path ./install.sh | sed 's|^\./||' | sort \
+    | while IFS= read -r file; do [ -e "$target/$file" ] && echo "       $file"; done || true)
+  [ -z "$clashes" ] || die "$target already has files the install would overwrite:
+$clashes
+       Choose an empty directory, or move these out of the way."
+
+  mkdir -p "$target" 2> /dev/null && [ -w "$target" ] \
+    || die "cannot write to $target. Choose a directory you can write to, or create it first."
+  cp -R "$unpacked/." "$target/"
+  rm -rf "$unpacked"; trap - EXIT
   cd "$target"
   echo "   unpacked into $PWD"
 fi
@@ -574,8 +602,8 @@ say "Checking images"
 # an install's time is the download, and one pull alone rarely fills the line.
 # Not docker compose pull, which cannot read compose.yml before .env exists.
 pulls=""
-for svc in $services frontend; do
-  image="$prefix$svc:$version"
+for name in $images; do
+  image="$prefix$name:$version"
   docker image inspect "$image" > /dev/null 2>&1 && continue
 
   printf "   pulling %s\n" "$image"
@@ -597,7 +625,7 @@ done
 
        Otherwise check that $version is a published version and that this
        machine can reach the registry."
-echo "   all eight present"
+echo "   all three present"
 
 # --- external servers --------------------------------------------------------
 
@@ -618,7 +646,7 @@ if $external; then
   say "Connecting to PostgreSQL at $pg_host:$pg_port"
   if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
       -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode${ca:+&sslrootcert=$ca}" \
-      -e "PGPASSWORD=$pg_password" "${prefix}iam:$version" ruby -e '
+      -e "PGPASSWORD=$pg_password" "${prefix}service:$version" ruby -e '
         require "sequel"
         begin
           Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| puts db.fetch("show server_version_num").single_value }
@@ -647,7 +675,7 @@ fi
 if $external_redis; then
   say "Connecting to Redis at $redis_addr"
   if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
-      -e "REDIS_URL=$redis_url" "${prefix}iam:$version" ruby -e '
+      -e "REDIS_URL=$redis_url" "${prefix}service:$version" ruby -e '
         require "redis"
         begin
           Redis.new(url: ENV.fetch("REDIS_URL")).ping

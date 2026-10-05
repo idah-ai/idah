@@ -21,7 +21,7 @@ require "zeitwerk"
 loader = Zeitwerk::Loader.new
 
 # Dynamically load only existing backend service directories
-backend_services = ["media", "sync"]
+backend_services = ["dataset", "media", "sync"]
 backend_services.each do |service|
   service_path = "./#{service}"
   loader.push_dir(service_path) if Dir.exist?(service_path)
