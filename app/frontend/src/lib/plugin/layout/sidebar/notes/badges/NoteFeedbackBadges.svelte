@@ -29,7 +29,7 @@
   }
 </script>
 
-<div class="mt-1 grid min-w-0 gap-1">
+<div class="grid min-w-0 gap-1">
   {#each visibleFeedbackKeys as feedbackKey (feedbackKey)}
     <NoteFeedbackBadge {feedbackKey} />
   {/each}

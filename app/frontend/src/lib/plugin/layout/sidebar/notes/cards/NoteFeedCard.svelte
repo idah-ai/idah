@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { MapPinIcon, MessageCircleIcon, SquareDashedIcon } from "@lucide/svelte";
-
   import Button from "@/components/ui/button/button.svelte";
-  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
-  import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
+  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/ResolveNoteFeedButton.svelte";
+  import NoteCard from "@/plugin/layout/sidebar/notes/cards/NoteCard.svelte";
+  import NoteFeedIcon from "./_NoteFeedIcon.svelte";
 
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed, updateNoteFeedContent } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
   import { AuthContext } from "@/security/AuthContext";
-  import { cn } from "@/utils";
 
   // Props
   interface Props {
@@ -86,21 +84,7 @@
   }}
 >
   {#snippet headerIcon()}
-    <div
-      class={cn("dark:text-accent flex size-8 shrink-0 items-center justify-center rounded-full", {
-        "bg-purple-300": noteType === "annotation",
-        "bg-yellow-300 ": noteType === "video_frame",
-        "bg-emerald-300": noteType === "general",
-      })}
-    >
-      {#if noteType === "annotation"}
-        <SquareDashedIcon class="size-3.5" />
-      {:else if noteType === "video_frame"}
-        <MapPinIcon class="size-3.5" />
-      {:else if noteType === "general"}
-        <MessageCircleIcon class="size-3.5" />
-      {/if}
-    </div>
+    <NoteFeedIcon {noteType} />
   {/snippet}
 
   {#snippet headerActions()}
@@ -113,7 +97,7 @@
     {#if showReplyCount}
       {#await loadComments() then comments}
         {@const commentCount = comments.length}
-        <Button variant="link" size="xs" class="pl-0" onclick={selectNoteFeed}>
+        <Button variant="link" size="xs" class="ml-auto" onclick={selectNoteFeed}>
           {#if commentCount === 0}
             Reply
           {:else}

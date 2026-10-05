@@ -7,7 +7,7 @@
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
   import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
   import NoteOverlay from "@/plugin/layout/notes/NoteOverlay.svelte";
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
+  import NoteSidebar from "@/plugin/layout/sidebar/notes/NoteSidebar.svelte";
 
   import { authStatus } from "@/security/AuthContext";
 

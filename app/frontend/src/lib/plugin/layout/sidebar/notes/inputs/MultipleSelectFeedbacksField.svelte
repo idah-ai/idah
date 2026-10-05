@@ -2,6 +2,7 @@
   import { getContext, hasContext } from "svelte";
 
   import ComboboxTriggerValueBadges from "@/components/app/forms/fields/combobox/combobox-trigger-value-badges.svelte";
+  import FieldLabel from "@/components/ui/field/field-label.svelte";
   import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
 
@@ -26,7 +27,6 @@
 
 <MultipleSelectField
   name="{resource}/feedback"
-  label="Feedback"
   placeholder="Select feedbacks"
   choices={Object.entries(driver.feedbackConfig).map(([feedbackItemKey, feedbackItem]) => ({
     label: feedbackItem.label,
@@ -37,7 +37,11 @@
   {values}
   onSelected={(selectedChoices) => onSelected(selectedChoices.map((choice) => String(choice.value)))}
 >
+  {#snippet slotLabel()}
+    <FieldLabel class="text-xs">Feedback</FieldLabel>
+  {/snippet}
+
   {#snippet slotTriggerValues({ selectedChoices })}
-    <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} truncateLength={15} />
+    <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} truncateLength={10} />
   {/snippet}
 </MultipleSelectField>

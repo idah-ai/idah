@@ -2,7 +2,7 @@
   import Skeleton from "@/components/ui/skeleton/skeleton.svelte";
 </script>
 
-<div class="flex flex-col gap-2 p-2">
+<div class="flex flex-col gap-2 border-b p-2">
   <!-- HEADER -->
   <div class="flex w-full items-center gap-2 pr-2">
     <!-- HEADER::ICON -->

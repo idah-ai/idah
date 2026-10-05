@@ -2,8 +2,8 @@
   import { getContext, hasContext } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Badge from "@/components/ui/badge/badge.svelte";
+  import * as HoverCard from "@/components/ui/hover-card/index";
 
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
 
@@ -23,16 +23,23 @@
   const feedbackItem = $derived(feedbackConfigMap.get(feedbackKey));
 </script>
 
-<Tooltips align="start" class="w-fit min-w-0" delayDuration={1000}>
-  {#snippet trigger()}
+<HoverCard.Root openDelay={700}>
+  <HoverCard.Trigger class="w-fit min-w-0">
     <Badge variant={feedbackItem ? "info" : "destructive"} class="max-w-60 justify-start text-left">
       <span class="truncate">
         {feedbackItem ? feedbackItem.label : "Feedback not found"}
       </span>
     </Badge>
-  {/snippet}
+  </HoverCard.Trigger>
 
-  {#snippet content()}
-    {feedbackItem ? feedbackItem.description : "Feedback not found"}
-  {/snippet}
-</Tooltips>
+  <HoverCard.Content class="p-2">
+    <div class="flex flex-col gap-2 text-xs">
+      {#if feedbackItem}
+        <span class="font-medium">{feedbackItem.label}</span>
+        <span class="text-muted-foreground">{feedbackItem.description}</span>
+      {:else}
+        <span class="text-destructive font-medium">Cannot find feedback item.</span>
+      {/if}
+    </div>
+  </HoverCard.Content>
+</HoverCard.Root>

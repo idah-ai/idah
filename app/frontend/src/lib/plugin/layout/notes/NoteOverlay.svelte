@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onDestroy, onMount, setContext } from "svelte";
   import { page } from "$app/state";
-  import { XIcon } from "@lucide/svelte";
+  import { PlusIcon, ReplyIcon, SaveIcon, XIcon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import { Kbd, KbdGroup } from "@/components/ui/kbd";
   import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
   import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
-  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
+  import NoteContentMdField from "@/plugin/layout/sidebar/notes/inputs/NoteContentMdField.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
   import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
-  import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -21,7 +21,6 @@
   import { refetches } from "@/utils/refetch";
   import type { INoteAnchor, INoteComment, INoteRecord, INoteScreenPosition } from "@/plugin/v2/types";
   import type { NotesDriverAdapter } from "@/plugin/v2/driver/adapter/notes";
-  import type { Resource } from "@/security/types";
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
 
   interface Props {
@@ -31,7 +30,6 @@
   let { driver, notesAdapter }: Props = $props();
 
   setContext("driver", driver);
-  const resource: Resource = "dataset:note_feeds";
 
   let x: number | undefined = $state(undefined);
   let y: number | undefined = $state(undefined);
@@ -420,13 +418,36 @@
           <section
             data-feed-id={selectedNote.id}
             class={[
-              "bg-muted/30 hover:bg-secondary border-b px-3 py-2",
+              "bg-muted/30 hover:bg-primary/5 flex flex-col gap-2 border-b px-3 py-2",
               highlightedFeedId === selectedNote.id ? "bg-muted" : "",
             ].join(" ")}
           >
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="text-sm font-semibold">{selectedNote.created_by_email ?? "Unknown"}</span>
-              <div class="ml-auto flex items-center">
+            <div class="flex items-center">
+              <div class="flex flex-col">
+                <p class="text-sm font-semibold">{selectedNote.created_by_email ?? "Unknown"}</p>
+                <div class="flex items-center gap-1.5 text-xs">
+                  <DateText
+                    class="text-muted-foreground text-xs"
+                    datetime={new Date(selectedNote.created_at ?? "")}
+                    datetimeFormat="MMM dd, yyyy HH:mm:ss"
+                    size="xs"
+                    weight="normal"
+                    showDistance
+                  />
+                  {#if selectedNote.edited_at}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger class="inline-block">
+                          <span class="text-muted-foreground text-xs">• Edited</span>
+                        </TooltipTrigger>
+                        <TooltipContent>{formatEditedTooltip(selectedNote.edited_at)}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  {/if}
+                </div>
+              </div>
+
+              <div class="ml-auto">
                 <NoteDropdownMenus
                   noteFeedId={selectedNote.id}
                   editable={isSelectedNoteOwner}
@@ -437,52 +458,37 @@
               </div>
             </div>
 
-            <div class="flex items-center gap-1.5 text-xs">
-              <DateText
-                class="text-muted-foreground text-xs"
-                datetime={new Date(selectedNote.created_at ?? "")}
-                datetimeFormat="MMM dd, yyyy HH:mm:ss"
-                size="xs"
-                weight="normal"
-                showDistance
-              />
-              {#if selectedNote.edited_at}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger class="inline-block">
-                      <span class="text-muted-foreground text-xs">• Edited</span>
-                    </TooltipTrigger>
-                    <TooltipContent>{formatEditedTooltip(selectedNote.edited_at)}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              {/if}
-            </div>
-
-            <NoteFeedbackBadges feedbackKeys={selectedNote.feedback_keys ?? []} />
+            {#if selectedNote.feedback_keys}
+              <NoteFeedbackBadges feedbackKeys={selectedNote.feedback_keys ?? []} />
+            {/if}
 
             {#if editingFeedContent}
-              <MultipleSelectFeedbacksField
-                values={editingFeedbackKeys}
-                onSelected={(selected) => (editingFeedbackKeys = selected)}
-              />
+              <div class="mt-4 flex flex-col gap-2">
+                <MultipleSelectFeedbacksField
+                  values={editingFeedbackKeys}
+                  onSelected={(selected) => (editingFeedbackKeys = selected)}
+                />
 
-              <textarea
-                class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
-                rows="3"
-                bind:value={editingContentMd}
-              ></textarea>
+                <NoteContentMdField
+                  label="Comment"
+                  placeholder="Leave a comment here (optional)"
+                  value={editingContentMd}
+                  oninput={(e) => (editingContentMd = e.currentTarget.value)}
+                />
 
-              <div class="mt-2 ml-auto flex w-fit items-center gap-2">
-                <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
+                <div class="flex w-full items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
 
-                <Button
-                  size="sm"
-                  onclick={() =>
-                    handleUpdateFeedContent({ newMd: editingContentMd, newFeedbackKeys: editingFeedbackKeys })}
-                  disabled={disableUpdateButton}
-                >
-                  Save
-                </Button>
+                  <Button
+                    size="sm"
+                    disabled={disableUpdateButton}
+                    onclick={() =>
+                      handleUpdateFeedContent({ newMd: editingContentMd, newFeedbackKeys: editingFeedbackKeys })}
+                  >
+                    <SaveIcon />
+                    Save
+                  </Button>
+                </div>
               </div>
             {:else}
               <div class="mt-2 text-sm"><MarkdownPreview value={selectedNote.content_md ?? ""} /></div>
@@ -545,6 +551,7 @@
                       onclick={() => handleUpdateComment(comment.id, editingContentMd)}
                       disabled={!editingContentMd.trim()}
                     >
+                      <SaveIcon />
                       Save
                     </Button>
                   </div>
@@ -566,12 +573,10 @@
             />
           {/if}
 
-          <TextareaField
-            name="{resource}/contentMd"
+          <NoteContentMdField
             label={isCreating ? "Comment" : "Reply"}
             placeholder={isCreating ? "Leave a comment here (optional)" : "Leave a reply here"}
             value={contentMd}
-            disabled={loading}
             oninput={(e) => (contentMd = e.currentTarget.value)}
           />
         </section>
@@ -590,8 +595,20 @@
       >
         <Tooltips class="ml-auto" align="center">
           {#snippet trigger()}
-            <Button disabled={disableSubmitButton || loading} onclick={handleSubmit}>
-              {isCreating ? "Add Note" : "Reply"}
+            <Button
+              size="sm"
+              {loading}
+              loadingLabel={isCreating ? "Adding..." : "Replying..."}
+              disabled={disableSubmitButton || loading}
+              onclick={handleSubmit}
+            >
+              {#if isCreating}
+                <PlusIcon />
+                New Note
+              {:else}
+                <ReplyIcon />
+                Reply
+              {/if}
             </Button>
           {/snippet}
 

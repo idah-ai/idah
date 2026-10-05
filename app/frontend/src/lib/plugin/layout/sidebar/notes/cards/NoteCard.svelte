@@ -1,19 +1,19 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { SaveIcon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
+  import NoteContentMdField from "@/plugin/layout/sidebar/notes/inputs/NoteContentMdField.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
   import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
   import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
   import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
-  import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { cn } from "@/utils";
   import { truncate, truncateEmail } from "@/utils/string";
-  import type { Resource } from "@/security/types";
 
   // Props
   interface Props {
@@ -57,8 +57,6 @@
   }: Props = $props();
 
   // Variables
-  const resource: Resource = "dataset:note_feeds";
-
   let editedContentMd = $state<string | null>(content_md);
   let editedFeedbackKeys = $state<string[]>(feedbackKeys ?? []);
   let mode = $state<"view" | "edit">("view");
@@ -103,79 +101,78 @@
 <div
   role="button"
   tabindex="0"
-  class={cn("hover:bg-secondary group flex cursor-pointer flex-col gap-2 border-1 border-transparent p-2", {
-    "bg-secondary": highlighted,
-  })}
+  class={cn("hover:bg-primary/5 flex cursor-pointer gap-2 border-b p-2", { "bg-secondary": highlighted })}
   onkeypress={handleClickCard}
   onclick={handleClickCard}
 >
-  <!-- HEADER -->
-  <div class="flex w-full gap-2">
-    <div class="flex flex-1 items-start gap-2">
-      <!-- HEADER::ICON -->
-      {@render headerIcon?.()}
+  <!-- ICONS -->
+  <section class="shrink-0">
+    {@render headerIcon?.()}
+  </section>
 
-      <!-- HEADER::CREATED BY & CREATED AT & FEEDBACKS -->
-      <div class="flex min-w-0 flex-1 flex-col text-left text-xs">
+  <!-- CONTENT -->
+  <section class="flex flex-1 flex-col gap-2">
+    <!-- CONTENT::EMAIL, CREATED AT, ACTIONS -->
+    <div class="flex items-center">
+      <div class="flex flex-col text-xs">
         <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
-        <div>
-          <DateText
-            class="text-muted-foreground"
-            datetime={new Date(created_at)}
-            datetimeFormat="MMM dd, yyyy HH:mm:ss"
-            size="xs"
-            weight="normal"
-            showDistance
-          ></DateText>
-          {#if edited_at}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger class="inline-block">
-                  <span class="text-muted-foreground text-xs">• Edited</span>
-                </TooltipTrigger>
-                <TooltipContent>{formatEditedTooltip(edited_at)}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          {/if}
-        </div>
 
-        <NoteFeedbackBadges feedbackKeys={feedbackKeys ?? []} />
+        <DateText
+          class="text-muted-foreground"
+          datetime={new Date(created_at)}
+          datetimeFormat="MMM dd, yyyy HH:mm:ss"
+          size="xs"
+          weight="normal"
+          showDistance
+        ></DateText>
+
+        {#if edited_at}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger class="inline-block">
+                <span class="text-muted-foreground text-xs">• Edited</span>
+              </TooltipTrigger>
+              <TooltipContent>{formatEditedTooltip(edited_at)}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        {/if}
       </div>
 
-      <!-- HEADER::ACTIONS -->
       <div class="ml-auto flex items-center">
         {@render headerActions?.()}
 
         <NoteDropdownMenus
           {noteFeedId}
           {noteCommentId}
-          {editable}
+          editable={editable && isViewMode}
           {deletable}
           onSwitchToEditMode={switchToEditMode}
           {onDelete}
         />
       </div>
     </div>
-  </div>
 
-  <!-- CONTENT -->
-  <div class="flex flex-1 flex-col items-start gap-1 overflow-x-hidden text-xs">
+    <!-- FEEDBACK KEYS -->
+    <NoteFeedbackBadges feedbackKeys={feedbackKeys ?? []} />
+
+    <!-- CONTENT MD -->
     {#if isViewMode}
-      <MarkdownPreview value={truncate(content_md ?? "", 140)} />
+      <MarkdownPreview class="text-xs" value={truncate(content_md ?? "", 140)} />
 
       {@render contentActions?.()}
     {/if}
 
+    <!-- EDIT FORM -->
     {#if isEditMode}
-      <div class="grid w-full gap-2">
+      <div class="grid gap-2">
         <MultipleSelectFeedbacksField
           values={editedFeedbackKeys}
           onSelected={(selected) => (editedFeedbackKeys = selected)}
         />
 
-        <TextareaField
-          name="{resource}/content_md"
+        <NoteContentMdField
           label="Comment"
+          placeholder="Leave a comment here (optional)"
           value={editedContentMd}
           oninput={(e) => (editedContentMd = e.currentTarget.value)}
         />
@@ -203,9 +200,10 @@
             switchToViewMode();
           }}
         >
+          <SaveIcon />
           Save
         </Button>
       </div>
     {/if}
-  </div>
+  </section>
 </div>

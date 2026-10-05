@@ -4,6 +4,7 @@
     ArrowLeftIcon,
     FunnelIcon,
     MessageCircleDashedIcon,
+    ReplyIcon,
     SquareCheckBigIcon,
     SquareIcon,
     XIcon,
@@ -15,13 +16,14 @@
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
-  import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/note-comment-card.svelte";
-  import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/note-feed-card.svelte";
+  import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
+  import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/NoteCommentCard.svelte";
+  import NoteContentMdField from "@/plugin/layout/sidebar/notes/inputs/NoteContentMdField.svelte";
+  import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/NoteFeedCard.svelte";
   import NoteCardLoading from "@/plugin/layout/sidebar/notes/cards/NoteCardLoading.svelte";
-  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
-  import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
+  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/ResolveNoteFeedButton.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { AuthContext } from "@/security/AuthContext";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
@@ -51,7 +53,11 @@
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
   let isFilteringResolved = $derived(noteFeedFilters.status__in.includes("resolved"));
+  let isSubmitting = $state<boolean>(false);
   let contentMd = $state<string>("");
+  let feedbackKeys = $state<string[]>([]);
+
+  const disabledSubmitButton = $derived(!contentMd.trim() && feedbackKeys.length === 0);
 
   let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
 
@@ -143,7 +149,7 @@
   // Functions
   function selectNoteFeed(noteFeed: NoteFeedRecord) {
     switch (noteFeed.noteType) {
-      case "general": {
+      case "entry": {
         selectedNoteFeed = noteFeed;
         break;
       }
@@ -219,7 +225,10 @@
   }
 
   async function createNote() {
-    if (!contentMd.trim()) return;
+    if (!isAllowToCreateNewNote) return;
+    if (disabledSubmitButton) return;
+
+    isSubmitting = true;
 
     if (isListView) {
       /** Create a general note feed, if current view is list */
@@ -229,6 +238,7 @@
           annotation_id: undefined,
           anchor_type: "entry",
           content_md: contentMd,
+          feedback_keys: feedbackKeys,
         },
       });
       $refetches.noteFeeds.list = new Date();
@@ -254,6 +264,8 @@
     }
 
     contentMd = "";
+    feedbackKeys = [];
+    isSubmitting = false;
   }
 
   async function deleteNote() {
@@ -357,6 +369,7 @@
           {#await loadNoteComments() then { noteFeed, noteComments }}
             {#if noteFeed}
               <NoteFeedCard
+                highlighted={selectedNoteFeed.id === noteFeed.id}
                 noteFeedRecord={noteFeed}
                 onNoteFeedUpdated={(updatedFeed) => {
                   selectedNoteFeed = updatedFeed;
@@ -374,14 +387,36 @@
     </div>
 
     <!-- FOOTER -->
-    <section class="bg-background sticky bottom-0 mt-auto flex border-t p-2">
-      <NoteInputField
-        disabled={!isAllowToCreateNewNote}
-        placeholder={isListView ? "Write your note" : "Reply"}
+    <section
+      class="bg-background sticky bottom-0 mt-auto flex flex-col gap-4 border-t p-2 shadow-[0_-8px_20px_-6px_rgba(0,0,0,0.15)]"
+    >
+      {#if isListView}
+        <MultipleSelectFeedbacksField values={feedbackKeys} onSelected={(selected) => (feedbackKeys = selected)} />
+      {/if}
+
+      <NoteContentMdField
+        label={isListView ? "Comment" : "Reply"}
+        placeholder={isListView ? "Leave a comment here (optional)" : "Leave a reply here"}
         value={contentMd}
-        onInput={(e) => (contentMd = e.currentTarget.value)}
-        onSubmit={createNote}
-      ></NoteInputField>
+        oninput={(e) => (contentMd = e.currentTarget.value)}
+      />
+
+      <div class="flex w-full justify-end">
+        <Button
+          disabled={isAllowToCreateNewNote && (disabledSubmitButton || isSubmitting)}
+          loading={isSubmitting}
+          loadingLabel={isListView ? "Commenting..." : "Replying..."}
+          size="sm"
+          onclick={createNote}
+        >
+          {#if isListView}
+            Comment
+          {:else}
+            <ReplyIcon />
+            Reply
+          {/if}
+        </Button>
+      </div>
     </section>
   </div>
 {/if}
