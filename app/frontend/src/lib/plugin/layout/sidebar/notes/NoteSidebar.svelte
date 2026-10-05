@@ -152,6 +152,10 @@
       case "entry": {
         // Clear any previously focused/selected anchor note in the plugin overlay
         driver.notesAdapter?.selectNote(null);
+
+        // Reset viewport zoom/pan to fit the full media
+        driver.command.call(`${driver.dataset.modality}:viewport.reset`);
+
         selectedNoteFeed = noteFeed;
         break;
       }
