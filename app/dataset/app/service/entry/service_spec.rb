@@ -396,13 +396,14 @@ RSpec.describe Entry::Service, database: true do
     end
 
     it "refreshes dataset progress after deleting an entry" do
+      pending_entry_id = entry.id
       completed_entry_id = repo.create({ project_id:, dataset_id:, resource: "completed.mp4", status: "pending" })
       repo.update!(completed_entry_id, { status: "completed" })
       dataset_repo.update_progress!(dataset_id)
 
       expect(dataset_repo.find!(dataset_id).progress).to eq(0.5)
 
-      subject.delete(entry.id)
+      subject.delete(pending_entry_id)
 
       dataset = dataset_repo.find!(dataset_id)
       expect(dataset.progress).to eq(1.0)
