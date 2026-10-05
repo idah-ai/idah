@@ -134,6 +134,7 @@
             editingFeedContent = false;
             editingContentMd = "";
             editingFeedbackKeys = [];
+            editingFeedbackKeys = [];
           }
         }
       }),
@@ -344,8 +345,15 @@
   <div
     class="fixed z-40"
     style="left: {x}px; top: {y}px;"
+    tabindex="-1"
     role="dialog"
     aria-label={isCreating ? "New note" : "Note details"}
+    onkeydown={(e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    }}
   >
     <div class="bg-background border-border min-w-80 rounded-lg border shadow-lg">
       <!-- HEADER -->
@@ -571,58 +579,45 @@
               values={selectedFeedbackKeys}
               onSelected={(selected) => (selectedFeedbackKeys = selected)}
             />
-          {/if}
 
-          <NoteContentMdField
-            label={isCreating ? "Comment" : "Reply"}
-            placeholder={isCreating ? "Leave a comment here (optional)" : "Leave a reply here"}
-            value={contentMd}
-            oninput={(e) => (contentMd = e.currentTarget.value)}
-          />
+            <NoteContentMdField
+              label="Comment"
+              placeholder="Leave a comment here (optional)"
+              value={contentMd}
+              oninput={(e) => (contentMd = e.currentTarget.value)}
+            />
+          {:else}
+            <NoteContentMdField
+              label="Reply"
+              placeholder="Leave a reply here"
+              value={editingContentMd}
+              oninput={(e) => (editingContentMd = e.currentTarget.value)}
+            />
+          {/if}
         </section>
       </div>
 
       <!-- FOOTER -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="flex justify-end border-t px-3 py-2"
-        onkeydown={(e) => {
-          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-            e.preventDefault();
-            handleSubmit();
-          }
-        }}
-      >
-        <Tooltips class="ml-auto" align="center">
-          {#snippet trigger()}
-            <Button
-              size="sm"
-              {loading}
-              loadingLabel={isCreating ? "Adding..." : "Replying..."}
-              disabled={disableSubmitButton || loading}
-              onclick={handleSubmit}
-            >
-              {#if isCreating}
-                <PlusIcon />
-                New Note
-              {:else}
-                <ReplyIcon />
-                Reply
-              {/if}
-            </Button>
-          {/snippet}
+      <div class="flex justify-end border-t px-3 py-2">
+        <Button
+          size="sm"
+          {loading}
+          loadingLabel={isCreating ? "Adding..." : "Replying..."}
+          disabled={isCreating ? disableSubmitButton : disableUpdateButton}
+          onclick={handleSubmit}
+        >
+          {#if isCreating}
+            <PlusIcon />
+            Add Note
+          {:else}
+            <ReplyIcon />
+            Reply
+          {/if}
 
-          {#snippet content()}
-            <div class="flex items-center gap-2">
-              <KbdGroup>
-                <Kbd>{modKey}</Kbd>
-                <Kbd>Enter</Kbd>
-              </KbdGroup>
-
-              <span>to submit</span>
-            </div>
-          {/snippet}
-        </Tooltips>
+          <KbdGroup>
+            <Kbd>{modKey} ↵</Kbd>
+          </KbdGroup>
+        </Button>
       </div>
     </div>
   </div>

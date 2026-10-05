@@ -150,6 +150,8 @@
   function selectNoteFeed(noteFeed: NoteFeedRecord) {
     switch (noteFeed.noteType) {
       case "entry": {
+        // Clear any previously focused/selected anchor note in the plugin overlay
+        driver.notesAdapter?.selectNote(null);
         selectedNoteFeed = noteFeed;
         break;
       }
