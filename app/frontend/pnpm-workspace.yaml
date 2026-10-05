@@ -1,4 +1,5 @@
-allowBuilds:
-  '@sentry/cli': set this to true or false
-  '@tailwindcss/oxide': set this to true or false
-  esbuild: set this to true or false
+# Dependency install scripts pnpm should skip: both only fetch binaries that
+# their platform packages already provide.
+ignoredBuiltDependencies:
+  - "@sentry/cli"
+  - "@tailwindcss/oxide"

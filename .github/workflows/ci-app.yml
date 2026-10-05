@@ -9,9 +9,6 @@ name: CI - App
 
 on:
   pull_request:
-    paths:
-      - "app/**"
-      - "common/**"
     types:
       # Trigger the workflow only when PR is ready for review
       - ready_for_review
@@ -728,3 +725,22 @@ jobs:
         with:
           name: dataset-code-coverage
           path: ${{ env.DATASET_DIR }}/coverage
+
+  # The one check branch protection requires. The workflow runs on every PR and
+  # the jobs above skip themselves when their paths did not change, so this job
+  # always reports: skipped counts as passed, failed or cancelled does not.
+  passed:
+    name: App CI passed
+    if: ${{ always() }}
+    needs: [changes, frontend, iam, notification, setting, audit, sync, media, dataset]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every job's result
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if jq -e 'any(.[]; . == "failure" or . == "cancelled")' <<< "$RESULTS" > /dev/null; then
+            echo "::error::A job failed or was cancelled."
+            exit 1
+          fi
