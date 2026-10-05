@@ -5,7 +5,7 @@ source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}" }
 
 gem "verse-core", github: "verse-rb/verse-core", branch: "master"
-gem "verse-http", github: "verse-rb/verse-http", branch: "features/migrate-to-sinatra-4"
+gem "verse-http", github: "verse-rb/verse-http", branch: "master"
 gem "verse-jsonapi", github: "verse-rb/verse-jsonapi", branch: "master"
 gem "verse-jsonrpc", github: "verse-rb/verse-jsonrpc", branch: "master"
 gem "verse-periodic", github: "verse-rb/verse-periodic", branch: "master"
