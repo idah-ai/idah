@@ -2,6 +2,7 @@
   import { media } from "$lib/state/media.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import GridOverlay from "./GridOverlay.svelte";
 
   let { canvas = $bindable(), element = $bindable() }: { canvas?: HTMLCanvasElement; element?: HTMLDivElement } =
     $props();
@@ -63,6 +64,7 @@
     height={media.height}
     bind:this={canvas}
   ></canvas>
+  <GridOverlay />
 </div>
 
 <style>
