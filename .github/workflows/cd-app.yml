@@ -1,6 +1,6 @@
 name: CD - App
 
-# Builds, publishes and smoke-tests the three images the eight services run:
+# Builds, publishes, smoke-tests and scans the three images the eight services run:
 #
 #   service   iam, audit, dataset, notification, setting and sync (docker/Dockerfile.service)
 #   media     media: the service image plus ffmpeg and ImageMagick (docker/Dockerfile.media)
@@ -260,6 +260,71 @@ jobs:
           done
           docker buildx imagetools create --tag "$IMAGE:$IMAGE_TAG" "${sources[@]}"
           docker buildx imagetools inspect "$IMAGE:$IMAGE_TAG"
+
+  # Known vulnerabilities in what each published image ships: the base image's
+  # system packages, the Ruby and Node runtimes, and the gems and npm packages
+  # inside. Dependabot only watches the gems and npm packages.
+  #
+  # Report-only: findings go to the run summary and the Security tab, and never
+  # block a release. Only high and critical ones that already have a fix.
+  scan:
+    name: Scan ${{ matrix.image }}
+    needs: [prepare, merge]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.prepare.outputs.images) }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan for the Security tab
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}${{ matrix.image }}:${{ needs.prepare.outputs.image_tag }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: sarif
+          output: trivy.sarif
+          exit-code: "0"
+
+      - name: Upload to the Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-${{ matrix.image }}
+
+      # Same scan from Trivy's cache, as a table for the run summary.
+      - name: Scan for the run summary
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}${{ matrix.image }}:${{ needs.prepare.outputs.image_tag }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: table
+          output: trivy.txt
+          exit-code: "0"
+          skip-setup-trivy: true
+
+      - name: Write the run summary
+        env:
+          IMAGE: ${{ env.IMAGE_PREFIX }}${{ matrix.image }}:${{ needs.prepare.outputs.image_tag }}
+        run: |
+          {
+            echo "### \`$IMAGE\`"
+            echo '```'
+            cat trivy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # The release gate: every published image runs with no source tree, on both
   # architectures.
