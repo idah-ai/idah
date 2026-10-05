@@ -17,7 +17,7 @@ smtp_host = ENV["MAIL_SMTP_HOST"].to_s.strip
 case ENV["APP_ENVIRONMENT"]
 when "test"
   Email.enabled = true
-when "production", "staging"
+when "production"
   Email.enabled = !smtp_host.empty?
 
   if Email.enabled?

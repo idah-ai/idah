@@ -24,8 +24,6 @@ doc/frontend/dist
 **/.env.*
 config/
 deploy/
-staging/config
-staging/storage
 app/*/config/keys/*
 !app/*/config/keys/*.dev.pem
 !app/*/config/keys/README.md
