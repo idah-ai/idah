@@ -21,6 +21,7 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Checkbox } from "@/components/ui/checkbox";
+  import Separator from "@/components/ui/separator/separator.svelte";
   import { Slider } from "@/components/ui/slider";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import {
@@ -385,7 +386,7 @@
       <PopoverContent
         align="start"
         side="bottom"
-        class="w-96"
+        class="min-w-96"
         onOpenAutoFocus={(e) => {
           // FocusScope's default behavior focuses the first tabbable element on
           // open — which is the first item's "?" description icon, not the
@@ -404,20 +405,22 @@
             </span>
             {#each group.subGroups as subGroup, i (subGroup.subSection || "")}
               {#if i > 0}
-                <hr class="border-muted my-1 border-t" />
+                <Separator />
               {/if}
               {#if subGroup.subSection}
                 <span class="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                   {subGroup.subSection}
                   {#if subGroup.items.some((i) => i.default !== undefined)}
-                    <button
-                      class="ml-auto flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 font-normal transition-colors hover:bg-blue-100"
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      class="ml-auto flex cursor-pointer items-center gap-1 hover:bg-blue-100"
                       onclick={() => resetSection(subGroup.items)}
                       title="Reset to defaults"
                     >
-                      <RotateCcwIcon class="size-3" />
+                      <RotateCcwIcon />
                       Reset all
-                    </button>
+                    </Button>
                   {/if}
                 </span>
               {/if}
