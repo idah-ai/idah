@@ -174,10 +174,10 @@ module Dataset
       # (e.g. submitted, waiting for a reviewer). The counter is maintained by
       # the dataset entry-counters trigger.
       submitted_entries = table.db[:entries]
-        .where(dataset_id:)
-        .exclude(status: "errored")
-        .exclude(submitted_by_id: nil)
-        .count
+                               .where(dataset_id:)
+                               .exclude(status: "errored")
+                               .exclude(submitted_by_id: nil)
+                               .count
 
       progress = completed_entries.to_f / total_entries
 
