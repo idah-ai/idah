@@ -77,7 +77,11 @@ module Entry
     end
 
     def mark_entries_status_as(job_id, status)
-      entries.mark_entries_status_as(job_id, status)
+      entries.transaction do
+        entry = entries.find_by!({ job_id:, status: "processing" })
+        entries.mark_entries_status_as(job_id, status)
+        system_datasets_repo.update_progress!(entry.dataset_id)
+      end
     end
 
     def complete_entry_processing(job_id)

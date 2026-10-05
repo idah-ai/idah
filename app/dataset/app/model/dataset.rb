@@ -162,7 +162,7 @@ module Dataset
 
       return unless dataset
 
-      total_entries = dataset[:entries_total_count]
+      total_entries = table.db[:entries].where(dataset_id:).exclude(status: "errored").count
 
       return pending!(dataset_id, 0.0) if total_entries.zero?
 
@@ -173,7 +173,7 @@ module Dataset
       # on, even if they are back to "pending" status awaiting a next stage
       # (e.g. submitted, waiting for a reviewer). The counter is maintained by
       # the dataset entry-counters trigger.
-      submitted_entries = dataset[:entries_submitted_count]
+      submitted_entries = table.db[:entries].where(dataset_id:).exclude(status: "errored").exclude(submitted_by_id: nil).count
 
       progress = completed_entries.to_f / total_entries
 

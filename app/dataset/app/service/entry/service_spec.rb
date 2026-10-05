@@ -238,6 +238,18 @@ RSpec.describe Entry::Service, database: true do
       other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("done")
     end
+
+    it "does not count an errored processing entry when a later entry completes" do
+      subject.mark_entries_status_as(job_id, "errored")
+
+      completed_entry_id = repo.create({ project_id:, dataset_id:, resource: "completed-after-error.mp4", status: "pending" })
+      repo.update!(completed_entry_id, { status: "completed" })
+      dataset_repo.update_progress!(dataset_id)
+
+      dataset = dataset_repo.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(1)
+      expect(dataset.progress).to eq(1.0 / 2)
+    end
   end
 
   describe "#index" do
