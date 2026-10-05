@@ -89,7 +89,7 @@ RSpec.describe Dataset, database: true do
       expect(dataset.status).to eq("pending")
     end
 
-    it "excludes errored entries from the progress denominator" do
+    it "counts errored entries in the progress denominator" do
       add_entry("completed")
       add_entry("pending")
       add_entry("pending")
@@ -98,19 +98,19 @@ RSpec.describe Dataset, database: true do
       subject.update_progress!(dataset_id)
 
       dataset = subject.find!(dataset_id)
-      expect(dataset.progress).to eq(1.0 / 3)
+      expect(dataset.progress).to eq(0.25)
       expect(dataset.status).to eq("in_progress")
     end
 
-    it "is completed when all non-errored entries are completed" do
+    it "stays in_progress when completed entries also have errored entries" do
       add_entry("completed")
       add_entry("errored")
 
       subject.update_progress!(dataset_id)
 
       dataset = subject.find!(dataset_id)
-      expect(dataset.progress).to eq(1.0)
-      expect(dataset.status).to eq("completed")
+      expect(dataset.progress).to eq(0.5)
+      expect(dataset.status).to eq("in_progress")
     end
 
     it "resets to pending with zero progress when the last entry is deleted" do

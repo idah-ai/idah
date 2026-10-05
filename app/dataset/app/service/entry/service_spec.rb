@@ -239,7 +239,7 @@ RSpec.describe Entry::Service, database: true do
       expect(other_entry.status).to eq("done")
     end
 
-    it "does not count an errored processing entry when a later entry completes" do
+    it "counts an errored processing entry in progress after a later entry completes" do
       subject.mark_entries_status_as(job_id, "errored")
 
       completed_entry_id = repo.create(
@@ -250,7 +250,7 @@ RSpec.describe Entry::Service, database: true do
 
       dataset = dataset_repo.find!(dataset_id)
       expect(dataset.entries_completed_count).to eq(1)
-      expect(dataset.progress).to eq(1.0 / 2)
+      expect(dataset.progress).to eq(1.0 / 3)
     end
   end
 

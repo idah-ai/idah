@@ -162,7 +162,7 @@ module Dataset
 
       return unless dataset
 
-      total_entries = table.db[:entries].where(dataset_id:).exclude(status: "errored").count
+      total_entries = dataset[:entries_total_count]
 
       return pending!(dataset_id, 0.0) if total_entries.zero?
 
