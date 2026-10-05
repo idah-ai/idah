@@ -258,28 +258,46 @@ RSpec.describe LogsExpo, database: true do
       end
     end
 
-    it "ignores entry submitted event without submission_type" do
-      @content[:metadata].delete(:submission_type)
-      expect(service).not_to receive(:create)
+    context "with entry submitted event mutations" do
+      before do
+        @resource_type = Resource::Dataset::Entries
+        @resource_id = "entry-1"
+        @content = {
+          resource_id: "entry-1",
+          metadata: {
+            at: Time.now,
+            actor_account_id: 1,
+            submission_type: "draft",
+            organization_id: 1,
+            project_id: "proj-1",
+            dataset_id: "ds-1"
+          }
+        }
+      end
 
-      Verse.publish_resource_event(
-        resource_type: @resource_type,
-        resource_id: @resource_id,
-        event: "submitted",
-        payload: @content
-      )
-    end
+      it "ignores entry submitted event without submission_type" do
+        @content[:metadata].delete(:submission_type)
+        expect(service).not_to receive(:create)
 
-    it "ignores entry submitted event with start submission_type" do
-      @content[:metadata][:submission_type] = "start"
-      expect(service).not_to receive(:create)
+        Verse.publish_resource_event(
+          resource_type: @resource_type,
+          resource_id: @resource_id,
+          event: "submitted",
+          payload: @content
+        )
+      end
 
-      Verse.publish_resource_event(
-        resource_type: @resource_type,
-        resource_id: @resource_id,
-        event: "submitted",
-        payload: @content
-      )
+      it "ignores entry submitted event with start submission_type" do
+        @content[:metadata][:submission_type] = "start"
+        expect(service).not_to receive(:create)
+
+        Verse.publish_resource_event(
+          resource_type: @resource_type,
+          resource_id: @resource_id,
+          event: "submitted",
+          payload: @content
+        )
+      end
     end
   end
 end
