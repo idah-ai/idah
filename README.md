@@ -2,7 +2,6 @@
 
 [![CI - App](https://github.com/idah-ai/idah/actions/workflows/ci-app.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-app.yml)
 [![CI - Common](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml)
-[![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
 [![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
 [![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](compose.yml)
 
@@ -48,7 +47,7 @@
    docker compose up -d --build
    ```
 
-   `docker compose` merges [compose.override.yml](compose.override.yml) over [compose.yml](compose.yml) automatically: it mounts the source tree and loads the development settings from `config/development/`. These files are the developer setup; an on-premise install uses the release bundle in [deploy/compose/](deploy/compose/) instead.
+   For changes only you need, add a gitignored `compose.override.yml`.
 
 4. **Initialize setup** (first time only)
    ```bash
@@ -182,7 +181,7 @@ We welcome contributions from the community!
 
 ## 📄 License
 
-This project is licensed under the **[Functional Source License (FSL)](LICENSE)**.
+This project is licensed under the **[Functional Source License (FSL)](LICENSE.md)**.
 
 ---
 

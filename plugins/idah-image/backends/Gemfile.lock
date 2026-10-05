@@ -1,0 +1,118 @@
+GIT
+  remote: https://github.com/verse-rb/verse-core.git
+  revision: 8caf189141ed50d99051a339b31125ff9e299f50
+  branch: master
+  specs:
+    verse-core (2.0.0)
+      bigdecimal (>= 3.2.0)
+      logger (>= 1.0)
+      verse-schema (>= 1)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    addressable (2.9.0)
+      public_suffix (>= 2.0.2, < 8.0)
+    ast (2.4.3)
+    attr_chainable (1.0.0)
+    bigdecimal (4.1.3)
+    bootsnap (1.26.0)
+      msgpack (~> 1.5)
+    coderay (1.1.3)
+    crack (1.0.1)
+      bigdecimal
+      rexml
+    diff-lcs (1.6.2)
+    dotenv (3.2.0)
+    hashdiff (1.2.1)
+    io-console (0.9.4)
+    json (3.0.2)
+    language_server-protocol (3.17.0.6)
+    lint_roller (1.1.0)
+    logger (1.7.0)
+    method_source (1.1.0)
+    msgpack (1.8.5)
+    observer (0.1.2)
+    parallel (2.3.0)
+    parser (3.3.12.0)
+      ast (~> 2.4.1)
+      racc
+    pkg-config (1.6.5)
+    prism (1.9.0)
+    pry (0.16.0)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+      reline (>= 0.6.0)
+    public_suffix (7.0.5)
+    racc (1.8.1)
+    rack (3.2.7)
+    rack-test (2.2.0)
+      rack (>= 1.3)
+    rainbow (3.1.1)
+    regexp_parser (2.13.1)
+    reline (0.7.0)
+      io-console (~> 0.5)
+    rexml (3.4.4)
+    rmagick (6.0.1)
+      observer (~> 0.1)
+      pkg-config (~> 1.4)
+    rspec (3.13.2)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.6)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.8)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.7)
+    rubocop (1.91.0)
+      json (>= 2.3)
+      language_server-protocol (~> 3.17.0.2)
+      lint_roller (~> 1.1.0)
+      parallel (>= 1.10)
+      parser (>= 3.3.0.2)
+      rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 2.9.3, < 3.0)
+      rubocop-ast (>= 1.49.0, < 2.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 2.4.0, < 4.0)
+    rubocop-ast (1.50.0)
+      parser (>= 3.3.7.2)
+      prism (~> 1.7)
+    ruby-progressbar (1.13.0)
+    simplecov (1.3.2)
+    unicode-display_width (3.3.0)
+      unicode-emoji (~> 4.3)
+    unicode-emoji (4.3.0)
+    verse-schema (1.2.4)
+      attr_chainable (~> 1.0)
+    webmock (3.26.4)
+      addressable (>= 2.8.0)
+      crack (>= 0.3.2)
+      hashdiff (>= 0.4.0, < 2.0.0)
+    zeitwerk (2.8.3)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  bootsnap (~> 1.16)
+  dotenv
+  pry
+  rack-test
+  rmagick (~> 6.0.1)
+  rspec (~> 3.0)
+  rubocop
+  simplecov
+  verse-core!
+  verse-schema
+  webmock
+  zeitwerk
+
+BUNDLED WITH
+   2.7.1
