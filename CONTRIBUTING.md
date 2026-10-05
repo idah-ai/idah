@@ -1,4 +1,4 @@
-# Contributing to [Project Name]
+# Contributing to IDAH
 
 First off — thank you! External contributions are what make open source thrive, and we genuinely appreciate you taking the time to help improve this project.
 
@@ -87,12 +87,12 @@ We follow **GitHub Flow**. Here's the step-by-step:
 1. **Fork** the repository to your own GitHub account.
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/PROJECT_NAME.git
-   cd PROJECT_NAME
+   git clone https://github.com/YOUR_USERNAME/idah.git
+   cd idah
    ```
 3. **Add the upstream remote** to stay in sync:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_ORG/PROJECT_NAME.git
+   git remote add upstream https://github.com/idah-ai/idah.git
    ```
 4. **Create a branch** from `main` with a descriptive name:
    ```bash
@@ -100,8 +100,10 @@ We follow **GitHub Flow**. Here's the step-by-step:
    git checkout -b feat/bulk-import-support
    git checkout -b docs/update-api-reference
    ```
-   Use the prefixes `fix/`, `feat/`, `docs/`, `chore/` to keep things clear.
-5. **Make your changes**, committing early and often (see commit conventions below).
+   Use the prefixes `fix/`, `feat/`, `docs/`, `chore/` to keep things clear. Branch names are
+   not checked; only the PR title is (see below).
+5. **Make your changes**, committing early and often. Individual commits on your branch can be
+   anything — they are squashed on merge.
 6. **Sync with upstream** before opening your PR:
    ```bash
    git fetch upstream
@@ -111,13 +113,18 @@ We follow **GitHub Flow**. Here's the step-by-step:
    ```bash
    git push origin your-branch-name
    ```
-8. **Open a Pull Request** against the `main` branch of this repository.
+8. **Open a Pull Request** against the `main` branch of this repository, with a
+   [Conventional Commits title](#commit-message-convention).
+
+   A fix for an already-released version targets that version's release branch
+   (`release/0.4`) instead — see [RELEASE.md](RELEASE.md#5-hotfixes).
 
 ### Pull Request Checklist
 
 Before submitting, make sure your PR:
 
-- [ ] Has a clear title and description explaining *what* and *why*
+- [ ] Has a [Conventional Commits title](#commit-message-convention) and a description explaining *what* and *why*
+- [ ] Marks breaking changes with `!` and describes what users must do in a `BREAKING CHANGE:` footer
 - [ ] Is focused — one concern per PR
 - [ ] Includes tests for new behaviour or bug fixes
 - [ ] Passes all existing tests and CI checks
@@ -127,25 +134,58 @@ Before submitting, make sure your PR:
 
 ## Commit Message Convention
 
-We use a simplified version of [Conventional Commits](https://www.conventionalcommits.org/):
+We use [Conventional Commits](https://www.conventionalcommits.org/) and **squash merge every
+pull request**. The **PR title becomes the commit on `main`** and a line in the release notes, so
+it is the only message that has to follow the convention — a check blocks merging otherwise.
 
 ```
-<type>: <short summary>
+<type>(<scope>)<!>: <summary>
 
-[optional body — explain why, not what]
+[body — explain why, not what]
+
+[footers]
 ```
 
-**Types:** `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`
+- **Summary**: imperative mood, lower case, no trailing period, under 72 characters.
+- **Scope** (optional): the part of the system a changelog reader recognises — `iam`, `dataset`,
+  `media`, `sync`, `audit`, `notification`, `setting`, `frontend`, `common`, `idah-image`,
+  `idah-video`, `plugin-cli`, `deploy`, `installer`. Leave it out for platform-wide changes.
+- **`!`** after the type or scope, or a `BREAKING CHANGE:` footer, marks a breaking change.
+
+| Type       | Use for                                               | In release notes |
+|------------|-------------------------------------------------------|:----------------:|
+| `feat`     | A capability users or API consumers could not use before | ✅ |
+| `fix`      | Behaviour that was wrong and is now right             | ✅ |
+| `perf`     | Faster or lighter, same behaviour                     | ✅ |
+| `revert`   | Reverting an earlier change                           | ✅ |
+| `refactor` | Internal change, no behaviour change                  | — |
+| `docs`     | Documentation only                                    | — |
+| `test`     | Tests only                                            | — |
+| `build`    | Dockerfiles, dependencies, package manifests          | — |
+| `ci`       | GitHub workflows and CI scripts                       | — |
+| `chore`    | Anything else that ships nothing                      | — |
 
 Examples:
 ```
-feat: add multi-label support to annotation export
-fix: prevent crash when dataset is empty
+feat(sync): add multi-label support to COCO export
+fix(dataset): prevent crash when dataset is empty
+perf(media): stream zip entries instead of buffering the archive
+feat(iam)!: require organization scope on API keys
 docs: clarify authentication setup in README
-chore: update dependencies
+build(frontend): bump svelte to 5.2
 ```
 
-Keep the summary under 72 characters.
+A few rules of thumb:
+
+- **"Enhance", "improve" and "update" are not types.** If users could not do it before, it is
+  `feat`; if they could but it was wrong, `fix`; if nobody outside the team would notice,
+  `refactor`.
+- **Changes to export formats or stored annotation data are breaking** unless they are strictly
+  additive, because they break downstream pipelines without raising an error.
+- **Ticket references go in a footer**, not the title — `Closes #42`, or `Refs: CU-869f1cbzt`
+  for maintainers.
+
+The type decides the next version number — see [RELEASE.md](RELEASE.md#2-commit-convention).
 
 ---
 
