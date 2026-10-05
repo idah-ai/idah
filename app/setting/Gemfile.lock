@@ -10,8 +10,8 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-http
-  revision: f96ae0f9a117a8ca5dea014ac3025cb526b9599a
-  branch: features/migrate-to-sinatra-4
+  revision: e8f6c545cff3507f815ed4b7bece8c541973a6e1
+  branch: master
   specs:
     verse-http (0.1.0)
       jwt (~> 2.7.1)
