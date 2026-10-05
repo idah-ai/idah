@@ -15,11 +15,11 @@
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { Spinner } from "@/components/ui/spinner";
   import Text from "@/components/ui/text/Text.svelte";
   import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
   import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/note-comment-card.svelte";
   import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/note-feed-card.svelte";
+  import NoteCardLoading from "@/plugin/layout/sidebar/notes/cards/NoteCardLoading.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
@@ -328,7 +328,9 @@
         <!-- CONTENT::LIST VIEW -->
         {#if isListView}
           {#await loadNoteFeeds()}
-            <Spinner />
+            {#each Array.from({ length: 8 }) as _, i (i)}
+              <NoteCardLoading />
+            {/each}
           {:then noteFeeds}
             {#each noteFeeds as noteFeed (noteFeed.id)}
               <NoteFeedCard

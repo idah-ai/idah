@@ -19,8 +19,8 @@
   interface Props {
     noteFeedId: string;
     noteCommentId?: string;
-    content_md: string;
-    feedbackKeys: string[];
+    content_md: string | null;
+    feedbackKeys: string[] | null;
     edited_at?: Date | string | null;
     created_by_email: string;
     created_at: Date | string;
@@ -30,7 +30,7 @@
     highlighted?: boolean;
 
     onClick?: () => void;
-    onUpdateContentMd: (newContentMd: string) => Promise<void>;
+    onUpdate: (params: { editedContentMd: string | null; editedFeedbackKeys: string[] | null }) => Promise<void>;
     onDelete?: () => Promise<void>;
 
     headerIcon?: Snippet;
@@ -49,7 +49,7 @@
     deletable = false,
     highlighted = false,
     onClick,
-    onUpdateContentMd,
+    onUpdate,
     onDelete,
     headerIcon,
     headerActions,
@@ -59,11 +59,12 @@
   // Variables
   const resource: Resource = "dataset:note_feeds";
 
-  let editedContentMd = $state<string>(content_md);
-  let editedFeedbackKeys = $state<string[]>(feedbackKeys);
+  let editedContentMd = $state<string | null>(content_md);
+  let editedFeedbackKeys = $state<string[]>(feedbackKeys ?? []);
   let mode = $state<"view" | "edit">("view");
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
+  let disabledSaveButton = $derived(!editedContentMd?.trim() && editedFeedbackKeys.length === 0);
 
   function formatEditedTooltip(dateStr?: Date | string | null): string {
     if (!dateStr) return "";
@@ -138,7 +139,7 @@
           {/if}
         </div>
 
-        <NoteFeedbackBadges {feedbackKeys} />
+        <NoteFeedbackBadges feedbackKeys={feedbackKeys ?? []} />
       </div>
 
       <!-- HEADER::ACTIONS -->
@@ -160,7 +161,7 @@
   <!-- CONTENT -->
   <div class="flex flex-1 flex-col items-start gap-1 overflow-x-hidden text-xs">
     {#if isViewMode}
-      <MarkdownPreview value={truncate(content_md, 140)} />
+      <MarkdownPreview value={truncate(content_md ?? "", 140)} />
 
       {@render contentActions?.()}
     {/if}
@@ -195,9 +196,10 @@
 
         <Button
           size="sm"
+          disabled={disabledSaveButton}
           onclick={async (e) => {
             e.stopPropagation();
-            await onUpdateContentMd(editedContentMd);
+            await onUpdate({ editedContentMd, editedFeedbackKeys });
             switchToViewMode();
           }}
         >

@@ -23,7 +23,7 @@
   const feedbackItem = $derived(feedbackConfigMap.get(feedbackKey));
 </script>
 
-<Tooltips align="start" class="w-fit min-w-0">
+<Tooltips align="start" class="w-fit min-w-0" delayDuration={1000}>
   {#snippet trigger()}
     <Badge variant={feedbackItem ? "info" : "destructive"} class="max-w-60 justify-start text-left">
       <span class="truncate">

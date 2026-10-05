@@ -380,10 +380,10 @@ export interface INoteRecord {
   anchor: INoteAnchor;
 
   /** Markdown content of the note. */
-  content_md?: string;
+  content_md?: string | null;
 
   /** Feedback keys */
-  feedback_keys?: string[];
+  feedback_keys?: string[] | null;
 
   /** Whether the note thread is resolved. */
   resolved?: boolean;

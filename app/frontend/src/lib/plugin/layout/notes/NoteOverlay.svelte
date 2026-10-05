@@ -494,7 +494,9 @@
             {#each comments as comment (comment.id)}
               <div
                 data-comment-id={comment.id}
-                class={["rounded border-b px-3 py-2", highlightedCommentId === comment.id ? "bg-muted" : ""].join(" ")}
+                class={["rounded border-b py-2 pr-3 pl-6", highlightedCommentId === comment.id ? "bg-muted" : ""].join(
+                  " ",
+                )}
               >
                 <div class="flex items-center gap-1.5 text-sm">
                   <span class="font-semibold">{comment.created_by_email}</span>

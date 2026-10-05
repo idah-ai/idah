@@ -7,7 +7,7 @@
 
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
-  import { deleteNoteFeed, updateNoteFeedContentMd } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
+  import { deleteNoteFeed, updateNoteFeedContent } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
   import { AuthContext } from "@/security/AuthContext";
   import { cn } from "@/utils";
 
@@ -53,9 +53,17 @@
     return noteCommentsRes.data;
   }
 
-  async function updateNoteFeed(editedContentMd: string) {
-    const updatedNoteFeedRes = await updateNoteFeedContentMd(id, editedContentMd);
+  async function updateNoteFeed(params: { editedContentMd: string | null; editedFeedbackKeys: string[] | null }) {
+    const { editedContentMd, editedFeedbackKeys } = params;
+
+    const updatedNoteFeedRes = await updateNoteFeedContent({
+      id,
+      newContentMd: editedContentMd,
+      newFeedbackKeys: editedFeedbackKeys,
+    });
+
     if (!updatedNoteFeedRes) return;
+
     onNoteFeedUpdated?.(updatedNoteFeedRes);
   }
 </script>
@@ -71,7 +79,7 @@
   deletable={isOwner}
   {highlighted}
   onClick={selectNoteFeed}
-  onUpdateContentMd={updateNoteFeed}
+  onUpdate={updateNoteFeed}
   onDelete={async () => {
     await deleteNoteFeed(id);
     await onNoteFeedDeleted?.();

@@ -39,6 +39,16 @@
 
   driver.onModeChange((event) => {
     currentMode = event.newValue;
+
+    switch (currentMode) {
+      case "review": {
+        noteSidebarOpen = true;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
   });
 
   driver.notesAdapter!.onNoteSidebarChange((open) => {
