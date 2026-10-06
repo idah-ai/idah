@@ -113,6 +113,18 @@ RSpec.describe Dataset, database: true do
       expect(dataset.status).to eq("in_progress")
     end
 
+    it "excludes submitted errored entries from submitted progress" do
+      id = entry_repo.create({ project_id:, dataset_id:, status: "pending", wf_step: "review" })
+      entry_repo.update!(id, { submitted_by_id: 1, submitted_by_email: "a@example.com" })
+      expect(subject.find!(dataset_id).entries_submitted_count).to eq(1)
+
+      entry_repo.update!(id, { status: "errored" })
+      expect(subject.find!(dataset_id).entries_submitted_count).to eq(0)
+
+      entry_repo.update!(id, { status: "pending" })
+      expect(subject.find!(dataset_id).entries_submitted_count).to eq(1)
+    end
+
     it "resets to pending with zero progress when the last entry is deleted" do
       entry_id = add_entry("completed")
       subject.update_progress!(dataset_id)
