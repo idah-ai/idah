@@ -51,7 +51,6 @@ idah/
 ├── plugins/            # Production plugins
 ├── plugins_dev/        # Plugin development CLI & templates
 ├── dev/                # Dev infrastructure (nginx config, ssl, rake tasks)
-├── doc/                # Documentation assets
 └── deploy/             # On-premise installer and compose bundle
 ```
 
