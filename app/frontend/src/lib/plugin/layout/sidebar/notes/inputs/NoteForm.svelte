@@ -46,7 +46,7 @@
     contentValue,
     onContentChange,
     contentLabel = "Comment",
-    contentPlaceholder = "Leave a comment here (optional)",
+    contentPlaceholder = "Leave a comment here",
 
     // Cancel button
     showCancel = false,

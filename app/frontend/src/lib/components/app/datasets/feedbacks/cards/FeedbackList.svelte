@@ -47,7 +47,7 @@
       {:else}
         <ResponseBlock
           title="No feedback items yet."
-          description="Create feedback items to give reviewers clear, consistent guidance when reviewing this dataset."
+          description="Add your first feedback item so reviewers can attach it to notes."
           icon={MessageSquareDashedIcon}
         >
           {#snippet actions()}

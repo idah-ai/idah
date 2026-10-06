@@ -28,10 +28,7 @@
 </script>
 
 <section class="mb-4">
-  <Text size="sm" class="text-muted-foreground">
-    Reusable feedback reviewers can attach to a note in one click, with an optional comment, instead of retyping the
-    same note on every entry, frame, or annotation. Available on the Video and Image
-  </Text>
+  <Text size="sm" class="text-muted-foreground">Pre-configured feedback reviewers can attach to notes.</Text>
 </section>
 
 <DatasetFeedbackManagement />

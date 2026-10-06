@@ -546,16 +546,10 @@
           showFeedbackField={isCreating}
           feedbackValues={selectedFeedbackKeys}
           onFeedbackSelected={(selected) => (selectedFeedbackKeys = selected)}
-          contentValue={isCreating ? contentMd : editingContentMd}
+          contentValue={contentMd}
           contentLabel={isCreating ? "Comment" : "Reply"}
-          contentPlaceholder={isCreating ? "Leave a comment here (optional)" : "Leave a reply here"}
-          onContentChange={(newValue) => {
-            if (isCreating) {
-              contentMd = newValue;
-            } else {
-              editingContentMd = newValue;
-            }
-          }}
+          contentPlaceholder={isCreating ? "Leave a comment here" : "Leave a reply here"}
+          onContentChange={(newValue) => (contentMd = newValue)}
           submitLabel={isCreating ? "Add Note" : "Reply"}
           {loading}
           loadingLabel={isCreating ? "Adding..." : "Replying..."}

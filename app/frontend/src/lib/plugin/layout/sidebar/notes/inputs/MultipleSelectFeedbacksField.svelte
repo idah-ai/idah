@@ -23,25 +23,31 @@
     onSelected: (selectedValues: string[]) => void;
   }
   let { values, onSelected }: Props = $props();
+
+  const choices = $derived(
+    Object.entries(driver.feedbackConfig).map(([feedbackItemKey, feedbackItem]) => ({
+      label: feedbackItem.label,
+      value: feedbackItemKey,
+      description: feedbackItem.description ?? undefined,
+    })),
+  );
 </script>
 
-<MultipleSelectField
-  name="{resource}/feedback"
-  placeholder="Select feedbacks"
-  choices={Object.entries(driver.feedbackConfig).map(([feedbackItemKey, feedbackItem]) => ({
-    label: feedbackItem.label,
-    value: feedbackItemKey,
-    description: feedbackItem.description ?? undefined,
-  }))}
-  clearable
-  {values}
-  onSelected={(selectedChoices) => onSelected(selectedChoices.map((choice) => String(choice.value)))}
->
-  {#snippet slotLabel()}
-    <FieldLabel class="text-xs">Feedback</FieldLabel>
-  {/snippet}
+{#if choices.length > 0}
+  <MultipleSelectField
+    name="{resource}/feedback"
+    placeholder="Select feedbacks"
+    {choices}
+    clearable
+    {values}
+    onSelected={(selectedChoices) => onSelected(selectedChoices.map((choice) => String(choice.value)))}
+  >
+    {#snippet slotLabel()}
+      <FieldLabel class="text-xs">Feedback</FieldLabel>
+    {/snippet}
 
-  {#snippet slotTriggerValues({ selectedChoices })}
-    <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} truncateLength={8} />
-  {/snippet}
-</MultipleSelectField>
+    {#snippet slotTriggerValues({ selectedChoices })}
+      <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} truncateLength={8} />
+    {/snippet}
+  </MultipleSelectField>
+{/if}

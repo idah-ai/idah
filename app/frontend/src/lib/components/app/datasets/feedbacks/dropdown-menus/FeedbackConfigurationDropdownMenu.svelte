@@ -126,7 +126,7 @@
     {#snippet trigger({ props })}
       <Button {...props} variant="outline" class="w-fit">
         <LayersIcon />
-        Templates
+        Feedback Templates
         <ChevronsUpDownIcon />
       </Button>
     {/snippet}

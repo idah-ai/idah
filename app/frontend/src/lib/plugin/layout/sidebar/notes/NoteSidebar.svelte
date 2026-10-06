@@ -398,8 +398,8 @@
         contentValue={contentMd}
         onContentChange={(newValue) => (contentMd = newValue)}
         contentLabel={isListView ? "Comment" : "Reply"}
-        contentPlaceholder={isListView ? "Leave a comment here (optional)" : "Leave a reply here"}
-        submitLabel={isListView ? "Comment" : "Reply"}
+        contentPlaceholder={isListView ? "Leave a comment here" : "Leave a reply here"}
+        submitLabel={isListView ? "Add Note" : "Reply"}
         loading={isSubmitting}
         loadingLabel={isListView ? "Commenting..." : "Replying..."}
         disabled={!isAllowToCreateNewNote}

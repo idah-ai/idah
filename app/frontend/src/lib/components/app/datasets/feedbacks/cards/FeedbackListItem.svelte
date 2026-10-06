@@ -41,8 +41,8 @@
           destructive: true,
           action: async () => {
             await showConfirmModal({
-              title: "Delete feedback item?",
-              description: `This will permanently delete "${feedbackItem.label}". This action cannot be undone.`,
+              title: "Delete Feedback Item?",
+              description: `Are you sure you want to delete this feedback item "${feedbackItem.label}"? This action cannot be undone.`,
               confirmLabel: "Yes, Delete",
               onConfirm: () => {
                 controller.deleteItem(feedbackItemKey);
