@@ -4,7 +4,6 @@
     ArrowLeftIcon,
     FunnelIcon,
     MessageCircleDashedIcon,
-    ReplyIcon,
     SquareCheckBigIcon,
     SquareIcon,
     XIcon,
@@ -16,9 +15,8 @@
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
   import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/NoteCommentCard.svelte";
-  import NoteContentMdField from "@/plugin/layout/sidebar/notes/inputs/NoteContentMdField.svelte";
+  import NoteForm from "@/plugin/layout/sidebar/notes/inputs/NoteForm.svelte";
   import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/NoteFeedCard.svelte";
   import NoteCardLoading from "@/plugin/layout/sidebar/notes/cards/NoteCardLoading.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
@@ -56,8 +54,6 @@
   let isSubmitting = $state<boolean>(false);
   let contentMd = $state<string>("");
   let feedbackKeys = $state<string[]>([]);
-
-  const disabledSubmitButton = $derived(!contentMd.trim() && feedbackKeys.length === 0);
 
   let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
 
@@ -232,7 +228,6 @@
 
   async function createNote() {
     if (!isAllowToCreateNewNote) return;
-    if (disabledSubmitButton) return;
 
     isSubmitting = true;
 
@@ -396,33 +391,20 @@
     <section
       class="bg-background sticky bottom-0 mt-auto flex flex-col gap-4 border-t p-2 shadow-[0_-8px_20px_-6px_rgba(0,0,0,0.15)]"
     >
-      {#if isListView}
-        <MultipleSelectFeedbacksField values={feedbackKeys} onSelected={(selected) => (feedbackKeys = selected)} />
-      {/if}
-
-      <NoteContentMdField
-        label={isListView ? "Comment" : "Reply"}
-        placeholder={isListView ? "Leave a comment here (optional)" : "Leave a reply here"}
-        value={contentMd}
-        oninput={(e) => (contentMd = e.currentTarget.value)}
+      <NoteForm
+        showFeedbackField={isListView}
+        feedbackValues={feedbackKeys}
+        onFeedbackSelected={(selected) => (feedbackKeys = selected)}
+        contentValue={contentMd}
+        onContentChange={(newValue) => (contentMd = newValue)}
+        contentLabel={isListView ? "Comment" : "Reply"}
+        contentPlaceholder={isListView ? "Leave a comment here (optional)" : "Leave a reply here"}
+        submitLabel={isListView ? "Comment" : "Reply"}
+        loading={isSubmitting}
+        loadingLabel={isListView ? "Commenting..." : "Replying..."}
+        disabled={!isAllowToCreateNewNote}
+        onSubmit={createNote}
       />
-
-      <div class="flex w-full justify-end">
-        <Button
-          disabled={isAllowToCreateNewNote && (disabledSubmitButton || isSubmitting)}
-          loading={isSubmitting}
-          loadingLabel={isListView ? "Commenting..." : "Replying..."}
-          size="sm"
-          onclick={createNote}
-        >
-          {#if isListView}
-            Comment
-          {:else}
-            <ReplyIcon />
-            Reply
-          {/if}
-        </Button>
-      </div>
     </section>
   </div>
 {/if}

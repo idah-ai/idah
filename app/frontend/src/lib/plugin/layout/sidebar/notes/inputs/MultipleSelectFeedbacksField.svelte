@@ -42,6 +42,6 @@
   {/snippet}
 
   {#snippet slotTriggerValues({ selectedChoices })}
-    <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} truncateLength={10} />
+    <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} truncateLength={8} />
   {/snippet}
 </MultipleSelectField>

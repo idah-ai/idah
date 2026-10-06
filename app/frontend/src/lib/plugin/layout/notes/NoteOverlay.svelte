@@ -1,21 +1,18 @@
 <script lang="ts">
   import { onDestroy, onMount, setContext } from "svelte";
   import { page } from "$app/state";
-  import { PlusIcon, ReplyIcon, SaveIcon, XIcon } from "@lucide/svelte";
+  import { XIcon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import { Kbd, KbdGroup } from "@/components/ui/kbd";
   import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
-  import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
-  import NoteContentMdField from "@/plugin/layout/sidebar/notes/inputs/NoteContentMdField.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
+  import NoteForm from "@/plugin/layout/sidebar/notes/inputs/NoteForm.svelte";
   import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { AuthContext } from "@/security/AuthContext";
-  import { modKeyLabel } from "@/plugin/v2/utils/browser";
   import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { refetches } from "@/utils/refetch";
@@ -55,9 +52,7 @@
 
   let unsubFns: Array<() => void> = [];
 
-  let modKey = $derived(modKeyLabel());
   let disableSubmitButton = $derived(selectedFeedbackKeys.length === 0 && !contentMd.trim());
-  let disableUpdateButton = $derived(editingFeedbackKeys.length === 0 && !editingContentMd.trim());
 
   // Owner checks
   let isSelectedNoteOwner = $derived(AuthContext.currentAuthContext?.email === selectedNote?.created_by_email);
@@ -345,15 +340,8 @@
   <div
     class="fixed z-40"
     style="left: {x}px; top: {y}px;"
-    tabindex="-1"
     role="dialog"
     aria-label={isCreating ? "New note" : "Note details"}
-    onkeydown={(e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleSubmit();
-      }
-    }}
   >
     <div class="bg-background border-border min-w-80 rounded-lg border shadow-lg">
       <!-- HEADER -->
@@ -471,32 +459,18 @@
             {/if}
 
             {#if editingFeedContent}
-              <div class="mt-4 flex flex-col gap-2">
-                <MultipleSelectFeedbacksField
-                  values={editingFeedbackKeys}
-                  onSelected={(selected) => (editingFeedbackKeys = selected)}
+              <div class="mt-4">
+                <NoteForm
+                  feedbackValues={editingFeedbackKeys}
+                  onFeedbackSelected={(selected) => (editingFeedbackKeys = selected)}
+                  contentValue={editingContentMd}
+                  onContentChange={(newValue) => (editingContentMd = newValue)}
+                  submitLabel="Save"
+                  onSubmit={() =>
+                    handleUpdateFeedContent({ newMd: editingContentMd, newFeedbackKeys: editingFeedbackKeys })}
+                  showCancel
+                  onCancel={cancelEdit}
                 />
-
-                <NoteContentMdField
-                  label="Comment"
-                  placeholder="Leave a comment here (optional)"
-                  value={editingContentMd}
-                  oninput={(e) => (editingContentMd = e.currentTarget.value)}
-                />
-
-                <div class="flex w-full items-center justify-end gap-2">
-                  <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
-
-                  <Button
-                    size="sm"
-                    disabled={disableUpdateButton}
-                    onclick={() =>
-                      handleUpdateFeedContent({ newMd: editingContentMd, newFeedbackKeys: editingFeedbackKeys })}
-                  >
-                    <SaveIcon />
-                    Save
-                  </Button>
-                </div>
               </div>
             {:else}
               <div class="mt-2 text-sm"><MarkdownPreview value={selectedNote.content_md ?? ""} /></div>
@@ -547,22 +521,16 @@
                 </div>
 
                 {#if editingCommentId === comment.id}
-                  <textarea
-                    class="border-border mt-2 w-full resize-none rounded border p-1.5 text-sm"
-                    rows="2"
-                    bind:value={editingContentMd}
-                  ></textarea>
-                  <div class="mt-2 ml-auto flex w-fit items-center gap-2">
-                    <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
-                    <Button
-                      size="sm"
-                      onclick={() => handleUpdateComment(comment.id, editingContentMd)}
-                      disabled={!editingContentMd.trim()}
-                    >
-                      <SaveIcon />
-                      Save
-                    </Button>
-                  </div>
+                  <NoteForm
+                    showFeedbackField={false}
+                    feedbackValues={editingFeedbackKeys}
+                    onFeedbackSelected={(selected) => (editingFeedbackKeys = selected)}
+                    contentValue={editingContentMd}
+                    onContentChange={(newValue) => (editingContentMd = newValue)}
+                    showCancel
+                    onCancel={cancelEdit}
+                    onSubmit={() => handleUpdateComment(comment.id, editingContentMd)}
+                  />
                 {:else}
                   <div class="mt-2 text-sm">
                     <MarkdownPreview value={comment.content_md} />
@@ -573,51 +541,26 @@
           </section>
         {/if}
 
-        <section class="grid gap-4 p-3">
-          {#if isCreating}
-            <MultipleSelectFeedbacksField
-              values={selectedFeedbackKeys}
-              onSelected={(selected) => (selectedFeedbackKeys = selected)}
-            />
-
-            <NoteContentMdField
-              label="Comment"
-              placeholder="Leave a comment here (optional)"
-              value={contentMd}
-              oninput={(e) => (contentMd = e.currentTarget.value)}
-            />
-          {:else}
-            <NoteContentMdField
-              label="Reply"
-              placeholder="Leave a reply here"
-              value={editingContentMd}
-              oninput={(e) => (editingContentMd = e.currentTarget.value)}
-            />
-          {/if}
-        </section>
-      </div>
-
-      <!-- FOOTER -->
-      <div class="flex justify-end border-t px-3 py-2">
-        <Button
-          size="sm"
+        <NoteForm
+          class="gap-3 p-3"
+          showFeedbackField={isCreating}
+          feedbackValues={selectedFeedbackKeys}
+          onFeedbackSelected={(selected) => (selectedFeedbackKeys = selected)}
+          contentValue={isCreating ? contentMd : editingContentMd}
+          contentLabel={isCreating ? "Comment" : "Reply"}
+          contentPlaceholder={isCreating ? "Leave a comment here (optional)" : "Leave a reply here"}
+          onContentChange={(newValue) => {
+            if (isCreating) {
+              contentMd = newValue;
+            } else {
+              editingContentMd = newValue;
+            }
+          }}
+          submitLabel={isCreating ? "Add Note" : "Reply"}
           {loading}
           loadingLabel={isCreating ? "Adding..." : "Replying..."}
-          disabled={isCreating ? disableSubmitButton : disableUpdateButton}
-          onclick={handleSubmit}
-        >
-          {#if isCreating}
-            <PlusIcon />
-            Add Note
-          {:else}
-            <ReplyIcon />
-            Reply
-          {/if}
-
-          <KbdGroup>
-            <Kbd>{modKey} ↵</Kbd>
-          </KbdGroup>
-        </Button>
+          onSubmit={handleSubmit}
+        />
       </div>
     </div>
   </div>

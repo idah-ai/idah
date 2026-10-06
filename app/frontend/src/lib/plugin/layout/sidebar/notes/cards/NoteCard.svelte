@@ -1,14 +1,11 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { SaveIcon } from "@lucide/svelte";
 
-  import Button from "@/components/ui/button/button.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import NoteContentMdField from "@/plugin/layout/sidebar/notes/inputs/NoteContentMdField.svelte";
+  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
   import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
-  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
-  import MultipleSelectFeedbacksField from "@/plugin/layout/sidebar/notes/inputs/MultipleSelectFeedbacksField.svelte";
+  import NoteForm from "@/plugin/layout/sidebar/notes/inputs/NoteForm.svelte";
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -62,7 +59,7 @@
   let mode = $state<"view" | "edit">("view");
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
-  let disabledSaveButton = $derived(!editedContentMd?.trim() && editedFeedbackKeys.length === 0);
+  const isNoteComment = $derived(noteCommentId !== undefined);
 
   function formatEditedTooltip(dateStr?: Date | string | null): string {
     if (!dateStr) return "";
@@ -166,46 +163,24 @@
 
     <!-- EDIT FORM -->
     {#if isEditMode}
-      <div class="grid gap-2">
-        <MultipleSelectFeedbacksField
-          values={editedFeedbackKeys}
-          onSelected={(selected) => (editedFeedbackKeys = selected)}
-        />
-
-        <NoteContentMdField
-          label="Comment"
-          placeholder="Leave a comment here (optional)"
-          value={editedContentMd}
-          oninput={(e) => (editedContentMd = e.currentTarget.value)}
-        />
-      </div>
-
-      <div class="mt-2 ml-auto flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={(e) => {
-            e.stopPropagation();
-            editedContentMd = content_md;
-            switchToViewMode();
-          }}
-        >
-          Cancel
-        </Button>
-
-        <Button
-          size="sm"
-          disabled={disabledSaveButton}
-          onclick={async (e) => {
-            e.stopPropagation();
-            await onUpdate({ editedContentMd, editedFeedbackKeys });
-            switchToViewMode();
-          }}
-        >
-          <SaveIcon />
-          Save
-        </Button>
-      </div>
+      <NoteForm
+        showFeedbackField={!isNoteComment}
+        feedbackValues={editedFeedbackKeys}
+        onFeedbackSelected={(selected) => (editedFeedbackKeys = selected)}
+        contentValue={editedContentMd}
+        onContentChange={(newValue) => (editedContentMd = newValue)}
+        submitLabel="Save"
+        onSubmit={async () => {
+          await onUpdate({ editedContentMd, editedFeedbackKeys });
+          switchToViewMode();
+        }}
+        showCancel
+        onCancel={() => {
+          editedContentMd = content_md;
+          editedFeedbackKeys = feedbackKeys ?? [];
+          switchToViewMode();
+        }}
+      />
     {/if}
   </section>
 </div>

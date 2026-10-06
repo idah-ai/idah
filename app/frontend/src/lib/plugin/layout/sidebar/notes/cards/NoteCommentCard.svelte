@@ -57,6 +57,7 @@
   noteFeedId={note_feed_id}
   noteCommentId={id}
   {content_md}
+  feedbackKeys={[]}
   {created_by_email}
   {created_at}
   {edited_at}
