@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "CLI tool to generate and manage plugins for the IDAH platform",
   "type": "module",
+  "packageManager": "pnpm@10.15.1",
   "main": "./_cli/src/index.js",
   "bin": {
     "idah-plugin": "./_cli/bin/cli.js"
@@ -18,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "npm test"
+    "prepublishOnly": "pnpm test"
   },
   "keywords": [
     "idah",
