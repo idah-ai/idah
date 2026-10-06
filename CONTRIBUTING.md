@@ -150,6 +150,7 @@ it is the only message that has to follow the convention — a check blocks merg
 - **Scope** (optional): the part of the system a changelog reader recognises — `iam`, `dataset`,
   `media`, `sync`, `audit`, `notification`, `setting`, `frontend`, `common`, `idah-image`,
   `idah-video`, `plugin-cli`, `deploy`, `installer`. Leave it out for platform-wide changes.
+  Dependabot uses `deps` and `deps-dev` for its dependency updates.
 - **`!`** after the type or scope, or a `BREAKING CHANGE:` footer, marks a breaking change.
 
 | Type       | Use for                                               | In release notes |

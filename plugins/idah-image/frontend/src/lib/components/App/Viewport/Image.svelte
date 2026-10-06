@@ -10,10 +10,38 @@
   // ── Element refs ──────────────────────────────────────────────────
   let imageElement: HTMLImageElement;
 
+  // ── Gamma correction via SVG filter ─────────────────────────────────
+  //
+  // CSS has no native gamma() filter, so we use an SVG <feComponentTransfer>
+  // and update its exponent reactively via $effect.
+  let gammaFilter: SVGFilterElement | undefined;
+
+  $effect(() => {
+    if (!gammaFilter) return;
+    const exp = Math.max(0.05, 1 + ui.imageGamma / 100);
+    const funcs = gammaFilter.querySelectorAll<SVGElement>("feFuncR, feFuncG, feFuncB");
+    for (const fn of funcs) {
+      fn.setAttribute("exponent", String(exp));
+    }
+  });
+
   onMount(() => {
     imageElement.addEventListener("resize", () => onResize());
   });
 </script>
+
+<!-- Hidden SVG filter for gamma correction -->
+<svg style="display:none" aria-hidden="true">
+  <defs>
+    <filter id="image-gamma" bind:this={gammaFilter}>
+      <feComponentTransfer>
+        <feFuncR type="gamma" amplitude="1" exponent="1" offset="0" />
+        <feFuncG type="gamma" amplitude="1" exponent="1" offset="0" />
+        <feFuncB type="gamma" amplitude="1" exponent="1" offset="0" />
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
 
 <div class="image-wrapper" style="width: {media.width}px; height: {media.height}px;" bind:this={element}>
   <img
@@ -22,7 +50,7 @@
     {src}
     alt=""
     class={["image-element", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-    style="opacity: {ui.imageOpacity / 100};"
+    style="opacity: {ui.imageOpacity / 100}; filter: contrast({1 + ui.imageContrast / 100}) brightness({1 + ui.imageBrightness / 100}) saturate({1 + ui.imageSaturation / 100}) hue-rotate({ui.imageHue * 1.8}deg) url(#image-gamma);"
     onload={() => {
       // Image loaded — container layout is now final. Re-fit.
       requestAnimationFrame(() => {
