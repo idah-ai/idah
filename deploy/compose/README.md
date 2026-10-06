@@ -120,6 +120,18 @@ Off after an install. Uncomment `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`,
 `MAIL_SMTP_USER` and `MAIL_SMTP_PASSWORD` and fill them in, then
 `docker compose up -d`.
 
+Until then, no email is sent: the notification service writes each one to its
+log instead, with the recipient, the subject and the text, including the link
+in an invitation or a password reset. Pass that link on to the person:
+
+```bash
+docker compose logs notification | grep -A 20 "Email not sent"
+```
+
+Those links work like one-time passwords, so anyone who can read the logs can
+use them. Keep the logs on this host, or set up email before forwarding them
+anywhere.
+
 ### Serving HTTPS
 
 IDAH serves plain HTTP on `IDAH_HTTP_PORT`, and can serve HTTPS itself from a
