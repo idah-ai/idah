@@ -40,7 +40,7 @@ GEM
     mcp (0.25.0)
       json_schemer (>= 2.4)
     method_source (1.1.0)
-    msgpack (1.8.0)
+    msgpack (1.8.2)
     observer (0.1.2)
     parallel (1.27.0)
     parser (3.3.10.2)
