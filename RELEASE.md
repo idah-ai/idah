@@ -209,8 +209,10 @@ git push origin v0.2.0
 
 ### 4.5 Write the release notes
 
-Edit the GitHub Release CD created. Use GitHub's *Generate release notes* against the previous
-stable tag as a starting point, then arrange it as:
+CD creates the GitHub Release with generated notes: the title of every pull request merged since
+the previous stable version (candidates are skipped, so `v0.2.0-rc.1` and `v0.2.0` both list the
+changes since `v0.1.x`). PR titles are checked Conventional Commits, so the list reads as a
+changelog. Edit the release to add what a list of titles cannot say, and arrange it as:
 
 ```markdown
 ## Highlights
