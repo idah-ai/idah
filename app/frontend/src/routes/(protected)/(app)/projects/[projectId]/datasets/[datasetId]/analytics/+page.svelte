@@ -28,7 +28,7 @@
     projectBreadcrumb,
     { label: project.name },
     { label: "Datasets" },
-    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets/`) },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
     { label: "Analytics" },
   ]);
 </script>

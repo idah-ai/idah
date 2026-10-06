@@ -154,7 +154,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             default: 100,
             min: 5,
             max: 1000,
-            step: 1,
+            step: 5,
             disabled: () => !ui.gridEnabled,
             get: () => ui.gridSize,
             set: (v: number) => (ui.gridSize = v),
