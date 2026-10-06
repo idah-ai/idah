@@ -257,7 +257,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  bcrypt (~> 3.1.20)
+  bcrypt (~> 3.1.22)
   bootsnap (~> 1.16)
   dotenv
   opentelemetry-instrumentation-net_http
