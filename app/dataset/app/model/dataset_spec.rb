@@ -126,6 +126,34 @@ RSpec.describe Dataset, database: true do
       expect(dataset.progress).to eq(0.0)
     end
 
+    %w[pending in_progress errored].each do |status|
+      it "recalculates progress after deleting a #{status} entry" do
+        add_entry("completed")
+        entry_id = add_entry(status)
+        subject.update_progress!(dataset_id)
+
+        entry_repo.delete!(entry_id)
+        subject.update_progress!(dataset_id)
+
+        dataset = subject.find!(dataset_id)
+        expect(dataset.progress).to eq(1.0)
+        expect(dataset.status).to eq("completed")
+      end
+    end
+
+    it "recalculates progress after deleting a completed entry" do
+      completed_entry_id = add_entry("completed")
+      add_entry("pending")
+      subject.update_progress!(dataset_id)
+
+      entry_repo.delete!(completed_entry_id)
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.0)
+      expect(dataset.status).to eq("pending")
+    end
+
     it "reopens a completed dataset to in_progress when a new unassigned entry is added" do
       add_entry("completed")
       subject.update_progress!(dataset_id)
