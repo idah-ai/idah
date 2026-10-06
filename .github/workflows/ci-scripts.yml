@@ -1,0 +1,118 @@
+# Scripts CI workflow
+#
+# Checks the release and install scripts when a pull request changes them:
+#
+#   lint       shellcheck on every script, and bin/tag-release's tests
+#   installer  builds the three images from the pull request, builds the
+#              installer bundle, and installs it as a customer would
+#
+# The upgrade from the previous release needs published images, so it runs in
+# CD - App on every version tag instead.
+
+name: CI - Scripts
+
+on:
+  pull_request:
+    types:
+      - ready_for_review
+      - synchronize
+      - opened
+      - reopened
+
+concurrency:
+  group: ${{ github.head_ref }}-scripts
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      scripts: ${{ steps.filter.outputs.scripts }}
+      installer: ${{ steps.filter.outputs.installer }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            scripts:
+              - 'bin/tag-release*'
+              - 'deploy/compose/install.sh'
+              - '.github/scripts/**'
+              - '.github/workflows/ci-scripts.yml'
+            installer:
+              - 'deploy/compose/**'
+              - '.github/scripts/build-bundle.sh'
+              - '.github/scripts/test-installer.sh'
+              - '.github/workflows/ci-scripts.yml'
+
+  lint:
+    name: Lint and test scripts
+    if: ${{ needs.changes.outputs.scripts == 'true' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Warnings and errors; shellcheck's style hints are left to review.
+      - name: Run shellcheck
+        run: |
+          shellcheck --severity=warning \
+            bin/tag-release bin/tag-release.test.sh \
+            deploy/compose/install.sh \
+            .github/scripts/*.sh
+
+      - name: Test bin/tag-release
+        run: bin/tag-release.test.sh
+
+  installer:
+    name: Install from the bundle
+    if: ${{ needs.changes.outputs.installer == 'true' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: 0.0.0-ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Tagged idah-<image>:0.0.0-ci, so the install uses them instead of
+      # pulling: IDAH_IMAGE_PREFIX=idah- below.
+      - name: Build the images
+        run: |
+          docker build -f docker/Dockerfile.service -t "idah-service:$VERSION" \
+            --build-arg IDAH_VERSION="$VERSION" .
+          docker build -f docker/Dockerfile.media -t "idah-media:$VERSION" \
+            --build-arg SERVICE_IMAGE="idah-service:$VERSION" .
+          docker build -f docker/Dockerfile.frontend -t "idah-frontend:$VERSION" \
+            --build-arg IDAH_VERSION="$VERSION" .
+
+      - name: Build the bundle
+        run: .github/scripts/build-bundle.sh "$VERSION" dist
+
+      - name: Install as a customer would
+        env:
+          IDAH_IMAGE_PREFIX: idah-
+        run: .github/scripts/test-installer.sh install "dist/idah-$VERSION"
+
+  # The one check branch protection requires. The workflow runs on every PR and
+  # the jobs above skip themselves when their paths did not change, so this job
+  # always reports: skipped counts as passed, failed or cancelled does not.
+  passed:
+    name: Scripts CI passed
+    if: ${{ always() }}
+    needs: [changes, lint, installer]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every job's result
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if jq -e 'any(.[]; . == "failure" or . == "cancelled")' <<< "$RESULTS" > /dev/null; then
+            echo "::error::A job failed or was cancelled."
+            exit 1
+          fi

@@ -183,10 +183,18 @@ creating anything. It refuses a version that is already tagged.
 3. Publishes each multi-arch image only when both architectures built.
 4. Smoke-tests every image with no source tree mounted, and checks it reports the expected
    version ([`.github/scripts/smoke-image.sh`](.github/scripts/smoke-image.sh)).
-5. Builds the installer bundle from [`deploy/compose/`](deploy/compose/) and attaches
-   `idah-<version>.tar.gz`, `install.sh` and `SHA256SUMS` to a GitHub Release. A version with a
-   suffix (`-rc.1`) is published as a **pre-release**, so `releases/latest` — which the one-line
-   installer uses — never points at a candidate.
+5. Builds the installer bundle from [`deploy/compose/`](deploy/compose/)
+   ([`.github/scripts/build-bundle.sh`](.github/scripts/build-bundle.sh)).
+6. Tests the installer as a customer runs it, with the images just published: a fresh install, and
+   an install of the previous stable release upgraded to this one with `--upgrade`
+   ([`.github/scripts/test-installer.sh`](.github/scripts/test-installer.sh)). Every service must
+   answer through nginx and report the new version.
+7. Attaches `idah-<version>.tar.gz`, `install.sh` and `SHA256SUMS` to a GitHub Release. A version
+   with a suffix (`-rc.1`) is published as a **pre-release**, so `releases/latest` — which the
+   one-line installer uses — never points at a candidate.
+
+Pull requests that change `deploy/compose/` or these scripts run the fresh install too, with images
+built from the pull request (*CI - Scripts*).
 
 If any step fails, fix on `main` and tag `-rc.2`. Never delete and re-push a tag.
 

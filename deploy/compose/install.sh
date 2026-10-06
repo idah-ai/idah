@@ -175,6 +175,8 @@ if [ ! -f compose.yml ]; then
   # named after it. Asked, since it cannot be moved lightly afterwards; the
   # current directory unless IDAH_DIR or the answer names another.
   target=$(ask "Install IDAH into" "${IDAH_DIR:-$PWD}")
+  # A typed ~ arrives as text, so it is matched literally and expanded here.
+  # shellcheck disable=SC2088
   case "$target" in
     "~") target=$HOME ;;
     "~/"*) target="$HOME/${target#\~/}" ;;
