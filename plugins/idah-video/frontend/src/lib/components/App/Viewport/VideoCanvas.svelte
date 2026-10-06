@@ -5,6 +5,21 @@
 
   let { canvas = $bindable(), element = $bindable() }: { canvas?: HTMLCanvasElement; element?: HTMLDivElement } =
     $props();
+
+  // ── Gamma correction via SVG filter ─────────────────────────────────
+  //
+  // CSS has no native gamma() filter, so we use an SVG <feComponentTransfer>
+  // and update its exponent reactively via $effect.
+  let gammaFilter: SVGFilterElement | undefined;
+
+  $effect(() => {
+    if (!gammaFilter) return;
+    const exp = Math.max(0.05, 1 + ui.videoGamma / 100);
+    const funcs = gammaFilter.querySelectorAll<SVGElement>("feFuncR, feFuncG, feFuncB");
+    for (const fn of funcs) {
+      fn.setAttribute("exponent", String(exp));
+    }
+  });
 </script>
 
 <!--
@@ -13,6 +28,20 @@
   the transform and pushes frames here via drawImage. Backing store matches the
   media dimensions, so zoom upscales this raster as it did the <video>.
 -->
+<!-- Hidden SVG filter for gamma correction — CSS has no native gamma() so we
+     use SVG <feComponentTransfer> updated reactively via $effect. -->
+<svg style="display:none" aria-hidden="true">
+  <defs>
+    <filter id="video-gamma" bind:this={gammaFilter}>
+      <feComponentTransfer>
+        <feFuncR type="gamma" amplitude="1" exponent="1" offset="0" />
+        <feFuncG type="gamma" amplitude="1" exponent="1" offset="0" />
+        <feFuncB type="gamma" amplitude="1" exponent="1" offset="0" />
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
+
 <div class="video-wrapper" style="width: {media.width}px; height: {media.height}px;" bind:this={element}>
   {#if !viewport.video.hasRenderedFrame}
     <!-- Spinner, not a play glyph — that would read as clickable. Leaves the
@@ -29,7 +58,7 @@
 
   <canvas
     class={["video-canvas", ui.renderMode === "nearest-neighbor" ? "nearest" : ""].join(" ")}
-    style="opacity: {ui.videoOpacity / 100};"
+    style="opacity: {ui.videoOpacity / 100}; filter: contrast({1 + ui.videoContrast / 100}) brightness({1 + ui.videoBrightness / 100}) saturate({1 + ui.videoSaturation / 100}) hue-rotate({ui.videoHue * 1.8}deg) url(#video-gamma);"
     width={media.width}
     height={media.height}
     bind:this={canvas}
