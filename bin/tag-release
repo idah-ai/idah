@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# Tag an IDAH release (RELEASE.md §4).
+#
+#   bin/tag-release 0.2.0-rc.1            a candidate, on the latest main from GitHub
+#   bin/tag-release 0.2.0                 the stable release, on its latest candidate's commit
+#   bin/tag-release --dry-run 0.2.0       show what would be tagged, and create nothing
+#   bin/tag-release --previous-stable 0.2.0-rc.1
+#                                         print the stable tag the release compares against
+#
+# The tag is annotated: it records who tagged and when, and lists the pull
+# requests merged since the previous stable version, a message you can edit
+# before the tag is created. Pushing it starts the release workflow, so the
+# script asks first. Tags are never moved or replaced.
+
+set -euo pipefail
+
+REMOTE="${IDAH_RELEASE_REMOTE:-origin}"
+
+usage() {
+  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-1}"
+}
+
+die() {
+  echo "tag-release: $*" >&2
+  exit 1
+}
+
+# The version tags on the remote, one per line.
+remote_version_tags() {
+  git ls-remote --tags --refs "$REMOTE" 'v*' | sed 's|.*refs/tags/||'
+}
+
+# The highest stable tag below VERSION's own number, read from tags on stdin.
+# Candidates are skipped, so 0.2.0-rc.1 and 0.2.0 both compare against the
+# last 0.1.x. Versions compare as numbers: 0.10.0 comes after 0.2.0. Prints
+# nothing before the first stable release.
+previous_stable() {
+  local current="v${1%%-*}"
+
+  { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } \
+    | { grep -vxF "$current" || true; } \
+    | { cat; echo "$current"; } \
+    | sort -V \
+    | awk -v current="$current" '$0 == current { print previous; exit } { previous = $0 }'
+}
+
+# The latest candidate for VERSION (e.g. v0.2.0-rc.3), read from tags on stdin.
+latest_candidate() {
+  local escaped="${1//./\\.}"
+
+  { grep -E "^v${escaped}-rc\.[0-9]+$" || true; } | sort -V | tail -n 1
+}
+
+# The GitHub owner/repo of the remote, for the link to the workflow run.
+repository_slug() {
+  git remote get-url "$REMOTE" | sed -E 's#^.*github\.com[:/]##; s#\.git$##'
+}
+
+main() {
+  local dry_run=false
+
+  case "${1:-}" in
+    -h | --help) usage 0 ;;
+    --previous-stable)
+      [ $# -eq 2 ] || usage
+      remote_version_tags | previous_stable "${2#v}"
+      return
+      ;;
+    --dry-run)
+      dry_run=true
+      shift
+      ;;
+  esac
+
+  [ $# -eq 1 ] || usage
+
+  local version="${1#v}"
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] \
+    || die "'$1' is not a version such as 0.2.0 or 0.2.0-rc.1"
+  local tag="v$version"
+
+  # The remote is the source of truth for main and for tags.
+  git fetch --quiet "$REMOTE" main
+  git fetch --quiet --tags --force "$REMOTE"
+
+  local tags
+  tags="$(remote_version_tags)"
+
+  if grep -qxF "$tag" <<<"$tags"; then
+    die "$tag already exists on $REMOTE. Tags are never moved: release the next version instead."
+  fi
+  if git rev-parse --quiet --verify "refs/tags/$tag" >/dev/null; then
+    die "$tag exists locally but not on $REMOTE. If it was never pushed, remove it with: git tag -d $tag"
+  fi
+
+  local commit source
+  if [[ "$version" == *-rc.* ]]; then
+    commit="$(git rev-parse "$REMOTE/main^{commit}")"
+    source="the latest $REMOTE/main"
+
+    if git rev-parse --quiet --verify main >/dev/null \
+      && [ -n "$(git rev-list "$REMOTE/main..main")" ]; then
+      echo "Note: your local main has commits that are not on $REMOTE/main; they are not part of $tag."
+    fi
+  else
+    local candidate
+    candidate="$(latest_candidate "$version" <<<"$tags")"
+    [ -n "$candidate" ] \
+      || die "no candidate for $tag yet. Tag and verify $tag-rc.1 first (RELEASE.md §4.2-4.3)."
+    commit="$(git rev-parse "$candidate^{commit}")"
+    source="the commit of $candidate"
+  fi
+
+  local previous
+  previous="$(previous_stable "$version" <<<"$tags")"
+
+  local message
+  message="$tag"$'\n\n'"$(git log --reverse --format='- %s' "${previous:+$previous..}$commit")"
+
+  echo "Tag:       $tag"
+  echo "Commit:    $(git log -1 --format='%h %s' "$commit") ($source)"
+  echo "Changes:   since ${previous:-the first commit}"
+  echo
+
+  if $dry_run; then
+    echo "$message"
+    echo
+    echo "Dry run: nothing was created."
+    return
+  fi
+
+  local message_file
+  message_file="$(mktemp)"
+  # Expanded now: the variable is local and gone by the time the script exits.
+  # shellcheck disable=SC2064
+  trap "rm -f '$message_file'" EXIT
+  printf '%s\n' "$message" >"$message_file"
+
+  # Opens your editor with the message. Quitting with an empty message cancels.
+  git tag --annotate --edit --file "$message_file" "$tag" "$commit"
+
+  echo
+  git show --no-patch "$tag"
+  echo
+
+  local answer
+  read -r -p "Push $tag to $REMOTE? This starts the release workflow. [y/N] " answer
+  case "$answer" in
+    y | Y | yes) ;;
+    *)
+      echo "Not pushed. Push it later with: git push $REMOTE refs/tags/$tag"
+      echo "Or remove it with: git tag -d $tag"
+      return
+      ;;
+  esac
+
+  git push "$REMOTE" "refs/tags/$tag"
+  echo
+  echo "Release workflow: https://github.com/$(repository_slug)/actions/workflows/cd-app.yml"
+}
+
+# Run only when executed, so the functions can be sourced by the tests.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

@@ -7,12 +7,9 @@ How we version, cut, publish, deploy and patch the platform.
 ## TL;DR
 
 ```bash
-git switch main && git pull
-git tag -a v0.2.0-rc.1 -m "v0.2.0-rc.1"   # candidate first
-git push origin v0.2.0-rc.1                # CD builds, smoke-tests, publishes a pre-release
+bin/tag-release 0.2.0-rc.1   # candidate on the latest main: CD builds, smoke-tests, publishes a pre-release
 # ...verify on staging...
-git tag -a v0.2.0 -m "v0.2.0"              # same commit
-git push origin v0.2.0                     # CD publishes the stable release
+bin/tag-release 0.2.0        # same commit as the candidate: CD publishes the stable release
 ```
 
 Pushing a `v*.*.*` tag is what triggers a release. Nothing else does.
@@ -170,12 +167,14 @@ Apply §1: largest bump wins. Ten PRs make one release — merging a PR does not
 ### 4.2 Tag a release candidate
 
 ```bash
-git switch main && git pull --ff-only
-git tag -a v0.2.0-rc.1 -m "v0.2.0-rc.1"
-git push origin v0.2.0-rc.1
+bin/tag-release 0.2.0-rc.1
 ```
 
-Always use **annotated** tags (`-a`). The tag date matters legally — see §8.
+[`bin/tag-release`](bin/tag-release) tags the latest `main` on GitHub with an **annotated** tag: it
+records who tagged and when — the date matters legally, see §8 — and lists the pull requests merged
+since the previous stable version. It opens the message in your editor first, then asks before
+pushing, because the push starts the release. `--dry-run` shows the commit and the message without
+creating anything. It refuses a version that is already tagged.
 
 [`cd-app.yml`](.github/workflows/cd-app.yml) then:
 
@@ -203,9 +202,10 @@ If any step fails, fix on `main` and tag `-rc.2`. Never delete and re-push a tag
 Tag **the same commit** as the verified candidate:
 
 ```bash
-git tag -a v0.2.0 -m "v0.2.0" v0.2.0-rc.1^{}
-git push origin v0.2.0
+bin/tag-release 0.2.0
 ```
+
+The script finds the latest `v0.2.0-rc.N` and tags its commit; it refuses if there is no candidate.
 
 ### 4.5 Write the release notes
 

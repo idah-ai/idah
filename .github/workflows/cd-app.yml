@@ -419,20 +419,12 @@ jobs:
       # The notes list every pull request merged since the previous stable
       # version. A candidate and its stable release share a commit, so
       # candidates are skipped: 0.1.1-rc.1 and 0.1.1 both list what changed
-      # since 0.1.0.
+      # since 0.1.0. bin/tag-release holds the rule, so a tag's message and its
+      # release notes cover the same changes.
       - name: Find the previous stable version
         id: previous
         run: |
-          current="v${VERSION%%-*}"
-          previous=$(
-            git ls-remote --tags --refs origin 'v*' \
-              | sed 's|.*refs/tags/||' \
-              | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-              | grep -vxF "$current" \
-              | { cat; echo "$current"; } \
-              | sort -V \
-              | awk -v current="$current" '$0 == current { print previous; exit } { previous = $0 }'
-          )
+          previous="$(bin/tag-release --previous-stable "$VERSION")"
           echo "tag=$previous" >> "$GITHUB_OUTPUT"
           echo "Release notes list the changes since ${previous:-the first commit}" >> "$GITHUB_STEP_SUMMARY"
 
