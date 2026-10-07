@@ -3,8 +3,8 @@
   import type { Snippet } from "svelte";
 
   import { Button, type ButtonSize } from "$lib/components/ui/Button";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
-  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
+  import * as DropdownMenu from "$lib/components/ui/DropdownMenu/index";
+  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
 
   import { cn } from "$lib/utils";
 
