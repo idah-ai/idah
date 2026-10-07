@@ -122,7 +122,7 @@ jobs:
             runner: ubuntu-24.04-arm
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -211,7 +211,7 @@ jobs:
           done
 
       - name: Upload the digests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: digests-${{ matrix.group }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/
@@ -233,7 +233,7 @@ jobs:
         image: ${{ fromJSON(needs.prepare.outputs.images) }}
     steps:
       - name: Download the digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/digests
           pattern: digests-*
@@ -362,7 +362,7 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -395,7 +395,7 @@ jobs:
       previous: ${{ steps.previous.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build the bundle
         run: |
@@ -415,7 +415,7 @@ jobs:
           echo "Release notes list the changes since ${previous:-the first commit}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the bundle for the next jobs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-files
           path: dist/
@@ -442,10 +442,10 @@ jobs:
       PREVIOUS: ${{ needs.bundle.outputs.previous }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Get the bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-files
           path: dist
@@ -481,13 +481,13 @@ jobs:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - name: Get the bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-files
           path: dist
 
       - name: Attach it to the release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           previous_tag: ${{ needs.bundle.outputs.previous }}

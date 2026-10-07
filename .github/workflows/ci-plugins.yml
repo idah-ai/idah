@@ -32,11 +32,11 @@ concurrency:
 jobs:
   discover:
     name: Discover Plugins
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       plugins: ${{ steps.list.outputs.plugins }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: List plugin directories
         id: list
@@ -47,13 +47,13 @@ jobs:
 
   changes:
     name: Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       changed: ${{ steps.filter.outputs.plugins }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -64,7 +64,7 @@ jobs:
     name: Plugin ${{ matrix.plugin }}
     if: ${{ needs.changes.outputs.changed == 'true' }}
     needs: [discover, changes]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         plugin: ${{ fromJson(needs.discover.outputs.plugins) }}
@@ -74,7 +74,7 @@ jobs:
         working-directory: plugins/${{ matrix.plugin }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # -------------------------------------------------------
       # System dependencies
@@ -93,7 +93,7 @@ jobs:
       # -------------------------------------------------------
       - name: Setup Node
         if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -103,7 +103,7 @@ jobs:
 
       - name: Cache frontend dependencies
         if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: plugins/${{ matrix.plugin }}/frontend/node_modules
           key: ${{ runner.os }}-plugin-${{ matrix.plugin }}-modules-${{ hashFiles(format('plugins/{0}/frontend/pnpm-lock.yaml', matrix.plugin)) }}
@@ -154,7 +154,7 @@ jobs:
     name: Plugins CI passed
     if: ${{ always() }}
     needs: [discover, changes, plugin-ci]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check every job's result
         env:
