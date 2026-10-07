@@ -1,9 +1,10 @@
 # Scripts CI workflow
 #
-# Checks the release and install scripts when a pull request changes them:
+# Checks the release and install scripts when a pull request or a merge to main
+# changes them:
 #
 #   lint       shellcheck on every script, and bin/tag-release's tests
-#   installer  builds the three images from the pull request, builds the
+#   installer  builds the three images from the change, builds the
 #              installer bundle, and installs it as a customer would, then
 #              again with a first attempt that fails part-way
 #
@@ -20,8 +21,17 @@ on:
       - opened
       - reopened
 
+  # Every merge too: a pull request is tested against main as it was when its
+  # checks ran, and other merges may have landed since. On main the path
+  # filters compare with the commit before the merge.
+  push:
+    branches:
+      - main
+
+# A newer push to a pull request cancels its older run. On main each commit
+# gets its own group, so every merge is tested in full.
 concurrency:
-  group: ${{ github.head_ref }}-scripts
+  group: ${{ github.head_ref || github.sha }}-scripts
   cancel-in-progress: true
 
 jobs:
@@ -84,9 +94,9 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       # Tagged idah-<image>:0.0.0-ci, so the install uses them instead of
-      # pulling: IDAH_IMAGE_PREFIX=idah- below. Service and frontend are cached
-      # between runs of the same pull request, so a push that leaves the app
-      # alone skips most of the build. A pull request's first run builds all.
+      # pulling: IDAH_IMAGE_PREFIX=idah- below. Service and frontend are cached:
+      # a pull request reuses its own earlier runs and main's, so a push that
+      # leaves the app alone skips most of the build.
       - name: Build the service image
         uses: docker/build-push-action@v7
         with:

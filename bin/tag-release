@@ -10,14 +10,15 @@
 # The tag is annotated: it records who tagged and when, and lists the pull
 # requests merged since the previous stable version, a message you can edit
 # before the tag is created. Pushing it starts the release workflow, so the
-# script asks first. Tags are never moved or replaced.
+# script asks first. Tags are never moved or replaced, and only a commit CI
+# has passed on main is tagged (checked with the GitHub CLI, gh).
 
 set -euo pipefail
 
 REMOTE="${IDAH_RELEASE_REMOTE:-origin}"
 
 usage() {
-  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-1}"
 }
 
@@ -50,6 +51,33 @@ latest_candidate() {
   local escaped="${1//./\\.}"
 
   { grep -E "^v${escaped}-rc\.[0-9]+$" || true; } | sort -V | tail -n 1
+}
+
+# The checks a commit must have passed on main before it is tagged: the gate
+# job of each CI workflow. They run on every merge to main and always report,
+# even when the tests behind them were skipped. Other checks on the commit,
+# such as GitHub's own Dependabot run, do not count.
+REQUIRED_CHECKS=("App CI passed" "Common CI passed" "Plugins CI passed" "Scripts CI passed")
+
+# What stands between a commit and its tag, one line each, read from its check
+# runs on stdin ("name<TAB>status<TAB>conclusion"). Prints nothing when every
+# required check has passed.
+ci_problems() {
+  local runs name status conclusion
+  runs="$(cat)"
+
+  for name in "${REQUIRED_CHECKS[@]}"; do
+    status="$(awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' <<<"$runs")"
+    conclusion="$(awk -F'\t' -v n="$name" '$1 == n { print $3; exit }' <<<"$runs")"
+
+    if [ -z "$status" ]; then
+      echo "$name has not run on this commit"
+    elif [ "$status" != completed ]; then
+      echo "$name is still running"
+    elif [ "$conclusion" != success ]; then
+      echo "$name: $conclusion"
+    fi
+  done
 }
 
 # The GitHub owner/repo of the remote, for the link to the workflow run.
@@ -112,6 +140,24 @@ main() {
     source="the commit of $candidate"
   fi
 
+  # Only a commit CI has passed on main. A pull request is tested against main
+  # as it was then, so this is the one test of the code as it will ship.
+  command -v gh >/dev/null \
+    || die "the GitHub CLI (gh) is needed to check CI on the commit. Install it and run: gh auth login"
+  local slug runs problems
+  slug="$(repository_slug)"
+  runs="$(gh api "repos/$slug/commits/$commit/check-runs?per_page=100" \
+    --jq '.check_runs[] | "\(.name)\t\(.status)\t\(.conclusion)"')" \
+    || die "could not read the checks of $commit from GitHub. Is gh logged in? Try: gh auth status"
+  problems="$(ci_problems <<<"$runs")"
+
+  if [ -n "$problems" ] && ! $dry_run; then
+    die "CI has not passed on this commit, so it cannot be tagged:
+$(sed 's/^/  /' <<<"$problems")
+Wait for CI to finish, or fix main and tag the next merge.
+Checks: https://github.com/$slug/commit/$commit"
+  fi
+
   local previous
   previous="$(previous_stable "$version" <<<"$tags")"
 
@@ -121,6 +167,12 @@ main() {
   echo "Tag:       $tag"
   echo "Commit:    $(git log -1 --format='%h %s' "$commit") ($source)"
   echo "Changes:   since ${previous:-the first commit}"
+  if [ -z "$problems" ]; then
+    echo "CI:        passed on main"
+  else
+    echo "CI:        not passed, so a real run would stop here:"
+    sed 's/^/             /' <<<"$problems"
+  fi
   echo
 
   if $dry_run; then
