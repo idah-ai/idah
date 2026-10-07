@@ -7,12 +7,9 @@ How we version, cut, publish, deploy and patch the platform.
 ## TL;DR
 
 ```bash
-git switch main && git pull
-git tag -a v0.2.0-rc.1 -m "v0.2.0-rc.1"   # candidate first
-git push origin v0.2.0-rc.1                # CD builds, smoke-tests, publishes a pre-release
+bin/tag-release 0.2.0-rc.1   # candidate on the latest main: CD builds, smoke-tests, publishes a pre-release
 # ...verify on staging...
-git tag -a v0.2.0 -m "v0.2.0"              # same commit
-git push origin v0.2.0                     # CD publishes the stable release
+bin/tag-release 0.2.0        # same commit as the candidate: CD publishes the stable release
 ```
 
 Pushing a `v*.*.*` tag is what triggers a release. Nothing else does.
@@ -170,12 +167,16 @@ Apply §1: largest bump wins. Ten PRs make one release — merging a PR does not
 ### 4.2 Tag a release candidate
 
 ```bash
-git switch main && git pull --ff-only
-git tag -a v0.2.0-rc.1 -m "v0.2.0-rc.1"
-git push origin v0.2.0-rc.1
+bin/tag-release 0.2.0-rc.1
 ```
 
-Always use **annotated** tags (`-a`). The tag date matters legally — see §8.
+[`bin/tag-release`](bin/tag-release) tags the latest `main` on GitHub with an **annotated** tag: it
+records who tagged and when — the date matters legally, see §8 — and lists the pull requests merged
+since the previous stable version. It opens the message in your editor first, then asks before
+pushing, because the push starts the release. `--dry-run` shows the commit and the message without
+creating anything. It refuses a version that is already tagged, and a commit whose CI has not passed
+on `main` (the four "CI passed" checks, read with the GitHub CLI, `gh`). Pull requests are tested
+against `main` as it was when their checks ran, so the run on `main` is the one that tests what ships.
 
 [`cd-app.yml`](.github/workflows/cd-app.yml) then:
 
@@ -184,10 +185,18 @@ Always use **annotated** tags (`-a`). The tag date matters legally — see §8.
 3. Publishes each multi-arch image only when both architectures built.
 4. Smoke-tests every image with no source tree mounted, and checks it reports the expected
    version ([`.github/scripts/smoke-image.sh`](.github/scripts/smoke-image.sh)).
-5. Builds the installer bundle from [`deploy/compose/`](deploy/compose/) and attaches
-   `idah-<version>.tar.gz`, `install.sh` and `SHA256SUMS` to a GitHub Release. A version with a
-   suffix (`-rc.1`) is published as a **pre-release**, so `releases/latest` — which the one-line
-   installer uses — never points at a candidate.
+5. Builds the installer bundle from [`deploy/compose/`](deploy/compose/)
+   ([`.github/scripts/build-bundle.sh`](.github/scripts/build-bundle.sh)).
+6. Tests the installer as a customer runs it, with the images just published: a fresh install, and
+   an install of the previous stable release upgraded to this one with `--upgrade`
+   ([`.github/scripts/test-installer.sh`](.github/scripts/test-installer.sh)). Every service must
+   answer through nginx and report the new version.
+7. Attaches `idah-<version>.tar.gz`, `install.sh` and `SHA256SUMS` to a GitHub Release. A version
+   with a suffix (`-rc.1`) is published as a **pre-release**, so `releases/latest` — which the
+   one-line installer uses — never points at a candidate.
+
+Pull requests that change `deploy/compose/` or these scripts run the fresh install too, with images
+built from the pull request (*CI - Scripts*).
 
 If any step fails, fix on `main` and tag `-rc.2`. Never delete and re-push a tag.
 
@@ -203,14 +212,17 @@ If any step fails, fix on `main` and tag `-rc.2`. Never delete and re-push a tag
 Tag **the same commit** as the verified candidate:
 
 ```bash
-git tag -a v0.2.0 -m "v0.2.0" v0.2.0-rc.1^{}
-git push origin v0.2.0
+bin/tag-release 0.2.0
 ```
+
+The script finds the latest `v0.2.0-rc.N` and tags its commit; it refuses if there is no candidate.
 
 ### 4.5 Write the release notes
 
-Edit the GitHub Release CD created. Use GitHub's *Generate release notes* against the previous
-stable tag as a starting point, then arrange it as:
+CD creates the GitHub Release with generated notes: the title of every pull request merged since
+the previous stable version (candidates are skipped, so `v0.2.0-rc.1` and `v0.2.0` both list the
+changes since `v0.1.x`). PR titles are checked Conventional Commits, so the list reads as a
+changelog. Edit the release to add what a list of titles cannot say, and arrange it as:
 
 ```markdown
 ## Highlights

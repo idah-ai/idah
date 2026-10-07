@@ -3,7 +3,7 @@
 // rollback-on-failure behavior
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 const { mockMarkOccupancyDirty } = vi.hoisted(() => ({
   mockMarkOccupancyDirty: vi.fn(),
@@ -13,30 +13,27 @@ vi.mock("$lib/mask/occupancy", () => ({
   markOccupancyDirty: mockMarkOccupancyDirty,
 }));
 
-import { createAnnotationStore, type AnnotationItem } from "./data.svelte";
+import { createAnnotationStore, type AnnotationDriver, type AnnotationItem } from "./data.svelte";
+
+// A plain function mock: since vitest 4 an untyped vi.fn() can also stand for a
+// class, which no longer satisfies AnnotationDriver's methods.
+type AnyFn = (...args: any[]) => any;
+const mockFn = () => vi.fn<AnyFn>();
 
 describe("createAnnotationStore setShape/setShapes rollback", () => {
-  let driver: {
-    fetch: ReturnType<typeof vi.fn>;
-    create: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-    restore: ReturnType<typeof vi.fn>;
-    setShape: ReturnType<typeof vi.fn>;
-    setShapes: ReturnType<typeof vi.fn>;
-  };
+  let driver: Record<keyof AnnotationDriver, Mock<AnyFn>>;
   let store: ReturnType<typeof createAnnotationStore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     driver = {
-      fetch: vi.fn().mockResolvedValue([]),
-      create: vi.fn().mockResolvedValue({ id: "ann-1" }),
-      update: vi.fn().mockResolvedValue(undefined),
-      delete: vi.fn().mockResolvedValue(undefined),
-      restore: vi.fn().mockResolvedValue(undefined),
-      setShape: vi.fn().mockResolvedValue(undefined),
-      setShapes: vi.fn().mockResolvedValue(undefined),
+      fetch: mockFn().mockResolvedValue([]),
+      create: mockFn().mockResolvedValue({ id: "ann-1" }),
+      update: mockFn().mockResolvedValue(undefined),
+      delete: mockFn().mockResolvedValue(undefined),
+      restore: mockFn().mockResolvedValue(undefined),
+      setShape: mockFn().mockResolvedValue(undefined),
+      setShapes: mockFn().mockResolvedValue(undefined),
     };
     store = createAnnotationStore(driver);
 
@@ -162,27 +159,19 @@ describe("createAnnotationStore setShape/setShapes rollback", () => {
 });
 
 describe("createAnnotationStore occupancy dirty flag", () => {
-  let driver: {
-    fetch: ReturnType<typeof vi.fn>;
-    create: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-    restore: ReturnType<typeof vi.fn>;
-    setShape: ReturnType<typeof vi.fn>;
-    setShapes: ReturnType<typeof vi.fn>;
-  };
+  let driver: Record<keyof AnnotationDriver, Mock<AnyFn>>;
   let store: ReturnType<typeof createAnnotationStore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     driver = {
-      fetch: vi.fn().mockResolvedValue([]),
-      create: vi.fn().mockResolvedValue({ id: "ann-1" }),
-      update: vi.fn().mockResolvedValue(undefined),
-      delete: vi.fn().mockResolvedValue(undefined),
-      restore: vi.fn().mockResolvedValue(undefined),
-      setShape: vi.fn().mockResolvedValue(undefined),
-      setShapes: vi.fn().mockResolvedValue(undefined),
+      fetch: mockFn().mockResolvedValue([]),
+      create: mockFn().mockResolvedValue({ id: "ann-1" }),
+      update: mockFn().mockResolvedValue(undefined),
+      delete: mockFn().mockResolvedValue(undefined),
+      restore: mockFn().mockResolvedValue(undefined),
+      setShape: mockFn().mockResolvedValue(undefined),
+      setShapes: mockFn().mockResolvedValue(undefined),
     };
     store = createAnnotationStore(driver);
     store.upsert({ id: "ann-1", shape_type: "idah-image:mask", shape_args: {}, properties: {} } as any);

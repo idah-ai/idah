@@ -3,8 +3,8 @@ FROM node:24-alpine AS base
 
 RUN npm install -g pnpm@10.15.1
 
-ENV APP_PATH /app/frontend
-ENV LOCAL_APP_PATH ./app/frontend
+ENV APP_PATH=/app/frontend
+ENV LOCAL_APP_PATH=./app/frontend
 
 RUN mkdir -p $APP_PATH
 
@@ -23,7 +23,7 @@ CMD ["pnpm", "run", "dev"]
 
 FROM base
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 COPY $LOCAL_APP_PATH/package.json $LOCAL_APP_PATH/pnpm-lock.yaml $APP_PATH/
 

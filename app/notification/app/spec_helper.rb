@@ -60,6 +60,15 @@ RSpec.configure do |config|
   config.include WebMock::API
 
   Verse::Spec.add_user(:system, "system")
+  Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
+  Verse::Spec.add_user(
+    :org_owner,
+    "org_owner",
+    scopes: { org: ["1"] },
+    user_data: { id: 2, email: "org_owner@example.com", name: "Org Owner User" }
+  )
+  Verse::Spec.add_user(:user, "user", user_data: { id: 3, email: "user@example.com", name: "User" })
+  Verse::Spec.add_user(:other_user, "user", user_data: { id: 4, email: "other@example.com", name: "Other User" })
   Verse::Spec.add_user(:anonymous, "anonymous")
 
   config.example_status_persistence_file_path = ".rspec_status"

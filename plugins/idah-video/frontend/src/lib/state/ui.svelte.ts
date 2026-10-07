@@ -51,11 +51,22 @@ class UIState {
   #renderMode = createLocalStorageStore<RenderMode>("idah-video:settings:render-mode", "bilinear");
   #timeDisplay = createLocalStorageStore<TimeDisplay>("idah-video:settings:time-display", "frames");
 
-  // Opacity is intentionally session-only (in-memory): it resets to the default
-  // on every plugin load/registration instead of persisting to localStorage.
-  // Plain reactive fields — no getter/setter needed since nothing is saved.
+  // Opacity and contrast are intentionally session-only (in-memory): they reset
+  // to the default on every plugin load/registration instead of persisting to
+  // localStorage. Plain reactive fields — no getter/setter needed since nothing
+  // is saved.
   annotationOpacity = $state(100);
   videoOpacity = $state(100);
+  videoContrast = $state(0);
+  videoBrightness = $state(0);
+  videoSaturation = $state(0);
+  videoGamma = $state(0);
+  videoHue = $state(0);
+
+  // ── Grid ──────────────────────────────────────────────────────────────
+  gridEnabled = $state(false);
+  gridSize = $state(100);
+  gridOpacity = $state(100);
 
   // Persisted per-plugin to account settings (not localStorage): hydrated from
   // the account setting on init via settings.ts#hydrateSettings, and written back

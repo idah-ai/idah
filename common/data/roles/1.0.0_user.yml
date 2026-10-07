@@ -37,6 +37,9 @@ user:
     # Setting Service
     - "setting:account_settings.*.own"
 
+    # Notification Service
+    - "notification:webhooks.*.own"
+
     # Sync Service
     - "sync:jobs.read.as_user"
     - "sync:exports.read.as_user"

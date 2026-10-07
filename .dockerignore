@@ -12,7 +12,6 @@
 **/.bundle
 app/frontend/build
 plugins/*/frontend/build
-doc/frontend/dist
 
 # Test artefacts
 **/coverage
