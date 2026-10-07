@@ -11,16 +11,33 @@ if [ -n "$bundled" ]; then
 fi
 
 if ! $external; then
+  # The container's restart count. It restarts on its own (restart: always),
+  # so a count that goes up while waiting means PostgreSQL crashed: stop then
+  # rather than wait out the two minutes. Counted from here, as a container
+  # kept from a failed run may have restarted before.
+  pg_restarts() {
+    docker inspect -f '{{.RestartCount}}' "$(dc ps -aq postgres 2> /dev/null | head -1)" 2> /dev/null || echo 0
+  }
+  restarts_before=$(pg_restarts)
+  crashed=false
+
   # Checked over TCP: on a new volume, PostgreSQL first runs a temporary
   # socket-only server that would pass a socket check just before restarting.
   printf "   waiting for PostgreSQL"
   for _ in $(seq 1 60); do
     if dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then break; fi
+    if [ "$(pg_restarts)" -gt "$restarts_before" ]; then crashed=true; break; fi
     printf "."; sleep 2
   done
-  dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 \
-    || die "PostgreSQL did not become ready. See: ${in_dir}docker compose logs postgres
+  if $crashed || ! dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then
+    echo
+    # Its own last words, so the cause is in the message.
+    pg_log=$(dc logs --no-log-prefix --tail 30 postgres 2> /dev/null | grep -v '^[[:space:]]*$' | tail -6 | sed 's/^/           /' || true)
+    die "PostgreSQL $($crashed && echo "stopped while starting" || echo "did not become ready"). Its last log lines:
+${pg_log:-           (none)}
+       More: ${in_dir}docker compose logs postgres
        $retry"
+  fi
   echo " ready"
 fi
 

@@ -93,7 +93,10 @@ case "${1:-}" in
     mkdir "$work/install"
     cp -R "$bundle/." "$work/install/"
     printf 'services:\n  postgres:\n    entrypoint: ["sh", "-c", "exit 1"]\n' > "$work/install/compose.override.yml"
-    if IDAH_VERSION=$version run_installer; then fail "the install should have failed"; fi
+    if IDAH_VERSION=$version run_installer 2>&1 | tee "$work/first.log"; then fail "the install should have failed"; fi
+    # Stopped by the crash, not by something else, and without waiting it out.
+    grep -q "PostgreSQL stopped while starting" "$work/first.log" \
+      || fail "the install did not stop on PostgreSQL's crash"
     grep -q '^IDAH_INSTALL_STARTED_AT=.' "$work/install/.env" || fail "the failed install is not marked as started"
     if grep -q '^IDAH_INSTALLED_AT=' "$work/install/.env"; then fail "the failed install is marked as finished"; fi
 

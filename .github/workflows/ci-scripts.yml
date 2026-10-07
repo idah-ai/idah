@@ -84,15 +84,37 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       # Tagged idah-<image>:0.0.0-ci, so the install uses them instead of
-      # pulling: IDAH_IMAGE_PREFIX=idah- below.
-      - name: Build the images
+      # pulling: IDAH_IMAGE_PREFIX=idah- below. Service and frontend are cached
+      # between runs of the same pull request, so a push that leaves the app
+      # alone skips most of the build. A pull request's first run builds all.
+      - name: Build the service image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.service
+          build-args: IDAH_VERSION=${{ env.VERSION }}
+          tags: idah-service:${{ env.VERSION }}
+          load: true
+          cache-from: type=gha,scope=ci-installer-service
+          cache-to: type=gha,mode=max,scope=ci-installer-service
+
+      # Built with Docker's own builder: it starts FROM the service image just
+      # loaded, which the caching builder above cannot see. One layer, quick.
+      - name: Build the media image
         run: |
-          docker build -f docker/Dockerfile.service -t "idah-service:$VERSION" \
-            --build-arg IDAH_VERSION="$VERSION" .
-          docker build -f docker/Dockerfile.media -t "idah-media:$VERSION" \
-            --build-arg SERVICE_IMAGE="idah-service:$VERSION" .
-          docker build -f docker/Dockerfile.frontend -t "idah-frontend:$VERSION" \
-            --build-arg IDAH_VERSION="$VERSION" .
+          docker buildx build --builder default --load -f docker/Dockerfile.media \
+            -t "idah-media:$VERSION" --build-arg SERVICE_IMAGE="idah-service:$VERSION" .
+
+      - name: Build the frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.frontend
+          build-args: IDAH_VERSION=${{ env.VERSION }}
+          tags: idah-frontend:${{ env.VERSION }}
+          load: true
+          cache-from: type=gha,scope=ci-installer-frontend
+          cache-to: type=gha,mode=max,scope=ci-installer-frontend
 
       - name: Build the bundle
         run: .github/scripts/build-bundle.sh "$VERSION" dist
