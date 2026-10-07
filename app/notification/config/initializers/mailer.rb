@@ -2,7 +2,8 @@
 
 module Email
   # Email notifications are sent only when an SMTP host is configured.
-  # Without MAIL_SMTP_HOST the service boots normally and skips emails.
+  # Without MAIL_SMTP_HOST the service boots normally and writes each email to
+  # the log instead (Email::Service), invitation and password links included.
   def self.enabled?
     @enabled
   end
@@ -55,5 +56,5 @@ end
 
 unless Email.enabled?
   Verse.logger ||= Logger.new($stdout)
-  Verse.logger.info{ "Email notifications disabled: MAIL_SMTP_HOST is not set" }
+  Verse.logger.info{ "MAIL_SMTP_HOST is not set: emails are written to this log instead of being sent" }
 end
