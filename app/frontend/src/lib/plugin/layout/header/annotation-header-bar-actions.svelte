@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ChevronDownIcon,
-    CircleHelpIcon,
+    CircleQuestionMarkIcon,
     FileTextIcon,
     KeyboardIcon,
     MoonIcon,
@@ -429,7 +429,7 @@
               {#if subGroup.subSection}
                 <span class="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                   {subGroup.subSection}
-                  {#each subGroup.items.filter((i) => i.subSectionHeader) as headerItem}
+                  {#each subGroup.items.filter((i) => i.subSectionHeader) as headerItem (headerItem.key)}
                     {#if headerItem.type === "switch"}
                       {@const hkey = settingKey(group.section, headerItem.key)}
                       <Switch
@@ -470,7 +470,7 @@
                         <TooltipProvider ignoreNonKeyboardFocus>
                           <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
                             <TooltipTrigger>
-                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                              <CircleQuestionMarkIcon class="text-muted-foreground size-3.5" />
                             </TooltipTrigger>
                             <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
                               {item.description}
@@ -503,7 +503,7 @@
                         <TooltipProvider ignoreNonKeyboardFocus>
                           <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
                             <TooltipTrigger>
-                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                              <CircleQuestionMarkIcon class="text-muted-foreground size-3.5" />
                             </TooltipTrigger>
                             <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
                               {item.description}
@@ -536,7 +536,7 @@
                         <TooltipProvider ignoreNonKeyboardFocus>
                           <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
                             <TooltipTrigger>
-                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                              <CircleQuestionMarkIcon class="text-muted-foreground size-3.5" />
                             </TooltipTrigger>
                             <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
                               {item.description}

@@ -4,7 +4,7 @@
   import { media } from "$lib/state/media.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import GridOverlay from "./GridOverlay.svelte";
+  import GridOverlay from "$lib/components/App/Viewport/GridOverlay.svelte";
 
   let { src = undefined, element = $bindable(), onResize = () => {} } = $props();
 
