@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ChevronDownIcon,
-    CircleHelpIcon,
+    CircleQuestionMarkIcon,
     FileTextIcon,
     KeyboardIcon,
     MoonIcon,
@@ -23,6 +23,7 @@
   import { Checkbox } from "@/components/ui/checkbox";
   import Separator from "@/components/ui/separator/separator.svelte";
   import { Slider } from "@/components/ui/slider";
+  import Switch from "@/components/ui/switch/switch.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import {
     DropdownMenu,
@@ -133,13 +134,31 @@
   let settingValues = $derived.by(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     driver.settingsAdapter?.revision; // track revision so values re-read on invalidate()
-    const values: Record<string, number | string> = {};
+    const values: Record<string, number | string | boolean> = {};
     for (const group of settingGroups) {
       for (const item of group.items) {
         values[settingKey(group.section, item.key)] = item.get();
       }
     }
     return values;
+  });
+
+  // Mirrors each setting's disabled state, updated on every revision bump so the
+  // template reactively greys out controls (e.g. grid size/opacity when grid is off).
+  // Must be a separate $derived rather than inlining into the template because the
+  // item descriptors from collect() are not themselves reactive — their `disabled`
+  // closure captures plugin-side state that only this reactive pipeline re-reads.
+  let disabledMap = $derived.by(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    driver.settingsAdapter?.revision; // same sync signal as settingValues
+    const map: Record<string, boolean> = {};
+    for (const group of settingGroups) {
+      for (const item of group.items) {
+        const d = item.disabled;
+        map[settingKey(group.section, item.key)] = typeof d === "function" ? d() : !!d;
+      }
+    }
+    return map;
   });
 
   // Single write path for EVERY control type. The caller passes its own already
@@ -410,6 +429,15 @@
               {#if subGroup.subSection}
                 <span class="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                   {subGroup.subSection}
+                  {#each subGroup.items.filter((i) => i.subSectionHeader) as headerItem (headerItem.key)}
+                    {#if headerItem.type === "switch"}
+                      {@const hkey = settingKey(group.section, headerItem.key)}
+                      <Switch
+                        checked={settingValues[hkey] as boolean}
+                        onCheckedChange={(v: boolean) => commitSetting(() => headerItem.set(v))}
+                      />
+                    {/if}
+                  {/each}
                   {#if subGroup.items.some((i) => i.default !== undefined)}
                     <Button
                       variant="ghost"
@@ -424,7 +452,7 @@
                   {/if}
                 </span>
               {/if}
-              {#each subGroup.items as item (item.key)}
+              {#each subGroup.items.filter((i) => !i.subSectionHeader) as item (item.key)}
                 {@const key = settingKey(group.section, item.key)}
                 <!--
                   Two-column row: label (+ tooltip) on the left, control on the right.
@@ -442,7 +470,7 @@
                         <TooltipProvider ignoreNonKeyboardFocus>
                           <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
                             <TooltipTrigger>
-                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                              <CircleQuestionMarkIcon class="text-muted-foreground size-3.5" />
                             </TooltipTrigger>
                             <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
                               {item.description}
@@ -460,6 +488,7 @@
                         value={settingValues[key] as number}
                         onValueChange={(v) => commitSetting(() => item.set(v))}
                         class={item.key.endsWith("-hue") ? "hue-slider flex-1" : "flex-1"}
+                        disabled={disabledMap[key]}
                       />
                       <span class="text-muted-foreground w-8 shrink-0 text-right text-xs tabular-nums"
                         >{settingValues[key]}</span
@@ -474,7 +503,7 @@
                         <TooltipProvider ignoreNonKeyboardFocus>
                           <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
                             <TooltipTrigger>
-                              <CircleHelpIcon class="text-muted-foreground size-3.5" />
+                              <CircleQuestionMarkIcon class="text-muted-foreground size-3.5" />
                             </TooltipTrigger>
                             <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
                               {item.description}
@@ -492,11 +521,35 @@
                           variant={settingValues[key] === opt.value ? "default" : "ghost"}
                           size="sm"
                           onclick={() => commitSetting(() => item.set(opt.value))}
+                          disabled={disabledMap[key]}
                         >
                           {opt.label}
                         </Button>
                       {/each}
                     </div>
+                  </div>
+                {:else if item.type === "switch"}
+                  <div class="grid grid-cols-[110px_1fr] items-center gap-3">
+                    <span class="flex items-center gap-2 text-sm whitespace-nowrap">
+                      {item.label}
+                      {#if item.description}
+                        <TooltipProvider ignoreNonKeyboardFocus>
+                          <Tooltip delayDuration={100} ignoreNonKeyboardFocus>
+                            <TooltipTrigger>
+                              <CircleQuestionMarkIcon class="text-muted-foreground size-3.5" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right" sideOffset={8} avoidCollisions={false} class="max-w-56">
+                              {item.description}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      {/if}
+                    </span>
+                    <Switch
+                      checked={settingValues[key] as boolean}
+                      onCheckedChange={(v: boolean) => commitSetting(() => item.set(v))}
+                      disabled={disabledMap[key]}
+                    />
                   </div>
                 {/if}
               {/each}
