@@ -18,7 +18,7 @@
   let { values = $bindable([]), maxShown = 1, truncateLength = 30, dataSource, displayKey = "name" }: Props = $props();
 
   // Records
-  let records: Record[];
+  let records: Record[] = $state([]);
 
   // Functions
   async function fetchData(): Promise<void> {

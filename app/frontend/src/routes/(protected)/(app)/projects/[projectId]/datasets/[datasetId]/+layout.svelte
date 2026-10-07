@@ -61,7 +61,7 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name", "modality"],
+        [DatasetRecord.type]: ["name", "modality", "feedback_configuration"],
       },
     });
     dataset = datasetRes.data;

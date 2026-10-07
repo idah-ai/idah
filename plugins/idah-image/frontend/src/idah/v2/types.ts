@@ -166,6 +166,18 @@ export interface IConfig {
   [shape_type: string]: IShapeConfig;
 }
 
+/**
+ * Project feedback configuration
+ */
+export interface IFeedbackItem {
+  label: string;
+  description: string | null;
+}
+
+export interface IFeedbackConfig {
+  [key: string]: IFeedbackItem;
+}
+
 // ─── AST (conditional visibility) ────────────────────────────────────────
 
 export type ASTValue = string | number | string[] | boolean | undefined;
@@ -370,7 +382,10 @@ export interface INoteRecord {
   anchor: INoteAnchor;
 
   /** Markdown content of the note. */
-  content_md?: string;
+  content_md?: string | null;
+
+  /** Feedback keys */
+  feedback_keys?: string[] | null;
 
   /** Whether the note thread is resolved. */
   resolved?: boolean;
@@ -661,12 +676,7 @@ export interface ISettingsDriverV2 {
 // ─── V2 Driver — Account settings submodule ───────────────────────────────
 
 export type AccountSettingValue =
-  | string
-  | number
-  | boolean
-  | null
-  | AccountSettingValue[]
-  | { [key: string]: AccountSettingValue };
+  string | number | boolean | null | AccountSettingValue[] | { [key: string]: AccountSettingValue };
 
 /**
  * Loads & persists the current user's account settings. A generic store

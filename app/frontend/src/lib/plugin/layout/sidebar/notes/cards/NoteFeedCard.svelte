@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { MapPinIcon, MessageCircleIcon, SquareDashedIcon } from "@lucide/svelte";
-
   import Button from "@/components/ui/button/button.svelte";
-  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
-  import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
+  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/ResolveNoteFeedButton.svelte";
+  import NoteCard from "@/plugin/layout/sidebar/notes/cards/NoteCard.svelte";
+  import NoteFeedIcon from "./_NoteFeedIcon.svelte";
 
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
-  import { deleteNoteFeed, updateNoteFeedContentMd } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
+  import { deleteNoteFeed, updateNoteFeedContent } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
   import { AuthContext } from "@/security/AuthContext";
-  import { cn } from "@/utils";
 
   // Props
   interface Props {
@@ -32,7 +30,7 @@
   }: Props = $props();
 
   // Variables
-  let { id, content_md, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
+  let { id, content_md, feedback_keys, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
 
   let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
@@ -53,9 +51,17 @@
     return noteCommentsRes.data;
   }
 
-  async function updateNoteFeed(editedContentMd: string) {
-    const updatedNoteFeedRes = await updateNoteFeedContentMd(id, editedContentMd);
+  async function updateNoteFeed(params: { editedContentMd: string | null; editedFeedbackKeys: string[] | null }) {
+    const { editedContentMd, editedFeedbackKeys } = params;
+
+    const updatedNoteFeedRes = await updateNoteFeedContent({
+      id,
+      newContentMd: editedContentMd,
+      newFeedbackKeys: editedFeedbackKeys,
+    });
+
     if (!updatedNoteFeedRes) return;
+
     onNoteFeedUpdated?.(updatedNoteFeedRes);
   }
 </script>
@@ -63,6 +69,7 @@
 <NoteCard
   noteFeedId={id}
   {content_md}
+  feedbackKeys={feedback_keys}
   {created_by_email}
   {created_at}
   {edited_at}
@@ -70,28 +77,14 @@
   deletable={isOwner}
   {highlighted}
   onClick={selectNoteFeed}
-  onUpdateContentMd={updateNoteFeed}
+  onUpdate={updateNoteFeed}
   onDelete={async () => {
     await deleteNoteFeed(id);
     await onNoteFeedDeleted?.();
   }}
 >
   {#snippet headerIcon()}
-    <div
-      class={cn("dark:text-accent flex size-8 shrink-0 items-center justify-center rounded-full", {
-        "bg-purple-300": noteType === "annotation",
-        "bg-yellow-300 ": noteType === "video_frame",
-        "bg-emerald-300": noteType === "general",
-      })}
-    >
-      {#if noteType === "annotation"}
-        <SquareDashedIcon class="size-3.5" />
-      {:else if noteType === "video_frame"}
-        <MapPinIcon class="size-3.5" />
-      {:else if noteType === "general"}
-        <MessageCircleIcon class="size-3.5" />
-      {/if}
-    </div>
+    <NoteFeedIcon {noteType} />
   {/snippet}
 
   {#snippet headerActions()}
@@ -104,7 +97,7 @@
     {#if showReplyCount}
       {#await loadComments() then comments}
         {@const commentCount = comments.length}
-        <Button variant="link" size="xs" class="pl-0" onclick={selectNoteFeed}>
+        <Button variant="link" size="xs" class="ml-auto" onclick={selectNoteFeed}>
           {#if commentCount === 0}
             Reply
           {:else}
