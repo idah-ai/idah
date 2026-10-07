@@ -45,6 +45,28 @@ check "candidates of other versions are ignored" \
 check "no candidate yet" \
   "" "$(tags v0.1.0 | latest_candidate 0.2.0)"
 
+# Check runs as gh prints them: name, status and conclusion, tab-separated.
+runs() { printf '%s\t%s\t%s\n' "$@"; }
+all_passed() {
+  runs "App CI passed" completed success "Common CI passed" completed success \
+    "Plugins CI passed" completed success "Scripts CI passed" completed success
+}
+
+check "a commit whose CI passed can be tagged" \
+  "" "$(all_passed | ci_problems)"
+check "other checks, such as Dependabot's, do not count" \
+  "" "$({ all_passed; runs Dependabot completed failure; } | ci_problems)"
+check "a failed gate stops the tag" \
+  "App CI passed: failure" \
+  "$(all_passed | sed 's/^App CI passed\tcompleted\tsuccess$/App CI passed\tcompleted\tfailure/' | ci_problems)"
+check "a gate still running stops the tag" \
+  "Scripts CI passed is still running" \
+  "$({ all_passed | grep -v '^Scripts'; runs "Scripts CI passed" in_progress ""; } | ci_problems)"
+check "a commit CI never ran on stops the tag" \
+  "$(printf '%s\n' "App CI passed has not run on this commit" "Common CI passed has not run on this commit" \
+    "Plugins CI passed has not run on this commit" "Scripts CI passed has not run on this commit")" \
+  "$(printf '' | ci_problems)"
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures failed"
   exit 1

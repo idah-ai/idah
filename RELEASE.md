@@ -174,7 +174,9 @@ bin/tag-release 0.2.0-rc.1
 records who tagged and when — the date matters legally, see §8 — and lists the pull requests merged
 since the previous stable version. It opens the message in your editor first, then asks before
 pushing, because the push starts the release. `--dry-run` shows the commit and the message without
-creating anything. It refuses a version that is already tagged.
+creating anything. It refuses a version that is already tagged, and a commit whose CI has not passed
+on `main` (the four "CI passed" checks, read with the GitHub CLI, `gh`). Pull requests are tested
+against `main` as it was when their checks ran, so the run on `main` is the one that tests what ships.
 
 [`cd-app.yml`](.github/workflows/cd-app.yml) then:
 
