@@ -28,7 +28,8 @@
       displayKey="name"
       searchable
       searchKeyWithOperation="name__match"
-      placeholder="Select template"
+      placeholder="Select feedback template"
+      searchPlaceholder="Search a template"
       valueKey="id"
       dataSource={feedbackConfigTemplateDataSource}
       listOptions={{

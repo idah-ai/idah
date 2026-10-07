@@ -182,7 +182,8 @@
     displayKey="name"
     searchable
     searchKeyWithOperation="name__match"
-    placeholder="Select template"
+    placeholder="Select label template"
+    searchPlaceholder="Search a template"
     valueKey="id"
     dataSource={labelConfigTemplateDataSource}
     listOptions={{

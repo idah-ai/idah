@@ -80,6 +80,19 @@
     }
   }
 
+  function resetComposeForm(): void {
+    contentMd = "";
+    selectedFeedbackKeys = [];
+    comments = [];
+  }
+
+  function resetEditingState(): void {
+    editingFeedContent = false;
+    editingCommentId = null;
+    editingContentMd = "";
+    editingFeedbackKeys = [];
+  }
+
   function close(): void {
     if (selectedNote === null && pendingAnchor === null) return;
 
@@ -87,13 +100,8 @@
     pendingAnchor = null;
     x = undefined;
     y = undefined;
-    contentMd = "";
-    selectedFeedbackKeys = [];
-    comments = [];
-    editingCommentId = null;
-    editingFeedContent = false;
-    editingContentMd = "";
-    editingFeedbackKeys = [];
+    resetComposeForm();
+    resetEditingState();
     highlightedCommentId = null;
     highlightedFeedId = null;
 
@@ -125,22 +133,15 @@
             pendingAnchor = null;
             contentMd = "";
             selectedFeedbackKeys = found.feedback_keys ?? [];
-            editingCommentId = null;
-            editingFeedContent = false;
-            editingContentMd = "";
-            editingFeedbackKeys = [];
-            editingFeedbackKeys = [];
+            resetEditingState();
           }
         }
       }),
       na.onCreateIntent((anchor: INoteAnchor) => {
         selectedNote = null;
         pendingAnchor = anchor;
-        contentMd = "";
-        selectedFeedbackKeys = [];
-        comments = [];
-        editingCommentId = null;
-        editingFeedContent = false;
+        resetComposeForm();
+        resetEditingState();
       }),
     ];
   });
@@ -207,17 +208,16 @@
         // Clear creating state and switch to viewing the newly created note
         pendingAnchor = null;
         selectedNote = note;
-        contentMd = "";
-        selectedFeedbackKeys = [];
-        comments = [];
+        resetComposeForm();
         na.focusNote(note);
         na.selectNote(note.id);
         na.fetchComments(note.id).then((c) => (comments = c));
       } else if (selectedNote) {
         await na.replyToNote(selectedNote.id, contentMd);
         await na.fetchComments(selectedNote.id);
+        // clear the current form first, then override comments from selected one
+        resetComposeForm();
         comments = na.getComments(selectedNote.id);
-        contentMd = "";
       }
     } catch (e) {
       console.error("Failed to save note:", e);
@@ -238,9 +238,7 @@
       selectedNote.content_md = newMd;
       selectedNote.feedback_keys = newFeedbackKeys;
       selectedNote.edited_at = new Date().toISOString();
-      editingFeedContent = false;
-      editingContentMd = "";
-      editingFeedbackKeys = [];
+      resetEditingState();
     } catch (e) {
       console.error("Failed to update note:", e);
     }
@@ -253,9 +251,7 @@
       const na = notesAdapter!;
       await na.fetchComments(selectedNote.id);
       comments = na.getComments(selectedNote.id);
-      editingCommentId = null;
-      editingContentMd = "";
-      editingFeedbackKeys = [];
+      resetEditingState();
     } catch (e) {
       console.error("Failed to update comment:", e);
     }
@@ -299,10 +295,7 @@
   }
 
   function cancelEdit(): void {
-    editingFeedContent = false;
-    editingCommentId = null;
-    editingContentMd = "";
-    editingFeedbackKeys = [];
+    resetEditingState();
   }
 
   async function handleResolve(): Promise<void> {

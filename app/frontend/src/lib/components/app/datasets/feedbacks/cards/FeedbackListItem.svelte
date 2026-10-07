@@ -38,6 +38,7 @@
           label: "Delete",
           icon: Trash2Icon,
           disabled: isTemplate ? false : alreadyInUsed, // Can only deletable if feedback is not being used.
+          tooltip: alreadyInUsed ? "This feedback item can't be deleted because it's currently in use." : "",
           destructive: true,
           action: async () => {
             await showConfirmModal({
@@ -64,7 +65,10 @@
 
   <Item.Content>
     <Item.Title class="group-hover:text-primary">{feedbackItem.label}</Item.Title>
-    <Item.Description class="text-xs">{feedbackItem.description}</Item.Description>
+
+    {#if feedbackItem.description}
+      <Item.Description class="text-xs">{feedbackItem.description}</Item.Description>
+    {/if}
   </Item.Content>
 
   <Item.Actions>

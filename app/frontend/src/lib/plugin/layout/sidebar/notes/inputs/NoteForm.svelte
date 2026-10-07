@@ -76,6 +76,11 @@
     internalContentValue = newValue;
     onContentChange(newValue);
   }
+
+  function resetInternalFormState() {
+    internalFeedbackValues = [];
+    internalContentValue = null;
+  }
 </script>
 
 <Form class={cn("gap-2", className)}>
@@ -113,6 +118,7 @@
         e.stopPropagation();
         if (submitDisabled) return;
         await onSubmit();
+        resetInternalFormState();
       }}
     >
       {submitLabel}
