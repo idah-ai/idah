@@ -20,10 +20,11 @@ out=${2:?usage: build-bundle.sh <version> <output directory>}
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 bundle="idah-$version"
 
-mkdir -p "$out/$bundle/config/nginx"
+mkdir -p "$out/$bundle/config/nginx" "$out/$bundle/install"
 cp "$root/deploy/compose/compose.yml" "$root/deploy/compose/.env.example" \
    "$root/deploy/compose/README.md" "$out/$bundle/"
 cp "$root"/deploy/compose/config/nginx/*.conf "$out/$bundle/config/nginx/"
+cp "$root"/deploy/compose/install/*.sh "$out/$bundle/install/"
 
 sed "s/^release_version=\"\"$/release_version=\"$version\"/" \
   "$root/deploy/compose/install.sh" > "$out/$bundle/install.sh"
