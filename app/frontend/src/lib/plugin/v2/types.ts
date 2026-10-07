@@ -762,6 +762,12 @@ export interface ISettingItemBase {
    */
   subSection?: string;
   /**
+   * When true, the control is rendered inline on the sub-section header line
+   * instead of as its own row. Useful for on/off toggles that control the
+   * sub-section.
+   */
+  subSectionHeader?: boolean;
+  /**
    * When true (or a function that returns true), the control is greyed out
    * and cannot be interacted with. Used for settings that depend on another
    * control's state (e.g. grid size/opacity when the grid is off).

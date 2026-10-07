@@ -429,6 +429,15 @@
               {#if subGroup.subSection}
                 <span class="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                   {subGroup.subSection}
+                  {#each subGroup.items.filter((i) => i.subSectionHeader) as headerItem}
+                    {#if headerItem.type === "switch"}
+                      {@const hkey = settingKey(group.section, headerItem.key)}
+                      <Switch
+                        checked={settingValues[hkey] as boolean}
+                        onCheckedChange={(v: boolean) => commitSetting(() => headerItem.set(v))}
+                      />
+                    {/if}
+                  {/each}
                   {#if subGroup.items.some((i) => i.default !== undefined)}
                     <Button
                       variant="ghost"
@@ -443,7 +452,7 @@
                   {/if}
                 </span>
               {/if}
-              {#each subGroup.items as item (item.key)}
+              {#each subGroup.items.filter((i) => !i.subSectionHeader) as item (item.key)}
                 {@const key = settingKey(group.section, item.key)}
                 <!--
                   Two-column row: label (+ tooltip) on the left, control on the right.

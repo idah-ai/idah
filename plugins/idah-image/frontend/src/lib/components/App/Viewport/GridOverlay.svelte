@@ -19,7 +19,7 @@
       >
         <path
           d="M {ui.gridSize} 0 L {ui.gridSize} {ui.gridSize} M 0 {ui.gridSize} L {ui.gridSize} {ui.gridSize}"
-          stroke="rgba(255, 255, 255, {ui.gridOpacity / 100 * 0.5})"
+          stroke="rgba(180, 180, 180, {ui.gridOpacity / 100 * 0.5})"
           stroke-width="1"
           fill="none"
         />

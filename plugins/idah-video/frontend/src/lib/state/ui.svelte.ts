@@ -66,7 +66,7 @@ class UIState {
   // ── Grid ──────────────────────────────────────────────────────────────
   gridEnabled = $state(false);
   gridSize = $state(100);
-  gridOpacity = $state(50);
+  gridOpacity = $state(100);
 
   // Persisted per-plugin to account settings (not localStorage): hydrated from
   // the account setting on init via settings.ts#hydrateSettings, and written back

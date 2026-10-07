@@ -126,6 +126,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             key: "grid-enabled",
             label: "Show grid",
             subSection: "Grid",
+            subSectionHeader: true,
             default: false,
             get: () => ui.gridEnabled,
             set: (v: boolean) => (ui.gridEnabled = v),
@@ -150,7 +151,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
             label: "Opacity",
             description: "Grid line opacity.",
             subSection: "Grid",
-            default: 50,
+            default: 100,
             min: 0,
             max: 100,
             step: 1,
@@ -188,7 +189,7 @@ export function registerSettings(driver: IIdahDriverV2): void {
           {
             type: "options",
             key: "label-visibility",
-            label: "Category label",
+            label: "Category Label",
             description:
               "Show each annotation's category name on the canvas — always, only while hovered or selected, or never. Saved to your account.",
             subSection: "Annotations",
