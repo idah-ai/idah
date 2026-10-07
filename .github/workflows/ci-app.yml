@@ -16,6 +16,13 @@ on:
       - opened
       - reopened
 
+  # Every merge too: a pull request is tested against main as it was when its
+  # checks ran, and other merges may have landed since. On main the path
+  # filters compare with the commit before the merge.
+  push:
+    branches:
+      - main
+
 env:
   FRONTEND_DIR: ./app/frontend
   IAM_DIR: ./app/iam
@@ -27,8 +34,10 @@ env:
   DATASET_DIR: ./app/dataset
   COMMON_DIR: ./common
 
+# A newer push to a pull request cancels its older run. On main each commit
+# gets its own group, so every merge is tested in full.
 concurrency:
-  group: ${{ github.head_ref }}
+  group: ${{ github.head_ref || github.sha }}-app
   cancel-in-progress: true
 
 jobs:
