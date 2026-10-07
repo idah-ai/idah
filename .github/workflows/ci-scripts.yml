@@ -4,7 +4,8 @@
 #
 #   lint       shellcheck on every script, and bin/tag-release's tests
 #   installer  builds the three images from the pull request, builds the
-#              installer bundle, and installs it as a customer would
+#              installer bundle, and installs it as a customer would, then
+#              again with a first attempt that fails part-way
 #
 # The upgrade from the previous release needs published images, so it runs in
 # CD - App on every version tag instead.
@@ -39,6 +40,7 @@ jobs:
             scripts:
               - 'bin/tag-release*'
               - 'deploy/compose/install.sh'
+              - 'deploy/compose/install/**'
               - '.github/scripts/**'
               - '.github/workflows/ci-scripts.yml'
             installer:
@@ -56,11 +58,13 @@ jobs:
       - uses: actions/checkout@v4
 
       # Warnings and errors; shellcheck's style hints are left to review.
+      # --external-sources lets shellcheck read the installer's steps in install/
+      # where install.sh sources them.
       - name: Run shellcheck
         run: |
-          shellcheck --severity=warning \
+          shellcheck --severity=warning --external-sources \
             bin/tag-release bin/tag-release.test.sh \
-            deploy/compose/install.sh \
+            deploy/compose/install.sh deploy/compose/install/*.sh \
             .github/scripts/*.sh
 
       - name: Test bin/tag-release
@@ -80,15 +84,37 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       # Tagged idah-<image>:0.0.0-ci, so the install uses them instead of
-      # pulling: IDAH_IMAGE_PREFIX=idah- below.
-      - name: Build the images
+      # pulling: IDAH_IMAGE_PREFIX=idah- below. Service and frontend are cached
+      # between runs of the same pull request, so a push that leaves the app
+      # alone skips most of the build. A pull request's first run builds all.
+      - name: Build the service image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.service
+          build-args: IDAH_VERSION=${{ env.VERSION }}
+          tags: idah-service:${{ env.VERSION }}
+          load: true
+          cache-from: type=gha,scope=ci-installer-service
+          cache-to: type=gha,mode=max,scope=ci-installer-service
+
+      # Built with Docker's own builder: it starts FROM the service image just
+      # loaded, which the caching builder above cannot see. One layer, quick.
+      - name: Build the media image
         run: |
-          docker build -f docker/Dockerfile.service -t "idah-service:$VERSION" \
-            --build-arg IDAH_VERSION="$VERSION" .
-          docker build -f docker/Dockerfile.media -t "idah-media:$VERSION" \
-            --build-arg SERVICE_IMAGE="idah-service:$VERSION" .
-          docker build -f docker/Dockerfile.frontend -t "idah-frontend:$VERSION" \
-            --build-arg IDAH_VERSION="$VERSION" .
+          docker buildx build --builder default --load -f docker/Dockerfile.media \
+            -t "idah-media:$VERSION" --build-arg SERVICE_IMAGE="idah-service:$VERSION" .
+
+      - name: Build the frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.frontend
+          build-args: IDAH_VERSION=${{ env.VERSION }}
+          tags: idah-frontend:${{ env.VERSION }}
+          load: true
+          cache-from: type=gha,scope=ci-installer-frontend
+          cache-to: type=gha,mode=max,scope=ci-installer-frontend
 
       - name: Build the bundle
         run: .github/scripts/build-bundle.sh "$VERSION" dist
@@ -97,6 +123,11 @@ jobs:
         env:
           IDAH_IMAGE_PREFIX: idah-
         run: .github/scripts/test-installer.sh install "dist/idah-$VERSION"
+
+      - name: Retry an install that failed part-way
+        env:
+          IDAH_IMAGE_PREFIX: idah-
+        run: .github/scripts/test-installer.sh retry "dist/idah-$VERSION"
 
   # The one check branch protection requires. The workflow runs on every PR and
   # the jobs above skip themselves when their paths did not change, so this job

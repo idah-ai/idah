@@ -4,14 +4,19 @@
 #   test-installer.sh install <bundle dir>
 #       A fresh install from an unpacked bundle (or deploy/compose/ itself).
 #
+#   test-installer.sh retry <bundle dir>
+#       A fresh install that fails part-way (its PostgreSQL will not start),
+#       then ./install.sh run again once the cause is gone: it must carry on
+#       and finish, and a third run must refuse to install over it.
+#
 #   test-installer.sh upgrade <from version> <to version> <release dir>
 #       Installs <from version> from its published bundle, then upgrades it to
 #       <to version> with --upgrade. <release dir> holds the new release's files
 #       as build-bundle.sh writes them; they are served locally, so the upgrade
 #       works before the release is published.
 #
-# Either way every service must answer through nginx and report the version
-# installed. The install is removed afterwards, volumes included.
+# Every scenario checks that every service answers through nginx and reports
+# the version installed. The install is removed afterwards, volumes included.
 #
 # Images come from IDAH_IMAGE_PREFIX (default: the published ones). For images
 # built locally, tag them <prefix><image>:<version> and set the prefix.
@@ -79,6 +84,34 @@ case "${1:-}" in
     check "$version"
     ;;
 
+  retry)
+    bundle=${2:?usage: test-installer.sh retry <bundle dir>}
+    version=${IDAH_VERSION:-$(sed -n 's/^release_version="\(.*\)"$/\1/p' "$bundle/install.sh")}
+    [ -n "$version" ] || fail "set IDAH_VERSION, or give a bundle whose installer carries a release"
+
+    say "Installing $version with a PostgreSQL that will not start"
+    mkdir "$work/install"
+    cp -R "$bundle/." "$work/install/"
+    printf 'services:\n  postgres:\n    entrypoint: ["sh", "-c", "exit 1"]\n' > "$work/install/compose.override.yml"
+    if IDAH_VERSION=$version run_installer 2>&1 | tee "$work/first.log"; then fail "the install should have failed"; fi
+    # Stopped by the crash, not by something else, and without waiting it out.
+    grep -q "PostgreSQL stopped while starting" "$work/first.log" \
+      || fail "the install did not stop on PostgreSQL's crash"
+    grep -q '^IDAH_INSTALL_STARTED_AT=.' "$work/install/.env" || fail "the failed install is not marked as started"
+    if grep -q '^IDAH_INSTALLED_AT=' "$work/install/.env"; then fail "the failed install is marked as finished"; fi
+
+    say "Running it again after the fix"
+    rm "$work/install/compose.override.yml"
+    IDAH_VERSION=$version run_installer
+    check "$version"
+    grep -q '^IDAH_INSTALLED_AT=.' "$work/install/.env" || fail "the install is not marked as finished"
+
+    say "Running it a third time"
+    if run_installer > "$work/third.log" 2>&1; then fail "the installer ran over a finished install"; fi
+    grep -q "already installed" "$work/third.log" || { cat "$work/third.log"; fail "refused for the wrong reason"; }
+    echo "   refused: already installed"
+    ;;
+
   upgrade)
     from=${2:?usage: test-installer.sh upgrade <from> <to> <release dir>}
     to=${3:?usage: test-installer.sh upgrade <from> <to> <release dir>}
@@ -115,7 +148,7 @@ case "${1:-}" in
     ;;
 
   *)
-    sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac

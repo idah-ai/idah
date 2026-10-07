@@ -5,45 +5,41 @@
 #
 #   ./install.sh
 #
-# Settings come from .env. Without one it is created from .env.example, and
-# IDAH runs with its own PostgreSQL and Redis. To change that or anything else,
-# create .env first (cp .env.example .env), edit it, then run this; see
-# README.md. Values already in .env are kept: only empty secrets are generated.
+# Settings come from .env, created from .env.example if missing. By default
+# IDAH runs its own PostgreSQL and Redis. To change anything, create .env first
+# (cp .env.example .env), edit it, then run this; see README.md. Values already
+# in .env are kept: only empty secrets are generated.
 #
-# A setting .env leaves empty may also be given in the environment, which is
+# A setting .env leaves empty can also come from the environment, and is then
 # written into .env:
 #
 #   IDAH_VERSION=0.0.0-local IDAH_IMAGE_PREFIX=idah- ./install.sh
 #
 # It asks for the public URL (unless IDAH_URL is set) and the administrator's
-# email. Run on its own (curl ... | bash), it first asks where to install,
-# the current directory by default (IDAH_DIR sets the default).
+# email. Run on its own (curl ... | bash), it first asks where to install:
+# the current directory by default, or IDAH_DIR.
 #
 #   --admin-email EMAIL    administrator login, instead of asking
 #   --admin-name NAME      default Administrator
 #   -y, --yes              ask nothing; defaults for anything not set
 #   --encode               percent-encode a password for REDIS_URL, then exit
-# Two flags continue an install that already exists. Both keep .env, its
-# secrets and the signing key, and neither ever drops a database.
 #
-#   --provision            set up the database .env now points at, after
-#                          switching to your own PostgreSQL. It creates the
-#                          databases and the schema there, and refuses a
-#                          database that already has IDAH data in it.
-#                          A bundled database with data in it is copied to the
-#                          new server first, and its volume is left untouched,
-#                          so you can go back to it.
-#   --start-empty          with --provision: do not copy anything, start with
-#                          empty databases and a new administrator password.
-#                          The old database is still left untouched.
+# Two flags continue an existing install. Both keep .env, its secrets and the
+# signing key, and neither drops a database.
+#
+#   --provision            after pointing .env at your own PostgreSQL: create
+#                          the databases and schema there. Refuses a database
+#                          that already has IDAH data. Data in the bundled
+#                          database is copied over first; its volume is left
+#                          untouched, so you can go back.
+#   --start-empty          with --provision: copy nothing, start with empty
+#                          databases and a new administrator password.
 #   --upgrade              after changing IDAH_VERSION: take that release's
-#                          files (compose.yml, nginx's configuration, this
-#                          installer), then run the migrations its images
-#                          bring and restart. Keeps every row and every
-#                          account, and touches no administrator. Refuses a
-#                          database with no IDAH data in it.
+#                          files, run its migrations and restart. Keeps every
+#                          row and account. Refuses a database with no IDAH data.
 #
 # Requires docker, docker compose, openssl and curl.
+# shellcheck source-path=SCRIPTDIR
 set -euo pipefail
 
 self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -53,20 +49,31 @@ env_file=.env
 keys_dir=config/keys
 certs_dir=config/certs
 services="iam dataset media setting notification sync audit"
-# The images they run: every service but media runs the service image.
+# Every service runs the service image, except media.
 images="service media frontend"
 default_prefix=ghcr.io/idah-ai/idah-
 
-# The release this installer belongs to, filled in when the release is published.
+# Set by the release build (build-bundle.sh).
 release_version=""
 
 admin_email=""; admin_name="Administrator"
 assume_yes=false; encode=false; provision=false; upgrade=false; start_empty=false
 
-die() { echo "error: $*" >&2; exit 1; }
+# After a curl download the user is not in the install folder. in_dir puts a
+# cd in front of the commands errors suggest, so they run as shown; an error
+# without one still says where the install is.
+downloaded_to=""; in_dir=""
+die() {
+  echo "error: $*" >&2
+  case "$*" in
+    ""|*"cd $downloaded_to "*) ;;
+    *) [ -z "$downloaded_to" ] || printf '\n       IDAH was downloaded to %s. Run these from there:\n           cd %s\n' "$downloaded_to" "$downloaded_to" >&2 ;;
+  esac
+  exit 1
+}
 say() { printf '\n== %s\n' "$*"; }
 
-# As given, for the newer installer an upgrade hands over to.
+# Kept for the newer installer an upgrade hands over to.
 args=("$@")
 
 while [ $# -gt 0 ]; do
@@ -90,7 +97,7 @@ ask() { # <prompt> <default>
   local answer
   if $assume_yes; then echo "${2:-}"; return; fi
   if [ ! -t 0 ] && { : < /dev/tty; } 2> /dev/null; then
-    # Stdin is the script itself (curl ... | bash): ask the terminal instead.
+    # Piped (curl ... | bash): stdin is the script, so read the terminal.
     read -r -p "$1${2:+ [$2]}: " answer < /dev/tty
   else
     # A terminal, or answers piped in one per line.
@@ -99,8 +106,8 @@ ask() { # <prompt> <default>
   echo "${answer:-${2:-}}"
 }
 
-# Percent-encodes every byte outside the RFC 3986 unreserved set. Byte by byte
-# through od: bash's printf "'c" mangles bytes above 127, differently per version.
+# Percent-encodes every byte outside the RFC 3986 unreserved set. Goes through
+# od, since bash's printf "'c" mangles bytes above 127.
 urlencode() {
   local out="" h
   for h in $(printf '%s' "$1" | od -An -v -tx1); do
@@ -113,7 +120,7 @@ urlencode() {
 }
 
 if $encode; then
-  # Read without echo, so the password stays off the screen and out of the history.
+  # Read silently: keeps the password off the screen and out of the history.
   if [ -t 0 ]; then IFS= read -r -s -p "Password to encode: " value; echo >&2; else IFS= read -r value; fi
   urlencode "$value"; echo
   exit 0
@@ -126,11 +133,11 @@ for tool in docker openssl curl; do
 done
 docker compose version > /dev/null 2>&1 || die "docker compose (v2) is required"
 docker info > /dev/null 2>&1 || die "cannot talk to the Docker daemon; is it running?"
-# --- the files this installs with --------------------------------------------
 
-# Run on its own (curl ... | bash), the installer fetches the rest of the
-# release it belongs to. Next to them already — the unpacked bundle, or a
-# checkout — it uses those and downloads nothing.
+# --- the release's files -----------------------------------------------------
+
+# Run on its own (curl ... | bash), the installer downloads its release. Run
+# from an unpacked bundle or a checkout, it uses the files already there.
 release_base=${IDAH_RELEASE_BASE:-https://github.com/idah-ai/idah/releases/download}
 
 checksum() { # <file> -> its sha256
@@ -139,9 +146,8 @@ checksum() { # <file> -> its sha256
   fi
 }
 
-# Downloads a release's bundle, checks it against the checksums published beside
-# it, and unpacks it into a directory. Nothing is unpacked unless the check
-# passes: a mismatch means the file is not the one that release built.
+# Downloads a release's bundle and unpacks it into a directory, only if it
+# matches the published checksum.
 fetch_bundle() { # <version> <directory>
   local bundle="idah-$1.tar.gz" dl expected url
   url="$release_base/v$1/$bundle"
@@ -163,19 +169,19 @@ fetch_bundle() { # <version> <directory>
   rm -rf "$dl"
 }
 
-if [ ! -f compose.yml ]; then
-  # IDAH_VERSION pins the whole install, files and images alike; without it the
-  # release this installer came from is what gets installed.
+# Piped (curl ... | bash): always download, even where a compose.yml happens to
+# be, such as a project of the user's. BASH_SOURCE is empty only when piped.
+if [ -z "${BASH_SOURCE[0]:-}" ] || [ ! -f compose.yml ]; then
+  # IDAH_VERSION picks the release; otherwise the one this installer came from.
   bundle_version=${IDAH_VERSION:-$release_version}
   [ -n "$bundle_version" ] || die "this installer does not carry a release, so there is nothing to download.
        Run it from an unpacked release bundle, or from deploy/compose/ in a checkout,
        or name the release to install: IDAH_VERSION=0.5.0"
 
-  # Where the install lives: its files, .env, the keys, and the compose project
-  # named after it. Asked, since it cannot be moved lightly afterwards; the
-  # current directory unless IDAH_DIR or the answer names another.
+  # The install's home: its files, .env, keys and compose project name. Hard to
+  # move later, so it is asked.
   target=$(ask "Install IDAH into" "${IDAH_DIR:-$PWD}")
-  # A typed ~ arrives as text, so it is matched literally and expanded here.
+  # A typed ~ arrives as text, so it is expanded here.
   # shellcheck disable=SC2088
   case "$target" in
     "~") target=$HOME ;;
@@ -183,13 +189,25 @@ if [ ! -f compose.yml ]; then
   esac
   case "$target" in /*) ;; *) target="$PWD/${target#./}" ;; esac
   target=${target%/}; target=${target:-/}
-  [ -f "$target/compose.yml" ] && die "$target already holds an install.
+  # Already downloaded there. What to do depends on how far the install got.
+  if [ -f "$target/compose.yml" ]; then
+    t_env="$target/$env_file"
+    if [ ! -f "$target/$keys_dir/private.pem" ]; then
+      die "IDAH was downloaded to $target but not installed yet. To install it:
+           cd $target && ./install.sh"
+    elif [ -f "$t_env" ] && grep -q '^IDAH_INSTALL_STARTED_AT=.' "$t_env" \
+        && ! grep -q '^IDAH_INSTALLED_AT=.' "$t_env"; then
+      die "an install in $target did not finish. To carry on with it:
+           cd $target && ./install.sh"
+    else
+      die "$target already holds an install.
        To upgrade it: cd $target && ./install.sh --upgrade"
+    fi
+  fi
 
   say "Downloading IDAH $bundle_version"
-  # Unpacked aside first: only once the bundle is verified, and none of its
-  # files would overwrite one already in the directory, is anything created
-  # there. install.sh may be, when it was downloaded there to run.
+  # Unpacked aside first: nothing lands in the target until the bundle is
+  # verified and none of its files would overwrite one there (except install.sh).
   unpacked=$(mktemp -d)
   trap 'rm -rf "$unpacked"' EXIT
   fetch_bundle "$bundle_version" "$unpacked"
@@ -205,6 +223,7 @@ $clashes
   cp -R "$unpacked/." "$target/"
   rm -rf "$unpacked"; trap - EXIT
   cd "$target"
+  downloaded_to=$PWD; in_dir="cd $PWD && "
   echo "   unpacked into $PWD"
 fi
 
@@ -213,6 +232,8 @@ for file in compose.yml .env.example config/nginx/nginx.conf config/nginx/routes
   [ -f "$file" ] || die "$file not found; run this from the directory it lives in"
 done
 
+# --- what this run does ------------------------------------------------------
+
 if $provision && $upgrade; then
   die "--provision sets up a database with no IDAH data in it, --upgrade migrates one that has it. Pass one."
 fi
@@ -220,17 +241,36 @@ if $start_empty && ! $provision; then
   die "--start-empty says what --provision should put in the new database. Pass both, or leave it out to keep the data you have."
 fi
 
-# Either flag continues an install rather than making one: everything generated
-# the first time is kept, so the service accounts still match the services.
-continuing=false
-if $provision || $upgrade; then continuing=true; fi
+# The steps follow the mode:
+#
+#   new        first install: generates every secret and the signing key
+#   resume     first install that failed part-way, run again
+#   upgrade    --upgrade
+#   provision  --provision
+#
+# All but new keep what the first install generated.
+mode=new
+$provision && mode=provision
+$upgrade && mode=upgrade
 
-if $continuing; then
-  flag=$($provision && echo --provision || echo --upgrade)
-  [ -f "$env_file" ] || die "$flag continues an install, and there is no $env_file here.
+# Two marks in .env: IDAH_INSTALL_STARTED_AT is written with the signing key
+# (step 4), IDAH_INSTALLED_AT once every service answers (step 9). Started but
+# not installed means the first install failed, so it is resumed. Installs from
+# before the marks have neither and are refused, as before.
+started_at=""; installed_at=""
+if [ -f "$env_file" ]; then
+  started_at=$(sed -n 's/^IDAH_INSTALL_STARTED_AT=//p' "$env_file" | tail -1)
+  installed_at=$(sed -n 's/^IDAH_INSTALLED_AT=//p' "$env_file" | tail -1)
+fi
+
+if [ "$mode" != new ]; then
+  [ -f "$env_file" ] || die "--$mode continues an install, and there is no $env_file here.
        For a new install, run ./install.sh"
-  [ -f "$keys_dir/private.pem" ] || die "$flag keeps the existing signing key, and $keys_dir/private.pem is missing.
+  [ -f "$keys_dir/private.pem" ] || die "--$mode keeps the existing signing key, and $keys_dir/private.pem is missing.
        Restore it, or start a new install: docker compose down -v && rm -f $env_file"
+elif [ -f "$keys_dir/private.pem" ] && [ -n "$started_at" ] && [ -z "$installed_at" ]; then
+  mode=resume
+  printf '\n   note: an earlier install here did not finish. Carrying on with its\n   settings, secrets and signing key.\n'
 elif [ -f "$keys_dir/private.pem" ]; then
   die "IDAH is already installed here ($keys_dir/private.pem exists).
 
@@ -248,22 +288,18 @@ elif [ -f "$keys_dir/private.pem" ]; then
                                  (this deletes the databases and uploaded files)"
 fi
 
-# --- the release's files, on --upgrade ---------------------------------------
+# --- upgrade: the new release's files ----------------------------------------
 
-# An upgrade takes the files of the release it upgrades to, not only its images:
-# compose.yml, nginx's configuration and this installer change between releases,
-# and the new images expect the new files. The release is the one .env names;
-# its bundle is fetched and verified, its files replace these, and its installer
-# carries on with the upgrade, since a newer release may upgrade differently.
-#
-# Only for an install unpacked from a release: this installer then knows the
-# release it came from. In a checkout the files are the checkout's.
+# New images expect their release's compose.yml, nginx configuration and
+# installer. So --upgrade downloads the release IDAH_VERSION names, replaces
+# these files, and hands over to the new installer, which may upgrade
+# differently. Skipped in a checkout, whose files are the checkout's.
 if $upgrade && [ -n "$release_version" ]; then
   to_version=$(sed -n 's/^IDAH_VERSION=//p' "$env_file" | tail -1 | tr -d "'\"")
   [ -n "$to_version" ] || die "--upgrade upgrades to the release IDAH_VERSION names, and $env_file sets none.
        Set it to the release to upgrade to, e.g. IDAH_VERSION=$release_version"
 
-  # Handed over already: the files are this release's.
+  # Already handed over: the files are this release's.
   if [ "${IDAH_UPGRADE_FILES:-}" != "$to_version" ]; then
     older() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]; }
     older "$to_version" "$release_version" && die "IDAH_VERSION is $to_version in $env_file, older than this installer ($release_version).
@@ -275,9 +311,8 @@ if $upgrade && [ -n "$release_version" ]; then
     trap 'rm -rf "$new"' EXIT
     fetch_bundle "$to_version" "$new"
 
-    # The replaced files are kept, so they can be put back by hand. .env,
-    # compose.override.yml, config/keys and config/certs are not in a bundle,
-    # and stay as they are.
+    # Replaced files are kept in .previous-files/. .env, compose.override.yml,
+    # config/keys and config/certs are not in a bundle, so they are untouched.
     kept=".previous-files/$(date -u +%Y%m%dT%H%M%SZ)"
     changed=0
     while IFS= read -r file; do
@@ -287,8 +322,7 @@ if $upgrade && [ -n "$release_version" ]; then
         cp -p "$file" "$kept/$file"
       fi
       mkdir -p "$(dirname "$file")"
-      # A new file moved into place rather than written over: this installer is
-      # one of them, and bash reads the script it runs as it goes.
+      # Moved into place, not written over: bash is still reading this script.
       cp -p "$new/$file" "$file.new" && mv -f "$file.new" "$file"
       echo "   $file"
       changed=$((changed + 1))
@@ -300,817 +334,33 @@ if $upgrade && [ -n "$release_version" ]; then
       echo "   the previous versions are in $kept/"
     fi
 
-    # exec replaces this process, so its EXIT trap would not clean up.
+    # exec skips the EXIT trap, so clean up first.
     rm -rf "$new"; trap - EXIT
     exec env IDAH_UPGRADE_FILES="$to_version" bash ./install.sh ${args[@]+"${args[@]}"}
   fi
 fi
 
-# --- settings --------------------------------------------------------------
+# --- steps -------------------------------------------------------------------
 
-# Nothing is written until every check below has passed, so a failed check
-# leaves nothing behind. Until then settings are read from .env, or from the
-# template when there is none.
-settings=$env_file
-[ -f "$settings" ] || settings=.env.example
+# Each step is a file in install/, run in order in this shell, so it sees the
+# variables of the steps before it. Steps 1-3 only check; step 4 is the first
+# to write. Since the steps share variables, each turns off shellcheck's
+# "assigned but unused" and "used but not assigned" checks.
+[ -f install/lib.sh ] || die "install/ is missing next to install.sh. Run the installer from the
+       unpacked release bundle, or from deploy/compose/ in a checkout."
 
-# The value of KEY in this shell, empty if unset. eval rather than ${!KEY},
-# which bash 3 (macOS) handles differently; every key here comes from the
-# template, so it is a plain name.
-from_env() { # <key>
-  eval "printf '%s' \"\${$1:-}\""
-}
+copied=false # step 6 sets it when it copies the old data
 
-# The value of KEY in the settings file: the last KEY= line, one layer of
-# surrounding quotes removed. Commented-out lines are not settings.
-from_file() { # <key>
-  local v
-  v=$(sed -n "s/^$1=//p" "$settings" | tail -1)
-  case "$v" in
-    \'*\') v=${v#\'}; v=${v%\'} ;;
-    \"*\") v=${v#\"}; v=${v%\"} ;;
-  esac
-  printf '%s' "$v"
-}
-
-# What the install will use: the file, and the environment for what it leaves
-# empty (IDAH_VERSION=0.0.0-local ./install.sh). Anything taken from the
-# environment is written into .env below, so later docker compose commands see
-# it without it being set again.
-get() { # <key>
-  local v
-  v=$(from_file "$1")
-  [ -n "$v" ] || v=$(from_env "$1")
-  printf '%s' "$v"
-}
-
-# Which settings this run takes from the environment: those the template
-# documents that .env leaves empty. Collected here, written in below, so a bad
-# value stops the install before anything is written.
-env_keys=""
-for key in $(sed -n 's/^#* *\([A-Z][A-Z_0-9]*\)=.*/\1/p' .env.example | sort -u); do
-  value=$(from_env "$key")
-  [ -n "$value" ] || continue
-  [ -n "$(from_file "$key")" ] && continue
-  case "$value" in *"'"*) die "$key cannot contain a single quote (')" ;; esac
-  env_keys="${env_keys:+$env_keys }$key"
-done
-
-# A setting both .env and the environment give, differently. docker compose
-# takes the environment's, this installer the file's, so the two would build
-# different things: an exported POSTGRES_USER creates the database with one
-# user while .env tells the services to log in as another, which breaks as soon
-# as the variable is gone.
-for key in $(sed -n 's/^#* *\([A-Z][A-Z_0-9]*\)=.*/\1/p' .env.example | sort -u); do
-  value=$(from_env "$key")
-  [ -n "$value" ] || continue
-  in_file=$(from_file "$key")
-  [ -n "$in_file" ] && [ "$in_file" != "$value" ] || continue
-  die "$key is '$in_file' in $settings, but '$value' in this shell.
-       docker compose would use the shell's, and this installer the file's.
-       Unset it (unset $key), or put the value you want in $env_file."
-done
-
-version=$(get IDAH_VERSION); version=${version:-$release_version}
-[ -n "$version" ] || version=$(ask "IDAH version to install" "")
-[ -n "$version" ] || die "a version is required: set IDAH_VERSION in $env_file"
-
-http_port=$(get IDAH_HTTP_PORT); http_port=${http_port:-8080}
-https_port=$(get IDAH_HTTPS_PORT); https_port=${https_port:-8443}
-prefix=$(get IDAH_IMAGE_PREFIX); prefix=${prefix:-$default_prefix}
-
-# A URL, not a port or a bare host: it ends up in email links, in the API
-# documentation and in the check for whether TLS is terminated in front of IDAH.
-# A trailing slash would double up in every link built from it.
-check_url() { # <value> -> the reason it is not a URL, or nothing
-  case "$1" in
-    http://*|https://*) ;;
-    [0-9]*) echo "a URL, not just a port: http://localhost:$1" ; return ;;
-    *) echo "a URL with a scheme: http://$1 or https://$1" ; return ;;
-  esac
-  case "$1" in
-    http://|https://) echo "the address too, not only the scheme" ;;
-  esac
-}
-
-url=$(get IDAH_URL)
-if [ -n "$url" ]; then
-  url=${url%/}
-  reason=$(check_url "$url")
-  [ -z "$reason" ] || die "IDAH_URL is '$url'. It needs $reason"
-else
-  # Asked rather than taken as given, so a slip can be corrected on the spot.
-  tries=0
-  while :; do
-    url=$(ask "Public URL users will open" "http://localhost:$http_port")
-    url=${url%/}
-    reason=$(check_url "$url")
-    [ -n "$reason" ] || break
-    tries=$((tries + 1))
-    [ "$tries" -lt 3 ] || die "'$url' is not a URL. It needs $reason"
-    echo "   '$url' is not a URL. It needs $reason"
-  done
+. install/lib.sh                # helpers the steps share
+. install/01-settings.sh        # read and check the settings
+. install/02-project.sh         # pick the compose project name
+. install/03-preflight.sh       # ports, TLS files, images, external servers
+. install/04-env.sh             # write .env: secrets, signing key
+. install/05-databases.sh       # start PostgreSQL and Redis, check the database
+if [ "$mode" = provision ]; then
+  . install/06-copy-database.sh # --provision only: copy the bundled data over
 fi
-# Only a new install creates an administrator; continuing one touches none.
-if ! $continuing && [ -z "$admin_email" ]; then
-  admin_email=$(ask "Administrator email" "admin@example.com")
-fi
-
-refuse_localhost() { # <what> <host>
-  case "$2" in
-    localhost|127.*|::1|\[::1\]|0.0.0.0)
-      die "$1 host '$2' would make every container connect to itself.
-       For a server running on this machine, use host.docker.internal." ;;
-  esac
-}
-
-# PostgreSQL: the bundled one unless POSTGRES_HOST names another.
-pg_host=$(get POSTGRES_HOST)
-external=false
-[ -n "$pg_host" ] && [ "$pg_host" != postgres ] && external=true
-pg_port=$(get POSTGRES_PORT); pg_port=${pg_port:-5432}
-pg_user=$(get POSTGRES_USER); pg_user=${pg_user:-idah}
-pg_password=$(get POSTGRES_PASSWORD)
-pg_sslmode=$(get POSTGRES_SSLMODE)
-
-if $external; then
-  refuse_localhost PostgreSQL "$pg_host"
-  [ -n "$pg_password" ] || die "POSTGRES_HOST is set, so POSTGRES_PASSWORD must be too: the password of $pg_user on $pg_host"
-  # Encrypted unless the setting says otherwise; require needs no CA.
-  pg_sslmode=${pg_sslmode:-require}
-fi
-case "${pg_sslmode:-prefer}" in
-  disable|allow|prefer|require|verify-ca|verify-full) ;;
-  *) die "unknown POSTGRES_SSLMODE '$pg_sslmode'" ;;
-esac
-
-# Redis: the bundled one unless REDIS_URL names another.
-redis_url=$(get REDIS_URL)
-external_redis=false
-if [ -n "$redis_url" ]; then
-  external_redis=true
-  case "$redis_url" in
-    redis://*|rediss://*) ;;
-    *) die "REDIS_URL must start with redis:// or rediss:// (TLS)" ;;
-  esac
-  redis_addr=${redis_url#*://}; redis_addr=${redis_addr##*@}; redis_addr=${redis_addr%%/*}
-  refuse_localhost Redis "${redis_addr%%:*}"
-fi
-
-# A CA certificate, given as its path inside the containers: config/certs here.
-ca=$(get IDAH_CA_CERT)
-ca_file=""
-ca_mount=()
-if [ -n "$ca" ]; then
-  case "$ca" in
-    /certs/*) ca_file="$certs_dir/${ca#/certs/}" ;;
-    *) die "IDAH_CA_CERT must be a path under /certs, which is $certs_dir on this machine" ;;
-  esac
-  [ -r "$ca_file" ] || die "IDAH_CA_CERT is $ca, but $ca_file does not exist"
-  openssl x509 -in "$ca_file" -noout 2> /dev/null || die "$ca_file is not a PEM certificate"
-  ca_mount=(-v "$PWD/$certs_dir:/certs:ro" -e "SSL_CERT_FILE=$ca")
-fi
-
-# libpq has no system trust store to fall back on, so verification needs a file.
-case "$pg_sslmode" in
-  verify-ca|verify-full)
-    [ -n "$ca" ] || die "POSTGRES_SSLMODE=$pg_sslmode needs the CA certificate the PostgreSQL
-       server's certificate is signed by: put it in $certs_dir/ca.pem and set
-       IDAH_CA_CERT=/certs/ca.pem (for a managed database, your provider's CA bundle)." ;;
-esac
-
-# --- the compose project ---------------------------------------------------
-
-# Compose takes the project name from this directory unless COMPOSE_PROJECT_NAME
-# says otherwise, and that name is the namespace for its containers and volumes.
-# A project of that name belonging to another directory would be shared: this
-# install would start that project's database and then fail to authenticate
-# against it, several steps from here, with nothing pointing at the cause.
-
-# Volumes a project left behind. Their containers may be long gone, and an
-# install that adopted one would meet a database whose password it does not know.
-project_volumes() { # <name>
-  docker volume ls --filter "label=com.docker.compose.project=$1" \
-    --format '{{.Name}}' 2> /dev/null | head -1 || true
-}
-
-# Which directory owns a project, when it is not this one.
-project_owner() { # <name>
-  docker ps -a --filter "label=com.docker.compose.project=$1" \
-    --format '{{.Label "com.docker.compose.project.working_dir"}}' 2> /dev/null \
-    | sort -u | grep -v "^$PWD\$" | head -1 || true
-}
-
-project=$(get COMPOSE_PROJECT_NAME)
-if $continuing; then
-  # Continuing an install, so the project is whatever it already uses: the name
-  # .env records, or the directory's. Its own containers may carry a working
-  # directory from before a move, which is not a clash with anything.
-  [ -n "$project" ] || project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
-elif [ -n "$project" ]; then
-  # Named on purpose, so a clash is a mistake to point out rather than work around.
-  owner=$(project_owner "$project")
-  [ -z "$owner" ] || die "COMPOSE_PROJECT_NAME is '$project', which belongs to
-       $owner
-
-       Sharing it would mean sharing that project's containers and volumes,
-       including its database. Choose another name in $env_file."
-
-  leftover=$(project_volumes "$project")
-  [ -z "$leftover" ] || die "volumes of a project named '$project' are still here, such as
-       $leftover
-
-       A new install would adopt that database and fail to authenticate against
-       it, since its password is not the one generated here. Remove them, or
-       choose another name in $env_file:
-
-           docker volume ls --filter label=com.docker.compose.project=$project"
-else
-  # Taken by something else: take the next free name rather than stopping. An
-  # install that already exists here is caught by the check further up.
-  project=$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')
-  [ -n "$project" ] || project=idah
-  owner=$(project_owner "$project")
-  if [ -n "$owner" ]; then
-    reason="belongs to $owner"
-  elif [ -n "$(project_volumes "$project")" ]; then
-    reason="still has volumes from an earlier install"
-  else
-    reason=""
-  fi
-  if [ -n "$reason" ]; then
-    base=$project
-    n=2
-    while [ -n "$(project_owner "$base-$n")" ] || [ -n "$(project_volumes "$base-$n")" ]; do
-      n=$((n + 1))
-      [ "$n" -le 20 ] || die "every name from $base-2 to $base-20 belongs to another directory.
-       Set COMPOSE_PROJECT_NAME in $env_file to one of your own."
-    done
-    project="$base-$n"
-    printf '\n   note: the project name %s %s,\n   so this install uses %s for its containers and volumes.\n' \
-      "$base" "$reason" "$project"
-  fi
-fi
-
-# --- ports -----------------------------------------------------------------
-
-# Both ports are published, the HTTPS one even with no TLS configured, so a
-# port another program holds would stop the stack at the very end. Checked
-# here instead, before anything is written. A port this install already holds
-# is fine: that is its own nginx, on a re-run.
-port_taken() { # <port>
-  (exec 3<> "/dev/tcp/127.0.0.1/$1") 2> /dev/null || return 1
-  exec 3<&- 3>&-
-  docker compose ps --format '{{.Ports}}' 2> /dev/null | grep -q ":$1->" && return 1
-  return 0
-}
-
-for port_pair in "HTTP:$http_port:IDAH_HTTP_PORT" "HTTPS:$https_port:IDAH_HTTPS_PORT"; do
-  what=${port_pair%%:*}; rest=${port_pair#*:}; port=${rest%%:*}; setting=${rest#*:}
-  if port_taken "$port"; then
-    die "port $port is already in use, and IDAH publishes its $what port there.
-       Set $setting in $env_file to a free port, or stop what is holding it:
-           lsof -nP -iTCP:$port -sTCP:LISTEN"
-  fi
-done
-
-# --- images ----------------------------------------------------------------
-
-# HTTPS served by IDAH's own nginx: the certificate and its key must be there,
-# match each other, and the key must not need a passphrase, or nginx fails to
-# start after everything else has been set up.
-tls_conf=$(get IDAH_TLS_CONF)
-if [ -n "$tls_conf" ]; then
-  [ -f "$tls_conf" ] || die "IDAH_TLS_CONF is $tls_conf, which does not exist. The one this release
-       ships is ./config/nginx/tls.conf"
-  for f in "$certs_dir/idah.crt" "$certs_dir/idah.key"; do
-    [ -r "$f" ] || die "$tls_conf serves HTTPS from $certs_dir/idah.crt and $certs_dir/idah.key. Missing: $f"
-  done
-  openssl x509 -in "$certs_dir/idah.crt" -noout 2> /dev/null \
-    || die "$certs_dir/idah.crt is not a PEM certificate"
-  openssl pkey -in "$certs_dir/idah.key" -noout 2> /dev/null \
-    || die "$certs_dir/idah.key is not a PEM private key, or it needs a passphrase, which nginx cannot supply"
-  crt_key=$(openssl x509 -in "$certs_dir/idah.crt" -noout -pubkey 2> /dev/null)
-  key_key=$(openssl pkey -in "$certs_dir/idah.key" -pubout 2> /dev/null)
-  [ "$crt_key" = "$key_key" ] || die "$certs_dir/idah.key is not the key of $certs_dir/idah.crt"
-elif [ "${url#https://}" != "$url" ]; then
-  # An https:// address with no TLS here only works behind a terminator, which
-  # is not something this installer can check for.
-  printf '\n   note: IDAH serves plain HTTP on port %s. %s expects TLS to be terminated\n   in front of it, or IDAH_TLS_CONF set — see "Serving HTTPS" in README.md.\n' "$http_port" "$url"
-fi
-
-say "Checking images"
-# The missing ones pulled side by side rather than one after another: most of
-# an install's time is the download, and one pull alone rarely fills the line.
-# Not docker compose pull, which cannot read compose.yml before .env exists.
-pulls=""
-for name in $images; do
-  image="$prefix$name:$version"
-  docker image inspect "$image" > /dev/null 2>&1 && continue
-
-  printf "   pulling %s\n" "$image"
-  docker pull -q "$image" > /dev/null 2>&1 &
-  pulls="$pulls $!:$image"
-done
-
-missing=""
-for pull in $pulls; do
-  wait "${pull%%:*}" || missing="${missing:+$missing, }${pull#*:}"
-done
-[ -z "$missing" ] || die "cannot get $missing
-
-       If these images are built from source rather than published, set the
-       prefix they were tagged with in $env_file, for example:
-
-           IDAH_IMAGE_PREFIX=idah-
-           IDAH_VERSION=local
-
-       Otherwise check that $version is a published version and that this
-       machine can reach the registry."
-echo "   all three present"
-
-# --- external servers --------------------------------------------------------
-
-# What to do about a certificate the server presents but we cannot verify.
-tls_hint() { # <reason>
-  case "$1" in
-    *"certificate verify failed"*)
-      if [ -n "$ca" ]; then
-        printf '\n       Check that %s includes the CA that signed the server'"'"'s certificate.' "$ca_file"
-      else
-        printf '\n       If the server'"'"'s certificate is signed by your own CA, see IDAH_CA_CERT in %s.' "$env_file"
-      fi ;;
-  esac
-}
-
-# Run in a service image, so they test what the services will use.
-if $external; then
-  say "Connecting to PostgreSQL at $pg_host:$pg_port"
-  if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
-      -e "DATABASE_URI=postgres://$pg_user@$pg_host:$pg_port/postgres?sslmode=$pg_sslmode${ca:+&sslrootcert=$ca}" \
-      -e "PGPASSWORD=$pg_password" "${prefix}service:$version" ruby -e '
-        require "sequel"
-        begin
-          Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| puts db.fetch("show server_version_num").single_value }
-        rescue StandardError => e
-          warn e.message.lines.first.strip
-          exit 1
-        end' 2>&1 < /dev/null); then
-    hint=""
-    case "$reason" in
-      *"does not support SSL"*) hint="
-       Set POSTGRES_SSLMODE=disable in $env_file for a server without TLS." ;;
-    esac
-    die "cannot connect to PostgreSQL at $pg_host:$pg_port as $pg_user:
-       $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"
-  fi
-
-  # IDAH needs 13 or later: from 13 on, the database owner may create the
-  # extensions it uses without being a superuser, which is what makes a managed
-  # database work at all.
-  pg_server_major=$(( $(printf '%s' "$reason" | tail -1 | tr -dc '0-9' || echo 0) / 10000 ))
-  [ "$pg_server_major" -ge 13 ] || die "PostgreSQL at $pg_host:$pg_port is version ${pg_server_major:-unknown}, and IDAH needs 13 or later.
-       Older versions cannot create pg_trgm, pgcrypto and uuid-ossp without a superuser."
-  echo "   connected (PostgreSQL $pg_server_major, sslmode=$pg_sslmode)"
-fi
-
-if $external_redis; then
-  say "Connecting to Redis at $redis_addr"
-  if ! reason=$(docker run --rm --add-host=host.docker.internal:host-gateway ${ca_mount[@]+"${ca_mount[@]}"} \
-      -e "REDIS_URL=$redis_url" "${prefix}service:$version" ruby -e '
-        require "redis"
-        begin
-          Redis.new(url: ENV.fetch("REDIS_URL")).ping
-        rescue StandardError => e
-          # A failed TLS handshake comes back with an empty message.
-          message = e.message.lines.first.to_s.strip
-          message = "no answer to the TLS handshake #{message}" if message.start_with?("(")
-          warn message
-          exit 1
-        end' 2>&1 < /dev/null); then
-    hint=""
-    case "$reason" in
-      *"TLS handshake"*) hint="
-       Does the server accept TLS? rediss:// connects with TLS, redis:// without." ;;
-      *WRONGPASS*|*NOAUTH*|*"invalid password"*|*"bad URI"*) hint="
-       A password with characters other than letters, digits and - . _ ~ must be
-       percent-encoded in REDIS_URL: ./install.sh --encode" ;;
-    esac
-    die "cannot connect to Redis at $redis_addr:
-       $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"
-  fi
-  case "$redis_url" in rediss://*) echo "   connected over TLS" ;; *) echo "   connected" ;; esac
-fi
-
-# --- secrets ---------------------------------------------------------------
-
-# Alphanumeric only: these end up in a URI, in .env and in a comma/colon
-# separated list of service credentials. `cut` rather than `head -c`, which
-# would close the pipe early and trip pipefail.
-secret() {
-  n=${1:-32}
-  openssl rand -base64 $((n * 3)) | LC_ALL=C tr -dc 'A-Za-z0-9' | cut -c1-"$n"
-}
-
-# Sets KEY, replacing its line or uncommenting "# KEY=" from the template, and
-# appends it if the template has no such line. The value goes through ENVIRON,
-# not awk -v, which would interpret backslashes in it.
-set_env() { # <key> <value>
-  KEY=$1 VAL=$2 awk '
-    BEGIN { key = ENVIRON["KEY"]; line = key "=" ENVIRON["VAL"] }
-    !done && ($0 ~ ("^" key "=") || $0 ~ ("^# " key "=")) { print line; done = 1; next }
-    { print }
-    END { if (!done) print line }
-  ' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
-}
-
-$provision && say "Checking $env_file" || say "Writing $env_file"
-saved_umask=$(umask); umask 077 # secrets: never readable by other users
-if [ ! -f "$env_file" ]; then
-  { echo "# Created by install.sh on $(date -u '+%Y-%m-%d %H:%M:%S UTC')."; cat .env.example; } > "$env_file"
-fi
-chmod 600 "$env_file"
-settings=$env_file
-
-# A value is single-quoted unless it is plain enough to stand on its own, so
-# spaces and shell characters survive compose reading the file back.
-quote() { # <value>
-  case "$1" in
-    *[!A-Za-z0-9_.:/@=+-]*) printf "'%s'" "$1" ;;
-    *) printf '%s' "$1" ;;
-  esac
-}
-
-# The settings collected from the environment, written in so docker compose
-# sees them later without them being set again.
-for key in $env_keys; do
-  set_env "$key" "$(quote "$(from_env "$key")")"
-  echo "   $key from the environment"
-done
-
-# Written in, so renaming the directory later cannot detach the volumes.
-[ -n "$(from_file COMPOSE_PROJECT_NAME)" ] || set_env COMPOSE_PROJECT_NAME "$project"
-
-[ -n "$(from_file IDAH_VERSION)" ] || set_env IDAH_VERSION "$version"
-# The normalised one, whatever .env or the environment carried: a trailing
-# slash would double up in every link built from it.
-[ "$(from_file IDAH_URL)" = "$url" ] || set_env IDAH_URL "$url"
-
-if [ -z "$pg_password" ]; then
-  pg_password=$(secret 32)
-  set_env POSTGRES_PASSWORD "'$pg_password'"
-fi
-if $external; then
-  [ -n "$(from_file IDAH_POSTGRES_CONTAINER)" ] || set_env IDAH_POSTGRES_CONTAINER 0
-  [ -n "$(from_file POSTGRES_SSLMODE)" ]        || set_env POSTGRES_SSLMODE "$pg_sslmode"
-fi
-if $external_redis; then
-  [ -n "$(from_file IDAH_REDIS_CONTAINER)" ] || set_env IDAH_REDIS_CONTAINER 0
-fi
-
-# Each service account gets its own password, kept if .env already has one, and
-# handed to service_accounts:create as svc:password pairs.
-service_list=""
-for svc in $services; do
-  key="IDAH_SERVICE_PASSWORD_$(echo "$svc" | tr '[:lower:]' '[:upper:]')"
-  pw=$(from_file "$key")
-  if [ -z "$pw" ]; then pw=$(secret 32); set_env "$key" "$pw"; fi
-  service_list="${service_list:+$service_list,}$svc:$pw"
-done
-echo "   your settings kept, missing secrets generated"
-
-mkdir -p "$keys_dir" "$certs_dir"
-if $continuing; then
-  # A new key would sign everyone out on every upgrade.
-  umask "$saved_umask"
-  echo "   the signing key in $keys_dir is kept"
-else
-  openssl ecparam -name prime256v1 -genkey -noout -out "$keys_dir/private.pem" 2> /dev/null
-  openssl ec -in "$keys_dir/private.pem" -pubout -out "$keys_dir/public.pem" 2> /dev/null
-  umask "$saved_umask"
-  chmod 644 "$keys_dir/public.pem"
-  echo "   $keys_dir/private.pem (iam signs tokens with it)"
-  echo "   $keys_dir/public.pem  (the other services verify with it)"
-fi
-
-# No -f: under its default name compose.yml, compose also merges the
-# customer's compose.override.yml, which naming the file explicitly would skip.
-dc() { docker compose "$@"; }
-
-# From here on a failure leaves a partial install. Settings and secrets stay in
-# .env, so after fixing the cause the installer can simply run again.
-if $continuing; then
-  retry="After fixing it: ./install.sh $flag (it can simply run again)"
-else
-  retry="After fixing it: rm -rf $keys_dir && ./install.sh (the settings and secrets in $env_file are kept)"
-fi
-
-# --- databases -------------------------------------------------------------
-
-bundled=""
-$external || bundled="postgres"
-$external_redis || bundled="$bundled redis"
-if [ -n "$bundled" ]; then
-  say "Starting the bundled services:$(printf ' %s' $bundled)"
-  dc up -d $bundled
-fi
-
-if ! $external; then
-  # Over TCP: on a new volume the image first runs a temporary server on the
-  # socket only, and a socket check would pass against it just before the restart.
-  printf "   waiting for PostgreSQL"
-  for _ in $(seq 1 60); do
-    if dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1; then break; fi
-    printf "."; sleep 2
-  done
-  dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 \
-    || die "PostgreSQL did not become ready. See: docker compose logs postgres
-       $retry"
-  echo " ready"
-fi
-
-# Which of the two situations this is: a database with IDAH's schema in it, or
-# one without. Asked in the iam image, so it uses the same connection settings
-# the services will.
-if $continuing; then
-  say "Looking at the database"
-  if dc run --rm iam bundle exec ruby -e '
-        require "sequel"
-        begin
-          Sequel.connect(ENV.fetch("DATABASE_URI")) { |db| exit db.table_exists?(:schema_migrations) ? 0 : 1 }
-        rescue Sequel::DatabaseConnectionError
-          exit 1 # no database yet, so nothing in it
-        end' < /dev/null > /dev/null 2>&1; then
-    $upgrade || die "the database at $($external && echo "$pg_host:$pg_port" || echo "the bundled postgres") already has IDAH data in it.
-
-       To run the migrations a new IDAH_VERSION brings, keeping every row:
-           ./install.sh --upgrade
-
-       --provision is for a database with no IDAH data in it, and it brings the
-       data of this install with it; see \"Moving to your own PostgreSQL\" in
-       README.md."
-    echo "   IDAH's schema is there; the data in it is kept"
-  else
-    $provision || die "there is no IDAH data in the database at $($external && echo "$pg_host:$pg_port" || echo "the bundled postgres").
-
-       --upgrade migrates a database that already has it. To set this one up
-       from scratch, with fresh databases and accounts:
-           ./install.sh --provision"
-    echo "   empty, ready to be set up"
-  fi
-fi
-
-# Moving to your own server keeps what the install already has: the bundled
-# database is copied over unless --start-empty says otherwise. The target is
-# empty (the check above insisted on it) and the bundled volume is only read,
-# so this can be undone by putting the old POSTGRES_* settings back.
-copied=false
-if $provision && $start_empty; then
-  say "Starting with empty databases"
-  echo "   --start-empty: nothing is copied from the database this install used"
-elif $provision && $external; then
-  # Its volume was created with the credentials of the first install, which may
-  # not be the ones .env now holds. Local connections in that image are trusted,
-  # so any role that exists will do.
-  say "Looking for data to copy over"
-  dc stop $services frontend > /dev/null 2>&1 || true
-  dc up -d --scale postgres=1 postgres > /dev/null 2>&1 \
-    || die "could not start the bundled database to look in it"
-  for _ in $(seq 1 30); do
-    dc exec -T postgres pg_isready -h 127.0.0.1 -d postgres < /dev/null > /dev/null 2>&1 && break
-    sleep 2
-  done
-
-  src_user=""
-  for candidate in "$pg_user" idah postgres; do
-    if dc exec -T postgres psql -U "$candidate" -Atqc "select 1" postgres < /dev/null > /dev/null 2>&1; then
-      src_user=$candidate; break
-    fi
-  done
-
-  if [ -n "$src_user" ] && dc exec -T postgres psql -U "$src_user" -Atqc \
-      "select 1 from information_schema.tables where table_name = 'schema_migrations'" idah_iam \
-      < /dev/null 2>/dev/null | grep -q 1; then
-    echo "   the bundled database has IDAH's data; copying it over"
-    echo "   (--start-empty leaves it behind and starts with empty databases)"
-
-    # The client tools come from the image the bundled database uses, so they
-    # can always read what it holds.
-    pg_image=$(sed -n 's/^ *image: *\(pgvector[^ ]*\)/\1/p' compose.yml | head -1)
-    target() { # <database>
-      printf 'postgres://%s@%s:%s/%s?sslmode=%s%s' "$pg_user" "$pg_host" "$pg_port" "$1" "$pg_sslmode" "${ca:+&sslrootcert=$ca}"
-    }
-    run_pg() { # <command...> against the target
-      docker run --rm -i -e "PGPASSWORD=$pg_password" --add-host=host.docker.internal:host-gateway \
-        ${ca_mount[@]+"${ca_mount[@]}"} "$pg_image" "$@"
-    }
-
-    # Major versions of both ends. A dump restored into an older server fails on
-    # settings that version does not have (PostgreSQL 17 writes
-    # `SET transaction_timeout`, which 16 rejects), so that case is copied as
-    # plain SQL with those lines left out instead.
-    major() { # <server_version_num>
-      echo $(( ${1:-0} / 10000 ))
-    }
-    src_major=$(major "$(dc exec -T postgres psql -U "$src_user" -Atqc "show server_version_num" postgres < /dev/null 2>/dev/null | tr -d '\r')")
-    tgt_major=$(major "$(run_pg psql -Atqc "show server_version_num" "$(target postgres)" < /dev/null 2>/dev/null | tr -d '\r')")
-    older_target=false
-    if [ "$tgt_major" -gt 0 ] && [ "$src_major" -gt 0 ] && [ "$tgt_major" -lt "$src_major" ]; then
-      older_target=true
-      echo "   your server is PostgreSQL $tgt_major, the bundled one is $src_major: copying in a form $tgt_major accepts"
-    fi
-
-    copy_log=$(mktemp)
-    for db in $services; do
-      printf "   %-13s" "$db"
-      run_pg psql -q "$(target postgres)" -c "CREATE DATABASE idah_$db" < /dev/null > "$copy_log" 2>&1 \
-        || die "could not create idah_$db on $pg_host:
-       $(tail -2 "$copy_log")
-       Does $pg_user have the CREATEDB privilege?"
-
-      if $older_target; then
-        dc exec -T postgres pg_dump -U "$src_user" --format=plain --no-owner --no-acl "idah_$db" 2> "$copy_log" \
-          | grep -v '^SET transaction_timeout' \
-          | run_pg psql -v ON_ERROR_STOP=1 -q "$(target "idah_$db")" >> "$copy_log" 2>&1 \
-          || copy_failed=true
-      else
-        dc exec -T postgres pg_dump -U "$src_user" -Fc "idah_$db" 2> "$copy_log" \
-          | run_pg pg_restore --no-owner --no-acl --exit-on-error -d "$(target "idah_$db")" >> "$copy_log" 2>&1 \
-          || copy_failed=true
-      fi
-      # What the copy is checked against: every table and how many rows it has.
-      row_counts="select table_name || ':' || (xpath('/row/c/text()',
-          query_to_xml(format('select count(*) as c from public.%I', table_name), false, true, '')))[1]::text::bigint
-        from information_schema.tables
-        where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name"
-
-      if [ "${copy_failed:-false}" = true ]; then
-        die "copying idah_$db failed:
-
-$(sed 's/^/       /' "$copy_log" | tail -6)
-
-       The bundled database is untouched: put the old POSTGRES_* settings back
-       in $env_file to return to it. To set the new server up without the old
-       data instead, add --start-empty."
-      fi
-      # A restore that reported no error can still have landed short; compare
-      # both ends rather than trusting it.
-      before=$(dc exec -T postgres psql -U "$src_user" -Atqc "$row_counts" "idah_$db" < /dev/null 2>> "$copy_log")
-      after=$(run_pg psql -Atqc "$row_counts" "$(target "idah_$db")" < /dev/null 2>> "$copy_log")
-      if [ "$before" != "$after" ]; then
-        die "idah_$db did not copy completely. Tables and row counts differ:
-
-       bundled: $(printf '%s' "$before" | tr '\n' ' ')
-       copied:  $(printf '%s' "$after" | tr '\n' ' ')
-
-       The bundled database is untouched: put the old POSTGRES_* settings back
-       in $env_file to return to it."
-      fi
-      tables=$(printf '%s' "$before" | grep -c .)
-      echo "copied, $tables table$([ "$tables" = 1 ] || echo s) verified"
-    done
-    rm -f "$copy_log"
-    copied=true
-  else
-    echo "   none: the new databases will start empty"
-  fi
-fi
-
-say "Creating databases and running migrations"
-for svc in $services; do
-  printf "   %-13s" "$svc"
-  dc run --rm "$svc" bundle exec rake db:setup db:migrate < /dev/null > /dev/null 2>&1 \
-    || die "migrations failed for $svc. To see why:
-       docker compose run --rm $svc bundle exec rake db:setup db:migrate
-$($external && printf '%s' "
-       With an external database, $pg_user needs the CREATEDB privilege, or the
-       idah_* databases must be created in advance and owned by $pg_user.")
-       $retry"
-  echo "ok"
-done
-
-# --- accounts --------------------------------------------------------------
-
-# An upgrade leaves every account as it is: the accounts are already there,
-# with the passwords in .env, and creating an administrator again would reset
-# the password of the one already in use.
-admin_password=""
-if $upgrade || $copied; then
-  say "Accounts"
-  echo "   left as they are"
-else
-  say "Creating accounts"
-
-  # Both tasks set the account to the password in .env, so they can run again.
-  dc run --rm -e "SERVICES=$service_list" iam bundle exec rake service_accounts:create < /dev/null > /dev/null 2>&1 \
-    || die "could not create the service accounts. $retry"
-  echo "   seven service accounts, each with its own password"
-
-  dc run --rm iam bundle exec rake api_key_service_account:create < /dev/null > /dev/null 2>&1 \
-    || die "could not create the API service account. $retry"
-  echo "   API service account"
-
-  admin_password=$(secret 20)
-  dc run --rm -e "ADMIN_EMAIL=$admin_email" -e "ADMIN_PASSWORD=$admin_password" \
-    -e "ADMIN_NAME=$admin_name" iam bundle exec rake admin:create < /dev/null > /dev/null 2>&1 \
-    || die "could not create the administrator account. $retry"
-  echo "   administrator $admin_email"
-fi
-
-# --- start -----------------------------------------------------------------
-
-say "Starting IDAH"
-# Recreated even if unchanged: after a retry, containers from the failed run
-# would still hold the key files that were replaced.
-dc up -d --force-recreate
-
-# Not /health: nginx answers that itself. iam answering through nginx means
-# both are up, and every service's own check below needs it.
-printf "   waiting for iam"
-for _ in $(seq 1 90); do
-  if curl -fsS --max-time 2 "http://localhost:$http_port/api/v1/iam/healthcheck" > /dev/null 2>&1; then break; fi
-  printf "."; sleep 2
-done
-curl -fsS --max-time 2 "http://localhost:$http_port/api/v1/iam/healthcheck" > /dev/null 2>&1 \
-  || die "iam did not come up. See: docker compose logs iam"
-echo " ready"
-
-# Each service logs in to iam with its own account, through the address its
-# service-to-service calls use. Catches a wrong internal URL or password here
-# instead of at the first upload.
-say "Checking service-to-service calls"
-for svc in $services; do
-  printf "   %-13s" "$svc"
-  if ! out=$(dc exec -T "$svc" bundle exec rake api:check < /dev/null 2>&1); then
-    die "the stack is running, but $svc cannot reach the other services:
-       $( { printf '%s\n' "$out" | grep -E '^FAILED' || printf '%s\n' "$out" | grep -v -e COMMON_PATH -e '^/' -e '^Tasks:' -e '^(See'; } | tail -1)
-       See: docker compose logs $svc"
-  fi
-  echo "ok"
-done
-
-smtp_host=$(get MAIL_SMTP_HOST)
-
-# bash 3 (macOS) cannot parse a case inside $(...), so build this beforehand.
-tls_note=""
-if [ -n "$tls_conf" ]; then
-  tls_note=" (HTTPS on port $https_port, from $certs_dir/idah.crt)"
-else
-  case "$url" in https://*) tls_note=" (TLS terminated in front of port $http_port)" ;; esac
-fi
-
-# An administrator that was left alone keeps a login and a password we do not
-# know, so neither is printed.
-if [ -n "$admin_password" ]; then
-  account_lines="  Login     $admin_email
-  Password  $admin_password"
-  password_note="Write the password down now: it is not stored anywhere and cannot be recovered.
-Change it after the first login."
-else
-  account_lines="  Accounts  unchanged: log in as before"
-  password_note="Accounts, and every row in the database, are as they were."
-fi
-
-# Where uploaded files are, which is what a backup has to cover: S3, a
-# directory compose.override.yml mounts over the volume, or the volume itself.
-files_where() { # <service> <adapter key> <volume> <path>: the path is the
-                 # folder, both in the volume and under the bucket by default
-  local prefix
-  if [ "$(get "$2")" = s3 ]; then
-    prefix=$(get "${2%_ADAPTER}_PREFIX"); prefix=${prefix:-${4#/data/}}
-    echo "S3, $(get "${2%_ADAPTER}_BUCKET")/$prefix"
-  elif [ -f compose.override.yml ] && grep -q ":$4" compose.override.yml; then
-    dc config 2> /dev/null | awk -v svc="$1" -v target="$4" '
-      /^  [a-z]/ { in_svc = ($1 == svc ":") }
-      in_svc && /source:/ { src = $2 }
-      in_svc && $1 == "target:" && $2 == target { print src; exit }' | grep . || echo "the ${project}_$3 volume"
-  else
-    echo "the ${project}_$3 volume"
-  fi
-}
-media_where=$(files_where media MEDIAS_FILES_ADAPTER media_files /data/media/files)
-sync_where=$(files_where sync SYNC_FILES_ADAPTER sync_files /data/sync/files)
-
-cat <<SUMMARY
-
-IDAH $version is $($continuing && echo "ready" || echo "installed").$($copied && printf '\n\nThe bundled database was copied to %s, and its volume is untouched:\nput the old POSTGRES_* settings back in %s to return to it.' "$pg_host:$pg_port" "$env_file")
-
-  URL       $url$tls_note
-$account_lines
-  Project   $project (its containers and volumes carry this name)
-  Database  $($external && echo "$pg_host:$pg_port (sslmode=$pg_sslmode)" || echo "bundled, in the ${project}_postgres_data volume")
-  Redis     $($external_redis && echo "$redis_addr" || echo "bundled, in the ${project}_redis_data volume")
-  Email     $([ -n "$smtp_host" ] && echo "via $smtp_host" || echo "off until MAIL_SMTP_HOST is set")
-  Uploads   $media_where
-  Exports   $sync_where
-
-$password_note
-
-Settings live in $env_file and README.md describes them. After changing one:
-docker compose up -d. Back up the uploads and exports above along with the
-database, $env_file and config/.
-
-  Status    docker compose ps
-  Logs      docker compose logs -f
-  Stop      docker compose down
-SUMMARY
+. install/07-migrations.sh      # create the databases, run the migrations
+. install/08-accounts.sh        # service accounts and the administrator
+. install/09-start.sh           # start, check every service, mark installed
+. install/10-summary.sh         # print what was installed

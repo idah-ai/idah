@@ -11,6 +11,7 @@ with settings in `config/development/`.
 | File | Purpose |
 |---|---|
 | `install.sh` | The installer. Downloads the release when run on its own, generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
+| `install/` | The installer's steps, numbered in the order `install.sh` runs them: `01-settings.sh` to `10-summary.sh`, with shared helpers in `lib.sh`. `06-copy-database.sh` runs only with `--provision`. |
 | `compose.yml` | The stack, pulling published images pinned to one release. nginx, PostgreSQL and Redis are pinned to exact versions too. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
 | `config/nginx/` | The reverse proxy: `nginx.conf`, `routes.conf` for the routes it serves, and `tls.conf` for an HTTPS server from your own certificate (off unless `IDAH_TLS_CONF` names it). |
@@ -84,6 +85,13 @@ IDAH_VERSION=0.0.0-local IDAH_IMAGE_PREFIX=idah- ./install.sh --yes --admin-emai
 It checks the images, the ports and any server you configured before writing
 anything, so a failed check leaves nothing behind. `--yes` asks nothing, for
 unattended installs: set `IDAH_URL` in `.env` and pass `--admin-email`.
+
+If it fails later, while creating the databases or accounts or starting the
+stack, fix what it reports and run `./install.sh` again: it carries on with the
+settings, secrets and signing key the first attempt wrote. An install is marked
+finished (`IDAH_INSTALLED_AT` in `.env`) only once every service answers; from
+then on `./install.sh` refuses to run over it, and `--upgrade` is the way to
+change it.
 
 ## Configuration
 
