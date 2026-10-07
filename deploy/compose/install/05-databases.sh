@@ -19,7 +19,7 @@ if ! $external; then
     printf "."; sleep 2
   done
   dc exec -T postgres pg_isready -h 127.0.0.1 -U "$pg_user" -d postgres < /dev/null > /dev/null 2>&1 \
-    || die "PostgreSQL did not become ready. See: docker compose logs postgres
+    || die "PostgreSQL did not become ready. See: ${in_dir}docker compose logs postgres
        $retry"
   echo " ready"
 fi

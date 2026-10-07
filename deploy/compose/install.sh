@@ -59,7 +59,18 @@ release_version=""
 admin_email=""; admin_name="Administrator"
 assume_yes=false; encode=false; provision=false; upgrade=false; start_empty=false
 
-die() { echo "error: $*" >&2; exit 1; }
+# After a curl download the user is not in the install folder. in_dir puts a
+# cd in front of the commands errors suggest, so they run as shown; an error
+# without one still says where the install is.
+downloaded_to=""; in_dir=""
+die() {
+  echo "error: $*" >&2
+  case "$*" in
+    ""|*"cd $downloaded_to "*) ;;
+    *) [ -z "$downloaded_to" ] || printf '\n       IDAH was downloaded to %s. Run these from there:\n           cd %s\n' "$downloaded_to" "$downloaded_to" >&2 ;;
+  esac
+  exit 1
+}
 say() { printf '\n== %s\n' "$*"; }
 
 # Kept for the newer installer an upgrade hands over to.
@@ -158,7 +169,9 @@ fetch_bundle() { # <version> <directory>
   rm -rf "$dl"
 }
 
-if [ ! -f compose.yml ]; then
+# Piped (curl ... | bash): always download, even where a compose.yml happens to
+# be, such as a project of the user's. BASH_SOURCE is empty only when piped.
+if [ -z "${BASH_SOURCE[0]:-}" ] || [ ! -f compose.yml ]; then
   # IDAH_VERSION picks the release; otherwise the one this installer came from.
   bundle_version=${IDAH_VERSION:-$release_version}
   [ -n "$bundle_version" ] || die "this installer does not carry a release, so there is nothing to download.
@@ -176,8 +189,21 @@ if [ ! -f compose.yml ]; then
   esac
   case "$target" in /*) ;; *) target="$PWD/${target#./}" ;; esac
   target=${target%/}; target=${target:-/}
-  [ -f "$target/compose.yml" ] && die "$target already holds an install.
+  # Already downloaded there. What to do depends on how far the install got.
+  if [ -f "$target/compose.yml" ]; then
+    t_env="$target/$env_file"
+    if [ ! -f "$target/$keys_dir/private.pem" ]; then
+      die "IDAH was downloaded to $target but not installed yet. To install it:
+           cd $target && ./install.sh"
+    elif [ -f "$t_env" ] && grep -q '^IDAH_INSTALL_STARTED_AT=.' "$t_env" \
+        && ! grep -q '^IDAH_INSTALLED_AT=.' "$t_env"; then
+      die "an install in $target did not finish. To carry on with it:
+           cd $target && ./install.sh"
+    else
+      die "$target already holds an install.
        To upgrade it: cd $target && ./install.sh --upgrade"
+    fi
+  fi
 
   say "Downloading IDAH $bundle_version"
   # Unpacked aside first: nothing lands in the target until the bundle is
@@ -197,6 +223,7 @@ $clashes
   cp -R "$unpacked/." "$target/"
   rm -rf "$unpacked"; trap - EXIT
   cd "$target"
+  downloaded_to=$PWD; in_dir="cd $PWD && "
   echo "   unpacked into $PWD"
 fi
 

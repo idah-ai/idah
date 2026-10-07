@@ -13,14 +13,54 @@ port_taken() { # <port>
   return 0
 }
 
+# The next free port after <port>, skipping <other> (the other port IDAH uses).
+free_port() { # <port> <other>
+  local p=$1
+  while [ "$p" -lt $(($1 + 100)) ]; do
+    p=$((p + 1))
+    [ "$p" != "$2" ] && ! port_taken "$p" && { echo "$p"; return; }
+  done
+  echo "<free port>"
+}
+
+# Both ports checked before stopping, so one message covers both. The command
+# it suggests carries every port setting: a busy one with a free port in its
+# place, and one given in the environment as given, since nothing is saved
+# until step 4.
+busy=""; busy_ports=""; in_file=""; ports_cmd=""; other=$https_port
 for port_pair in "HTTP:$http_port:IDAH_HTTP_PORT" "HTTPS:$https_port:IDAH_HTTPS_PORT"; do
   what=${port_pair%%:*}; rest=${port_pair#*:}; port=${rest%%:*}; setting=${rest#*:}
   if port_taken "$port"; then
-    die "port $port is already in use, and IDAH publishes its $what port there.
-       Set $setting in $env_file to a free port, or stop what is holding it:
-           lsof -nP -iTCP:$port -sTCP:LISTEN"
+    busy="${busy:+$busy and }$port ($what)"
+    busy_ports="$busy_ports -iTCP:$port"
+    picked=$(free_port "$port" "$other")
+    port=$picked
+    if [ -n "$(from_file "$setting")" ]; then
+      in_file="${in_file:+$in_file, }$setting=$picked"
+    else
+      ports_cmd="$ports_cmd$setting=$picked "
+    fi
+  elif [ -z "$(from_file "$setting")" ] && [ -n "$(from_env "$setting")" ]; then
+    ports_cmd="$ports_cmd$setting=$port "
   fi
+  other=$port # what HTTP ends up with, for HTTPS to avoid
 done
+
+if [ -n "$busy" ]; then
+  # A port set in .env is changed there; one not set is given for this run.
+  if [ -n "$in_file" ]; then
+    fix="Set $in_file in $env_file (or other free ports), then run again:
+           ${in_dir}${ports_cmd}./install.sh"
+  else
+    fix="Run again with free ports, for example (they are saved in $env_file):
+           ${in_dir}${ports_cmd}./install.sh"
+  fi
+  case "$busy" in *" and "*) ports_are="ports $busy are" ;; *) ports_are="port $busy is" ;; esac
+  die "$ports_are already in use, and IDAH publishes its ports there.
+       $fix
+       Or stop what is holding them:
+           lsof -nP$busy_ports -sTCP:LISTEN"
+fi
 
 # --- TLS -------------------------------------------------------------------
 
@@ -140,7 +180,7 @@ if $external_redis; then
        Does the server accept TLS? rediss:// connects with TLS, redis:// without." ;;
       *WRONGPASS*|*NOAUTH*|*"invalid password"*|*"bad URI"*) hint="
        A password with characters other than letters, digits and - . _ ~ must be
-       percent-encoded in REDIS_URL: ./install.sh --encode" ;;
+       percent-encoded in REDIS_URL: ${in_dir}./install.sh --encode" ;;
     esac
     die "cannot connect to Redis at $redis_addr:
        $(printf '%s\n' "$reason" | tail -1)$hint$(tls_hint "$reason")"

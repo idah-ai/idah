@@ -15,7 +15,7 @@ for _ in $(seq 1 90); do
   printf "."; sleep 2
 done
 curl -fsS --max-time 2 "http://localhost:$http_port/api/v1/iam/healthcheck" > /dev/null 2>&1 \
-  || die "iam did not come up. See: docker compose logs iam"
+  || die "iam did not come up. See: ${in_dir}docker compose logs iam"
 echo " ready"
 
 # Each service logs in to iam with its own account, over its internal address.
@@ -26,7 +26,7 @@ for svc in $services; do
   if ! out=$(dc exec -T "$svc" bundle exec rake api:check < /dev/null 2>&1); then
     die "the stack is running, but $svc cannot reach the other services:
        $( { printf '%s\n' "$out" | grep -E '^FAILED' || printf '%s\n' "$out" | grep -v -e COMMON_PATH -e '^/' -e '^Tasks:' -e '^(See'; } | tail -1)
-       See: docker compose logs $svc"
+       See: ${in_dir}docker compose logs $svc"
   fi
   echo "ok"
 done

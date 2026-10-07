@@ -7,7 +7,7 @@ for svc in $services; do
   printf "   %-13s" "$svc"
   dc run --rm "$svc" bundle exec rake db:setup db:migrate < /dev/null > /dev/null 2>&1 \
     || die "migrations failed for $svc. To see why:
-       docker compose run --rm $svc bundle exec rake db:setup db:migrate
+       ${in_dir}docker compose run --rm $svc bundle exec rake db:setup db:migrate
 $($external && printf '%s' "
        With an external database, $pg_user needs the CREATEDB privilege, or the
        idah_* databases must be created in advance and owned by $pg_user.")

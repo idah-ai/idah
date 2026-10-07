@@ -66,9 +66,11 @@ fi
 # by now, so running again carries on.
 case "$mode" in
   new|resume)
-    retry="After fixing it, run ./install.sh again: it carries on with the settings,
-       secrets and signing key it has. To start over instead (this deletes the
-       bundled databases): docker compose down -v && rm -f $env_file && rm -rf $keys_dir" ;;
+    retry="After fixing it, run it again. It carries on with the settings, secrets
+       and signing key it has:
+           ${in_dir}./install.sh
+       To start over instead (this deletes the bundled databases):
+           ${in_dir}docker compose down -v && rm -f $env_file && rm -rf $keys_dir" ;;
   *)
-    retry="After fixing it: ./install.sh --$mode (it can simply run again)" ;;
+    retry="After fixing it: ${in_dir}./install.sh --$mode (it can simply run again)" ;;
 esac
