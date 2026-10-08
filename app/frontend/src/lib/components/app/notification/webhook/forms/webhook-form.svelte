@@ -1,6 +1,6 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
+  import WebhookEventTypesField from "@/components/app/notification/webhook/forms/webhook-event-types-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
@@ -17,15 +17,6 @@
 
   // Variables
   let resource: string = WebhookRecord.type;
-  const eventTypeChoices = [
-    { label: "Annotation created", value: "annotation.created" },
-    { label: "Dataset export ready", value: "dataset.export.ready" },
-    { label: "Entry review completed", value: "entry.review.completed" },
-    { label: "Project member changed", value: "project.member.changed" },
-    { label: "Sync completed", value: "sync.completed" },
-    { label: "Sync failed", value: "sync.failed" },
-    { label: "Sync started", value: "sync.started" },
-  ];
 
   // Variables::Reactive
   let { name, url, event_types, secret_key, enabled } = $derived(webhook);
@@ -60,20 +51,13 @@
     />
 
     <!-- WEBHOOK::EVENT_TYPES -->
-    <MultipleSelectField
+    <WebhookEventTypesField
       name="{resource}/event_types"
-      values={event_types}
-      choices={eventTypeChoices}
       label="Event Types"
-      placeholder="Select Event Types"
+      placeholder="Select event types"
       required
-      clearable
-      searchable
-      searchPlaceholder="Search event types by name"
       errors={fieldErrors["event_types"]}
-      onSelected={(selectedChoice) => {
-        event_types = selectedChoice.map((choice) => String(choice.value));
-      }}
+      bind:values={event_types}
     />
 
     <!-- WEBHOOK::SECRET_KEY -->
