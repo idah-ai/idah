@@ -31,7 +31,7 @@
   }
 
   onMount(async () => {
-    canUpdateWebhook = (await currentAccount?.can("update", webhookResource,)) || false;
+    canUpdateWebhook = (await currentAccount?.can("update", webhookResource)) || false;
     canDeleteWebhook = (await currentAccount?.can("delete", webhookResource)) || false;
     columns.action.visible = canUpdateWebhook || canDeleteWebhook;
   });

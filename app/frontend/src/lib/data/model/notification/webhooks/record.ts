@@ -24,7 +24,7 @@ RecordFactory.registerTypes(WebhookRecord);
 export const webhooksBasePath: string = `/api/v1/notification/webhooks`;
 export const webhooksBackendDataSource = createBackendDataSource(WebhookRecord, webhooksBasePath, {
   event: async () => {
-    const response = await fetch(`${webhooksBasePath}/event`, {
+    const response = await fetch(`${webhooksBasePath}/events`, {
       method: "GET",
     });
     const body = await response.json();

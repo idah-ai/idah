@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { CheckSquareIcon, ChevronsUpDownIcon, CircleXIcon, SquareIcon } from "@lucide/svelte";
+  import { ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
-  import Button from "@/components/ui/button/button.svelte";
   import { Badge } from "@/components/ui/badge";
+  import Button from "@/components/ui/button/button.svelte";
+  import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
   import { Field, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -69,11 +71,19 @@
 
     try {
       const eventsRes = await webhooksBackendDataSource.event();
-      choices = eventsRes.data.map((event) => ({
-        label: event.label,
-        value: event.event,
-        data: event,
-      }));
+      const choicesByValue = new SvelteMap<string, Choice>();
+
+      eventsRes.data.forEach((event) => {
+        if (choicesByValue.has(event.event)) return;
+
+        choicesByValue.set(event.event, {
+          label: event.label,
+          value: event.event,
+          data: event,
+        });
+      });
+
+      choices = Array.from(choicesByValue.values());
     } finally {
       loading = false;
     }
@@ -81,9 +91,10 @@
 
   function groupChoices(items: Choice[]): GroupedChoices {
     return items.reduce((acc, choice) => {
-      const [service, table] = choice.value.split(".");
+      const [service, table, ...actionParts] = choice.value.split(":");
+      const action = actionParts.join(":");
 
-      if (!service || !table) return acc;
+      if (!service || !table || !action) return acc;
 
       acc[service] ||= {};
       acc[service][table] ||= [];
@@ -170,11 +181,11 @@
 
                   {#each tableChoices as choice (choice.value)}
                     <CommandItem value={choice.value} onclick={() => toggleChoice(choice)} class="pl-10">
-                      {#if values.includes(choice.value)}
-                        <CheckSquareIcon class="text-primary mr-2 size-4" />
-                      {:else}
-                        <SquareIcon class="text-primary mr-2 size-4" />
-                      {/if}
+                      <Checkbox
+                        checked={values.includes(choice.value)}
+                        onclick={(event) => event.stopPropagation()}
+                        onCheckedChange={() => toggleChoice(choice)}
+                      />
 
                       {choice.label}
                     </CommandItem>
