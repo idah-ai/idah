@@ -1,6 +1,7 @@
 name: CD - App
 
-# Builds, publishes, smoke-tests and scans the three images the eight services run:
+# Builds, publishes, smoke-tests and scans the three images the eight services run,
+# then tests the installer with them before a release is published:
 #
 #   service   iam, audit, dataset, notification, setting and sync (docker/Dockerfile.service)
 #   media     media: the service image plus ffmpeg and ImageMagick (docker/Dockerfile.media)
@@ -121,7 +122,7 @@ jobs:
             runner: ubuntu-24.04-arm
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -210,7 +211,7 @@ jobs:
           done
 
       - name: Upload the digests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: digests-${{ matrix.group }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/
@@ -232,7 +233,7 @@ jobs:
         image: ${{ fromJSON(needs.prepare.outputs.images) }}
     steps:
       - name: Download the digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/digests
           pattern: digests-*
@@ -361,7 +362,7 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -381,44 +382,115 @@ jobs:
   # The files a customer installs with, published beside the images so the
   # install is one command. Only for a version tag: a dispatched run publishes
   # sha- images that no release points at.
+  bundle:
+    name: Build the installer bundle
+    if: github.ref_type == 'tag'
+    needs: prepare
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    outputs:
+      previous: ${{ steps.previous.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build the bundle
+        run: |
+          .github/scripts/build-bundle.sh "$VERSION" dist
+          cat dist/SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+
+      # The notes list every pull request merged since the previous stable
+      # version, and the upgrade test starts from it. A candidate and its
+      # stable release share a commit, so candidates are skipped: 0.1.1-rc.1
+      # and 0.1.1 both compare against 0.1.0. bin/tag-release holds the rule,
+      # so a tag's message and its release notes cover the same changes.
+      - name: Find the previous stable version
+        id: previous
+        run: |
+          previous="$(bin/tag-release --previous-stable "$VERSION")"
+          echo "tag=$previous" >> "$GITHUB_OUTPUT"
+          echo "Release notes list the changes since ${previous:-the first commit}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the bundle for the next jobs
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-files
+          path: dist/
+          retention-days: 7
+
+  # The release gate's last step: the bundle installs as a customer runs it,
+  # from the images just published, and an install of the previous stable
+  # release upgrades to it. A failure here publishes nothing; fix on main and
+  # tag the next candidate.
+  install:
+    name: Test the installer (${{ matrix.scenario }})
+    if: github.ref_type == 'tag'
+    needs: [prepare, smoke, bundle]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [install, upgrade]
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      PREVIOUS: ${{ needs.bundle.outputs.previous }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Get the bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: release-files
+          path: dist
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install as a customer would
+        if: matrix.scenario == 'install'
+        run: .github/scripts/test-installer.sh install "dist/idah-$VERSION"
+
+      - name: Upgrade from the previous stable release
+        if: matrix.scenario == 'upgrade'
+        run: |
+          if [ -z "$PREVIOUS" ]; then
+            echo "No earlier stable release to upgrade from." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          .github/scripts/test-installer.sh upgrade "${PREVIOUS#v}" "$VERSION" dist
+
   release:
     name: Publish the installer
     if: github.ref_type == 'tag'
-    needs: [prepare, smoke]
+    needs: [prepare, bundle, install]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Build the bundle
-        run: |
-          set -euo pipefail
-          bundle="idah-$VERSION"
-          mkdir -p "dist/$bundle"
-          cp deploy/compose/install.sh deploy/compose/compose.yml deploy/compose/.env.example \
-             deploy/compose/README.md "dist/$bundle/"
-          mkdir -p "dist/$bundle/config/nginx"
-          cp deploy/compose/config/nginx/*.conf "dist/$bundle/config/nginx/"
-
-          # The installer knows which release it belongs to, so it installs that
-          # version and downloads the matching bundle when run on its own.
-          sed -i "s/^release_version=\"\"/release_version=\"$VERSION\"/" "dist/$bundle/install.sh"
-          grep -q "^release_version=\"$VERSION\"$" "dist/$bundle/install.sh" \
-            || { echo "::error::could not stamp the version into install.sh"; exit 1; }
-          chmod +x "dist/$bundle/install.sh"
-
-          tar -czf "dist/$bundle.tar.gz" -C dist "$bundle"
-          cp "dist/$bundle/install.sh" dist/install.sh
-          cd dist && sha256sum "$bundle.tar.gz" install.sh > SHA256SUMS
-          cat SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+      - name: Get the bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: release-files
+          path: dist
 
       - name: Attach it to the release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
+          generate_release_notes: true
+          previous_tag: ${{ needs.bundle.outputs.previous }}
           # A version with a suffix — 0.1.0-rc.1 — is a candidate, so it is
           # published as a pre-release and releases/latest keeps pointing at the
           # newest stable one. The installer's one-line form downloads from

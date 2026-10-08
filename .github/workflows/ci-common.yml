@@ -13,22 +13,31 @@ on:
       - opened
       - reopened
 
+  # Every merge too: a pull request is tested against main as it was when its
+  # checks ran, and other merges may have landed since. On main the path
+  # filters compare with the commit before the merge.
+  push:
+    branches:
+      - main
+
 env:
   COMMON_DIR: ./common
 
+# A newer push to a pull request cancels its older run. On main each commit
+# gets its own group, so every merge is tested in full.
 concurrency:
-  group: ${{ github.head_ref }}-common
+  group: ${{ github.head_ref || github.sha }}-common
   cancel-in-progress: true
 
 jobs:
   changes:
     name: Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       common: ${{ steps.filter.outputs.common }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -40,7 +49,7 @@ jobs:
     name: Common Library
     if: ${{ needs.changes.outputs.common == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.COMMON_DIR }}
@@ -60,7 +69,7 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -77,7 +86,7 @@ jobs:
       # Coverage is reported, not gated: common/ sits below the 90% service minimum.
       - name: Upload Code Coverage
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: common-code-coverage
           path: ${{ env.COMMON_DIR }}/coverage
@@ -89,7 +98,7 @@ jobs:
     name: Common CI passed
     if: ${{ always() }}
     needs: [changes, common]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check every job's result
         env:

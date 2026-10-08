@@ -761,6 +761,18 @@ export interface ISettingItemBase {
    * are shown directly under the section header with no sub-header.
    */
   subSection?: string;
+  /**
+   * When true, the control is rendered inline on the sub-section header line
+   * instead of as its own row. Useful for on/off toggles that control the
+   * sub-section.
+   */
+  subSectionHeader?: boolean;
+  /**
+   * When true (or a function that returns true), the control is greyed out
+   * and cannot be interacted with. Used for settings that depend on another
+   * control's state (e.g. grid size/opacity when the grid is off).
+   */
+  disabled?: boolean | (() => boolean);
 }
 
 /** A slider control (continuous numeric value). */
@@ -795,8 +807,21 @@ export interface IOptionsSetting extends ISettingItemBase {
   set(value: string): void;
 }
 
+/** A switch/toggle control (on/off boolean). */
+export interface ISwitchSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "switch";
+  /** Optional default value — when set, the sub-section header shows a "Reset"
+   * button that restores every item in that sub-section to its declared default. */
+  default?: boolean;
+  /** Read the current value (plugin-owned). */
+  get(): boolean;
+  /** Write a new value (plugin-owned). */
+  set(value: boolean): void;
+}
+
 /** What consumers hold and the renderer narrows on `type`. Grows per control. */
-export type ISettingItem = ISliderSetting | IOptionsSetting;
+export type ISettingItem = ISliderSetting | IOptionsSetting | ISwitchSetting;
 
 /**
  * A group of settings under one section. `section` is a raw key (e.g.
