@@ -221,7 +221,6 @@
         }
 
         media.errorMessage = undefined;
-        refetchEntriesAndDatasets();
         media.status = "completed";
         return; // done
       } catch (error) {
