@@ -39,14 +39,14 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
     hidable: false,
     cellComponent: WebhookUrlCell,
   },
-  event_types: {
+  events: {
     label: "Event Types",
     dataType: "string",
     clickable: true,
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "event_types",
+      filterKey: "events",
       filterBy: "string",
       filterOperation: "match",
     },

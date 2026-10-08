@@ -19,11 +19,11 @@
   let resource: string = WebhookRecord.type;
 
   // Variables::Reactive
-  let { name, url, event_types, secret_key, enabled } = $derived(webhook);
+  let { name, url, events, secret_key, enabled } = $derived(webhook);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, url, event_types, secret_key, enabled });
+    onValueChange({ name, url, events, secret_key, enabled });
   });
 </script>
 
@@ -50,14 +50,14 @@
       oninput={(e) => (url = e.currentTarget.value)}
     />
 
-    <!-- WEBHOOK::EVENT_TYPES -->
+    <!-- WEBHOOK::events -->
     <WebhookEventTypesField
-      name="{resource}/event_types"
+      name="{resource}/events"
       label="Event Types"
       placeholder="Select event types"
       required
-      errors={fieldErrors["event_types"]}
-      bind:values={event_types}
+      errors={fieldErrors["events"]}
+      bind:values={events}
     />
 
     <!-- WEBHOOK::SECRET_KEY -->

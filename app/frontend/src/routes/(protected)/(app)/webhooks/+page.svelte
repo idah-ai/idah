@@ -64,7 +64,7 @@
       dataSource={webhooksBackendDataSource}
       listOptions={{
         fields: {
-          [WebhookRecord.type]: ["id", "name", "url", "event_types", "enabled", "created_at"],
+          [WebhookRecord.type]: ["id", "name", "url", "events", "enabled", "created_at"],
         },
       }}
     >

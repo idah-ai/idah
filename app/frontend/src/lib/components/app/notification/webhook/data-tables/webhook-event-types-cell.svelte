@@ -10,7 +10,7 @@
   let { record: webhook }: DataTableCellBaseProps<WebhookRecord> = $props();
 </script>
 
-{#each webhook.event_types as eventType (eventType)}
+{#each webhook.events as eventType (eventType)}
   <div class="flex w-full items-center justify-between py-0.5">
     <Badge variant="outline">{eventType}</Badge>
   </div>

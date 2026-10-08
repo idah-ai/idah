@@ -67,7 +67,7 @@
   async function fetchWebhook(): Promise<WebhookRecord> {
     const webhookRes = await webhooksBackendDataSource.get(webhookRecord.id, {
       fields: {
-        [WebhookRecord.type]: ["name", "url", "event_types", "secret_key", "enabled"],
+        [WebhookRecord.type]: ["name", "url", "events", "secret_key", "enabled"],
       },
       noCache: true,
     });
