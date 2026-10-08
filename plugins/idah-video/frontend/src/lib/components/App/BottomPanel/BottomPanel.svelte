@@ -103,11 +103,18 @@
   }))
 
   let items = $derived.by(() => {
-    const annotations = !categorySearch.value
-      ? viewportAnnotations
-      : viewportAnnotations.filter(
-          (ann) => ann.category?.toLowerCase().includes(categorySearch.value.toLowerCase()),
-        );
+    const query = categorySearch.value;
+    if (!query) {
+      return transformAnnotationsToTracks({
+        annotations: viewportAnnotations,
+        labelConfig: getDriver().config,
+      });
+    }
+    // Normalize hyphens↔spaces so searching by id or label both work.
+    const q = query.toLowerCase().replace(/-/g, " ");
+    const annotations = viewportAnnotations.filter(
+      (ann) => (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q),
+    );
     return transformAnnotationsToTracks({
       annotations,
       labelConfig: getDriver().config,

@@ -66,10 +66,13 @@
     const query = categorySearch.value;
     if (!query) return tools;
 
+    const q = query.toLowerCase();
     const result = new Map<string, IConfigValue[]>();
 
     for (const [toolType, categories] of tools) {
-      const matching = categories.filter((category) => category.id.toLowerCase().includes(query.toLowerCase()));
+      const matching = categories.filter(
+        (cat) => cat.id.toLowerCase().includes(q) || cat.label?.toLowerCase().includes(q),
+      );
 
       if (matching.length > 0) {
         result.set(toolType, matching);

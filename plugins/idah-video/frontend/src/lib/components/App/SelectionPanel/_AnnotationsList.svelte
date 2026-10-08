@@ -55,11 +55,15 @@
   );
 
   // Filter by category search query (case-insensitive).
+  // Normalizes hyphens↔spaces so searching by id or label both work.
   const filteredSortedAnnotations = $derived(
     !categorySearch.value
       ? sortedAnnotations
       : sortedAnnotations.filter(
-          (ann) => ann.category?.toLowerCase().includes(categorySearch.value.toLowerCase()),
+          (ann) =>
+            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
+              categorySearch.value.toLowerCase().replace(/-/g, " "),
+            ),
         ),
   );
 

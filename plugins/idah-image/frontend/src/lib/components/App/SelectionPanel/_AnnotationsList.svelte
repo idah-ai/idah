@@ -81,7 +81,10 @@
         { id: "locked", label: "Locked", count: lockedAnnotations.length },
       ];
     }
-    const matches = (ann: IImageAnnotationRecord) => ann.category?.toLowerCase().includes(query.toLowerCase());
+    // Normalize hyphens↔spaces so searching by id or label both work.
+    const q = query.toLowerCase().replace(/-/g, " ");
+    const matches = (ann: IImageAnnotationRecord) =>
+      (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
     return [
       { id: "all", label: "All", count: sortedAnnotations.filter(matches).length },
       { id: "hidden", label: "Hidden", count: hiddenAnnotations.filter(matches).length },
@@ -94,11 +97,15 @@
   );
 
   // Filter by category search query (case-insensitive), applied on top of the tab filter.
+  // Normalizes hyphens↔spaces so searching by id or label both work.
   const categoryFilteredAnnotations = $derived(
     !categorySearch.value
       ? filteredAnnotations
       : filteredAnnotations.filter(
-          (ann) => ann.category?.toLowerCase().includes(categorySearch.value.toLowerCase()),
+          (ann) =>
+            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
+              categorySearch.value.toLowerCase().replace(/-/g, " "),
+            ),
         ),
   );
 
