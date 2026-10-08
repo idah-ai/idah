@@ -28,10 +28,17 @@ module Log
 
   class Repository < Verse::Sequel::Repository
     self.table = "logs"
-    self.resource = "audit:logs"
+    self.resource = Resource::Audit::Logs
 
     custom_filter :actor_account_role_name__nin do |collection, value|
-      collection.where(Sequel.lit("actor_account_role_name NOT IN ?  OR actor_account_role_name IS NULL", value))
+      collection.where(Sequel.lit("actor_account_role_name NOT IN ? OR actor_account_role_name IS NULL", value))
+    end
+
+    def scoped(_action)
+      auth_context.can!(:read, self.class.resource) do |scope|
+        # only allow access to lgs for admin users
+        scope.all? { table }
+      end
     end
   end
 end

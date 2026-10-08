@@ -145,6 +145,9 @@ RSpec.describe Jobs::Scheduler do
 
     # Stub the repository
     allow(subject).to receive(:jobs).and_return(job_repository)
+
+    # Stub stale job recovery so existing tests don't trigger DB calls
+    allow(job_repository).to receive(:requeue_stale).and_return(0)
   end
 
   after do
@@ -292,6 +295,34 @@ RSpec.describe Jobs::Scheduler do
       subject.signal
       # prevent the after block from running `stop` which would call signal again
       allow(subject).to receive(:stop)
+    end
+  end
+
+  describe "#start" do
+    context "when there are stale jobs" do
+      it "calls requeue_stale and logs the count" do
+        expect(job_repository).to receive(:requeue_stale).and_return(3)
+        expect(Verse.logger).to receive(:info).with("Requeued 3 stale jobs")
+
+        allow(job_repository).to receive(:lock_available).and_return([])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+
+        subject.start
+        sleep 0.05
+      end
+    end
+
+    context "when there are no stale jobs" do
+      it "calls requeue_stale and logs 0" do
+        expect(job_repository).to receive(:requeue_stale).and_return(0)
+        expect(Verse.logger).to receive(:info).with("Requeued 0 stale jobs")
+
+        allow(job_repository).to receive(:lock_available).and_return([])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+
+        subject.start
+        sleep 0.05
+      end
     end
   end
 end

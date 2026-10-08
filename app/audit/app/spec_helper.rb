@@ -61,6 +61,7 @@ RSpec.configure do |config|
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
+  Verse::Spec.add_user(:user, "user", user_data: { id: 2, email: "user@example.com", name: "Regular User" })
 
   config.example_status_persistence_file_path = ".rspec_status"
 
