@@ -77,7 +77,11 @@ module Entry
     end
 
     def mark_entries_status_as(job_id, status)
-      entries.mark_entries_status_as(job_id, status)
+      entries.transaction do
+        entry = entries.find_by!({ job_id:, status: "processing" })
+        entries.mark_entries_status_as(job_id, status)
+        system_datasets_repo.update_progress!(entry.dataset_id)
+      end
     end
 
     def complete_entry_processing(job_id)
@@ -95,12 +99,16 @@ module Entry
     end
 
     def delete(id)
-      entry = entries.find!(id)
-      if %w[in_progress completed].include?(entry.status)
-        raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
-      end
+      entries.transaction do
+        entry = entries.find!(id)
+        if %w[in_progress completed].include?(entry.status)
+          raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
+        end
 
-      entries.delete!(id)
+        dataset_id = entry.dataset_id
+        entries.delete!(id)
+        system_datasets_repo.update_progress!(dataset_id)
+      end
     end
 
     def assign_member(id, assigned_to_id)

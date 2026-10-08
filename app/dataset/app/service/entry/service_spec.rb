@@ -238,6 +238,20 @@ RSpec.describe Entry::Service, database: true do
       other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("done")
     end
+
+    it "counts an errored processing entry in progress after a later entry completes" do
+      subject.mark_entries_status_as(job_id, "errored")
+
+      completed_entry_id = repo.create(
+        { project_id:, dataset_id:, resource: "completed-after-error.mp4", status: "pending" }
+      )
+      repo.update!(completed_entry_id, { status: "completed" })
+      dataset_repo.update_progress!(dataset_id)
+
+      dataset = dataset_repo.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(1)
+      expect(dataset.progress).to eq(1.0 / 3)
+    end
   end
 
   describe "#index" do
@@ -393,6 +407,21 @@ RSpec.describe Entry::Service, database: true do
     it "deletes an entry" do
       subject.delete(entry.id)
       expect { repo.find!(entry.id) }.to raise_error(Verse::Error::NotFound)
+    end
+
+    it "refreshes dataset progress after deleting an entry" do
+      pending_entry_id = entry.id
+      completed_entry_id = repo.create({ project_id:, dataset_id:, resource: "completed.mp4", status: "pending" })
+      repo.update!(completed_entry_id, { status: "completed" })
+      dataset_repo.update_progress!(dataset_id)
+
+      expect(dataset_repo.find!(dataset_id).progress).to eq(0.5)
+
+      subject.delete(pending_entry_id)
+
+      dataset = dataset_repo.find!(dataset_id)
+      expect(dataset.progress).to eq(1.0)
+      expect(dataset.status).to eq("completed")
     end
 
     it "cannot delete an entry with in_progress or completed status" do

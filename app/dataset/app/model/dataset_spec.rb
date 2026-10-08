@@ -79,6 +79,96 @@ RSpec.describe Dataset, database: true do
       expect(subject.find!(dataset_id).status).to eq("completed")
     end
 
+    it "does not count errored entries as completed progress" do
+      add_entry("errored")
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(0)
+      expect(dataset.progress).to eq(0.0)
+      expect(dataset.status).to eq("pending")
+    end
+
+    it "counts errored entries in the progress denominator" do
+      add_entry("completed")
+      add_entry("pending")
+      add_entry("pending")
+      add_entry("errored")
+
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.25)
+      expect(dataset.status).to eq("in_progress")
+    end
+
+    it "stays in_progress when completed entries also have errored entries" do
+      add_entry("completed")
+      add_entry("errored")
+
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.5)
+      expect(dataset.status).to eq("in_progress")
+    end
+
+    it "excludes submitted errored entries from submitted progress" do
+      id = entry_repo.create({ project_id:, dataset_id:, status: "pending", wf_step: "review" })
+      entry_repo.update!(id, { submitted_by_id: 1, submitted_by_email: "a@example.com" })
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("in_progress")
+
+      entry_repo.update!(id, { status: "errored" })
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("pending")
+
+      entry_repo.update!(id, { status: "pending" })
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("in_progress")
+    end
+
+    it "resets to pending with zero progress when the last entry is deleted" do
+      entry_id = add_entry("completed")
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("completed")
+
+      entry_repo.delete!(entry_id)
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.status).to eq("pending")
+      expect(dataset.progress).to eq(0.0)
+    end
+
+    %w[pending in_progress errored].each do |status|
+      it "recalculates progress after deleting a #{status} entry" do
+        add_entry("completed")
+        entry_id = add_entry(status)
+        subject.update_progress!(dataset_id)
+
+        entry_repo.delete!(entry_id)
+        subject.update_progress!(dataset_id)
+
+        dataset = subject.find!(dataset_id)
+        expect(dataset.progress).to eq(1.0)
+        expect(dataset.status).to eq("completed")
+      end
+    end
+
+    it "recalculates progress after deleting a completed entry" do
+      completed_entry_id = add_entry("completed")
+      add_entry("pending")
+      subject.update_progress!(dataset_id)
+
+      entry_repo.delete!(completed_entry_id)
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.0)
+      expect(dataset.status).to eq("pending")
+    end
+
     it "reopens a completed dataset to in_progress when a new unassigned entry is added" do
       add_entry("completed")
       subject.update_progress!(dataset_id)
