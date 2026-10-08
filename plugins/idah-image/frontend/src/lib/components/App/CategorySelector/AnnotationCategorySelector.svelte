@@ -14,6 +14,7 @@
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { categorySearch } from "$lib/state/category-search.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
 
@@ -55,16 +56,16 @@
     ),
   );
 
-  let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   let filteredTools = $derived.by(() => {
-    if (!searchValue) return tools;
+    const query = categorySearch.value;
+    if (!query) return tools;
 
     const result = new Map<string, IConfigValue[]>();
 
     for (const [toolType, categories] of tools) {
-      const matching = categories.filter((category) => category.id.toLowerCase().includes(searchValue.toLowerCase()));
+      const matching = categories.filter((category) => category.id.toLowerCase().includes(query.toLowerCase()));
 
       if (matching.length > 0) {
         result.set(toolType, matching);
@@ -96,14 +97,14 @@
       clearTimeout(debounceTimer);
     }
 
-    // Set new timer for debounced search (300ms delay)
+    // Set new timer for debounced search (200ms delay)
     debounceTimer = setTimeout(() => {
-      searchValue = value;
+      categorySearch.value = value;
     }, 200);
   }
 
   function clearSearch() {
-    searchValue = "";
+    categorySearch.clear();
   }
 </script>
 
@@ -113,11 +114,11 @@
       <InputField
         name="input/plugin/search"
         placeholder="Search"
-        value={searchValue}
+        value={categorySearch.value}
         oninput={(e) => searchCategory(e)}
       >
         {#snippet suffixIcon()}
-          {#if searchValue}
+          {#if categorySearch.value}
             <CircleXIcon class="hover:cursor-pointer" onclick={clearSearch} />
           {/if}
         {/snippet}
