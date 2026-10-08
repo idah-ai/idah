@@ -60,15 +60,20 @@ latest_candidate() {
 REQUIRED_CHECKS=("App CI passed" "Common CI passed" "Plugins CI passed" "Scripts CI passed")
 
 # What stands between a commit and its tag, one line each, read from its check
-# runs on stdin ("name<TAB>status<TAB>conclusion"). Prints nothing when every
-# required check has passed.
+# runs on stdin ("name<TAB>status<TAB>conclusion<TAB>started_at"). Prints
+# nothing when every required check has passed. A check can have run more than
+# once on a commit (a re-run, or a run cancelled by a second one), so only the
+# latest counts: a cancelled run's gate reports failure, and an old failure
+# must not outweigh the run that replaced it, nor an old success a new failure.
 ci_problems() {
-  local runs name status conclusion
-  runs="$(cat)"
+  local latest name status conclusion
+  # Newest first. ISO times sort as text; a queued run has no start time yet
+  # ("null"), which sorts above them, so it counts as the latest.
+  latest="$(sort -t "$(printf '\t')" -k4,4r)"
 
   for name in "${REQUIRED_CHECKS[@]}"; do
-    status="$(awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' <<<"$runs")"
-    conclusion="$(awk -F'\t' -v n="$name" '$1 == n { print $3; exit }' <<<"$runs")"
+    status="$(awk -F'\t' -v n="$name" '$1 == n { print $2; exit }' <<<"$latest")"
+    conclusion="$(awk -F'\t' -v n="$name" '$1 == n { print $3; exit }' <<<"$latest")"
 
     if [ -z "$status" ]; then
       echo "$name has not run on this commit"
@@ -147,7 +152,7 @@ main() {
   local slug runs problems
   slug="$(repository_slug)"
   runs="$(gh api "repos/$slug/commits/$commit/check-runs?per_page=100" \
-    --jq '.check_runs[] | "\(.name)\t\(.status)\t\(.conclusion)"')" \
+    --jq '.check_runs[] | "\(.name)\t\(.status)\t\(.conclusion)\t\(.started_at)"')" \
     || die "could not read the checks of $commit from GitHub. Is gh logged in? Try: gh auth status"
   problems="$(ci_problems <<<"$runs")"
 
