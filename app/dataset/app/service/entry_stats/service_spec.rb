@@ -110,4 +110,35 @@ RSpec.describe EntryStats::Service, database: true do
       expect(stats.find { |s| s.key == "annotation.count" }.value).to eq("0")
     end
   end
+
+  describe "#recompute_all_for_dataset" do
+    before do
+      # create a second entry in the same dataset
+      entry_repo.create(
+        priority: 1, wf_step: "annotate", status: "in_progress", project_id:, dataset_id:
+      )
+    end
+
+    it "recomputes stats for all entries in the dataset" do
+      subject.recompute_all_for_dataset(dataset_id)
+
+      dataset_entry_ids = entry_repo.index({ dataset_id__eq: dataset_id }).map(&:id)
+
+      dataset_entry_ids.each do |eid|
+        stat_keys = stat_repo.index({ entry_id__eq: eid }).map(&:key)
+        expect(stat_keys).to include("annotation.count")
+      end
+    end
+
+    it "recomputes stats for an entry that previously had stale stats" do
+      stat_repo.bulk_insert(entry_id, { "annotation.count" => "99", "stale.key" => "old" })
+
+      subject.recompute_all_for_dataset(dataset_id)
+
+      refreshed = stat_repo.index({ entry_id__eq: entry_id })
+      keys = refreshed.map(&:key)
+      expect(keys).not_to include("stale.key")
+      expect(refreshed.find { |s| s.key == "annotation.count" }.value).to eq("0")
+    end
+  end
 end
