@@ -677,35 +677,143 @@ RSpec.describe Account::Service, database: true do
       end
     end
 
-    context "when the email already belongs to an account", as: :org_owner do
+    # The inviting org owner is scoped to org "1" (see spec_helper). Here the
+    # email it invites already belongs to an account in a *different* org (999),
+    # which the inviter cannot see.
+    context "when the email already belongs to an account in another organization", as: :org_owner do
       subject { described_class.new(current_auth_context) }
 
-      let!(:existing_id) do
+      # Created with the all-rights account_repo so the other-org account exists
+      # regardless of the inviter's scope.
+      def existing_account(role_name:, role_scope: {})
+        id = account_repo.create(
+          {
+            name: "Existing Person",
+            email: "existing@example.com",
+            role_name:,
+            role_scope: role_scope.to_json,
+            enabled: true
+          }
+        )
+        account_repo.find!(id)
+      end
+
+      def invite
+        subject.create(
+          account_record(name: "ignored", email: "existing@example.com", enabled: true)
+        )
+      end
+
+      it "hides the role, scope and status when the email belongs to an admin elsewhere" do
+        existing = existing_account(role_name: "admin", role_scope: { org: ["999"] })
+
+        result = invite
+
+        expect(result.id.to_s).to eq(existing.id.to_s)
+        expect(result.name).to eq("Existing Person")
+        expect(result.email).to eq("existing@example.com")
+        expect(result.role_name).to be_nil
+        expect(result.role_scope).to be_nil
+        expect(result.enabled).to be_nil
+      end
+
+      it "hides the role and scope when the email belongs to an org owner of another organization" do
+        existing_account(role_name: "org_owner", role_scope: { org: ["999"] })
+
+        result = invite
+
+        expect(result.role_name).to be_nil
+        expect(result.role_scope).to be_nil
+      end
+
+      it "still returns the id and name so the person can be added to a project" do
+        existing = existing_account(role_name: "user")
+
+        result = invite
+
+        expect(result.id.to_s).to eq(existing.id.to_s)
+        expect(result.name).to eq("Existing Person")
+      end
+
+      it "does not modify the account in the other organization" do
+        existing = existing_account(role_name: "admin", role_scope: { org: ["999"] })
+
+        invite
+
+        reloaded = account_repo.find!(existing.id)
+        expect(reloaded.role_name).to eq("admin")
+        expect(reloaded.role_scope).to eq({ "org" => ["999"] })
+        expect(reloaded.email).to eq("existing@example.com")
+      end
+
+      it "does not create a second account for the same email" do
+        existing = existing_account(role_name: "admin", role_scope: { org: ["999"] })
+
+        invite
+
+        matches = account_repo.index({ email: "existing@example.com" })
+        expect(matches.map(&:id).map(&:to_s)).to eq([existing.id.to_s])
+      end
+    end
+
+    # The inviting org owner is scoped to org "1" (see spec_helper, id 2). The
+    # target already owns org "2", which the inviter does not. Adding the
+    # inviter's org should union the scope to ["1", "2"].
+    context "when an org owner adds their org to an owner of another org", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      let!(:target_id) do
         account_repo.create(
           {
-            name: "Existing Admin",
-            email: "existing@example.com",
-            role_name: "admin",
-            role_scope: { org: ["999"] }.to_json,
+            name: "Foreign Owner",
+            email: "foreign-owner@example.com",
+            role_name: "org_owner",
+            role_scope: { org: ["2"] }.to_json,
             enabled: true
           }
         )
       end
 
-      it "returns only id, name and email, not the role, scope or status" do
-        result = subject.create(
-          account_record(
-            name: "ignored",
-            email: "existing@example.com",
-            enabled: true
+      before do
+        # The scoped update reaches the target because it is a member of one of
+        # the caller's projects; stub that inter-service lookup.
+        member = Verse::JsonApi::Struct.new({ account_id: target_id })
+        allow(Api[:idah].dataset.project_members).to receive(:index)
+          .and_return(Verse::JsonApi::Struct.new([member]))
+        # The role-change notification is covered elsewhere.
+        allow_any_instance_of(Account::Repository).to receive(:after_commit)
+      end
+
+      def update_scope(orgs)
+        subject.update(
+          deserialize(
+            {
+              data: {
+                type: Resource::Iam::Accounts,
+                id: target_id,
+                attributes: { role_scope: { org: orgs } }
+              }
+            }
           )
         )
+      end
 
-        expect(result.id.to_s).to eq(existing_id.to_s)
-        expect(result.email).to eq("existing@example.com")
-        expect(result.name).to eq("Existing Admin")
-        expect(result.role_name).to be_nil
-        expect(result.enabled).to be_nil
+      it "unions the scope, keeping the organization the caller does not own" do
+        updated = update_scope(["1", "2"])
+        expect(updated.role_scope).to eq({ "org" => ["1", "2"] })
+      end
+
+      it "refuses removing an organization the caller does not own" do
+        expect { update_scope(["1"]) }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "refuses adding an organization the caller does not own" do
+        expect { update_scope(["2", "3"]) }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "leaves the scope unchanged when the change is refused" do
+        expect { update_scope(["2", "3"]) }.to raise_error(Verse::Error::Unauthorized)
+        expect(account_repo.find!(target_id).role_scope).to eq({ "org" => ["2"] })
       end
     end
   end

@@ -86,9 +86,19 @@ module Account
     def update(record)
       auth_context.reject! unless auth_context.can?(:update, accounts.class.resource)
 
+      # When the organization scope is changing, only the organizations being
+      # added or removed need to be within the caller's scope, so the guard
+      # needs the account's current scope. Read it only for a real caller that
+      # is actually changing the scope, to keep the other paths cheap.
+      previous_scope =
+        if auth_context.role && !record.attributes[:role_scope].nil?
+          accounts.find!(record.id).role_scope
+        end
+
       guard_role_assignment!(
         record.attributes[:role_name],
-        record.attributes[:role_scope]
+        record.attributes[:role_scope],
+        previous_scope: previous_scope
       )
 
       accounts.transaction do
@@ -188,17 +198,20 @@ module Account
     # Callers with no role (internal / system contexts built in-process) are
     # trusted and skip the ceiling; every request authenticated over HTTP
     # carries a role, so this only exempts code running inside the services.
-    def guard_role_assignment!(role_name, role_scope)
-      return if role_name.nil?
+    def guard_role_assignment!(role_name, role_scope, previous_scope: nil)
+      caller_role = auth_context.role
+      return if caller_role.nil?
 
+      check_role_tier!(role_name, caller_role) unless role_name.nil?
+      check_role_scope!(role_scope, previous_scope) unless role_scope.nil?
+    end
+
+    def check_role_tier!(role_name, caller_role)
       target_role = role_lookup(role_name)
       unless target_role&.assignable
         raise Verse::Error::Unauthorized,
               "Role '#{role_name}' cannot be assigned"
       end
-
-      caller_role = auth_context.role
-      return if caller_role.nil?
 
       caller_tier =
         if caller_role.to_s.start_with?("api:")
@@ -210,16 +223,27 @@ module Account
           role_tier(caller_role)
         end
 
-      if role_tier(role_name) > caller_tier
-        raise Verse::Error::Unauthorized,
-              "You are not allowed to assign the '#{role_name}' role"
-      end
+      return unless role_tier(role_name) > caller_tier
 
+      raise Verse::Error::Unauthorized,
+            "You are not allowed to assign the '#{role_name}' role"
+    end
+
+    # Only the organizations being added or removed need to be within the
+    # caller's own scope; organizations that were already present and stay are
+    # left untouched. So an org owner can add their organization to an account
+    # that already owns others (scope becomes the union) without needing rights
+    # over those others, but still cannot grant or remove an organization they
+    # do not own.
+    def check_role_scope!(role_scope, previous_scope)
       allowed_orgs = auth_context.custom_scopes[:org]
       return if allowed_orgs.nil? || allowed_orgs.empty?
 
-      outside = requested_org_scope(role_scope) - allowed_orgs.map(&:to_s)
-      return if outside.empty?
+      requested = requested_org_scope(role_scope)
+      previous = requested_org_scope(previous_scope)
+      changed = (requested - previous) | (previous - requested)
+
+      return if (changed - allowed_orgs.map(&:to_s)).empty?
 
       raise Verse::Error::Unauthorized,
             "role_scope is outside your organization"
@@ -238,6 +262,9 @@ module Account
     def requested_org_scope(role_scope)
       scope = role_scope
       scope = JSON.parse(scope) if scope.is_a?(String) && !scope.strip.empty?
+      # role_scope read from the database is a Sequel JSONB wrapper, not a plain
+      # Hash, so coerce any hash-like value before inspecting it.
+      scope = scope.to_h if scope.respond_to?(:to_h) && !scope.is_a?(Array)
       return [] unless scope.is_a?(Hash)
 
       Array(scope["org"] || scope[:org]).map(&:to_s)
