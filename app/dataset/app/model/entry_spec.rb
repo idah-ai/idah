@@ -10,54 +10,127 @@ RSpec.describe Entry, database: true do
       expect(subject).to be_a(Entry::Repository)
     end
 
+    let(:system_auth_context) { Verse::Auth::Context[:system] }
+    let(:project_repo) { Project::Repository.new(system_auth_context) }
+    let(:dataset_repo) { Dataset::Repository.new(system_auth_context) }
+    let(:entry_repo) { described_class.new(system_auth_context) }
+
+    let!(:project_id) do
+      project_repo.create(
+        name: "Test Project",
+        description: "Test project",
+        organization_id: 1,
+        created_by_email: "admin@example.com"
+      )
+    end
+
+    let!(:dataset_id) do
+      dataset_repo.create(
+        modality: "idah-image",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {},
+        project_id: project_id
+      )
+    end
+
+    describe "#custom_filter :assigned" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(current_auth_context) }
+
+        let!(:entry_assigned) do
+          eid = entry_repo.create(
+            priority: 1, wf_step: "annotate", status: "in_progress",
+            project_id: project_id, dataset_id: dataset_id
+          )
+          entry_repo.assign(eid, 10, "assignee@example.com")
+          eid
+        end
+
+        let!(:entry_unassigned) do
+          entry_repo.create(
+            priority: 1, wf_step: "annotate", status: "in_progress",
+            project_id: project_id, dataset_id: dataset_id
+          )
+        end
+
+        it "returns assigned entries when filter is true" do
+          result = subject.index({ assigned: "true" })
+
+          expect(result.size).to eq(1)
+          expect(result.first.id).to eq(entry_assigned)
+        end
+
+        it "returns unassigned entries when filter is false" do
+          result = subject.index({ assigned: "false" })
+
+          expect(result.size).to eq(1)
+          expect(result.first.id).to eq(entry_unassigned)
+        end
+
+        it "accepts boolean-like values" do
+          result_true = subject.index({ assigned: true })
+          expect(result_true.size).to eq(1)
+
+          result_false = subject.index({ assigned: false })
+          expect(result_false.size).to eq(1)
+        end
+      end
+    end
+
+    describe "#custom_filter :participated" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(current_auth_context) }
+
+        let!(:entry_participated) do
+          eid = entry_repo.create(
+            priority: 1, wf_step: "annotate", status: "in_progress",
+            project_id: project_id, dataset_id: dataset_id
+          )
+          entry_repo.assign(eid, 42, "participant@example.com")
+          eid
+        end
+
+        let!(:entry_not_participated) do
+          entry_repo.create(
+            priority: 1, wf_step: "annotate", status: "in_progress",
+            project_id: project_id, dataset_id: dataset_id
+          )
+        end
+
+        it "returns entries where the account participated (as assignee)" do
+          result = subject.index({ participated: 42 })
+
+          expect(result.size).to eq(1)
+          expect(result.first.id).to eq(entry_participated)
+        end
+
+        it "does not return entries where the account is not a participant" do
+          result = subject.index({ participated: 99 })
+
+          expect(result).to be_empty
+        end
+      end
+    end
+
     describe "#custom_filter :orphan_categories" do
-      let(:system_auth_context) { Verse::Auth::Context[:system] }
-      let(:project_repo) { Project::Repository.new(system_auth_context) }
-      let(:dataset_repo) { Dataset::Repository.new(system_auth_context) }
-      let(:entry_repo) { described_class.new(system_auth_context) }
       let(:stat_repo) { EntryStat::Repository.new(system_auth_context) }
-
-      let!(:project_id) do
-        project_repo.create(
-          name: "Test Project",
-          description: "Test project",
-          organization_id: 1,
-          created_by_email: "admin@example.com"
-        )
-      end
-
-      let!(:dataset_id) do
-        dataset_repo.create(
-          modality: "idah-image",
-          labels: [],
-          labeling_configuration: {},
-          workflow_configuration: {},
-          project_id: project_id
-        )
-      end
 
       let!(:entry_with_orphans) do
         entry_repo.create(
-          priority: 1,
-          wf_step: "annotate",
-          status: "in_progress",
-          project_id: project_id,
-          dataset_id: dataset_id
+          priority: 1, wf_step: "annotate", status: "in_progress",
+          project_id: project_id, dataset_id: dataset_id
         )
       end
 
       let!(:entry_without_orphans) do
         entry_repo.create(
-          priority: 1,
-          wf_step: "annotate",
-          status: "in_progress",
-          project_id: project_id,
-          dataset_id: dataset_id
+          priority: 1, wf_step: "annotate", status: "in_progress",
+          project_id: project_id, dataset_id: dataset_id
         )
       end
 
       before do
-        # Entry with orphan categories (orphan_category.count = "3")
         stat_repo.bulk_insert(
           entry_with_orphans,
           {
@@ -67,7 +140,6 @@ RSpec.describe Entry, database: true do
           }
         )
 
-        # Entry without orphan categories (orphan_category.count = "0")
         stat_repo.bulk_insert(
           entry_without_orphans,
           {
@@ -95,17 +167,10 @@ RSpec.describe Entry, database: true do
           expect(result.first.id).to eq(entry_without_orphans)
         end
 
-        it "does not return entries that have no entry_stats row at all" do
-          # Create an entry with no stats at all.
-          # Entries without stats satisfy NOT EXISTS (no orphan row found),
-          # so they ARE included in the false filter — they are treated as
-          # having no orphan categories because stats haven't been computed yet.
+        it "includes entries that have no entry_stats row when filter is false" do
           entry_no_stats = entry_repo.create(
-            priority: 1,
-            wf_step: "annotate",
-            status: "in_progress",
-            project_id: project_id,
-            dataset_id: dataset_id
+            priority: 1, wf_step: "annotate", status: "in_progress",
+            project_id: project_id, dataset_id: dataset_id
           )
 
           result = subject.index({ orphan_categories: "false" })
