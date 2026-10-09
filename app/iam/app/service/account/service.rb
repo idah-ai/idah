@@ -6,7 +6,7 @@ module Account
         organization_service: Organization::Service,
         role_change_notification: Account::RoleChangeNotification
 
-    use_system accounts_system: Account::Repository
+    use_system accounts_system: Account::Repository, role_system: RoleRepository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
@@ -226,8 +226,7 @@ module Account
     end
 
     def role_lookup(name)
-      @role_lookup ||= RoleRepository.new(Verse::Auth::Context.new)
-      @role_lookup.find_by({ name: name.to_s })
+      role_system.find_by({ name: name.to_s })
     end
 
     # Privilege tier = the major number of the role mask ("8.0.0" -> 8).
