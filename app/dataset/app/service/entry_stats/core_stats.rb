@@ -17,6 +17,10 @@ module EntryStats
     #                                         Shape types from tool-type config keys are zero-filled
     #                                         (like categories). Generic across modalities, so it
     #                                         lives here rather than in a per-plugin generator.
+    #   "orphan_category.count"             → count of annotations whose category is not
+    #                                         present in labeling_configuration (e.g. was
+    #                                         deleted or renamed). Each annotation counted
+    #                                         individually.
     #
     # Category ids are collected by flattening values[*][:id] across all tool-type keys
     # in labeling_configuration (e.g. "idah-video:bounding-box" → :values → :id).
@@ -67,6 +71,16 @@ module EntryStats
       label_counts.each do |label, count|
         stats["category.#{label}.count"] = count.to_s
       end
+
+      # Count annotations whose category is not present in the labeling configuration.
+      # These are "orphan" annotations — the category was deleted, renamed, or never
+      # configured. Each annotation is counted individually (not per distinct category).
+      configured_set = configured_ids.to_set
+      orphan_annotation_count = live_annotations.count do |annotation|
+        category = annotation.category
+        category && !configured_set.include?(category)
+      end
+      stats["orphan_category.count"] = orphan_annotation_count.to_s
 
       shape_counts.each do |shape, count|
         stats["shape.#{shape}.count"] = count.to_s
