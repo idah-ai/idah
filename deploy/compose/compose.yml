@@ -31,6 +31,9 @@ x-logging: &logging
     tag: "{{.Name}}"
 
 # Every Ruby service gets these. Service-specific values are set per service.
+# They all run one image, service (media: its own, which adds ffmpeg and
+# ImageMagick to it), holding every service in /app/<service>; working_dir
+# picks the service a container runs.
 #
 # No env_file: .env is read only to fill in the ${...} below, so each service
 # sees the settings it uses and nothing else — not the others' secrets — and a
@@ -70,6 +73,8 @@ x-service-env: &service-env
   IDAH_API_READ_TIMEOUT: ${IDAH_API_READ_TIMEOUT:-30}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   LOG_SHOW_ERROR_DETAILS: ${LOG_SHOW_ERROR_DETAILS:-false}
+  # Empty reports the image's APP_ENVIRONMENT, production, as the frontend does.
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-}
 
 services:
   # HTTP, and HTTPS when IDAH_TLS_CONF points at config/nginx/tls.conf.
@@ -143,7 +148,8 @@ services:
   # iam signs service tokens, so it is the one service with the private key.
   iam:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}iam:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/iam
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_iam?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}
@@ -161,6 +167,7 @@ services:
   media:
     <<: *service
     image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}media:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/media
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_media?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}
@@ -188,7 +195,8 @@ services:
 
   dataset:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}dataset:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/dataset
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_dataset?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}
@@ -202,7 +210,8 @@ services:
 
   setting:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}setting:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/setting
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_setting?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}
@@ -216,7 +225,8 @@ services:
 
   audit:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}audit:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/audit
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_audit?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}
@@ -232,7 +242,8 @@ services:
   # SYNC_FILES_ADAPTER=s3 in .env to use S3, as for media.
   sync:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}sync:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/sync
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_sync?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}
@@ -256,7 +267,8 @@ services:
 
   notification:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}notification:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    working_dir: /app/notification
     environment:
       <<: *service-env
       DATABASE_URI: postgres://${POSTGRES_USER:-idah}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/idah_notification?sslmode=${POSTGRES_SSLMODE:-prefer}${IDAH_CA_CERT:+&sslrootcert=}${IDAH_CA_CERT:-}

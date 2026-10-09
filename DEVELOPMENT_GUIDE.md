@@ -51,8 +51,7 @@ idah/
 ├── plugins/            # Production plugins
 ├── plugins_dev/        # Plugin development CLI & templates
 ├── dev/                # Dev infrastructure (nginx config, ssl, rake tasks)
-├── doc/                # Documentation assets
-└── staging/            # Staging environment config
+└── deploy/             # On-premise installer and compose bundle
 ```
 
 **Key technologies:**
@@ -112,19 +111,32 @@ IDAH_REDIS_CONTAINER=0
 docker compose up -d --build
 ```
 
-`compose.yml` builds the images and wires the services together. `docker compose` automatically merges `compose.override.yml` on top of it, which adds the development setup: source, `common/` and plugin mounts, the settings in `config/development/`, Postgres and Redis, the dev entrypoints, the vite frontend, TLS on `idah.localhost` and MailHog. Together they are the developer environment; an on-premise install uses the release bundle in `deploy/compose/`, which pulls published images and reads a single `.env`.
+This starts all services. Your code is mounted, so edits apply without a rebuild.
 
-This builds and starts all services:
-- `nginx` (reverse proxy, port 8080/8443)
-- `iam` (Identity & Access Management)
-- `dataset` (Dataset management)
-- `media` (Media processing)
-- `sync` (Data sync/export)
-- `notification` (Notifications)
-- `audit` (Audit logging)
-- `setting` (Settings)
-- `frontend` (SvelteKit dev server on port 5173)
-- `mails` (MailHog for email testing, ports 1025/8025)
+| Service | Usage | Port |
+|---|---|---|
+| `nginx` | Reverse proxy in front of everything | 8080, 8443 |
+| `frontend` | SvelteKit dev server | via nginx |
+| `iam` | Identity & Access Management | via nginx |
+| `dataset` | Projects, datasets, entries, annotations | via nginx |
+| `media` | File storage and media processing | via nginx |
+| `sync` | Exports | via nginx |
+| `notification` | Email notifications | via nginx |
+| `audit` | Audit logging | via nginx |
+| `setting` | Settings and plugins | via nginx |
+| `postgres` | PostgreSQL | 5432 |
+| `redis` | Redis | 6379 |
+| `mails` | MailHog, catches outgoing email | 1025, 8025 (web UI) |
+
+For changes only you need, create a `compose.override.yml`. Git ignores it and
+`docker compose` merges it in automatically:
+
+```yaml
+services:
+  iam:
+    ports:
+      - "3001:3000"
+```
 
 ### 4. Initialize the setup (first time only)
 
@@ -369,7 +381,6 @@ app/<service>/
 ├── .env.test           # Test environment variables
 ├── Gemfile
 ├── Rakefile
-├── Dockerfile
 └── dev-entrypoint.sh   # Dev entrypoint (runs bundle + db setup)
 ```
 
@@ -645,7 +656,7 @@ serves every install:
   DSN as a build argument: a published image carrying ours would send every
   customer's errors, and their session replays, to our Sentry project.
 
-In development, `compose.override.yml` passes `SENTRY_DSN_FRONTEND` from your
+In development, `compose.yml` passes `SENTRY_DSN_FRONTEND` from your
 root `.env` as `PUBLIC_SENTRY_DSN`.
 
 ---

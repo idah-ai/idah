@@ -3,14 +3,15 @@
 What an on-premise install uses. These files are published as release assets, so
 a customer never clones the repository.
 
-The developer environment is separate: `compose.yml` and `compose.override.yml`
-at the repository root, with settings in `config/development/`.
+The developer environment is separate: `compose.yml` at the repository root,
+with settings in `config/development/`.
 
 ## Contents
 
 | File | Purpose |
 |---|---|
 | `install.sh` | The installer. Downloads the release when run on its own, generates every secret, prepares the databases and starts the stack. Configures nothing itself: settings come from `.env`. |
+| `install/` | The installer's steps, numbered in the order `install.sh` runs them: `01-settings.sh` to `10-summary.sh`, with shared helpers in `lib.sh`. `06-copy-database.sh` runs only with `--provision`. |
 | `compose.yml` | The stack, pulling published images pinned to one release. nginx, PostgreSQL and Redis are pinned to exact versions too. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
 | `config/nginx/` | The reverse proxy: `nginx.conf`, `routes.conf` for the routes it serves, and `tls.conf` for an HTTPS server from your own certificate (off unless `IDAH_TLS_CONF` names it). |
@@ -26,13 +27,22 @@ Customers keep their own changes in a `compose.override.yml` next to
 curl -fsSL https://github.com/idah-ai/idah/releases/latest/download/install.sh | bash
 ```
 
-The installer downloads the rest of the release it belongs to, checks it
-against the published `SHA256SUMS`, unpacks it into `./idah` and installs from
-there. It asks two things, the public URL and the administrator's email, then
-generates the signing key pair and every password — one per internal service
+The installer first asks where to install IDAH: the current directory unless
+you name another, which it creates if needed. It then downloads the rest of the
+release it belongs to, checks it against the published `SHA256SUMS`, unpacks
+it there and installs from there. It refuses a directory that already holds
+files of the same names, so nothing of yours is overwritten. It asks two more
+things, the public URL and the administrator's email, then generates the signing key pair and every password — one per internal service
 account — creates the databases, runs the migrations, creates the accounts and
 starts the stack. The administrator's password is printed once and stored
 nowhere.
+
+`IDAH_DIR` sets the directory offered, and with `--yes` it is used without
+asking, for a scripted install:
+
+```bash
+curl -fsSL https://github.com/idah-ai/idah/releases/latest/download/install.sh | IDAH_DIR=/home/apps/idah bash -s -- --yes --admin-email you@example.com
+```
 
 That line installs the newest release. To install a particular one, name it —
 the version pins the files and the images alike:
@@ -52,8 +62,9 @@ tar -xzf idah-<version>.tar.gz && cd idah-<version>
 ./install.sh
 ```
 
-An install on a machine with no internet also needs the eight images mirrored
-into a registry it can reach, with `IDAH_IMAGE_PREFIX` pointed at it.
+An install on a machine with no internet also needs the three images
+(`service`, which six of the services run, `media` and `frontend`) mirrored into
+a registry it can reach, with `IDAH_IMAGE_PREFIX` pointed at it.
 
 To configure anything before installing, create `.env` first and edit it:
 
@@ -74,6 +85,13 @@ IDAH_VERSION=0.0.0-local IDAH_IMAGE_PREFIX=idah- ./install.sh --yes --admin-emai
 It checks the images, the ports and any server you configured before writing
 anything, so a failed check leaves nothing behind. `--yes` asks nothing, for
 unattended installs: set `IDAH_URL` in `.env` and pass `--admin-email`.
+
+If it fails later, while creating the databases or accounts or starting the
+stack, fix what it reports and run `./install.sh` again: it carries on with the
+settings, secrets and signing key the first attempt wrote. An install is marked
+finished (`IDAH_INSTALLED_AT` in `.env`) only once every service answers; from
+then on `./install.sh` refuses to run over it, and `--upgrade` is the way to
+change it.
 
 ## Configuration
 
@@ -109,6 +127,18 @@ PostgreSQL" covers it.
 Off after an install. Uncomment `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`,
 `MAIL_SMTP_USER` and `MAIL_SMTP_PASSWORD` and fill them in, then
 `docker compose up -d`.
+
+Until then, no email is sent: the notification service writes each one to its
+log instead, with the recipient, the subject and the text, including the link
+in an invitation or a password reset. Pass that link on to the person:
+
+```bash
+docker compose logs notification | grep -A 20 "Email not sent"
+```
+
+Those links work like one-time passwords, so anyone who can read the logs can
+use them. Keep the logs on this host, or set up email before forwarding them
+anywhere.
 
 ### Serving HTTPS
 
