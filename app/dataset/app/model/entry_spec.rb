@@ -40,8 +40,11 @@ RSpec.describe Entry, database: true do
 
         let!(:entry_assigned) do
           eid = entry_repo.create(
-            priority: 1, wf_step: "annotate", status: "in_progress",
-            project_id: project_id, dataset_id: dataset_id
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
           )
           entry_repo.assign(eid, 10, "assignee@example.com")
           eid
@@ -49,8 +52,11 @@ RSpec.describe Entry, database: true do
 
         let!(:entry_unassigned) do
           entry_repo.create(
-            priority: 1, wf_step: "annotate", status: "in_progress",
-            project_id: project_id, dataset_id: dataset_id
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
           )
         end
 
@@ -84,8 +90,11 @@ RSpec.describe Entry, database: true do
 
         let!(:entry_participated) do
           eid = entry_repo.create(
-            priority: 1, wf_step: "annotate", status: "in_progress",
-            project_id: project_id, dataset_id: dataset_id
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
           )
           entry_repo.assign(eid, 42, "participant@example.com")
           eid
@@ -93,8 +102,11 @@ RSpec.describe Entry, database: true do
 
         let!(:entry_not_participated) do
           entry_repo.create(
-            priority: 1, wf_step: "annotate", status: "in_progress",
-            project_id: project_id, dataset_id: dataset_id
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
           )
         end
 
@@ -118,15 +130,21 @@ RSpec.describe Entry, database: true do
 
       let!(:entry_with_orphans) do
         entry_repo.create(
-          priority: 1, wf_step: "annotate", status: "in_progress",
-          project_id: project_id, dataset_id: dataset_id
+          priority: 1,
+          wf_step: "annotate",
+          status: "in_progress",
+          project_id: project_id,
+          dataset_id: dataset_id
         )
       end
 
       let!(:entry_without_orphans) do
         entry_repo.create(
-          priority: 1, wf_step: "annotate", status: "in_progress",
-          project_id: project_id, dataset_id: dataset_id
+          priority: 1,
+          wf_step: "annotate",
+          status: "in_progress",
+          project_id: project_id,
+          dataset_id: dataset_id
         )
       end
 
@@ -169,8 +187,11 @@ RSpec.describe Entry, database: true do
 
         it "includes entries that have no entry_stats row when filter is false" do
           entry_no_stats = entry_repo.create(
-            priority: 1, wf_step: "annotate", status: "in_progress",
-            project_id: project_id, dataset_id: dataset_id
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
           )
 
           result = subject.index({ orphan_categories: "false" })
