@@ -162,8 +162,7 @@
 
   let showAnnotationsList = $derived(
     !shapeTypeOverride &&
-      (viewport.mode === "editor" || viewport.isReviewWorkspace) &&
-      currentFrameAnnotations.length > 0,
+      (viewport.mode === "editor" || viewport.isReviewWorkspace),
   );
 
   // -----------------------------------------------------------------------

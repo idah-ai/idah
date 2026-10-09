@@ -59,11 +59,11 @@
   const filteredSortedAnnotations = $derived(
     !categorySearch.value
       ? sortedAnnotations
-      : sortedAnnotations.filter(
-          (ann) =>
-            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
-              categorySearch.value.toLowerCase().replace(/-/g, " "),
-            ),
+      : sortedAnnotations.filter((ann) =>
+          (ann.category ?? "")
+            .toLowerCase()
+            .replace(/-/g, " ")
+            .includes(categorySearch.value.toLowerCase().replace(/-/g, " ")),
         ),
   );
 
@@ -137,7 +137,7 @@
 
     {#if filteredSortedAnnotations.length === 0}
       {#if annotations.length === 0}
-        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations</div>
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations on this frame</div>
       {:else}
         <div class="text-muted-foreground px-2 py-4 text-center text-xs">No matching annotations</div>
       {/if}
