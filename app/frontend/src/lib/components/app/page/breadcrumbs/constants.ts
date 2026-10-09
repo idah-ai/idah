@@ -10,3 +10,4 @@ export const projectBreadcrumb: PageBreadcrumbItem = { label: "Projects", href: 
 
 /** SETTINGS */
 export const settingBreadcrumb: PageBreadcrumbItem = { label: "Settings", href: "/settings" };
+export const webhookBreadcrumb: PageBreadcrumbItem = { label: "Webhooks", href: "/webhooks" };

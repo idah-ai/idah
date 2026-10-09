@@ -29,6 +29,10 @@ export interface Refetches {
 
   /** AUDIT */
   logs: Refetch;
+
+  /** NOTIFICATION */
+  webhooks: Refetch;
+  webhookCalls: Refetch;
 }
 
 export type RefetchesKey = keyof Refetches;
@@ -96,6 +100,16 @@ export const refetches = writable<Refetches>({
 
   /** AUDIT */
   logs: {
+    list: new Date(),
+    get: new Date(),
+  },
+
+  /** NOTIFICATION */
+  webhooks: {
+    list: new Date(),
+    get: new Date(),
+  },
+  webhookCalls: {
     list: new Date(),
     get: new Date(),
   },
