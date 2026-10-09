@@ -13,6 +13,7 @@
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { notes } from "$lib/state/data.svelte";
+  import { categorySearch } from "$lib/state/category-search.svelte";
   import { ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
   import type Video from "$lib/components/App/Viewport/Video.svelte";
   import type { INoteRecord } from "$idah/v2/types";
@@ -102,10 +103,22 @@
   }))
 
   let items = $derived.by(() => {
+    const query = categorySearch.value;
+    if (!query) {
+      return transformAnnotationsToTracks({
+        annotations: viewportAnnotations,
+        labelConfig: getDriver().config,
+      });
+    }
+    // Normalize hyphens↔spaces so searching by id or label both work.
+    const q = query.toLowerCase().replace(/-/g, " ");
+    const annotations = viewportAnnotations.filter(
+      (ann) => (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q),
+    );
     return transformAnnotationsToTracks({
-      annotations: viewportAnnotations,
-      labelConfig: getDriver().config
-    })
+      annotations,
+      labelConfig: getDriver().config,
+    });
   })
 
   // Entry notes row — rendered as a sticky row between ruler and tracks
