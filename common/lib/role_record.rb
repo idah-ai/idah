@@ -9,6 +9,10 @@ class RoleRecord < Verse::Model::Record::Base
 
   field :rights, type: Array
 
+  # Privilege level, as "major.minor.patch" (e.g. "8.0.0" for admin). The major
+  # number is the privilege tier used to decide which roles a caller may assign.
+  field :mask, type: String
+
   field :description, type: String
   field :assignable, type: TrueClass, visible: false
 

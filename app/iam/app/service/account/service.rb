@@ -24,22 +24,31 @@ module Account
     end
 
     def create(record)
-      if record.attributes[:role_name] == ("system" || "admin") &&
-         auth_context.can?(:create, projects.class.resource) != :all
-
-        raise Verse::Error::ValidationFailed, "System account can't be created"
-      end
+      guard_role_assignment!(
+        record.attributes[:role_name],
+        record.attributes[:role_scope]
+      )
 
       accounts.transaction do
         attr = record.attributes.dup
 
-        # We use the system repository to check for existing accounts
+        # We use the system repository to check for existing accounts, so the
+        # same email can't be created twice across the whole platform.
         account = accounts_system.find_by({ email: attr[:email] })
 
-        # If account with the email already exists, return it
+        # When the email already belongs to an account, return only what the
+        # invite flow needs to add the person (id, name, email). The caller may
+        # not be allowed to see that account, so its role, scope and status are
+        # never disclosed through this lookup.
         if account
           auth_context.mark_as_checked!
-          return account
+          return Account::Record.new(
+            {
+              id: account.id,
+              name: account.name,
+              email: account.email
+            }
+          )
         end
 
         # Set a default random password for the account if none is provided
@@ -76,6 +85,11 @@ module Account
 
     def update(record)
       auth_context.reject! unless auth_context.can?(:update, accounts.class.resource)
+
+      guard_role_assignment!(
+        record.attributes[:role_name],
+        record.attributes[:role_scope]
+      )
 
       accounts.transaction do
         previous_account = accounts.find!(record.id)
@@ -163,6 +177,72 @@ module Account
     end
 
     private
+
+    # Prevent privilege escalation when assigning a role to an account.
+    #
+    # A caller may only assign a role whose privilege tier (the major number of
+    # its mask) is at most their own, and may only scope that role to
+    # organizations they already belong to. Roles flagged as non-assignable
+    # (e.g. `system`) can never be assigned through the API.
+    #
+    # Callers with no role (internal / system contexts built in-process) are
+    # trusted and skip the ceiling; every request authenticated over HTTP
+    # carries a role, so this only exempts code running inside the services.
+    def guard_role_assignment!(role_name, role_scope)
+      return if role_name.nil?
+
+      target_role = role_lookup(role_name)
+      unless target_role&.assignable
+        raise Verse::Error::Unauthorized,
+              "Role '#{role_name}' cannot be assigned"
+      end
+
+      caller_role = auth_context.role
+      return if caller_role.nil?
+
+      caller_tier =
+        if caller_role.to_s.start_with?("api:")
+          # API keys carry a compound "api:..." role. Cap them at the `user`
+          # tier: a key may invite regular users but never create privileged
+          # accounts, regardless of the key's own data rights.
+          role_tier("user")
+        else
+          role_tier(caller_role)
+        end
+
+      if role_tier(role_name) > caller_tier
+        raise Verse::Error::Unauthorized,
+              "You are not allowed to assign the '#{role_name}' role"
+      end
+
+      allowed_orgs = auth_context.custom_scopes[:org]
+      return if allowed_orgs.nil? || allowed_orgs.empty?
+
+      outside = requested_org_scope(role_scope) - allowed_orgs.map(&:to_s)
+      return if outside.empty?
+
+      raise Verse::Error::Unauthorized,
+            "role_scope is outside your organization"
+    end
+
+    def role_lookup(name)
+      @role_lookup ||= RoleRepository.new(Verse::Auth::Context.new)
+      @role_lookup.find_by({ name: name.to_s })
+    end
+
+    # Privilege tier = the major number of the role mask ("8.0.0" -> 8).
+    # An unknown role yields 0, the lowest tier.
+    def role_tier(name)
+      role_lookup(name)&.mask.to_s.split(".").first.to_i
+    end
+
+    def requested_org_scope(role_scope)
+      scope = role_scope
+      scope = JSON.parse(scope) if scope.is_a?(String) && !scope.strip.empty?
+      return [] unless scope.is_a?(Hash)
+
+      Array(scope["org"] || scope[:org]).map(&:to_s)
+    end
 
     def update_password_reset_token(account)
       password_reset_token = SecureRandom.hex(32)

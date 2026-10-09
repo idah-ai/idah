@@ -495,4 +495,218 @@ RSpec.describe Account::Service, database: true do
       end
     end
   end
+
+  describe "role assignment guard" do
+    def account_record(attributes)
+      deserialize(
+        {
+          data: {
+            type: Resource::Iam::Accounts,
+            attributes:,
+          }
+        }
+      )
+    end
+
+    context "As an organization owner", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      it "creates a user when no role is given (the invite flow)" do
+        account = subject.create(
+          account_record(name: "Invitee", email: "invitee@example.com", enabled: true)
+        )
+        expect(account.role_name).to eq("user")
+      end
+
+      it "allows assigning the user role" do
+        account = subject.create(
+          account_record(
+            name: "Plain User",
+            email: "plain-user@example.com",
+            enabled: true,
+            role_name: "user"
+          )
+        )
+        expect(account.role_name).to eq("user")
+      end
+
+      it "allows assigning org_owner within its own organization scope" do
+        account = subject.create(
+          account_record(
+            name: "Another Owner",
+            email: "another-owner@example.com",
+            enabled: true,
+            role_name: "org_owner",
+            role_scope: { org: ["1"] }.to_json
+          )
+        )
+        expect(account.role_name).to eq("org_owner")
+      end
+
+      it "refuses assigning the admin role" do
+        expect {
+          subject.create(
+            account_record(
+              name: "Escalate",
+              email: "escalate-admin@example.com",
+              enabled: true,
+              role_name: "admin"
+            )
+          )
+        }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "refuses assigning the non-assignable system role" do
+        expect {
+          subject.create(
+            account_record(
+              name: "System",
+              email: "escalate-system@example.com",
+              enabled: true,
+              role_name: "system"
+            )
+          )
+        }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "refuses a role scoped to another organization" do
+        expect {
+          subject.create(
+            account_record(
+              name: "Cross Org",
+              email: "cross-org@example.com",
+              enabled: true,
+              role_name: "org_owner",
+              role_scope: { org: ["999"] }.to_json
+            )
+          )
+        }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "refuses escalating an existing account to admin via update" do
+        account = subject.create(
+          account_record(
+            name: "Later Admin",
+            email: "later-admin@example.com",
+            enabled: true,
+            role_name: "user"
+          )
+        )
+
+        updating = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              id: account.id,
+              attributes: { role_name: "admin" }
+            }
+          }
+        )
+
+        expect { subject.update(updating) }.to raise_error(Verse::Error::Unauthorized)
+      end
+    end
+
+    context "As an organization API key" do
+      # API keys authenticate with a compound "api:<scopes>" role.
+      subject do
+        described_class.new(
+          Verse::Auth::Context.from_role(
+            "api:project_rw_org",
+            custom_scopes: { org: ["1"] },
+            metadata: { id: 99, role: :"api:project_rw_org" }
+          )
+        )
+      end
+
+      before do
+        # Scoping accounts to the key's organization asks the dataset service
+        # for its project members; stub that inter-service call.
+        allow(Api[:idah].dataset.project_members).to receive(:index)
+          .and_return(Verse::JsonApi::Struct.new([]))
+      end
+
+      it "allows inviting a regular user" do
+        account = subject.create(
+          account_record(
+            name: "Invited User",
+            email: "key-user@example.com",
+            enabled: true,
+            role_name: "user"
+          )
+        )
+        expect(account.role_name).to eq("user")
+      end
+
+      it "allows inviting a user when no role is given" do
+        account = subject.create(
+          account_record(
+            name: "Invited User",
+            email: "key-default-user@example.com",
+            enabled: true
+          )
+        )
+        expect(account.role_name).to eq("user")
+      end
+
+      it "refuses creating an org_owner account" do
+        expect {
+          subject.create(
+            account_record(
+              name: "Key Owner",
+              email: "key-owner@example.com",
+              enabled: true,
+              role_name: "org_owner",
+              role_scope: { org: ["1"] }.to_json
+            )
+          )
+        }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "refuses creating an admin account" do
+        expect {
+          subject.create(
+            account_record(
+              name: "Key Admin",
+              email: "key-admin@example.com",
+              enabled: true,
+              role_name: "admin"
+            )
+          )
+        }.to raise_error(Verse::Error::Unauthorized)
+      end
+    end
+
+    context "when the email already belongs to an account", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      let!(:existing_id) do
+        account_repo.create(
+          {
+            name: "Existing Admin",
+            email: "existing@example.com",
+            role_name: "admin",
+            role_scope: { org: ["999"] }.to_json,
+            enabled: true
+          }
+        )
+      end
+
+      it "returns only id, name and email, not the role, scope or status" do
+        result = subject.create(
+          account_record(
+            name: "ignored",
+            email: "existing@example.com",
+            enabled: true
+          )
+        )
+
+        expect(result.id.to_s).to eq(existing_id.to_s)
+        expect(result.email).to eq("existing@example.com")
+        expect(result.name).to eq("Existing Admin")
+        expect(result.role_name).to be_nil
+        expect(result.enabled).to be_nil
+      end
+    end
+  end
 end
