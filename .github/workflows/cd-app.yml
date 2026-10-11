@@ -450,6 +450,13 @@ jobs:
           name: release-files
           path: dist
 
+      # upload-artifact does not keep the executable bit, so the unpacked
+      # bundle's install.sh comes back non-executable. The install scenario runs
+      # it as ./install.sh; restore the bit. (The upgrade scenario extracts the
+      # tarball, which keeps permissions, so it is unaffected.)
+      - name: Restore the installer's executable bit
+        run: chmod +x "dist/idah-$VERSION/install.sh"
+
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
