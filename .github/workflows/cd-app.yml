@@ -450,13 +450,6 @@ jobs:
           name: release-files
           path: dist
 
-      # upload-artifact does not keep the executable bit, so the unpacked
-      # bundle's install.sh comes back non-executable. The install scenario runs
-      # it as ./install.sh; restore the bit. (The upgrade scenario extracts the
-      # tarball, which keeps permissions, so it is unaffected.)
-      - name: Restore the installer's executable bit
-        run: chmod +x "dist/idah-$VERSION/install.sh"
-
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
@@ -466,7 +459,14 @@ jobs:
 
       - name: Install as a customer would
         if: matrix.scenario == 'install'
-        run: .github/scripts/test-installer.sh install "dist/idah-$VERSION"
+        # Install from the tarball a customer downloads, not the unpacked dir:
+        # the artifact round-trip strips the executable bit and drops hidden
+        # files (.env.example) from a plain directory, but the tarball keeps
+        # both. The upgrade scenario already extracts the tarball this way.
+        run: |
+          mkdir bundle
+          tar -xzf "dist/idah-$VERSION.tar.gz" --strip-components=1 -C bundle
+          .github/scripts/test-installer.sh install bundle
 
       - name: Upgrade from the previous stable release
         if: matrix.scenario == 'upgrade'
