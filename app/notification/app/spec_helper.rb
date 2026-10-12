@@ -6,6 +6,7 @@ require "bootsnap"
 Bootsnap.setup(cache_dir: "tmp/cache")
 
 require "webmock"
+require "webmock/rspec/matchers"
 WebMock.enable!
 WebMock.disable_net_connect!
 
@@ -58,6 +59,8 @@ RSpec.configure do |config|
 
   config.include RSpec::Mocks::ExampleMethods
   config.include WebMock::API
+  config.include WebMock::Matchers
+  config.after { WebMock.reset! }
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })

@@ -43,6 +43,7 @@ org_owner:
 
     # Notification Service
     - "notification:webhooks.*.own"
+    - "notification:jobs.read.own"
 
     # Sync Service
     - "sync:jobs.read.as_org_owner"

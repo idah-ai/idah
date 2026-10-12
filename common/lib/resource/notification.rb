@@ -4,6 +4,7 @@ module Resource
   module Notification
     # rubocop:disable Naming/ConstantName
     Webhooks = "notification:webhooks"
+    Jobs = "notification:jobs"
     # rubocop:enable Naming/ConstantName
   end
 end

@@ -237,4 +237,68 @@ RSpec.describe WebhooksExpo, type: :exposition, database: true do
       expect(event.allowed_roles).to eq %w[admin org_owner user]
     end
   end
+
+  describe "POST /webhooks/:id/test" do
+    let(:jobs) { Jobs::Repository.new(Verse::Auth::Context[:system]) }
+
+    def result
+      JSON.parse(last_response.body, symbolize_names: true)
+    end
+
+    it "sends a signed ping to the receiver right away and returns its response, even when disabled" do
+      id = create_webhook(account_id: 3, role_name: "user", enabled: false)
+      stub_request(:post, public_url).to_return(status: 200, body: "pong")
+
+      as_user(:user) { post "/webhooks/#{id}/test" }
+
+      expect(last_response.status).to eq 200
+      expect(result).to eq(http_code: 200, success: true, response: "pong")
+      expect(
+        a_request(:post, public_url).with { |request|
+          body = JSON.parse(request.body, symbolize_names: true)
+          body[:event] == "ping" && body[:resource_id] == id.to_s &&
+            request.headers["X-Signature"]&.start_with?("sha256=")
+        }
+      ).to have_been_made.once
+    end
+
+    it "reports a failing receiver without retrying" do
+      id = create_webhook(account_id: 3, role_name: "user")
+      stub_request(:post, public_url).to_return(status: 500, body: "boom")
+
+      as_user(:user) { post "/webhooks/#{id}/test" }
+
+      expect(result).to eq(http_code: 500, success: false, response: "boom")
+      expect(a_request(:post, public_url)).to have_been_made.once
+    end
+
+    it "doesn't record the ping in the delivery log" do
+      id = create_webhook(account_id: 3, role_name: "user")
+      stub_request(:post, public_url).to_return(status: 200, body: "pong")
+
+      as_user(:user) { post "/webhooks/#{id}/test" }
+
+      expect(jobs.index({ webhook_id: id })).to be_empty
+    end
+
+    it "reports an unreachable receiver" do
+      id = create_webhook(account_id: 3, role_name: "user")
+      stub_request(:post, public_url).to_timeout
+
+      as_user(:user) { post "/webhooks/#{id}/test" }
+
+      expect(result[:http_code]).to be_nil
+      expect(result[:success]).to be false
+      expect(result[:response]).to include("Timeout")
+    end
+
+    it "cannot test other accounts' webhooks" do
+      id = create_webhook(account_id: 4, role_name: "user")
+
+      as_user(:user) { post "/webhooks/#{id}/test" }
+
+      expect(last_response.status).to eq 404
+      expect(a_request(:post, public_url)).not_to have_been_made
+    end
+  end
 end
