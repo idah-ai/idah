@@ -15,6 +15,8 @@
   import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
+  
+  import type { Hash } from "@/utils/types";
 
   pageBreadcrumbsStore.set([webhookBreadcrumb]);
 
@@ -35,6 +37,13 @@
     canDeleteWebhook = (await currentAccount?.can("delete", webhookResource)) || false;
     columns.action.visible = canUpdateWebhook || canDeleteWebhook;
   });
+
+  // Functions
+   async function onLoadSetContexts(): Promise<Hash> {
+    const webhookEventsRes = await webhooksBackendDataSource.event( );
+
+    return { webhookEvents: webhookEventsRes.data };
+  }
 </script>
 
 {#snippet AddNewWebhookButton()}
@@ -67,6 +76,7 @@
           [WebhookRecord.type]: ["id", "name", "url", "events", "enabled", "created_at"],
         },
       }}
+      {onLoadSetContexts}
     >
       {#snippet addNewRecordButton()}
         {@render AddNewWebhookButton()}

@@ -49,7 +49,9 @@
   let choices = $state<Choice[]>([]);
   let loading = $state(true);
 
-  let selectedChoices = $derived(values);
+  let selectedChoices = $derived(
+    values.map((value) => choices.find((choice) => choice.value === value.value) ?? value),
+  );
   let groupedChoices = $derived(groupChoices(choices));
 
   onMount(async () => {
@@ -64,17 +66,16 @@
       const choicesByValue = new SvelteMap<string, Choice>();
 
       eventsRes.data.forEach((event) => {
-        if (choicesByValue.has(event.event)) return;
+        if (choicesByValue.has(event.id)) return;
 
-        choicesByValue.set(event.event, {
+        choicesByValue.set(event.id, {
           label: event.label,
-          value: event.event,
+          value: event.id,
           data: event,
         });
       });
 
       choices = Array.from(choicesByValue.values());
-      values = values.map((value) => choices.find((choice) => choice.value === value.value) ?? value);
     } finally {
       loading = false;
     }
@@ -82,8 +83,8 @@
 
   function groupChoices(items: Choice[]): GroupedChoices {
     return items.reduce((acc, choice) => {
-      const [service, table, ...actionParts] = String(choice.value).split(":");
-      const action = actionParts.join(":");
+      const [service, table, ...actionParts] = String(choice.value).split(".");
+      const action = actionParts.join(".");
 
       if (!service || !table || !action) return acc;
 

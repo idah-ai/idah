@@ -18,11 +18,12 @@
   let filterKey: string = $derived(columnSetting.filterOptions?.filterKey || "events");
   let filterOperation: DataTableColumnFilterOperation = $derived(columnSetting.filterOptions?.filterOperation || "in");
   let filterKeyWithOperation: string = $derived(`${filterKey}__${filterOperation}`);
-  let selectedEvents = $state<LabelValue<string | number>[]>(getSelectedEvents());
+  let selectedEvents = $derived<LabelValue<string | number>[]>(
+    getSelectedEvents(filters[filterKeyWithOperation] || []),
+  );
 
   // Functions
-  function getSelectedEvents(): LabelValue<string | number>[] {
-    const values = filters[filterKeyWithOperation] || [];
+  function getSelectedEvents(values: (string | number)[]): LabelValue<string | number>[] {
     return values.map((value: string | number) => ({ label: String(value), value }));
   }
 
@@ -37,10 +38,12 @@
   }
 </script>
 
-<SelectMultipleWebhookEventTypes
-  name="{resource}/events"
-  placeholder="Select event types"
-  required
-  values={selectedEvents}
-  onSelected={handleFilter}
-/>
+<div class="min-w-81">
+  <SelectMultipleWebhookEventTypes
+    name="{resource}/events"
+    placeholder="Select event types"
+    required
+    values={selectedEvents}
+    onSelected={handleFilter}
+  />
+</div>

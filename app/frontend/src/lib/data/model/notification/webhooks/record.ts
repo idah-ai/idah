@@ -23,6 +23,28 @@ RecordFactory.registerTypes(WebhookRecord);
 
 export const webhooksBasePath: string = `/api/v1/notification/webhooks`;
 export const webhooksBackendDataSource = createBackendDataSource(WebhookRecord, webhooksBasePath, {
+  test: async (id: string) => {
+    const response = await fetch(`${webhooksBasePath}/${id}/test`, {
+      method: "POST",
+    });
+    const body = await response.json();
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error testing webhook: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: response.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseCollectionReturn<WebhookRecord>(body));
+    }
+
+    throw "No data returned";
+  },
   event: async () => {
     const response = await fetch(`${webhooksBasePath}/events`, {
       method: "GET",

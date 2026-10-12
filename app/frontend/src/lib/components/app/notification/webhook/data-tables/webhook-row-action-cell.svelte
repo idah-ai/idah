@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import WebhookCallLogsContentModal from "@/components/app/notification/webhook/call/overlays/webhook-call-logs-content-modal.svelte";
   import WebhookFormModal from "@/components/app/notification/webhook/overlays/webhook-form-modal.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
@@ -8,7 +9,7 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
   import TooltipContent from "@/components/ui/tooltip/tooltip-content.svelte";
-  import { ClockIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { ClockIcon, SquarePenIcon, Trash2Icon, WifiIcon } from "@lucide/svelte";
 
   import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
@@ -17,7 +18,6 @@
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
   import type { Component } from "svelte";
-  import WebhookCallLogsContentModal from "../call/overlays/webhook-call-logs-content-modal.svelte";
 
   // Props
   let { record: webhookRecord }: DataTableCellBaseProps<WebhookRecord> = $props();
@@ -36,6 +36,12 @@
     destructive?: boolean;
     action: () => void | Promise<void>;
   }[] = $derived([
+     {
+      label: "Test Webhook",
+      icon: WifiIcon,
+      visible: true,
+      action: testWebhook,
+    },
     {
       label: "Call logs",
       icon: ClockIcon,
@@ -59,7 +65,7 @@
 
   // Lifecycle
   onMount(async () => {
-    canReadWebhookCalls = (await currentAccount?.can("read", "notification:webhook:calls")) || false;
+    canReadWebhookCalls = (await currentAccount?.can("read", webhookResource)) || false;
     canUpdateWebhook = (await currentAccount?.can("update", webhookResource)) || false;
     canDeleteWebhook = (await currentAccount?.can("delete", webhookResource)) || false;
   });
@@ -82,6 +88,18 @@
   async function openEditWebhookModal(): Promise<void> {
     await fetchWebhook();
     openEditWebhookFormModal = true;
+  }
+
+  async function testWebhook(): Promise<void> {
+    try {
+      await webhooksBackendDataSource.test(webhookRecord.id);
+      showToast.success({
+        title: "Webhook tested",
+        description: `The webhook "${webhookRecord.name}" has been tested successfully.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 
   async function confirmDeleteWebhook(): Promise<void> {

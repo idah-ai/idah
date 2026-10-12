@@ -21,7 +21,7 @@
 
   // Variables::Reactive
   let { name, url, events, secret_key, enabled } = $derived(webhook);
-  let selectedEvents = $state<LabelValue<string | number>[]>(events.map((event) => ({ label: event, value: event })));
+  let selectedEvents = $derived<LabelValue<string | number>[]>(events.map((event) => ({ label: event, value: event })));
 
   // Functions
   function selectEvents(selectedChoices: LabelValue<string | number>[]): void {
