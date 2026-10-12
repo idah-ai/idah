@@ -159,7 +159,6 @@
 
     <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
-
         <CommandList>
           {#if loading}
             <div class="text-muted-foreground p-3 text-sm">Loading event types...</div>

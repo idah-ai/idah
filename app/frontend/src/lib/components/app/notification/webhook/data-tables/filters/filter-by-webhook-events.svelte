@@ -5,8 +5,8 @@
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
 
   import type {
-      DataTableColumnFilterOperation,
-      DataTableFilterBaseProps,
+    DataTableColumnFilterOperation,
+    DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
   import type { LabelValue } from "@/utils/types";
 
