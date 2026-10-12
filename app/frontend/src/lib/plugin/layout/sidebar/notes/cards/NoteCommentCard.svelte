@@ -1,5 +1,5 @@
 <script lang="ts">
-  import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
+  import NoteCard from "@/plugin/layout/sidebar/notes/cards/NoteCard.svelte";
 
   import { noteCommentsBackendDataSource, type NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
   import { AuthContext } from "@/security/AuthContext";
@@ -18,13 +18,16 @@
   let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
   // Functions
-  async function updateNoteCommentMd(newContentMd: string) {
+  async function updateNoteCommentMd(params: { editedContentMd: string | null; editedFeedbackKeys: string[] | null }) {
+    const { editedContentMd } = params;
+    if (!editedContentMd) return;
+
     try {
       const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(
         id,
         {
           attributes: {
-            content_md: newContentMd,
+            content_md: editedContentMd,
           },
         },
         {
@@ -54,12 +57,13 @@
   noteFeedId={note_feed_id}
   noteCommentId={id}
   {content_md}
+  feedbackKeys={[]}
   {created_by_email}
   {created_at}
   {edited_at}
   editable={isOwner}
   deletable={isOwner}
   {highlighted}
-  onUpdateContentMd={updateNoteCommentMd}
+  onUpdate={updateNoteCommentMd}
   onDelete={deleteNoteComment}
 ></NoteCard>

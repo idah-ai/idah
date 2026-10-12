@@ -14,13 +14,19 @@ function refetchNoteFeeds() {
   }));
 }
 
-export async function updateNoteFeedContentMd(id: string, newContentMd: string) {
+export async function updateNoteFeedContent(params: {
+  id: string;
+  newContentMd: string | null;
+  newFeedbackKeys: string[] | null;
+}) {
   try {
+    const { id, newContentMd, newFeedbackKeys } = params;
     const updatedNoteFeedRes = await noteFeedsBackendDataSource.update(
       id,
       {
         attributes: {
           content_md: newContentMd,
+          feedback_keys: newFeedbackKeys,
         },
       },
       {

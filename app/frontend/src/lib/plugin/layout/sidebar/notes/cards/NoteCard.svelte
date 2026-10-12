@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
-  import Button from "@/components/ui/button/button.svelte";
-  import { Textarea } from "@/components/ui/textarea";
-  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
+  import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
+  import NoteFeedbackBadges from "@/plugin/layout/sidebar/notes/badges/NoteFeedbackBadges.svelte";
+  import NoteForm from "@/plugin/layout/sidebar/notes/inputs/NoteForm.svelte";
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -16,7 +16,8 @@
   interface Props {
     noteFeedId: string;
     noteCommentId?: string;
-    content_md: string;
+    content_md: string | null;
+    feedbackKeys: string[] | null;
     edited_at?: Date | string | null;
     created_by_email: string;
     created_at: Date | string;
@@ -26,7 +27,7 @@
     highlighted?: boolean;
 
     onClick?: () => void;
-    onUpdateContentMd: (newContentMd: string) => Promise<void>;
+    onUpdate: (params: { editedContentMd: string | null; editedFeedbackKeys: string[] | null }) => Promise<void>;
     onDelete?: () => Promise<void>;
 
     headerIcon?: Snippet;
@@ -37,6 +38,7 @@
     noteFeedId,
     noteCommentId,
     content_md,
+    feedbackKeys,
     edited_at,
     created_by_email,
     created_at,
@@ -44,7 +46,7 @@
     deletable = false,
     highlighted = false,
     onClick,
-    onUpdateContentMd,
+    onUpdate,
     onDelete,
     headerIcon,
     headerActions,
@@ -52,10 +54,12 @@
   }: Props = $props();
 
   // Variables
-  let editedContentMd = $state<string>(content_md);
+  let editedContentMd = $state<string | null>(content_md);
+  let editedFeedbackKeys = $state<string[]>(feedbackKeys ?? []);
   let mode = $state<"view" | "edit">("view");
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
+  const isNoteComment = $derived(noteCommentId !== undefined);
 
   function formatEditedTooltip(dateStr?: Date | string | null): string {
     if (!dateStr) return "";
@@ -94,21 +98,22 @@
 <div
   role="button"
   tabindex="0"
-  class={cn("hover:bg-secondary group flex cursor-pointer flex-col gap-2 border-1 border-transparent p-2", {
-    "bg-secondary": highlighted,
-  })}
+  class={cn("hover:bg-primary/5 flex cursor-pointer gap-2 border-b p-2", { "bg-secondary": highlighted })}
   onkeypress={handleClickCard}
   onclick={handleClickCard}
 >
-  <!-- HEADER -->
-  <div class="flex w-full gap-2">
-    <div class="flex flex-1 items-center gap-2">
-      <!-- HEADER::ICON -->
-      {@render headerIcon?.()}
+  <!-- ICONS -->
+  <section class="shrink-0">
+    {@render headerIcon?.()}
+  </section>
 
-      <!-- HEADER::CREATED BY & CREATED AT -->
-      <div class="flex flex-col text-left text-xs">
+  <!-- CONTENT -->
+  <section class="flex flex-1 flex-col gap-2">
+    <!-- CONTENT::EMAIL, CREATED AT, ACTIONS -->
+    <div class="flex items-center">
+      <div class="flex flex-col text-xs">
         <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
+
         <div>
           <DateText
             class="text-muted-foreground"
@@ -118,6 +123,7 @@
             weight="normal"
             showDistance
           ></DateText>
+
           {#if edited_at}
             <TooltipProvider>
               <Tooltip>
@@ -131,57 +137,50 @@
         </div>
       </div>
 
-      <!-- HEADER::ACTIONS -->
       <div class="ml-auto flex items-center">
         {@render headerActions?.()}
 
         <NoteDropdownMenus
           {noteFeedId}
           {noteCommentId}
-          {editable}
+          editable={editable && isViewMode}
           {deletable}
           onSwitchToEditMode={switchToEditMode}
           {onDelete}
         />
       </div>
     </div>
-  </div>
 
-  <!-- CONTENT -->
-  <div class="flex flex-1 flex-col items-start gap-1 text-xs">
+    <!-- FEEDBACK KEYS -->
+    <NoteFeedbackBadges feedbackKeys={feedbackKeys ?? []} />
+
+    <!-- CONTENT MD -->
     {#if isViewMode}
-      <MarkdownPreview value={truncate(content_md, 140)} />
+      <MarkdownPreview class="text-xs" value={truncate(content_md ?? "", 140)} />
 
       {@render contentActions?.()}
     {/if}
 
+    <!-- EDIT FORM -->
     {#if isEditMode}
-      <Textarea value={editedContentMd} oninput={(e) => (editedContentMd = e.currentTarget.value)} />
-
-      <div class="mt-2 ml-auto flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={(e) => {
-            e.stopPropagation();
-            editedContentMd = content_md;
-            switchToViewMode();
-          }}
-        >
-          Cancel
-        </Button>
-
-        <Button
-          size="sm"
-          onclick={async (e) => {
-            e.stopPropagation();
-            await onUpdateContentMd(editedContentMd);
-            switchToViewMode();
-          }}
-        >
-          Save
-        </Button>
-      </div>
+      <NoteForm
+        showFeedbackField={!isNoteComment}
+        feedbackValues={editedFeedbackKeys}
+        onFeedbackSelected={(selected) => (editedFeedbackKeys = selected)}
+        contentValue={editedContentMd}
+        onContentChange={(newValue) => (editedContentMd = newValue)}
+        submitLabel="Save"
+        onSubmit={async () => {
+          await onUpdate({ editedContentMd, editedFeedbackKeys });
+          switchToViewMode();
+        }}
+        showCancel
+        onCancel={() => {
+          editedContentMd = content_md;
+          editedFeedbackKeys = feedbackKeys ?? [];
+          switchToViewMode();
+        }}
+      />
     {/if}
-  </div>
+  </section>
 </div>

@@ -82,10 +82,11 @@
     await onSelected?.(selectedChoices);
   }
 
-  function clearSelection(event: MouseEvent): void {
+  async function clearSelection(event: MouseEvent): Promise<void> {
     event.stopPropagation();
     values = [];
     allChoicesSelected = false;
+    await onSelected?.(selectedChoices);
     closePopover();
   }
 </script>
@@ -108,7 +109,7 @@
       {:else}
         <Button
           variant="outline"
-          class="w-full justify-between"
+          class="w-full justify-between px-2.5"
           {disabled}
           role="combobox"
           aria-expanded={open}
@@ -124,7 +125,7 @@
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
 
-          <div class="ml-auto inline-flex items-center gap-2">
+          <div class="ml-auto inline-flex items-center gap-1">
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedChoices.length > 0 ? "opacity-50" : "opacity-0")}
@@ -163,7 +164,14 @@
                       "opacity-0": !values.includes(choice.value),
                     })}
                   />
-                  {choice.label}
+
+                  <div class="flex flex-col gap-0">
+                    <p>{choice.label}</p>
+
+                    {#if choice.description}
+                      <small class="text-muted-foreground">{choice.description}</small>
+                    {/if}
+                  </div>
                 </CommandItem>
               {/if}
             {/each}

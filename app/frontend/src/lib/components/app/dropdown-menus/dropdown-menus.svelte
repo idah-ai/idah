@@ -3,19 +3,8 @@
   import type { Snippet } from "svelte";
 
   import { Button, type ButtonSize } from "@/components/ui/button";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuGroupHeading,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
+  import * as DropdownMenu from "@/components/ui/dropdown-menu/index";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import { cn } from "@/utils";
   import { authStatus } from "@/security/AuthContext";
@@ -48,7 +37,7 @@
 </script>
 
 {#snippet DropdownMenusItem(item: IDropdownMenuItem)}
-  <DropdownMenuItem
+  <DropdownMenu.Item
     variant={item.destructive ? "destructive" : "default"}
     class={cn("", {
       "cursor-not-allowed": item.disabled,
@@ -58,15 +47,27 @@
     onclick={() => item.action?.()}
   >
     {#if item.icon}
-      <item.icon class="size-4" />
+      <item.icon class="size-4 shrink-0" />
     {/if}
 
-    {item.label}
-  </DropdownMenuItem>
+    <span>{item.label}</span>
+  </DropdownMenu.Item>
 {/snippet}
 
-<DropdownMenu>
-  <DropdownMenuTrigger>
+{#snippet DropdownMenuItemTooltip(item: IDropdownMenuItem)}
+  <Tooltips align="center" ignoreNonKeyboardFocus>
+    {#snippet trigger()}
+      {@render DropdownMenusItem(item)}
+    {/snippet}
+
+    {#snippet content()}
+      {item.tooltip}
+    {/snippet}
+  </Tooltips>
+{/snippet}
+
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger>
     {#snippet child({ props })}
       {#if trigger}
         {@render trigger({ props })}
@@ -84,34 +85,34 @@
         </Button>
       {/if}
     {/snippet}
-  </DropdownMenuTrigger>
+  </DropdownMenu.Trigger>
 
-  <DropdownMenuContent {align} {side} class={cn("", className)}>
+  <DropdownMenu.Content {align} {side} class={cn("", className)}>
     {#each Object.entries(menus) as [groupKey, group], groupIndex (groupKey)}
       {@const isLastGroup = groupIndex === Object.keys(menus).length - 1}
-      <DropdownMenuGroup>
+      <DropdownMenu.Group>
         {#if group.label}
-          <DropdownMenuGroupHeading>{group.label}</DropdownMenuGroupHeading>
+          <DropdownMenu.GroupHeading>{group.label}</DropdownMenu.GroupHeading>
         {/if}
 
         {#each group.items as item, itemIndex (itemIndex)}
           {#if isItemVisible(item)}
             {#if item.items && Object.keys(item.items).length > 0}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger>
                   {#if item.icon}
                     <item.icon class="size-4"></item.icon>
                   {/if}
 
                   {item.label}
-                </DropdownMenuSubTrigger>
+                </DropdownMenu.SubTrigger>
 
-                <DropdownMenuSubContent>
+                <DropdownMenu.SubContent>
                   {#each Object.entries(item.items) as [subGroupKey, subGroup], subGroupIndex (subGroupKey)}
                     {@const isLastSubItem = subGroupIndex === Object.keys(item.items).length - 1}
 
                     {#if subGroup.label}
-                      <DropdownMenuLabel class="text-muted-foreground text-xs">{subGroup.label}</DropdownMenuLabel>
+                      <DropdownMenu.Label class="text-muted-foreground text-xs">{subGroup.label}</DropdownMenu.Label>
                     {/if}
 
                     <div class="max-h-64 overflow-x-hidden overflow-y-auto">
@@ -121,21 +122,23 @@
                     </div>
 
                     {#if !isLastSubItem}
-                      <DropdownMenuSeparator />
+                      <DropdownMenu.Separator />
                     {/if}
                   {/each}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            {:else if item.tooltip}
+              {@render DropdownMenuItemTooltip(item)}
             {:else}
               {@render DropdownMenusItem(item)}
             {/if}
           {/if}
         {/each}
-      </DropdownMenuGroup>
+      </DropdownMenu.Group>
 
       {#if !isLastGroup}
-        <DropdownMenuSeparator />
+        <DropdownMenu.Separator />
       {/if}
     {/each}
-  </DropdownMenuContent>
-</DropdownMenu>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
