@@ -8,6 +8,7 @@
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { LabelValue } from "@/utils/types";
 
   // Props
   interface Props extends FormBaseProps {
@@ -20,8 +21,14 @@
 
   // Variables::Reactive
   let { name, url, events, secret_key, enabled } = $derived(webhook);
+  let selectedEvents = $state<LabelValue<string | number>[]>(events.map((event) => ({ label: event, value: event })));
 
   // Functions
+  function selectEvents(selectedChoices: LabelValue<string | number>[]): void {
+    selectedEvents = selectedChoices;
+    events = selectedChoices.map((choice) => String(choice.value));
+  }
+
   $effect(() => {
     onValueChange({ name, url, events, secret_key, enabled });
   });
@@ -57,7 +64,8 @@
       placeholder="Select event types"
       required
       errors={fieldErrors["events"]}
-      bind:values={events}
+      values={selectedEvents}
+      onSelected={selectEvents}
     />
 
     <!-- WEBHOOK::SECRET_KEY -->

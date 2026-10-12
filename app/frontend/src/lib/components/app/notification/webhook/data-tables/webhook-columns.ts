@@ -1,3 +1,4 @@
+import FilterByWebhookEvents from "@/components/app/notification/webhook/data-tables/filters/filter-by-webhook-events.svelte";
 import WebhookEnabledCell from "@/components/app/notification/webhook/data-tables/webhook-enabled-cell.svelte";
 import WebhookEventTypesCell from "@/components/app/notification/webhook/data-tables/webhook-event-types-cell.svelte";
 import WebhookNameCell from "@/components/app/notification/webhook/data-tables/webhook-name-cell.svelte";
@@ -47,11 +48,12 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
     filterable: true,
     filterOptions: {
       filterKey: "events",
-      filterBy: "string",
-      filterOperation: "match",
+      filterBy: "datasource",
+      filterOperation: "in",
     },
     visible: true,
     hidable: false,
+    filterComponent: FilterByWebhookEvents,
     cellComponent: WebhookEventTypesCell,
   },
   created_at: {

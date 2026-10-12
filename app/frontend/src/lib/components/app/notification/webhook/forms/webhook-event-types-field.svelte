@@ -6,7 +6,7 @@
   import { Badge } from "@/components/ui/badge";
   import Button from "@/components/ui/button/button.svelte";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
   import { Field, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -15,12 +15,9 @@
   import { humanize } from "@/utils/string";
 
   import type { WebhookEventRecord } from "@/data/model/notification/webhooks/event/record";
+  import type { LabelValue } from "@/utils/types";
 
-  interface Choice {
-    label: string;
-    value: string;
-    data: WebhookEventRecord;
-  }
+  type Choice = LabelValue<string | number, WebhookEventRecord>;
 
   interface GroupedChoices {
     [service: string]: {
@@ -34,33 +31,26 @@
     placeholder?: string;
     required?: boolean;
     errors?: string | string[];
-    values: string[];
+    values: LabelValue<string | number>[];
+    onSelected?: (selectedChoices: LabelValue<string | number>[]) => Promise<void> | void;
   }
 
   let {
     name,
-    label = "Event Types",
+    label,
     placeholder = "Select event types",
     required = false,
     errors,
     values = $bindable([]),
+    onSelected,
   }: Props = $props();
 
   let open = $state(false);
-  let searchValue = $state("");
   let choices = $state<Choice[]>([]);
   let loading = $state(true);
 
-  let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
-  let filteredChoices = $derived(
-    searchValue.trim()
-      ? choices.filter((choice) => {
-          const keyword = searchValue.toLowerCase();
-          return choice.label.toLowerCase().includes(keyword) || choice.value.toLowerCase().includes(keyword);
-        })
-      : choices,
-  );
-  let groupedChoices = $derived(groupChoices(filteredChoices));
+  let selectedChoices = $derived(values);
+  let groupedChoices = $derived(groupChoices(choices));
 
   onMount(async () => {
     await loadEvents();
@@ -84,6 +74,7 @@
       });
 
       choices = Array.from(choicesByValue.values());
+      values = values.map((value) => choices.find((choice) => choice.value === value.value) ?? value);
     } finally {
       loading = false;
     }
@@ -91,7 +82,7 @@
 
   function groupChoices(items: Choice[]): GroupedChoices {
     return items.reduce((acc, choice) => {
-      const [service, table, ...actionParts] = choice.value.split(":");
+      const [service, table, ...actionParts] = String(choice.value).split(":");
       const action = actionParts.join(":");
 
       if (!service || !table || !action) return acc;
@@ -105,21 +96,29 @@
   }
 
   function toggleChoice(choice: Choice): void {
-    if (values.includes(choice.value)) {
-      values = values.filter((value) => value !== choice.value);
+    if (isSelected(choice)) {
+      values = values.filter((value) => value.value !== choice.value);
     } else {
-      values = [...values, choice.value];
+      values = [...values, choice];
     }
+    onSelected?.(values);
+  }
+
+  function isSelected(choice: Choice): boolean {
+    return values.some((value) => value.value === choice.value);
   }
 
   function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
+    onSelected?.(values);
   }
 </script>
 
 <Field id={name}>
-  <FieldLabel for={name} {required}>{label}</FieldLabel>
+  {#if label}
+    <FieldLabel for={name} {required}>{label}</FieldLabel>
+  {/if}
 
   <Popover bind:open>
     <PopoverTrigger
@@ -160,7 +159,6 @@
 
     <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
-        <CommandInput bind:value={searchValue} placeholder="Search event types by name" />
 
         <CommandList>
           {#if loading}
@@ -180,9 +178,9 @@
                   </div>
 
                   {#each tableChoices as choice (choice.value)}
-                    <CommandItem value={choice.value} onclick={() => toggleChoice(choice)} class="pl-10">
+                    <CommandItem value={String(choice.value)} onclick={() => toggleChoice(choice)} class="pl-10">
                       <Checkbox
-                        checked={values.includes(choice.value)}
+                        checked={isSelected(choice)}
                         onclick={(event) => event.stopPropagation()}
                         onCheckedChange={() => toggleChoice(choice)}
                       />
