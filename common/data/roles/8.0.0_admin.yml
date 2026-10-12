@@ -35,6 +35,10 @@ admin:
     # Setting Service
     - "setting:account_settings.*.*"
 
+    # Notification Service
+    - "notification:webhooks.*.own"
+    - "notification:jobs.read.own"
+
     # Sync Service
     - "sync:jobs.read.*"
     - "sync:exports.read.*"
