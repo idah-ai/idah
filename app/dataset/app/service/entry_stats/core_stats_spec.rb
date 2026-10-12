@@ -19,7 +19,7 @@ RSpec.describe EntryStats::CoreStats do
 
   describe ".call" do
     it "returns zero annotation count and no category keys when there are no annotations" do
-      expect(described_class.call(make_entry)).to eq("annotation.count" => "0")
+      expect(described_class.call(make_entry)).to eq("annotation.count" => "0", "orphan_category.count" => "0")
     end
 
     context "with annotations and no labeling config" do
@@ -91,6 +91,93 @@ RSpec.describe EntryStats::CoreStats do
         result = described_class.call(make_entry(annotations: [annotation], config: config))
 
         expect(result["category.cat.count"]).to eq("1")
+      end
+    end
+
+    context "with orphan categories (not in labeling configuration)" do
+      let(:config) do
+        {
+          "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+        }
+      end
+
+      it "counts annotations whose category is not in the config" do
+        annotations = [
+          make_annotation(category: "cat"),
+          make_annotation(category: "bird"),
+          make_annotation(category: "bird"),
+          make_annotation(category: "fish")
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        # 2 bird annotations + 1 fish annotation; cat is configured
+        expect(result["orphan_category.count"]).to eq("3")
+      end
+
+      it "reports 0 when all annotation categories are in the config" do
+        annotations = [
+          make_annotation(category: "cat"),
+          make_annotation(category: "dog")
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        expect(result["orphan_category.count"]).to eq("0")
+      end
+
+      it "reports 0 when there are no annotations" do
+        result = described_class.call(make_entry(config: config))
+
+        expect(result["orphan_category.count"]).to eq("0")
+      end
+
+      it "does not count a configured-but-unused category as orphaned" do
+        annotations = [make_annotation(category: "cat")]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        expect(result["orphan_category.count"]).to eq("0")
+      end
+
+      it "counts each annotation individually, not just distinct categories" do
+        annotations = [
+          make_annotation(category: "bird"),
+          make_annotation(category: "bird"),
+          make_annotation(category: "bird")
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        expect(result["orphan_category.count"]).to eq("3")
+      end
+
+      it "excludes deleted annotations from the orphan count" do
+        annotations = [
+          make_annotation(category: "bird"),
+          make_annotation(category: "bird", deleted: true)
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        # only the non-deleted bird annotation counts
+        expect(result["orphan_category.count"]).to eq("1")
+      end
+
+      it "includes all annotations when there is no labeling configuration" do
+        annotations = [
+          make_annotation(category: "cat"),
+          make_annotation(category: "dog")
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: {}))
+
+        # No configured categories → both annotations are orphans
+        expect(result["orphan_category.count"]).to eq("2")
+      end
+
+      it "excludes annotations without a category value" do
+        annotations = [
+          make_annotation(category: "bird"),
+          instance_double(Annotation::Record, category: nil, shape_type: nil, deleted_at: nil)
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        expect(result["orphan_category.count"]).to eq("1")
       end
     end
 

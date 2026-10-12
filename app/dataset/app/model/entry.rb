@@ -86,6 +86,25 @@ module Entry
       end
     end
 
+    custom_filter :orphan_categories do |collection, value|
+      present = value.to_s.downcase == "true"
+
+      orphan_exists = <<-SQL
+        EXISTS (
+          SELECT 1 FROM entry_stats
+          WHERE entry_stats.entry_id = entries.id
+            AND entry_stats.key = 'orphan_category.count'
+            AND entry_stats.value != '0'
+        )
+      SQL
+
+      if present
+        collection.where(Sequel.lit(orphan_exists))
+      else
+        collection.where(Sequel.lit("NOT (#{orphan_exists})"))
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }

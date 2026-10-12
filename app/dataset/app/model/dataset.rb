@@ -200,9 +200,12 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
+        labeling_config_changed = attributes.key?(:labeling_configuration)
+
         add_event_metadata(
           project_id: attributes[:project_id] || dataset.project_id,
-          dataset_id: id
+          dataset_id: id,
+          **({ labeling_configuration_updated: true } if labeling_config_changed).to_h
         )
 
         super(id, attributes, scope:)

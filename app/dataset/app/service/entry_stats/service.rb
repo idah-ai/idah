@@ -24,5 +24,13 @@ module EntryStats
       entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
       EntryStats::Recompute.call(entry)
     end
+
+    def recompute_all_for_dataset(dataset_id)
+      entries = system_entries.index({ dataset_id__eq: dataset_id })
+      entries.each do |entry|
+        full_entry = system_entries.find!(entry.id, included: [:dataset, :annotations])
+        EntryStats::Recompute.call(full_entry)
+      end
+    end
   end
 end

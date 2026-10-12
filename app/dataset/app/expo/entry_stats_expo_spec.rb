@@ -72,4 +72,44 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
       )
     end
   end
+
+  describe "#recompute_stats_on_dataset_updated" do
+    let(:dataset_id) { UUIDv7.generate }
+
+    it "recomputes all stats for the dataset when labeling configuration is updated" do
+      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: { resource_id: dataset_id, metadata: { labeling_configuration_updated: true } }
+      )
+    end
+
+    it "does not recompute when the dataset update did not touch labeling configuration" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: { resource_id: dataset_id, metadata: {} }
+      )
+    end
+
+    it "does not recompute when labeling_configuration_updated is falsy" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { labeling_configuration_updated: false }
+        }
+      )
+    end
+  end
 end
