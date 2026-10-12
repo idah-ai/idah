@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends Record">
-  import WebhookEventTypesField from "@/components/app/notification/webhook/forms/webhook-event-types-field.svelte";
+  import SelectMultipleWebhookEventTypes from "@/components/app/notification/webhook/select/select-multiple-webhook-event-types.svelte";
 
   import { Record } from "@/data/model/Record";
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
@@ -37,7 +37,7 @@
   }
 </script>
 
-<WebhookEventTypesField
+<SelectMultipleWebhookEventTypes
   name="{resource}/events"
   placeholder="Select event types"
   required
