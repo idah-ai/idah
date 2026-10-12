@@ -45,27 +45,40 @@ check "candidates of other versions are ignored" \
 check "no candidate yet" \
   "" "$(tags v0.1.0 | latest_candidate 0.2.0)"
 
-# Check runs as gh prints them: name, status and conclusion, tab-separated.
-runs() { printf '%s\t%s\t%s\n' "$@"; }
-all_passed() {
-  runs "App CI passed" completed success "Common CI passed" completed success \
-    "Plugins CI passed" completed success "Scripts CI passed" completed success
+# Check runs as gh prints them: name, status, conclusion and start time,
+# tab-separated.
+runs() { printf '%s\t%s\t%s\t%s\n' "$@"; }
+gates_at() { # <status> <conclusion> <started_at>: all four gates alike
+  local name
+  for name in "App CI passed" "Common CI passed" "Plugins CI passed" "Scripts CI passed"; do
+    runs "$name" "$1" "$2" "$3"
+  done
 }
+all_passed() { gates_at completed success 2026-10-07T08:00:00Z; }
+all_but_app() { all_passed | grep -v '^App CI passed'; }
 
 check "a commit whose CI passed can be tagged" \
   "" "$(all_passed | ci_problems)"
 check "other checks, such as Dependabot's, do not count" \
-  "" "$({ all_passed; runs Dependabot completed failure; } | ci_problems)"
+  "" "$({ all_passed; runs Dependabot completed failure 2026-10-07T09:00:00Z; } | ci_problems)"
 check "a failed gate stops the tag" \
   "App CI passed: failure" \
-  "$(all_passed | sed 's/^App CI passed\tcompleted\tsuccess$/App CI passed\tcompleted\tfailure/' | ci_problems)"
+  "$({ all_but_app; runs "App CI passed" completed failure 2026-10-07T08:00:00Z; } | ci_problems)"
 check "a gate still running stops the tag" \
-  "Scripts CI passed is still running" \
-  "$({ all_passed | grep -v '^Scripts'; runs "Scripts CI passed" in_progress ""; } | ci_problems)"
+  "App CI passed is still running" \
+  "$({ all_but_app; runs "App CI passed" in_progress null 2026-10-07T08:00:00Z; } | ci_problems)"
 check "a commit CI never ran on stops the tag" \
   "$(printf '%s\n' "App CI passed has not run on this commit" "Common CI passed has not run on this commit" \
     "Plugins CI passed has not run on this commit" "Scripts CI passed has not run on this commit")" \
   "$(printf '' | ci_problems)"
+check "a run cancelled by a later one that passed does not count" \
+  "" "$({ all_passed; gates_at completed failure 2026-10-07T07:59:00Z; } | ci_problems)"
+check "a failure after an earlier success stops the tag" \
+  "App CI passed: failure" \
+  "$({ all_passed; runs "App CI passed" completed failure 2026-10-07T08:30:00Z; } | ci_problems)"
+check "a queued re-run after a success counts as still running" \
+  "App CI passed is still running" \
+  "$({ all_passed; runs "App CI passed" queued null null; } | ci_problems)"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures failed"
