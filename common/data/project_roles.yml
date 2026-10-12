@@ -1,0 +1,6 @@
+annotator:
+  mask: "1.10.0"
+reviewer:
+  mask: "1.20.0"
+project_owner:
+  mask: "1.30.0"

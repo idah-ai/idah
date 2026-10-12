@@ -2,6 +2,10 @@
 
 ENV["APP_ENVIRONMENT"] = "test"
 
+# Run the test process in UTC so timestamp round-trips through Postgres are
+# deterministic regardless of the developer's local timezone.
+ENV["TZ"] = "UTC"
+
 require "bootsnap"
 Bootsnap.setup(cache_dir: "tmp/cache")
 
@@ -62,6 +66,7 @@ RSpec.configure do |config|
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")
   Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
+  Verse::Spec.add_user(:user, "user", user_data: { id: 10, email: "user@example.com", name: "Regular User" })
   Verse::Spec.add_user(
     :org_owner,
     "org_owner",

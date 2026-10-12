@@ -61,7 +61,11 @@ RSpec.describe ProjectMember::Service, database: true do
     end
 
     describe "#create" do
-      it "creates a new project member" do
+      # The generic create is system-only; member creation for real actors goes
+      # through the guarded `invite` endpoint.
+      let(:system_service) { described_class.new(Verse::Auth::Context[:system]) }
+
+      it "creates a new project member as system" do
         record = deserialize(
           {
             data: {
@@ -79,11 +83,37 @@ RSpec.describe ProjectMember::Service, database: true do
           }
         )
 
-        project_member = subject.create(record)
+        project_member = system_service.create(record)
         expect(project_member.project_id).to eq(project_id)
         expect(project_member.account_id).to eq(1)
         expect(project_member.email).to eq("annotator@email.com")
         expect(project_member.role).to eq("annotator")
+      end
+
+      it "rejects a non-full-access actor (e.g. a plain user)" do
+        user_service = described_class.new(
+          Verse::Auth::Context.from_role("user", metadata: { id: 10, email: "user@test.com", role: :user })
+        )
+        record = deserialize(
+          {
+            data: {
+              type: "dataset:project_members",
+              attributes: attributes,
+              relationships: {
+                project: {
+                  data: {
+                    type: "dataset:projects",
+                    id: project_id
+                  }
+                }
+              }
+            }
+          }
+        )
+
+        expect {
+          user_service.create(record)
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       context "notifications" do
@@ -113,7 +143,7 @@ RSpec.describe ProjectMember::Service, database: true do
             }
           )
 
-          subject.create(record)
+          system_service.create(record)
 
           expect(Service::Notification).to have_received(:email).with(
             hash_including(
@@ -147,7 +177,7 @@ RSpec.describe ProjectMember::Service, database: true do
             }
           )
 
-          subject.create(record)
+          system_service.create(record)
 
           expect(Service::Notification).not_to have_received(:email)
         end
@@ -164,7 +194,28 @@ RSpec.describe ProjectMember::Service, database: true do
     end
 
     describe "#update" do
-      it "updates a project member" do
+      it "updates a project member role" do
+        project_member_id = project_member_repo.create(attributes)
+
+        record = deserialize(
+          {
+            data: {
+              type: "dataset:project_members",
+              id: project_member_id,
+              attributes: {
+                role: "reviewer"
+              }
+            }
+          }
+        )
+
+        subject.update(record)
+
+        updated_project_member = project_member_repo.find!(project_member_id)
+        expect(updated_project_member.role).to eq("reviewer")
+      end
+
+      it "rejects an invalid role" do
         project_member_id = project_member_repo.create(attributes)
 
         record = deserialize(
@@ -179,10 +230,9 @@ RSpec.describe ProjectMember::Service, database: true do
           }
         )
 
-        subject.update(record)
-
-        updated_project_member = project_member_repo.find!(project_member_id)
-        expect(updated_project_member.role).to eq("admin")
+        expect {
+          subject.update(record)
+        }.to raise_error(Verse::Error::ValidationFailed)
       end
     end
 
@@ -359,6 +409,8 @@ RSpec.describe ProjectMember::Service, database: true do
     end
 
     describe "#delete_account_members" do
+      let(:system_service) { described_class.new(Verse::Auth::Context[:system]) }
+
       before do
         another_project_id = project_repo.create(
           name: "Another Project",
@@ -367,7 +419,7 @@ RSpec.describe ProjectMember::Service, database: true do
           organization_id: 1
         )
 
-        @project_member = subject.create(
+        @project_member = system_service.create(
           deserialize(
             {
               data: {
@@ -385,7 +437,7 @@ RSpec.describe ProjectMember::Service, database: true do
             }
           )
         )
-        @another_project_member = subject.create(
+        @another_project_member = system_service.create(
           deserialize(
             {
               data: {

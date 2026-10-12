@@ -23,10 +23,7 @@ module LabelConfigTemplate
     def create(record)
       organization_id = record.attributes[:organization_id]
 
-      authorize_creation(
-        organization_id,
-        auth_context.can?(:create, templates.class.resource)
-      )
+      authorize_creation(organization_id)
 
       account_id = auth_context.metadata[:id]
       attributes = record.attributes
@@ -53,16 +50,34 @@ module LabelConfigTemplate
 
     private
 
-    def authorize_creation(organization_id, access)
-      authorized =
-        access == :all ||
-        # org_owner can create within their own organizations
-        (access == :as_org_owner &&
-          auth_context.custom_scopes[:org]&.include?(organization_id.to_s)) ||
-        # project_owner can create within organizations they own a project in
-        (access == :as_user && project_owner_in_organization?(organization_id))
+    def authorize_creation(organization_id)
+      auth_context.can!(:create, templates.class.resource) do |scope|
+        scope.all? { true }
 
-      raise Verse::Error::Unauthorized, "You do not have permission to create this template" unless authorized
+        # org_owner can create within their own organizations, or in an
+        # organization where they own a project.
+        scope.as_org_owner? do
+          if auth_context.custom_scopes[:org]&.include?(organization_id.to_s) ||
+             project_owner_in_organization?(organization_id)
+            true
+          else
+            raise Verse::Error::Unauthorized, "You do not have permission to create this template"
+          end
+        end
+
+        # project_owner can create within organizations they own a project in.
+        scope.as_user? do
+          if project_owner_in_organization?(organization_id)
+            true
+          else
+            raise Verse::Error::Unauthorized, "You do not have permission to create this template"
+          end
+        end
+
+        scope.else? do
+          raise Verse::Error::Unauthorized, "You do not have permission to create this template"
+        end
+      end
     end
 
     def project_owner_in_organization?(organization_id)

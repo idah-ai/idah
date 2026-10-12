@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import ProjectMemberRoleBadge from "@/components/app/projects/members/badges/project-member-role-badge.svelte";
   import RoleChangeWarning from "@/components/app/projects/members/datasource-tables/role-change-warning.svelte";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-  import Can from "@/security/can.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
@@ -13,10 +14,13 @@
     projectMembersBackendDataSource,
     type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { canManageProjectMember, filterAssignableProjectRoles } from "@/security/roleHierarchy";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+  import type { LabelValue } from "@/utils/types";
 
   // Props
   let { record: projectMember }: DataTableCellBaseProps<ProjectMemberRecord> = $props();
@@ -54,8 +58,29 @@
   // Variables
   let selectedRole: ProjectMemberRole = $state(projectMember.role);
   let selectResetKey: number = $state(0);
+  let canUpdateMember: boolean = $state(false);
+  let assignableRoles: Array<LabelValue<string | number>> = $state(projectMemberRoles);
 
   let selectedRoleLabel = $derived(projectMemberRoles.find((r) => r.value === selectedRole)?.label ?? selectedRole);
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    const effectiveRank = currentAccount ? await currentAccount.effectiveProjectRank(projectMember.project_id) : null;
+
+    // The actor can manage this member only if their effective rank is at least
+    // the member's current role (and at least project_owner).
+    canUpdateMember = !!effectiveRank && canManageProjectMember(effectiveRank, String(projectMember.role));
+
+    // Only roles the actor may assign are offered.
+    const allowed = effectiveRank
+      ? filterAssignableProjectRoles(
+          effectiveRank,
+          projectMemberRoles.map((r) => String(r.value)),
+        )
+      : [];
+    assignableRoles = projectMemberRoles.filter((r) => allowed.includes(String(r.value)));
+  });
 
   function roleLabel(role: ProjectMemberRole) {
     return projectMemberRoles.find((r) => r.value === role)?.label ?? role;
@@ -112,30 +137,14 @@
   }
 </script>
 
-<Can
-  action="update"
-  resource="dataset:project_members"
-  scopes={[
-    "as_org_owner",
-    {
-      as_user: {
-        projectId: projectMember.project_id,
-        projectMemberRoles: ["project_owner"],
-      },
-    },
-  ]}
->
-  {#snippet noAccess()}
-    <ProjectMemberRoleBadge projectMemberRecord={projectMember} />
-  {/snippet}
-
+{#if canUpdateMember}
   {#key selectResetKey}
     <Select type="single" value={selectedRole} onValueChange={onRoleChange}>
       <SelectTrigger size="sm">
         {selectedRoleLabel}
       </SelectTrigger>
       <SelectContent>
-        {#each projectMemberRoles as role (role.value)}
+        {#each assignableRoles as role (role.value)}
           <SelectItem value={role.value} label={role.label}>
             <div>
               <p>{role.label}</p>
@@ -146,4 +155,6 @@
       </SelectContent>
     </Select>
   {/key}
-</Can>
+{:else}
+  <ProjectMemberRoleBadge projectMemberRecord={projectMember} />
+{/if}

@@ -105,5 +105,53 @@ RSpec.describe Account, database: true do
         end
       end
     end
+
+    describe "#scoped as org_owner (accounts_from_project_member_scoped)" do
+      let(:org_owner_context) do
+        Verse::Auth::Context.new(
+          ["iam:accounts.read.as_org_owner"],
+          role: "org_owner",
+          custom_scopes: { org: ["1"] },
+          metadata: { id: 2, email: "owner@test.com", name: "Owner", role: :org_owner }
+        )
+      end
+      let(:org_owner_repo) { described_class.new(org_owner_context) }
+
+      before do
+        @actor = subject.create(name: "Actor", email: "actor@test.com", role_name: "org_owner", enabled: true)
+        @member = subject.create(name: "Member", email: "member@test.com", role_name: "user", enabled: true)
+        @other = subject.create(name: "Other", email: "other@test.com", role_name: "user", enabled: true)
+
+        # The org_owner read scope resolves co-members via the dataset service,
+        # through ProjectMembership::Lookup.
+        @lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(@lookup)
+        allow(@lookup).to receive(:member_account_ids).with(
+          organization_ids: ["1"]
+        ).and_return(
+          [@actor.to_i, @member.to_i, @other.to_i]
+        )
+        allow(@lookup).to receive(:memberships_for).with(2).and_return([])
+      end
+
+      it "returns self plus the co-members of the actor's org projects" do
+        result = org_owner_repo.index({})
+
+        expect(result.map(&:id)).to include(@member.to_i, @other.to_i, @actor.to_i)
+      end
+
+      it "also returns co-members of the actor's own memberships (foreign projects)" do
+        @foreign_member = subject.create(name: "Foreign", email: "foreign@test.com", role_name: "user", enabled: true)
+
+        allow(@lookup).to receive(:memberships_for).with(2).and_return(
+          [double(project_id: "p9", role: "reviewer", organization_id: 999)]
+        )
+        allow(@lookup).to receive(:member_account_ids).with(project_ids: ["p9"]).and_return([@foreign_member.to_i])
+
+        result = org_owner_repo.index({})
+
+        expect(result.map(&:id)).to include(@foreign_member.to_i)
+      end
+    end
   end
 end

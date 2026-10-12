@@ -5,7 +5,15 @@ class RoleRepository < Verse::Model::InMemory::Repository
   self.resource = "iam:roles"
 
   ROLE_PATH = File.join(COMMON_PATH, "/data/roles")
+  PROJECT_ROLE_PATH = File.join(COMMON_PATH, "/data/project_roles.yml")
   NO_DESC = "There is no description for this role"
+
+  # Project role masks (name => mask), loaded from `common/data/project_roles.yml`.
+  # Kept separate from account roles so project roles are never visible as
+  # account roles to RoleBackend or the assignable lists.
+  def self.project_role_masks
+    @project_role_masks ||= load_project_role_masks
+  end
 
   def self.load
     data.clear
@@ -17,6 +25,24 @@ class RoleRepository < Verse::Model::InMemory::Repository
 
       repo.load_role(YAML.safe_load(File.read(file)))
     end
+  end
+
+  def self.load_project_role_masks
+    hash = YAML.safe_load(File.read(PROJECT_ROLE_PATH)) || {}
+
+    hash.each_with_object({}) do |(name, attribute), out|
+      out[name.to_s] = attribute.fetch("mask", "0.0.0")
+    end.freeze
+  end
+
+  # All role masks (account + project roles, name => mask). Account roles come
+  # from the in-memory RoleRepository rows; project roles from project_role_masks.
+  def self.role_masks
+    account = data.each_with_object({}) do |row, out|
+      out[row[:name]] = row[:mask]
+    end
+
+    account.merge(project_role_masks)
   end
 
   def find_template(file_name)
@@ -57,7 +83,8 @@ class RoleRepository < Verse::Model::InMemory::Repository
             scopes: attribute.fetch("scopes", []),
             labels: attribute.fetch("labels", []),
             description: attribute.fetch("description", NO_DESC),
-            assignable: attribute.fetch("assignable", false)
+            assignable: attribute.fetch("assignable", false),
+            mask: attribute.fetch("mask", "0.0.0")
           }
         )
       end

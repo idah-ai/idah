@@ -33,12 +33,16 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Iam::Accounts, event)
     def on_account_event
+      return unless actor_present?
+
       service.create(log_attributes(message:))
     end
   end
 
   expose on_resource_event(Resource::Iam::Accounts, "logged_in")
   def on_account_logged_in
+    return unless actor_present?
+
     service.create(
       log_attributes(
         message:,
@@ -51,6 +55,8 @@ class LogsExpo < BaseExpo
   %w[logged_out].each do |event|
     expose on_resource_event(Resource::Iam::AccountSessions, event)
     def on_account_session_event
+      return unless actor_present?
+
       service.create(
         log_attributes(
           message:,
@@ -64,6 +70,8 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Iam::Organizations, event)
     def on_organization_event
+      return unless actor_present?
+
       service.create(
         log_attributes(
           message:,
@@ -77,6 +85,8 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::Projects, event)
     def on_project_event
+      return unless actor_present?
+
       service.create(
         log_attributes(
           message:,
@@ -91,6 +101,8 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::ProjectMembers, event)
     def on_project_member_event
+      return unless actor_present?
+
       service.create(
         log_attributes(
           message:,
@@ -104,6 +116,8 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::Datasets, event)
     def on_dataset_event
+      return unless actor_present?
+
       service.create(
         log_attributes(
           message:,
@@ -139,6 +153,7 @@ class LogsExpo < BaseExpo
 
     return unless submission_type # process only actual submission from annotation/review
     return if submission_type == "start" # initial stage of the entry, not an actual submission
+    return unless actor_present?
 
     service.create(
       log_attributes(
@@ -170,6 +185,8 @@ class LogsExpo < BaseExpo
   # Sync events
   expose on_resource_event(Resource::Sync::Exports, "created")
   def on_exported
+    return unless actor_present?
+
     service.create(
       log_attributes(
         message:,
@@ -182,6 +199,20 @@ class LogsExpo < BaseExpo
   # rubocop:enable Style/CombinableLoops
 
   private
+
+  # A single event without an actor must never fail the consumer: the audit
+  # `logs.actor_account_id` column is NOT NULL, so skip the insert (with a
+  # warning) instead of raising. Consistent with the existing guards for entries
+  # and medias.
+  def actor_present?
+    return true if message.content[:metadata][:actor_account_id]
+
+    Verse.logger&.warn(
+      "[audit] skipping log for #{message.event} (resource #{message.content[:resource_id]}): " \
+      "no actor_account_id in event metadata"
+    )
+    false
+  end
 
   def log_attributes(message:, **additional_attributes)
     service, type, action = message.event.split(":")

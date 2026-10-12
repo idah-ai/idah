@@ -108,33 +108,24 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(@org_scope).to include(project_repo.find!(first_project_id).organization_id.to_s)
       end
 
-      it "can create" do
-        record = subject.create(deserialize(create_data))
-
-        expect(record.name).to eq create_data[:data][:attributes][:name]
-        expect(record.email).to eq create_data[:data][:attributes][:email]
-        expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
-        expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
-        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
+      # The generic create is system-only; org_owners use the guarded `invite` endpoint.
+      it "cannot create directly (system only)" do
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
-      it "can create a 'project_owner' member" do
+      it "cannot create a 'project_owner' member directly (system only)" do
         create_data[:data][:attributes][:role] = "project_owner"
-        record = subject.create(deserialize(create_data))
 
-        expect(record.role).to eq "project_owner"
-        expect(record.name).to eq create_data[:data][:attributes][:name]
-        expect(record.email).to eq create_data[:data][:attributes][:email]
-        expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
-        expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
-        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "can update" do
         record = subject.update(deserialize(update_data))
 
-        expect(record.name).to eq update_data[:data][:attributes][:name]
-        expect(record.email).to eq update_data[:data][:attributes][:email]
         expect(record.role).to eq update_data[:data][:attributes][:role]
       end
 
@@ -155,10 +146,12 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:id)).to_not include reviewer_member_id
       end
 
-      it "cannot create" do
+      it "cannot create directly (system only)" do
         create_data[:data][:relationships][:project][:data][:id] = second_project_id
 
-        expect { subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "cannot update" do
@@ -204,26 +197,24 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:name)).to eq ["Project Owner", "Annotator"]
       end
 
-      it "can create" do
-        record = subject.create(deserialize(create_data))
-
-        expect(record.name).to eq "John Doe"
-        expect(record.email).to eq "johndoe@example.com"
-        expect(record.account_id).to eq annotator_account_id
-        expect(record.project_id).to eq first_project_id
+      # The generic create is system-only; project_owners use the guarded `invite` endpoint.
+      it "cannot create directly (system only)" do
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
-      it "cannot create a 'project_owner' member" do
+      it "cannot create a 'project_owner' member directly (system only)" do
         create_data[:data][:attributes][:role] = "project_owner"
 
-        expect{ subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "can update" do
         record = subject.update(deserialize(update_data))
 
-        expect(record.name).to eq "Jane Doe"
-        expect(record.email).to eq "janedoe@example.com"
         expect(record.role).to eq "reviewer"
       end
 
@@ -258,15 +249,12 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:name)).to_not include "Reviewer"
       end
 
-      it "cannot create" do
+      it "cannot create directly (system only)" do
         create_data[:data][:relationships][:project][:data][:id] = second_project_id
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create project member on this project"
-        )
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "cannot update" do
@@ -309,25 +297,22 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:name).sort).to eq ["Annotator", "Project Owner"]
       end
 
-      it "cannot create" do
+      it "cannot create directly (system only)" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create project member on this project"
-        )
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "cannot update" do
         expect {
           subject.update(deserialize(update_data))
-        }.to raise_error(Verse::Error::RecordNotFound)
+        }.to raise_error(Verse::Error::Unauthorized)
       end
 
       it "cannot delete" do
         expect {
           subject.delete(annotator_member_id)
-        }.to raise_error(Verse::Error::RecordNotFound)
+        }.to raise_error(Verse::Error::Unauthorized)
       end
     end
 
@@ -354,13 +339,10 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:name)).to_not include "Reviewer"
       end
 
-      it "cannot create" do
+      it "cannot create directly (system only)" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create project member on this project"
-        )
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "cannot update" do
@@ -403,13 +385,10 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:name)).to eq ["Reviewer"]
       end
 
-      it "cannot create" do
+      it "cannot create directly (system only)" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create project member on this project"
-        )
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "cannot update" do
@@ -448,13 +427,10 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(result.map(&:name)).to_not include "Project Owner", "Annotator"
       end
 
-      it "cannot create" do
+      it "cannot create directly (system only)" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create project member on this project"
-        )
+        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
       end
 
       it "cannot update" do

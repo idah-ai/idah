@@ -39,7 +39,7 @@
     /** Human-readable modality label from the plugin manifest (e.g. "Video"). */
     modalityLabel: string;
     controller: LabelConfigController;
-    permission: { resource: Resource; scopes: Scope[] };
+    permission: { resource: Resource; scopes?: Scope[]; projectId?: string; minRole?: string };
     /** Whether to show the "duplicate configuration to other datasets" affordance
      *  (only meaningful when editing a dataset's config, not a template). */
     allowDuplicateToDatasets?: boolean;
@@ -322,7 +322,13 @@
         <CardTitle>Configurations</CardTitle>
         <CardDescription class="text-xs">Select a label configuration to manage</CardDescription>
 
-        <Can action="update" resource={permission.resource} scopes={permission.scopes}>
+        <Can
+          action="update"
+          resource={permission.resource}
+          scopes={permission.scopes}
+          projectId={permission.projectId}
+          minRole={permission.minRole}
+        >
           <CardAction>
             {#if allowDuplicateToDatasets}
               <Tooltips align="center">
@@ -382,7 +388,13 @@
               ondragleave={shapeDrag.leave}
               ondrop={(e) => shapeDrag.drop(e, labelConfigKey)}
             >
-              <Can action="update" resource={permission.resource} scopes={permission.scopes}>
+              <Can
+                action="update"
+                resource={permission.resource}
+                scopes={permission.scopes}
+                projectId={permission.projectId}
+                minRole={permission.minRole}
+              >
                 <span
                   role="button"
                   tabindex="-1"

@@ -46,12 +46,11 @@ module Medias
         scope.all? { table }
 
         scope.as_org_owner? do
-          if auth_context.custom_scopes[:org]
-            project_from_orgs_scoped
-          elsif auth_context.custom_scopes[:project]
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
             table.where(project_id: auth_context.custom_scopes[:project])
           else
-            table.where(Sequel.lit("false"))
+            project_from_orgs_and_memberships_scoped
           end
         end
 
@@ -102,16 +101,28 @@ module Medias
 
     def project_from_orgs_scoped
       org_ids = auth_context.custom_scopes[:org]
-      projects = Api[:idah].dataset.projects.index_all(organization_id: org_ids)
+      project_ids = ProjectMembership::Lookup.new.project_ids_for_organizations(org_ids)
 
-      table.where(project_id: projects.map(&:id).uniq)
+      table.where(project_id: project_ids)
+    end
+
+    # as_org_owner union: org projects ∪ projects where the actor is an enabled
+    # member.
+    def project_from_orgs_and_memberships_scoped
+      account_id = auth_context.metadata[:id]
+      lookup = ProjectMembership::Lookup.new
+
+      project_ids = lookup.project_ids_for_organizations(auth_context.custom_scopes[:org])
+      project_ids += lookup.memberships_for(account_id).map(&:project_id)
+
+      table.where(project_id: project_ids.uniq)
     end
 
     def project_from_memberships_scoped
       account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index_all(filter: { account_id:, enabled: true })
+      project_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:project_id)
 
-      table.where(project_id: memberships.map(&:project_id).uniq)
+      table.where(project_id: project_ids)
     end
 
     def add_event_metadata(**opts)

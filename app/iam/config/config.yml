@@ -57,6 +57,17 @@ counter:
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
 
+idah:
+  # In-memory cache for ProjectMembership::Lookup (org_owner membership union).
+  # Per-process LRU; entries never expire unless a TTL is set. A missed
+  # invalidation broadcast keeps a stale entry until the next invalidation or a
+  # process restart, so set a TTL when that is a concern.
+  project_membership_cache:
+    enabled: <%= ENV.fetch("IDAH_PROJECT_MEMBERSHIP_CACHE_ENABLED", "true") == "true" %>
+    # Seconds, or empty for no expiry.
+    ttl: <%= ENV["IDAH_PROJECT_MEMBERSHIP_CACHE_TTL"] %>
+    capacity: <%= ENV.fetch("IDAH_PROJECT_MEMBERSHIP_CACHE_CAPACITY", 10000) %>
+
 credentials:
   account: <%= ENV.fetch("IDAH_SERVICE_ACCOUNT") %>
   password: <%= ENV.fetch("IDAH_SERVICE_PASSWORD") %>

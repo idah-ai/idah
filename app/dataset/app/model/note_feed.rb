@@ -37,39 +37,62 @@ module NoteFeed
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_org_owner? { org_owner_project_scoped_query(action) }
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_org_owner? do
+          table.where(org_owner_project_scoped_condition(action))
+        end
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
-    def org_owner_project_scoped_query(action)
-      # Ignore create action as it will be handled in service layer
-      return table if action == :create
+    # For an org_owner, read is the union of the actor's org projects and the
+    # projects where the actor is an enabled member (evaluated with the same
+    # per-action role rules as as_user). update/delete are "own records" in both
+    # branches, so the union stays "own records".
 
-      org_ids = auth_context.custom_scopes[:org]
-      project_ids = auth_context.custom_scopes[:project]
+    def org_owner_project_scoped_condition(action)
+      # Ignore create action as it will be handled in service layer
+      return Sequel.lit("true") if action == :create
+
       email = auth_context.metadata[:email]
 
       case action
       when :read
-        if org_ids
-          table.where(
-            table.db[:projects]
-              .where(organization_id: org_ids)
-              .where(id: Sequel[:note_feeds][:project_id])
-              .select(1).exists
-          )
-        elsif project_ids
-          table.where(project_id: project_ids)
+        if auth_context.custom_scopes[:project]
+          # API-key project scope: no membership union.
+          table.db[:projects]
+            .where(id: auth_context.custom_scopes[:project])
+            .where(id: Sequel[:note_feeds][:project_id])
+            .select(1).exists
         else
-          table.where(Sequel.lit("false"))
+          org_projects_condition | user_project_scoped_condition(action)
+        end
+      when :resolve
+        if auth_context.custom_scopes[:project]
+          # API-key project scope: no membership union.
+          table.db[:projects]
+            .where(id: auth_context.custom_scopes[:project])
+            .where(id: Sequel[:note_feeds][:project_id])
+            .select(1).exists
+        else
+          org_projects_condition | user_project_scoped_condition(action)
         end
       when :update, :delete
-        table.where(created_by_email: email)
+        # Own records in both the org and membership branches.
+        Sequel[:created_by_email] =~ email
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
+    end
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      table.db[:projects]
+        .where(organization_id: org_ids)
+        .where(id: Sequel[:note_feeds][:project_id])
+        .select(1).exists
     end
 
     # Actions                      Member Roles
@@ -83,9 +106,9 @@ module NoteFeed
     # 2. all roles can update and delete only their own note feeds in their projects
     # 3. project_owner and reviewer can resolve note feeds in their projects
     query
-    def user_project_scoped_query(action)
+    def user_project_scoped_condition(action)
       # Ignore create action as it will be handled in service layer
-      return table if action == :create
+      return Sequel.lit("true") if action == :create
 
       account_id = auth_context.metadata[:id]
       email = auth_context.metadata[:email]
@@ -114,13 +137,11 @@ module NoteFeed
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            with_roles: %w[project_owner],
-            assigned_to_roles: %w[reviewer annotator]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          with_roles: %w[project_owner],
+          assigned_to_roles: %w[reviewer annotator]
         )
       when :update, :delete
         scoped_fragment = <<-SQL
@@ -146,14 +167,12 @@ module NoteFeed
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            email:,
-            with_roles: %w[project_owner],
-            assigned_to_roles: %w[reviewer annotator]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          email:,
+          with_roles: %w[project_owner],
+          assigned_to_roles: %w[reviewer annotator]
         )
       when :resolve
         scoped_fragment = <<-SQL
@@ -162,6 +181,7 @@ module NoteFeed
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = note_feeds.project_id
+              AND pm.disabled_at IS NULL
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
@@ -184,6 +204,7 @@ module NoteFeed
               FROM project_members pm
               WHERE pm.account_id = :account_id
                 AND pm.project_id = note_feeds.project_id
+                AND pm.disabled_at IS NULL
                 AND pm.role IN :own_roles
                 AND EXISTS (
                   SELECT 1
@@ -195,15 +216,13 @@ module NoteFeed
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            email:,
-            with_roles: %w[project_owner],
-            assigned_to_roles: %w[reviewer],
-            own_roles: %w[annotator],
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          email:,
+          with_roles: %w[project_owner],
+          assigned_to_roles: %w[reviewer],
+          own_roles: %w[annotator],
         )
       else
         raise Verse::Error::Unauthorized,

@@ -335,7 +335,7 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 | Prefix             | Endpoints                                                                                                    |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
 | `/projects`        | CRUD — `index`, `show`, `create`, `update`, `delete`                                                         |
-| `/project_members` | CRUD + event handler for account updates (sync name/email via `DuplicateFieldHelper`), account disable, account delete |
+| `/project_members` | CRUD (create is **system-only**) + `POST /invite` (batch, all-or-nothing) + `POST /:id/resend_invitation` + event handler for account updates (sync name/email via `DuplicateFieldHelper`), account disable, account delete |
 | `/datasets`        | CRUD + event handler for dataset completion (sends notification emails)                                      |
 | `/entries`         | CRUD + `PATCH /:id/assign`, `GET /:id/select`, `POST /:id/submit`, `POST /:id/error`, event handlers for job completion/error |
 | `/annotations`     | CRUD + `POST /_rpc` (JSON-RPC batch interface)                                                               |
@@ -636,6 +636,40 @@ Key design decisions:
 - **Scoped read for write**: The repository's `submit` method uses `scope: scoped(:read)` when updating, because submit requires read-level access (anyone who can read the entry can submit it).
 
 ---
+
+## Project Member Invitation & Guards
+
+Member creation for real actors goes through the guarded batch endpoint `POST /project_members/invite` (`ProjectMember::Service#invite`), not the generic `create` (which is now **system-only**).
+
+**Project-level invite rules** (decided by the actor's **effective rank** on the project via `ProjectAccess::Service`, not the `can?` symbol):
+- Only effective rank ≥ `project_owner` can invite or manage members (reviewers cannot).
+- Assigning `project_owner` requires effective rank ≥ `org_owner`. A `project_owner` assigns `reviewer`/`annotator` only.
+- Managing existing members (role change, disable, remove): a `project_owner` can manage rows up to and including `project_owner`; org_owner of the project's org and admin manage everything.
+- A project invite **never** modifies the account: dataset calls the IAM invite with `role_name: "user"` and empty scope (a no-op for existing accounts). Access to the project comes from the membership.
+- A disabled account cannot be invited to a project; an explicit error tells the actor that an administrator or org owner must re-enable it.
+- Batch invites are **all-or-nothing**: validate every member first; if any fails, write nothing and return a per-email reason.
+- Membership `account_id`, `email`, `name` are resolved server-side from IAM; `invited_by_id` comes from `auth_context`. `role` is validated against the project roles enum.
+
+**Resend invitation** (`POST /project_members/:id/resend_invitation`) is guarded by the project-level resend rule (the actor can manage that member), then delegates to `Api[:idah].iam.accounts.resend_invitation` with the service token. It rejects accounts that already joined and disabled accounts.
+
+**Generic `create` lockdown:** `ProjectMember::Service#create` now rejects any non-system actor. The frontend uses `invite`; internal/system flows (e.g. `invite_single`) still use the repository-level `create`.
+
+### Project Access Resolver
+
+`ProjectAccess::Service` (`app/service/project_access/service.rb`) resolves the effective access an actor has on a concrete project, using the system repositories so the result does not depend on repository scoping. It returns `:all` (admin/system), `:org_owner` (project in the actor's orgs), the actor's enabled membership role, or `nil`. `effective_rank` maps that to a `RoleHierarchy` rank. The actor's identity is passed explicitly (org ids from `auth_context.custom_scopes[:org]`, account id from `auth_context.metadata[:id]`); when `custom_scopes[:project]` is present (API keys), only those projects resolve to anything other than `nil`.
+
+It is used by `ProjectMember::Service` authorisation **and** by the service-level create checks of `project`, `dataset`, `entry`, `annotation`, `note_feed`, `note_comment` and `label_config_template`. This means an org_owner who is a member of a foreign project is evaluated with their **membership role** there, not org_owner powers.
+
+### Org_owner membership union in repositories
+
+Every dataset repository's `as_org_owner` scope is the **union** of the org condition (projects of the actor's orgs) and the `as_user` condition for the same action (projects where the actor is an enabled member, with the same per-action role rules). Each branch is produced as a Sequel **condition** and combined with `Sequel.|`; API-key `custom_scopes[:project]` branches are unchanged (no union).
+
+Per-repository notes:
+- `note_feeds` / `note_comments`: `update`/`delete` are "own records" (`created_by_email`) in both branches, so the union stays "own records".
+- `entry_stats`: the org branch joins `entries`+`projects`, the user branch joins `entries`+`project_members`; combined at condition level.
+- `label_config_templates`: organization-level; union = actor's orgs ∪ orgs where the actor is an enabled `project_owner` (the existing `as_user` rule).
+
+An org_owner of Org A who is a reviewer on an Org B project therefore sees exactly what a reviewer sees on Org B and nothing more; disabled memberships grant nothing; own-org behaviour is unchanged.
 
 ## Soft-Delete Pattern (ProjectMembers)
 

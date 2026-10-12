@@ -15,4 +15,6 @@ class RoleRecord < Verse::Model::Record::Base
   field :scopes, type: Hash
 
   field :labels, type: Array
+
+  field :mask, type: String
 end

@@ -43,6 +43,7 @@ RSpec.describe Exports::Service, database: true do
         expect(export.job_id).not_to be_nil
         expect(export.project_id).to eq(project_id)
         expect(export.created_by_id).to eq(account_id)
+        expect(subject.auth_context.checked?).to be(true)
 
         job = Jobs::Service.new(auth_context).show(export.job_id)
 
@@ -220,26 +221,26 @@ RSpec.describe Exports::Service, database: true do
       subject { described_class.new(current_auth_context) }
 
       it "allows access to datasets in projects they own" do
-        # Export Service
-        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
-          filter: { id: project_id, organization_id: current_auth_context.custom_scopes[:org] },
-          fields: { "dataset:projects": ["id"] }
-        ).and_return(
-          [double(id: project_id)]
-        )
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
+        ).and_return([project_id])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return([])
         allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
           filter: { project_id:, id: dataset_ids },
-          fields: { "dataset:dataset": ["id"] }
+          fields: { "dataset:datasets": ["id"] }
         ).and_return(
           dataset_ids.map { |id| double(id:) }
         )
 
         # Export Repository
-        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
-          filter: { organization_id: current_auth_context.custom_scopes[:org] },
-          fields: { "dataset:projects": ["id"] }
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
         ).and_return(
-          [double(id: project_id)]
+          [project_id]
         )
 
         export = subject.create(project_id, dataset_ids, exporter)
@@ -251,14 +252,62 @@ RSpec.describe Exports::Service, database: true do
       end
 
       it "denies access to datasets if project does not belong to their organization" do
-        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
-          filter: { id: project_id, organization_id: current_auth_context.custom_scopes[:org] },
-          fields: { "dataset:projects": ["id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
         ).and_return([]) # Project does not belong to org owner's organization
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return([]) # Nor is the org owner a project_owner member of it
 
         expect {
           subject.create(project_id, dataset_ids, exporter)
         }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
+      end
+
+      it "denies sync access to a foreign project where the org_owner is only a reviewer member" do
+        # The sync as_user rule grants access only to enabled project_owner
+        # memberships, so a reviewer membership on a foreign project yields no
+        # sync access (the intended asymmetry vs dataset/media).
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
+        ).and_return([]) # Project is not in the org owner's orgs
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return(
+          [double(project_id:, role: "reviewer", organization_id: 999)]
+        )
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter)
+        }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
+      end
+
+      it "allows sync access to a foreign project where the org_owner is a project_owner member" do
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
+        ).and_return([]) # Project is not in the org owner's orgs
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return(
+          [double(project_id:, role: "project_owner", organization_id: 999)]
+        )
+        allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:datasets": ["id"] }
+        ).and_return(
+          dataset_ids.map { |id| double(id:) }
+        )
+
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        expect(export).not_to be_nil
+        expect(export.project_id).to eq(project_id)
       end
     end
 
@@ -266,26 +315,26 @@ RSpec.describe Exports::Service, database: true do
       subject { described_class.new(current_auth_context) }
 
       it "allows access to datasets in projects they own" do
-        # Export Service
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).and_return([])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return(
-          [double(project_id:)]
+          [double(project_id:, role: "project_owner", organization_id: 1)]
         )
         allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
-          filter: { project_id: [project_id], id: dataset_ids },
-          fields: { "dataset:dataset": ["id"] }
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:datasets": ["id"] }
         ).and_return(
           dataset_ids.map { |id| double(id:) }
         )
 
         # Export Repository
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return(
-          [double(project_id:)]
+          [double(project_id:, role: "project_owner", organization_id: 1)]
         )
 
         export = subject.create(project_id, dataset_ids, exporter)
@@ -297,9 +346,11 @@ RSpec.describe Exports::Service, database: true do
       end
 
       it "denies access to datasets if user is not a project owner" do
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).and_return([])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return([]) # User is not a project owner
 
         expect {
@@ -308,16 +359,18 @@ RSpec.describe Exports::Service, database: true do
       end
 
       it "denies access to datasets if they do not belong to the project" do
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).and_return([])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return(
-          [double(project_id:)]
+          [double(project_id:, role: "project_owner", organization_id: 1)]
         )
 
         allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
-          filter: { project_id: [project_id], id: dataset_ids },
-          fields: { "dataset:dataset": ["id"] }
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:datasets": ["id"] }
         ).and_return([]) # No datasets belong to the project
 
         expect {

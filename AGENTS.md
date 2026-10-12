@@ -123,6 +123,7 @@ Lives only at the repository root. Every Ruby service loads it through `COMMON_P
 | `lib/resource/` | JSON:API resource type constants & event channel names |
 | `lib/api.rb` + `lib/api/` | Inter-service HTTP client with JWT bearer auth |
 | `lib/plugin_system/` | Plugin discovery, loading, lifecycle |
+| `lib/project_membership/` | Membership lookup + in-memory cache + broadcast invalidation expo |
 | `lib/role_backend.rb` | Auth context role rights evaluation |
 | `lib/role_repository.rb` | In-memory role storage (YAML-loaded) |
 | `lib/role_record.rb` | Role model |

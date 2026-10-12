@@ -22,7 +22,10 @@ module Organization
 
         scope.as_org_owner? do
           org_ids = auth_context[:org] || []
-          table.where(id: org_ids)
+          membership_org_ids = ProjectMembership::Lookup.new.memberships_for(auth_context.metadata[:id])
+            .map(&:organization_id)
+
+          table.where(id: (org_ids + membership_org_ids).uniq)
         end
 
         scope.as_user? { organizations_from_project_member_scoped }
@@ -59,11 +62,9 @@ module Organization
 
     def organizations_from_project_member_scoped
       account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index(
-        filter: { account_id: }, enabled: true, included: ["project"]
-      ).data
+      org_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:organization_id).uniq
 
-      table.where(id: memberships.map { |pm| pm.project.organization_id }.uniq)
+      table.where(id: org_ids)
     end
 
     def add_event_metadata(**opts)

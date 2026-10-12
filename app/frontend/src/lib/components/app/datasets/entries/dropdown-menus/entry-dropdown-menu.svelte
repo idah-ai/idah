@@ -21,8 +21,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     entry: EntryRecord;
@@ -55,17 +53,10 @@
 
   // Lifecycle
   onMount(async () => {
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
-
     canUpdateEntry =
-      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("update", "dataset:entries", projectId, "project_owner")) || false;
     canDeleteEntry =
-      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("delete", "dataset:entries", projectId, "project_owner")) || false;
   });
 
   // Functions

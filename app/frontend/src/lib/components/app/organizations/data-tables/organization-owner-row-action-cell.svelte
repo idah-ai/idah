@@ -42,23 +42,16 @@
       /** If account is admin, skip */
       if (account.role_name === "admin") return;
 
-      /** If org in role_scope is empty after remove organizationId, change role_name from "org_owner" to "user" */
-      /** Remove organizationId from account role_scope */
+      /** Remove organizationId from account role_scope. Only the scope delta is
+       *  sent; the server auto-demotes an org_owner whose org list becomes empty. */
       const updatedOrgRoleScope = (account.role_scope?.org || []).filter((scope) => scope !== String(organizationId));
-
-      if (updatedOrgRoleScope.length === 0) {
-        account.role_name = "user";
-      }
-
-      account.role_scope = {
-        ...account.role_scope,
-        org: updatedOrgRoleScope,
-      };
 
       await accountsBackendDataSource.update(account.id, {
         attributes: {
-          role_name: account.role_name,
-          role_scope: account.role_scope,
+          role_scope: {
+            ...account.role_scope,
+            org: updatedOrgRoleScope,
+          },
         },
       });
 

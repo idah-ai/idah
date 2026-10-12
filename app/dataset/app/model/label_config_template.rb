@@ -29,24 +29,26 @@ module LabelConfigTemplate
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-
-          if org_ids
-            table.where(organization_id: org_ids)
-          else
-            table.where(Sequel.lit("false"))
-          end
+          table.where(org_projects_condition | project_owner_organizations_condition)
         end
 
-        scope.as_user? { organizations_from_project_member_scoped }
+        scope.as_user? { table.where(project_owner_organizations_condition) }
       end
     end
 
     # Templates are visible to project_owners through any project they own,
     # scoped to that project's organization. project_owners can read, create,
     # update and delete templates within those organizations.
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      Sequel[:organization_id] =~ org_ids
+    end
+
     query
-    def organizations_from_project_member_scoped
+    def project_owner_organizations_condition
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
@@ -60,12 +62,10 @@ module LabelConfigTemplate
         )
       SQL
 
-      table.where(
-        Sequel.lit(
-          scoped_fragment,
-          account_id:,
-          roles: %w[project_owner]
-        )
+      Sequel.lit(
+        scoped_fragment,
+        account_id:,
+        roles: %w[project_owner]
       )
     end
   end
