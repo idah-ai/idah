@@ -24,6 +24,7 @@ module Service
 
       Verse.logger.debug { "Send email: #{hash}" }
       Verse.publish(SEND_EMAIL_CHANNEL, hash)
+      hash
     end
   end
 end
