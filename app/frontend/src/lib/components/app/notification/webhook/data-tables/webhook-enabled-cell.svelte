@@ -7,6 +7,7 @@
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+  import { showToast } from "@/components/ui/toast/index.svelte";
 
   // Props
   let { record: webhook }: DataTableCellBaseProps<WebhookRecord> = $props();
@@ -30,6 +31,11 @@
         { showErrorToast: false },
       );
       $refetches.webhooks.list = new Date();
+
+      showToast.success({
+        title: "Webhook updated",
+        description: `The webhook "${webhook.name}" has been updated.`,
+      });
     } catch (error) {
       webhook.enabled = previousValue;
       showActionFailedToast(error);

@@ -20,7 +20,7 @@
   let resource: string = WebhookRecord.type;
 
   // Variables::Reactive
-  let { name, url, events, secret_key, enabled } = $derived(webhook);
+  let { name, url, events, secret, enabled } = $derived(webhook);
   let selectedEvents = $derived<LabelValue<string | number>[]>(events.map((event) => ({ label: event, value: event })));
 
   // Functions
@@ -30,7 +30,7 @@
   }
 
   $effect(() => {
-    onValueChange({ name, url, events, secret_key, enabled });
+    onValueChange({ name, url, events, secret, enabled });
   });
 </script>
 
@@ -68,15 +68,15 @@
       onSelected={selectEvents}
     />
 
-    <!-- WEBHOOK::SECRET_KEY -->
+    <!-- WEBHOOK::SECRET -->
     <InputField
-      name="{resource}/secret_key"
+      name="{resource}/secret"
       label="Secret Key"
       placeholder="Webhook Secret Key"
       required
-      errors={fieldErrors["secret_key"]}
-      value={secret_key}
-      oninput={(e) => (secret_key = e.currentTarget.value)}
+      errors={fieldErrors["secret"]}
+      value={secret}
+      oninput={(e) => (secret = e.currentTarget.value)}
     />
 
     <!-- WEBHOOK::ENABLED -->

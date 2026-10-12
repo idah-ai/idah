@@ -36,7 +36,7 @@
             name: null,
             url: null,
             events: [],
-            secret_key: null,
+            secret: null,
             enabled: true,
           },
         }),
@@ -52,7 +52,7 @@
       name: source.name,
       url: source.url,
       events: source.events,
-      secret_key: source.secret_key,
+      secret: source.secret,
       enabled: source.enabled,
     };
   }
@@ -80,7 +80,7 @@
           name: draft.name,
           url: draft.url,
           events: draft.events,
-          secret_key: draft.secret_key,
+          secret: draft.secret,
           enabled: draft.enabled,
         },
       },
@@ -105,7 +105,7 @@
           name: draft.name,
           url: draft.url,
           events: draft.events,
-          secret_key: draft.secret_key,
+          secret: draft.secret,
           enabled: draft.enabled,
         },
       },
@@ -132,7 +132,7 @@
         name: draft.name,
         url: draft.url,
         events: draft.events,
-        secret_key: draft.secret_key,
+        secret: draft.secret,
         enabled: draft.enabled,
       });
 

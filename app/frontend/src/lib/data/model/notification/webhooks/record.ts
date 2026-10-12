@@ -13,7 +13,7 @@ export class WebhookRecord extends Record {
   @field() public name!: string;
   @field() public url!: string;
   @field() public events!: string[];
-  @field() public secret_key!: string;
+  @field() public secret!: string;
   @field() public enabled!: boolean;
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;

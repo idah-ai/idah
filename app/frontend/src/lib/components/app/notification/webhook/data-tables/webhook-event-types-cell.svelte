@@ -1,10 +1,10 @@
 <script lang="ts">
   import Badge from "@/components/ui/badge/badge.svelte";
   import Text from "@/components/ui/text/Text.svelte";
-  
+
   import { WebhookEventRecord } from "@/data/model/notification/webhooks/event/record";
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
-  
+
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props

@@ -36,7 +36,7 @@
     destructive?: boolean;
     action: () => void | Promise<void>;
   }[] = $derived([
-     {
+    {
       label: "Test Webhook",
       icon: WifiIcon,
       visible: true,
@@ -73,7 +73,7 @@
   async function fetchWebhook(): Promise<WebhookRecord> {
     const webhookRes = await webhooksBackendDataSource.get(webhookRecord.id, {
       fields: {
-        [WebhookRecord.type]: ["name", "url", "events", "secret_key", "enabled"],
+        [WebhookRecord.type]: ["name", "url", "events", "secret", "enabled"],
       },
       noCache: true,
     });
