@@ -99,7 +99,7 @@ RSpec.describe Dataset, database: true do
 
       # Change the completed entry to in_progress (like reopening)
       completed_entry = Entry::Repository.new(auth_context)
-                                       .index({ dataset_id: dataset_id, status: "completed" }).first
+                                         .index({ dataset_id: dataset_id, status: "completed" }).first
       Entry::Repository.new(auth_context).update!(completed_entry.id, { status: "in_progress" })
 
       dataset = subject.find!(dataset_id)
