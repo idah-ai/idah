@@ -26,6 +26,9 @@ module Entry
     field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
     field :reviewed_by_email, type: [String, NilClass] # Set alongside reviewed_by_id
 
+    field :reopened_by_id, type: [Integer, NilClass] # Set through reopen method
+    field :reopened_by_email, type: [String, NilClass] # Set alongside reopened_by_id
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -57,6 +60,7 @@ module Entry
     belongs_to_project_member :assigned_to, :assigned_to_id
     belongs_to_project_member :submitted_by, :submitted_by_id
     belongs_to_project_member :reviewed_by, :reviewed_by_id
+    belongs_to_project_member :reopened_by, :reopened_by_id
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
     has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
@@ -282,6 +286,23 @@ module Entry
       no_event do
         transaction do
           update!(id, { assigned_to_id: nil, assigned_to_email: nil, status: "pending" })
+        end
+      end
+    end
+
+    event(name: "reopened")
+    def reopen(id, attributes)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: entry.project_id,
+        dataset_id: entry.dataset_id,
+        entry_id: id
+      )
+
+      no_event do
+        transaction do
+          update!(id, attributes, scope: scoped(:update))
         end
       end
     end

@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
+  import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -42,9 +43,12 @@
       onUnassign: confirmUnAssignEntry,
       onSetPriority: () => {},
       onDelete: confirmDeleteEntry,
+      onReopen: () => (openReopenEntryModal = true),
       isAssigned: !!entry.assigned_to_id,
       isAssignDisabled: entry.wf_step === "done",
       isUnassignDisabled: entry.wf_step === "done",
+      isReopenHidden: entry.status !== "completed",
+      isReopenDisabled: entry.status !== "completed",
     }).filter((m) => m.label !== "Set Priority"),
   );
 
@@ -52,6 +56,7 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
+  let openReopenEntryModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -131,7 +136,7 @@
     await entriesBackendDataSource
       .get(entry.id, {
         noCache: true,
-        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by"],
+        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by", "reopened_by"],
       })
       .then((res) => {
         entry = res.data;
@@ -171,5 +176,17 @@
     onAssigned={onEntryAssigned}
     entryIds={[entry.id]}
     bind:open={openAssignEntryFormModal}
+  />
+
+  <!-- MODAL::REOPEN ENTRY -->
+  <ReopenEntryModal
+    action="update"
+    entryIds={[entry.id]}
+    entryMap={new Map([[entry.id, entry]])}
+    onReopened={(updated) => {
+      const updatedEntry = updated[0];
+      if (updatedEntry) onAssigned?.(updatedEntry);
+    }}
+    bind:open={openReopenEntryModal}
   />
 {/if}

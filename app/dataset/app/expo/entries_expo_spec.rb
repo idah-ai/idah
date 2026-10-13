@@ -159,6 +159,19 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "#reopen" do
+    it "calls service.reopen with entry_id" do
+      expect(service).to receive(:reopen).with(uuid).and_return(entry_record)
+
+      post "/entries/#{uuid}/reopen"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+    end
+  end
+
   describe "#error" do
     it "calls service.error with entry_id and options" do
       expect(service).to receive(:error).with(

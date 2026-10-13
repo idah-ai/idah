@@ -56,3 +56,27 @@ export async function deleteEntries(
     return false;
   }
 }
+
+/**
+ * Reopen completed entries in parallel.
+ * Returns the updated records on success, null on failure (toast already shown).
+ * The target stage label comes from the first returned record's new wf_step.
+ */
+export async function reopenEntries(entryIds: string[]): Promise<EntryRecord[] | null> {
+  try {
+    const results = await Promise.all(entryIds.map((id) => entriesBackendDataSource.reopen(id)));
+
+    const updatedEntries = results.map((r) => r.data);
+    const count = updatedEntries.length;
+    const targetStage = updatedEntries[0]?.wf_step || "the first stage";
+    const stageLabel = targetStage.charAt(0).toUpperCase() + targetStage.slice(1);
+    const description =
+      count > 1 ? `${count} entries moved to ${stageLabel}.` : `Entry moved to ${stageLabel}.`;
+
+    showToast.success({ title: "Entry reopened", description });
+    return updatedEntries;
+  } catch (error) {
+    showActionFailedToast(error);
+    return null;
+  }
+}

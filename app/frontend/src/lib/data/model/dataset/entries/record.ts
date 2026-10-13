@@ -39,6 +39,9 @@ export class EntryRecord extends Record {
   @field() public reviewed_by_id!: number | null;
   @field() public reviewed_by_email!: string | null;
 
+  @field() public reopened_by_id!: number | null;
+  @field() public reopened_by_email!: string | null;
+
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
 
@@ -46,6 +49,7 @@ export class EntryRecord extends Record {
   @relationship() public assigned_to!: ProjectMemberRecord;
   @relationship() public reviewed_by!: ProjectMemberRecord;
   @relationship() public submitted_by!: ProjectMemberRecord;
+  @relationship() public reopened_by!: ProjectMemberRecord;
 
   public get priorityBadge(): EntryPriorityBadgeProps {
     const defaultBadgeProps: EntryPriorityBadgeProps = {
@@ -156,6 +160,36 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
       if (body.errors.length > 0) {
         body.errors.forEach((err: Hash) => {
           console.error(`Error unassigning entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+    }
+
+    throw "No data returned";
+  },
+  reopen: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+    const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
+      method: "POST",
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    // Note: Clear dataset cache as well so the Datasets list reflects the updated status on return.
+    const cacheDatasetIndexKey = resourcePath(datasetBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+    clearCache(cacheDatasetIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error reopening entry: ${err.title} - ${err.detail}`, err);
         });
       }
 

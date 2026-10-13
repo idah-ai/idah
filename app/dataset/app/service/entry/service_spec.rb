@@ -624,6 +624,89 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "#reopen" do
+    let!(:completed_entry) do
+      repo.create(
+        {
+          project_id:,
+          dataset_id:,
+          resource: "completed-video.mp4",
+          status: "completed",
+          wf_step: "done",
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com"
+        }
+      )
+    end
+
+    context "when entry is not completed" do
+      it "raises ValidationFailed" do
+        pending_entry = repo.create(
+          {
+            project_id:,
+            dataset_id:,
+            resource: "pending-video.mp4",
+            status: "pending",
+            wf_step: "annotate"
+          }
+        )
+
+        expect { subject.reopen(pending_entry) }
+          .to raise_error(Verse::Error::ValidationFailed, /Only completed entries can be reopened/)
+      end
+    end
+
+    context "when entry is completed and previous assignee has valid membership" do
+      before do
+        ProjectMember::Repository.new(auth_context).create(
+          project_id:,
+          account_id: 42,
+          email: "annotator@example.com",
+          role: "annotator",
+          invited_by_id: 1
+        )
+      end
+
+      it "moves entry back to the first workflow step and assigns to previous annotator" do
+        result = subject.reopen(completed_entry)
+
+        expect(result.wf_step).to eq("annotate")
+        expect(result.status).to eq("in_progress")
+        expect(result.assigned_to_id).to eq(42)
+        expect(result.assigned_to_email).to eq("annotator@example.com")
+      end
+
+      it "marks the dataset as in_progress when it was previously completed" do
+        # Make the dataset completed by adding another completed entry
+        repo.create(
+          {
+            project_id:,
+            dataset_id:,
+            resource: "other.mp4",
+            status: "completed",
+            wf_step: "done"
+          }
+        )
+
+        # Reopen one entry
+        subject.reopen(completed_entry)
+
+        expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+      end
+    end
+
+    context "when previous assignee no longer has access" do
+      it "sets the entry to Unassigned" do
+        result = subject.reopen(completed_entry)
+
+        expect(result.wf_step).to eq("annotate")
+        expect(result.status).to eq("in_progress")
+        expect(result.assigned_to_id).to be_nil
+        expect(result.assigned_to_email).to be_nil
+      end
+    end
+  end
+
   describe "#unassign_account_entries" do
     let(:account_id) { 123 }
     let(:another_account_id) { 456 }
