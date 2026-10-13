@@ -15,7 +15,18 @@ interface Params {
   isReopenDisabled?: boolean;
 }
 export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[] {
-  const { onAssign, onUnassign, onSetPriority, onDelete, onReopen, isAssigned, isAssignDisabled, isUnassignDisabled, isReopenHidden, isReopenDisabled } = params;
+  const {
+    onAssign,
+    onUnassign,
+    onSetPriority,
+    onDelete,
+    onReopen,
+    isAssigned,
+    isAssignDisabled,
+    isUnassignDisabled,
+    isReopenHidden,
+    isReopenDisabled,
+  } = params;
 
   return [
     {

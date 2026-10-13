@@ -70,8 +70,7 @@ export async function reopenEntries(entryIds: string[]): Promise<EntryRecord[] |
     const count = updatedEntries.length;
     const targetStage = updatedEntries[0]?.wf_step || "the first stage";
     const stageLabel = targetStage.charAt(0).toUpperCase() + targetStage.slice(1);
-    const description =
-      count > 1 ? `${count} entries moved to ${stageLabel}.` : `Entry moved to ${stageLabel}.`;
+    const description = count > 1 ? `${count} entries moved to ${stageLabel}.` : `Entry moved to ${stageLabel}.`;
 
     showToast.success({ title: "Entry reopened", description });
     return updatedEntries;
