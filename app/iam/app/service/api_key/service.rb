@@ -45,8 +45,9 @@ module ApiKey
 
         attr[:key_sha] = Digest::SHA256.hexdigest(raw_key)
 
-        # Generate key label (first 10 characters + ... + last 4 characters)
-        attr[:key_label] = "#{raw_key[0..9]}...#{raw_key[-4..]}"
+        # Generate key label revealing only the fixed, non-secret "IDAH_" prefix and
+        # the last 4 characters of the random portion (never the raw key's body).
+        attr[:key_label] = "IDAH_...#{raw_key[-4..]}"
 
         attr[:permissions] = permissions
 
