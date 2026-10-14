@@ -44,14 +44,10 @@ module Workflow
       @submit_opts[:approved]
     end
 
-    # Stage entries are moved back to when reopened — the first real work step.
     def first_workflow_step
       :annotate
     end
 
-    # The annotator is recorded in submitted_by when leaving the annotate step
-    # and retained through subsequent stages, so reopened entries are assigned
-    # back to the original annotator.
     def first_stage_assignee
       [@entry.submitted_by_id, @entry.submitted_by_email]
     end

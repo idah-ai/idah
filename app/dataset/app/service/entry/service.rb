@@ -209,7 +209,7 @@ module Entry
           }
         )
 
-        # Update dataset progress — dataset status changes to in_progress if
+        # Dataset status changes to in_progress if
         # it was previously completed.
         system_datasets_repo.update_progress!(entry.dataset_id)
 

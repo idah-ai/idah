@@ -5,7 +5,6 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import { reopenEntries } from "@/components/app/datasets/entries/util/entry-actions";
-  // import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { pluralizeUnit } from "@/utils/unit";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";

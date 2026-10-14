@@ -97,7 +97,6 @@ RSpec.describe Dataset, database: true do
       expect(dataset.entries_completed_count).to eq(1)
       expect(dataset.entries_in_progress_count).to eq(0)
 
-      # Change the completed entry to in_progress (like reopening)
       completed_entry = Entry::Repository.new(auth_context)
                                          .index({ dataset_id: dataset_id, status: "completed" }).first
       Entry::Repository.new(auth_context).update!(completed_entry.id, { status: "in_progress" })

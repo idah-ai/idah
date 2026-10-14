@@ -19,15 +19,15 @@ module Entry
 
     field :name, type: String
 
-    field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
-    field :assigned_to_email, type: [String, NilClass] # Set alongside assigned_to_id
-    field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
-    field :submitted_by_email, type: [String, NilClass] # Set alongside submitted_by_id
-    field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
-    field :reviewed_by_email, type: [String, NilClass] # Set alongside reviewed_by_id
+    field :assigned_to_id, type: [Integer, NilClass]
+    field :assigned_to_email, type: [String, NilClass]
+    field :submitted_by_id, type: [Integer, NilClass]
+    field :submitted_by_email, type: [String, NilClass]
+    field :reviewed_by_id, type: [Integer, NilClass]
+    field :reviewed_by_email, type: [String, NilClass]
 
-    field :reopened_by_id, type: [Integer, NilClass] # Set through reopen method
-    field :reopened_by_email, type: [String, NilClass] # Set alongside reopened_by_id
+    field :reopened_by_id, type: [Integer, NilClass]
+    field :reopened_by_email, type: [String, NilClass]
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
