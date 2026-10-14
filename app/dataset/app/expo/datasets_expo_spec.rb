@@ -95,4 +95,34 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 204
   end
+
+  describe "PATCH /datasets/:id/feedback_configuration" do
+    it "updates the feedback configuration" do
+      new_config = {
+        key1: { label: "Fix this", description: "It's broken" },
+        key2: { label: "Great work" }
+      }
+
+      expect(service).to receive(:update_feedback_configuration)
+        .with(uuid, new_config)
+        .and_return(new_config)
+
+      patch "/datasets/#{uuid}/feedback_configuration", { feedback_configuration: new_config }
+      expect(last_response.status).to eq 200
+    end
+  end
+
+  describe "GET /datasets/:id/feedback_keys_in_use" do
+    it "returns keys referenced by notes" do
+      expect(service).to receive(:feedback_keys_in_use)
+        .with(uuid)
+        .and_return({ keys: ["key1", "key3"] })
+
+      get "/datasets/#{uuid}/feedback_keys_in_use"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data][:keys]).to match_array(%w[key1 key3])
+    end
+  end
 end
