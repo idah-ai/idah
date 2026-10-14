@@ -12,10 +12,10 @@
   import { cn } from "@/utils";
 
   import type {
-      FilterDataSourceParams,
-      SortDataSourceParams,
-      TableData,
-      TablePreferences,
+    FilterDataSourceParams,
+    SortDataSourceParams,
+    TableData,
+    TablePreferences,
   } from "@/components/app/datasource-table/types";
   import type { ModalBaseProps } from "@/components/app/overlays/modals/Modal.types";
   import type { Sort } from "@/data/DataSource";
@@ -169,31 +169,26 @@
           <Table>
             <TableHeader class="bg-muted/40">
               <TableRow>
-                         {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-            {@const { label, align, filterable, sortable, visible } = columnSetting}
-            {#if visible}
-              <TableHead
-                class={cn(
-                  "bg-primary/10  last:rounded-tr-md",
-                  align ? `text-${align}` : "text-left",
-                )}
-              >
-                {#if !filterable && !sortable}
-                  <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
-                {:else}
-                  <DataTableHeadOptions
-                    {tableData}
-                    {columnKey}
-                    {columnSetting}
-                    {tablePreferences}
-                    {onFilter}
-                    {onSort}
-                    {onHide}
-                  />
-                {/if}
-              </TableHead>
-            {/if}
-          {/each}
+                {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
+                  {@const { label, align, filterable, sortable, visible } = columnSetting}
+                  {#if visible}
+                    <TableHead class={cn("bg-primary/10  last:rounded-tr-md", align ? `text-${align}` : "text-left")}>
+                      {#if !filterable && !sortable}
+                        <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
+                      {:else}
+                        <DataTableHeadOptions
+                          {tableData}
+                          {columnKey}
+                          {columnSetting}
+                          {tablePreferences}
+                          {onFilter}
+                          {onSort}
+                          {onHide}
+                        />
+                      {/if}
+                    </TableHead>
+                  {/if}
+                {/each}
               </TableRow>
             </TableHeader>
 
