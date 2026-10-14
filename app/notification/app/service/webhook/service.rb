@@ -71,6 +71,23 @@ module Webhook
       end
     end
 
+    # Sends a signed ping to the webhook URL right away (disabled webhooks
+    # included, no retries) and returns the receiver's answer. Not recorded in
+    # the delivery log.
+    def test(id)
+      webhook = webhooks.find!(id)
+      body = Delivery.envelope(event: "ping", resource_id: webhook.id.to_s, payload: {})
+
+      http_code, response =
+        begin
+          Delivery.post(webhook, body)
+        rescue StandardError => e
+          [nil, "#{e.class}: #{e.message}"]
+        end
+
+      { http_code:, success: Delivery.success?(http_code), response: }
+    end
+
     def events
       auth_context.reject! unless auth_context.can?(:read, Resource::Notification::Webhooks)
 

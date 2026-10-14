@@ -10,6 +10,7 @@ module Webhook
   module UrlValidator
     extend self
 
+    # Returns the first resolved address, which delivery connects to.
     def validate!(url)
       uri = URI.parse(url.to_s)
       invalid!("must be an http or https URL") unless uri.is_a?(URI::HTTP) && !uri.hostname.to_s.empty?
@@ -20,6 +21,8 @@ module Webhook
       addresses.each do |address|
         invalid!("host `#{uri.hostname}` resolves to a non-public address (#{address})") unless public?(address)
       end
+
+      addresses.first
     rescue URI::InvalidURIError
       invalid!("is not a valid URL")
     end

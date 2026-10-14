@@ -39,6 +39,7 @@ user:
 
     # Notification Service
     - "notification:webhooks.*.own"
+    - "notification:jobs.read.own"
 
     # Sync Service
     - "sync:jobs.read.as_user"
