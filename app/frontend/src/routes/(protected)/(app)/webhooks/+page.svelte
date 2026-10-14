@@ -15,7 +15,7 @@
   import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
-  
+
   import type { Hash } from "@/utils/types";
 
   pageBreadcrumbsStore.set([webhookBreadcrumb]);
@@ -39,8 +39,8 @@
   });
 
   // Functions
-   async function onLoadSetContexts(): Promise<Hash> {
-    const webhookEventsRes = await webhooksBackendDataSource.event( );
+  async function onLoadSetContexts(): Promise<Hash> {
+    const webhookEventsRes = await webhooksBackendDataSource.event();
 
     return { webhookEvents: webhookEventsRes.data };
   }
