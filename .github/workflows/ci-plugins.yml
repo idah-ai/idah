@@ -19,26 +19,33 @@ name: CI - Plugins
 
 on:
   pull_request:
-    paths:
-      - "plugins/**"
     types:
       - ready_for_review
       - synchronize
       - opened
       - reopened
 
+  # Every merge too: a pull request is tested against main as it was when its
+  # checks ran, and other merges may have landed since. On main the path
+  # filters compare with the commit before the merge.
+  push:
+    branches:
+      - main
+
+# A newer push to a pull request cancels its older run. On main each commit
+# gets its own group, so every merge is tested in full.
 concurrency:
-  group: ${{ github.head_ref }}-plugins
+  group: ${{ github.head_ref || github.sha }}-plugins
   cancel-in-progress: true
 
 jobs:
   discover:
     name: Discover Plugins
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       plugins: ${{ steps.list.outputs.plugins }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: List plugin directories
         id: list
@@ -49,13 +56,13 @@ jobs:
 
   changes:
     name: Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       changed: ${{ steps.filter.outputs.plugins }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -66,7 +73,7 @@ jobs:
     name: Plugin ${{ matrix.plugin }}
     if: ${{ needs.changes.outputs.changed == 'true' }}
     needs: [discover, changes]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         plugin: ${{ fromJson(needs.discover.outputs.plugins) }}
@@ -76,7 +83,7 @@ jobs:
         working-directory: plugins/${{ matrix.plugin }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # -------------------------------------------------------
       # System dependencies
@@ -95,7 +102,7 @@ jobs:
       # -------------------------------------------------------
       - name: Setup Node
         if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -105,7 +112,7 @@ jobs:
 
       - name: Cache frontend dependencies
         if: ${{ hashFiles(format('plugins/{0}/frontend/package.json', matrix.plugin)) != '' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: plugins/${{ matrix.plugin }}/frontend/node_modules
           key: ${{ runner.os }}-plugin-${{ matrix.plugin }}-modules-${{ hashFiles(format('plugins/{0}/frontend/pnpm-lock.yaml', matrix.plugin)) }}
@@ -148,3 +155,22 @@ jobs:
         if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
         working-directory: plugins/${{ matrix.plugin }}/backends
         run: bundle exec rspec --exclude-pattern 'vendor/**/*'
+
+  # The one check branch protection requires. The workflow runs on every PR and
+  # the jobs above skip themselves when their paths did not change, so this job
+  # always reports: skipped counts as passed, failed or cancelled does not.
+  passed:
+    name: Plugins CI passed
+    if: ${{ always() }}
+    needs: [discover, changes, plugin-ci]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check every job's result
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if jq -e 'any(.[]; . == "failure" or . == "cancelled")' <<< "$RESULTS" > /dev/null; then
+            echo "::error::A job failed or was cancelled."
+            exit 1
+          fi

@@ -4,9 +4,9 @@ require "mail"
 
 module Email
   class Service < Verse::Service::Base
+    # Without SMTP (no MAIL_SMTP_HOST) the email is written to the log instead,
+    # so an administrator can still pass on invitation and password links.
     def send_email(to_email, notification)
-      return unless Email.enabled?
-
       account = Api[:idah].iam.accounts.index(
         {
           filter: { email: to_email }
@@ -37,9 +37,15 @@ module Email
       end
 
       renderer = Email::Renderer.new(account, notification)
+      text = renderer.render_text
+
+      unless Email.enabled?
+        log_instead_of_sending(to_email, notification.title, text)
+        return
+      end
 
       mail.text_part = Mail::Part.new do
-        body renderer.render_text
+        body text
       end
 
       mail.html_part = Mail::Part.new do
@@ -48,6 +54,21 @@ module Email
       end
 
       Mail.deliver(mail)
+    end
+
+    private
+
+    # The text body carries the same links as the HTML one, and reads in a log.
+    def log_instead_of_sending(to_email, subject, text)
+      Verse.logger.info(
+        <<~LOG
+          Email not sent, SMTP is not configured (set MAIL_SMTP_HOST to send it):
+          To: #{to_email}
+          Subject: #{subject}
+
+          #{text}
+        LOG
+      )
     end
   end
 end

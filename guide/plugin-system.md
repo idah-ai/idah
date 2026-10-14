@@ -450,8 +450,8 @@ Plugins live only in the repository's `plugins/` directory. Services have no `pl
 | Where the service runs | Plugins are found in |
 |---|---|
 | Local checkout, CI | `<repository>/plugins/**` |
-| Container image | `/plugins/**`, copied in by the service's Dockerfile |
-| Development containers | `/plugins/**`, mounted from `./plugins` by `compose.override.yml` |
+| Container image | `/plugins/**`, copied in by `docker/Dockerfile.service` |
+| Development containers | `/plugins/**`, mounted from `./plugins` by `compose.yml` |
 
 `IDAH_PLUGIN_PATH` overrides the default with a `;`-separated list of glob patterns; relative patterns are resolved from the service's directory.
 

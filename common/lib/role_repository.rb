@@ -80,11 +80,11 @@ class RoleRepository < Verse::Model::InMemory::Repository
             name:,
             title: attribute.fetch("title", name),
             rights: unfold_rights(attribute["rights"]),
+            mask: attribute.fetch("mask", "0.0.0"),
             scopes: attribute.fetch("scopes", []),
             labels: attribute.fetch("labels", []),
             description: attribute.fetch("description", NO_DESC),
-            assignable: attribute.fetch("assignable", false),
-            mask: attribute.fetch("mask", "0.0.0")
+            assignable: attribute.fetch("assignable", false)
           }
         )
       end

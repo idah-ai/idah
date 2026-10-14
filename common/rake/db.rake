@@ -19,7 +19,7 @@ namespace :db do
 
   desc "Reset database. Remove existing database and create a new one"
   task reset: :environment do
-    unless %w(staging development test).include?(ENV["APP_ENVIRONMENT"])
+    unless %w(development test).include?(ENV["APP_ENVIRONMENT"])
       raise "This is too dangerous to use in production! Create/Replace manually the database"
     end
 

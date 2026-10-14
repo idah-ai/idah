@@ -66,13 +66,59 @@ RSpec.describe Email::Service, database: true do
     end
 
     context "when SMTP is not configured" do
-      before { allow(Email).to receive(:enabled?).and_return(false) }
+      let(:logger) { instance_double(Logger, info: nil) }
 
-      it "skips the email without calling other services" do
+      let(:notification) do
+        double(
+          title: "Account created",
+          category: "account_created",
+          type: "notification:account:activities",
+          invitation_token: "invite-token-123",
+          recipient_account_id: account.id
+        )
+      end
+
+      before do
+        allow(Email).to receive(:enabled?).and_return(false)
+        allow(Verse).to receive(:logger).and_return(logger)
+      end
+
+      it "does not deliver the email" do
         subject.send_email(to_email, notification)
 
-        expect(Api[:idah].iam.accounts).not_to have_received(:index)
         expect(Mail).not_to have_received(:deliver)
+      end
+
+      it "logs the recipient, the subject and the text body with its link" do
+        subject.send_email(to_email, notification)
+
+        expect(logger).to have_received(:info).with(
+          a_string_including(
+            "SMTP is not configured",
+            "To: #{to_email}",
+            "Subject: Account created",
+            "/accept-invitation?token=invite-token-123"
+          )
+        )
+      end
+
+      it "still skips notification types the account turned off" do
+        allow(Api[:idah].setting.account_settings).to receive(:index).and_return(
+          double(data: [double(key: "notification:account:activities", value: false)])
+        )
+
+        subject.send_email(to_email, notification)
+
+        expect(logger).not_to have_received(:info)
+      end
+
+      it "still raises when the account does not exist" do
+        allow(Api[:idah].iam.accounts).to receive(:index).and_return(double(data: []))
+
+        expect {
+          subject.send_email(to_email, notification)
+        }.to raise_error(Verse::Error::NotFound)
+        expect(logger).not_to have_received(:info)
       end
     end
 

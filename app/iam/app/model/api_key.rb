@@ -118,19 +118,20 @@ module ApiKey
     end
 
     def projects_from_organization_scoped
-      organization_id = auth_context.custom_scopes[:org]&.first
-      return table.where(Sequel.lit("false")) unless organization_id
+      organization_ids = auth_context.custom_scopes[:org]
 
-      projects = Api[:idah].dataset.projects.index(filter: { organization_id: }).data
+      return table.where(Sequel.lit("false")) if organization_ids.empty?
+
+      projects = Api[:idah].dataset.projects.index(filter: { organization_id: organization_ids }).data
 
       # Use <@ (contained by) operator to ensure ALL scope_values are within the
       # user's own org projects/orgs — excludes API keys referencing projects or orgs
       # outside the user's organization, preventing cross-org visibility.
       table.where(
         Sequel.lit(
-          "(scope_type = 'project' AND scope_value <@ ?) OR (scope_type = 'org' AND scope_value <@ ?)",
+          "(scope_type = 'project' AND scope_value <@ ?::text[]) OR (scope_type = 'org' AND scope_value <@ ?::text[])",
           Sequel.pg_array(projects.map(&:id)),
-          Sequel.pg_array([organization_id])
+          Sequel.pg_array(organization_ids)
         )
       )
     end

@@ -13,6 +13,10 @@
 # holds media's gems and code already. Built from the repository root:
 #
 #   docker build -f docker/Dockerfile.service -t idah-service .
+#
+# The development stack builds the `dev` stage instead (compose.yml): the same
+# system packages, plus the compilers, with the source, gems and plugins mounted
+# in at run time.
 
 # Build the plugin frontend bundles setting serves (Plugins::Service#serve_file).
 FROM node:24-alpine AS plugin-frontends
@@ -44,7 +48,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     file \
     && rm -rf /var/lib/apt/lists/*
 
-# Published images run in production; compose and staging pass their own value.
+# Published images run in production; the dev compose passes its own value.
 ARG APP_ENVIRONMENT=production
 
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
@@ -52,8 +56,8 @@ ENV PORT=3000
 
 WORKDIR /app
 
-# Compilers and headers for the native gems.
-FROM base AS build
+# Compilers and headers for the native gems, and updcli.
+FROM base AS toolchain
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -82,6 +86,26 @@ RUN case "$TARGETARCH" in \
     && tar -xf /tmp/updcli/updcli.tar.gz -C /tmp/updcli \
     && install -m 755 "/tmp/updcli/updcli-linux-${TARGETARCH}" /usr/local/bin/updcli-static \
     && rm -rf /tmp/updcli
+
+# The development image: every service runs it, with its directory mounted on
+# /app and its gems in a volume on /usr/local/bundle, which dev-entrypoint.sh
+# fills with `bundle` at start. It adds what media runs on top of the toolchain,
+# the same packages as docker/Dockerfile.media.
+FROM toolchain AS dev
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libmagickwand-6.q16-6 \
+    libmagickcore-6.q16-6-extra \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV APP_ENVIRONMENT=development
+ENV BUNDLE_FORCE_RUBY_PLATFORM=true
+
+CMD ["./dev-entrypoint.sh", "puma"]
+
+# The gems of every service, for the published image.
+FROM toolchain AS build
 
 ARG BUNDLE_WITHOUT="development test"
 

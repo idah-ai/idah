@@ -29,7 +29,7 @@ module Account
 
     # Only the system role may create accounts directly. Everyone else goes
     # through #invite. This is enforced in service code (not by narrowing
-    # admin's rights), per the rights principle.
+    # admin's rights).
     def create(record, actor: nil)
       auth_context.can!(:create, accounts.class.resource) do |scope|
         scope.all? { true }
@@ -427,8 +427,7 @@ module Account
     # Whether the target is within the actor's repository update scope
     # (accounts.scoped(:update)). For an org_owner this is the members of their
     # org projects; for a plain user it is self only. This correctly includes
-    # plain users who are members of the actor's org projects (the old
-    # "target's orgs ⊆ actor's orgs" check wrongly excluded them).
+    # plain users who are members of the actor's org projects.
     def within_update_scope?(target)
       accounts.scoped(:update).where(id: target.id).count > 0
     end
