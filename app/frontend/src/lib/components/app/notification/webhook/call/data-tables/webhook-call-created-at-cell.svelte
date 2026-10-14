@@ -30,18 +30,22 @@
     </Button>
 
     <!-- CREATED AT -->
-    <div class="gap- flex items-center">
-      <DateText datetime={webhookCall.created_at} datetimeFormat="MMM dd, yyyy HH:mm:ss aa" />
+    <div class="flex items-center">
+      <DateText
+        datetime={webhookCall.created_at}
+        datetimeFormat="MMM dd, yyyy HH:mm:ss aa"
+        class="text-muted-foreground text-lg"
+      />
     </div>
   </div>
 
   {#if expanded}
-    <div transition:slide class="flex w-full flex-col gap-2">
-      <Label>Response</Label>
+    <div transition:slide class="mt-8 flex w-full max-w-4xl flex-col gap-3">
+      <Label class="text-muted-foreground text-lg font-semibold">Response</Label>
 
       <div class="h-full max-h-[40vh] overflow-y-auto pr-3">
         <PreFormattedText>
-          {webhookCall.body}
+          {webhookCall.response || webhookCall.error || "-"}
         </PreFormattedText>
       </div>
     </div>

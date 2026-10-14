@@ -1,5 +1,6 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { parseCollectionReturn, parseSingleElementError } from "@/data/model/json_api";
+import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";
 import { WebhookEventRecord } from "@/data/model/notification/webhooks/event/record";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
@@ -63,6 +64,28 @@ export const webhooksBackendDataSource = createBackendDataSource(WebhookRecord, 
 
     if (body && body.data) {
       return Promise.resolve(parseCollectionReturn<WebhookEventRecord>(body));
+    }
+
+    throw "No data returned";
+  },
+  jobs: async (id: string) => {
+    const response = await fetch(`${webhooksBasePath}/${id}/jobs`, {
+      method: "GET",
+    });
+    const body = await response.json();
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error fetching webhook job: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: response.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseCollectionReturn<WebhookCallRecord>(body));
     }
 
     throw "No data returned";

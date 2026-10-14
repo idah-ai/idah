@@ -24,8 +24,7 @@ export const webhookCallLogsColumns: ColumnsSettings<WebhookCallRecord> = {
   http_code: {
     label: "HTTP Status",
     dataType: "number",
-    clickable: true,
-    sortable: true,
+    sortable: false,
     filterable: false,
     visible: true,
     hidable: false,
