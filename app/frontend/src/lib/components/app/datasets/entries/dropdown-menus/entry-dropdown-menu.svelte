@@ -48,7 +48,6 @@
       isAssignDisabled: entry.wf_step === "done",
       isUnassignDisabled: entry.wf_step === "done",
       isReopenHidden: entry.status !== "completed",
-      isReopenDisabled: entry.status !== "completed",
     }).filter((m) => m.label !== "Set Priority"),
   );
 

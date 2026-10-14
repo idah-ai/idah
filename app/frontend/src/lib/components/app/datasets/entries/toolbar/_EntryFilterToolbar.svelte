@@ -65,7 +65,6 @@
       isAssignDisabled: sel.assignableEntryIds.length === 0,
       isUnassignDisabled: sel.unAssignableEntryIds.length === 0,
       isReopenHidden: sel.reopenableEntryIds.length === 0,
-      isReopenDisabled: sel.reopenableEntryIds.length === 0,
     }),
   );
 

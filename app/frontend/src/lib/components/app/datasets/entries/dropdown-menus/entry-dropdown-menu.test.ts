@@ -47,17 +47,6 @@ describe("getEntryDropdownMenuActions", () => {
     expect(reopenItem?.hidden).toBe(true);
   });
 
-  it("disables Reopen when isReopenDisabled is true", () => {
-    const items = getEntryDropdownMenuActions({
-      ...defaultParams,
-      onReopen: () => {},
-      isReopenDisabled: true,
-    });
-
-    const reopenItem = items.find((i) => i.label === "Reopen");
-    expect(reopenItem?.disabled).toBe(true);
-  });
-
   it("hides Unassign when isAssigned is false", () => {
     const items = getEntryDropdownMenuActions(defaultParams);
 

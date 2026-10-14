@@ -12,7 +12,6 @@ interface Params {
   isAssignDisabled?: boolean;
   isUnassignDisabled?: boolean;
   isReopenHidden?: boolean;
-  isReopenDisabled?: boolean;
 }
 export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[] {
   const {
@@ -25,7 +24,6 @@ export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[]
     isAssignDisabled,
     isUnassignDisabled,
     isReopenHidden,
-    isReopenDisabled,
   } = params;
 
   return [
@@ -52,7 +50,6 @@ export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[]
       icon: RotateCcwIcon,
       action: onReopen,
       hidden: isReopenHidden,
-      disabled: isReopenDisabled,
     },
     {
       label: "Delete",
