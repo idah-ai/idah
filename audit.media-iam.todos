@@ -1,0 +1,46 @@
+IAM
+
+- F01 - Password-reset token returned in HTTP response after invitation join
+    - skipped. returned by front end redirection to set user password once joined
+- F02 - Login flow depends on auth-scoped repository
+- F03 - Account enumeration via create-or-return-existing
+- F04 - Shared memoized repository in RefreshToken module
+- F05 - Asymmetric timing-attack mitigation in login
+- F06 - Role/role_scope update lacks target-role authorization
+- F07 - Cookies missing same_site attribute
+- F08 - API-key login returns distinguishable error messages
+- F09 - Password-reset token not single-use / no rotation on read
+- F10 - API key label leaks first 10 characters of raw key
+- F11 - check_seq UPDATE has no row lock and shape is index-unfriendly
+- F12 - join endpoint is unauthenticated and trusts URL :token
+- F13 - N+1 cross-service call inside Account::Repository scope builder
+- F14 - Cross-service Api[:idah] call on every API-key list/show
+- F15 - remove_org_from_account_role_scope is N+1
+- F16 - Duplicated password-policy rule block
+- F17 - use_system_repo for accounts in Account::Service
+- F18 - Heavy use_system_repo in Auth::Service
+- F19 - Broken boolean expression ("system" || "admin")
+- F20 - SecureRandom.hex used for tokens
+- F21 - Hardcoded role/status strings
+- F22 - Hardcoded "iam:api_keys" resource string
+- F23 - Service starts even when JWT key is public-only
+- F24 - show_error_details defaults to true
+- F25 - Hardcoded dev admin password
+- F26 - password_reset_token column not unique / not indexed
+- F27 - Swallowed exception in Auth::SimpleExpo#refresh
+- F28 - join route/input parameter mismatch
+- F29 - Default items_per_page: 1000 for account index
+- F30 - Sequel.lit with JSON parameterization
+- F31 - AccountSessionsExpo relies on repo-level scoping only
+- F32 - OrganizationsExpo registered twice
+- F33 - Stale TODO in Account::Repository
+- F34 - Mixed use_repo / use_system_repo / use / use_service DSL
+
+media (security criticals)
+
+- M-01 - Video::Job class referenced but never defined
+- M-02 - Arbitrary class instantiation via constantize on DB job arguments
+- M-03 - Open3.popen3 with shell string — command injection risk ⛓ part of Executor consolidation (roger); coordinate
+- M-04 - No timeout on subprocess execution ⛓ part of Executor consolidation (roger); coordinate
+- M-05 - File upload loads entire file into memory; no size limit
+- M-06 - Download endpoint trusts DB-stored mime_type / size
