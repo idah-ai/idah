@@ -2,6 +2,8 @@
 
 module Exports
   class Job < Jobs::Base
+    self.max_retries = 3
+
     def run_impl
       options, dataset_ids = arguments.values_at(:options, :dataset_ids)
       export_class = arguments[:exporter]
@@ -21,12 +23,12 @@ module Exports
           export_context.io.file.rewind
           export_context.io.file
         when :dir
-          File.open(export_context.io.zip_directory)
+          export_context.io.zip_directory
         else
           raise "Invalid IO mode: #{export_context.io.mode}"
         end
 
-      export = exports.index({ job_id: }, items_per_page: 1).first
+      export = exports.show(arguments[:export_id])
       exports.upload(export.id, import_file)
     ensure
       export_context.io&.cleanup

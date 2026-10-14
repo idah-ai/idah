@@ -4,6 +4,7 @@ require "cgi"
 require "net/http"
 require "json"
 require "uri"
+require "timeout"
 require "pry"
 require_relative "./multipart_stream"
 

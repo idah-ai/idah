@@ -105,6 +105,22 @@ module Jobs
       end
     end
 
+    def requeue_stale(ttl: 3600)
+      stalled_jobs = table.where(status: "running")
+                          .where { updated_at < Time.now - ttl }
+
+      count = stalled_jobs.count
+
+      stalled_jobs.update(
+        status: "pending",
+        retry_count: Sequel.lit("retry_count + 1"),
+        error: "Job requeued as stale after #{ttl}s",
+        scheduled_at: Time.now
+      )
+
+      count
+    end
+
     def next_scheduled_time
       table.select(
         Sequel.lit("min(scheduled_at)")

@@ -80,10 +80,10 @@ RSpec.describe Exports::IoContext do
     it "zips the directory contents" do
       dir = io_context.directory
       File.write("#{dir}/test.txt", "hello")
-      zip_path = io_context.zip_directory
-      expect(File.exist?(zip_path)).to be true
+      zip_file_obj = io_context.zip_directory
+      expect(File.exist?(zip_file_obj.path)).to be true
 
-      Zip::File.open(zip_path) do |zip_file|
+      Zip::File.open(zip_file_obj.path) do |zip_file|
         expect(zip_file.find_entry("test.txt")).not_to be_nil
         expect(zip_file.read("test.txt")).to eq("hello")
       end

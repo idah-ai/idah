@@ -43,16 +43,24 @@ module Jobs
 
       Verse.logger&.debug "Starting scheduler with #{@thread_pool.size} threads"
       while running
+        available_jobs = nil
+
+        # 1. Atomically claim available jobs.
         synchronize do
-          # Pull more job if a thread is free.
           free = @thread_pool.free
           if free > 0
             Verse.logger&.debug "Job pooling (#{free} free threads)"
             available_jobs = jobs.lock_available(free)
-            available_jobs.each(&method(:process))
           end
+        end
 
-          # Check scheduled jobs
+        # 2. Enqueue jobs OUTSIDE the lock so that process()
+        #    (which calls @thread_pool.run) does not block
+        #    signal() from acquiring the monitor.
+        available_jobs&.each(&method(:process))
+
+        # 3. Atomically check next scheduled time and wait.
+        synchronize do
           time = jobs.next_scheduled_time
 
           if time.nil?

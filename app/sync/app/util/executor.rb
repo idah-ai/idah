@@ -7,6 +7,7 @@ require "shellwords"
 # Run processes using popen3
 class Executor
   class ExecutionError < StandardError; end
+  # class TimeoutError < ExecutionError; end
 
   class Promise
     include MonitorMixin
@@ -95,9 +96,9 @@ class Executor
             ExecutionError.new(stderr.read)
           )
         end
-      rescue StandardError => e
-        promise.raise(e)
       end
+    rescue StandardError => e
+      promise.raise(e)
     end
 
     promise
