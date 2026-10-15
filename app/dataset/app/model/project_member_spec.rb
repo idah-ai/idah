@@ -193,6 +193,31 @@ RSpec.describe ProjectMember, database: true do
       end
     end
 
+    describe "#custom_filter :project_id__in" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(system_auth_context) }
+
+        it "returns only members of the given projects" do
+          result = subject.index({ project_id__in: [project_org1] })
+
+          expect(result.size).to eq(3)
+          expect(result.map { |r| r[:project_id] }).to all(eq(project_org1))
+        end
+
+        it "returns members across multiple projects" do
+          result = subject.index({ project_id__in: [project_org1, project_org2] })
+
+          expect(result.size).to eq(4)
+        end
+
+        it "returns no results for a non-existent project" do
+          result = subject.index({ project_id__in: ["00000000-0000-0000-0000-000000000000"] })
+
+          expect(result.size).to eq(0)
+        end
+      end
+    end
+
     describe "#custom_filter :enabled" do
       context "As Admin", as: :admin do
         subject { described_class.new(system_auth_context) }
@@ -226,6 +251,77 @@ RSpec.describe ProjectMember, database: true do
           expect(result[0].email).to eq("disabled@example.com")
           expect(result[0].disabled_at).not_to be_nil
         end
+      end
+    end
+
+    describe "event metadata for cache invalidation" do
+      let(:captured) { [] }
+
+      before do
+        allow(Verse).to receive(:publish_resource_event) do |**opts|
+          captured << opts[:payload][:metadata]
+        end
+      end
+
+      it "create emits project_id, project_member_account_id and organization_id" do
+        project_member_repo.create(
+          project_id: project_org1,
+          account_id: 77,
+          name: "Meta User",
+          email: "meta@example.com",
+          role: "annotator",
+          invited_by_id: 1
+        )
+
+        expect(captured.last).to include(
+          project_id: project_org1,
+          project_member_account_id: 77,
+          organization_id: 1
+        )
+      end
+
+      it "update! emits project_id, project_member_account_id and organization_id" do
+        project_member_repo.update!(pm_annotator_org1, { role: "reviewer" })
+
+        expect(captured.last).to include(
+          project_id: project_org1,
+          project_member_account_id: 4,
+          organization_id: 1
+        )
+      end
+
+      it "delete! emits project_id, project_member_account_id and organization_id" do
+        project_member_repo.delete!(pm_reviewer_org1)
+
+        expect(captured.last).to include(
+          project_id: project_org1,
+          project_member_account_id: 5,
+          organization_id: 1
+        )
+      end
+
+      it "seeds the actor from a request context without add_event_metadata actor code" do
+        actor = Verse::Auth::Context.new(
+          ["dataset:project_members.*.*"],
+          role: :admin,
+          metadata: { id: 7, email: "admin@example.com", role: :admin }
+        )
+        repo = described_class.new(actor)
+
+        repo.create(
+          project_id: project_org1,
+          account_id: 78,
+          name: "Actor User",
+          email: "actor@example.com",
+          role: "annotator",
+          invited_by_id: 1
+        )
+
+        expect(captured.last).to include(
+          actor_account_id: 7,
+          actor_account_email: "admin@example.com",
+          actor_account_role_name: :admin
+        )
       end
     end
   end

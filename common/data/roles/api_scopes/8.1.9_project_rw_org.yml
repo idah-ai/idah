@@ -5,9 +5,6 @@ api/project_rw_org:
     Allow access to read and write project resources with scope.
   assignable: false
   rights:
-    # IAM
-    - "iam:accounts.create.as_org_owner"
-
     # Dataset Service - Read Write (Project level)
     - "dataset:projects.*.as_org_owner"
     - "dataset:project_members.*.as_org_owner"

@@ -113,18 +113,32 @@ module Jobs
       ).first[:min]
     end
 
+    private
+
+    # Org projects ∪ projects where the actor is an enabled project_owner member
+    # (the sync as_user rule). An org_owner who is a reviewer on a foreign
+    # project therefore gets no sync access there.
+    def org_and_member_project_ids(org_ids)
+      account_id = auth_context.metadata[:id]
+      lookup = ProjectMembership::Lookup.new
+
+      project_ids = lookup.project_ids_for_organizations(org_ids)
+      project_ids += lookup.memberships_for(account_id)
+                           .select { |m| m.role == "project_owner" }
+                           .map(&:project_id)
+
+      project_ids.uniq
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
         scope.as_org_owner? {
           org_ids = auth_context.custom_scopes[:org]
 
-          # Get project IDs for the organizations the user has access to.
-          # This ensures that org owners can access jobs for projects within their organizations.
-          project_ids = Api[:idah].dataset.projects.index_all(
-            filter: { organization_id: org_ids },
-            fields: { "dataset:projects": ["id"] }
-          ).map(&:id)
+          # Org projects ∪ projects where the actor is an enabled project_owner
+          # (the sync as_user rule).
+          project_ids = org_and_member_project_ids(org_ids)
 
           frag = <<-SQL
             EXISTS (
@@ -142,10 +156,9 @@ module Jobs
 
           # Get project IDs where the user is a project owner.
           # This ensures that users can access jobs for projects they own.
-          project_ids = Api[:idah].dataset.project_members.index_all(
-            filter: { account_id:, role: "project_owner", enabled: true },
-            fields: { "dataset:project_members": ["project_id"] }
-          ).map(&:project_id).uniq
+          project_ids = ProjectMembership::Lookup.new.memberships_for(account_id)
+                                                 .select { |m| m.role == "project_owner" }
+                                                 .map(&:project_id)
 
           frag = <<-SQL
             EXISTS (

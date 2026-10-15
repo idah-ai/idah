@@ -27,7 +27,7 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
-  import type { ProjectMemberScope, Resource, Scope } from "@/security/types";
+  import type { Resource } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -53,15 +53,10 @@
     Discard: "discard",
   } as const;
 
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: {
-      projectId,
-      projectMemberRoles: ["project_owner"],
-    },
-  };
-  const permission: { resource: Resource; scopes: Scope[] } = {
+  const permission: { resource: Resource; projectId: string; minRole: string } = {
     resource: "dataset:datasets",
-    scopes: ["as_org_owner", as_project_owner],
+    projectId,
+    minRole: "project_owner",
   };
 
   pageBreadcrumbsStore.set([
@@ -189,7 +184,7 @@
     {/snippet}
 
     {#snippet actions()}
-      <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+      <Can action="update" resource="dataset:datasets" {projectId} minRole="project_owner">
         <Button
           class="ml-auto"
           loading={saving}

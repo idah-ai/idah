@@ -340,8 +340,21 @@ Expositions subscribe to events using two DSL methods:
 
 | Method | Purpose |
 |--------|---------|
-| `on_resource_event(resource_constant, event_name)` | Subscribe to a resource CRUD or custom event |
+| `on_resource_event(resource_constant, event_name)` | Subscribe to a resource CRUD or custom event (consumer mode — one process per service) |
 | `on_event(channel_string)` | Subscribe to a custom event channel |
+
+#### Broadcast subscriptions (cache invalidation)
+
+`on_resource_event` subscribes in **consumer** mode, which delivers each event to only **one** process per service. For cache invalidation every worker must receive the event, so `ProjectMembership::CacheExpo` (`common/lib/project_membership/cache_expo.rb`) subscribes in **broadcast** mode via `ProjectMembership::BroadcastHook#on_resource_broadcast`:
+
+```ruby
+expose on_resource_broadcast(Resource::Dataset::ProjectMembers, "updated")
+def on_project_member_updated
+  # ...invalidate the cache
+end
+```
+
+`on_resource_broadcast` builds an `EventBus` with `type: Verse::Event::Manager::MODE_BROADCAST` and `resource_channel: [resource, event]`. verse-redis publishes every resource event both to a stream and to the fire-and-forget pub/sub channel `VERSE:RESOURCE:<resource>:<event>`; a broadcast-mode subscription receives it in **every** process. Pub/sub has **no replay**, so a missed broadcast leaves a stale cache entry until the next invalidation or a process restart (see [`guide/inter-service-api.md`](inter-service-api.md)).
 
 #### `on_resource_event`
 

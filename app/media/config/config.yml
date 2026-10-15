@@ -86,6 +86,15 @@ idah:
   # Jobs used for processing media files
   jobs:
     concurrency: <%= ENV.fetch("IDAH_JOBS_CONCURRENCY", 1) %>
+  # In-memory cache for ProjectMembership::Lookup (org_owner membership union).
+  # Per-process LRU; entries never expire unless a TTL is set. A missed
+  # invalidation broadcast keeps a stale entry until the next invalidation or a
+  # process restart, so set a TTL when that is a concern.
+  project_membership_cache:
+    enabled: <%= ENV.fetch("IDAH_PROJECT_MEMBERSHIP_CACHE_ENABLED", "true") == "true" %>
+    # Seconds, or empty for no expiry.
+    ttl: <%= ENV["IDAH_PROJECT_MEMBERSHIP_CACHE_TTL"] %>
+    capacity: <%= ENV.fetch("IDAH_PROJECT_MEMBERSHIP_CACHE_CAPACITY", 10000) %>
   # Define where mounted plugins are stored.
   # Plugin system is managed directly by the application,
   # except for manual mounting and dev mode.
