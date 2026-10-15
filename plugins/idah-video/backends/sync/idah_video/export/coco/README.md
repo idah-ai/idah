@@ -12,7 +12,9 @@ list, `video_id` and `frame_id` on images, `track_id` on annotations, and
 `attributes`.
 
 The export appears as **COCO (Video)** in the export dialog for video
-datasets.
+datasets. What it shares with the other video exports (export options, which
+frames are exported, how shapes are placed, names, and the export report) is
+described in the [video exports README](../README.md).
 
 ## The zip
 
@@ -26,24 +28,9 @@ export_report.json               what was exported and what was left out, for th
 
 Each dataset is a complete COCO file of its own, paired with its own image
 folder, the way COCO itself ships `instances_train2017.json` with
-`train2017/`. Categories are set up per dataset in IDAH, so each file lists
-its own dataset's categories, and every id (categories, videos, images,
-annotations, tracks) counts from 1 in each file. To combine files, match
-categories by `name`, not by `id`.
-
-| Include medias | Contents |
-| --- | --- |
-| No medias (`none`) | `annotations/` and the report: labels only. |
-| Original medias (`original`) | Labels, plus every exported frame as a JPEG, taken from the original video. |
-| All medias (`all`) | Same as original. Streaming variants and thumbnails have no place in COCO. |
-
-Files and folders are named after the dataset and the entry (without its
-extension), with characters other than letters, digits, `.`, `-` and `_`
-replaced by `_`. An entry with no name uses its uploaded file's name. When two
-datasets, or two entries of a dataset, share a name, later ones get a suffix:
-`street`, `street_2`. A dataset with nothing to export gets no file.
-
-Only completed entries are exported unless "Completed Entries Only" is switched off.
+`train2017/`. Every id (categories, videos, images, annotations, tracks)
+counts from 1 in each file. To combine files, match categories by `name`, not
+by `id`.
 
 ## instances_<dataset>.json
 
@@ -82,12 +69,9 @@ rounded to 2 decimals. Ids count from 1 in each file.
 
 ### categories
 
-One category per value of the dataset's bounding-box and polygon labeling
-configurations, in configuration order.
+The dataset's categories (see [Categories](../README.md#categories)).
 
-- `name` is the IDAH category id, such as `human/civilian/armed`. Labels are not
-  used because they repeat across a category tree ("armed" under several
-  parents) and can be blank; ids are unique.
+- `name` is the IDAH category id, such as `human/civilian/armed`.
 - `supercategory` is the parent path (`human/civilian`), or `""` at the top.
 
 Frame tag and entry-level categories are not listed here (see below).
@@ -132,32 +116,10 @@ One per shape per frame.
 | `category_id` | The category in `categories`. |
 | `iscrowd` | Always `0`. |
 | `track_id` | The object this shape belongs to, the same on every frame (see Tracks). |
-| `attributes.keyframe` | `true` when the shape is a keyframe stored in IDAH, `false` when it was computed between two keyframes. |
+| `attributes.keyframe` | `true` when the shape is a keyframe stored in IDAH, `false` when it was computed between two keyframes (see [Frames](../README.md#frames)). Filter on it to keep the stored keyframes only. |
 | `attributes.rotation` | Boxes only: the box's rotation in degrees, clockwise, from 0 to 360. It is already applied to `segmentation` and `bbox`; it is there to rebuild the rotated box. |
 | `attributes.idah_id` | The IDAH annotation the shape comes from. |
 | `attributes.*` | The annotation's IDAH properties, such as `occlusion`, as stored. |
-
-### Frames between keyframes
-
-IDAH stores a shape's keyframes only; the annotation tool computes every
-frame in between when it draws the video. The export computes them the same
-way, with a port of the tool's own code, so every exported frame shows what
-annotators saw:
-
-```
-Shape in IDAH:   keyframe 10 (x=100) ........ keyframe 20 (x=200)
-Exported:        frame 10  x=100  keyframe: true
-                 frame 11  x=110  keyframe: false
-                 ...
-                 frame 20  x=200  keyframe: true
-```
-
-A shape is exported from its first to its last keyframe, within its start and
-end frames. Boxes move and rotate linearly between keyframes. Polygons morph
-as in the annotation tool, even when two keyframes have different numbers of
-points.
-
-Filter on `attributes.keyframe` to keep the stored keyframes only.
 
 ### Tracks
 
@@ -174,67 +136,26 @@ track, and the report lists the group under `split_groups`.
 
 ## export_report.json
 
-A summary of the export, so nothing is left out without a trace.
+The report is described in the [video exports README](../README.md#export_reportjson).
+For COCO, `split_groups` lists every group exported as several tracks:
 
 ```json
-{
-  "datasets": 1,
-  "videos": 8,
-  "images": 371,
-  "annotations": 5402,
-  "interpolated_annotations": 4075,
-  "image_files": 371,
-  "skipped": {
-    "videos_without_annotated_frames": 10
-  },
-  "split_groups": [
-    {
-      "dataset": "05_2026_DRAGONFLY_330_AIRATTACK_NP_BATCH_B01_HUMAN",
-      "video": "NP-AIRATTACK-330-B-00002-000-002500980000-002503060000.ts",
-      "idah_entry_id": "019ef9dd-0ce9-7959-9cbb-9b968d8b9bc7",
-      "group": "019f64e5-2f26-7951-a342-75f893546e70",
-      "tracks": [
-        { "category": "human/undefined/tobedefined/-", "track_id": 70 },
-        { "category": "human/undefined/transported/-", "track_id": 71 }
-      ]
-    }
-  ],
-  "warnings": []
-}
+"split_groups": [
+  {
+    "dataset": "05_2026_DRAGONFLY_330_AIRATTACK_NP_BATCH_B01_HUMAN",
+    "video": "NP-AIRATTACK-330-B-00002-000-002500980000-002503060000.ts",
+    "idah_entry_id": "019ef9dd-0ce9-7959-9cbb-9b968d8b9bc7",
+    "group": "019f64e5-2f26-7951-a342-75f893546e70",
+    "tracks": [
+      { "category": "human/undefined/tobedefined/-", "track_id": 70 },
+      { "category": "human/undefined/transported/-", "track_id": 71 }
+    ]
+  }
+]
 ```
 
-| Field | Meaning |
-| --- | --- |
-| `datasets` | COCO files written, one per dataset. |
-| `videos` | Videos across all files. |
-| `images` | Images (frames) across all files. |
-| `annotations` | Annotations across all files. |
-| `interpolated_annotations` | How many of them were computed between keyframes (`keyframe: false`). |
-| `image_files` | Frame images written to `images/`. `0` without medias; lower than `images` when some could not be extracted (see `warnings`). |
-| `skipped` | Data left out, counted by reason (below). |
-| `split_groups` | Groups exported as several tracks because their annotations have different categories: the dataset's file name, the video, the group, and the track each category became. |
-| `warnings` | Problems with a whole entry, one message each (below). |
-
-### skipped
-
-| Reason | Meaning |
-| --- | --- |
-| `deleted` | A deleted annotation. |
-| `no_category` | A box or polygon without a category. |
-| `no_keyframes` | A box or polygon without any keyframe, so without geometry. |
-| `zero_area` | A shape on one frame that lies outside the video: clamped to the frame, it is a line or a point. |
-| `too_few_points` | A polygon on one frame with fewer than 3 points, which COCO tools would read as a box. |
-| `unsupported_shape_type:<type>` | An annotation of a type COCO instances cannot hold. |
-| `videos_without_annotated_frames` | An entry with no shape and no frame tag. |
-| `datasets_without_annotated_frames` | A dataset with nothing to export; it gets no file. |
-
-### warnings
-
-| Message | Meaning |
-| --- | --- |
-| ``Entry `<name>` (<id>) skipped: video width and height are unknown.`` | The video's metadata is missing, so its shapes cannot be placed in pixels. Nothing of the entry is exported. |
-| ``Entry `<name>` (<id>): N frames past the end of the video have no image.`` | Shapes run past the last frame of the video. Their annotations are exported; those frames have no image file. |
-| ``Entry `<name>` (<id>): no images, the video could not be read (<error>).`` | The original video could not be downloaded or decoded. The entry's annotations are exported without images. |
+Each gives the dataset's file name, the video and its IDAH entry, the group,
+and the track each category became, so the split can be checked in IDAH.
 
 ## Reading the export
 
@@ -294,38 +215,13 @@ Each label shows its category name, `track_id`, `keyframe`, `rotation`,
 `idah_id` and IDAH properties, all usable as filters (for example
 `keyframe` to show the stored keyframes only).
 
-## Limits
-
-- Frame `N` is the `N`-th decoded frame of the video. This matches the
-  annotation tool for constant frame rate videos; variable frame rate videos
-  have not been checked.
-- The original video is downloaded into memory before its frames are
-  extracted, as in the UPD export.
-
 ## Code
 
 | File | Role |
 | --- | --- |
-| `coco/exporter.rb` | `IdahVideo::Export::Coco::Exporter`, registered for `idah-video` in `sync.rb`. |
-| `coco/writer.rb` | Writes one `instances_<dataset>.json`, streaming images and annotations through temporary files. |
-| `coco/category_index.rb` | Builds `categories` from the labeling configurations. |
-| `helpers/interpolator.rb`, `helpers/polygon_morph.rb` | Frames between keyframes: ports of the frontend's `utils/interpolation.ts` and of flubber 0.4.2. |
-| `helpers/geometry.rb` | Pixels, rotation, clamping, box and area. |
-| `helpers/frame_extractor.rb` | Extracts the exported frames with ffmpeg, in one pass per video. |
-| `helpers/report.rb` | `export_report.json`. |
-| `helpers/keys.rb` | Reads API data whatever its key type. |
+| `exporter.rb` | `IdahVideo::Export::Coco::Exporter`, registered for `idah-video` in `sync.rb`. |
+| `writer.rb` | Writes one `instances_<dataset>.json`, streaming images and annotations through temporary files. |
 
-Paths are relative to `backends/sync/idah_video/export/`. `helpers/`
-(`IdahVideo::Export::Helpers`) is shared with the formats to come.
-
-The interpolation must match the frontend exactly. Its specs check
-`spec_data/interpolation_parity.json`, which the frontend test
-`frontend/src/lib/utils/interpolation.parity.test.ts` generates from the real
-code. After changing the interpolation or the flubber version, regenerate it:
-
-```bash
-npx vitest run -u src/lib/utils/interpolation.parity.test.ts
-```
-
-Run from `plugins/idah-video/frontend`, then run `bundle exec rspec` in
-`plugins/idah-video/backends`.
+Everything else (reading entries, frames between keyframes, geometry, frame
+images, the report) is in `../helpers/`, shared with the other video exports;
+see the [video exports README](../README.md#for-developers).

@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe IdahVideo::Export::Coco::CategoryIndex do
+RSpec.describe IdahVideo::Export::Helpers::CategoryIndex do
   subject(:index) { described_class.new }
 
   let(:configuration) do

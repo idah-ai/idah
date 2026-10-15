@@ -6,6 +6,7 @@ module IdahVideo
   class Sync
     def self.init(context)
       context.register_exports("idah-video", IdahVideo::Export::Coco::Exporter)
+      context.register_exports("idah-video", IdahVideo::Export::Yolo::Exporter)
     end
   end
 end

@@ -2,18 +2,20 @@
 
 module IdahVideo
   module Export
-    module Coco
-      # COCO categories built from the datasets' labeling configurations.
+    module Helpers
+      # The categories of a dataset's labeling configuration, numbered for
+      # export.
       #
       # A category is named by its IDAH value id, such as
       # "human/civilian/armed": labels repeat across a category tree ("armed"
       # under several parents) or are blank, while ids are unique and are what
       # annotations store. The parent path is the supercategory. Ids start at 1
-      # and follow configuration order, so a category keeps its id across the
-      # datasets of one export.
+      # (COCO's numbering; YOLO classes are the id minus 1) and follow
+      # configuration order; a category missing from the configuration is added
+      # at the end when an annotation uses it.
       class CategoryIndex
-        # Shape types whose categories become COCO categories. Frame tags and
-        # entry-level categories are written as attributes instead.
+        # Shape types whose categories are exported as categories. Frame tags
+        # and entry-level categories are not objects.
         SHAPE_TYPES = %i[idah-video:bounding-box idah-video:polygon].freeze
 
         def initialize
@@ -22,7 +24,7 @@ module IdahVideo
         end
 
         def add_configuration(configuration)
-          configuration = Helpers::Keys.symbolize(configuration || {})
+          configuration = Keys.symbolize(configuration || {})
 
           SHAPE_TYPES.each do |shape_type|
             Array(configuration.dig(shape_type, :values)).each do |value|
