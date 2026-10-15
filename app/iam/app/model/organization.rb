@@ -13,6 +13,8 @@ module Organization
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "organizations"
     self.resource = Resource::Iam::Organizations
 
@@ -22,10 +24,20 @@ module Organization
 
         scope.as_org_owner? do
           org_ids = auth_context[:org] || []
-          membership_org_ids = ProjectMembership::Lookup.new.memberships_for(auth_context.metadata[:id])
-            .map(&:organization_id)
 
-          table.where(id: (org_ids + membership_org_ids).uniq)
+          if action == :read
+            # Read union: the actor's own orgs ∪ the orgs of their memberships,
+            # so an org_owner who is a member of a foreign project can read that
+            # project's org.
+            membership_org_ids = ProjectMembership::Lookup.new.memberships_for(auth_context.metadata[:id])
+              .map(&:organization_id)
+
+            table.where(id: (org_ids + membership_org_ids).uniq)
+          else
+            # Updates stay limited to the actor's own orgs (foreign memberships
+            # never widen the update scope), like Account::Repository#scoped.
+            table.where(id: org_ids)
+          end
         end
 
         scope.as_user? { organizations_from_project_member_scoped }
@@ -68,12 +80,7 @@ module Organization
     end
 
     def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
+      add_metadata(**opts)
     end
   end
 end

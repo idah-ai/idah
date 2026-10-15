@@ -7,7 +7,7 @@
 # services don't need a global cache config). It is a thin wrapper: it adds
 # nil/empty caching (the adapter returns nil on a miss, so we store a `{ value: }`
 # wrapper to distinguish a cached empty result from a miss) and the invalidation
-# entry points the broadcast expo (Step 16) uses.
+# entry points the broadcast expo uses.
 #
 # Configuration comes from the service config block `idah.project_membership_cache`
 # (`Verse.config.extra_fields.dig(:idah, :project_membership_cache, ...)`):

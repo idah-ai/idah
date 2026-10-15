@@ -11,8 +11,8 @@ RSpec.describe ProjectMembership::Lookup do
   let(:dataset) { Api[:idah].dataset }
 
   before do
-    # Use a disabled cache so the lookup behaves as a passthrough (Step 9
-    # semantics); cache behaviour is covered by the cache spec.
+    # Use a disabled cache so the lookup behaves as a passthrough; cache
+    # behaviour is covered by the cache spec.
     subject.cache = ProjectMembership::Cache.new(enabled: false)
   end
 

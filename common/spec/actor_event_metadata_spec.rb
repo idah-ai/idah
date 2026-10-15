@@ -5,21 +5,28 @@ require_relative "../lib/actor_event_metadata"
 
 RSpec.describe ActorEventMetadata do
   # A minimal repository-like object that includes the module, exposing the
-  # metadata an emitted event would carry.
-  class FakeRepo
+  # metadata an emitted event would carry. `initialize` mirrors a real
+  # repository: it calls `super` (here a no-op base) so the module's
+  # `initialize` can seed the actor.
+  class FakeBase
+    def initialize(_auth_context)
+      @metadata = {}
+    end
+
+    def add_metadata(**opts)
+      @metadata.merge!(opts)
+    end
+  end
+
+  class FakeRepo < FakeBase
     include ActorEventMetadata
 
     attr_reader :auth_context
 
-    def initialize(auth_context)
-      @auth_context = auth_context
-      @metadata = {}
-    end
-
-    # Simulates what a repository's add_event_metadata does: merge the actor
-    # metadata into the current metadata and return it (as an event would carry).
+    # Simulates what a repository's add_event_metadata does: return the current
+    # metadata as an event would carry it.
     def emit
-      @metadata.merge(actor_event_metadata)
+      @metadata
     end
   end
 
@@ -35,6 +42,24 @@ RSpec.describe ActorEventMetadata do
     )
   end
 
+  describe "actor seeding from the auth context" do
+    it "seeds the actor from a request context at construction" do
+      repo = FakeRepo.new(user_context)
+
+      expect(repo.emit).to include(
+        actor_account_id: 7,
+        actor_account_email: "admin@example.com",
+        actor_account_role_name: :admin
+      )
+    end
+
+    it "seeds nothing for a system context" do
+      repo = FakeRepo.new(system_context)
+
+      expect(repo.emit).not_to have_key(:actor_account_id)
+    end
+  end
+
   describe "#with_actor" do
     it "sets the actor on the emitted metadata for the duration of the block" do
       repo = FakeRepo.new(system_context)
@@ -45,6 +70,23 @@ RSpec.describe ActorEventMetadata do
         actor_account_id: 7,
         actor_account_email: "admin@example.com",
         actor_account_role_name: :admin
+      )
+    end
+
+    it "overrides the seeded actor for the block" do
+      repo = FakeRepo.new(user_context)
+      other = Verse::Auth::Context.new(
+        ["iam:accounts.*.*"],
+        role: :org_owner,
+        metadata: { id: 9, email: "owner@example.com", role: :org_owner }
+      )
+
+      emitted = repo.with_actor(other) { repo.emit }
+
+      expect(emitted).to include(
+        actor_account_id: 9,
+        actor_account_email: "owner@example.com",
+        actor_account_role_name: :org_owner
       )
     end
 
@@ -85,32 +127,6 @@ RSpec.describe ActorEventMetadata do
       emitted = repo.with_actor(nil) { repo.emit }
 
       expect(emitted).not_to have_key(:actor_account_id)
-    end
-  end
-
-  describe "#actor_event_metadata" do
-    it "lets a request context identity win over with_actor" do
-      repo = FakeRepo.new(user_context)
-
-      emitted = repo.with_actor(system_context) { repo.emit }
-
-      expect(emitted).to include(
-        actor_account_id: 7,
-        actor_account_email: "admin@example.com",
-        actor_account_role_name: :admin
-      )
-    end
-
-    it "keeps the with_actor actor when the auth context is a system context (no identity)" do
-      repo = FakeRepo.new(system_context)
-
-      emitted = repo.with_actor(user_context) { repo.emit }
-
-      expect(emitted).to include(
-        actor_account_id: 7,
-        actor_account_email: "admin@example.com",
-        actor_account_role_name: :admin
-      )
     end
   end
 end

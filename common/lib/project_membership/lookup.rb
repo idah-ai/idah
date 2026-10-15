@@ -5,8 +5,8 @@
 #
 # The lookup is deliberately stateless: it always queries the dataset service
 # through the inter-service API client with `index_all` + `filter:` + minimal
-# `fields`. The in-memory cache (Step 15) is layered behind this class without
-# changing any caller.
+# `fields`. The in-memory cache is layered behind this class without changing
+# any caller.
 module ProjectMembership
   class Lookup
     # A single enabled membership, with the project's organization id resolved

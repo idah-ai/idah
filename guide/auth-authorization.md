@@ -215,7 +215,7 @@ The `RoleRepository` is an in-memory repository (stored as module-level class da
 
 ### Account Invitation & Update Guards
 
-**Only `system` creates accounts.** `Account::Service#create` rejects any actor whose role is not `system`, whatever its rights. Everyone else goes through `POST /accounts/invite`. The `admin` role keeps wildcard rights (`iam:accounts.*.*`) per the rights principle; the "system only" restriction on `create` is enforced in service code, not by narrowing admin's rights.
+**Account creation is internal.** `Account::Service#create` is only called through a system context (e.g. from `#invite`); the `POST /accounts` route was removed. Everyone else goes through `POST /accounts/invite`. The `admin` role keeps wildcard rights (`iam:accounts.*.*`); the internal-only restriction on `create` is enforced in service code, not by narrowing admin's rights.
 
 **Invite rights:**
 
@@ -459,7 +459,7 @@ end
 as_org_owner = (projects of the actor's orgs)  ∪  (projects where the actor is an enabled member)
 ```
 
-The membership side is evaluated with the same per-action role rules as `as_user`. In the repositories this is implemented by producing each branch as a Sequel **condition** and combining with `Sequel.|` (see the dataset repositories in Step 11). The same union is applied in IAM (accounts, organizations), media (medias, jobs) and sync (exports, jobs) via `ProjectMembership::Lookup` (Step 12).
+The membership side is evaluated with the same per-action role rules as `as_user`. In the repositories this is implemented by producing each branch as a Sequel **condition** and combining with `Sequel.|` (see the dataset repositories). The same union is applied in IAM (accounts, organizations), media (medias, jobs) and sync (exports, jobs) via `ProjectMembership::Lookup`.
 
 **Per-service notes:**
 - **IAM accounts**: the read scope is `self ∪ members of the actor's org projects ∪ co-members of the actor's own memberships`; **updates stay limited** to accounts reachable through the actor's own orgs (foreign memberships never widen update scope).

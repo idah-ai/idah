@@ -335,7 +335,7 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 | Prefix             | Endpoints                                                                                                    |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
 | `/projects`        | CRUD — `index`, `show`, `create`, `update`, `delete`                                                         |
-| `/project_members` | CRUD (create is **system-only**) + `POST /invite` (batch, all-or-nothing) + `POST /:id/resend_invitation` + event handler for account updates (sync name/email via `DuplicateFieldHelper`), account disable, account delete |
+| `/project_members` | `index`, `show`, `update`, `delete` + `POST /invite` (batch, all-or-nothing) + `POST /:id/resend_invitation` + event handler for account updates (sync name/email via `DuplicateFieldHelper`), account disable, account delete |
 | `/datasets`        | CRUD + event handler for dataset completion (sends notification emails)                                      |
 | `/entries`         | CRUD + `PATCH /:id/assign`, `GET /:id/select`, `POST /:id/submit`, `POST /:id/error`, event handlers for job completion/error |
 | `/annotations`     | CRUD + `POST /_rpc` (JSON-RPC batch interface)                                                               |
@@ -639,7 +639,7 @@ Key design decisions:
 
 ## Project Member Invitation & Guards
 
-Member creation for real actors goes through the guarded batch endpoint `POST /project_members/invite` (`ProjectMember::Service#invite`), not the generic `create` (which is now **system-only**).
+Member creation for real actors goes through the guarded batch endpoint `POST /project_members/invite` (`ProjectMember::Service#invite`); the generic `create` service method and its route were removed.
 
 **Project-level invite rules** (decided by the actor's **effective rank** on the project via `ProjectAccess::Service`, not the `can?` symbol):
 - Only effective rank ≥ `project_owner` can invite or manage members (reviewers cannot).
@@ -652,7 +652,7 @@ Member creation for real actors goes through the guarded batch endpoint `POST /p
 
 **Resend invitation** (`POST /project_members/:id/resend_invitation`) is guarded by the project-level resend rule (the actor can manage that member), then delegates to `Api[:idah].iam.accounts.resend_invitation` with the service token. It rejects accounts that already joined and disabled accounts.
 
-**Generic `create` lockdown:** `ProjectMember::Service#create` now rejects any non-system actor. The frontend uses `invite`; internal/system flows (e.g. `invite_single`) still use the repository-level `create`.
+**No generic `create`:** `ProjectMember::Service#create` was removed; the frontend uses `invite`. Internal/system flows (e.g. `invite_single`) use the repository-level `create`.
 
 ### Project Access Resolver
 

@@ -649,4 +649,30 @@ RSpec.describe Exports::Service, database: true do
       end
     end
   end
+
+  describe "actor seeding from a request context" do
+    it "emits the actor on a created event without add_event_metadata actor code" do
+      captured = []
+      allow(Verse).to receive(:publish_resource_event) do |**opts|
+        captured << opts[:payload][:metadata]
+      end
+
+      actor = Verse::Auth::Context.new(
+        ["sync:exports.*.*"],
+        role: :admin,
+        metadata: { id: 7, email: "admin@example.com", role: :admin }
+      )
+      described_class.new(actor).exports.create(
+        project_id: project_id,
+        created_by_id: 7,
+        job_id: job_id
+      )
+
+      expect(captured.last).to include(
+        actor_account_id: 7,
+        actor_account_email: "admin@example.com",
+        actor_account_role_name: :admin
+      )
+    end
+  end
 end

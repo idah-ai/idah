@@ -36,7 +36,7 @@ RSpec.describe ProjectMember::Service, database: true do
       subject { described_class.new(build_context("org_owner", scopes: { org: [org_a.to_s] }, id: 2)) }
 
       before do
-        # Phase 1: no existing account for the invited email.
+        # No existing account for the invited email.
         allow(Api[:idah].iam.accounts).to receive(:index).and_return(double(data: []))
         allow(Api[:idah].iam.accounts).to receive(:invite).and_return(
           account_stub(id: 100, email: "new@test.com")
@@ -77,7 +77,7 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(created[2]).to include(actor_account_id: 2, actor_account_email: "actor@test.com")
       end
 
-      it "runs the membership write on a plain system context (no hybrid actor identity)" do
+      it "runs the membership write on a plain system context (no actor identity in the write context)" do
         # The system repository used for the write (`system_project_members`) must
         # NOT carry the inviter's identity in its auth context — only the event
         # metadata does. Assert on that repository directly rather than stubbing
@@ -193,7 +193,7 @@ RSpec.describe ProjectMember::Service, database: true do
           name: "Old", email: "removed@test.com", invited_by_id: 1, disabled_at: Time.now
         )
 
-        # A project_owner cannot assign project_owner; rejected in Phase 1.
+        # A project_owner cannot assign project_owner; rejected during validation.
         expect {
           subject.invite(project_a, members: [{ email: "removed@test.com", role: "project_owner" }])
         }.to raise_error(Verse::Error::ValidationFailed, /cannot assign role/)
@@ -217,7 +217,7 @@ RSpec.describe ProjectMember::Service, database: true do
         # The project_owner cannot re-add the removed project_owner as project_owner.
         # The batch also contains a brand-new email that would otherwise be invited.
         # Stub per email so new@test.com resolves to no existing account — proving
-        # Phase 1 blocks the batch before any IAM invite is called.
+        # the batch is blocked before any IAM invite is called.
         allow(Api[:idah].iam.accounts).to receive(:index) do |params|
           email = params.dig(:filter, :email)
           if email == "removed@test.com"

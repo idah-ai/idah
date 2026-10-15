@@ -60,130 +60,6 @@ RSpec.describe ProjectMember::Service, database: true do
       end
     end
 
-    describe "#create" do
-      # The generic create is system-only; member creation for real actors goes
-      # through the guarded `invite` endpoint.
-      let(:system_service) { described_class.new(Verse::Auth::Context[:system]) }
-
-      it "creates a new project member as system" do
-        record = deserialize(
-          {
-            data: {
-              type: "dataset:project_members",
-              attributes: attributes,
-              relationships: {
-                project: {
-                  data: {
-                    type: "dataset:projects",
-                    id: project_id
-                  }
-                }
-              }
-            }
-          }
-        )
-
-        project_member = system_service.create(record)
-        expect(project_member.project_id).to eq(project_id)
-        expect(project_member.account_id).to eq(1)
-        expect(project_member.email).to eq("annotator@email.com")
-        expect(project_member.role).to eq("annotator")
-      end
-
-      it "rejects a non-full-access actor (e.g. a plain user)" do
-        user_service = described_class.new(
-          Verse::Auth::Context.from_role("user", metadata: { id: 10, email: "user@test.com", role: :user })
-        )
-        record = deserialize(
-          {
-            data: {
-              type: "dataset:project_members",
-              attributes: attributes,
-              relationships: {
-                project: {
-                  data: {
-                    type: "dataset:projects",
-                    id: project_id
-                  }
-                }
-              }
-            }
-          }
-        )
-
-        expect {
-          user_service.create(record)
-        }.to raise_error(Verse::Error::Unauthorized, /Only system/)
-      end
-
-      context "notifications" do
-        before do
-          expect_any_instance_of(ProjectMember::Repository).to receive(:after_commit).and_yield
-          allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-            double(name: "Annotator User", email: "inviter@example.com", joined_at: Time.now)
-          )
-          allow(Service::Notification).to receive(:email)
-        end
-
-        it "sends notification email when account has joined" do
-          record = deserialize(
-            {
-              data: {
-                type: "dataset:project_members",
-                attributes: attributes,
-                relationships: {
-                  project: {
-                    data: {
-                      type: "dataset:projects",
-                      id: project_id
-                    }
-                  }
-                }
-              }
-            }
-          )
-
-          system_service.create(record)
-
-          expect(Service::Notification).to have_received(:email).with(
-            hash_including(
-              to: "annotator@email.com",
-              title: "You have been assigned to the project 'Test Project'",
-              category: "project_member_added",
-              project_name: "Test Project"
-            )
-          )
-        end
-
-        it "does not send notification email when account has not joined" do
-          allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-            double(email: "inviter@example.com", joined_at: nil)
-          )
-
-          record = deserialize(
-            {
-              data: {
-                type: "dataset:project_members",
-                attributes: attributes,
-                relationships: {
-                  project: {
-                    data: {
-                      type: "dataset:projects",
-                      id: project_id
-                    }
-                  }
-                }
-              }
-            }
-          )
-
-          system_service.create(record)
-
-          expect(Service::Notification).not_to have_received(:email)
-        end
-      end
-    end
-
     describe "#show" do
       it "shows a project member" do
         project_member_id = project_member_repo.create(attributes)
@@ -409,8 +285,6 @@ RSpec.describe ProjectMember::Service, database: true do
     end
 
     describe "#delete_account_members" do
-      let(:system_service) { described_class.new(Verse::Auth::Context[:system]) }
-
       before do
         another_project_id = project_repo.create(
           name: "Another Project",
@@ -419,41 +293,11 @@ RSpec.describe ProjectMember::Service, database: true do
           organization_id: 1
         )
 
-        @project_member = system_service.create(
-          deserialize(
-            {
-              data: {
-                type: "dataset:project_members",
-                attributes: attributes,
-                relationships: {
-                  project: {
-                    data: {
-                      type: "dataset:projects",
-                      id: project_id
-                    }
-                  }
-                }
-              }
-            }
-          )
+        @project_member = project_member_repo.find!(
+          project_member_repo.create(attributes.merge(project_id: project_id, account_id: 1))
         )
-        @another_project_member = system_service.create(
-          deserialize(
-            {
-              data: {
-                type: "dataset:project_members",
-                attributes: attributes,
-                relationships: {
-                  project: {
-                    data: {
-                      type: "dataset:projects",
-                      id: another_project_id
-                    }
-                  }
-                }
-              }
-            }
-          )
+        @another_project_member = project_member_repo.find!(
+          project_member_repo.create(attributes.merge(project_id: another_project_id, account_id: 1))
         )
       end
 

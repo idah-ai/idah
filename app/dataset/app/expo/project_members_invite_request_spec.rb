@@ -15,6 +15,13 @@ RSpec.describe ProjectMembersExpo, type: :exposition, database: true, as: :org_o
   end
 
   before do
+    # The inter-service IAM calls need a bearer token; override the auth provider
+    # with a fixed token so the real client code runs without a service-account
+    # login round-trip.
+    Api[:idah].add_auth(:bearer) do |request|
+      request["Authorization"] = "Bearer test-token"
+    end
+
     # The org_owner actor is a project_owner member of the project.
     member_repo.create(
       project_id: project_id,
@@ -106,17 +113,49 @@ RSpec.describe ProjectMembersExpo, type: :exposition, database: true, as: :org_o
     end
 
     before do
-      allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-        double(id: 100, email: "member@test.com", enabled: true, joined_at: nil)
-      )
-      allow(Api[:idah].iam.accounts).to receive(:resend_invitation).and_return(true)
+      # Answer the IAM HTTP boundary with realistic JSON:API documents so the
+      # real client code and deserialiser run. The resend response is the shape
+      # the real IAM resend returns (id/name/email only), so a shape change on
+      # either side fails this test.
+      stub_request(:get, %r{/iam/accounts/100$}).
+        to_return(
+          status: 200,
+          body: JSON.generate(
+            data: {
+              type: "iam:accounts",
+              id: "100",
+              attributes: {
+                email: "member@test.com",
+                name: "Member",
+                enabled: true,
+                joined_at: nil
+              }
+            }
+          ),
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, %r{/iam/accounts/100/resend_invitation$}).
+        to_return(
+          status: 200,
+          body: JSON.generate(
+            data: {
+              type: "iam:accounts",
+              id: "100",
+              attributes: {
+                email: "member@test.com",
+                name: "Member"
+              }
+            }
+          ),
+          headers: { "Content-Type" => "application/json" }
+        )
     end
 
     it "resends through the real service" do
       post "/project_members/#{member_id}/resend_invitation"
 
       expect(last_response.status).to eq 200
-      expect(Api[:idah].iam.accounts).to have_received(:resend_invitation).with(id: 100)
+      assert_requested(:post, %r{/iam/accounts/100/resend_invitation$})
     end
   end
 end

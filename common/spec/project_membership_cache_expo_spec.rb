@@ -13,6 +13,16 @@ RSpec.describe ProjectMembership::CacheExpo do
     allow(ProjectMembership::Cache).to receive(:instance).and_return(cache)
   end
 
+  describe "broadcast registration" do
+    it "subscribes its resource events in broadcast mode so every process receives them" do
+      bus = described_class.on_resource_broadcast(Resource::Dataset::ProjectMembers, "updated")
+
+      expect(bus).to be_a(Verse::Exposition::Hook::EventBus)
+      expect(bus.type).to eq(Verse::Event::Manager::MODE_BROADCAST)
+      expect(bus.resource_channel).to eq([Resource::Dataset::ProjectMembers, "updated"])
+    end
+  end
+
   # Builds an exposition instance whose `message` returns the given content.
   def expo_for(method_name, content, headers: {})
     message = double("message", content: content, headers: headers)

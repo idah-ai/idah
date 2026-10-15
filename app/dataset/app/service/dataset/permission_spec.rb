@@ -268,8 +268,8 @@ RSpec.describe Dataset::Service, database: true do
   # Permission: Organization Owner acting through a membership on a FOREIGN project
   # ------------------------------------------------
   # An org_owner of Org A who is a member of a project in Org B is evaluated on
-  # that project with their membership role (Step 10), not org_owner powers.
-  # Creating a dataset requires effective rank >= project_owner.
+  # that project with their membership role, not org_owner powers. Creating a
+  # dataset requires effective rank >= project_owner.
   context "as Organization Owner with a membership on a foreign project", as: :org_owner do
     subject { described_class.new(current_auth_context) }
 

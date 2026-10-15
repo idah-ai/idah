@@ -136,12 +136,12 @@ module ProjectMember
 
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
-        membership = find!(id)
+        membership = membership_and_organization(id)
 
         add_event_metadata(
-          project_id: attributes[:project_id] || membership.project_id,
-          project_member_account_id: attributes[:account_id] || membership.account_id,
-          organization_id: project_organization_id(attributes[:project_id] || membership.project_id)
+          project_id: attributes[:project_id] || membership[:project_id],
+          project_member_account_id: attributes[:account_id] || membership[:account_id],
+          organization_id: membership[:organization_id]
         )
 
         super(id, attributes, scope:)
@@ -150,12 +150,12 @@ module ProjectMember
 
     def delete!(id)
       with_metadata do
-        membership = find!(id)
+        membership = membership_and_organization(id)
 
         add_event_metadata(
-          project_id: membership.project_id,
-          project_member_account_id: membership.account_id,
-          organization_id: project_organization_id(membership.project_id)
+          project_id: membership[:project_id],
+          project_member_account_id: membership[:account_id],
+          organization_id: membership[:organization_id]
         )
 
         super(id)
@@ -172,8 +172,23 @@ module ProjectMember
       table.db[:projects].where(id: project_id).get(:organization_id)
     end
 
+    # Loads a membership together with its project's organization_id in a single
+    # query, so an update/delete write needs no separate projects lookup for the
+    # emitted event metadata.
+    def membership_and_organization(id)
+      row = table
+        .join(:projects, id: Sequel[:project_members][:project_id])
+        .select(Sequel[:project_members].*, Sequel[:projects][:organization_id].as(:organization_id))
+        .where(Sequel[:project_members][:id] => id)
+        .first
+
+      raise Verse::Error::NotFound, "Project member not found: #{id}" if row.nil?
+
+      row
+    end
+
     def add_event_metadata(**opts)
-      add_metadata(**actor_event_metadata.merge(**opts))
+      add_metadata(**opts)
     end
   end
 end

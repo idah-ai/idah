@@ -83,7 +83,7 @@ module Account
         account = self.class.model_class.new(account)
         valid = account.password_match?(password)
 
-        add_event_metadata(
+        add_metadata(
           actor_account_id: account.id,
           actor_account_email: account.email,
           actor_account_role_name: account.role_name,
@@ -97,37 +97,15 @@ module Account
       valid ? account : nil
     end
 
-    def create(attributes)
-      with_metadata do
-        add_event_metadata
-
-        super(attributes)
-      end
-    end
-
-    def update!(id, attributes, scope: scoped(:update))
-      with_metadata do
-        add_event_metadata
-
-        super(id, attributes, scope:)
-      end
-    end
-
     def delete!(id)
       with_metadata do
         find!(id)
-
-        add_event_metadata
 
         super(id)
       end
     end
 
     private
-
-    def add_event_metadata(**opts)
-      add_metadata(**actor_event_metadata.merge(**opts))
-    end
 
     def accounts_from_project_member_scoped
       account_id = auth_context.metadata[:id]

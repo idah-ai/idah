@@ -48,6 +48,34 @@ RSpec.describe Account::Service, database: true do
 
   before do
     allow(Time).to receive(:now).and_return(Time.utc(2025, 1, 1, 0, 0, 0))
+
+    # The org_owner read scope resolves co-members through the dataset service;
+    # the inter-service client needs a bearer token. Override the auth provider
+    # with a fixed token so the real client code runs without a service-account
+    # login round-trip.
+    Api[:idah].add_auth(:bearer) do |request|
+      request["Authorization"] = "Bearer test-token"
+    end
+  end
+
+  # Stubs the dataset project_members HTTP calls that the org_owner read scope
+  # makes through ProjectMembership::Lookup. `account_ids` are the members the
+  # lookup returns for the actor's orgs; the actor's own memberships return none.
+  def stub_org_owner_read_scope(account_ids: [])
+    stub_request(:get, /dataset\/project_members/).
+      with { |req| CGI.unescape(req.uri.query.to_s).include?("filter[organization_id__in]") }.
+      to_return(
+        status: 200,
+        body: JSON.generate(
+          data: account_ids.map do |id|
+            { type: "dataset:project_members", id: "pm#{id}", attributes: { account_id: id } }
+          end
+        ),
+        headers: { "Content-Type" => "application/json" }
+      )
+    stub_request(:get, /dataset\/project_members/).
+      with { |req| CGI.unescape(req.uri.query.to_s).include?("filter[account_id]") }.
+      to_return(status: 200, body: JSON.generate(data: []), headers: { "Content-Type" => "application/json" })
   end
 
   describe "#create (system-only)" do
@@ -125,7 +153,7 @@ RSpec.describe Account::Service, database: true do
         expect(created[1]).to include(actor_account_id: 1, actor_account_email: "actor@test.com")
       end
 
-      it "runs the write on a plain system context (no hybrid actor identity)" do
+      it "runs the write on a plain system context (no actor identity in the write context)" do
         # The system service that performs the write must NOT carry the inviter's
         # identity in its auth context — only the event metadata does.
         system_ctx = nil
@@ -235,21 +263,34 @@ RSpec.describe Account::Service, database: true do
       context "invite on an existing email" do
         before do
           create_account(base_attrs.merge(email: "existing@test.com", role_name: "user"))
+
+          # The existing accounts are not members of the actor's org projects, so
+          # they are outside the org_owner's read scope and the invite returns
+          # only id/name/email. Stub the read-scope lookup to return no members.
+          stub_org_owner_read_scope
         end
 
         it "promotes a user to org_owner of the actor's org" do
           updated = subject.invite(
             build_record(base_attrs.merge(email: "existing@test.com", role_name: "org_owner", role_scope: { org: ["1"] }))
           )
-          expect(updated.role_name).to eq("org_owner")
-          expect(updated.role_scope).to eq("org" => ["1"])
+          expect(updated.email).to eq("existing@test.com")
+          expect(updated.role_name).to be_nil
+
+          stored = system_repo.find_by({ email: "existing@test.com" })
+          expect(stored.role_name).to eq("org_owner")
+          expect(stored.role_scope).to eq("org" => ["1"])
         end
 
         it "leaves an org_owner of another org unchanged when invited as user" do
           create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2"] }))
           updated = subject.invite(build_record(base_attrs.merge(email: "owner@test.com", role_name: "user")))
-          expect(updated.role_name).to eq("org_owner")
-          expect(updated.role_scope).to eq("org" => ["2"])
+          expect(updated.email).to eq("owner@test.com")
+          expect(updated.role_name).to be_nil
+
+          stored = system_repo.find_by({ email: "owner@test.com" })
+          expect(stored.role_name).to eq("org_owner")
+          expect(stored.role_scope).to eq("org" => ["2"])
         end
 
         it "expands an org_owner's scope when invited as org_owner" do
@@ -257,17 +298,23 @@ RSpec.describe Account::Service, database: true do
           updated = subject.invite(
             build_record(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["1"] }))
           )
-          expect(updated.role_scope).to eq("org" => %w[1 2])
+          expect(updated.email).to eq("owner@test.com")
+          expect(updated.role_scope).to be_nil
+
+          stored = system_repo.find_by({ email: "owner@test.com" })
+          expect(stored.role_scope).to eq("org" => %w[1 2])
         end
 
         it "grants only the requested org, not all of the actor's orgs" do
           # Actor owns orgs 1 and 2 but requests only org 1.
           actor = described_class.new(build_context("org_owner", scopes: { org: ["1", "2"] }, id: 2))
           create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["3"] }))
-          updated = actor.invite(
+          actor.invite(
             build_record(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["1"] }))
           )
-          expect(updated.role_scope).to eq("org" => %w[1 3])
+
+          stored = system_repo.find_by({ email: "owner@test.com" })
+          expect(stored.role_scope).to eq("org" => %w[1 3])
         end
 
         it "raises when a requested org falls outside the actor's reach" do
@@ -283,10 +330,12 @@ RSpec.describe Account::Service, database: true do
           # Owner of A invites an existing owner of B as owner of A with org [B, A]
           # → succeeds with scope [A, B] (B is already in the current scope).
           create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2"] }))
-          updated = subject.invite(
+          subject.invite(
             build_record(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2", "1"] }))
           )
-          expect(updated.role_scope).to eq("org" => %w[1 2])
+
+          stored = system_repo.find_by({ email: "owner@test.com" })
+          expect(stored.role_scope).to eq("org" => %w[1 2])
         end
 
         it "rejects inviting a disabled account" do
@@ -723,6 +772,107 @@ RSpec.describe Account::Service, database: true do
           actor_account_email: "admin@example.com",
           actor_account_role_name: "admin"
         )
+      end
+    end
+  end
+
+  describe "account disclosure on invite" do
+    context "as org_owner inviting an existing account outside its read scope", as: :org_owner do
+      subject { described_class.new(build_context("org_owner", scopes: { org: ["1"] }, id: 2)) }
+
+      before do
+        stub_org_owner_read_scope
+      end
+
+      it "returns only id/name/email for an account in another org" do
+        other = create_account(
+          base_attrs.merge(email: "other@test.com", role_name: "org_owner", role_scope: { org: ["9"] })
+        )
+
+        result = subject.invite(build_record(base_attrs.merge(email: "other@test.com", role_name: "user")))
+
+        expect(result.id.to_s).to eq(other.to_s)
+        expect(result.email).to eq("other@test.com")
+        expect(result.role_name).to be_nil
+        expect(result.role_scope).to be_nil
+        expect(result.enabled).to be_nil
+      end
+    end
+
+    context "as admin" do
+      subject { described_class.new(build_context("admin")) }
+
+      it "returns the full record for an existing account" do
+        create_account(base_attrs.merge(email: "existing@test.com", role_name: "org_owner", role_scope: { org: ["9"] }))
+
+        result = subject.invite(build_record(base_attrs.merge(email: "existing@test.com", role_name: "user")))
+
+        expect(result.email).to eq("existing@test.com")
+        expect(result.role_name).to eq("org_owner")
+        expect(result.role_scope).to eq("org" => ["9"])
+      end
+    end
+  end
+
+  describe "API-key account invites" do
+    def api_key_context(scope, orgs: ["1"])
+      Verse::Auth::Context.from_role(
+        "api:#{scope}",
+        custom_scopes: { org: orgs },
+        metadata: { id: 99, email: "key@test.com", name: "Key", role: "api:#{scope}" }
+      )
+    end
+
+    context "as api:account_rw_all" do
+      subject { described_class.new(api_key_context("account_rw_all")) }
+
+      it "can invite an account with role admin (all? branch)" do
+        created = subject.invite(
+          build_record(base_attrs.merge(email: "admin@test.com", role_name: "admin"))
+        )
+
+        expect(created.email).to eq("admin@test.com")
+        expect(created.role_name).to eq("admin")
+        expect(subject.auth_context.checked?).to be(true)
+      end
+    end
+
+    context "as api:org_rw_org" do
+      subject { described_class.new(api_key_context("org_rw_org")) }
+
+      it "can invite into its own org (as_org_owner branch)" do
+        created = subject.invite(
+          build_record(base_attrs.merge(email: "member@test.com", role_name: "user"))
+        )
+
+        expect(created.email).to eq("member@test.com")
+        expect(created.role_name).to eq("user")
+      end
+
+      it "is rejected for another org" do
+        expect {
+          subject.invite(
+            build_record(base_attrs.merge(email: "member@test.com", role_name: "org_owner", role_scope: { org: ["999"] }))
+          )
+        }.to raise_error(Verse::Error::Unauthorized, /outside your own organizations/)
+      end
+
+      it "cannot assign admin (as_org_owner branch)" do
+        expect {
+          subject.invite(
+            build_record(base_attrs.merge(email: "member@test.com", role_name: "admin"))
+          )
+        }.to raise_error(Verse::Error::Unauthorized, /do not have permission to invite an account with role/)
+      end
+    end
+
+    context "as api:project_rw_org" do
+      subject { described_class.new(api_key_context("project_rw_org")) }
+
+      it "cannot invite through IAM (no iam:accounts.invite right)" do
+        expect {
+          subject.invite(build_record(base_attrs))
+        }.to raise_error(Verse::Error::Unauthorized, /do not have permission to invite an account/)
       end
     end
   end

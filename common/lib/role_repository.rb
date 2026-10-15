@@ -17,6 +17,7 @@ class RoleRepository < Verse::Model::InMemory::Repository
 
   def self.load
     data.clear
+    @role_masks_cache = nil
 
     repo = new(Verse::Auth::Context.new)
 
@@ -37,12 +38,16 @@ class RoleRepository < Verse::Model::InMemory::Repository
 
   # All role masks (account + project roles, name => mask). Account roles come
   # from the in-memory RoleRepository rows; project roles from project_role_masks.
+  # The merged map is memoized and invalidated by `load` (which runs at boot and
+  # in specs that reload roles).
   def self.role_masks
-    account = data.each_with_object({}) do |row, out|
-      out[row[:name]] = row[:mask]
-    end
+    @role_masks_cache ||= begin
+      account = data.each_with_object({}) do |row, out|
+        out[row[:name]] = row[:mask]
+      end
 
-    account.merge(project_role_masks)
+      account.merge(project_role_masks)
+    end
   end
 
   def find_template(file_name)

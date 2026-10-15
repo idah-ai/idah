@@ -6,11 +6,7 @@ module Account
         organization_service: Organization::Service,
         role_change_notification: Account::RoleChangeNotification
 
-    use_system accounts_system: Account::Repository
-
-    # Roles that can be assigned through the public account creation path.
-    # `system` is never assignable; `admin` is restricted to admin/system actors.
-    ASSIGNABLE_ROLES = %w[user org_owner admin].freeze
+    use_system accounts_system: Account::Repository, role_system: RoleRepository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
@@ -27,9 +23,10 @@ module Account
       accounts.find!(id, included: included)
     end
 
-    # Only the system role may create accounts directly. Everyone else goes
-    # through #invite. This is enforced in service code (not by narrowing
-    # admin's rights).
+    # Internal account creation, called only through a system context (e.g. from
+    # #invite). The HTTP route was removed; the check below uses `scope.all?`,
+    # which admin also passes, so it is not a hard "system only" gate — it just
+    # keeps direct creation out of reach of the public invite path.
     def create(record, actor: nil)
       auth_context.can!(:create, accounts.class.resource) do |scope|
         scope.all? { true }
@@ -46,7 +43,7 @@ module Account
       attr = record.attributes.select { |k, _| allowed.include?(k) }
 
       role_name = (attr[:role_name] || "user").to_s
-      unless ASSIGNABLE_ROLES.include?(role_name)
+      unless role_system.find_by({ name: role_name })&.assignable
         raise Verse::Error::ValidationFailed, "Role `#{role_name}` is not assignable"
       end
 
@@ -137,7 +134,9 @@ module Account
         existing = accounts_system.find_by({ email: email })
 
         if existing
-          return invite_existing_account(existing, target_role, requested_scope, actor_role, actor_orgs)
+          return disclose_account(
+            invite_existing_account(existing, target_role, requested_scope, actor_role, actor_orgs)
+          )
         end
 
         # New account: create through a plain system context so #create stays the
@@ -184,9 +183,7 @@ module Account
         else
           # The `own` branch resolves to `:self` only for the actor's own record.
           # A user can read co-members through the `as_user` read scope, but the
-          # `own` update right never covers them: reject any other target here
-          # rather than passing `"self"` to RoleHierarchy (which would raise
-          # ArgumentError → 500).
+          # `own` update right never covers them: reject any other target here.
           if actor_level == :self
             raise Verse::Error::Unauthorized, "You do not have permission to update this account"
           end
@@ -263,9 +260,9 @@ module Account
               "Cannot delete an account that has already joined"
       end
 
-      # delete! (not delete) so the emitted iam:accounts:deleted event carries
-      # the deleting actor's identity (Account::Repository#delete! adds the
-      # actor metadata; the base `delete` does not).
+      # delete! (not delete) so the record is found first; the emitted
+      # iam:accounts:deleted event carries the deleting actor's identity (seeded
+      # by ActorEventMetadata).
       accounts.delete!(id)
     end
 
@@ -330,6 +327,8 @@ module Account
         recipient_id: account.id,
         invitation_token:
       )
+
+      restricted_account(account)
     end
 
     # Guarded account-level resend: authorised by the iam:accounts.invite right
@@ -346,11 +345,6 @@ module Account
 
       account = accounts_system.find!(id)
       actor_role = actor_level.to_s
-
-      # user: never
-      if actor_role == "user"
-        raise Verse::Error::Unauthorized, "You do not have permission to resend this invitation"
-      end
 
       # admin: any; org_owner: target ranked at most org_owner, every org in the
       # target's scope within the actor's orgs, and the target within the actor's
@@ -405,6 +399,29 @@ module Account
     end
 
     private
+
+    # Returns an account record restricted to the fields a caller may see after
+    # an invite/resend: id, name, email. Never role, scope, enabled or any
+    # invitation/password token.
+    def restricted_account(account)
+      Account::Record.new(
+        {
+          id: account.id,
+          name: account.name,
+          email: account.email
+        }
+      )
+    end
+
+    # Returns the account in full when the actor may read it (within the actor's
+    # read scope); otherwise only id/name/email, so an invite never discloses
+    # another account's role, scope or status to a caller who could not read it
+    # directly.
+    def disclose_account(account)
+      return account if accounts.scoped(:read).where(id: account.id).count > 0
+
+      restricted_account(account)
+    end
 
     def actor_orgs
       (auth_context.custom_scopes[:org] || []).map(&:to_s)

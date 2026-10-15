@@ -73,5 +73,23 @@ RSpec.describe Organization::Repository, database: true do
 
       expect(result.map(&:id)).to contain_exactly(org1.to_i, org2.to_i)
     end
+
+    it "does not widen the update scope with foreign membership orgs" do
+      update_context = Verse::Auth::Context.new(
+        ["iam:organizations.read.as_org_owner", "iam:organizations.update.as_org_owner"],
+        role: "org_owner",
+        custom_scopes: { org: [org1.to_s] },
+        metadata: { id: 7, email: "owner@test.com", name: "Owner", role: :org_owner }
+      )
+      update_repo = described_class.new(update_context)
+      allow(@lookup).to receive(:memberships_for).with(7).and_return(
+        [double(project_id: "p9", role: "reviewer", organization_id: org2.to_i)]
+      )
+
+      update_ids = update_repo.scoped(:update).select_map(:id)
+
+      expect(update_ids).to contain_exactly(org1.to_i)
+      expect(update_ids).not_to include(org2.to_i)
+    end
   end
 end

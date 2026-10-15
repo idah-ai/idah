@@ -68,4 +68,36 @@ RSpec.describe Medias::Repository, database: true do
       expect(result.map(&:resource)).to contain_exactly("media-a", "media-b")
     end
   end
+
+  describe "actor seeding from a request context" do
+    it "emits the actor on a created event without add_event_metadata actor code" do
+      captured = []
+      allow(Verse).to receive(:publish_resource_event) do |**opts|
+        captured << opts[:payload][:metadata]
+      end
+
+      actor = Verse::Auth::Context.new(
+        ["media:medias.*.*"],
+        role: :admin,
+        metadata: { id: 7, email: "admin@example.com", role: :admin }
+      )
+      described_class.new(actor).create(
+        id: UUIDv7.generate,
+        resource: "media-actor",
+        key: "key-actor",
+        filename: "actor.mp4",
+        size: 1024,
+        mime_type: "video/mp4",
+        created_by: 7,
+        created_role: "admin",
+        project_id: project_a
+      )
+
+      expect(captured.last).to include(
+        actor_account_id: 7,
+        actor_account_email: "admin@example.com",
+        actor_account_role_name: :admin
+      )
+    end
+  end
 end

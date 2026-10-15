@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../lib/project_membership/cache"
+require_relative "../lib/project_membership/lookup"
 
 RSpec.describe ProjectMembership::Cache do
   subject { described_class.new(config) }

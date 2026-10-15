@@ -28,6 +28,8 @@ module Exports
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "exports"
     self.resource = Resource::Sync::Exports
 
@@ -68,7 +70,7 @@ module Exports
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(project_id: attributes[:project_id])
+        add_metadata(project_id: attributes[:project_id])
 
         super(attributes)
       end
@@ -89,15 +91,6 @@ module Exports
         .map(&:project_id)
 
       project_ids.uniq
-    end
-
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
     end
   end
 end

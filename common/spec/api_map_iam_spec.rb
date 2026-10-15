@@ -10,12 +10,16 @@ require_relative "../lib/api/exposition"
 # These specs exercise the REAL client code registered in
 # `common/lib/api/__map__/iam.rb` (no stubbing of `Api[:idah].iam.accounts.*`).
 # They stub only the HTTP boundary with WebMock, so a regression in the client
-# (e.g. passing `body:` instead of `params:`) fails here.
+# (e.g. sending the request body or query incorrectly) fails here.
 RSpec.describe "IAM API client map" do
   include WebMock::API
 
   before do
-    WebMock.enable!
+    # Save the shared client's global state and restore it after each example so
+    # these specs do not leak a base_url/auth override into other specs.
+    @saved_base_url = Api[:idah].base_url
+    @saved_bearer = Api[:idah].auths[:bearer]
+
     Api[:idah].base_url = "https://idah.example.com"
 
     # The real auth block (`generate_token`) needs Verse::Config credentials,
@@ -28,8 +32,12 @@ RSpec.describe "IAM API client map" do
   end
 
   after do
-    WebMock.disable!
-    WebMock.reset!
+    Api[:idah].base_url = @saved_base_url
+    if @saved_bearer
+      Api[:idah].add_auth(:bearer, &@saved_bearer)
+    else
+      Api[:idah].auths.delete(:bearer)
+    end
   end
 
   describe "Api[:idah].iam.accounts.invite" do
@@ -96,9 +104,9 @@ RSpec.describe "IAM API client map" do
               type: "iam:accounts",
               id: "100",
               attributes: {
-                email: "new@test.com",
-                role_name: "user",
-                enabled: true
+                id: 100,
+                name: "New Member",
+                email: "new@test.com"
               }
             }
           ),

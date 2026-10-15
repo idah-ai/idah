@@ -299,6 +299,30 @@ RSpec.describe ProjectMember, database: true do
           organization_id: 1
         )
       end
+
+      it "seeds the actor from a request context without add_event_metadata actor code" do
+        actor = Verse::Auth::Context.new(
+          ["dataset:project_members.*.*"],
+          role: :admin,
+          metadata: { id: 7, email: "admin@example.com", role: :admin }
+        )
+        repo = described_class.new(actor)
+
+        repo.create(
+          project_id: project_org1,
+          account_id: 78,
+          name: "Actor User",
+          email: "actor@example.com",
+          role: "annotator",
+          invited_by_id: 1
+        )
+
+        expect(captured.last).to include(
+          actor_account_id: 7,
+          actor_account_email: "admin@example.com",
+          actor_account_role_name: :admin
+        )
+      end
     end
   end
 end

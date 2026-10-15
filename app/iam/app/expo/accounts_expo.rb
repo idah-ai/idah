@@ -35,7 +35,7 @@ class AccountsExpo < BaseExpo
   end
 
   expose on_http(:post, "/invite") do
-    desc "Invite an account (guarded; creation is system-only)"
+    desc "Invite an account (guarded; direct creation is restricted)"
     input do
       field? :name, String
       field :email, String

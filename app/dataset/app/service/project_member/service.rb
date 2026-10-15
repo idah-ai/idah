@@ -23,55 +23,6 @@ module ProjectMember
       project_members.find!(id, included: included)
     end
 
-    def create(record)
-      # The generic create is locked down: member creation now goes through the
-      # guarded `invite` endpoint. Only the system context may create a member
-      # directly (e.g. internal flows); everyone else must use `invite`.
-      auth_context.can!(:create, project_members.class.resource) do |scope|
-        scope.all? { true }
-
-        scope.else? do
-          raise Verse::Error::Unauthorized,
-                "Only system can create a project member directly; use the invite endpoint"
-        end
-      end
-
-      # Validate required relationships
-      unless record.project
-        raise Verse::Error::ValidationFailed,
-              "project relationship is required to create a project member"
-      end
-
-      # Assign attributes
-      attributes = record.attributes
-      attributes[:project_id] = record.project.id
-
-      project_members.transaction do
-        record_id = project_members.create(attributes)
-        member = project_members.find!(record_id, included: [:project])
-
-        project_members.after_commit do
-          member_account = Api[:idah].iam.accounts.show(id: member.account_id)
-
-          # only send notification email if the account has joined already
-          unless member_account.joined_at.nil?
-            ::Service::Notification.email(
-              to: member.email,
-              title: "You have been assigned to the project '#{member.project.name}'",
-              category: "project_member_added",
-              type: "notification:project:activities",
-              project_id: member.project_id,
-              project_name: member.project.name,
-              inviter_email: auth_context.metadata[:email],
-              inviter_name: auth_context.metadata[:name],
-            )
-          end
-        end
-
-        member
-      end
-    end
-
     def update(record)
       member = project_members.find!(record.id)
 
@@ -138,9 +89,9 @@ module ProjectMember
     end
 
     # Batch invite members to a project. All-or-nothing: validates every member
-    # first (Phase 1, read-only); if any fails, writes nothing and returns a
-    # per-index reason. Only if all are valid does it call the IAM invite and
-    # write memberships in one transaction (Phase 2).
+    # first (read-only); if any fails, writes nothing and returns a per-index
+    # reason. Only if all are valid does it call the IAM invite and write
+    # memberships in one transaction.
     def invite(project_id, members:)
       project = system_projects.find!(project_id)
       effective_rank = ProjectAccess::Service.effective_rank(
@@ -152,12 +103,12 @@ module ProjectMember
               "You do not have permission to invite members to this project"
       end
 
-      # Phase 1 (read-only): validate every member without writing anything.
+      # Validate every member without writing anything.
       errors = {}
       validated = []
 
       members.each_with_index do |m, index|
-        email = (m[:email] || m["email"]).to_s.strip.downcase
+        email = (m[:email] || m["email"]).to_s.strip
         role = (m[:role] || m["role"]).to_s
 
         if email.empty?
@@ -223,8 +174,8 @@ module ProjectMember
 
       raise Verse::Error::ValidationFailed, errors_object(errors) unless errors.empty?
 
-      # Phase 2: only if all valid, call the IAM invite and write memberships in
-      # one transaction. "Added to project" emails fire in after_commit.
+      # Only if all valid, call the IAM invite and write memberships in one
+      # transaction. "Added to project" emails fire in after_commit.
       project_members.transaction do
         validated.map do |m|
           invite_single(project, m[:email], m[:role], m[:account], m[:existing])
@@ -283,8 +234,9 @@ module ProjectMember
       Project::Repository.new(Verse::Auth::Context[:system])
     end
 
-    # Resolves an account by email with the service token (Phase 1, read-only).
-    # Returns the account record or nil when no account exists yet.
+    # Resolves an account by email with the service token (read-only). Returns
+    # the account record or nil when no account exists yet. Emails are matched
+    # exactly as typed.
     def find_account_by_email(email)
       Api[:idah].iam.accounts.index(
         filter: { email: email }
@@ -297,12 +249,11 @@ module ProjectMember
       Struct.new(:errors).new(errors)
     end
 
-    # Phase 2: writes a single membership. The account and the existing row (if
-    # any) were already resolved and validated in Phase 1. If a disabled row
-    # exists for (project_id, account_id) it is re-enabled (re-invite of a removed
-    # member); otherwise a new row is created. The IAM invite with role_name
-    # "user" and an empty scope is a no-op for existing accounts and creates new
-    # ones.
+    # Writes a single membership. The account and the existing row (if any) were
+    # already resolved and validated. If a disabled row exists for
+    # (project_id, account_id) it is re-enabled (re-invite of a removed member);
+    # otherwise a new row is created. The IAM invite with role_name "user" and an
+    # empty scope is a no-op for existing accounts and creates new ones.
     def invite_single(project, email, role, account, existing)
       account ||= Api[:idah].iam.accounts.invite(
         attributes: { email:, role_name: "user", role_scope: {} }

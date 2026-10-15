@@ -36,6 +36,8 @@ module Dataset
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "datasets"
     self.resource = Resource::Dataset::Datasets
 
@@ -249,12 +251,7 @@ module Dataset
     private
 
     def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
+      add_metadata(**opts)
     end
   end
 end
