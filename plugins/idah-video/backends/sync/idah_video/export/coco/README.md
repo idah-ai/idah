@@ -282,6 +282,10 @@ for sample in dataset.iter_samples(autosave=True):
     sample["video"] = videos[image["video_id"]]["name"]
     sample["frame_id"] = image["frame_id"]
 
+# The label attributes (occlusion, track_id, keyframe, ...) are imported as
+# undeclared fields, which the app hides until they are declared.
+dataset.add_dynamic_sample_fields()
+
 # One group per video, frames in order.
 session = fo.launch_app(dataset.group_by("video", order_by="frame_id"))
 ```
