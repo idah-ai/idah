@@ -146,8 +146,8 @@ usually helps.
 
 ## Viewing in FiftyOne
 
-[FiftyOne](https://docs.voxel51.com/) imports a detection export's folder with
-its YOLOv5 importer, which reads the Ultralytics layout. It needs
+[FiftyOne](https://docs.voxel51.com/) imports each dataset's folder with its
+YOLOv5 importer, which reads the Ultralytics layout. It needs
 `pip install fiftyone`.
 
 ```python
@@ -161,6 +161,7 @@ dataset = fo.Dataset.from_dir(
     dataset_type=fo.types.YOLOv5Dataset,
     yaml_path="data.yaml",
     split="train",                      # or "val"
+    label_type="detections",            # "polylines" for segment and obb exports
 )
 
 # YOLO keeps no video fields: the video is the image's folder, the frame its name.
@@ -172,9 +173,9 @@ for sample in dataset.iter_samples(autosave=True):
 session = fo.launch_app(dataset.group_by("video", order_by="frame_id"))
 ```
 
-The boxes are in the `ground_truth` field, labelled with their category name.
-This was tried with `detect` exports; to look at shapes, the
-[COCO export](../coco/README.md) shows outlines in FiftyOne.
+The labels are in the `ground_truth` field, named after their category:
+boxes for `detect`, outlines for `segment`. FiftyOne's YOLOv5 importer has no
+rotated-box type, so an `obb` export's boxes show as 4-point outlines.
 
 ## Code
 
