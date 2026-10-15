@@ -65,4 +65,4 @@ test/version_tmp/
 # Local agent instructions (project conventions live in AGENTS.md)
 CLAUDE.md
 
-exports/
+/exports/
