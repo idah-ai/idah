@@ -261,7 +261,7 @@
     <TextareaField
       name="{id}/visibility"
       class="col-span-1 md:col-span-2"
-      placeholder="e.g. task_name match '...' and status = '...'"
+      placeholder={'e.g. category = "vehicles/car" and properties.occluded = true'}
       value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
       oninput={(e) => {
         const value = e.currentTarget.value.trim();

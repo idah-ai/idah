@@ -1,13 +1,30 @@
+// Grammar for property visibility conditions in the label editor.
+//
+// Input:  (properties.occluded = true) and (category match "vehicles/*")
+// Output: ["and", [["eq", [["get", ["properties.occluded"]], true]],
+//                  ["match", [["get", ["category"]], "vehicles/*"]]]]
+//
+// Every node is [operator, [args]]. Variables become ["get", [name]] and are
+// read from the annotation value at runtime (see AstProcessor).
+//
+// Build: pnpm run build:parser (writes build/parser.js, imported as @build/parser.js)
+
 start = expression
+
+// ─── Tokens ──────────────────────────────────────────────────────────────
 
 _ "whitespace" = [ \t\n\r]*
 digit = [0-9]
 nonQuoteCharacter = [^"]
-alphaNum = [a-zA-Z0-9]
+// Property ids are slugified labels, so they can contain "_" and "-".
+identChar = [a-zA-Z0-9_-]
 ParentIn = "("
 ParentOut = ")"
-Operator = ("AND" / "OR" / "and" / "or")
+// !identChar stops "or" from matching the start of a word such as "order".
+Operator = op:("AND" / "OR" / "and" / "or") !identChar { return op }
 StringQuotes = '"'
+
+// Maps each comparison symbol to its AstProcessor operator name.
 comparisonOperator
   = op:("=" / "<=" / ">=" / "!=" / "<" / ">" / "in" / "match") {
     switch(op) {
@@ -22,12 +39,17 @@ comparisonOperator
     }
   }
 
+// ─── Expressions ─────────────────────────────────────────────────────────
+
 expression = operatorExpr / comparisonExpr / parenExpr
 
 baseExpr = comparisonExpr
 
+// A literal is tried before a variable, so true/false are not read as names.
 values = value / variable
 
+// and / or have no precedence and group to the right:
+// a and b or c  →  a and (b or c). Use parentheses to group otherwise.
 operatorExpr
   = left:baseExpr _ op:Operator _ right:expression {
     return [op.toLowerCase(), [left, right]]
@@ -36,6 +58,7 @@ operatorExpr
     return [op.toLowerCase(), [left, right]]
   }
 
+// Parentheses only group; they add no node to the AST.
 parenExpr = ParentIn _ inner:expression _ ParentOut { return inner }
 
 comparisonExpr
@@ -43,21 +66,23 @@ comparisonExpr
     return [op, [left, right]]
   }
 
-value = value:(Array / Integer / string) { return value }
+// ─── Values ──────────────────────────────────────────────────────────────
+
+value = value:(Array / Integer / Boolean / string) { return value }
 
 variable
   = variableName:variableName {
     return ["get", [variableName]]
   }
 
+// Dotted path into the annotation value, e.g. category or properties.occlusion-level.
 variableName = variableName:(variableSegment ("." (variableSegment))*) {
   return variableName[0] + variableName[1].map((arr) => arr.join("")).join("")
 }
 
-variableSegment = variableSegmentStart:alphaNum variableSegmentEnd:(alphaNum)* {
-  return variableSegmentStart + variableSegmentEnd.join("")
-}
+variableSegment = $identChar+
 
+// Double quotes only. There is no escape for a quote inside a string.
 string = StringQuotes stringValue:stringValue StringQuotes { return stringValue }
 
 stringValue = stringChar:stringChar* { return stringChar.join("") }
@@ -66,12 +91,20 @@ stringChar = stringCharStart:nonQuoteCharacter stringCharEnd:(nonQuoteCharacter)
   return stringCharStart + stringCharEnd.join("")
 }
 
+// A list of strings or a list of integers, used with "in". Not empty, not mixed.
+// Wrapped in an extra array so AstProcessor reads it as one literal, not a node.
 Array
-  = "[" inner:(string ("," _ (string))*) "]" {
-    return [[inner[0], ...inner[1].map(arr => arr[2])]]
+  = "[" _ head:string tail:(_ "," _ string)* _ "]" {
+    return [[head, ...tail.map(arr => arr[3])]]
   }
-  / "[" inner:(Integer ("," _ (Integer))*) "]" {
-    return [[inner[0], ...inner[1].map(arr => arr[2])]]
+  / "[" _ head:Integer tail:(_ "," _ Integer)* _ "]" {
+    return [[head, ...tail.map(arr => arr[3])]]
   }
 
+// !identChar keeps names such as trueColor readable as variables.
+Boolean
+  = "true" !identChar { return true }
+  / "false" !identChar { return false }
+
+// Whole numbers only: no sign, no decimals.
 Integer = integer:digit+ { return parseInt(integer.join("")) }
