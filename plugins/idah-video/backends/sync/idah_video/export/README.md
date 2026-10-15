@@ -7,10 +7,11 @@ Universal Portable Dataset (UPD) export.
 | Format | Writes | Keeps | Details |
 | --- | --- | --- | --- |
 | **COCO (Video)** | One COCO instances file per dataset: boxes, polygons and their outlines | Videos, frame numbers, tracks, keyframes, rotation, properties, frame and video tags | [COCO README](coco/README.md) |
-| **YOLO Detect (Video)** | One Ultralytics YOLO dataset per dataset: one box per shape | Classes and boxes only | [YOLO README](yolo/README.md) |
+| **YOLO (Video)** | One Ultralytics YOLO dataset per dataset: boxes, outlines or rotated boxes (Task option), with an optional validation share | Classes and shapes only | [YOLO README](yolo/README.md) |
 
 Pick COCO to keep everything IDAH knows about the annotations, or to work
-with segmentation or tracking. Pick YOLO to train a detector right away.
+with tracking. Pick YOLO to train a detector, a segmentation model or an
+oriented-box model right away.
 
 This page covers what both formats share: which frames are exported, how
 shapes are placed, how files are named, and the export report. Each format's
@@ -24,6 +25,9 @@ README covers its own files.
 | Include medias: Original medias (`original`) | Labels, plus every exported frame as a JPEG, taken from the original video. |
 | Include medias: All medias (`all`) | Same as original. Streaming variants and thumbnails have no place in a dataset of frames. |
 | Completed Entries Only | On by default: only completed entries are exported. Switch it off to export every entry. |
+
+A format can add options of its own, shown in the dialog when it is selected;
+YOLO (Video) adds a task and a validation share (see its README).
 
 A selection can hold several datasets, but only `idah-video` ones: an export
 that includes a dataset of another modality fails.
@@ -197,7 +201,10 @@ shadow the sync service's own `::Exports` inside the plugin.
 
 1. Add a folder next to `coco/` and `yolo/` with an exporter that subclasses
    `Helpers::BaseExporter`, gives a `name` and a `description`, and implements
-   `export_dataset(dataset, filter)`.
+   `export_dataset(dataset, filter)`. To add options to the export dialog,
+   override `options` with a `Verse::Schema` (see `yolo/exporter.rb`, and
+   "Exporter options" in `guide/service-sync.md` at the repository root);
+   the sync service validates them and passes them in `context.options`.
 2. Read each entry with `Helpers::VideoEntry`: `load`, then `shapes` (frame
    to shapes) and `write_images`.
 3. Register it in `IdahVideo::Sync.init`, and add a README next to it, linked

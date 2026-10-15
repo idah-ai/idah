@@ -63,9 +63,19 @@ RSpec.describe IdahVideo::Export::Yolo::Exporter do
 
   describe "metadata" do
     it "describes the format" do
-      expect(exporter.name).to eq("YOLO Detect (Video)")
+      expect(exporter.name).to eq("YOLO (Video)")
       expect(exporter.description).to be_a(String)
-      expect(exporter.options).to eq(Verse::Schema.empty)
+    end
+
+    it "declares a task and a validation share as options" do
+      fields = exporter.options.fields.to_h { |field| [field.key, field] }
+
+      expect(fields.keys).to eq(%i[task val_percent])
+      expect(fields[:task].default).to eq("detect")
+      expect(fields[:task].opts[:meta][:choices].map { |choice| choice[:value] }).to eq(%w[detect segment obb])
+      expect(fields[:task].opts[:meta][:choices]).to all(include(:label))
+      expect(fields[:val_percent].default).to eq(0)
+      expect(fields[:val_percent].opts[:meta]).to include(min: 0, max: 50)
     end
   end
 
@@ -259,6 +269,110 @@ RSpec.describe IdahVideo::Export::Yolo::Exporter do
           exporter.export(context)
 
           expect(Dir.exist?(File.join(root, "images"))).to be(false)
+        end
+      end
+    end
+
+    context "with task: segment" do
+      let(:options) { { task: "segment" } }
+      let(:annotations) do
+        [
+          car,
+          FakeExportContext::Annotation.new(
+            id: "road-1",
+            shape_type: "idah-video:polygon",
+            category: "road",
+            shape_args: { start: 0, end: 0,
+                          frames: [{ frame: 0, angle: 0, points: [[0.1, 0.2], [0.5, 0.2], [0.5, 1.2]] }] }
+          )
+        ]
+      end
+
+      it "writes each shape as `class x1 y1 x2 y2 ...`: a box's corners, a polygon's points" do
+        exporter.export(context)
+
+        expect(labels(0)).to eq(
+          [
+            "0 0.100000 0.100000 0.300000 0.100000 0.300000 0.300000 0.100000 0.300000",
+            "1 0.100000 0.200000 0.500000 0.200000 0.500000 1.000000"
+          ]
+        )
+      end
+    end
+
+    context "with task: obb" do
+      let(:options) { { task: "obb" } }
+
+      it "writes a box as its 4 corners, rotation included" do
+        # 200 x 100 px box centred on (200, 100), turned a quarter clockwise.
+        car.record.shape_args[:frames] = [keyframe(0, 0.1, 0.1, 0.2, 0.2, angle: Math::PI / 2)]
+        car.record.shape_args[:end] = 0
+
+        exporter.export(context)
+
+        expect(labels(0)).to eq(["0 0.250000 0.000000 0.250000 0.400000 0.150000 0.400000 0.150000 0.000000"])
+      end
+
+      it "writes a polygon as the smallest rotated rectangle around it" do
+        annotations.replace(
+          [FakeExportContext::Annotation.new(
+            id: "road-1",
+            shape_type: "idah-video:polygon",
+            category: "road",
+            shape_args: { start: 0, end: 0,
+                          frames: [{ frame: 0, angle: 0, points: [[0.3, 0.1], [0.5, 0.5], [0.3, 0.9], [0.1, 0.5]] }] }
+          )]
+        )
+
+        exporter.export(context)
+
+        values = labels(0).first.split.drop(1).map(&:to_f)
+        corners = values.each_slice(2).map { |x, y| [x * 1000, y * 500] }
+
+        expect(labels(0).first).to start_with("1 ")
+        expect(corners.size).to eq(4)
+        expect(IdahVideo::Export::Helpers::Geometry.polygon_area(corners).round).to eq(80_000)
+      end
+    end
+
+    context "with val_percent" do
+      let(:entries) do
+        # By entry id, entry-1 falls in the 36th percent and entry-4 in the 23rd.
+        [
+          FakeExportContext::Entry.new(id: "entry-1", name: "street.mp4", annotations:, meta:),
+          FakeExportContext::Entry.new(
+            id: "entry-4",
+            name: "harbour.mp4",
+            meta:,
+            annotations: [
+              box("car-9", start: 0, finish: 0, frames: [keyframe(0, 0.1, 0.1, 0.2, 0.2)])
+            ]
+          )
+        ]
+      end
+
+      context "when some videos fall in val" do
+        let(:options) { { val_percent: 30 } }
+
+        it "puts whole videos in val, and points data.yaml at both splits" do
+          exporter.export(context)
+
+          expect(Dir.glob("*/*", base: File.join(root, "labels")).sort).to eq(%w[train/street val/harbour])
+          expect(data_yaml).to include("train" => "images/train", "val" => "images/val")
+          expect(report[:warnings]).to eq([])
+        end
+      end
+
+      context "when no video falls in val" do
+        let(:options) { { val_percent: 20 } }
+
+        it "keeps every video in train, points val at train, and reports it" do
+          exporter.export(context)
+
+          expect(data_yaml).to include("train" => "images/train", "val" => "images/train")
+          expect(report[:warnings]).to eq(
+            ["Dataset `Dataset` (ds-1): no video fell in val; val points at train."]
+          )
         end
       end
     end

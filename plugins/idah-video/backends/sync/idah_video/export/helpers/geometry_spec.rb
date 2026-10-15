@@ -45,6 +45,39 @@ RSpec.describe IdahVideo::Export::Helpers::Geometry do
     end
   end
 
+  describe ".min_area_rect" do
+    def area(corners) = described_class.polygon_area(corners).round(6)
+
+    it "returns an axis-aligned rectangle's own corners" do
+      rect = [[0.0, 0.0], [4.0, 0.0], [4.0, 2.0], [0.0, 2.0]]
+
+      result = described_class.min_area_rect(rect)
+
+      expect(result.size).to eq(4)
+      expect(area(result)).to eq(8.0)
+      expect(result.map { |p| p.map { |v| v.round(6) } }).to match_array(rect)
+    end
+
+    it "finds the rotated rectangle around a rotated shape" do
+      diamond = [[2.0, 0.0], [4.0, 2.0], [2.0, 4.0], [0.0, 2.0]] # a square turned 45°
+
+      expect(area(described_class.min_area_rect(diamond))).to eq(8.0)
+    end
+
+    it "ignores inner points" do
+      points = [[0.0, 0.0], [4.0, 0.0], [2.0, 1.0], [4.0, 2.0], [0.0, 2.0], [1.0, 1.0]]
+
+      expect(area(described_class.min_area_rect(points))).to eq(8.0)
+    end
+
+    it "is never larger than the axis-aligned box" do
+      triangle = [[0.0, 0.0], [10.0, 1.0], [3.0, 7.0]]
+      _, _, w, h = described_class.envelope(triangle)
+
+      expect(area(described_class.min_area_rect(triangle))).to be <= (w * h).round(6)
+    end
+  end
+
   describe ".rotate" do
     it "turns points around their centroid, clockwise on screen" do
       square = [[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]]
