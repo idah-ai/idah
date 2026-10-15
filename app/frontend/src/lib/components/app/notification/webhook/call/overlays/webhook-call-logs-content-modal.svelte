@@ -4,6 +4,7 @@
   import { webhookCallLogsColumns } from "@/components/app/notification/webhook/call/data-tables/webhook-call-logs-columns";
   import AppPaginator from "@/components/app/paginators/app-paginator.svelte";
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+  import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import { onMount } from "svelte";
@@ -133,12 +134,17 @@
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="flex max-h-[90vh] min-w-0 flex-col gap-0 p-0 sm:max-w-5xl">
+  <DialogContent
+    data-webhook-call-logs
+    class="flex max-h-[90dvh] min-w-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
+  >
     <DialogHeader class="shrink-0 border-b px-6 py-5">
       <DialogTitle>Call logs of webhook</DialogTitle>
     </DialogHeader>
 
-    <div class="min-h-0 min-w-0">
+    <ScrollArea
+      class="min-h-0 min-w-0 flex-1 overflow-hidden [&>[data-slot=scroll-area-viewport]]:max-h-[calc(90dvh-12rem)]"
+    >
       <Table class="w-full table-fixed">
         <TableHeader>
           <TableRow>
@@ -213,9 +219,9 @@
           {/if}
         </TableBody>
       </Table>
-    </div>
+    </ScrollArea>
 
-    <div class="border-t px-6 py-5">
+    <div class="shrink-0 border-t px-6 py-5">
       <AppPaginator
         page={currentPage}
         itemsPerPage={rowsPerPage}
@@ -227,3 +233,11 @@
     </div>
   </DialogContent>
 </Dialog>
+
+<style>
+  :global(body:has([data-webhook-call-logs]) [data-slot="popover-content"]) {
+    max-height: min(80dvh, var(--bits-popover-content-available-height, 80dvh));
+    max-width: calc(100vw - 2rem);
+    overflow: auto;
+  }
+</style>
