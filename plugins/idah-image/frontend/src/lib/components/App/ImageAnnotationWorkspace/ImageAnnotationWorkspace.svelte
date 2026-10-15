@@ -31,6 +31,7 @@
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
@@ -472,7 +473,14 @@
     if (!editable) return;
     const existing = entryRootAnnotation;
     if (existing) {
-      getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });
+      confirmAnnotationsDelete({
+        count: 1,
+        title: "Delete image tag",
+        description: "Are you sure you want to delete the image tag for this entry?",
+        onConfirm: () => {
+          getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });
+        },
+      });
     }
   }
 
