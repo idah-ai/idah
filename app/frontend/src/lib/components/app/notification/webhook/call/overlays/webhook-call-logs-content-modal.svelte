@@ -139,7 +139,7 @@
     class="flex max-h-[90dvh] min-w-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
   >
     <DialogHeader class="shrink-0 border-b px-6 py-5">
-      <DialogTitle>Call logs of webhook</DialogTitle>
+      <DialogTitle>Call logs of "{webhookRecord.name}"</DialogTitle>
     </DialogHeader>
 
     <ScrollArea
