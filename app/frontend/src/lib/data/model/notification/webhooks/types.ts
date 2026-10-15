@@ -1,4 +1,5 @@
 export interface TestWebhookResponse {
   success: boolean;
-  message: string;
+  http_code: number | null;
+  response: string;
 }

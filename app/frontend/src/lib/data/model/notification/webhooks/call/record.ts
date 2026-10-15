@@ -16,7 +16,14 @@ export class WebhookCallRecord extends Record {
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
 
   public get httpStatus(): WebhookCallHttpStatus {
-    if (this.http_code && this.http_code > 0 && this.http_code < 400) {
+    if (this.status === "pending" || this.status === "running") {
+      return webhookCallHttpStatuses.find((status) => status.value === this.status)!;
+    }
+    if (this.status === "errored") return webhookCallHttpStatuses[1];
+    if (this.http_code == null) {
+      return { label: "No response", value: "unknown", success: null, bgColor: "gray" };
+    }
+    if (this.http_code >= 200 && this.http_code < 300) {
       return webhookCallHttpStatuses[0];
     }
 

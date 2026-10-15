@@ -4,7 +4,7 @@ import type { BackendDataSource } from "@/data/BackendDataSource";
 import type { Hash, LabelValue } from "@/utils/types";
 
 export interface WebhookCallHttpStatus extends LabelValue<string> {
-  success: boolean;
+  success: boolean | null;
   bgColor: string;
 }
 

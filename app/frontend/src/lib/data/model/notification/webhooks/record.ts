@@ -1,4 +1,3 @@
-import { showToast } from "@/components/ui/toast/index.svelte";
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { filtersToHash } from "@/data/filtering";
 import { parseCollectionReturn, parseSingleElementError } from "@/data/model/json_api";
@@ -36,25 +35,13 @@ export const webhooksBackendDataSource = createBackendDataSource(WebhookRecord, 
       throw new Error("Failed to test webhook");
     }
 
-    const returnedData: { data: TestWebhookResponse } = await response.json();
-
-    if (returnedData && returnedData.data) {
-      if (returnedData.data.success) {
-        /** Show success toast if webhook is tested successfully */
-        showToast.success({
-          title: "Webhook Test Successful",
-          description: returnedData.data.message || "Webhook test was successful.",
-        });
-      } else {
-        /** Show error toast if webhook test failed */
-        showToast.error({
-          title: "Webhook Test Failed",
-          description: returnedData.data.message || "An error occurred while testing the webhook.",
-        });
-      }
+    const result: TestWebhookResponse = await response.json();
+    if (!result.success) {
+      const status = result.http_code ? ` (HTTP ${result.http_code})` : "";
+      throw new Error(`Webhook delivery failed${status}: ${result.response || "No response received."}`);
     }
 
-    return Promise.resolve(returnedData.data);
+    return result;
   },
   event: async () => {
     const response = await fetch(`${webhooksBasePath}/events`, {

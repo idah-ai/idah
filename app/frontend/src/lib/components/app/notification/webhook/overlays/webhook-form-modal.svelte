@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Button from "@/components/ui/button/button.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import WebhookForm from "@/components/app/notification/webhook/forms/webhook-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
@@ -25,6 +27,8 @@
   let newRecord: boolean = $derived(action === "create");
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
+  let generatedSecret = $state<string | null>(null);
+  let copied = $state(false);
 
   // Read-only seed for <WebhookForm>; never mutated here.
   let webhook: WebhookRecord = $derived(
@@ -36,7 +40,6 @@
             name: null,
             url: null,
             events: [],
-            secret: null,
             enabled: true,
           },
         }),
@@ -52,7 +55,6 @@
       name: source.name,
       url: source.url,
       events: source.events,
-      secret: source.secret,
       enabled: source.enabled,
     };
   }
@@ -64,6 +66,9 @@
   }
 
   function resetForm(): void {
+    if (generatedSecret) $refetches.webhooks.list = new Date();
+    generatedSecret = null;
+    copied = false;
     fieldErrors = {};
     changeTracker.reset();
     draft = {};
@@ -74,13 +79,12 @@
     changeTracker.update(value);
   }
   async function createWebhook(): Promise<void> {
-    await webhooksBackendDataSource.create(
+    const result = await webhooksBackendDataSource.create(
       {
         attributes: {
           name: draft.name,
           url: draft.url,
           events: draft.events,
-          secret: draft.secret,
           enabled: draft.enabled,
         },
       },
@@ -89,8 +93,8 @@
       },
     );
 
-    closeThisModal();
-    $refetches.webhooks.list = new Date();
+    if (!("data" in result)) throw new Error("No webhook returned.");
+    generatedSecret = result.data.secret;
     showToast.success({
       title: "Webhook created",
       description: `The webhook "${draft.name}" has been created.`,
@@ -105,7 +109,6 @@
           name: draft.name,
           url: draft.url,
           events: draft.events,
-          secret: draft.secret,
           enabled: draft.enabled,
         },
       },
@@ -122,7 +125,18 @@
     });
   }
 
+  async function copySecret(): Promise<void> {
+    if (!generatedSecret) return;
+    try {
+      await navigator.clipboard.writeText(generatedSecret);
+      copied = true;
+    } catch {
+      showToast.error({ title: "Unable to copy secret", description: "Select the secret and copy it manually." });
+    }
+  }
+
   async function submit(): Promise<void> {
+    if (generatedSecret) return;
     fieldErrors = {};
     submitting = true;
     const schema: ZodSchema = newRecord ? createWebhookSchema : updateWebhookSchema;
@@ -132,7 +146,6 @@
         name: draft.name,
         url: draft.url,
         events: draft.events,
-        secret: draft.secret,
         enabled: draft.enabled,
       });
 
@@ -155,7 +168,16 @@
   }
 </script>
 
+{#snippet secretActions()}
+  <Button onclick={closeThisModal}>Done</Button>
+{/snippet}
+
 <FormModal
+  actions={generatedSecret ? secretActions : undefined}
+  description={generatedSecret
+    ? "Copy this secret now. It is shown only once and cannot be retrieved after closing."
+    : undefined}
+  closeOnOutsideClick={!generatedSecret}
   {action}
   {title}
   loading={submitting}
@@ -164,5 +186,12 @@
   onConfirm={submit}
   bind:open
 >
-  <WebhookForm {webhook} {fieldErrors} onValueChange={setValue} />
+  {#if generatedSecret}
+    <div class="space-y-3 p-1">
+      <InputField name="webhook/generated-secret" label="Generated Secret" value={generatedSecret} readonly />
+      <Button variant="outline" onclick={copySecret}>{copied ? "Copied!" : "Copy Secret"}</Button>
+    </div>
+  {:else}
+    <WebhookForm {webhook} {fieldErrors} onValueChange={setValue} />
+  {/if}
 </FormModal>

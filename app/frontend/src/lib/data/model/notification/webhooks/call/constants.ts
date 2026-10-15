@@ -13,4 +13,6 @@ export const webhookCallHttpStatuses: WebhookCallHttpStatus[] = [
     success: false,
     bgColor: "red",
   },
+  { label: "Pending", value: "pending", success: null, bgColor: "gray" },
+  { label: "Running", value: "running", success: null, bgColor: "blue" },
 ];

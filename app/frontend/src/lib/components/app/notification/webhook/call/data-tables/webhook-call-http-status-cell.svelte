@@ -12,6 +12,6 @@
 </script>
 
 <div class="flex items-center gap-1">
-  <DotIcon class="size-7 shrink-0" color={webhookCall.httpStatus.bgColor} />
+  <DotIcon class="size-10" color={webhookCall.httpStatus.bgColor} />
   <Text size="sm">{webhookCall.httpStatus.label}</Text>
 </div>

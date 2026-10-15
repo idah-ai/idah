@@ -22,7 +22,7 @@
   }
 </script>
 
-<div class="w-full max-w-full min-w-0 overflow-hidden">
+<div class="w-full max-w-full min-w-0 overflow-hidden py-1.5">
   <div class="flex items-center gap-1">
     <!-- TOGGLE -->
     <Button
