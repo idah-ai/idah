@@ -4,7 +4,7 @@ require "spec_helper"
 require "open3"
 require "tmpdir"
 
-RSpec.describe IdahVideo::Export::FrameExtractor do
+RSpec.describe IdahVideo::Export::Helpers::FrameExtractor do
   let(:dir) { Dir.mktmpdir }
   let(:output_dir) { File.join(dir, "images", "street") }
 

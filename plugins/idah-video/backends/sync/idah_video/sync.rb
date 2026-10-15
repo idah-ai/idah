@@ -5,7 +5,7 @@ module IdahVideo
   # at boot.
   class Sync
     def self.init(context)
-      context.register_exports("idah-video", IdahVideo::Export::Coco)
+      context.register_exports("idah-video", IdahVideo::Export::Coco::Exporter)
     end
   end
 end

@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe IdahVideo::Export::PolygonMorph do
+RSpec.describe IdahVideo::Export::Helpers::PolygonMorph do
   # Clockwise in screen space: d3's polygonArea is negative for it, so flubber
   # leaves it as it is.
   let(:square) { [[0.1, 0.1], [0.4, 0.1], [0.4, 0.4], [0.1, 0.4]] }

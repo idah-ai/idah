@@ -3,7 +3,7 @@
 require "spec_helper"
 require "json"
 
-RSpec.describe IdahVideo::Export::Interpolator do
+RSpec.describe IdahVideo::Export::Helpers::Interpolator do
   let(:box_args) do
     {
       start: 10,
@@ -86,7 +86,7 @@ RSpec.describe IdahVideo::Export::Interpolator do
   # the export matches what annotators see, number for number.
   describe "parity with the frontend" do
     fixtures = JSON.parse(
-      File.read(File.expand_path("../../../spec_data/interpolation_parity.json", __dir__))
+      File.read(File.expand_path("../../../../spec_data/interpolation_parity.json", __dir__))
     )
 
     fixtures["cases"].each do |fixture|

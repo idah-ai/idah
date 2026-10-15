@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe IdahVideo::Export::Geometry do
+RSpec.describe IdahVideo::Export::Helpers::Geometry do
   describe ".to_pixels" do
     it "scales normalized points to the video size" do
       expect(described_class.to_pixels([[0.5, 0.25], [1, 1]], 1920, 1080)).to eq([[960.0, 270.0], [1920.0, 1080.0]])
@@ -42,6 +42,16 @@ RSpec.describe IdahVideo::Export::Geometry do
       expect(described_class.degrees(Math::PI / 2)).to eq(90.0)
       expect(described_class.degrees(-Math::PI / 2)).to eq(270.0)
       expect(described_class.degrees(0)).to eq(0.0)
+    end
+  end
+
+  describe ".rotate" do
+    it "turns points around their centroid, clockwise on screen" do
+      square = [[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]]
+
+      rotated = described_class.rotate(square, Math::PI / 2).map { |p| p.map { |v| v.round(9) } }
+
+      expect(rotated).to eq([[10.0, 0.0], [10.0, 10.0], [0.0, 10.0], [0.0, 0.0]])
     end
   end
 end

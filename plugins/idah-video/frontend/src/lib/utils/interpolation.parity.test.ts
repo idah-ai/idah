@@ -2,7 +2,7 @@
 // interpolation.parity.test.ts — Shared fixtures for the Ruby port
 //
 // The sync backend exports interpolated frames to COCO with a Ruby port of
-// getInterpolatedFrame and flubber (backends/sync/idah_video/export/). Both
+// getInterpolatedFrame and flubber (backends/sync/idah_video/export/helpers/). Both
 // sides check themselves against the same fixture file, so the export draws
 // exactly what annotators see on screen.
 //
