@@ -28,14 +28,8 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
   url: {
     label: "URL",
     dataType: "string",
-    clickable: true,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "url",
-      filterBy: "string",
-      filterOperation: "match",
-    },
+    sortable: false,
+    filterable: false,
     visible: true,
     hidable: false,
     cellComponent: WebhookUrlCell,
@@ -49,7 +43,7 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
     filterOptions: {
       filterKey: "events",
       filterBy: "datasource",
-      filterOperation: "in",
+      filterOperation: "contains",
     },
     visible: true,
     hidable: false,
@@ -59,14 +53,8 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
   created_at: {
     label: "Created At",
     dataType: "datetime",
-    clickable: false,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "created_at",
-      filterBy: "date-range",
-      filterOperation: "gte",
-    },
+    sortable: false,
+    filterable: false,
     visible: true,
     hidable: false,
   },
