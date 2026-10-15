@@ -22,7 +22,7 @@ RSpec.describe Project, database: true do
       end
 
       it "create emits organization_id" do
-        id = project_repo.create(
+        project_repo.create(
           name: "Meta Project",
           organization_id: 5,
           created_by_email: "admin@example.com"

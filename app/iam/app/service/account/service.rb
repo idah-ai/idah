@@ -193,12 +193,9 @@ module Account
           # allowance is the org_owner scope delta within the actor's own orgs
           # (merge_role_scope). "Within reach" = the target is in the actor's
           # repository update scope (accounts.scoped(:update)).
-          if attrs.key?(:enabled)
-            unless can_change_account_role?(actor_role, previous_account.role_name) &&
-                   within_update_scope?(previous_account)
-              raise Verse::Error::Unauthorized,
-                    "You do not have permission to change this account's enabled state"
-            end
+          if attrs.key?(:enabled) && !can_toggle_enabled?(actor_role, previous_account)
+            raise Verse::Error::Unauthorized,
+                  "You do not have permission to change this account's enabled state"
           end
 
           if attrs.key?(:role_name)
@@ -207,13 +204,10 @@ module Account
             # A role_name equal to the target's current role is a no-op (e.g. the
             # org-owner removal flow sends role_name unchanged alongside the new
             # scope); skip the role check entirely.
-            unless target_role == previous_account.role_name.to_s
-              unless can_change_account_role?(actor_role, previous_account.role_name) &&
-                     within_update_scope?(previous_account) &&
-                     RoleHierarchy.can_assign_account_role?(actor_role, target_role)
-                raise Verse::Error::Unauthorized,
-                      "You do not have permission to assign role `#{target_role}`"
-              end
+            if role_change?(previous_account, target_role) &&
+               !can_assign_role_to?(actor_role, previous_account, target_role)
+              raise Verse::Error::Unauthorized,
+                    "You do not have permission to assign role `#{target_role}`"
             end
           end
 
@@ -449,6 +443,29 @@ module Account
       accounts.scoped(:update).where(id: target.id).count > 0
     end
 
+    # Whether the actor may toggle the target's enabled state: the actor must
+    # strictly outrank the target's CURRENT role and the target must be within
+    # the actor's update scope.
+    def can_toggle_enabled?(actor_role, target)
+      can_change_account_role?(actor_role, target.role_name) && within_update_scope?(target)
+    end
+
+    # Whether the requested role differs from the target's current role. A
+    # role_name equal to the current one is a no-op (e.g. the org-owner removal
+    # flow sends role_name unchanged alongside the new scope).
+    def role_change?(target, target_role)
+      target_role != target.role_name.to_s
+    end
+
+    # Whether the actor may assign +target_role+ to +target+: the actor must
+    # outrank the target's CURRENT role, the target must be within the actor's
+    # update scope, and the requested role must be assignable by the actor.
+    def can_assign_role_to?(actor_role, target, target_role)
+      can_change_account_role?(actor_role, target.role_name) &&
+        within_update_scope?(target) &&
+        RoleHierarchy.can_assign_account_role?(actor_role, target_role)
+    end
+
     # Invite on an existing email — expand, never reduce.
     def invite_existing_account(existing, target_role, requested_scope, actor_role, actor_orgs)
       # Disabled accounts are never re-enabled by an invite.
@@ -487,8 +504,10 @@ module Account
 
         unless %w[admin system].include?(actor_role)
           outside = (requested_orgs - current_orgs) - actor_orgs
-          raise Verse::Error::Unauthorized,
-                "Cannot assign an organization outside your own organizations" unless outside.empty?
+          unless outside.empty?
+            raise Verse::Error::Unauthorized,
+                  "Cannot assign an organization outside your own organizations"
+          end
         end
 
         granted =
@@ -543,8 +562,10 @@ module Account
       requested = RoleHierarchy.normalize_orgs(requested_scope) || []
       unless %w[admin system].include?(actor_role)
         outside = requested - actor_orgs
-        raise Verse::Error::Unauthorized,
-              "Cannot assign an organization outside your own organizations" unless outside.empty?
+        unless outside.empty?
+          raise Verse::Error::Unauthorized,
+                "Cannot assign an organization outside your own organizations"
+        end
       end
 
       { "org" => requested.sort }

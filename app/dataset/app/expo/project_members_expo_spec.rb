@@ -86,7 +86,11 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
   end
 
   it "invite members to a project" do
-    expect(service).to receive(:invite).with(uuid, members: [{ "email" => "a@test.com", "role" => "annotator" }]).and_return([project_member_record])
+    expect(service).to receive(:invite).with(
+      uuid,
+      members: [{ "email" => "a@test.com",
+                  "role" => "annotator" }]
+    ).and_return([project_member_record])
     post "/project_members/invite", { project_id: uuid, members: [{ email: "a@test.com", role: "annotator" }] }
 
     expect(last_response.status).to eq 200
@@ -111,7 +115,11 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
   end
 
   it "invite members to a project" do
-    expect(service).to receive(:invite).with(uuid, members: [{ "email" => "a@test.com", "role" => "annotator" }]).and_return([project_member_record])
+    expect(service).to receive(:invite).with(
+      uuid,
+      members: [{ "email" => "a@test.com",
+                  "role" => "annotator" }]
+    ).and_return([project_member_record])
     post "/project_members/invite", { project_id: uuid, members: [{ email: "a@test.com", role: "annotator" }] }
 
     expect(last_response.status).to eq 200
@@ -127,13 +135,14 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
     end
     expect(service).to receive(:invite).and_raise(Verse::Error::ValidationFailed, errors)
 
-    post "/project_members/invite", {
-      project_id: uuid,
-      members: [
-        { email: "a@test.com", role: "superuser" },
-        { email: "b@test.com", role: "annotator" }
-      ]
-    }
+    post "/project_members/invite",
+         {
+           project_id: uuid,
+           members: [
+             { email: "a@test.com", role: "superuser" },
+             { email: "b@test.com", role: "annotator" }
+           ]
+         }
 
     expect(last_response.status).to eq 422
     body = JSON.parse(last_response.body, symbolize_names: true)

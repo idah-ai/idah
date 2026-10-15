@@ -44,6 +44,7 @@ module Project
           unless auth_context.custom_scopes[:org]&.include?(organization_id.to_s)
             raise Verse::Error::Unauthorized, "You do not have permission to create this project"
           end
+
           true
         end
 

@@ -10,8 +10,12 @@ RSpec.describe ProjectMember::Service, database: true do
   let(:org_a) { 1 }
   let(:org_b) { 2 }
 
-  let(:project_a) { project_repo.create(name: "Project A", created_by_email: "system@example.com", organization_id: org_a) }
-  let(:project_b) { project_repo.create(name: "Project B", created_by_email: "system@example.com", organization_id: org_b) }
+  let(:project_a) {
+    project_repo.create(name: "Project A", created_by_email: "system@example.com", organization_id: org_a)
+  }
+  let(:project_b) {
+    project_repo.create(name: "Project B", created_by_email: "system@example.com", organization_id: org_b)
+  }
 
   def build_context(role, scopes: {}, id: 99, email: "actor@test.com", name: "Actor")
     # Build from the role so rights come from common/data/roles/*.yml via the
@@ -95,10 +99,13 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "is all-or-nothing: rejects the whole batch when one member is invalid" do
         expect {
-          subject.invite(project_a, members: [
-            { email: "new@test.com", role: "annotator" },
-            { email: "bad@test.com", role: "superuser" }
-          ])
+          subject.invite(
+            project_a,
+            members: [
+              { email: "new@test.com", role: "annotator" },
+              { email: "bad@test.com", role: "superuser" }
+            ]
+          )
         }.to raise_error(Verse::Error::ValidationFailed)
 
         expect(member_repo.index({}).count).to eq(0)
@@ -116,8 +123,12 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "rejects an already-active member instead of silently changing its role" do
         member_repo.create(
-          project_id: project_a, account_id: 100, role: "annotator",
-          name: "Old", email: "new@test.com", invited_by_id: 1
+          project_id: project_a,
+          account_id: 100,
+          role: "annotator",
+          name: "Old",
+          email: "new@test.com",
+          invited_by_id: 1
         )
         allow(Api[:idah].iam.accounts).to receive(:index).and_return(
           double(data: [account_stub(id: 100, email: "new@test.com")])
@@ -146,8 +157,13 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "re-enables the existing disabled row instead of creating a new one, with no email" do
         removed_id = member_repo.create(
-          project_id: project_a, account_id: 100, role: "annotator",
-          name: "Old", email: "removed@test.com", invited_by_id: 1, disabled_at: Time.now
+          project_id: project_a,
+          account_id: 100,
+          role: "annotator",
+          name: "Old",
+          email: "removed@test.com",
+          invited_by_id: 1,
+          disabled_at: Time.now
         )
         expect(Service::Notification).not_to receive(:email)
 
@@ -161,8 +177,13 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "allows an org_owner to re-add a removed project_owner as reviewer" do
         member_repo.create(
-          project_id: project_a, account_id: 100, role: "project_owner",
-          name: "Old", email: "removed@test.com", invited_by_id: 1, disabled_at: Time.now
+          project_id: project_a,
+          account_id: 100,
+          role: "project_owner",
+          name: "Old",
+          email: "removed@test.com",
+          invited_by_id: 1,
+          disabled_at: Time.now
         )
 
         member = subject.invite(project_a, members: [{ email: "removed@test.com", role: "reviewer" }]).first
@@ -176,8 +197,12 @@ RSpec.describe ProjectMember::Service, database: true do
       before do
         # The actor is a project_owner on the project.
         member_repo.create(
-          project_id: project_a, account_id: 3, role: "project_owner",
-          name: "Owner", email: "owner@test.com", invited_by_id: 1
+          project_id: project_a,
+          account_id: 3,
+          role: "project_owner",
+          name: "Owner",
+          email: "owner@test.com",
+          invited_by_id: 1
         )
         allow(Api[:idah].iam.accounts).to receive(:index).and_return(
           double(data: [account_stub(id: 100, email: "removed@test.com")])
@@ -189,8 +214,13 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "rejects re-adding a removed project_owner as project_owner" do
         member_repo.create(
-          project_id: project_a, account_id: 100, role: "project_owner",
-          name: "Old", email: "removed@test.com", invited_by_id: 1, disabled_at: Time.now
+          project_id: project_a,
+          account_id: 100,
+          role: "project_owner",
+          name: "Old",
+          email: "removed@test.com",
+          invited_by_id: 1,
+          disabled_at: Time.now
         )
 
         # A project_owner cannot assign project_owner; rejected during validation.
@@ -201,8 +231,13 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "allows re-adding a removed project_owner as reviewer" do
         member_repo.create(
-          project_id: project_a, account_id: 100, role: "project_owner",
-          name: "Old", email: "removed@test.com", invited_by_id: 1, disabled_at: Time.now
+          project_id: project_a,
+          account_id: 100,
+          role: "project_owner",
+          name: "Old",
+          email: "removed@test.com",
+          invited_by_id: 1,
+          disabled_at: Time.now
         )
 
         member = subject.invite(project_a, members: [{ email: "removed@test.com", role: "reviewer" }]).first
@@ -211,8 +246,13 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "a rejected re-invite in a batch writes nothing and calls no IAM invite" do
         member_repo.create(
-          project_id: project_a, account_id: 100, role: "project_owner",
-          name: "Old", email: "removed@test.com", invited_by_id: 1, disabled_at: Time.now
+          project_id: project_a,
+          account_id: 100,
+          role: "project_owner",
+          name: "Old",
+          email: "removed@test.com",
+          invited_by_id: 1,
+          disabled_at: Time.now
         )
         # The project_owner cannot re-add the removed project_owner as project_owner.
         # The batch also contains a brand-new email that would otherwise be invited.
@@ -229,10 +269,13 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(Api[:idah].iam.accounts).not_to receive(:invite)
 
         expect {
-          subject.invite(project_a, members: [
-            { email: "new@test.com", role: "annotator" },
-            { email: "removed@test.com", role: "project_owner" }
-          ])
+          subject.invite(
+            project_a,
+            members: [
+              { email: "new@test.com", role: "annotator" },
+              { email: "removed@test.com", role: "project_owner" }
+            ]
+          )
         }.to raise_error(Verse::Error::ValidationFailed)
 
         # Nothing was written: no new member row, and the removed member's row
@@ -249,8 +292,12 @@ RSpec.describe ProjectMember::Service, database: true do
 
       before do
         member_repo.create(
-          project_id: project_b, account_id: 2, role: "project_owner",
-          name: "Owner", email: "owner@test.com", invited_by_id: 1
+          project_id: project_b,
+          account_id: 2,
+          role: "project_owner",
+          name: "Owner",
+          email: "owner@test.com",
+          invited_by_id: 1
         )
         allow(Api[:idah].iam.accounts).to receive(:index).and_return(double(data: []))
         allow(Api[:idah].iam.accounts).to receive(:invite).and_return(
@@ -275,8 +322,12 @@ RSpec.describe ProjectMember::Service, database: true do
 
       before do
         member_repo.create(
-          project_id: project_a, account_id: 3, role: "reviewer",
-          name: "Reviewer", email: "reviewer@test.com", invited_by_id: 1
+          project_id: project_a,
+          account_id: 3,
+          role: "reviewer",
+          name: "Reviewer",
+          email: "reviewer@test.com",
+          invited_by_id: 1
         )
       end
 
@@ -291,8 +342,12 @@ RSpec.describe ProjectMember::Service, database: true do
   describe "#resend_invitation" do
     let(:member_id) do
       member_repo.create(
-        project_id: project_a, account_id: 100, role: "annotator",
-        name: "Member", email: "member@test.com", invited_by_id: 1
+        project_id: project_a,
+        account_id: 100,
+        role: "annotator",
+        name: "Member",
+        email: "member@test.com",
+        invited_by_id: 1
       )
     end
 
@@ -338,8 +393,12 @@ RSpec.describe ProjectMember::Service, database: true do
 
       before do
         member_repo.create(
-          project_id: project_a, account_id: 3, role: "reviewer",
-          name: "Reviewer", email: "reviewer@test.com", invited_by_id: 1
+          project_id: project_a,
+          account_id: 3,
+          role: "reviewer",
+          name: "Reviewer",
+          email: "reviewer@test.com",
+          invited_by_id: 1
         )
       end
 
@@ -358,8 +417,12 @@ RSpec.describe ProjectMember::Service, database: true do
 
     it "emits dataset:project_members:deleted events carrying the triggering event's actor" do
       member_repo.create(
-        project_id: project_a, account_id: 100, role: "annotator",
-        name: "Member", email: "member@test.com", invited_by_id: 1
+        project_id: project_a,
+        account_id: 100,
+        role: "annotator",
+        name: "Member",
+        email: "member@test.com",
+        invited_by_id: 1
       )
       captured = []
       allow(Verse).to receive(:publish_resource_event) do |**opts|
@@ -369,9 +432,9 @@ RSpec.describe ProjectMember::Service, database: true do
       subject = described_class.new(build_context("system"))
       subject.delete_account_members(100, actor_metadata)
 
-      deleted = captured.select { |event, _| event == "deleted" }
+      deleted = captured.filter_map { |event, metadata| metadata if event == "deleted" }
       expect(deleted).not_to be_empty
-      deleted.each do |_, metadata|
+      deleted.each do |metadata|
         expect(metadata).to include(
           actor_account_id: 7,
           actor_account_email: "admin@example.com",

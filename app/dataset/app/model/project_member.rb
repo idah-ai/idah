@@ -81,9 +81,9 @@ module ProjectMember
       return Sequel.lit("false") unless org_ids&.any?
 
       table.db[:projects]
-        .where(organization_id: org_ids)
-        .where(id: Sequel[:project_members][:project_id])
-        .select(1).exists
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:project_members][:project_id])
+           .select(1).exists
     end
 
     query
@@ -177,10 +177,10 @@ module ProjectMember
     # emitted event metadata.
     def membership_and_organization(id)
       row = table
-        .join(:projects, id: Sequel[:project_members][:project_id])
-        .select(Sequel[:project_members].*, Sequel[:projects][:organization_id].as(:organization_id))
-        .where(Sequel[:project_members][:id] => id)
-        .first
+            .join(:projects, id: Sequel[:project_members][:project_id])
+            .select(Sequel[:project_members].*, Sequel[:projects][:organization_id].as(:organization_id))
+            .where(Sequel[:project_members][:id] => id)
+            .first
 
       raise Verse::Error::NotFound, "Project member not found: #{id}" if row.nil?
 

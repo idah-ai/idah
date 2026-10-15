@@ -264,10 +264,10 @@ module Entry
       effective_rank = ProjectAccess::Service.effective_rank(
         auth_context, project_id, action: :create, resource: entries.class.resource
       )
-      unless effective_rank && effective_rank >= RoleHierarchy.rank("project_owner")
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create entry on this project"
-      end
+      return if effective_rank && effective_rank >= RoleHierarchy.rank("project_owner")
+
+      raise Verse::Error::Unauthorized,
+            "You do not have permission to create entry on this project"
     end
   end
 end

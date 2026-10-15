@@ -42,10 +42,11 @@ RSpec.describe ProjectMembersExpo, type: :exposition, database: true, as: :org_o
     end
 
     it "invites a member through the real service" do
-      post "/project_members/invite", {
-        project_id: project_id,
-        members: [{ email: "new@test.com", role: "annotator" }]
-      }
+      post "/project_members/invite",
+           {
+             project_id: project_id,
+             members: [{ email: "new@test.com", role: "annotator" }]
+           }
 
       expect(last_response.status).to eq 200
       invited = member_repo.find_by({ email: "new@test.com" })
@@ -86,10 +87,11 @@ RSpec.describe ProjectMembersExpo, type: :exposition, database: true, as: :org_o
           headers: { "Content-Type" => "application/json" }
         )
 
-      post "/project_members/invite", {
-        project_id: project_id,
-        members: [{ email: "new@test.com", role: "annotator" }]
-      }
+      post "/project_members/invite",
+           {
+             project_id: project_id,
+             members: [{ email: "new@test.com", role: "annotator" }]
+           }
 
       expect(last_response.status).to eq 200
       invited = member_repo.find_by({ email: "new@test.com" })

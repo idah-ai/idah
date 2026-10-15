@@ -55,7 +55,7 @@ RSpec.describe AccountsExpo, type: :exposition, database: true do
       # The org_owner read scope resolves the account through the dataset
       # service: member_account_ids(organization_ids: ["1"]) returns the pending
       # account, and memberships_for(2) returns none.
-      stub_request(:get, /dataset\/project_members/).
+      stub_request(:get, %r{dataset/project_members}).
         with { |req| CGI.unescape(req.uri.query.to_s).include?("filter[organization_id__in]") }.
         to_return(
           status: 200,
@@ -66,7 +66,7 @@ RSpec.describe AccountsExpo, type: :exposition, database: true do
           ),
           headers: { "Content-Type" => "application/json" }
         )
-      stub_request(:get, /dataset\/project_members/).
+      stub_request(:get, %r{dataset/project_members}).
         with { |req| CGI.unescape(req.uri.query.to_s).include?("filter[account_id]") }.
         to_return(
           status: 200,

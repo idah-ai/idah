@@ -49,10 +49,10 @@ module EntryStat
       return Sequel.lit("false") unless org_ids&.any?
 
       table.db[:entries]
-        .join(:projects, id: :project_id)
-        .where(organization_id: org_ids)
-        .where(Sequel[:entries][:id] => Sequel[:entry_stats][:entry_id])
-        .select(1).exists
+           .join(:projects, id: :project_id)
+           .where(organization_id: org_ids)
+           .where(Sequel[:entries][:id] => Sequel[:entry_stats][:entry_id])
+           .select(1).exists
     end
 
     query

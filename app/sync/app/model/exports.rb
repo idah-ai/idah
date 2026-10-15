@@ -60,8 +60,8 @@ module Exports
           # Get project IDs where the user is a project owner.
           # This ensures that users can access exports for projects they own.
           project_ids = ProjectMembership::Lookup.new.memberships_for(account_id)
-            .select { |m| m.role == "project_owner" }
-            .map(&:project_id)
+                                                 .select { |m| m.role == "project_owner" }
+                                                 .map(&:project_id)
 
           table.where(project_id: project_ids)
         }
@@ -87,8 +87,8 @@ module Exports
 
       project_ids = lookup.project_ids_for_organizations(org_ids)
       project_ids += lookup.memberships_for(account_id)
-        .select { |m| m.role == "project_owner" }
-        .map(&:project_id)
+                           .select { |m| m.role == "project_owner" }
+                           .map(&:project_id)
 
       project_ids.uniq
     end

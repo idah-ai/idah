@@ -60,9 +60,9 @@ module NoteFeed
         if auth_context.custom_scopes[:project]
           # API-key project scope: no membership union.
           table.db[:projects]
-            .where(id: auth_context.custom_scopes[:project])
-            .where(id: Sequel[:note_feeds][:project_id])
-            .select(1).exists
+               .where(id: auth_context.custom_scopes[:project])
+               .where(id: Sequel[:note_feeds][:project_id])
+               .select(1).exists
         else
           org_projects_condition | user_project_scoped_condition(action)
         end
@@ -70,9 +70,9 @@ module NoteFeed
         if auth_context.custom_scopes[:project]
           # API-key project scope: no membership union.
           table.db[:projects]
-            .where(id: auth_context.custom_scopes[:project])
-            .where(id: Sequel[:note_feeds][:project_id])
-            .select(1).exists
+               .where(id: auth_context.custom_scopes[:project])
+               .where(id: Sequel[:note_feeds][:project_id])
+               .select(1).exists
         else
           org_projects_condition | user_project_scoped_condition(action)
         end
@@ -90,9 +90,9 @@ module NoteFeed
       return Sequel.lit("false") unless org_ids&.any?
 
       table.db[:projects]
-        .where(organization_id: org_ids)
-        .where(id: Sequel[:note_feeds][:project_id])
-        .select(1).exists
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:note_feeds][:project_id])
+           .select(1).exists
     end
 
     # Actions                      Member Roles

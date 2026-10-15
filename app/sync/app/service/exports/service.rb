@@ -150,7 +150,7 @@ module Exports
 
       account_id = auth_context.metadata[:id]
       ProjectMembership::Lookup.new.memberships_for(account_id)
-        .any? { |m| m.role == "project_owner" && m.project_id == project_id }
+                               .any? { |m| m.role == "project_owner" && m.project_id == project_id }
     end
   end
 end

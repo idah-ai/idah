@@ -77,9 +77,9 @@ module Annotation
       return Sequel.lit("false") unless org_ids&.any?
 
       table.db[:projects]
-        .where(organization_id: org_ids)
-        .where(id: Sequel[:annotations][:project_id])
-        .select(1).exists
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:annotations][:project_id])
+           .select(1).exists
     end
 
     query

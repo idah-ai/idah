@@ -47,11 +47,9 @@ module ProjectMember
         end
 
         # Assigning project_owner requires effective rank >= org_owner.
-        if role == "project_owner"
-          unless effective_rank >= RoleHierarchy.rank("org_owner")
-            raise Verse::Error::Unauthorized,
-                  "You do not have permission to update a member to a project owner for this project"
-          end
+        if role == "project_owner" && effective_rank < RoleHierarchy.rank("org_owner")
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member to a project owner for this project"
         end
       end
 
@@ -127,20 +125,16 @@ module ProjectMember
         validated << { email:, role:, index: }
       end
 
-      # Duplicate emails in the batch.
+      # Duplicate emails in the batch, then resolve existing accounts and reject
+      # disabled / already-active members, and validate re-invite authorisation
+      # for existing (disabled) rows.
       seen = {}
       validated.each do |m|
         if seen[m[:email]]
           errors["members/#{m[:index]}"] = ["duplicate email in batch"]
-        else
-          seen[m[:email]] = true
+          next
         end
-      end
-
-      # Resolve existing accounts and reject disabled / already-active members,
-      # and validate re-invite authorisation for existing (disabled) rows.
-      validated.each do |m|
-        next if errors.key?("members/#{m[:index]}")
+        seen[m[:email]] = true
 
         account = find_account_by_email(m[:email])
         if account && !account.enabled
@@ -160,12 +154,9 @@ module ProjectMember
 
         # Re-invite of a removed member: authorisation must allow managing the
         # row's CURRENT role and assigning the new role.
-        if existing
-          unless RoleHierarchy.can_manage_project_member?(effective_rank, existing.role) &&
-                 RoleHierarchy.can_assign_project_role?(effective_rank, m[:role])
-            errors["members/#{m[:index]}"] = ["You do not have permission to re-invite this member"]
-            next
-          end
+        if existing && !can_reinvite_member?(effective_rank, existing, m[:role])
+          errors["members/#{m[:index]}"] = ["You do not have permission to re-invite this member"]
+          next
         end
 
         m[:account] = account
@@ -247,6 +238,13 @@ module ProjectMember
     # error per member (source.pointer = /members/<index>).
     def errors_object(errors)
       Struct.new(:errors).new(errors)
+    end
+
+    # Whether the actor may re-invite an existing (removed) member: they must be
+    # able to manage the row's CURRENT role and to assign the requested role.
+    def can_reinvite_member?(effective_rank, existing, requested_role)
+      RoleHierarchy.can_manage_project_member?(effective_rank, existing.role) &&
+        RoleHierarchy.can_assign_project_role?(effective_rank, requested_role)
     end
 
     # Writes a single membership. The account and the existing row (if any) were

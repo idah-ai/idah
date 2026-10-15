@@ -18,9 +18,30 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system, database: tru
   end
 
   before do
-    member_repo.create(project_id: project_a, account_id: 1, role: "annotator", name: "A1", email: "a1@test.com", invited_by_id: 1)
-    member_repo.create(project_id: project_a, account_id: 2, role: "reviewer", name: "A2", email: "a2@test.com", invited_by_id: 1)
-    member_repo.create(project_id: project_b, account_id: 3, role: "annotator", name: "B1", email: "b1@test.com", invited_by_id: 1)
+    member_repo.create(
+      project_id: project_a,
+      account_id: 1,
+      role: "annotator",
+      name: "A1",
+      email: "a1@test.com",
+      invited_by_id: 1
+    )
+    member_repo.create(
+      project_id: project_a,
+      account_id: 2,
+      role: "reviewer",
+      name: "A2",
+      email: "a2@test.com",
+      invited_by_id: 1
+    )
+    member_repo.create(
+      project_id: project_b,
+      account_id: 3,
+      role: "annotator",
+      name: "B1",
+      email: "b1@test.com",
+      invited_by_id: 1
+    )
   end
 
   it "returns only members of the given project" do

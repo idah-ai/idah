@@ -67,11 +67,11 @@ module LabelConfigTemplate
 
         # project_owner can create within organizations they own a project in.
         scope.as_user? do
-          if project_owner_in_organization?(organization_id)
-            true
-          else
+          unless project_owner_in_organization?(organization_id)
             raise Verse::Error::Unauthorized, "You do not have permission to create this template"
           end
+
+          true
         end
 
         scope.else? do

@@ -10,8 +10,12 @@ RSpec.describe ProjectAccess::Service, database: true do
   let(:org_a) { 1 }
   let(:org_b) { 2 }
 
-  let(:project_a) { project_repo.create(name: "Project A", created_by_email: "system@example.com", organization_id: org_a) }
-  let(:project_b) { project_repo.create(name: "Project B", created_by_email: "system@example.com", organization_id: org_b) }
+  let(:project_a) {
+    project_repo.create(name: "Project A", created_by_email: "system@example.com", organization_id: org_a)
+  }
+  let(:project_b) {
+    project_repo.create(name: "Project B", created_by_email: "system@example.com", organization_id: org_b)
+  }
 
   def build_context(role, scopes: {}, id: 99, email: "actor@test.com")
     # Build from the role so rights come from common/data/roles/*.yml via the

@@ -62,7 +62,7 @@ RSpec.describe Account::Service, database: true do
   # makes through ProjectMembership::Lookup. `account_ids` are the members the
   # lookup returns for the actor's orgs; the actor's own memberships return none.
   def stub_org_owner_read_scope(account_ids: [])
-    stub_request(:get, /dataset\/project_members/).
+    stub_request(:get, %r{dataset/project_members}).
       with { |req| CGI.unescape(req.uri.query.to_s).include?("filter[organization_id__in]") }.
       to_return(
         status: 200,
@@ -73,7 +73,7 @@ RSpec.describe Account::Service, database: true do
         ),
         headers: { "Content-Type" => "application/json" }
       )
-    stub_request(:get, /dataset\/project_members/).
+    stub_request(:get, %r{dataset/project_members}).
       with { |req| CGI.unescape(req.uri.query.to_s).include?("filter[account_id]") }.
       to_return(status: 200, body: JSON.generate(data: []), headers: { "Content-Type" => "application/json" })
   end
@@ -189,7 +189,13 @@ RSpec.describe Account::Service, database: true do
         it "grants the requested org as-is (admin is unrestricted)" do
           create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2"] }))
           updated = subject.invite(
-            build_record(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["999"] }))
+            build_record(
+              base_attrs.merge(
+                email: "owner@test.com",
+                role_name: "org_owner",
+                role_scope: { org: ["999"] }
+              )
+            )
           )
           expect(updated.role_scope).to eq("org" => %w[2 999])
         end
@@ -272,7 +278,13 @@ RSpec.describe Account::Service, database: true do
 
         it "promotes a user to org_owner of the actor's org" do
           updated = subject.invite(
-            build_record(base_attrs.merge(email: "existing@test.com", role_name: "org_owner", role_scope: { org: ["1"] }))
+            build_record(
+              base_attrs.merge(
+                email: "existing@test.com",
+                role_name: "org_owner",
+                role_scope: { org: ["1"] }
+              )
+            )
           )
           expect(updated.email).to eq("existing@test.com")
           expect(updated.role_name).to be_nil
@@ -321,7 +333,14 @@ RSpec.describe Account::Service, database: true do
           create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2"] }))
           expect {
             subject.invite(
-              build_record(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["1", "999"] }))
+              build_record(
+                base_attrs.merge(
+                  email: "owner@test.com",
+                  role_name: "org_owner",
+                  role_scope: { org: ["1",
+                                      "999"] }
+                )
+              )
             )
           }.to raise_error(Verse::Error::Unauthorized, /outside your own organizations/)
         end
@@ -331,7 +350,13 @@ RSpec.describe Account::Service, database: true do
           # → succeeds with scope [A, B] (B is already in the current scope).
           create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2"] }))
           subject.invite(
-            build_record(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["2", "1"] }))
+            build_record(
+              base_attrs.merge(
+                email: "owner@test.com",
+                role_name: "org_owner",
+                role_scope: { org: ["2", "1"] }
+              )
+            )
           )
 
           stored = system_repo.find_by({ email: "owner@test.com" })
@@ -575,7 +600,12 @@ RSpec.describe Account::Service, database: true do
     context "as a regular user updating another account" do
       let(:target_id) { create_account(base_attrs) }
       let(:user_context) do
-        build_context("user", id: 10, email: "user@test.com", rights: ["iam:accounts.update.own", "iam:accounts.read.as_user"])
+        build_context(
+          "user",
+          id: 10,
+          email: "user@test.com",
+          rights: ["iam:accounts.update.own", "iam:accounts.read.as_user"]
+        )
       end
       subject { described_class.new(user_context) }
 
@@ -698,7 +728,13 @@ RSpec.describe Account::Service, database: true do
       end
 
       it "rejects resending for an org_owner with an org outside the actor's reach" do
-        owner_id = create_account(base_attrs.merge(email: "owner@test.com", role_name: "org_owner", role_scope: { org: ["999"] }))
+        owner_id = create_account(
+          base_attrs.merge(
+            email: "owner@test.com",
+            role_name: "org_owner",
+            role_scope: { org: ["999"] }
+          )
+        )
         expect {
           subject.resend_invitation(owner_id)
         }.to raise_error(Verse::Error::Unauthorized)
@@ -741,8 +777,22 @@ RSpec.describe Account::Service, database: true do
     subject { described_class.new(build_context("system")) }
 
     it "removes the org from org_owner scopes and demotes empty org_owners" do
-      owner1 = create_account(base_attrs.merge(email: "o1@test.com", role_name: "org_owner", role_scope: { org: ["999"] }))
-      owner2 = create_account(base_attrs.merge(email: "o2@test.com", role_name: "org_owner", role_scope: { org: ["999", "111"] }))
+      owner1 = create_account(
+        base_attrs.merge(
+          email: "o1@test.com",
+          role_name: "org_owner",
+          role_scope: { org: ["999"] }
+        )
+      )
+      owner2 = create_account(
+        base_attrs.merge(
+          email: "o2@test.com",
+          role_name: "org_owner",
+          role_scope: { org: [
+            "999", "111"
+          ] }
+        )
+      )
 
       subject.remove_org_from_account_role_scope("999")
 
@@ -764,9 +814,9 @@ RSpec.describe Account::Service, database: true do
       }
       subject.remove_org_from_account_role_scope("999", actor_metadata)
 
-      updated = captured.select { |event, _| event == "updated" }
+      updated = captured.filter_map { |event, metadata| metadata if event == "updated" }
       expect(updated).not_to be_empty
-      updated.each do |_, metadata|
+      updated.each do |metadata|
         expect(metadata).to include(
           actor_account_id: 5,
           actor_account_email: "admin@example.com",
@@ -852,7 +902,13 @@ RSpec.describe Account::Service, database: true do
       it "is rejected for another org" do
         expect {
           subject.invite(
-            build_record(base_attrs.merge(email: "member@test.com", role_name: "org_owner", role_scope: { org: ["999"] }))
+            build_record(
+              base_attrs.merge(
+                email: "member@test.com",
+                role_name: "org_owner",
+                role_scope: { org: ["999"] }
+              )
+            )
           )
         }.to raise_error(Verse::Error::Unauthorized, /outside your own organizations/)
       end

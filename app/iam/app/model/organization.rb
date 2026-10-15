@@ -30,7 +30,7 @@ module Organization
             # so an org_owner who is a member of a foreign project can read that
             # project's org.
             membership_org_ids = ProjectMembership::Lookup.new.memberships_for(auth_context.metadata[:id])
-              .map(&:organization_id)
+                                                          .map(&:organization_id)
 
             table.where(id: (org_ids + membership_org_ids).uniq)
           else
