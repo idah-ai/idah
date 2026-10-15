@@ -98,7 +98,11 @@
         description: `The webhook "${webhookRecord.name}" has been tested successfully.`,
       });
     } catch (error) {
-      showActionFailedToast(error);
+      console.log(error);
+      showToast.error({
+        title: "Unable to test webhook",
+        description: error?.response?.message || "The action could not be completed, please try again later.",
+      });
     }
   }
 
@@ -148,6 +152,6 @@
 
 <WebhookFormModal title="Webhook" action="update" {webhookRecord} bind:open={openEditWebhookFormModal} />
 
-{#if canReadWebhookCalls}
+{#if canReadWebhookCalls && openCallLogsModal}
   <WebhookCallLogsContentModal {webhookRecord} bind:open={openCallLogsModal} />
 {/if}

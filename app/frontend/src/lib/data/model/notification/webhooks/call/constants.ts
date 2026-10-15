@@ -5,7 +5,7 @@ export const webhookCallHttpStatuses: WebhookCallHttpStatus[] = [
     label: "Success",
     value: 399,
     success: true,
-    bgColor: "var(--Colors-Foreground-fg-success-secondary)",
+    bgColor: "green",
   },
   {
     label: "Error",

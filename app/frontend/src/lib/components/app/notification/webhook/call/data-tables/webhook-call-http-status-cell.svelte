@@ -11,7 +11,7 @@
   let { record: webhookCall }: DataTableCellBaseProps<WebhookCallRecord> = $props();
 </script>
 
-<div class="flex items-center gap-2">
-  <DotIcon size="xl" color={webhookCall.httpStatus.bgColor} />
-  <Text>{webhookCall.http_code} {webhookCall.httpStatus.label}</Text>
+<div class="flex items-center gap-1">
+  <DotIcon class="size-12 shrink-0" color={webhookCall.httpStatus.bgColor} />
+  <Text size="sm">{webhookCall.httpStatus.label}</Text>
 </div>

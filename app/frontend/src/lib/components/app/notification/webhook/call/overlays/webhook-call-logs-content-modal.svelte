@@ -6,6 +6,7 @@
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import { onMount } from "svelte";
 
   import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";
   import { WebhookRecord, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
@@ -35,18 +36,17 @@
   let sort = $state<Sort>(["-created_at"]);
   let currentPage = $state(1);
   let rowsPerPage = $state(10);
+  let count = $state(0);
+  let hasMore = $state(false);
 
   const columns = webhookCallLogsColumns;
   let visibleColumns = $derived(Object.entries(columns).filter(([_, columnSetting]) => columnSetting.visible));
-  let filteredJobs = $derived(jobs.filter(jobMatchesFilters));
-  let sortedJobs = $derived([...filteredJobs].sort(compareJobs));
-  let pagedJobs = $derived(sortedJobs.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage));
   let tableData = $derived<TableData<WebhookCallRecord>>({
     status: error ? "error" : loading ? "loading" : "loaded",
     error,
     response: {
-      data: sortedJobs,
-      meta: { count: sortedJobs.length },
+      data: jobs,
+      meta: { count, more: hasMore },
     },
     contexts: {},
   });
@@ -60,10 +60,8 @@
     sort,
   });
 
-  $effect(() => {
-    if (open && webhookRecord.id) {
-      loadJobs();
-    }
+  onMount(() => {
+    loadJobs();
   });
 
   async function loadJobs(): Promise<void> {
@@ -71,13 +69,21 @@
     error = null;
 
     try {
-      const response = await webhooksBackendDataSource.jobs(webhookRecord.id);
+      const response = await webhooksBackendDataSource.jobs(webhookRecord.id, {
+        filters,
+        sort,
+        pagination: { page: currentPage, itemsPerPage: rowsPerPage },
+        count: true,
+      });
 
       jobs = response.data;
-      currentPage = 1;
+      count = response.meta?.count ?? 0;
+      hasMore = response.meta?.more ?? false;
     } catch (err) {
       error = err;
       jobs = [];
+      count = 0;
+      hasMore = false;
     } finally {
       loading = false;
     }
@@ -85,16 +91,21 @@
 
   async function onPageChange(changeToPage: number): Promise<void> {
     currentPage = changeToPage;
+    await loadJobs();
   }
 
   async function onItemsPerPageSelect(selectedItemsPerPage: number): Promise<void> {
     rowsPerPage = selectedItemsPerPage;
     currentPage = 1;
+    await loadJobs();
   }
 
   async function onFilter(params: FilterDataSourceParams): Promise<void> {
-    filters = cleanFilters({ ...filters, ...params.filters });
+    filters = Object.fromEntries(
+      Object.entries({ ...filters, ...params.filters }).filter(([_, value]) => value !== undefined),
+    );
     currentPage = 1;
+    await loadJobs();
   }
 
   async function onSort(params: SortDataSourceParams): Promise<void> {
@@ -106,46 +117,10 @@
     }
 
     currentPage = 1;
+    await loadJobs();
   }
 
   function onHide(_columnKey: string): void {}
-
-  function cleanFilters(nextFilters: Filters): Filters {
-    return Object.fromEntries(Object.entries(nextFilters).filter(([_, value]) => value !== undefined)) as Filters;
-  }
-
-  function jobMatchesFilters(job: WebhookCallRecord): boolean {
-    const createdAt = job.created_at?.getTime();
-    const createdAtStart = parseFilterDate(filters.created_at__gte, "start");
-    const createdAtEnd = parseFilterDate(filters.created_at__lte, "end");
-    const httpCodeStart = filters.http_code__gte;
-    const httpCodeEnd = filters.http_code__lte;
-
-    if (createdAtStart && createdAt && createdAt < createdAtStart.getTime()) return false;
-    if (createdAtEnd && createdAt && createdAt > createdAtEnd.getTime()) return false;
-    if (typeof httpCodeStart === "number" && (job.http_code ?? 0) < httpCodeStart) return false;
-    if (typeof httpCodeEnd === "number" && (job.http_code ?? 0) > httpCodeEnd) return false;
-
-    return true;
-  }
-
-  function parseFilterDate(value: unknown, boundary: "start" | "end"): Date | null {
-    if (!value || typeof value !== "string") return null;
-
-    const fallbackTime = boundary === "start" ? "00:00:00" : "23:59:59";
-    return new Date(value.includes(" ") ? value : `${value} ${fallbackTime}`);
-  }
-
-  function compareJobs(first: WebhookCallRecord, second: WebhookCallRecord): number {
-    const sortKey = sort[0] ?? "-created_at";
-    const sortDirection = sortKey.startsWith("-") ? -1 : 1;
-    const fieldName = sortKey.replace("-", "") as "created_at" | "http_code";
-
-    const firstValue = fieldName === "created_at" ? (first.created_at?.getTime() ?? 0) : (first.http_code ?? 0);
-    const secondValue = fieldName === "created_at" ? (second.created_at?.getTime() ?? 0) : (second.http_code ?? 0);
-
-    return (firstValue - secondValue) * sortDirection;
-  }
 
   function getCellValue(job: WebhookCallRecord, columnKey: string): string {
     switch (columnKey) {
@@ -158,103 +133,97 @@
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="max-h-[90vh] max-w-[90vw] overflow-hidden p-0">
-    <DialogHeader class="border-b px-6 py-5">
+  <DialogContent class="flex max-h-[90vh] min-w-0 flex-col gap-0 p-0 sm:max-w-5xl">
+    <DialogHeader class="shrink-0 border-b px-6 py-5">
       <DialogTitle>Call logs of webhook</DialogTitle>
     </DialogHeader>
 
-    <div class="px-6 py-6">
-      <div class="overflow-hidden rounded-lg border">
-        <div class="max-h-[70vh] overflow-auto">
-          <Table>
-            <TableHeader class="bg-muted/40">
-              <TableRow>
-                {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-                  {@const { label, align, filterable, sortable, visible } = columnSetting}
-                  {#if visible}
-                    <TableHead class={cn("bg-primary/10  last:rounded-tr-md", align ? `text-${align}` : "text-left")}>
-                      {#if !filterable && !sortable}
-                        <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
-                      {:else}
-                        <DataTableHeadOptions
-                          {tableData}
-                          {columnKey}
-                          {columnSetting}
-                          {tablePreferences}
-                          {onFilter}
-                          {onSort}
-                          {onHide}
-                        />
-                      {/if}
-                    </TableHead>
+    <div class="min-h-0 min-w-0">
+      <Table class="w-full table-fixed">
+        <TableHeader>
+          <TableRow>
+            {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
+              {@const { label, align, filterable, sortable, visible } = columnSetting}
+              {#if visible}
+                <TableHead class={cn("bg-primary/10 last:rounded-tr-md", align ? `text-${align}` : "text-left")}>
+                  {#if !filterable && !sortable}
+                    <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
+                  {:else}
+                    <DataTableHeadOptions
+                      {tableData}
+                      {columnKey}
+                      {columnSetting}
+                      {tablePreferences}
+                      {onFilter}
+                      {onSort}
+                      {onHide}
+                    />
+                  {/if}
+                </TableHead>
+              {/if}
+            {/each}
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {#if loading}
+            <TableRow>
+              <TableCell colspan={visibleColumns.length} class="h-80">
+                <div class="flex w-full items-center justify-center">
+                  <Spinner size="lg" />
+                </div>
+              </TableCell>
+            </TableRow>
+          {:else if error}
+            <TableRow>
+              <TableCell colspan={visibleColumns.length} class="h-80 text-center text-lg font-semibold">
+                Something went wrong.
+              </TableCell>
+            </TableRow>
+          {:else if jobs.length === 0}
+            <TableRow>
+              <TableCell colspan={visibleColumns.length} class="h-80 text-center text-lg font-semibold">
+                No call logs found.
+              </TableCell>
+            </TableRow>
+          {:else}
+            {#each jobs as job (job.id)}
+              <TableRow class="hover:bg-transparent">
+                {#each visibleColumns as [columnKey, columnSetting] (columnKey)}
+                  {#if columnSetting.cellComponent}
+                    {@const CellComponent = columnSetting.cellComponent}
+                    <TableCell class="px-4 py-3 align-top">
+                      <CellComponent record={job} />
+                    </TableCell>
+                  {:else}
+                    <TableCell class="px-4 py-3 align-top">
+                      <div
+                        class={cn("text-muted-foreground text-sm", {
+                          "text-right": columnKey === "http_code" || columnSetting.align === "right",
+                          "text-center": columnSetting.align === "center",
+                        })}
+                      >
+                        {getCellValue(job, columnKey)}
+                      </div>
+                    </TableCell>
                   {/if}
                 {/each}
               </TableRow>
-            </TableHeader>
+            {/each}
+          {/if}
+        </TableBody>
+      </Table>
+    </div>
 
-            <TableBody>
-              {#if loading}
-                <TableRow>
-                  <TableCell colspan={visibleColumns.length} class="h-80">
-                    <div class="flex w-full items-center justify-center">
-                      <Spinner size="lg" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              {:else if error}
-                <TableRow>
-                  <TableCell colspan={visibleColumns.length} class="h-80 text-center text-lg font-semibold">
-                    Something went wrong.
-                  </TableCell>
-                </TableRow>
-              {:else if sortedJobs.length === 0}
-                <TableRow>
-                  <TableCell colspan={visibleColumns.length} class="h-80 text-center text-lg font-semibold">
-                    No call logs found.
-                  </TableCell>
-                </TableRow>
-              {:else}
-                {#each pagedJobs as job (job.id)}
-                  <TableRow class="hover:bg-transparent">
-                    {#each visibleColumns as [columnKey, columnSetting] (columnKey)}
-                      {#if columnSetting.cellComponent}
-                        {@const CellComponent = columnSetting.cellComponent}
-                        <TableCell class="px-8 py-6 align-top">
-                          <div class={cn(columnKey === "http_code" ? "flex justify-end" : "")}>
-                            <CellComponent record={job} />
-                          </div>
-                        </TableCell>
-                      {:else}
-                        <TableCell class="px-8 py-6 align-top">
-                          <div
-                            class={cn("text-muted-foreground text-lg", {
-                              "text-right": columnKey === "http_code" || columnSetting.align === "right",
-                              "text-center": columnSetting.align === "center",
-                            })}
-                          >
-                            {getCellValue(job, columnKey)}
-                          </div>
-                        </TableCell>
-                      {/if}
-                    {/each}
-                  </TableRow>
-                {/each}
-              {/if}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div class="border-t px-6 py-5">
-          <AppPaginator
-            page={currentPage}
-            itemsPerPage={rowsPerPage}
-            count={sortedJobs.length}
-            hasMore={false}
-            {onPageChange}
-            {onItemsPerPageSelect}
-          />
-        </div>
-      </div>
+    <div class="border-t px-6 py-5">
+      <AppPaginator
+        page={currentPage}
+        itemsPerPage={rowsPerPage}
+        {count}
+        {hasMore}
+        {onPageChange}
+        {onItemsPerPageSelect}
+      />
     </div>
   </DialogContent>
 </Dialog>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Icon } from "@lucide/svelte";
+  import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
 
   import DateText from "@/components/app/texts/date-text.svelte";
@@ -22,28 +22,38 @@
   }
 </script>
 
-<div class="w-full min-w-[40vw]">
+<div class="w-full max-w-full min-w-0 overflow-hidden">
   <div class="flex items-center gap-1">
     <!-- TOGGLE -->
-    <Button variant="ghost" size="icon-sm" onclick={toggleExpanded}>
-      <Icon name={expanded ? "chevron-down" : "chevron-right"} />
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onclick={toggleExpanded}
+      aria-expanded={expanded}
+      aria-label="Toggle delivery response"
+    >
+      {#if expanded}
+        <ChevronDownIcon />
+      {:else}
+        <ChevronRightIcon />
+      {/if}
     </Button>
 
     <!-- CREATED AT -->
-    <div class="flex items-center">
+    <div class="flex min-w-0 items-center">
       <DateText
         datetime={webhookCall.created_at}
         datetimeFormat="MMM dd, yyyy HH:mm:ss aa"
-        class="text-muted-foreground text-lg"
+        class="text-muted-foreground text-sm"
       />
     </div>
   </div>
 
   {#if expanded}
-    <div transition:slide class="mt-8 flex w-full max-w-4xl flex-col gap-3">
-      <Label class="text-muted-foreground text-lg font-semibold">Response</Label>
+    <div transition:slide class="mt-3 flex max-w-full min-w-0 flex-col gap-2 whitespace-normal">
+      <Label class="text-muted-foreground text-sm font-semibold">Response</Label>
 
-      <div class="h-full max-h-[40vh] overflow-y-auto pr-3">
+      <div class="max-h-[40vh] max-w-full min-w-0 overflow-auto">
         <PreFormattedText>
           {webhookCall.response || webhookCall.error || "-"}
         </PreFormattedText>
