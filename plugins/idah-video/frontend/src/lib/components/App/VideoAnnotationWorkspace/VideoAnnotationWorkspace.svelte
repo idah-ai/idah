@@ -42,6 +42,7 @@
   import Video from "$lib/components/App/Viewport/Video.svelte";
   import VideoCanvas from "$lib/components/App/Viewport/VideoCanvas.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
 
   import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection, IVideoAnnotationValue } from "$lib/types";
@@ -551,14 +552,28 @@
     if (!editable) return;
     const existing = entryRootAnnotation;
     if (existing) {
-      getDriver().command.call("idah-video:annotation.delete", { annotationId: existing.id });
+      confirmAnnotationsDelete({
+        count: 1,
+        title: "Delete video tag",
+        description: "Are you sure you want to delete the video tag for this entry?",
+        onConfirm: () => {
+          getDriver().command.call("idah-video:annotation.delete", { annotationId: existing.id });
+        },
+      });
     }
   }
 
   /** Delete a specific idah-video:frame tagging annotation. */
   function onDeleteFrame(ann: IVideoAnnotationRecord) {
     if (!editable) return;
-    getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+    confirmAnnotationsDelete({
+      count: 1,
+      title: "Delete Frame Tag",
+      description: "Are you sure you want to delete this Frame Tag?",
+      onConfirm: () => {
+        getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+      },
+    });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {

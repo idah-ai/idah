@@ -7,7 +7,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
 
   import type { IVideoAnnotationRecord } from "$lib/types";
 
@@ -49,9 +49,10 @@
   }
 
   function removeAll() {
-    showConfirmDialog({
-      title: `Delete ${label}`,
-      description: `Are you sure you want to delete ${label}?`,
+    confirmAnnotationsDelete({
+      count: annotations.length,
+      title: `Delete All ${label}`,
+      description: `Are you sure you want to delete all ${label} in this entry?`,
       onConfirm: () => {
         getDriver().command.call("idah-video:annotation.group.delete", { annotations });
       },

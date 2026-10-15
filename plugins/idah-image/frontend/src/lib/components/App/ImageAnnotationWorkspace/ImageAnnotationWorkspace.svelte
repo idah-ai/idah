@@ -475,7 +475,7 @@
     if (existing) {
       confirmAnnotationsDelete({
         count: 1,
-        title: "Delete image tag",
+        title: "Delete Image Tag",
         description: "Are you sure you want to delete the image tag for this entry?",
         onConfirm: () => {
           getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });

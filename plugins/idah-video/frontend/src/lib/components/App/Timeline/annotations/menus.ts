@@ -5,7 +5,7 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
-import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
 
 import type { Menus } from "$lib/components/App/ContextMenu/types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
@@ -14,6 +14,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
   const { track } = props;
   const isSomeHidden = track.items.some((item) => annotation.isHidden(item.rawData));
   const isSomeLocked = track.items.some((item) => annotation.isLocked(item.rawData));
+  const tracksShapeType = track.items[0].rawData.shape_type.split(":")[1];
 
   return {
     actions: {
@@ -50,12 +51,16 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           destructive: true,
           disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
-            showConfirmDialog({
+            confirmAnnotationsDelete({
+              count: track.items.length,
               title: "Delete annotation group",
-              description: "Are you sure you want to delete this annotation group?",
+              description: `Are you sure you want to delete this ${tracksShapeType} annotation group ("${track.title}")?`,
               onConfirm: () => {
                 selection.selectGroup(track.id);
+                // This menu already confirmed — tell the gated selection.delete
+                // command to skip its own dialog (single confirmation).
                 getDriver().command.call("idah-video:selection.delete", {
+                  skipConfirm: true,
                   groupId: track.id,
                   annotations: track.items.map((item) => item.rawData),
                 });

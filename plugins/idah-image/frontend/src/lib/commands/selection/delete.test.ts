@@ -210,7 +210,7 @@ describe("selection.delete", () => {
     expect(mockDelete).toHaveBeenCalledTimes(2);
     expect(items.find((i) => i.id === "a-1")).toBeUndefined();
 
-    await action!.undo();
+    await action!.undo?.();
     expect(mockRestore).toHaveBeenCalledTimes(2);
     expect(items.find((i) => i.id === "a-1")).toBeDefined();
   });
@@ -341,12 +341,12 @@ describe("selection.delete", () => {
     await action.do();
     expect(mockDelete.mock.calls.length).toBe(deleteCount);
 
-    await action.undo();
+    await action.undo?.();
     const restoreCount = mockRestore.mock.calls.length;
     expect(restoreCount).toBe(2);
 
     // Re-running undo() restores nothing extra (no duplicates).
-    await action.undo();
+    await action.undo?.();
     expect(mockRestore.mock.calls.length).toBe(restoreCount);
   });
 

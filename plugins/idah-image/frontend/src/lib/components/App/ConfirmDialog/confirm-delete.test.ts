@@ -21,6 +21,22 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("uses singular copy for a single annotation", () => {
+    confirmAnnotationsDelete({
+      count: 1,
+      shape: "polygon",
+      annotation_category: "vehicle",
+      onConfirm: () => {},
+    });
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Delete annotation",
+        description: 'Are you sure you want to delete this polygon annotation ("vehicle")?',
+      }),
+    );
+  });
+
+  it("falls back to generic singular copy when shape/category are unknown", () => {
     confirmAnnotationsDelete({ count: 1, onConfirm: () => {} });
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
@@ -36,8 +52,8 @@ describe("confirmAnnotationsDelete", () => {
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Delete annotations",
-        description: "Are you sure you want to delete 3 selected annotations?",
+        title: "Delete all annotations",
+        description: "Are you sure you want to delete all 3 selected annotations in this entry?",
       }),
     );
   });

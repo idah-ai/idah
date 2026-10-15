@@ -37,7 +37,9 @@ export function confirmAnnotationsDelete(opts: ConfirmAnnotationsDeleteOptions):
     description:
       opts.description ??
       (singular
-        ? `Are you sure you want to delete this ${shape} annotation ("${annotation_category}")?`
+        ? shape && annotation_category
+          ? `Are you sure you want to delete this ${shape} annotation ("${annotation_category}")?`
+          : "Are you sure you want to delete this annotation?"
         : `Are you sure you want to delete all ${count} selected annotations in this entry?`),
 
     onConfirm,

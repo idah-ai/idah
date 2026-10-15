@@ -126,7 +126,7 @@
         </button>
 
         <div class="ml-auto flex shrink-0 items-center gap-0">
-          {#each getAnnotationActions(ann) as { label, icon: Icon, disabled, onclick }}
+          {#each getAnnotationActions(ann, annDisplayName) as { label, icon: Icon, disabled, onclick }}
             <div class="opacity-0 transition-opacity group-hover:opacity-100">
               <CategoryAction {label} icon={Icon} {disabled} {onclick} />
             </div>
