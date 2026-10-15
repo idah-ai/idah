@@ -3,7 +3,7 @@ import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/recor
 import type { BackendDataSource } from "@/data/BackendDataSource";
 import type { Hash, LabelValue } from "@/utils/types";
 
-export interface WebhookCallHttpStatus extends LabelValue<number> {
+export interface WebhookCallHttpStatus extends LabelValue<string> {
   success: boolean;
   bgColor: string;
 }

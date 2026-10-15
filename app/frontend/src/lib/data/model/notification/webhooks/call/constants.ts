@@ -3,13 +3,13 @@ import type { WebhookCallHttpStatus } from "@/data/model/notification/webhooks/c
 export const webhookCallHttpStatuses: WebhookCallHttpStatus[] = [
   {
     label: "Success",
-    value: 399,
+    value: "completed",
     success: true,
     bgColor: "green",
   },
   {
     label: "Error",
-    value: 400,
+    value: "errored",
     success: false,
     bgColor: "red",
   },

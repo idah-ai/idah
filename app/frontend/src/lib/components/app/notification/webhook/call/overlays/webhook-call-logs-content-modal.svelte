@@ -151,9 +151,12 @@
             {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
               {@const { label, align, filterable, sortable, visible } = columnSetting}
               {#if visible}
-                <TableHead class={cn("bg-primary/10 last:rounded-tr-md", align ? `text-${align}` : "text-left")}>
+                <TableHead
+                  data-column={columnKey}
+                  class={cn("bg-primary/10 px-4 last:rounded-tr-md", align ? `text-${align}` : "text-left")}
+                >
                   {#if !filterable && !sortable}
-                    <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
+                    <DataTableHeadLabel class="pl-8">{label}</DataTableHeadLabel>
                   {:else}
                     <DataTableHeadOptions
                       {tableData}
@@ -235,6 +238,10 @@
 </Dialog>
 
 <style>
+  :global([data-webhook-call-logs] [data-column="created_at"] button) {
+    padding-inline: 0.5rem;
+  }
+
   :global(body:has([data-webhook-call-logs]) [data-slot="popover-content"]) {
     max-height: min(80dvh, var(--bits-popover-content-available-height, 80dvh));
     max-width: calc(100vw - 2rem);

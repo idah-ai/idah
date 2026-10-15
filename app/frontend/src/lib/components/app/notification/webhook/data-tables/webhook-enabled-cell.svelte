@@ -32,10 +32,17 @@
       );
       $refetches.webhooks.list = new Date();
 
-      showToast.success({
-        title: "Webhook updated",
-        description: `The webhook "${webhook.name}" has been updated.`,
-      });
+      if (checkedValue) {
+        showToast.success({
+          title: "Webhook enabled",
+          description: `The webhook "${webhook.name}" has been enabled.`,
+        });
+      } else {
+        showToast.success({
+          title: "Webhook disabled",
+          description: `The webhook "${webhook.name}" has been disabled.`,
+        });
+      }
     } catch (error) {
       webhook.enabled = previousValue;
       showActionFailedToast(error);

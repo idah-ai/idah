@@ -28,6 +28,7 @@
     <Button
       variant="ghost"
       size="icon-sm"
+      class="shrink-0"
       onclick={toggleExpanded}
       aria-expanded={expanded}
       aria-label="Toggle delivery response"
@@ -50,7 +51,7 @@
   </div>
 
   {#if expanded}
-    <div transition:slide class="mt-3 flex max-w-full min-w-0 flex-col gap-2 whitespace-normal">
+    <div transition:slide class="mt-3 flex max-w-full min-w-0 flex-col gap-2 pl-8 whitespace-normal">
       <Label class="text-muted-foreground text-sm font-semibold">Response</Label>
 
       <div class="max-h-[40vh] max-w-full min-w-0 overflow-auto">
