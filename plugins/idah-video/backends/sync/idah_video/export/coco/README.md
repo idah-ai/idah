@@ -16,6 +16,25 @@ datasets. What it shares with the other video exports (export options, which
 frames are exported, how shapes are placed, names, and the export report) is
 described in the [video exports README](../README.md).
 
+## Options
+
+Beside "Include medias" and "Completed Entries Only", the export dialog shows
+one option when COCO (Video) is selected:
+
+| Option | Values | Default | Effect |
+| --- | --- | --- | --- |
+| Frames (`frames`) | All frames (`all`), Keyframes only (`keyframes`) | All frames | Which frames become images. |
+
+- **All frames** exports every frame a shape covers, frames between keyframes
+  included (see [Frames](../README.md#frames)).
+- **Keyframes only** exports only the frames where annotators stored a
+  keyframe, or a frame tag: a much smaller dataset, made of the frames people
+  drew. A kept frame still lists every shape visible on it, including other
+  objects whose shape is computed there (`attributes.keyframe: false`): COCO
+  takes an image's annotations as complete, so leaving one out would turn that
+  object into background. To keep the stored shapes only, filter on
+  `attributes.keyframe`.
+
 ## The zip
 
 ```
@@ -219,7 +238,7 @@ Each label shows its category name, `track_id`, `keyframe`, `rotation`,
 
 | File | Role |
 | --- | --- |
-| `exporter.rb` | `IdahVideo::Export::Coco::Exporter`, registered for `idah-video` in `sync.rb`. |
+| `exporter.rb` | `IdahVideo::Export::Coco::Exporter`, registered for `idah-video` in `sync.rb`. Declares the `frames` option. |
 | `writer.rb` | Writes one `instances_<dataset>.json`, streaming images and annotations through temporary files. |
 
 Everything else (reading entries, frames between keyframes, geometry, frame

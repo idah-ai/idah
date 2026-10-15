@@ -128,7 +128,6 @@ module IdahVideo
             # Drawn outside the video: clamping flattens it to a line or a point.
             next @report.skip(:zero_area) if Geometry.polygon_area(points).zero?
 
-            @report.count(:interpolated_annotations) unless geometry.keyframe
             @shapes[frame] << Shape.new(record:, points:, angle: geometry.angle, keyframe: geometry.keyframe)
           end
         end

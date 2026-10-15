@@ -27,7 +27,27 @@ module IdahVideo
 
         def name = "COCO (Video)"
 
-        def description = "COCO instances JSON, one image per annotated frame, with videos and tracks."
+        def description = "COCO instances, with videos and tracks."
+
+        FRAME_CHOICES = [
+          { value: "all", label: "All frames", info: "Every frame a shape covers." },
+          { value: "keyframes", label: "Keyframes only", info: "Frames with a stored keyframe." }
+        ].freeze
+
+        def options
+          Verse::Schema.define do
+            field(:frames, String).default("all").meta(
+              label: "Frames",
+              description: "Which frames to export.",
+              choices: FRAME_CHOICES
+            )
+          end
+        end
+
+        def export(context)
+          @frames = options.validate(context.options.to_h.transform_keys(&:to_sym).slice(:frames)).value[:frames]
+          super
+        end
 
         private
 
@@ -62,7 +82,7 @@ module IdahVideo
           @groups = Hash.new { |hash, group| hash[group] = {} }
           # Tracks are numbered in annotation order.
           video.shape_records.each { |record| track_id_for(record) }
-          frames = video.frames
+          frames = exported_frames(video)
 
           if frames.empty?
             report_split_groups(video)
@@ -76,6 +96,18 @@ module IdahVideo
           frames.each { |frame| write_frame(video, frame, stem:, video_id:) }
           report_split_groups(video)
           video.write_images(frames, File.join(@images_dir, stem)) if @images_dir
+        end
+
+        # All frames, or with `frames: keyframes`, the frames where annotators
+        # stored a keyframe or a tag. A kept frame still lists every visible
+        # shape, computed ones included: COCO takes an image's annotations as
+        # complete, so leaving one out would make it background.
+        def exported_frames(video)
+          return video.frames if @frames == "all"
+
+          video.frames.select do |frame|
+            video.shapes[frame].any?(&:keyframe) || video.frame_tags[frame].any?
+          end
         end
 
         # `file_name` is relative to the dataset's images folder, images/<dataset>/.
@@ -96,6 +128,7 @@ module IdahVideo
           video.shapes[frame].each do |shape|
             @writer.add_annotation({ image_id: }.merge(annotation(shape)))
             @report.count(:annotations)
+            @report.count(:interpolated_annotations) unless shape.keyframe
           end
         end
 

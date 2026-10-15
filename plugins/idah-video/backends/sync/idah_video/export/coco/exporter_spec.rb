@@ -81,7 +81,14 @@ RSpec.describe IdahVideo::Export::Coco::Exporter do
     it "describes the format" do
       expect(exporter.name).to eq("COCO (Video)")
       expect(exporter.description).to be_a(String)
-      expect(exporter.options).to eq(Verse::Schema.empty)
+    end
+
+    it "declares which frames to export as an option" do
+      field = exporter.options.fields.first
+
+      expect(field.key).to eq(:frames)
+      expect(field.default).to eq("all")
+      expect(field.opts[:meta][:choices].map { |choice| choice[:value] }).to eq(%w[all keyframes])
     end
   end
 
@@ -228,6 +235,41 @@ RSpec.describe IdahVideo::Export::Coco::Exporter do
       it "skips it, since COCO tools would read it as a box" do
         expect(export[:annotations].map { |a| a[:attributes][:idah_id] }.uniq).to eq(["car-1"])
         expect(report[:skipped]).to include(too_few_points: 1)
+      end
+    end
+
+    context "with frames: keyframes" do
+      let(:options) { { frames: "keyframes" } }
+      let(:annotations) do
+        [
+          car, # keyframes 0 and 4
+          box("car-2", start: 0, finish: 6, frames: [keyframe(0, 0.6, 0.6, 0.1, 0.1), keyframe(6, 0.6, 0.6, 0.1, 0.1)]),
+          FakeExportContext::Annotation.new(
+            id: "tag-1",
+            shape_type: "idah-video:frame",
+            category: "night",
+            shape_args: { start: 2, end: 2, frames: [{ frame: 2, points: [] }] }
+          )
+        ]
+      end
+
+      it "exports only the frames with a stored keyframe or a tag" do
+        expect(frame_of(export).values).to eq([0, 2, 4, 6])
+      end
+
+      it "still lists every visible shape on a kept frame, computed ones included" do
+        coco = export
+        kept_frame = coco[:images].find { |i| i[:frame_id] == 4 }
+        shapes = coco[:annotations].select { |a| a[:image_id] == kept_frame[:id] }
+
+        expect(shapes.map { |a| [a[:attributes][:idah_id], a[:attributes][:keyframe]] })
+          .to contain_exactly(["car-1", true], ["car-2", false])
+      end
+
+      it "counts only the exported computed shapes in the report" do
+        export
+
+        expect(report).to include(images: 4, annotations: 7, interpolated_annotations: 3)
       end
     end
 

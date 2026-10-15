@@ -123,6 +123,7 @@ module IdahVideo
 
           @report.count(:images)
           @report.count(:annotations, lines.size)
+          @report.count(:interpolated_annotations, video.shapes[frame].count { |shape| !shape.keyframe })
         end
 
         # One label line: the class, then coordinates as fractions of the frame.

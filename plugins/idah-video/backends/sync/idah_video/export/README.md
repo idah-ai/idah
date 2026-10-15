@@ -27,7 +27,8 @@ README covers its own files.
 | Completed Entries Only | On by default: only completed entries are exported. Switch it off to export every entry. |
 
 A format can add options of its own, shown in the dialog when it is selected;
-YOLO (Video) adds a task and a validation share (see its README).
+COCO (Video) adds a choice of frames (all, or keyframes only), and YOLO (Video)
+adds a task and a validation share (see their READMEs).
 
 A selection can hold several datasets, but only `idah-video` ones: an export
 that includes a dataset of another modality fails.
