@@ -7,7 +7,7 @@ import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
 
-import type { IVideoAnnotationRecord } from "$lib/types";
+import { VIDEO_FRAME, ENTRY_ROOT, type IVideoAnnotationRecord } from "$lib/types";
 import { humanize } from "$lib/utils/string";
 
 export interface AnnotationAction {
@@ -36,10 +36,12 @@ export function getAnnotationActions(ann: IVideoAnnotationRecord, annDisplayName
             disabled: annotation.isLocked(ann) || viewport.isReviewWorkspace,
             onclick: (e: MouseEvent) => {
               e.stopPropagation();
+              const isTag = ann.shape_type === VIDEO_FRAME || ann.shape_type === ENTRY_ROOT;
               confirmAnnotationsDelete({
                 count: 1,
                 title: "Delete Annotation",
-                shape: humanize(ann.shape_type.split(":")[1]),
+                type: isTag ? "tag" : "annotation",
+                shape: ann.shape_type === ENTRY_ROOT ? "video" : humanize(ann.shape_type.split(":")[1]),
                 annotation_category: annDisplayName,
                 onConfirm: () => {
                   getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });

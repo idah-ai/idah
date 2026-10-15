@@ -554,6 +554,7 @@
     if (existing) {
       confirmAnnotationsDelete({
         count: 1,
+        type: "tag",
         title: "Delete video tag",
         description: "Are you sure you want to delete the video tag for this entry?",
         onConfirm: () => {
@@ -568,6 +569,7 @@
     if (!editable) return;
     confirmAnnotationsDelete({
       count: 1,
+      type: "tag",
       title: "Delete Frame Tag",
       description: "Are you sure you want to delete this Frame Tag?",
       onConfirm: () => {

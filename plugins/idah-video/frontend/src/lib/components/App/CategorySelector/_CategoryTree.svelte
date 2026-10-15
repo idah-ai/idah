@@ -386,18 +386,6 @@
   </Collapsible>
 {/snippet}
 
-<!-- <ConfirmModal
-  title="Delete annotations in this category"
-  description="Are you sure you want to delete all annotations in this category?"
-  onConfirm={() => {
-    deleteCategoryAnnotations({ categoryId: categoryToDelete!, shapeType: modalityShape });
-    openConfirmCategoryDeleteDialog = false;
-    categoryToDelete = null;
-  }}
-  bind:open={openConfirmCategoryDeleteDialog}
-/> -->
-
-
 <ConfirmModal
   title="Delete annotations in this category"
   description={`Are you sure you want to delete all ${

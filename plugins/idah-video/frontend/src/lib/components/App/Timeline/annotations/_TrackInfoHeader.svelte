@@ -47,6 +47,7 @@
           onClick: () => {
             confirmAnnotationsDelete({
               count: annotations.length,
+              type: "annotation",
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations?",
               onConfirm: () => getDriver().command.call("idah-video:annotation.delete-all"),

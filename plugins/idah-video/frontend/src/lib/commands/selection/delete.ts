@@ -24,6 +24,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { showToast } from "$lib/components/ui/Toast/index.svelte";
 import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
 import { humanize } from "$lib/utils/string";
+import { VIDEO_FRAME, ENTRY_ROOT } from "$lib/types";
 
 export const command = {
   name: "idah-video:selection.delete",
@@ -114,9 +115,13 @@ export function register(driver: IIdahDriverV2): void {
               },
             )
           : "uncategorized";
+
         const annotationCategory = typeof annotation?.category === "string" ? humanize(annotation.category) : undefined;
+        const isTag =
+          annotation?.shape_type === VIDEO_FRAME || annotation?.shape_type === ENTRY_ROOT;
         confirmAnnotationsDelete({
           count: uniqueRecords.length,
+          type: isTag ? "tag" : "annotation",
           shape,
           annotation_category: annotationCategory,
           onConfirm: () => {

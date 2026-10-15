@@ -28,6 +28,7 @@
     onclick={() => {
       confirmAnnotationsDelete({
         count: 1,
+        type: "tag",
         title: "Delete Video Tag",
         description: "Are you sure you want to delete this video tag?",
         onConfirm: () => {

@@ -93,4 +93,48 @@ describe("confirmAnnotationsDelete", () => {
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it("uses tag copy when type is 'tag'", () => {
+    confirmAnnotationsDelete({
+      count: 1,
+      type: "tag",
+      shape: "frame",
+      annotation_category: "collision",
+      onConfirm: () => {},
+    });
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Delete tag",
+        description: 'Are you sure you want to delete this frame tag ("collision")?',
+      }),
+    );
+  });
+
+  it("derives tag type from frame / entry:root shapes", () => {
+    confirmAnnotationsDelete({
+      count: 1,
+      shape: "entry:root",
+      annotation_category: "scene",
+      onConfirm: () => {},
+    });
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Delete tag",
+        description: 'Are you sure you want to delete this entry:root tag ("scene")?',
+      }),
+    );
+  });
+
+  it("uses tag copy for multiple tags", () => {
+    confirmAnnotationsDelete({ count: 2, type: "tag", onConfirm: () => {} });
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Delete tags",
+        description: "Are you sure you want to delete all 2 selected tags in this entry?",
+      }),
+    );
+  });
 });

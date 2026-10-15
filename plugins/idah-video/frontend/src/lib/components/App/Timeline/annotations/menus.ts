@@ -53,6 +53,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           onClick: () => {
             confirmAnnotationsDelete({
               count: track.items.length,
+              type: "annotation",
               title: "Delete annotation group",
               description: `Are you sure you want to delete this ${tracksShapeType} annotation group ("${track.title}")?`,
               onConfirm: () => {
