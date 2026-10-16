@@ -126,7 +126,9 @@
 </script>
 
 {#if showFloatingCard}
-  <div class="bg-background fixed right-2 bottom-0 z-50 h-auto min-w-96 rounded-md rounded-br-none rounded-bl-none border">
+  <div
+    class="bg-background fixed right-2 bottom-0 z-50 h-auto min-w-96 rounded-md rounded-br-none rounded-bl-none border"
+  >
     <Collapsible bind:open>
       <CollapsibleTrigger class="w-full">
         <Button

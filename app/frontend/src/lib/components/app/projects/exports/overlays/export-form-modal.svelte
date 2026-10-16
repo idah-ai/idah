@@ -144,7 +144,7 @@
             />
             <div class="flex flex-col gap-0">
               <p>{label}</p>
-              <small class="max-w-xs whitespace-normal text-muted-foreground">{description}</small>
+              <small class="text-muted-foreground max-w-xs whitespace-normal">{description}</small>
             </div>
           </CommandItem>
         {/snippet}
@@ -178,7 +178,7 @@
               <div class="flex flex-col gap-0">
                 <p>{label}</p>
                 {#if description}
-                  <small class="max-w-xs whitespace-normal text-muted-foreground">{description}</small>
+                  <small class="text-muted-foreground max-w-xs whitespace-normal">{description}</small>
                 {/if}
               </div>
             </CommandItem>
@@ -243,7 +243,7 @@
           />
           <div class="flex flex-col gap-0">
             <p>{label}</p>
-            <small class="max-w-xs whitespace-normal text-muted-foreground">{description}</small>
+            <small class="text-muted-foreground max-w-xs whitespace-normal">{description}</small>
           </div>
         </CommandItem>
       {/snippet}

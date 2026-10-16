@@ -22,7 +22,14 @@ const task: ExportOptionField = {
     { value: "obb", label: "obb" },
   ],
 };
-const valPercent: ExportOptionField = { name: "val_percent", type: "integer", default: 0, required: false, min: 0, max: 50 };
+const valPercent: ExportOptionField = {
+  name: "val_percent",
+  type: "integer",
+  default: 0,
+  required: false,
+  min: 0,
+  max: 50,
+};
 const keyframesOnly: ExportOptionField = { name: "keyframes_only", type: "boolean", default: false, required: false };
 const note: ExportOptionField = { name: "note", type: "string", required: false };
 
@@ -81,7 +88,11 @@ describe("defaultExportOptionValues", () => {
 describe("exportOptionPayload", () => {
   it("sends the values of the format's options", () => {
     expect(
-      exportOptionPayload([task, valPercent, keyframesOnly], { task: "segment", val_percent: 20, keyframes_only: true }),
+      exportOptionPayload([task, valPercent, keyframesOnly], {
+        task: "segment",
+        val_percent: 20,
+        keyframes_only: true,
+      }),
     ).toEqual({ task: "segment", val_percent: 20, keyframes_only: true });
   });
 
