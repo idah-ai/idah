@@ -63,14 +63,36 @@ export function register(driver: IIdahDriverV2): void {
       // Capture the paste-time playhead frame at callback time for redo determinism.
       const capturePasteFrame = viewport.video.currentFrame.value;
 
-      // Shared between do() and undo() — tracks the IDs created by this paste.
-      const createdIds: string[] = [];
+      // Pre-generate each entry's id (and each new group id) ONCE here, outside
+      // do(). Redo reuses these ids, so later actions on the redo stack (move,
+      // delete, update) still refer to the same annotations.
+      const groupMap = new Map<string, string>();
+      const plannedIds = clipboardData.map((entry) => {
+        if (!groupMap.has(entry.groupId)) groupMap.set(entry.groupId, uuidv7());
+        return { newId: uuidv7(), newGroupId: groupMap.get(entry.groupId)! };
+      });
+
+      // Records successfully created by the first do(). Redo restores exactly
+      // these instead of creating new ones, because deletes are soft and
+      // create() is a plain insert.
+      const createdRecords: Array<Record<string, unknown>> = [];
+      let hasRun = false;
 
       return {
         command: { ...command },
         async do() {
-          // Reset from any previous redo cycle
-          createdIds.length = 0;
+          // Redo: restore exactly the records created on the first run, reusing
+          // their ids. Never re-create — the rows still exist (soft-deleted).
+          if (hasRun) {
+            for (const record of createdRecords) {
+              await data.annotations!.restore(record as any);
+            }
+            if (createdRecords.length > 0) {
+              selection.selectAnnotations(createdRecords.map((r) => r.id as string));
+            }
+            return;
+          }
+
           let skippedDuplicateTagCount = 0;
           let skippedOutOfBoundsCount = 0;
 
@@ -85,9 +107,6 @@ export function register(driver: IIdahDriverV2): void {
             });
             return;
           }
-
-          // Map original group IDs → new group IDs
-          const groupMap = new Map<string, string>();
 
           // Use the captured values so undo/redo are deterministic regardless
           // of cursor position or playback head at redo time.
@@ -106,14 +125,9 @@ export function register(driver: IIdahDriverV2): void {
           const dx = pastePos[0] - anchor[0];
           const dy = pastePos[1] - anchor[1];
 
-          for (const entry of clipboardData) {
-            // Generate new group ID for this original group
-            if (!groupMap.has(entry.groupId)) {
-              groupMap.set(entry.groupId, uuidv7());
-            }
-            const newGroupId = groupMap.get(entry.groupId)!;
-
-            const newId = uuidv7();
+          for (let i = 0; i < clipboardData.length; i++) {
+            const entry = clipboardData[i];
+            const { newId, newGroupId } = plannedIds[i];
 
             // Shift and clamp the annotation's keyframes along the timeline.
             const shifted = shiftAndClampShape(
@@ -166,29 +180,30 @@ export function register(driver: IIdahDriverV2): void {
 
             const newMetadata = entry.metadata ? { ...entry.metadata, group_id: newGroupId } : { group_id: newGroupId };
 
+            const record = {
+              id: newId,
+              shape_type: entry.shape_type,
+              shape_args: newShapeArgs,
+              category: entry.category,
+              properties: entry.properties ?? {},
+              metadata: newMetadata,
+            };
             try {
-              await data.annotations!.create({
-                id: newId,
-                shape_type: entry.shape_type,
-                shape_args: newShapeArgs,
-                category: entry.category,
-                properties: entry.properties ?? {},
-                metadata: newMetadata,
-              } as any);
-              createdIds.push(newId);
+              await data.annotations!.create(record as any);
+              createdRecords.push(record);
             } catch (err) {
               console.error("Paste: failed to create annotation", err);
             }
           }
 
           // Select the newly created annotations
-          if (createdIds.length > 0) {
-            selection.selectAnnotations(createdIds);
+          if (createdRecords.length > 0) {
+            selection.selectAnnotations(createdRecords.map((r) => r.id as string));
           }
 
           // ── Toast based on how many entries were actually created ────
           const total = clipboardData.length;
-          const created = createdIds.length;
+          const created = createdRecords.length;
           const skipped = total - created;
           if (created === total) {
             showToast.success({
@@ -233,16 +248,18 @@ export function register(driver: IIdahDriverV2): void {
               description: "No annotations could be pasted.",
             });
           }
+
+          hasRun = true;
         },
         async undo() {
           // Remove the annotations created by this paste.
           if (data.annotations) {
-            for (const id of createdIds) {
-              await data.annotations.delete(id);
+            for (const record of createdRecords) {
+              await data.annotations.delete(record.id as string);
             }
           }
           // Restore previous selection if the pasted set is no longer valid.
-          if (selection.selectedAnnotations.every((a) => createdIds.includes(a.id))) {
+          if (selection.selectedAnnotations.every((a) => createdRecords.some((r) => r.id === a.id))) {
             selection.deselect();
           }
         },

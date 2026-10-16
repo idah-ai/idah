@@ -72,7 +72,7 @@ export function computeMissingRanges(loaded: [number, number] | null, request: [
 // ---------------------------------------------------------------------------
 
 export interface AnnotationDataStore extends DataStore<AnnotationItem> {
-  restore(record: AnnotationItem): Promise<void>;
+  restore(record: AnnotationItem): Promise<AnnotationItem>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -256,7 +256,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       }
     },
 
-    async restore(record: AnnotationItem): Promise<void> {
+    async restore(record: AnnotationItem): Promise<AnnotationItem> {
       // Optimistic: insert locally first so the annotation reappears immediately
       // (the pre-delete snapshot carries everything needed to redisplay it,
       // including mask tile data merged into shape_args).
@@ -268,6 +268,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
         const restored = await driver.restore(record.id);
         originalUpsert(restored as AnnotationItem);
         markOccupancyDirty();
+        return restored as AnnotationItem;
       } catch {
         // Rollback on failure — remove the optimistically-inserted record so no
         // phantom "restored" annotation lingers if the backend rejected it.
