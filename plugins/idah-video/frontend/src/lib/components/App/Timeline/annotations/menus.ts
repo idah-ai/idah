@@ -1,4 +1,4 @@
-import { CrosshairIcon, EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+import { CrosshairIcon, EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, MergeIcon, Trash2Icon } from "@lucide/svelte";
 
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
@@ -6,6 +6,7 @@ import { selection } from "$lib/state/selection.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+import { canMerge } from "$lib/commands/annotation/_merge_utils";
 
 import type { Menus } from "$lib/components/App/ContextMenu/types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
@@ -42,7 +43,17 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Lock/Unlock Group",
           icon: isSomeLocked ? LockIcon : LockOpenIcon,
           alwaysShow: isSomeLocked,
-          onClick: () => getDriver().command.call("idah-video:annotation.group.toggle-editability", { groupId: track.id }),
+          onClick: () =>
+            getDriver().command.call("idah-video:annotation.group.toggle-editability", { groupId: track.id }),
+        },
+        merge: {
+          label: "Merge group",
+          icon: MergeIcon,
+          disabled: !isEditable() || viewport.isReviewWorkspace || !canMerge(track.items.map((i) => i.rawData)),
+          onClick: () => {
+            selection.selectGroup(track.id);
+            getDriver().command.call("idah-video:annotation.merge");
+          },
         },
         delete: {
           label: "Delete group",
