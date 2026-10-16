@@ -20,6 +20,7 @@ module IdahVideo
 
         def initialize
           @parents = {} # value id => parent id
+          @colors = {} # value id => "#RRGGBB"
           @categories = {} # value id => COCO category
         end
 
@@ -30,10 +31,16 @@ module IdahVideo
             Array(configuration.dig(shape_type, :values)).each do |value|
               id = value[:id].to_s
               @parents[id] ||= value[:parent].to_s if value[:parent]
+              # A value configured for several shapes keeps its first colour.
+              @colors[id] ||= value[:color].to_s if value[:color]
               add_category(id)
             end
           end
         end
+
+        # The colour the labeling configuration gives a category, as
+        # "#RRGGBB", or nil.
+        def color_for(value_id) = @colors[value_id.to_s]
 
         # The COCO id of a category, adding it when the configuration lacks it.
         def id_for(value_id)

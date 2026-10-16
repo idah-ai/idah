@@ -7,6 +7,7 @@ module IdahVideo
     def self.init(context)
       context.register_exports("idah-video", IdahVideo::Export::Coco::Exporter)
       context.register_exports("idah-video", IdahVideo::Export::Yolo::Exporter)
+      context.register_exports("idah-video", IdahVideo::Export::Segmentation::Exporter)
     end
   end
 end

@@ -25,6 +25,19 @@ RSpec.describe IdahVideo::Export::Helpers::CategoryIndex do
 
   before { index.add_configuration(configuration) }
 
+  describe "#color_for" do
+    let(:configuration) do
+      {
+        "idah-video:bounding-box": { values: [{ id: "car", color: "#009687" }, { id: "boat" }] },
+        "idah-video:polygon": { values: [{ id: "car", color: "#EB1461" }] }
+      }
+    end
+
+    it "gives a category's configured colour, the first when configured twice" do
+      expect([index.color_for("car"), index.color_for("boat"), index.color_for("other")]).to eq(["#009687", nil, nil])
+    end
+  end
+
   describe "#categories" do
     it "names box and polygon categories by their id, once each, in configuration order, from id 1" do
       expect(index.categories).to eq(

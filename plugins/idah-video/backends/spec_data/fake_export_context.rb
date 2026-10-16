@@ -94,8 +94,12 @@ class FakeExportContext
   class Annotation
     attr_reader :record
 
-    def initialize(id:, shape_type:, shape_args:, category: nil, properties: {}, metadata: {}, deleted_at: nil)
-      @record = Record.new(id, { shape_type:, shape_args:, category:, properties:, metadata:, deleted_at: })
+    def initialize(id:, shape_type:, shape_args:, category: nil, properties: {}, metadata: {}, deleted_at: nil,
+                   created_at: nil)
+      @record = Record.new(
+        id,
+        { shape_type:, shape_args:, category:, properties:, metadata:, deleted_at:, created_at: }
+      )
     end
   end
 end

@@ -8,12 +8,14 @@ Universal Portable Dataset (UPD) export.
 | --- | --- | --- | --- |
 | **COCO (Video)** | One COCO instances file per dataset: boxes, polygons and their outlines | Videos, frame numbers, tracks, keyframes, rotation, properties, frame and video tags | [COCO README](coco/README.md) |
 | **YOLO (Video)** | One Ultralytics YOLO dataset per dataset: boxes, outlines or rotated boxes (Task option), with an optional validation share | Classes and shapes only | [YOLO README](yolo/README.md) |
+| **Mask Segmentation (Video)** | One class mask PNG per frame: every box and polygon painted with its class | Classes and their colours only | [Mask Segmentation README](segmentation/README.md) |
 
 Pick COCO to keep everything IDAH knows about the annotations, or to work
 with tracking. Pick YOLO to train a detector, a segmentation model or an
-oriented-box model right away.
+oriented-box model right away. Pick Mask Segmentation to train a semantic
+segmentation model, where every pixel gets a class.
 
-This page covers what both formats share: which frames are exported, how
+This page covers what the formats share: which frames are exported, how
 shapes are placed, how files are named, and the export report. Each format's
 README covers its own files.
 
@@ -28,8 +30,9 @@ README covers its own files.
 
 A format can add options of its own, shown in the dialog when it is selected;
 COCO (Video) adds a choice of frames (all, or keyframes only) and of how boxes
-are written (polygons, or rectangles), and YOLO (Video) adds a task
-and a validation share (see their READMEs).
+are written (polygons, or rectangles), YOLO (Video) adds a task and a
+validation share, and Mask Segmentation (Video) adds the same choice of frames
+as COCO (see their READMEs).
 
 A selection can hold several datasets, but only `idah-video` ones: an export
 that includes a dataset of another modality fails.
@@ -137,12 +140,12 @@ export, so nothing is left out without a trace.
 | --- | --- |
 | `datasets` | Datasets exported: COCO files or YOLO datasets. |
 | `videos` | Videos with at least one exported frame. |
-| `images` | Frames exported: COCO images, or YOLO label files. |
-| `annotations` | Shapes exported, one per shape per frame: COCO annotations, or YOLO label lines. |
+| `images` | Frames exported: COCO images, YOLO label files, or mask PNGs. |
+| `annotations` | Shapes exported, one per shape per frame: COCO annotations, YOLO label lines, or painted shapes. |
 | `interpolated_annotations` | How many of them were computed between keyframes. |
 | `image_files` | Frame images written. `0` without medias; lower than `images` when some could not be extracted (see `warnings`). |
 | `skipped` | Data left out, counted by reason (below). |
-| `split_groups` | COCO only: groups exported as several tracks because their annotations have different categories (see the COCO README). Always empty for YOLO. |
+| `split_groups` | COCO only: groups exported as several tracks because their annotations have different categories (see the COCO README). Always empty for YOLO and Mask Segmentation. |
 | `warnings` | Problems with a whole entry, one message each (below). |
 
 ### skipped
@@ -154,7 +157,8 @@ export, so nothing is left out without a trace.
 | `no_keyframes` | A box or polygon without any keyframe, so without geometry. |
 | `zero_area` | A shape on one frame that lies outside the video: clamped to the frame, it is a line or a point. |
 | `too_few_points` | A polygon on one frame with fewer than 3 points. |
-| `unsupported_shape_type:<type>` | An annotation the format cannot hold. YOLO counts frame tags (`idah-video:frame`) and entry-level tags (`entry:root`) here; COCO keeps them. |
+| `unsupported_shape_type:<type>` | An annotation the format cannot hold. YOLO and Mask Segmentation count frame tags (`idah-video:frame`) and entry-level tags (`entry:root`) here; COCO keeps them. |
+| `too_many_classes` | Mask Segmentation only: a shape of a dataset's 256th class or later, as a mask PNG holds 255 classes besides background. |
 | `videos_without_annotated_frames` | An entry with nothing to export. |
 | `datasets_without_annotated_frames` | A dataset with nothing to export; it gets no file or folder. |
 
@@ -186,11 +190,14 @@ The plugin system loads `backends/sync` in the sync service and calls
 | --- | --- |
 | `coco/` | `Coco::Exporter` and its writer. See the [COCO README](coco/README.md). |
 | `yolo/` | `Yolo::Exporter`. See the [YOLO README](yolo/README.md). |
+| `segmentation/` | `Segmentation::Exporter`. See the [Mask Segmentation README](segmentation/README.md). |
 | `helpers/base_exporter.rb` | What every exporter does: goes through the datasets, checks their modality, applies the entries filter, writes the report. |
 | `helpers/video_entry.rb` | Reads one entry: its video's name and size, its shapes frame by frame in pixels, its tags; extracts its frames. |
 | `helpers/category_index.rb` | Builds a dataset's categories from its labeling configuration. |
 | `helpers/interpolator.rb`, `helpers/polygon_morph.rb` | Frames between keyframes: ports of the frontend's `utils/interpolation.ts` and of flubber 0.4.2. |
 | `helpers/geometry.rb` | Pixels, rotation, clamping, box and area. |
+| `helpers/canvas.rb` | A class mask being painted: polygon fill. |
+| `helpers/png.rb` | Writes palette PNGs, with Ruby's Zlib only. |
 | `helpers/frame_extractor.rb` | Extracts frames with ffmpeg, in one pass per video. |
 | `helpers/names.rb` | File and folder names, unique in the export. |
 | `helpers/report.rb` | `export_report.json`. |
