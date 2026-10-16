@@ -9,6 +9,7 @@
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
+import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
@@ -59,7 +60,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: { ...command },
         async do() {
-          let created;
+          let created: AnnotationItem;
           if (hasRun) {
             created = await data.annotations!.restore({
               id: createdId,
@@ -67,7 +68,7 @@ export function register(driver: IIdahDriverV2): void {
               shape_args: props.shape,
               category: props.category ?? "",
               properties: props.properties,
-            } as any);
+            });
           } else {
             created = await data.annotations!.create({
               id: createdId,

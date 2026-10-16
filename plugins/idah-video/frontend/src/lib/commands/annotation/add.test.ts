@@ -80,7 +80,8 @@ function resetMocks(): void {
   mockCreateFn.mockReset();
   mockCreateFn.mockResolvedValue({ id: "created" });
   mockRestoreFn.mockReset();
-  mockRestoreFn.mockResolvedValue({ id: "restored" });
+  // Resolve to a record carrying the original id, like the real store now does.
+  mockRestoreFn.mockImplementation((record: any) => Promise.resolve({ ...record }));
   mockDeleteFn.mockReset();
   mockDeleteFn.mockResolvedValue(undefined);
   mockSelectAnnotation.mockReset();
@@ -136,10 +137,16 @@ describe("annotation.add", () => {
     expect(mockRestoreFn).not.toHaveBeenCalled();
 
     // Redo: restore with the same id, never re-create
+    mockSelectAnnotation.mockClear();
+    mockSetMode.mockClear();
     await action.do();
     expect(mockCreateFn).not.toHaveBeenCalled();
     expect(mockRestoreFn).toHaveBeenCalledTimes(1);
     const restored = mockRestoreFn.mock.calls[0][0];
     expect(restored.id).toBe("test-uuid-0");
+
+    // do() finishes: the restored record is selected and the mode is reset
+    expect(mockSelectAnnotation).toHaveBeenCalledWith(expect.objectContaining({ id: "test-uuid-0" }));
+    expect(mockSetMode).toHaveBeenCalledWith("editor");
   });
 });

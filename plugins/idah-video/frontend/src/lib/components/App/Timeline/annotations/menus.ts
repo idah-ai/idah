@@ -42,8 +42,7 @@ export function getGroupContextMenus(props: { track: TrackData }): Menus {
           label: "Lock/Unlock Group",
           icon: isSomeLocked ? LockIcon : LockOpenIcon,
           alwaysShow: isSomeLocked,
-          onClick: () =>
-            getDriver().command.call("idah-video:annotation.group.toggle-editability", { groupId: track.id }),
+          onClick: () => getDriver().command.call("idah-video:annotation.group.toggle-editability", { groupId: track.id }),
         },
         delete: {
           label: "Delete group",

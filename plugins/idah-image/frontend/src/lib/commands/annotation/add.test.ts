@@ -112,7 +112,8 @@ describe("annotation.add (mask path)", () => {
     _mockMaskToolActive = "brush";
 
     mockCreate.mockResolvedValue({ id: "created-ann-id" });
-    mockRestore.mockResolvedValue({ id: "created-ann-id" });
+    // Resolve to a record carrying the original id, like the real store now does.
+    mockRestore.mockImplementation((record: any) => Promise.resolve({ ...record }));
 
     mockDriver = {
       command: { register: vi.fn() },
@@ -191,6 +192,7 @@ describe("annotation.add (mask path)", () => {
     mockCreate.mockClear();
     mockRestore.mockClear();
     mockSetShapes.mockClear();
+    mockSelectAnnotation.mockClear();
     await action.do();
 
     expect(mockCreate).not.toHaveBeenCalled();
@@ -202,7 +204,9 @@ describe("annotation.add (mask path)", () => {
       category: "cat",
       properties: undefined,
     });
-    // Tiles are still flushed on redo (backend upserts; soft-deleted tiles restore)
+    // do() finishes: the restored record is selected...
+    expect(mockSelectAnnotation).toHaveBeenCalledWith(expect.objectContaining({ id: "generated-uuid-123" }));
+    // ...and tiles are still flushed on redo (backend upserts; soft-deleted tiles restore)
     expect(mockSetShapes).toHaveBeenCalledWith(
       "generated-uuid-123",
       expect.arrayContaining([
