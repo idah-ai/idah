@@ -80,16 +80,36 @@ export function register(driver: IIdahDriverV2): void {
         maskPolygonDraft.closedPoints = null;
       }
 
+      // Tracks whether do() has run before. On the first run the annotation is
+      // created; on later runs (redo after undo soft-deleted it) it is restored
+      // instead, because the backend row still exists (deleted_at set) and a
+      // plain create would collide with it. The mask tile flush below still runs
+      // on redo: the backend upserts tiles, and soft-deleted tiles come back
+      // with restore().
+      let hasRun = false;
+
       return {
         command: { ...command },
         async do() {
-          const created = await data.annotations!.create({
-            id: createdId,
-            shape_type: shapeType,
-            shape_args: props.shape,
-            category: props.category ?? "",
-            properties: props.properties,
-          });
+          let created;
+          if (hasRun) {
+            created = await data.annotations!.restore({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            } as any);
+          } else {
+            created = await data.annotations!.create({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          }
+          hasRun = true;
           selection.selectAnnotation(created as any);
 
           if (shapeType === IMAGE_MASK && dirtyTileKeys.length > 0) {

@@ -33,9 +33,7 @@
   // Variables
   let { trackId, startRange, endRange, rawData } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
-  let isKeyframe = $derived(
-    rawData.shape_args.frames.some((f: { frame: number; x?: number; y?: number }) => f.frame === frame),
-  );
+  let isKeyframe = $derived(rawData.shape_args.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
   // When this is the annotation's only keyframe, deleting it would empty the annotation.
   // Hide the "Delete keyframe" action and steer the user to "Delete annotation" instead.
   let isLastKeyframe = $derived(isKeyframe && rawData.shape_args.frames.length <= 1);
@@ -60,37 +58,37 @@
         ...(isLastKeyframe
           ? {}
           : isKeyframe
-            ? {
-                deleteKeyframe: {
-                  label: `Delete keyframe`,
-                  icon: Trash2Icon,
-                  disabled: annotationIsLocked || !isEditable(),
-                  destructive: true,
-                  onClick: () => {
-                    getDriver().command.call("idah-video:annotation.keyframe.delete", {
-                      annotationId: rawData.id,
+          ? {
+              deleteKeyframe: {
+                label: `Delete keyframe`,
+                icon: Trash2Icon,
+                disabled: annotationIsLocked || !isEditable(),
+                destructive: true,
+                onClick: () => {
+                  getDriver().command.call("idah-video:annotation.keyframe.delete", {
+                    annotationId: rawData.id,
+                    frame,
+                  });
+                },
+              },
+            }
+          : {
+              addKeyframe: {
+                label: `Add keyframe`,
+                icon: FramerIcon,
+                disabled: annotationIsLocked || !isEditable(),
+                onClick: () => {
+                  getDriver().command.call("idah-video:annotation.keyframe.add", {
+                    annotationId: rawData.id,
+                    selection: {
                       frame,
-                    });
-                  },
+                      angle: 0,
+                      points: [],
+                    },
+                  });
                 },
-              }
-            : {
-                addKeyframe: {
-                  label: `Add keyframe`,
-                  icon: FramerIcon,
-                  disabled: annotationIsLocked || !isEditable(),
-                  onClick: () => {
-                    getDriver().command.call("idah-video:annotation.keyframe.add", {
-                      annotationId: rawData.id,
-                      selection: {
-                        frame,
-                        angle: 0,
-                        points: [],
-                      },
-                    });
-                  },
-                },
-              }),
+              },
+            }),
         split: {
           label: `Split at frame ${frame + 1}`,
           icon: SquareSplitHorizontalIcon,

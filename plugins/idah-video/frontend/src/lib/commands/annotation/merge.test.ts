@@ -316,6 +316,93 @@ describe("annotation.merge", () => {
     expect(mergeActiveWhen()).toBe(false);
   });
 
+  it("split redo: do → undo → do creates once then restores the right piece", async () => {
+    const original = makePiece("orig", 0, 4, {
+      shape_args: {
+        start: 0,
+        end: 4,
+        frames: [
+          { frame: 0, angle: 0, points: [[0, 0], [100, 100]] },
+          { frame: 4, angle: 0, points: [[20, 20], [80, 80]] },
+        ],
+      },
+    });
+    mockDataItems.push(original);
+    mockSelectedAnnotationIds.add("orig");
+
+    const { splitCallback } = registerCommands();
+    const action = splitCallback({ annotationId: "orig", at: 3 });
+
+    // First run: create the right piece
+    await action.do();
+    expect(mockCreateFn).toHaveBeenCalledTimes(1);
+    const right = mockCreateFn.mock.calls[0][0];
+    expect(right.id).toBe("test-uuid-0");
+
+    // Undo: soft-deletes the right piece
+    mockCreateFn.mockClear();
+    mockRestoreFn.mockClear();
+    await action.undo!();
+    expect(mockDeleteFn).toHaveBeenCalledWith(right.id);
+    expect(mockCreateFn).not.toHaveBeenCalled();
+    expect(mockRestoreFn).not.toHaveBeenCalled();
+
+    // Redo: restore the right piece instead of creating it again
+    await action.do();
+    expect(mockCreateFn).not.toHaveBeenCalled();
+    expect(mockRestoreFn).toHaveBeenCalledTimes(1);
+    expect(mockRestoreFn).toHaveBeenCalledWith(right);
+  });
+
+  it("split → merge → undo merge → undo split → redo split → redo merge succeeds", async () => {
+    const original = makePiece("orig", 0, 4, {
+      shape_args: {
+        start: 0,
+        end: 4,
+        frames: [
+          { frame: 0, angle: 0, points: [[0, 0], [100, 100]] },
+          { frame: 4, angle: 0, points: [[20, 20], [80, 80]] },
+        ],
+      },
+    });
+    mockDataItems.push(original);
+    mockSelectedAnnotationIds.add("orig");
+
+    const { splitCallback, mergeCallback } = registerCommands();
+
+    // Split
+    const splitAction = splitCallback({ annotationId: "orig", at: 3 });
+    await splitAction.do();
+    const left = mockUpdateFn.mock.calls[0][0];
+    const right = mockCreateFn.mock.calls[0][0];
+
+    // Merge the two pieces
+    mockDataItems.splice(0, mockDataItems.length, left, right);
+    mockSelectedAnnotationIds.clear();
+    mockSelectedAnnotationIds.add(left.id);
+    mockSelectedAnnotationIds.add(right.id);
+    const mergeAction = mergeCallback();
+    await mergeAction.do();
+
+    // Undo merge
+    await mergeAction.undo!();
+    // Undo split
+    await splitAction.undo!();
+    // Redo split (must restore, not create)
+    await splitAction.do();
+    // Redo merge
+    await mergeAction.do();
+
+    // Every store call succeeded (mocks resolve by default); final state is merged
+    const merged = mockUpdateFn.mock.calls[mockUpdateFn.mock.calls.length - 1][0];
+    expect(merged.id).toBe("orig");
+    expect(merged.shape_args.start).toBe(0);
+    expect(merged.shape_args.end).toBe(4);
+    expect(merged.shape_args.frames.map((f: any) => f.frame)).toEqual([0, 2, 3, 4]);
+    // The right piece was restored on redo, not re-created
+    expect(mockRestoreFn).toHaveBeenCalledWith(right);
+  });
+
   it("split → merge round-trip restores original id, range and keyframes plus seams", async () => {
     // Original single annotation
     const original = makePiece("orig", 0, 4, {

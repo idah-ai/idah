@@ -70,12 +70,8 @@
     };
 
     /* Select annotation — keep the current selection when this one is already
-       selected (mirrors Viewport shape Shift+click multi-select). */
-    if (selection.isAnnotationSelected(annotation.id)) {
-      // keep current selection
-    } else {
-      selection.selectAnnotation(annotation);
-    }
+       selected (mirrors the track right-click in Timeline/_Track.svelte). */
+    if (!selection.isAnnotationSelected(annotation.id)) selection.selectAnnotation(annotation);
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
