@@ -159,7 +159,7 @@
         <SingleSelectField
           {name}
           label={exportOptionLabel(field)}
-          description={field.description}
+          info={field.description}
           required={field.required}
           choices={exportOptionChoices(field)}
           value={optionValues[field.name] as string | null}
