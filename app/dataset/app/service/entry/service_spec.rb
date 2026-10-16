@@ -766,6 +766,21 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#reopen_targets" do
+    let!(:completed_entry) do
+      repo.create(
+        {
+          project_id:,
+          dataset_id:,
+          resource: "completed-video.mp4",
+          status: "completed",
+          wf_step: "done",
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
+        }
+      )
+    end
     it "returns the workflow steps a completed entry can be reopened to" do
       expect(subject.reopen_targets(completed_entry)).to eq(%w[annotate review])
     end
