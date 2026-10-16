@@ -17,6 +17,7 @@ class ExportsExpo < BaseExpo
 
     index do
       allowed_filters :id__in,
+                      :dataset_id__eq,
                       :created_at__gte,
                       :created_at__lte
     end
@@ -45,6 +46,7 @@ class ExportsExpo < BaseExpo
     input do
       field :project_id, type: Integer, required: true
       field :dataset_ids, type: Array, required: true
+      field? :entry_ids, Array, of: String
       field :exporter, type: String, required: true
       field :options, Hash, default: {} do
         field :include_medias, String, default: "original"
@@ -57,7 +59,8 @@ class ExportsExpo < BaseExpo
       params[:project_id],
       params[:dataset_ids],
       params[:exporter],
-      params[:options]
+      params[:options],
+      entry_ids: params[:entry_ids]
     )
   end
 

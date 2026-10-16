@@ -99,7 +99,12 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
 
     it "creates export job" do
       expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id, dataset_ids, exporter, { include_medias: "original", completed_entries: true })
+        .with(project_id,
+              dataset_ids,
+              exporter,
+              { include_medias: "original",
+                completed_entries: true },
+              entry_ids: nil)
         .and_return(export_without_file)
 
       post "/exports/export",
@@ -112,9 +117,33 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
       expect(last_response.status).to eq 200
     end
 
+    it "forwards entry_ids when provided" do
+      entry_ids = ["019bba87-7810-7935-a8ae-d2a6bacebecb"]
+
+      expect_any_instance_of(Exports::Service).to receive(:create)
+        .with(
+          project_id,
+          dataset_ids,
+          exporter,
+          { include_medias: "original", completed_entries: true },
+          entry_ids:
+        )
+        .and_return(export_without_file)
+
+      post "/exports/export",
+           {
+             project_id:,
+             dataset_ids:,
+             exporter:,
+             entry_ids:
+           }
+
+      expect(last_response.status).to eq 200
+    end
+
     it "defaults completed_entries to true when options are given without it" do
       expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id, dataset_ids, exporter, { include_medias: "all", completed_entries: true })
+        .with(project_id, dataset_ids, exporter, { include_medias: "all", completed_entries: true }, entry_ids: nil)
         .and_return(export_without_file)
 
       post "/exports/export",
@@ -130,7 +159,12 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
 
     it "forwards completed_entries when set to false" do
       expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id, dataset_ids, exporter, { include_medias: "original", completed_entries: false })
+        .with(project_id,
+              dataset_ids,
+              exporter,
+              { include_medias: "original",
+                completed_entries: false },
+              entry_ids: nil)
         .and_return(export_without_file)
 
       post "/exports/export",
@@ -146,7 +180,12 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
 
     it "coerces a string completed_entries into a boolean" do
       expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id, dataset_ids, exporter, { include_medias: "original", completed_entries: false })
+        .with(project_id,
+              dataset_ids,
+              exporter,
+              { include_medias: "original",
+                completed_entries: false },
+              entry_ids: nil)
         .and_return(export_without_file)
 
       post "/exports/export",

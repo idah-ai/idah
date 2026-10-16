@@ -28,6 +28,11 @@ export class EntrySelection {
     }),
   );
 
+  /** Selected entry records, in selection order. */
+  selectedEntryRecords: EntryRecord[] = $derived(
+    this.controller.selectedIds.map((id) => this.entryMap.get(id)).filter((e): e is EntryRecord => !!e),
+  );
+
   checkAnyAssigned(ids: string[]): boolean {
     return ids.some((id) => !!this.entryMap.get(id)?.assigned_to_id);
   }
