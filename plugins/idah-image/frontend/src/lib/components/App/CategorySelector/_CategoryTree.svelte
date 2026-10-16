@@ -395,9 +395,24 @@
 
 <ConfirmModal
   title="Delete annotations in this category"
-  description="Are you sure you want to delete all annotations in this category?"
+  description={`Are you sure you want to delete all ${
+    modalityShape
+      ? humanize(modalityShape.replace("idah-image:", ""), {
+          capitalize: false,
+          capitalizeFirstWord: false,
+        })
+      : "uncategorized"
+  } annotations in ${
+    categoryToDelete
+      ? `the "${humanize(categoryToDelete)}"`
+      : "this"
+  } category?`}
   onConfirm={() => {
-    deleteCategoryAnnotations({ categoryId: categoryToDelete!, shapeType: modalityShape });
+    deleteCategoryAnnotations({
+      categoryId: categoryToDelete!,
+      shapeType: modalityShape,
+    });
+
     openConfirmCategoryDeleteDialog = false;
     categoryToDelete = null;
   }}

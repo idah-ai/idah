@@ -5,8 +5,10 @@ import { getDriver } from "$lib/state/driver.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
 
-import type { IVideoAnnotationRecord } from "$lib/types";
+import { VIDEO_FRAME, ENTRY_ROOT, type IVideoAnnotationRecord } from "$lib/types";
+import { humanize } from "$lib/utils/string";
 
 export interface AnnotationAction {
   label: string;
@@ -15,7 +17,7 @@ export interface AnnotationAction {
   onclick: (e: MouseEvent) => void;
 }
 
-export function getAnnotationActions(ann: IVideoAnnotationRecord): AnnotationAction[] {
+export function getAnnotationActions(ann: IVideoAnnotationRecord, annDisplayName: string | undefined): AnnotationAction[] {
   return [
     {
       label: "Focus Annotation",
@@ -34,7 +36,17 @@ export function getAnnotationActions(ann: IVideoAnnotationRecord): AnnotationAct
             disabled: annotation.isLocked(ann) || viewport.isReviewWorkspace,
             onclick: (e: MouseEvent) => {
               e.stopPropagation();
-              getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+              const isTag = ann.shape_type === VIDEO_FRAME || ann.shape_type === ENTRY_ROOT;
+              confirmAnnotationsDelete({
+                count: 1,
+                title: "Delete Annotation",
+                type: isTag ? "tag" : "annotation",
+                shape: ann.shape_type === ENTRY_ROOT ? "video" : humanize(ann.shape_type.split(":")[1]),
+                annotation_category: annDisplayName,
+                onConfirm: () => {
+                  getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+                },
+              });
             },
           },
         ]

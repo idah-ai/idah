@@ -25,7 +25,7 @@
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
-  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -151,9 +151,10 @@
           icon: Trash2Icon,
           disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
-            showConfirmDialog({
+            confirmAnnotationsDelete({
+              count: annotations.length,
               title: "Delete all annotations",
-              description: "Are you sure you want to delete all annotations?",
+              description: "Are you sure you want to delete all annotations in this entry?",
               onConfirm: () => getDriver().command.call("idah-image:annotation.delete-all"),
             });
           },

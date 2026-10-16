@@ -67,7 +67,7 @@
 
   {#if annotation}
     <div class="absolute top-0 right-0 flex items-center gap-0">
-      {#each getAnnotationActions(annotation) as { label, icon: Icon, disabled: actionDisabled, onclick }, index (index)}
+      {#each getAnnotationActions(annotation, displayName) as { label, icon: Icon, disabled: actionDisabled, onclick }, index (index)}
         <CategoryAction
           {label}
           icon={Icon}

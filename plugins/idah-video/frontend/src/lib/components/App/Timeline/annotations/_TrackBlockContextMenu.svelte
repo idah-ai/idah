@@ -102,7 +102,7 @@
     danger: {
       items: {
         delete: {
-          label: `Delete annotation`,
+          label: `Delete annotation track`,
           icon: Trash2Icon,
           disabled: annotationIsLocked || !isEditable(),
           destructive: true,
