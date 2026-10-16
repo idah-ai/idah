@@ -185,6 +185,57 @@ module Entry
       end
     end
 
+    def reopen(entry_id, target_step: nil)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+
+        unless entry.status == "completed"
+          raise Verse::Error::ValidationFailed, "Only completed entries can be reopened"
+        end
+
+        workflow = entry.dataset.entry_workflow.new(entries, entry)
+        target = (target_step || workflow.first_workflow_step).to_s
+
+        unless workflow.reopenable_steps.map(&:to_s).include?(target)
+          raise Verse::Error::ValidationFailed, "Invalid reopen target step \"#{target}\""
+        end
+
+        assignee_id, assignee_email = workflow.assignee_for_step(target.to_sym)
+
+        # If the previous assignee no longer has access to the project,
+        # the entry becomes Unassigned.
+        if assignee_id &&
+           !project_members.find_by({ account_id: assignee_id, project_id: entry.project_id, disabled_at: nil })
+          assignee_id = nil
+          assignee_email = nil
+        end
+
+        entries.reopen(
+          entry.id,
+          {
+            wf_step: target,
+            status: "in_progress",
+            assigned_to_id: assignee_id,
+            assigned_to_email: assignee_email,
+            reopened_by_id: auth_context.metadata[:id],
+            reopened_by_email: auth_context.metadata[:email]
+          }
+        )
+
+        # Dataset status changes to in_progress if
+        # it was previously completed.
+        system_datasets_repo.update_progress!(entry.dataset_id)
+
+        entries.find!(entry.id, included: [:dataset])
+      end
+    end
+
+    def reopen_targets(entry_id)
+      entry = entries.find!(entry_id, included: [:dataset])
+
+      entry.dataset.entry_workflow.new(entries, entry).reopenable_steps.map(&:to_s)
+    end
+
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
         system_entries_repo.unassign(entry.id)

@@ -178,5 +178,25 @@ RSpec.describe Dataset, database: true do
       subject.update_progress!(dataset_id)
       expect(subject.find!(dataset_id).status).to eq("in_progress")
     end
+
+    it "decrements completed counter when a completed entry is moved to in_progress" do
+      add_entry("completed")
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(1)
+      expect(dataset.entries_in_progress_count).to eq(0)
+
+      completed_entry = Entry::Repository.new(auth_context)
+                                         .index({ dataset_id: dataset_id, status: "completed" }).first
+      Entry::Repository.new(auth_context).update!(completed_entry.id, { status: "in_progress" })
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(0)
+      expect(dataset.entries_in_progress_count).to eq(1)
+
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("in_progress")
+    end
   end
 end

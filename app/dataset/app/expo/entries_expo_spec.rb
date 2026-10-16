@@ -159,6 +159,48 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "#reopen" do
+    it "calls service.reopen with entry_id and no target_step" do
+      expect(service).to receive(:reopen).with(uuid).and_return(entry_record)
+
+      post "/entries/#{uuid}/reopen"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+    end
+
+    it "calls service.reopen with target_step" do
+      expect(service).to receive(:reopen).with(uuid, target_step: "review").and_return(entry_record)
+
+      post "/entries/#{uuid}/reopen",
+           {
+             data: {
+               attributes: {
+                 target_step: "review"
+               }
+             }
+           }
+
+      expect(last_response.status).to eq 200
+      record = deserialize(JSON.parse(last_response.body, symbolize_names: true))
+      expect(record.id).to eq uuid
+    end
+  end
+
+  describe "#reopen_targets" do
+    it "calls service.reopen_targets with entry_id and returns the steps" do
+      expect(service).to receive(:reopen_targets).with(uuid).and_return(["annotate", "review"])
+
+      get "/entries/#{uuid}/reopen_targets"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data]).to eq({ data: ["annotate", "review"] })
+    end
+  end
+
   describe "#error" do
     it "calls service.error with entry_id and options" do
       expect(service).to receive(:error).with(
