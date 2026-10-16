@@ -11,7 +11,29 @@ field goes in `attributes` and in IDAH ids on images, which COCO tools ignore.
 The export appears as **COCO (Image)** in the export dialog for image
 datasets. What it shares with the other image exports (export options, how
 shapes are placed, names, and the export report) is described in the
-[image exports README](../README.md). It has no options of its own.
+[image exports README](../README.md).
+
+## Options
+
+Beside "Include medias" and "Completed Entries Only", the export dialog shows
+one option when COCO (Image) is selected:
+
+| Option | Values | Default | Effect |
+| --- | --- | --- | --- |
+| Boxes (`boxes`) | Polygons (`polygon`), Rectangles (`rectangle`) | Polygons | How boxes are written; see [Boxes](#boxes). |
+
+### Boxes
+
+COCO has no box-only annotation: every object has a `segmentation` beside its
+`bbox`, and tools read one differently from the other.
+
+| Boxes | `segmentation` of an upright box | Good for |
+| --- | --- | --- |
+| **Polygons** (`polygon`, default) | its 4 corners | Every COCO tool. `pycocotools` (`annToMask`, mask evaluation) and segmentation training read the box as its own mask. Annotation tools import it as a polygon. |
+| **Rectangles** (`rectangle`) | `[]`, the box is its `bbox` only | Annotation tools that import a box without `segmentation` as a rectangle. `pycocotools`' `annToMask` and mask evaluation fail on an empty `segmentation`: filter these annotations out before using masks. Detection training and box evaluation are not affected. |
+
+A rotated box keeps its 4 corners either way, as a `bbox` cannot hold a
+rotation; annotation tools import it as a polygon.
 
 ## The zip
 
@@ -94,7 +116,7 @@ One per shape.
 
 | Field | Meaning |
 | --- | --- |
-| `segmentation` | Boxes, polygons, circles and ellipses: the outline as one polygon `[[x1, y1, x2, y2, …]]`, at least 3 points. Masks: compressed RLE `{"size": [height, width], "counts": "…"}` (below). |
+| `segmentation` | Boxes, polygons, circles and ellipses: the outline as one polygon `[[x1, y1, x2, y2, …]]`, at least 3 points; `[]` for an upright box with Boxes: Rectangles (see [Boxes](#boxes)). Masks: compressed RLE `{"size": [height, width], "counts": "…"}` (below). |
 | `bbox` | The axis-aligned box around the shape, `[x, y, width, height]`. |
 | `area` | The outline's area, or the mask's number of pixels; always above 0. |
 | `category_id` | The category in `categories`. |

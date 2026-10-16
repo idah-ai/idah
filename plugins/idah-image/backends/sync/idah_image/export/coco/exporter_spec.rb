@@ -48,10 +48,14 @@ RSpec.describe IdahImage::Export::Coco::Exporter do
   end
 
   describe "metadata" do
-    it "describes the format, without options" do
+    it "describes the format, and how boxes are written as an option" do
+      field = exporter.options.fields.first
+
       expect(exporter.name).to eq("COCO (Image)")
       expect(exporter.description).to be_a(String)
-      expect(exporter.options).to eq(Verse::Schema.empty)
+      expect(field.key).to eq(:boxes)
+      expect(field.default).to eq("polygon")
+      expect(field.opts[:meta][:choices].map { |choice| choice[:value] }).to eq(%w[polygon rectangle])
     end
   end
 
@@ -88,8 +92,25 @@ RSpec.describe IdahImage::Export::Coco::Exporter do
 
       annotation = export[:annotations].first
 
+      expect(annotation[:segmentation]).to eq([[250.0, 0.0, 250.0, 200.0, 150.0, 200.0, 150.0, 0.0]])
       expect(annotation[:bbox]).to eq([150.0, 0.0, 100.0, 200.0])
       expect(annotation[:attributes][:rotation]).to eq(90.0)
+    end
+
+    context "with boxes: rectangle" do
+      let(:options) { { boxes: "rectangle" } }
+      let(:turned) do
+        shape("car-2", "idah-image:bounding-box", { points: corners(0.5, 0.1, 0.2, 0.2), angle: Math::PI / 2 })
+      end
+      let(:annotations) { [car, turned] }
+
+      it "writes an upright box as its bbox only, and a rotated box with its corners" do
+        upright, rotated = export[:annotations]
+
+        expect(upright).to include(segmentation: [], bbox: [100.0, 50.0, 200.0, 100.0], area: 20_000.0)
+        expect(rotated[:segmentation].first.size).to eq(8)
+        expect(rotated[:attributes][:rotation]).to eq(90.0)
+      end
     end
 
     context "with a circle and an ellipse" do

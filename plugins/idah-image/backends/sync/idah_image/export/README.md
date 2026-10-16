@@ -26,7 +26,9 @@ covers its own files.
 | Include medias: All medias (`all`) | Same as original. Thumbnails and resized copies have no place in a dataset. |
 | Completed Entries Only | On by default: only completed entries are exported. Switch it off to export every entry. |
 
-YOLO (Image) adds a task and a validation share (see its README).
+A format can add options of its own, shown in the dialog when it is selected;
+COCO (Image) adds how boxes are written (polygons, or rectangles), and
+YOLO (Image) adds a task and a validation share (see their READMEs).
 
 A selection can hold several datasets, but only `idah-image` ones: an export
 that includes a dataset of another modality fails.
