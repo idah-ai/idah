@@ -3,9 +3,9 @@
   import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
 
   import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
-  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
-  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
   import Icon from "$lib/components/ui/Icon/Icon.svelte";
+  import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
+  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
 
   import {
     showContextMenu,
@@ -14,13 +14,13 @@
   } from "$lib/components/App/ContextMenu/store";
   import { getGroupContextMenus } from "$lib/components/App/Timeline/annotations/menus";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
+  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
+  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { cn } from "$lib/utils";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
-  import { annotation } from "$lib/state/annotation.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
-  import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
   import type { TrackData } from "$lib/components/App/Timeline/types";
 
@@ -38,7 +38,15 @@
     return ann ? resolveAnnotationColor(ann) : "gray";
   });
   let isGroupSelected = $derived(selection.isGroupSelected(id));
-  let isGroupHidden = $derived(annotation.isHidden(id));
+  let isGroupHidden = $derived(items.length > 0 && items.every((item) => annotation.isHidden(item.rawData)));
+  let isVisibleAtFrame = $derived(
+    items.some(
+      (item) =>
+        item.startRange <= viewport.video.currentFrame.value &&
+        item.endRange >= viewport.video.currentFrame.value &&
+        !annotation.isHidden(item.rawData),
+    ),
+  );
   let isGroupLocked = $derived(annotation.isLocked(id));
   let showTooltip = $derived(isGroupHidden || title.length > 17);
   const menus = $derived(getGroupContextMenus({ track }));
@@ -86,9 +94,11 @@
 
 <button
   class={cn(
-    "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
+    "hover:bg-secondary relative box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
     {
-      "border-primary/50 bg-primary/10 border-t border-b": isGroupSelected,
+      "hover:bg-primary/5 before:bg-primary bg-clip-padding before:pointer-events-none before:absolute before:inset-y-1.5 before:left-px before:w-1 before:rounded-full before:content-['']":
+        isVisibleAtFrame,
+      "border-primary bg-primary/15 hover:bg-primary/20 border-t border-b bg-clip-padding": isGroupSelected,
     },
   )}
   style:height="{TRACK_HEIGHT}px;"
@@ -97,12 +107,12 @@
 >
   <div class="group relative flex items-center gap-2 px-2">
     {#if shapeType === VIDEO_BOUNDING_BOX}
-      <Icon src={vectorSquareIconSvg} {color} />
+      <Icon src={vectorSquareIconSvg} {color} class={isGroupHidden ? "opacity-50" : ""} />
     {:else if shapeType === VIDEO_POLYGON}
-      <Icon src={polygonIconSvg} {color} />
+      <Icon src={polygonIconSvg} {color} class={isGroupHidden ? "opacity-50" : ""} />
     {/if}
 
-    <div class="flex min-w-0 flex-col">
+    <div class="flex min-w-0 flex-col" class:opacity-50={isGroupHidden}>
       <!-- SUBTITLE::CATEGORY -->
       <span id="subtitle" class="text-muted-foreground truncate text-xs">
         {subtitle}
@@ -112,7 +122,8 @@
       {#if showTooltip}
         <Tooltips
           class={cn("font-regular min-w-64 truncate text-left text-xs group-hover:min-w-32", {
-            "text-primary font-bold": isGroupSelected,
+            "text-primary font-bold": isGroupSelected && !isGroupHidden,
+            "font-semibold": isVisibleAtFrame && !isGroupSelected,
             "min-w-44": isGroupLocked,
             "min-w-32": isGroupHidden,
           })}
@@ -128,7 +139,8 @@
       {:else}
         <span
           class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
-            "text-primary font-bold": isGroupSelected,
+            "text-primary font-bold": isGroupSelected && !isGroupHidden,
+            "font-semibold": isVisibleAtFrame && !isGroupSelected,
             "min-w-44": isGroupLocked,
             "min-w-32": isGroupHidden,
           })}

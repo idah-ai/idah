@@ -9,12 +9,13 @@
   } from "$lib/components/App/ContextMenu/store";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { isInViewport } from "$lib/components/App/Timeline/utils";
-  import { cn } from "$lib/utils";
+  import { annotation } from "$lib/state/annotation.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { viewport as vp } from "$lib/state/viewport.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
+  import { viewport as vp } from "$lib/state/viewport.svelte";
+  import { cn } from "$lib/utils";
 
-  import type { TimelineItem, Viewport, TaggingRowKind } from "$lib/components/App/Timeline/types";
+  import type { TaggingRowKind, TimelineItem, Viewport } from "$lib/components/App/Timeline/types";
 
   interface Props {
     viewport: Viewport;
@@ -29,6 +30,14 @@
   }
 
   let { viewport, items, scale, top, isSelected, trackId, kind }: Props = $props();
+
+  const isVisibleAtFrame = $derived(
+    kind !== "tagging" && items.some((item) =>
+      item.startRange <= vp.video.currentFrame.value &&
+      item.endRange >= vp.video.currentFrame.value &&
+      !annotation.isHidden(item.rawData),
+    ),
+  );
 
   // Only render items visible in the viewport
   const visibleItems = $derived(
@@ -100,7 +109,8 @@
   role="button"
   tabindex="-1"
   class={cn("track border-b", {
-    "border-primary/50 bg-primary/10 border-t border-b": isSelected,
+    "hover:bg-primary/5 bg-clip-padding": isVisibleAtFrame,
+    "border-primary bg-primary/15 hover:bg-primary/15 border-t border-b bg-clip-padding": isSelected,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"
