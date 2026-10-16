@@ -20,22 +20,32 @@ module IdahImage
           idah-image:bounding-box idah-image:polygon idah-image:circle idah-image:ellipse idah-image:mask
         ].freeze
 
-        def initialize
+        # @param shape_types [Array<Symbol>] the configurations to read, for
+        #   formats that hold other shapes, such as lines
+        def initialize(shape_types: SHAPE_TYPES)
+          @shape_types = shape_types
           @parents = {} # value id => parent id
+          @colors = {} # value id => "#RRGGBB"
           @categories = {} # value id => COCO category
         end
 
         def add_configuration(configuration)
           configuration = Keys.symbolize(configuration || {})
 
-          SHAPE_TYPES.each do |shape_type|
+          @shape_types.each do |shape_type|
             Array(configuration.dig(shape_type, :values)).each do |value|
               id = value[:id].to_s
               @parents[id] ||= value[:parent].to_s if value[:parent]
+              # A value configured for several shapes keeps its first colour.
+              @colors[id] ||= value[:color].to_s if value[:color]
               add_category(id)
             end
           end
         end
+
+        # The colour the labeling configuration gives a category, as
+        # "#RRGGBB", or nil.
+        def color_for(value_id) = @colors[value_id.to_s]
 
         # The COCO id of a category, adding it when the configuration lacks it.
         def id_for(value_id)

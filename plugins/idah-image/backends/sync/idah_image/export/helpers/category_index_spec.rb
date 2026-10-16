@@ -25,6 +25,27 @@ RSpec.describe IdahImage::Export::Helpers::CategoryIndex do
 
   before { index.add_configuration(configuration) }
 
+  describe "with line categories" do
+    subject(:index) { described_class.new(shape_types: described_class::SHAPE_TYPES + %i[idah-image:line]) }
+
+    it "adds them after the others" do
+      expect(index.categories.last).to eq({ id: 5, name: "night", supercategory: "" })
+    end
+  end
+
+  describe "#color_for" do
+    let(:configuration) do
+      {
+        "idah-image:polygon": { values: [{ id: "road", color: "#00BBD6" }, { id: "tree" }] },
+        "idah-image:mask": { values: [{ id: "road", color: "#EB1461" }] }
+      }
+    end
+
+    it "gives a category's configured colour, the first when configured twice" do
+      expect([index.color_for("road"), index.color_for("tree"), index.color_for("other")]).to eq(["#00BBD6", nil, nil])
+    end
+  end
+
   describe "#categories" do
     it "names box and polygon categories by their id, once each, in configuration order, from id 1" do
       expect(index.categories).to eq(

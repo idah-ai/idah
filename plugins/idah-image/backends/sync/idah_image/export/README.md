@@ -8,12 +8,14 @@ Universal Portable Dataset (UPD) export.
 | --- | --- | --- | --- |
 | **COCO (Image)** | One COCO instances file per dataset: boxes, polygons, circles and ellipses as outlines, masks as RLE | Rotation, properties, image tags | [COCO README](coco/README.md) |
 | **YOLO (Image)** | One Ultralytics YOLO dataset per dataset: boxes, outlines or rotated boxes (Task option), with an optional validation share | Classes and shapes only | [YOLO README](yolo/README.md) |
+| **Mask Segmentation (Image)** | One class mask PNG per image: every shape painted with its class, lines and circle and ellipse outlines 1 pixel wide | Classes and their colours only | [Mask Segmentation README](segmentation/README.md) |
 
 Pick COCO to keep everything IDAH knows about the annotations, or to keep
 masks pixel for pixel. Pick YOLO to train a detector, a segmentation model or
-an oriented-box model right away.
+an oriented-box model right away. Pick Mask Segmentation to train a semantic
+segmentation model, where every pixel gets a class.
 
-This page covers what both formats share: which shapes are exported, how they
+This page covers what the formats share: which shapes are exported, how they
 are placed, how files are named, and the export report. Each format's README
 covers its own files.
 
@@ -27,8 +29,8 @@ covers its own files.
 | Completed Entries Only | On by default: only completed entries are exported. Switch it off to export every entry. |
 
 A format can add options of its own, shown in the dialog when it is selected;
-COCO (Image) adds how boxes are written (polygons, or rectangles), and
-YOLO (Image) adds a task and a validation share (see their READMEs).
+COCO (Image) adds how boxes are written (polygons, or rectangles), and YOLO
+(Image) adds a task and a validation share (see their READMEs).
 
 A selection can hold several datasets, but only `idah-image` ones: an export
 that includes a dataset of another modality fails.
@@ -56,10 +58,10 @@ by an annotation but missing from the configuration is added at the end.
 | --- | --- |
 | Bounding box | Its 4 corners, rotated as drawn. |
 | Polygon | Its points. |
-| Circle | A 64-point polygon. |
-| Ellipse | A 64-point polygon, rotated as drawn. |
-| Mask | Its pixels: COCO RLE in COCO; in YOLO, the outline of each separate piece, holes joined by zero-width cuts. |
-| Line | Not exported: neither format holds an open line. Counted as `unsupported_shape_type:idah-image:line`. |
+| Circle | A 64-point polygon; in Mask Segmentation, its outline 1 pixel thick, drawn as a pixel circle. |
+| Ellipse | A 64-point polygon, rotated as drawn; in Mask Segmentation, its outline as for a circle. |
+| Mask | Its pixels: COCO RLE in COCO; in YOLO, the outline of each separate piece, holes joined by zero-width cuts; in Mask Segmentation, painted pixel for pixel. |
+| Line | Mask Segmentation only: painted 1 pixel wide. COCO and YOLO hold no open line and count it as `unsupported_shape_type:idah-image:line`. |
 
 Shapes are stored in IDAH as fractions of the image. The export places them in
 pixels of the original image:
@@ -127,9 +129,10 @@ export, so nothing is left out without a trace.
 | `deleted` | A deleted annotation. |
 | `no_category` | A shape without a category. |
 | `zero_area` | A shape that lies outside the image, an empty mask, or (YOLO) a mask too thin to outline. |
-| `too_few_points` | A polygon with fewer than 3 points. |
+| `too_few_points` | A polygon with fewer than 3 points, or (Mask Segmentation) a line with fewer than 2. |
 | `small_mask_pieces` | YOLO only: a separate piece of a mask covering fewer than 20 pixels (see the YOLO README). |
-| `unsupported_shape_type:<type>` | An annotation the format cannot hold: lines (`idah-image:line`) in both, image tags (`entry:root`) in YOLO; COCO keeps image tags. |
+| `unsupported_shape_type:<type>` | An annotation the format cannot hold: lines (`idah-image:line`) in COCO and YOLO, image tags (`entry:root`) in YOLO and Mask Segmentation; COCO keeps image tags. |
+| `too_many_classes` | Mask Segmentation only: a shape of a dataset's 256th class or later, as a mask PNG holds 255 classes besides background. |
 | `images_without_annotations` | An entry with nothing to export. |
 | `datasets_without_annotations` | A dataset with nothing to export; it gets no file or folder. |
 
@@ -154,11 +157,14 @@ The plugin system loads `backends/sync` in the sync service and calls
 | --- | --- |
 | `coco/` | `Coco::Exporter` and its writer. See the [COCO README](coco/README.md). |
 | `yolo/` | `Yolo::Exporter`. See the [YOLO README](yolo/README.md). |
+| `segmentation/` | `Segmentation::Exporter`. See the [Mask Segmentation README](segmentation/README.md). |
 | `helpers/base_exporter.rb` | What every exporter does: goes through the datasets, checks their modality, applies the entries filter, writes the report. |
 | `helpers/image_entry.rb` | Reads one entry: its image's name, size and file, its shapes in pixels, its tags; copies its original. |
 | `helpers/mask.rb` | Decodes a mask's tiles; gives its area, box, COCO RLE and outlines. |
 | `helpers/category_index.rb` | Builds a dataset's categories from its labeling configuration. |
 | `helpers/geometry.rb` | Pixels, rotation, ellipses, clamping, box, area and rotated rectangles. |
+| `helpers/canvas.rb` | A class mask being painted: polygon fill, line stroke and mask pixels. |
+| `helpers/png.rb` | Writes palette PNGs, with Ruby's Zlib only. |
 | `helpers/names.rb` | File and folder names, unique in the export. |
 | `helpers/report.rb` | `export_report.json`. |
 | `helpers/keys.rb` | Reads API data whatever its key type. |

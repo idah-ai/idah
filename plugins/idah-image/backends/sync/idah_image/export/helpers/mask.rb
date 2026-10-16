@@ -106,6 +106,20 @@ module IdahImage
 
         def empty? = area.zero?
 
+        # Yields each run of set pixels as its row, first column and length, in
+        # image pixels.
+        def each_span
+          @window_height.times do |y|
+            row = @pixels.byteslice(y * @window_width, @window_width)
+            start = row.index(ON)
+            while start
+              stop = row.index(OFF, start) || row.bytesize
+              yield @y0 + y, @x0 + start, stop - start
+              start = row.index(ON, stop)
+            end
+          end
+        end
+
         # [x, y, width, height] of the set pixels, or nil when empty.
         def bbox
           xs = []

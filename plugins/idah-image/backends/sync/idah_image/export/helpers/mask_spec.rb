@@ -59,6 +59,14 @@ RSpec.describe IdahImage::Export::Helpers::Mask do
     end
   end
 
+  describe "#each_span" do
+    it "yields each run of set pixels in image pixels" do
+      mask = mask(rect(130, 5, 134, 6) + [[140, 5], [2, 9]])
+
+      expect(mask.enum_for(:each_span).to_a).to eq([[5, 130, 4], [5, 140, 1], [9, 2, 1]])
+    end
+  end
+
   describe "#coco_rle" do
     it "counts runs column by column, starting with 0s, as pycocotools does" do
       # 4 x 3 image, pixels (1,0), (1,1) and (2,2) set:

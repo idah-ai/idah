@@ -15,20 +15,29 @@ module IdahImage
         CIRCLE = "idah-image:circle"
         ELLIPSE = "idah-image:ellipse"
         MASK = "idah-image:mask"
+        LINE = "idah-image:line"
         SHAPES = [BOUNDING_BOX, POLYGON, CIRCLE, ELLIPSE, MASK].freeze
 
         # A shape in pixels. `points` is its outline, rotated as drawn and
-        # clamped to the image; a mask has none and gives its pixels in `mask`.
-        # `angle` is the rotation of a box or an ellipse, in radians.
-        Shape = Data.define(:record, :points, :angle, :mask) do
+        # clamped to the image, or for a line its open path; a mask has none
+        # and gives its pixels in `mask`. `angle` is the rotation of a box or
+        # an ellipse, in radians. `curve` is a circle's or an ellipse's exact
+        # centre and radii, [cx, cy, rx, ry], before rotation: `points` traces
+        # it with 64 points.
+        Shape = Data.define(:record, :points, :angle, :mask, :curve) do
           def mask? = !mask.nil?
+
+          def line? = record.shape_type == LINE
         end
 
         attr_reader :entry, :name, :width, :height, :shapes, :entry_tags
 
-        def initialize(entry, report)
+        # @param lines [Boolean] whether to read lines, for formats that can
+        #   hold them; otherwise they are reported as unsupported
+        def initialize(entry, report, lines: false)
           @entry = entry
           @report = report
+          @lines = lines
           # The original upload holds the image's width and height.
           @media = entry.medias({ key: "" }).first
           meta = Keys.symbolize(@media&.record&.data&.dig(:attributes, :meta) || {})
@@ -81,10 +90,10 @@ module IdahImage
 
           if record.shape_type == ENTRY_ROOT
             @entry_tags << record
-          elsif SHAPES.include?(record.shape_type)
+          elsif SHAPES.include?(record.shape_type) || (@lines && record.shape_type == LINE)
             return @report.skip(:no_category) if record.category.nil? || record.category.to_s.empty?
 
-            collect_shape(record)
+            record.shape_type == LINE ? collect_line(record) : collect_shape(record)
           else
             @report.skip("unsupported_shape_type:#{record.shape_type}")
           end
@@ -98,7 +107,7 @@ module IdahImage
             mask = Mask.decode(args, width, height)
             return @report.skip(:zero_area) if mask.empty?
 
-            return @shapes << Shape.new(record:, points: nil, angle: 0.0, mask:)
+            return @shapes << Shape.new(record:, points: nil, angle: 0.0, mask:, curve: nil)
           end
 
           points = outline(record.shape_type, args, angle)
@@ -109,7 +118,21 @@ module IdahImage
           # Drawn outside the image: clamping flattens it to a line or a point.
           return @report.skip(:zero_area) if Geometry.polygon_area(points).zero?
 
-          @shapes << Shape.new(record:, points:, angle:, mask: nil)
+          @shapes << Shape.new(record:, points:, angle:, mask: nil, curve: curve(record.shape_type, args))
+        end
+
+        # A line's path in pixels, clamped to the image.
+        def collect_line(record)
+          points = Geometry.to_pixels(Array(Keys.symbolize(record.shape_args || {})[:points]), width, height)
+          return @report.skip(:too_few_points) if points.size < 2
+
+          @shapes << Shape.new(
+            record:,
+            points: Geometry.clamp(points, width, height),
+            angle: 0.0,
+            mask: nil,
+            curve: nil
+          )
         end
 
         # The outline in pixels, a box or an ellipse turned around its centre
@@ -122,21 +145,28 @@ module IdahImage
             rotated(Geometry.to_pixels(points, width, height), angle)
           when POLYGON
             Geometry.to_pixels(points, width, height)
-          when CIRCLE
-            return if points.empty?
+          when CIRCLE, ELLIPSE
+            centre_and_radii = curve(shape_type, args)
+            rotated(Geometry.ellipse(*centre_and_radii), angle) if centre_and_radii
+          end
+        end
 
+        # A circle's or an ellipse's centre and radii in pixels, [cx, cy, rx,
+        # ry], or nil for other shapes or without a centre.
+        def curve(shape_type, args)
+          points = Array(args[:points])
+          return unless [CIRCLE, ELLIPSE].include?(shape_type) && points.any?
+
+          cx, cy = Geometry.to_pixels([points[0]], width, height).first
+          if shape_type == CIRCLE
             # The radius is a fraction of the image's shorter side.
-            cx, cy = Geometry.to_pixels([points[0]], width, height).first
             radius = (args[:radius] || 0.1).to_f * [width, height].min
-            Geometry.ellipse(cx, cy, radius, radius)
-          when ELLIPSE
-            return if points.empty?
-
+            [cx, cy, radius, radius]
+          else
             # Points are the centre, then the radii as fractions of the width
             # and height.
-            cx, cy = Geometry.to_pixels([points[0]], width, height).first
             rx, ry = points[1] || [0.1, 0.05]
-            rotated(Geometry.ellipse(cx, cy, rx.to_f * width, ry.to_f * height), angle)
+            [cx, cy, rx.to_f * width, ry.to_f * height]
           end
         end
 
