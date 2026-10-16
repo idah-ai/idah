@@ -63,10 +63,11 @@ module Exports
       end
     end
 
-    # Upload the exported file to the export record
-    def upload(id, file)
+    # Upload the exported file to the export record, under `filename`, or the
+    # file's own name.
+    def upload(id, file, filename: nil)
       export = exports.find!(id)
-      filename = File.basename(file.path)
+      filename ||= File.basename(file.path)
 
       Verse::Plugin[:shrine].with_storage do |storage|
         file = storage.upload(file)

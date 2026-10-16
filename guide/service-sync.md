@@ -38,7 +38,7 @@ Shrine-backed export file record stored in the `exports` table.
 | `project_id` | `uuid` | The project being exported |
 | `created_by_id` | `uuid` | Account ID that requested the export |
 | `file_id` | `text` | Shrine file identifier |
-| `filename` | `text` | Original export filename |
+| `filename` | `text` | Download filename: the exporter's name and the export time, such as `idah-coco-image_2026-10-16_0430.zip` (`Exports::Job.filename`) |
 | `mime_type` | `text` | MIME type of the export file |
 | `size` | `bigint` | File size in bytes |
 | `created_at` | `timestamptz` | Creation timestamp |
@@ -427,7 +427,7 @@ POST /exports { project_id, dataset_id, format: "upd" }
                                     → Collect data from context layers
                                     → Run updcli-static binary
                                     → Generate output file
-                                  → Upload file via Shrine
+                                  → Upload file via Shrine, named after the exporter and the time
                                   → Update Exports::Record (file_id, filename, size)
                                   → Mark Job completed
 

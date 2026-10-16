@@ -452,6 +452,12 @@ RSpec.describe Exports::Service, database: true do
         service.upload(export_id, mock_file)
       end
 
+      it "uses the filename given" do
+        service.upload(export_id, mock_file, filename: "idah-coco-image_2026-10-16_0430.zip")
+
+        expect(repo.find!(export_id).filename).to eq("idah-coco-image_2026-10-16_0430.zip")
+      end
+
       it "registers rollback callback for file cleanup" do
         expect(repo.table.db).to receive(:after_rollback)
 
