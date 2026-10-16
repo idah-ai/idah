@@ -324,4 +324,3 @@ describe("selection.delete", () => {
     expect(mockRestore.mock.calls.length).toBe(restoreCount);
   });
 });
-// ─── Tests ─────────────────────────────────────────────────────────────────

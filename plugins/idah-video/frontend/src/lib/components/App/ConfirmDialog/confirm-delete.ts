@@ -50,12 +50,10 @@ export function confirmAnnotationsDelete(opts: ConfirmAnnotationsDeleteOptions):
   showConfirmDialog({
     title:
       opts.title ??
-      (singular
-        ? kind === "tag"
-          ? "Delete tag"
-          : "Delete annotation"
-        : kind === "tag"
-          ? "Delete tags"
+      (kind === "tag"
+        ? singular ? "Delete tag" : "Delete tags"
+        : singular
+          ? "Delete annotation"
           : "Delete all annotations"),
 
     description:
