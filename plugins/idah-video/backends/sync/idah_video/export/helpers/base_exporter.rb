@@ -15,12 +15,15 @@ module IdahVideo
         # of frames.
         IMAGE_MEDIA_OPTIONS = %w[original all].freeze
 
+        # The format's name, as in the export dialog.
+        def name = raise(NotImplementedError)
+
         def options = Verse::Schema.empty
 
         def export(context)
           @directory = context.io.directory
           @with_images = IMAGE_MEDIA_OPTIONS.include?(context.options[:include_medias].to_s)
-          @report = Report.new
+          @report = Report.new(format: name, options: context.options.to_h.transform_keys(&:to_sym))
           @dataset_stems = Set.new
 
           context.datasets.each do |dataset|
