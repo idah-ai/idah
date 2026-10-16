@@ -98,10 +98,16 @@ and gets no file; the report says so in `warnings`.
 ## export_report.json
 
 Every export has an `export_report.json` at the root of the zip, for the whole
-export, so nothing is left out without a trace.
+export, so nothing is left out without a trace. It opens with what the zip
+holds: the format, when it was exported, and the options it ran with. The zip
+itself is named after them too, such as `idah-coco-image_2026-10-16_0430.zip` (the
+format, then the date and time in UTC).
 
 ```json
 {
+  "format": "COCO (Image)",
+  "exported_at": "2026-10-16T04:30:12Z",
+  "options": { "include_medias": "original", "completed_entries": true, "boxes": "polygon" },
   "datasets": 1,
   "images": 120,
   "annotations": 1834,
@@ -116,6 +122,9 @@ export, so nothing is left out without a trace.
 
 | Field | Meaning |
 | --- | --- |
+| `format` | The export's format, as named in the export dialog. |
+| `exported_at` | When the export ran, in UTC. |
+| `options` | The options it ran with, the general ones and the format's own, defaults included, by their keys (see each format's README). |
 | `datasets` | Datasets exported: COCO files or YOLO datasets. |
 | `images` | Images exported: COCO images, or YOLO label files. |
 | `annotations` | Shapes exported: COCO annotations, or YOLO label lines (a mask in several pieces gives several lines). |
