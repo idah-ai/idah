@@ -8,7 +8,8 @@ module IdahVideo
     module Segmentation
       # Semantic segmentation export of video datasets: one class mask per
       # frame a box or polygon covers, a palette PNG where each pixel holds its
-      # class index, 0 for background.
+      # class index, 0 for background. Shapes are filled, or with `shapes:
+      # outline`, drawn as their 1-pixel outline.
       #
       # Frames between keyframes are computed as the annotation tool draws
       # them (see Helpers::VideoEntry). Shapes are painted in creation order,
@@ -32,6 +33,10 @@ module IdahVideo
           { value: "all", label: "All frames", info: "Every frame a shape covers." },
           { value: "keyframes", label: "Keyframes only", info: "Frames with a stored keyframe." }
         ].freeze
+        SHAPE_CHOICES = [
+          { value: "filled", label: "Filled", info: "Each shape's whole area. What segmentation models train on." },
+          { value: "outline", label: "Outlines", info: "Each shape's 1-pixel outline, for boundary detection." }
+        ].freeze
 
         def name = "Mask Segmentation (Video)"
 
@@ -44,11 +49,18 @@ module IdahVideo
               description: "Which frames to export.",
               choices: FRAME_CHOICES
             )
+            field(:shapes, String).default("filled").meta(
+              label: "Shapes",
+              description: "How boxes and polygons are painted.",
+              choices: SHAPE_CHOICES
+            )
           end
         end
 
         def export(context)
-          @frames = options.validate(context.options.to_h.transform_keys(&:to_sym).slice(:frames)).value[:frames]
+          settings = options.validate(context.options.to_h.transform_keys(&:to_sym).slice(:frames, :shapes)).value
+          @frames = settings[:frames]
+          @shapes = settings[:shapes]
           super
         end
 
@@ -130,7 +142,11 @@ module IdahVideo
             return false
           end
 
-          canvas.fill_polygon(shape.points, index)
+          if @shapes == "filled"
+            canvas.fill_polygon(shape.points, index)
+          else
+            canvas.outline_polygon(shape.points, index)
+          end
           true
         end
 

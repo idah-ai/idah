@@ -8,7 +8,7 @@ Universal Portable Dataset (UPD) export.
 | --- | --- | --- | --- |
 | **COCO (Video)** | One COCO instances file per dataset: boxes, polygons and their outlines | Videos, frame numbers, tracks, keyframes, rotation, properties, frame and video tags | [COCO README](coco/README.md) |
 | **YOLO (Video)** | One Ultralytics YOLO dataset per dataset: boxes, outlines or rotated boxes (Task option), with an optional validation share | Classes and shapes only | [YOLO README](yolo/README.md) |
-| **Mask Segmentation (Video)** | One class mask PNG per frame: every box and polygon painted with its class | Classes and their colours only | [Mask Segmentation README](segmentation/README.md) |
+| **Mask Segmentation (Video)** | One class mask PNG per frame: every box and polygon painted with its class, filled or as outlines (Shapes option) | Classes and their colours only | [Mask Segmentation README](segmentation/README.md) |
 
 Pick COCO to keep everything IDAH knows about the annotations, or to work
 with tracking. Pick YOLO to train a detector, a segmentation model or an
@@ -32,7 +32,7 @@ A format can add options of its own, shown in the dialog when it is selected;
 COCO (Video) adds a choice of frames (all, or keyframes only) and of how boxes
 are written (polygons, or rectangles), YOLO (Video) adds a task and a
 validation share, and Mask Segmentation (Video) adds the same choice of frames
-as COCO (see their READMEs).
+as COCO and whether shapes are filled or outlined (see their READMEs).
 
 A selection can hold several datasets, but only `idah-video` ones: an export
 that includes a dataset of another modality fails.

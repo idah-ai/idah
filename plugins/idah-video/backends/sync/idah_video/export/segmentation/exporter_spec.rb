@@ -63,9 +63,9 @@ RSpec.describe IdahVideo::Export::Segmentation::Exporter do
   end
 
   describe "metadata" do
-    it "describes the format and its frames option" do
+    it "describes the format and its frames and shapes options" do
       expect(exporter.name).to eq("Mask Segmentation (Video)")
-      expect(exporter.options.validate({}).value).to eq(frames: "all")
+      expect(exporter.options.validate({}).value).to eq(frames: "all", shapes: "filled")
     end
   end
 
@@ -90,6 +90,18 @@ RSpec.describe IdahVideo::Export::Segmentation::Exporter do
           { index: 2, name: "road", color: [0, 128, 0] }
         ]
       )
+    end
+
+    context "with shapes: outline" do
+      let(:options) { { shapes: "outline" } }
+
+      it "paints a box as the edge of its fill, 1 pixel thick" do
+        exporter.export(context)
+
+        expect(mask_rows(0).first(5)).to eq(
+          %w[00000000000000000000 00111100000000000000 00100100000000000000 00111100000000000000 00000000000000000000]
+        )
+      end
     end
 
     context "with frames: keyframes" do

@@ -14,17 +14,26 @@ report) is described in the [video exports README](../README.md).
 ## Options
 
 Beside "Include medias" and "Completed Entries Only", the export dialog shows
-one option when Mask Segmentation (Video) is selected:
+two options when Mask Segmentation (Video) is selected:
 
 | Option | Values | Default | Effect |
 | --- | --- | --- | --- |
 | Frames (`frames`) | All frames (`all`), Keyframes only (`keyframes`) | All frames | Which frames get a mask. |
+| Shapes (`shapes`) | Filled (`filled`), Outlines (`outline`) | Filled | How boxes and polygons are painted. |
 
 - **All frames** writes a mask for every frame a shape covers, frames between
   keyframes included (see [Frames](../README.md#frames)).
 - **Keyframes only** writes the frames where annotators stored a keyframe. A
   kept frame still paints every shape on it, including those computed there:
   leaving one out would turn that object into background.
+
+- **Filled** paints each shape's whole area. This is what semantic
+  segmentation models train on: they learn a class for every pixel of an
+  object.
+- **Outlines** paints each shape's edge only, 1 pixel thick, the inside left as
+  background. Use it when the boundaries are what a model should find (edge,
+  contour or crack detection); a model trained on outlines learns that an
+  object's inside is background.
 
 ## The zip
 
@@ -52,8 +61,9 @@ from PIL import Image
 classes = np.array(Image.open("masks/street/frame_000012.png"))   # (height, width), class indexes
 ```
 
-Every box and polygon visible on the frame is filled with its class, a box
-rotated as drawn. A pixel belongs to a shape when its centre lies inside the
+Every box and polygon visible on the frame is painted with its class, a box
+rotated as drawn: filled, or with Outlines its edge, the pixels of the fill
+next to background. A pixel belongs to a shape when its centre lies inside the
 shape, so two shapes sharing an edge do not overlap.
 
 ### Overlaps
@@ -118,7 +128,7 @@ frame.show()
 
 | File | Role |
 | --- | --- |
-| `exporter.rb` | `IdahVideo::Export::Segmentation::Exporter`, registered for `idah-video` in `sync.rb`. Declares the `frames` option. |
+| `exporter.rb` | `IdahVideo::Export::Segmentation::Exporter`, registered for `idah-video` in `sync.rb`. Declares the `frames` and `shapes` options. |
 
 Painting is in `../helpers/canvas.rb`, the PNG writer in `../helpers/png.rb`;
 everything else (reading entries, frames between keyframes, geometry, frame

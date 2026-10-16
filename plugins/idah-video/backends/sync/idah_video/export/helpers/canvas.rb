@@ -20,6 +20,11 @@ module IdahVideo
 
         def empty? = !@pixels.match?(/[^\x00]/n)
 
+        # Whether the pixel is painted; pixels outside the canvas are not.
+        def set?(x, y)
+          x.between?(0, @width - 1) && y.between?(0, @height - 1) && @pixels.getbyte((y * @width) + x) != 0
+        end
+
         # Fills a closed polygon of [x, y] points in pixels, by the even-odd
         # rule.
         def fill_polygon(points, value)
@@ -37,7 +42,39 @@ module IdahVideo
           end
         end
 
+        # Draws a closed polygon's outline, 1 pixel thick: the pixels the fill
+        # would set that have an unset neighbour above, below, left or right,
+        # so the outline is the edge of the filled shape.
+        def outline_polygon(points, value)
+          return if points.size < 3
+
+          xs = points.map(&:first)
+          ys = points.map(&:last)
+          left = [(xs.min - 0.5).ceil, 0].max
+          top = [(ys.min - 0.5).ceil, 0].max
+          right = [(xs.max - 0.5).floor, @width - 1].min
+          bottom = [(ys.max - 0.5).floor, @height - 1].min
+          return if right < left || bottom < top
+
+          # The fill, alone, in a canvas over the polygon's pixels.
+          shape = Canvas.new(right - left + 1, bottom - top + 1)
+          shape.fill_polygon(points.map { |x, y| [x - left, y - top] }, 1)
+
+          shape.height.times do |y|
+            shape.width.times do |x|
+              next unless shape.set?(x, y)
+              next if shape.set?(x - 1, y) && shape.set?(x + 1, y) && shape.set?(x, y - 1) && shape.set?(x, y + 1)
+
+              plot(left + x, top + y, value)
+            end
+          end
+        end
+
         private
+
+        def plot(x, y, value)
+          @pixels.setbyte((y * @width) + x, value) if x.between?(0, @width - 1) && y.between?(0, @height - 1)
+        end
 
         # Where the polygon's edges cross the horizontal line `y`, sorted.
         def crossings(points, y)

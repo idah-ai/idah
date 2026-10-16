@@ -47,4 +47,24 @@ RSpec.describe IdahVideo::Export::Helpers::Canvas do
       expect(rows.first).to eq("1111222222")
     end
   end
+
+  describe "#outline_polygon" do
+    it "sets the edge pixels of the fill, 1 pixel thick" do
+      canvas.fill_polygon([[1, 1], [6, 1], [6, 5], [1, 5]], 9)
+      filled = rows
+      canvas.pixels.replace("\x00".b * 80)
+
+      canvas.outline_polygon([[1, 1], [6, 1], [6, 5], [1, 5]], 2)
+
+      expect(rows[0..5]).to eq(%w[0000000000 0222220000 0200020000 0200020000 0222220000 0000000000])
+      # Only where the fill is.
+      expect(rows.join.chars.zip(filled.join.chars).select { |o, _| o == "2" }.map(&:last).uniq).to eq(["9"])
+    end
+
+    it "outlines along the image edge where the polygon is cut" do
+      canvas.outline_polygon([[-5, -5], [3, -5], [3, 3], [-5, 3]], 1)
+
+      expect(rows.first(4)).to eq(%w[1110000000 1010000000 1110000000 0000000000])
+    end
+  end
 end
