@@ -634,7 +634,9 @@ RSpec.describe Entry::Service, database: true do
           status: "completed",
           wf_step: "done",
           submitted_by_id: 42,
-          submitted_by_email: "annotator@example.com"
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
         }
       )
     end
@@ -665,15 +667,31 @@ RSpec.describe Entry::Service, database: true do
           role: "annotator",
           invited_by_id: 1
         )
+        ProjectMember::Repository.new(auth_context).create(
+          project_id:,
+          account_id: 43,
+          email: "reviewer@example.com",
+          role: "reviewer",
+          invited_by_id: 1
+        )
       end
 
-      it "moves entry back to the first workflow step and assigns to previous annotator" do
+      it "moves entry back to the first workflow step and assigns to previous annotator by default" do
         result = subject.reopen(completed_entry)
 
         expect(result.wf_step).to eq("annotate")
         expect(result.status).to eq("in_progress")
         expect(result.assigned_to_id).to eq(42)
         expect(result.assigned_to_email).to eq("annotator@example.com")
+      end
+
+      it "moves entry back to the requested step and assigns to its previous worker" do
+        result = subject.reopen(completed_entry, target_step: "review")
+
+        expect(result.wf_step).to eq("review")
+        expect(result.status).to eq("in_progress")
+        expect(result.assigned_to_id).to eq(43)
+        expect(result.assigned_to_email).to eq("reviewer@example.com")
       end
 
       it "marks the dataset as in_progress when it was previously completed" do
@@ -704,6 +722,52 @@ RSpec.describe Entry::Service, database: true do
         expect(result.assigned_to_id).to be_nil
         expect(result.assigned_to_email).to be_nil
       end
+    end
+
+    context "when reopening to a step with no previous worker" do
+      it "sets the entry to Unassigned" do
+        entry_without_reviewer = repo.create(
+          {
+            project_id:,
+            dataset_id:,
+            resource: "no-reviewer.mp4",
+            status: "completed",
+            wf_step: "done",
+            submitted_by_id: 42,
+            submitted_by_email: "annotator@example.com",
+            reviewed_by_id: nil,
+            reviewed_by_email: nil
+          }
+        )
+
+        ProjectMember::Repository.new(auth_context).create(
+          project_id:,
+          account_id: 42,
+          email: "annotator@example.com",
+          role: "annotator",
+          invited_by_id: 1
+        )
+
+        result = subject.reopen(entry_without_reviewer, target_step: "review")
+
+        expect(result.wf_step).to eq("review")
+        expect(result.status).to eq("in_progress")
+        expect(result.assigned_to_id).to be_nil
+        expect(result.assigned_to_email).to be_nil
+      end
+    end
+
+    context "when target_step is invalid" do
+      it "raises ValidationFailed" do
+        expect { subject.reopen(completed_entry, target_step: "export") }
+          .to raise_error(Verse::Error::ValidationFailed, /Invalid reopen target step/)
+      end
+    end
+  end
+
+  describe "#reopen_targets" do
+    it "returns the workflow steps a completed entry can be reopened to" do
+      expect(subject.reopen_targets(completed_entry)).to eq(%w[annotate review])
     end
   end
 

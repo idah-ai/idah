@@ -177,7 +177,7 @@ module Entry
       end
     end
 
-    def reopen(entry_id)
+    def reopen(entry_id, target_step: nil)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
 
@@ -186,8 +186,13 @@ module Entry
         end
 
         workflow = entry.dataset.entry_workflow.new(entries, entry)
-        target_step = workflow.first_workflow_step.to_s
-        assignee_id, assignee_email = workflow.first_stage_assignee
+        target = (target_step || workflow.first_workflow_step).to_s
+
+        unless workflow.reopenable_steps.map(&:to_s).include?(target)
+          raise Verse::Error::ValidationFailed, "Invalid reopen target step \"#{target}\""
+        end
+
+        assignee_id, assignee_email = workflow.assignee_for_step(target.to_sym)
 
         # If the previous assignee no longer has access to the project,
         # the entry becomes Unassigned.
@@ -200,7 +205,7 @@ module Entry
         entries.reopen(
           entry.id,
           {
-            wf_step: target_step,
+            wf_step: target,
             status: "in_progress",
             assigned_to_id: assignee_id,
             assigned_to_email: assignee_email,
@@ -215,6 +220,12 @@ module Entry
 
         entries.find!(entry.id, included: [:dataset])
       end
+    end
+
+    def reopen_targets(entry_id)
+      entry = entries.find!(entry_id, included: [:dataset])
+
+      entry.dataset.entry_workflow.new(entries, entry).reopenable_steps.map(&:to_s)
     end
 
     def unassign_account_entries(account_id, project_id)

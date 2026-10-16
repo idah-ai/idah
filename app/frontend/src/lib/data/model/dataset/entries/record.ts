@@ -172,9 +172,22 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  reopen: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  reopen: async (
+    entryId: string,
+    opts?: { targetStep?: string },
+  ): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
       method: "POST",
+      body: opts?.targetStep
+        ? JSON.stringify({
+            data: {
+              attributes: {
+                target_step: opts.targetStep,
+              },
+            },
+          })
+        : undefined,
+      headers: { "Content-Type": "application/vnd.api+json" },
     });
 
     const body = await res.json();
@@ -201,6 +214,26 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     }
 
     throw "No data returned";
+  },
+  reopenTargets: async (entryId: string): Promise<string[]> => {
+    const res = await fetch(`${entriesBasePath}/${entryId}/reopen_targets`, {
+      method: "GET",
+    });
+
+    const body = await res.json();
+    const reopenTargets = body?.data?.data;
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error loading reopen targets: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    return Array.isArray(reopenTargets) ? (reopenTargets as string[]) : [];
   },
   submit: async (entryId: string, opts?: { approved: boolean }) => {
     const res = await fetch(`${entriesBasePath}/${entryId}/submit`, {

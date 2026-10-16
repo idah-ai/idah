@@ -16,11 +16,13 @@ describe("getEntryDropdownMenuActions", () => {
   it("returns all default actions", () => {
     const items = getEntryDropdownMenuActions(defaultParams);
 
-    expect(items).toHaveLength(4);
+    expect(items).toHaveLength(5);
     expect(items[0].label).toBe("Assign to");
     expect(items[1].label).toBe("Unassign");
     expect(items[2].label).toBe("Set Priority");
-    expect(items[3].label).toBe("Delete");
+    expect(items[3].label).toBe("Reopen");
+    expect(items[3].hidden).toBeUndefined();
+    expect(items[4].label).toBe("Delete");
   });
 
   it("includes a Reopen action when onReopen is provided", () => {

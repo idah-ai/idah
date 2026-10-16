@@ -43,7 +43,9 @@
       onUnassign: confirmUnAssignEntry,
       onSetPriority: () => {},
       onDelete: confirmDeleteEntry,
-      onReopen: () => (openReopenEntryModal = true),
+      onReopen: () => {
+        openReopenEntryModal = true;
+      },
       isAssigned: !!entry.assigned_to_id,
       isAssignDisabled: entry.wf_step === "done",
       isUnassignDisabled: entry.wf_step === "done",
@@ -89,6 +91,7 @@
       onConfirm: async () => {
         try {
           const entryRes = await entriesBackendDataSource.unassign(entry.id);
+          console.log("dsdqsds", entryRes.data);
 
           onUnAssigned?.(entryRes.data);
 

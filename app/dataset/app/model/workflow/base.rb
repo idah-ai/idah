@@ -21,15 +21,22 @@ module Workflow
     end
 
     # Stage entries are moved back to when reopened. Subclasses should override
-    # to return the actual first work stage (e.g. :annotate).
+    # to return the actual first work stage (e.g. :annotate). Used as the
+    # default target when no specific step is requested.
     def first_workflow_step
       aasm.states.map(&:name).find { |s| s != :start } || aasm.initial_state
     end
 
-    # Returns an [id, email] pair for the member who performed the first
-    # workflow stage — used as the assignee when an entry is reopened.
+    # Steps a completed entry can be reopened to — excludes non-work states
+    # (start pseudo-stage, done, error).
+    def reopenable_steps
+      aasm.states.map(&:name) - [:start, :done, :error]
+    end
+
+    # Returns an [id, email] pair for the member who previously worked on the
+    # given step — used as the assignee when an entry is reopened.
     # Override in custom workflows; default returns [nil, nil].
-    def first_stage_assignee
+    def assignee_for_step(_step)
       [nil, nil]
     end
   end
