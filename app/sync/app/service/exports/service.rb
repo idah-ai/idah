@@ -26,7 +26,7 @@ module Exports
     end
 
     # Create an export object + setup the job with it.
-    def create(project_id, dataset_ids, exporter, options = {})
+    def create(project_id, dataset_ids, exporter, options = {}, entry_ids: nil)
       # Ensure that the exporter class is valid
       sanitize_export_class!(exporter)
 
@@ -38,14 +38,21 @@ module Exports
               "You do not have access to any of the datasets provided"
       end
 
+      # Entries must belong to the datasets being exported — failing fast
+      # avoids generating an export that silently skips (or misses) entries.
+      entry_ids = filter_entry_ids_by_rights(dataset_ids, entry_ids)
+
       exports.transaction do
+        arguments = {
+          exporter:, # Exporter class
+          dataset_ids:,
+          options:
+        }
+        arguments[:entry_ids] = entry_ids if entry_ids&.any?
+
         job = jobs.create(
           "Exports::Job",
-          arguments: {
-            exporter:, # Exporter class
-            dataset_ids:,
-            options:
-          }
+          arguments:
         )
 
         export_id = exports.create(
@@ -154,6 +161,28 @@ module Exports
 
       # Filter the dataset_ids based on the accessible ones
       dataset_ids.select { |id| accessible_dataset_ids.include?(id) }
+    end
+
+    # Entries are children of the already-authorized datasets, so dataset-level
+    # rights cover them. This only validates that every requested entry_id
+    # actually belongs to one of those datasets — a mismatched id would
+    # otherwise be silently skipped during export generation.
+    def filter_entry_ids_by_rights(dataset_ids, entry_ids)
+      return entry_ids if entry_ids.nil? || entry_ids.empty?
+
+      accessible_entries = Api[:idah].dataset.entries.index_all(
+        filter: { dataset_id: dataset_ids, id: entry_ids },
+        fields: { "dataset:entries": ["id"] }
+      ).map(&:id)
+
+      missing = entry_ids - accessible_entries
+
+      if missing.any?
+        raise Verse::Error::ValidationFailed,
+              "Some requested entries do not belong to the selected datasets: #{missing.join(", ")}"
+      end
+
+      entry_ids
     end
   end
 end

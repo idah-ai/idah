@@ -31,6 +31,27 @@ module Exports
     self.table = "exports"
     self.resource = Resource::Sync::Exports
 
+    # Filter exports to those generated from entry selection (job arguments
+    # carry an `entry_ids` key) for the given dataset. Dataset-level exports
+    # are excluded: they live on the dataset Exports page, not the entry
+    # export history.
+    custom_filter :dataset_id__eq do |collection, value|
+      collection.where(
+        Sequel.lit(
+          <<~SQL,
+            EXISTS (
+              SELECT 1
+              FROM jobs
+              WHERE jobs.id = exports.job_id
+                AND jobs.arguments ? 'entry_ids'
+                AND jobs.arguments @> jsonb_build_object('dataset_ids', jsonb_build_array(:dataset_id))
+            )
+          SQL
+          dataset_id: value
+        )
+      )
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
