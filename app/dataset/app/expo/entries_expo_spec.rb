@@ -197,7 +197,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
 
       expect(last_response.status).to eq 200
       body = JSON.parse(last_response.body, symbolize_names: true)
-      expect(body[:data]).to eq({data: ["annotate", "review"]})
+      expect(body[:data]).to eq({ data: ["annotate", "review"] })
     end
   end
 
