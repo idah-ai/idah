@@ -109,6 +109,14 @@ RSpec.describe IdahImage::Export::Helpers::Mask do
       expect(IdahImage::Export::Helpers::Geometry.polygon_area(outlines.first)).to eq(300)
     end
 
+    it "keeps pieces touching at a corner apart" do
+      outlines = mask(rect(10, 10, 20, 20) + rect(20, 20, 30, 30)).outlines
+
+      expect(outlines.map(&:sort)).to contain_exactly(
+        [[10, 10], [10, 20], [20, 10], [20, 20]], [[20, 20], [20, 30], [30, 20], [30, 30]]
+      )
+    end
+
     it "leaves holes out when asked" do
       ring = rect(10, 10, 30, 30) - rect(15, 15, 25, 25)
 

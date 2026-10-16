@@ -232,55 +232,69 @@ module IdahImage
 
         # Loops along the pixel edges between set and unset pixels, the set
         # pixels on the right: an outer edge runs clockwise on screen (positive
-        # area), a hole counter-clockwise.
+        # area), a hole counter-clockwise. Vertices are kept as integers,
+        # `y * stride + x`, while tracing: a mask has millions of them.
         def trace_loops
+          stride = @window_width + 1
           edges = Hash.new { |hash, vertex| hash[vertex] = [] }
-          @window_height.times do |y|
-            @window_width.times do |x|
-              next unless on?(x, y)
-
-              edges[[x, y]] << [x + 1, y] unless on?(x, y - 1)
-              edges[[x + 1, y]] << [x + 1, y + 1] unless on?(x + 1, y)
-              edges[[x + 1, y + 1]] << [x, y + 1] unless on?(x, y + 1)
-              edges[[x, y + 1]] << [x, y] unless on?(x - 1, y)
-            end
+          # Jumps from set pixel to set pixel: most of a mask's window is empty.
+          position = @pixels.index(ON)
+          while position
+            y, x = position.divmod(@window_width)
+            top = (y * stride) + x
+            bottom = top + stride
+            edges[top] << (top + 1) unless on?(x, y - 1)
+            edges[top + 1] << (bottom + 1) unless on?(x + 1, y)
+            edges[bottom + 1] << bottom unless on?(x, y + 1)
+            edges[bottom] << top unless on?(x - 1, y)
+            position = @pixels.index(ON, position + 1)
           end
 
+          # Turning right from each step: right, down, left, up on screen.
+          right_of = { 1 => stride, stride => -1, -1 => -stride, -stride => 1 }
+          # Loops start from the vertices in the order they were found, so the
+          # traced loops do not depend on the hash's internals.
+          starts = edges.keys
           loops = []
-          until edges.empty?
-            start, targets = edges.first
-            loop_points = [start]
-            previous = start
-            current = targets.first
-            take(edges, start, current)
-
-            until current == start
-              loop_points << current
-              following = next_vertex(edges, previous, current)
-              take(edges, current, following)
-              previous = current
-              current = following
+          starts.each do |start|
+            # A corner where two pieces touch starts two loops.
+            while edges.key?(start)
+              loops << trace_loop(edges, right_of, start).map { |vertex| vertex.divmod(stride).reverse }
             end
-            loops << loop_points
           end
           loops
         end
 
+        def trace_loop(edges, right_of, start)
+          loop_points = [start]
+          previous = start
+          current = edges[start].first
+          take(edges, start, current)
+
+          until current == start
+            loop_points << current
+            following = next_vertex(edges, right_of, previous, current)
+            take(edges, current, following)
+            previous = current
+            current = following
+          end
+          loop_points
+        end
+
         # Where two loops touch at a corner, turn right, keeping pieces that
         # only touch diagonally apart.
-        def next_vertex(edges, previous, current)
+        def next_vertex(edges, right_of, previous, current)
           options = edges[current]
           return options.first if options.size == 1
 
-          dx = current[0] - previous[0]
-          dy = current[1] - previous[1]
-          right = [current[0] - dy, current[1] + dx]
+          right = current + right_of[current - previous]
           options.include?(right) ? right : options.first
         end
 
         def take(edges, from, to)
-          edges[from].delete_at(edges[from].index(to))
-          edges.delete(from) if edges[from].empty?
+          targets = edges[from]
+          targets.delete_at(targets.index(to))
+          edges.delete(from) if targets.empty?
         end
 
         def signed_area(points)
@@ -301,24 +315,42 @@ module IdahImage
           return corners if corners.size <= 4
 
           # Split the closed loop at its first point and the point farthest
-          # from it, then simplify each half.
+          # from it, then simplify each half. Index `corners.size` is the
+          # first point again, closing the loop.
           far = corners.each_index.max_by { |i| distance(corners[0], corners[i]) }
-          first_half = douglas_peucker(corners[0..far])
-          second_half = douglas_peucker(corners[far..] + [corners[0]])
-          first_half[0...-1] + second_half[0...-1]
+          ring = corners + [corners[0]]
+          keep = Array.new(ring.size, false)
+          douglas_peucker(ring, keep, 0, far)
+          douglas_peucker(ring, keep, far, corners.size)
+          corners.each_index.select { |i| keep[i] }.map { |i| corners[i] }
         end
 
-        def douglas_peucker(points, epsilon = 1.0)
-          return points if points.size < 3
+        # Marks in `keep` the points of `points[first..last]` that stay within
+        # `epsilon` of the simplified line, both ends included. Works on
+        # indexes, with a stack, as outlines run to many thousands of points.
+        def douglas_peucker(points, keep, first, last, epsilon = 1.0)
+          keep[first] = true
+          keep[last] = true
+          stack = [[first, last]]
 
-          a = points.first
-          b = points.last
-          index, farthest = points[1...-1].each_with_index
-                                          .map { |point, i| [i + 1, segment_distance(point, a, b)] }
-                                          .max_by(&:last)
-          return [a, b] if farthest <= epsilon
+          until stack.empty?
+            from, to = stack.pop
+            a = points[from]
+            b = points[to]
+            index = nil
+            farthest = epsilon
+            ((from + 1)...to).each do |i|
+              gap = segment_distance(points[i], a, b)
+              if gap > farthest
+                index = i
+                farthest = gap
+              end
+            end
+            next unless index
 
-          douglas_peucker(points[0..index], epsilon)[0...-1] + douglas_peucker(points[index..], epsilon)
+            keep[index] = true
+            stack.push([from, index], [index, to])
+          end
         end
 
         def segment_distance(point, a, b)
