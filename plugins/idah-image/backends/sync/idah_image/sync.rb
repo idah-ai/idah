@@ -6,6 +6,7 @@ module IdahImage
   class Sync
     def self.init(context)
       context.register_exports("idah-image", IdahImage::Export::Coco::Exporter)
+      context.register_exports("idah-image", IdahImage::Export::Yolo::Exporter)
     end
   end
 end
