@@ -10,9 +10,9 @@ module IdahImage
       # image, a palette PNG where each pixel holds its class index, 0 for
       # background.
       #
-      # Masks are painted pixel for pixel; boxes and polygons are filled;
-      # lines, and the outlines of circles and ellipses, are drawn 1 pixel
-      # wide.
+      # Masks are painted pixel for pixel and lines 1 pixel wide; boxes,
+      # polygons, circles and ellipses are filled, or with `shapes: outline`,
+      # drawn as their 1-pixel outline.
       # Shapes are painted in creation order, as the annotation tool draws
       # them, so where shapes overlap the pixel takes the class of the later
       # one.
@@ -33,10 +33,30 @@ module IdahImage
         MAX_CLASSES = 255
         # Lines, in pixels.
         LINE_WIDTH = 1
+        # Shown in the export dialog.
+        SHAPE_CHOICES = [
+          { value: "filled", label: "Filled", info: "Each shape's whole area. What segmentation models train on." },
+          { value: "outline", label: "Outlines", info: "Each shape's 1-pixel outline, for boundary detection." }
+        ].freeze
 
         def name = "Mask Segmentation (Image)"
 
         def description = "Class masks as PNG images, one per image."
+
+        def options
+          Verse::Schema.define do
+            field(:shapes, String).default("filled").meta(
+              label: "Shapes",
+              description: "How boxes, polygons, circles and ellipses are painted.",
+              choices: SHAPE_CHOICES
+            )
+          end
+        end
+
+        def export(context)
+          @shapes = options.validate(context.options.to_h.transform_keys(&:to_sym).slice(:shapes)).value[:shapes]
+          super
+        end
 
         private
 
@@ -97,11 +117,13 @@ module IdahImage
             canvas.paint_mask(shape.mask, index)
           elsif shape.line?
             canvas.stroke_line(shape.points, LINE_WIDTH, index)
+          elsif @shapes == "filled"
+            canvas.fill_polygon(shape.points, index)
           elsif shape.curve
-            # A circle or an ellipse: its outline.
+            # A circle or an ellipse: drawn as a pixel circle, not its 64 points.
             canvas.trace_ellipse(*shape.curve, shape.angle, index)
           else
-            canvas.fill_polygon(shape.points, index)
+            canvas.outline_polygon(shape.points, index)
           end
           true
         end

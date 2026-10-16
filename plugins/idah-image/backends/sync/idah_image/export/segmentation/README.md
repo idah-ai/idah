@@ -10,8 +10,24 @@ image datasets. What it shares with the other image exports (general options,
 how shapes are placed, names, and the export report) is described in the
 [image exports README](../README.md).
 
-It has no options of its own beside "Include medias" and "Completed Entries
-Only".
+## Options
+
+Beside "Include medias" and "Completed Entries Only", the export dialog shows
+one option when Mask Segmentation (Image) is selected:
+
+| Option | Values | Default | Effect |
+| --- | --- | --- | --- |
+| Shapes (`shapes`) | Filled (`filled`), Outlines (`outline`) | Filled | How boxes, polygons, circles and ellipses are painted. |
+
+- **Filled** paints each shape's whole area. This is what semantic
+  segmentation models train on: they learn a class for every pixel of an
+  object.
+- **Outlines** paints each shape's edge only, 1 pixel thick, the inside left as
+  background. Use it when the boundaries are what a model should find (edge,
+  contour or crack detection); a model trained on outlines learns that an
+  object's inside is background.
+
+Masks are painted pixel for pixel, and lines 1 pixel wide, either way.
 
 ## The zip
 
@@ -44,8 +60,8 @@ Every shape of the image is painted with its class:
 | IDAH shape | Painted as |
 | --- | --- |
 | Mask | Its pixels. |
-| Bounding box, polygon | Filled, a box rotated as drawn. |
-| Circle, ellipse | Its outline, 1 pixel thick, an ellipse rotated as drawn (see below). The inside stays background. |
+| Bounding box, polygon | Filled, or with Outlines its edge: the pixels of the fill next to background. A box rotated as drawn. |
+| Circle, ellipse | Filled from its 64-point outline, or with Outlines its outline drawn as a pixel circle (see below). An ellipse rotated as drawn. |
 | Line | 1 pixel wide. |
 
 A pixel belongs to a filled shape when its centre lies inside the shape, so
@@ -53,8 +69,8 @@ two shapes sharing an edge do not overlap.
 
 Lines have no width in IDAH (the annotation tool draws them at the same
 thickness on screen whatever the zoom), so they are painted 1 pixel wide.
-Circles, and ellipses turned by a multiple of 90 degrees, are drawn with the
-midpoint algorithm, as paint programs draw them: symmetric, closed and 1 pixel
+With Outlines, circles, and ellipses turned by a multiple of 90 degrees, are
+drawn with the midpoint algorithm, as paint programs draw them: symmetric, closed and 1 pixel
 thick. Their centre and radii are rounded to the pixel grid for this, so they
 move by half a pixel at most. An ellipse at any other angle is traced along
 its exact curve, and also closed and 1 pixel thick. Neither uses the 64-point
@@ -126,7 +142,7 @@ image.show()
 
 | File | Role |
 | --- | --- |
-| `exporter.rb` | `IdahImage::Export::Segmentation::Exporter`, registered for `idah-image` in `sync.rb`. |
+| `exporter.rb` | `IdahImage::Export::Segmentation::Exporter`, registered for `idah-image` in `sync.rb`. Declares the `shapes` option. |
 
 Painting is in `../helpers/canvas.rb`, the PNG writer in `../helpers/png.rb`;
 everything else (reading entries, masks, geometry, image files, the report)

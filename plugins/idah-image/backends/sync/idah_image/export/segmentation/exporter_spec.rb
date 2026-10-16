@@ -61,9 +61,13 @@ RSpec.describe IdahImage::Export::Segmentation::Exporter do
   end
 
   describe "metadata" do
-    it "describes the format, without options" do
+    it "describes the format and its shapes option, filled by default" do
+      field = exporter.options.fields.first
+
       expect(exporter.name).to eq("Mask Segmentation (Image)")
-      expect(exporter.options).to eq(Verse::Schema.empty)
+      expect(field.key).to eq(:shapes)
+      expect(field.default).to eq("filled")
+      expect(field.opts[:meta][:choices].map { |choice| choice[:value] }).to eq(%w[filled outline])
     end
   end
 
@@ -127,7 +131,15 @@ RSpec.describe IdahImage::Export::Segmentation::Exporter do
         [shape("ball-1", "idah-image:circle", { points: [[0.5, 0.5]], radius: 0.4 }, category: "ball")]
       }
 
-      it "paints its outline, 1 pixel wide, and leaves the inside empty" do
+      it "fills it" do
+        exporter.export(context)
+
+        expect(mask[:rows][5][7..12]).to eq("111111")
+        expect(mask[:rows].join.count("1")).to be_within(4).of(50)
+      end
+
+      it "with shapes: outline, paints its outline, 1 pixel wide, and leaves the inside empty" do
+        context.options[:shapes] = "outline"
         exporter.export(context)
 
         rows = mask[:rows]
@@ -147,13 +159,26 @@ RSpec.describe IdahImage::Export::Segmentation::Exporter do
         [shape("plate-1", "idah-image:ellipse", { points: [[0.5, 0.5], [0.4, 0.3]] }, category: "plate")]
       end
 
-      it "paints its outline too, and leaves the inside empty" do
+      it "with shapes: outline, paints its outline too, and leaves the inside empty" do
+        context.options[:shapes] = "outline"
         exporter.export(context)
 
         rows = mask[:rows]
         expect(rows[5][4..16]).to eq("0000000000000")
         expect(rows[5][1..3]).to include("1")
         expect(rows[2][9..11]).to include("1")
+      end
+    end
+
+    context "with shapes: outline" do
+      let(:options) { { shapes: "outline" } }
+
+      it "paints a box as the edge of its fill, 1 pixel thick" do
+        exporter.export(context)
+
+        expect(mask[:rows].first(5)).to eq(
+          %w[00000000000000000000 00111100000000000000 00100100000000000000 00111100000000000000 00000000000000000000]
+        )
       end
     end
 

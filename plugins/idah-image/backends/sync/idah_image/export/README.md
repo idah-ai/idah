@@ -8,7 +8,7 @@ Universal Portable Dataset (UPD) export.
 | --- | --- | --- | --- |
 | **COCO (Image)** | One COCO instances file per dataset: boxes, polygons, circles and ellipses as outlines, masks as RLE | Rotation, properties, image tags | [COCO README](coco/README.md) |
 | **YOLO (Image)** | One Ultralytics YOLO dataset per dataset: boxes, outlines or rotated boxes (Task option), with an optional validation share | Classes and shapes only | [YOLO README](yolo/README.md) |
-| **Mask Segmentation (Image)** | One class mask PNG per image: every shape painted with its class, lines and circle and ellipse outlines 1 pixel wide | Classes and their colours only | [Mask Segmentation README](segmentation/README.md) |
+| **Mask Segmentation (Image)** | One class mask PNG per image: every shape painted with its class, filled or as outlines (Shapes option), lines 1 pixel wide | Classes and their colours only | [Mask Segmentation README](segmentation/README.md) |
 
 Pick COCO to keep everything IDAH knows about the annotations, or to keep
 masks pixel for pixel. Pick YOLO to train a detector, a segmentation model or
@@ -29,8 +29,9 @@ covers its own files.
 | Completed Entries Only | On by default: only completed entries are exported. Switch it off to export every entry. |
 
 A format can add options of its own, shown in the dialog when it is selected;
-COCO (Image) adds how boxes are written (polygons, or rectangles), and YOLO
-(Image) adds a task and a validation share (see their READMEs).
+COCO (Image) adds how boxes are written (polygons, or rectangles), YOLO
+(Image) adds a task and a validation share, and Mask Segmentation (Image) adds
+whether shapes are filled or outlined (see their READMEs).
 
 A selection can hold several datasets, but only `idah-image` ones: an export
 that includes a dataset of another modality fails.
@@ -58,8 +59,8 @@ by an annotation but missing from the configuration is added at the end.
 | --- | --- |
 | Bounding box | Its 4 corners, rotated as drawn. |
 | Polygon | Its points. |
-| Circle | A 64-point polygon; in Mask Segmentation, its outline 1 pixel thick, drawn as a pixel circle. |
-| Ellipse | A 64-point polygon, rotated as drawn; in Mask Segmentation, its outline as for a circle. |
+| Circle | A 64-point polygon; in Mask Segmentation, filled, or its outline 1 pixel thick, drawn as a pixel circle. |
+| Ellipse | A 64-point polygon, rotated as drawn; in Mask Segmentation, filled, or its outline as for a circle. |
 | Mask | Its pixels: COCO RLE in COCO; in YOLO, the outline of each separate piece, holes joined by zero-width cuts; in Mask Segmentation, painted pixel for pixel. |
 | Line | Mask Segmentation only: painted 1 pixel wide. COCO and YOLO hold no open line and count it as `unsupported_shape_type:idah-image:line`. |
 
