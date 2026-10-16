@@ -90,6 +90,14 @@ RSpec.describe IdahVideo::Export::Coco::Exporter do
       expect(field.default).to eq("all")
       expect(field.opts[:meta][:choices].map { |choice| choice[:value] }).to eq(%w[all keyframes])
     end
+
+    it "declares how boxes are written as an option" do
+      field = exporter.options.fields.last
+
+      expect(field.key).to eq(:boxes)
+      expect(field.default).to eq("polygon")
+      expect(field.opts[:meta][:choices].map { |choice| choice[:value] }).to eq(%w[polygon rectangle])
+    end
   end
 
   describe "#export" do
@@ -235,6 +243,22 @@ RSpec.describe IdahVideo::Export::Coco::Exporter do
       it "skips it, since COCO tools would read it as a box" do
         expect(export[:annotations].map { |a| a[:attributes][:idah_id] }.uniq).to eq(["car-1"])
         expect(report[:skipped]).to include(too_few_points: 1)
+      end
+    end
+
+    context "with boxes: rectangle" do
+      let(:options) { { boxes: "rectangle" } }
+
+      it "writes an upright box as its bbox only, and a rotated box with its corners" do
+        car.record.shape_args[:frames] =
+          [keyframe(0, 0.1, 0.1, 0.2, 0.2), keyframe(4, 0.5, 0.1, 0.2, 0.2, angle: Math::PI / 2)]
+
+        # Keyframe 0 upright, keyframe 4 turned a quarter.
+        upright, *, rotated = export[:annotations].select { |annotation| annotation[:attributes][:idah_id] == "car-1" }
+
+        expect(upright).to include(segmentation: [], bbox: [100.0, 50.0, 200.0, 100.0], area: 20_000.0)
+        expect(rotated[:segmentation].first.size).to eq(8)
+        expect(rotated[:attributes][:rotation]).to eq(90.0)
       end
     end
 

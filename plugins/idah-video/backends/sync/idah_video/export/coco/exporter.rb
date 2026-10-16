@@ -33,6 +33,10 @@ module IdahVideo
           { value: "all", label: "All frames", info: "Every frame a shape covers." },
           { value: "keyframes", label: "Keyframes only", info: "Frames with a stored keyframe." }
         ].freeze
+        BOX_CHOICES = [
+          { value: "polygon", label: "Polygons", info: "Each box as its 4 corners. Works with every COCO tool." },
+          { value: "rectangle", label: "Rectangles", info: "Upright boxes as bbox only, read as rectangles." }
+        ].freeze
 
         def options
           Verse::Schema.define do
@@ -41,11 +45,18 @@ module IdahVideo
               description: "Which frames to export.",
               choices: FRAME_CHOICES
             )
+            field(:boxes, String).default("polygon").meta(
+              label: "Boxes",
+              description: "How boxes are written.",
+              choices: BOX_CHOICES
+            )
           end
         end
 
         def export(context)
-          @frames = options.validate(context.options.to_h.transform_keys(&:to_sym).slice(:frames)).value[:frames]
+          settings = options.validate(context.options.to_h.transform_keys(&:to_sym).slice(:frames, :boxes)).value
+          @frames = settings[:frames]
+          @boxes = settings[:boxes]
           super
         end
 
@@ -132,12 +143,15 @@ module IdahVideo
           end
         end
 
-        # The outline as a COCO polygon, with the box around it.
+        # The outline as a COCO polygon, with the box around it. With `boxes:
+        # rectangle`, an upright box has no polygon: its `bbox` is the whole
+        # shape, and annotation tools read an annotation without one as a
+        # rectangle.
         def annotation(shape)
           record = shape.record
 
           {
-            segmentation: [Helpers::Geometry.flatten(shape.points)],
+            segmentation: rectangle?(shape) ? [] : [Helpers::Geometry.flatten(shape.points)],
             area: Helpers::Geometry.round(Helpers::Geometry.polygon_area(shape.points)),
             bbox: Helpers::Geometry.envelope(shape.points).map { |v| Helpers::Geometry.round(v) },
             category_id: @categories.id_for(record.category),
@@ -145,6 +159,14 @@ module IdahVideo
             track_id: track_id_for(record),
             attributes: annotation_attributes(shape)
           }
+        end
+
+        # A box written as its bbox only: with `boxes: rectangle`, a box not
+        # rotated, to the 0.01 degree `rotation` is written with. A rotated box
+        # keeps its corners, which a bbox cannot hold.
+        def rectangle?(shape)
+          @boxes == "rectangle" && shape.record.shape_type == BOUNDING_BOX &&
+            [0.0, 360.0].include?(Helpers::Geometry.degrees(shape.angle))
         end
 
         # The IDAH properties, plus whether the shape is a stored keyframe or
