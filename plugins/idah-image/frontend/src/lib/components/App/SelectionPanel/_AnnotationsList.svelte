@@ -69,22 +69,49 @@
   const hiddenAnnotations = $derived(sortedAnnotations.filter((ann) => annotation.isHidden(ann)));
   const lockedAnnotations = $derived(sortedAnnotations.filter((ann) => annotation.isLocked(ann)));
 
-  const tabs = $derived<{ id: Tab; label: string; count: number }[]>([
-    { id: "all", label: "All", count: sortedAnnotations.length },
-    { id: "hidden", label: "Hidden", count: hiddenAnnotations.length },
-    { id: "locked", label: "Locked", count: lockedAnnotations.length },
-  ]);
+  const tabs = $derived.by<{ id: Tab; label: string; count: number }[]>(() => {
+    const query = categorySearch.value;
+    if (!query) {
+      return [
+        { id: "all", label: "All", count: sortedAnnotations.length },
+        { id: "hidden", label: "Hidden", count: hiddenAnnotations.length },
+        { id: "locked", label: "Locked", count: lockedAnnotations.length },
+      ];
+    }
+    // Normalize hyphens↔spaces so searching by id or label both work.
+    const q = query.toLowerCase().replace(/-/g, " ");
+    const matches = (ann: IImageAnnotationRecord) =>
+      (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
+    return [
+      { id: "all", label: "All", count: sortedAnnotations.filter(matches).length },
+      { id: "hidden", label: "Hidden", count: hiddenAnnotations.filter(matches).length },
+      { id: "locked", label: "Locked", count: lockedAnnotations.filter(matches).length },
+    ];
+  });
 
   const filteredAnnotations = $derived(
     activeTab === "hidden" ? hiddenAnnotations : activeTab === "locked" ? lockedAnnotations : sortedAnnotations,
   );
 
+  // Filter by category search query (case-insensitive), applied on top of the tab filter.
+  // Normalizes hyphens↔spaces so searching by id or label both work.
+  const categoryFilteredAnnotations = $derived(
+    !categorySearch.value
+      ? filteredAnnotations
+      : filteredAnnotations.filter(
+          (ann) =>
+            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
+              categorySearch.value.toLowerCase().replace(/-/g, " "),
+            ),
+        ),
+  );
+
   // -----------------------------------------------------------------------
   // Pagination
   // -----------------------------------------------------------------------
-  const totalPages = $derived(Math.max(1, Math.ceil(filteredAnnotations.length / PAGE_SIZE)));
-  const pagedAnnotations = $derived(filteredAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  const showPagination = $derived(filteredAnnotations.length > PAGE_SIZE);
+  const totalPages = $derived(Math.max(1, Math.ceil(categoryFilteredAnnotations.length / PAGE_SIZE)));
+  const pagedAnnotations = $derived(categoryFilteredAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  const showPagination = $derived(categoryFilteredAnnotations.length > PAGE_SIZE);
 
   // When paginating, pad the last (shorter) page with empty rows so every page
   // keeps the same height and the pagination controls stay anchored at the bottom.
@@ -164,10 +191,16 @@
       <AnnotationsListItem {annotation} />
     {/each}
 
-    {#if filteredAnnotations.length === 0}
-      <div class="text-muted-foreground px-2 py-4 text-center text-xs">
-        No {activeTab === "all" ? "" : activeTab} annotations
-      </div>
+    {#if categoryFilteredAnnotations.length === 0}
+      {#if filteredAnnotations.length === 0}
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">
+          No {activeTab === "all" ? "" : activeTab} annotations
+        </div>
+      {:else}
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">
+          No matching annotations
+        </div>
+      {/if}
     {/if}
 
     <!-- Reserve space on the last page so pagination doesn't shift upward.
@@ -178,7 +211,7 @@
   </div>
 
   {#if showPagination}
-    <Pagination count={filteredAnnotations.length} perPage={PAGE_SIZE} bind:page>
+    <Pagination count={categoryFilteredAnnotations.length} perPage={PAGE_SIZE} bind:page>
       {#snippet children({ pages, currentPage })}
         <PaginationContent class="flex-wrap gap-0.5">
           <PaginationItem>
