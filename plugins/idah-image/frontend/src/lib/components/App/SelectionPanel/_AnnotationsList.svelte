@@ -23,18 +23,15 @@
   } from "@lucide/svelte";
 
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
-  import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
+  import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
+  import AnnotationsListItem from "$lib/components/App/SelectionPanel/_AnnotationsListItem.svelte";
 
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
-  import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { annotation } from "$lib/state/annotation.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { selection } from "$lib/state/selection.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
   import { categorySearch } from "$lib/state/category-search.svelte";
-  import { cn } from "$lib/utils";
-  import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IImageAnnotationRecord } from "$lib/types";
@@ -83,8 +80,7 @@
     }
     // Normalize hyphens↔spaces so searching by id or label both work.
     const q = query.toLowerCase().replace(/-/g, " ");
-    const matches = (ann: IImageAnnotationRecord) =>
-      (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
+    const matches = (ann: IImageAnnotationRecord) => (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
     return [
       { id: "all", label: "All", count: sortedAnnotations.filter(matches).length },
       { id: "hidden", label: "Hidden", count: hiddenAnnotations.filter(matches).length },
@@ -101,11 +97,11 @@
   const categoryFilteredAnnotations = $derived(
     !categorySearch.value
       ? filteredAnnotations
-      : filteredAnnotations.filter(
-          (ann) =>
-            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
-              categorySearch.value.toLowerCase().replace(/-/g, " "),
-            ),
+      : filteredAnnotations.filter((ann) =>
+          (ann.category ?? "")
+            .toLowerCase()
+            .replace(/-/g, " ")
+            .includes(categorySearch.value.toLowerCase().replace(/-/g, " ")),
         ),
   );
 
@@ -165,7 +161,10 @@
 
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
-    <Text weight="semibold">Annotations</Text>
+    <div class="flex items-center gap-2">
+      <Text weight="semibold">Annotations</Text>
+      <AnnotationsErrorAlertIcon {annotations} />
+    </div>
 
     <div class="ml-auto flex items-center">
       {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick, disabled }] (key)}
@@ -187,46 +186,8 @@
 
   <div class="flex flex-col gap-1">
     <Separator class="my-2" />
-    {#each pagedAnnotations as ann (ann.id)}
-      {@const annShapeType = ann.shape_type as string}
-      {@const annConfig = getDriver().config[annShapeType]}
-      {@const annCategory = annConfig?.values?.find((v) => v.id === ann.category)}
-      {@const annColor = annCategory?.color ?? null}
-      {@const annDisplayName = annCategory?.label ?? ann.category ?? "Uncategorized"}
-      {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
-      <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
-        <button
-          class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-          onclick={() => selection.selectAnnotation(ann)}
-        >
-          <ShapeIcon shapeType={annShapeType} color={annColor} />
-          <div class="flex min-w-0 flex-col">
-            {#if annParentLabel.length > 0}
-              <span class="text-muted-foreground truncate text-xs">{annParentLabel}</span>
-            {/if}
-            <span class="truncate">{annDisplayName}</span>
-          </div>
-        </button>
-
-        <div class="ml-auto flex shrink-0 items-center gap-0">
-          {#each getAnnotationActions( { items: [ann], annotationId: ann.id }, ) as { label, icon: Icon, disabled, onClick, alwaysShow }, index (index)}
-            <CategoryAction
-              {label}
-              icon={Icon}
-              onclick={(e) => {
-                if (disabled) return;
-                e.stopPropagation();
-                onClick(e);
-              }}
-              class={cn("opacity-0", {
-                "opacity-100": alwaysShow,
-                "group-hover:opacity-100": !alwaysShow && !disabled,
-                "cursor-not-allowed group-hover:opacity-30": disabled,
-              })}
-            ></CategoryAction>
-          {/each}
-        </div>
-      </div>
+    {#each pagedAnnotations as annotation (annotation.id)}
+      <AnnotationsListItem {annotation} />
     {/each}
 
     {#if categoryFilteredAnnotations.length === 0}
@@ -235,9 +196,7 @@
           No {activeTab === "all" ? "" : activeTab} annotations
         </div>
       {:else}
-        <div class="text-muted-foreground px-2 py-4 text-center text-xs">
-          No matching annotations
-        </div>
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No matching annotations</div>
       {/if}
     {/if}
 

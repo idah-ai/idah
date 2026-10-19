@@ -18,8 +18,12 @@
     showConfirmModal,
   } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { clearCache } from "@/data/Cache";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
+  import { entryStatsBasePath } from "@/data/model/dataset/entry-stats/record";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { resourcePath } from "@/data/BackendDataSource";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
@@ -106,6 +110,10 @@
       );
 
       controller.markSaved(updatedDatasetRes.data.labeling_configuration);
+
+      clearCache(resourcePath(entryStatsBasePath, null, undefined));
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+
       showToast.success({
         title: "Label configurations updated",
         description: "The changes has been saved.",

@@ -24,7 +24,8 @@ class EntriesExpo < BaseExpo
                       :assigned_to_email__match,
                       :wf_step__in,
                       :participated,
-                      :name__match
+                      :name__match,
+                      :orphan_categories
     end
     create do
       authorized_relationships dataset: [:link]

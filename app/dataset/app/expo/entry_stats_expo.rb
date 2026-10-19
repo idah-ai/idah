@@ -7,7 +7,9 @@ class EntryStatsExpo < BaseExpo
 
   desc <<~MD
     Read-only access to per-entry computed statistics.
-    Stats are recomputed whenever an entry transitions to submitted or errored.
+    Stats are recomputed:
+      - when an entry transitions to submitted or errored
+      - when the dataset's labeling_configuration is updated (e.g. categories renamed/deleted)
   MD
 
   json_api EntryStat::Record do
@@ -29,5 +31,12 @@ class EntryStatsExpo < BaseExpo
   expose on_resource_event(Resource::Dataset::Entries, "errored")
   def compute_stats_on_entry_errored
     service.recompute(message.content[:resource_id])
+  end
+
+  expose on_resource_event(Resource::Dataset::Datasets, "updated")
+  def recompute_stats_on_dataset_updated
+    return unless message.content[:metadata][:labeling_configuration_updated]
+
+    service.recompute_all_for_dataset(message.content[:resource_id])
   end
 end

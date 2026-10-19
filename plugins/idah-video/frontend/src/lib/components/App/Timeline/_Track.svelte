@@ -10,6 +10,7 @@
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { isInViewport } from "$lib/components/App/Timeline/utils";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
   import { viewport as vp } from "$lib/state/viewport.svelte";
@@ -32,12 +33,19 @@
   let { viewport, items, scale, top, isSelected, trackId, kind }: Props = $props();
 
   const isVisibleAtFrame = $derived(
-    kind !== "tagging" && items.some((item) =>
-      item.startRange <= vp.video.currentFrame.value &&
-      item.endRange >= vp.video.currentFrame.value &&
-      !annotation.isHidden(item.rawData),
-    ),
+    kind !== "tagging" &&
+      items.some(
+        (item) =>
+          item.startRange <= vp.video.currentFrame.value &&
+          item.endRange >= vp.video.currentFrame.value &&
+          !annotation.isHidden(item.rawData),
+      ),
   );
+  const firstAnnotation = $derived(items[0].rawData);
+  const shapeType = $derived(firstAnnotation.shape_type);
+  const config = $derived(getDriver().config[shapeType]);
+  const category = $derived(config.values.find((v) => v.id === firstAnnotation.category));
+  const foundCategory = $derived(category !== undefined);
 
   // Only render items visible in the viewport
   const visibleItems = $derived(
@@ -109,8 +117,8 @@
   role="button"
   tabindex="-1"
   class={cn("track border-b", {
-    "hover:bg-primary/5 bg-clip-padding": isVisibleAtFrame,
-    "border-primary bg-primary/15 hover:bg-primary/15 border-t border-b bg-clip-padding": isSelected,
+    "hover:bg-primary/5 bg-clip-padding": isVisibleAtFrame && foundCategory,
+    "border-primary bg-primary/15 hover:bg-primary/15 border-t border-b bg-clip-padding": isSelected && !foundCategory,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"
