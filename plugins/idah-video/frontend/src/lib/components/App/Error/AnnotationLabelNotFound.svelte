@@ -13,7 +13,7 @@
     <span class="font-semibold">Label not found</span>
   </div>
   <span>
-    This label <strong>{displayName}</strong> was renamed or deletred from the label configuration. Reassign this annotation
+    This label <strong>{displayName}</strong> was renamed or deleted from the label configuration. Reassign this annotation
     to a valid label.
   </span>
 </div>
