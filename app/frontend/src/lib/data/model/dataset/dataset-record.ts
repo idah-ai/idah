@@ -7,12 +7,12 @@ import { showErrorToast } from "@/utils/error/error.toasts";
 import { EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
-import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { DataSourceOptions } from "@/data/DataSource";
+import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { RecordResponse } from "@/data/model/types";
 
-import type { Hash } from "@/utils/types";
 import type { IConfig } from "@/plugin/v2/types";
+import type { Hash } from "@/utils/types";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -26,6 +26,7 @@ export class DatasetRecord extends Record {
   @field() public entries_total_count!: number;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
+  @field() public delivery_at!: Date | null;
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];

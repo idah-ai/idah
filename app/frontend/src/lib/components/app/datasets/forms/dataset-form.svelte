@@ -1,7 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { getLocalTimeZone, today } from "@internationalized/date";
+  import { isBefore, startOfDay } from "date-fns";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
@@ -22,7 +25,7 @@
   // Variables
   const resource: Resource = "dataset:datasets";
   let projectId = $derived(page.params.projectId as string);
-  let { name, modality } = $derived(dataset);
+  let { name, modality, delivery_at } = $derived(dataset);
   let selectedDatasetId = $state<string | null>(null);
 
   // Functions
@@ -30,6 +33,7 @@
     onValueChange({
       name,
       modality,
+      delivery_at,
       selectedDatasetId,
     });
   });
@@ -72,6 +76,20 @@
         }}
       />
     {/await}
+
+     <DatePickerField
+      name="{resource}/expires_at"
+      label="Delivery Date"
+      placeholder="Select delivery date"
+      errors={fieldErrors["delivery_at"]}
+      value={delivery_at}
+      minDate={today(getLocalTimeZone()).add({ days: 1 })}
+      disabled={status === "revoked" ||
+        (delivery_at !== null && isBefore(startOfDay(delivery_at), startOfDay(new Date())))}
+      onDateSelected={(selectedDate) => {
+        delivery_at = selectedDate ? new Date(selectedDate) : null;
+      }}
+    />
 
     <!-- DATASET::LABELING CONFIGURATION -->
     {#key modality}
