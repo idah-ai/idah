@@ -3,15 +3,14 @@
   import { CheckIcon } from "@lucide/svelte";
 
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import SwitchField from "@/components/app/forms/fields/input/switch-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { CommandItem } from "@/components/ui/command";
   import { DialogTitle } from "@/components/ui/dialog";
   import { Item, ItemContent, ItemDescription } from "@/components/ui/item";
-  import Label from "@/components/ui/label/label.svelte";
   import { ScrollArea } from "@/components/ui/scroll-area";
   import { Skeleton } from "@/components/ui/skeleton";
-  import Switch from "@/components/ui/switch/switch.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
@@ -156,16 +155,13 @@
     </SingleSelectField>
 
     <!-- SWITCH TO EXPORT ONLY THE COMPLETED ENTRIES -->
-    <div class="flex items-center gap-2">
-      <Switch
-        id="export-completed-entries"
-        checked={completedEntriesOnly}
-        onCheckedChange={(checkedValue) => {
-          completedEntriesOnly = checkedValue;
-        }}
-      />
-      <Label for="export-completed-entries">Completed Entries Only</Label>
-    </div>
+    <SwitchField
+      name="{resource}/completed_entries"
+      label="Completed Entries Only"
+      info="Only entries that are already completed will be included in the export."
+      bordered
+      bind:checked={completedEntriesOnly}
+    />
 
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="medium">Dataset(s)</Text>

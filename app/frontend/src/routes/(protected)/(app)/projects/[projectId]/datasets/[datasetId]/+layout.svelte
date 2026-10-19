@@ -47,17 +47,13 @@
         projectMemberRoles: ["project_owner"],
       },
     };
-
-    const [canUpdateDataset, canReadExports] = await Promise.all([
-      currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner]),
-      currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]),
+    const canUpdateDataset = await currentAccount?.can("update", "dataset:datasets", [
+      "as_org_owner",
+      as_project_owner,
     ]);
 
     if (!canUpdateDataset) {
-      tabs = tabs.filter((tab) => tab.value !== "labels");
-    }
-    if (!canReadExports) {
-      tabs = tabs.filter((tab) => tab.value !== "exports");
+      tabs = datasetTabs.filter((tab) => tab.value !== "labels");
     }
   });
 

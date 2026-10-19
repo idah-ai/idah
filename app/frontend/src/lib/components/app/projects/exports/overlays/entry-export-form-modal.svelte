@@ -5,15 +5,14 @@
 
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import SwitchField from "@/components/app/forms/fields/input/switch-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { CommandItem } from "@/components/ui/command";
   import { DialogTitle } from "@/components/ui/dialog";
   import { Item, ItemContent } from "@/components/ui/item";
-  import Label from "@/components/ui/label/label.svelte";
   import { ScrollArea } from "@/components/ui/scroll-area";
   import { Skeleton } from "@/components/ui/skeleton";
-  import Switch from "@/components/ui/switch/switch.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
@@ -42,14 +41,14 @@
   let exporting = $state<boolean>(false);
   let selectedExporter = $state<string>("");
   let selectedIncludeMedias = $state<string>("original");
-  let completedEntriesOnly = $state<boolean>(true);
+  let completedEntriesOnly = $state<boolean>(false);
   let selectedEntryCount = $derived(entries.length);
 
   // Functions
   function resetForm(): void {
     selectedExporter = "";
     selectedIncludeMedias = "original";
-    completedEntriesOnly = true;
+    completedEntriesOnly = false;
   }
 
   async function loadExportFormatChoices(): Promise<Array<LabelValue<string | number>>> {
@@ -160,19 +159,16 @@
     </SingleSelectField>
 
     <!-- SWITCH TO EXPORT ONLY THE COMPLETED ENTRIES FROM THE SELECTION -->
-    <div class="flex items-center gap-2">
-      <Switch
-        id="export-completed-entries"
-        checked={completedEntriesOnly}
-        onCheckedChange={(checkedValue) => {
-          completedEntriesOnly = checkedValue;
-        }}
-      />
-      <Label for="export-completed-entries">Completed Entries Only</Label>
-    </div>
+    <SwitchField
+      name="{resource}/completed_entries"
+      label="Completed Entries Only"
+      info="Only the completed entries from your selection will be included in the export."
+      bordered
+      bind:checked={completedEntriesOnly}
+    />
 
     <div class="flex flex-col gap-1">
-      <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "selected entry", "selected entries")}</Text>
+      <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "Selected entry", "selected entries")}</Text>
       <ScrollArea class="h-40">
         {#each entries as entry (entry.id)}
           <Item class="py-1.5">
