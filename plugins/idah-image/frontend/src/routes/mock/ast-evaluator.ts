@@ -204,18 +204,31 @@ export class AstProcessor {
     ],
   ]);
 
-  /** Evaluate an AST node and return true/false. */
+  /**
+   * Evaluate an AST node and return true/false. A condition that can't be
+   * evaluated hides the property instead of breaking the properties panel.
+   */
   processAST(node: ASTNode): boolean {
-    return this.processOperator(node) === true;
+    try {
+      return this.processOperator(node) === true;
+    } catch (error) {
+      console.warn("Invalid visibility condition", node, error);
+      return false;
+    }
   }
 
   private processOperator(node: ASTNode): ASTValue {
     const [operator, args] = node;
     if (typeof operator !== "string") {
-      throw new Error(`Invalid operator type: ${typeof operator}`);
+      console.warn(`Invalid operator type: ${typeof operator}`);
+      return false;
     }
     const cmd = this.operators.get(operator);
-    if (!cmd) throw new Error(`Operator not found: ${operator}`);
+    // An operator this version doesn't know, e.g. from a config saved by a newer one, is false.
+    if (!cmd) {
+      console.warn(`Operator not found: ${operator}`);
+      return false;
+    }
     return cmd(args.map((a) => this.processValue(a)));
   }
 

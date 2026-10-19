@@ -188,4 +188,23 @@ describe("parsed conditions evaluated by AstProcessor", () => {
       expect(evaluate('properties.colors contains none ["red"]', {})).toBe(true);
     });
   });
+
+  describe("unknown operators", () => {
+    it("evaluate to false instead of throwing, so the property is hidden", () => {
+      const processor = new AstProcessor(new Map());
+      expect(processor.processAST(["future_op", [["get", ["category"]], "a"]] as ASTNode)).toBe(false);
+    });
+
+    it("only fail their own branch", () => {
+      const processor = new AstProcessor(new Map([["category", "a"]]));
+      const rule = [
+        "or",
+        [
+          ["future_op", [1, 2]],
+          ["eq", [["get", ["category"]], "a"]],
+        ],
+      ] as ASTNode;
+      expect(processor.processAST(rule)).toBe(true);
+    });
+  });
 });

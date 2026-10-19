@@ -309,16 +309,17 @@ describe("AstProcessor", () => {
       expect(true).toBe(true);
     });
 
-    it("throws on unknown operator", () => {
-      expect(() =>
-        proc({}).processAST(["unknown_op", [1, 2]] as unknown as ASTNode),
-      ).toThrow("Operator not found: unknown_op");
+    it("evaluates an unknown operator to false instead of throwing", () => {
+      expect(proc({}).processAST(["unknown_op", [1, 2]] as unknown as ASTNode)).toBe(false);
     });
 
-    it("throws on invalid operator type", () => {
-      expect(() =>
-        proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode),
-      ).toThrow("Invalid operator type");
+    it("fails only the branch with the unknown operator", () => {
+      const rule = ["or", [["unknown_op", [1, 2]], ["eq", [1, 1]]]] as unknown as ASTNode;
+      expect(proc({}).processAST(rule)).toBe(true);
+    });
+
+    it("evaluates an invalid operator type to false instead of throwing", () => {
+      expect(proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode)).toBe(false);
     });
   });
 });
