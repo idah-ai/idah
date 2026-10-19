@@ -9,7 +9,6 @@
   } from "$lib/components/App/ContextMenu/store";
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { isInViewport } from "$lib/components/App/Timeline/utils";
-  import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
@@ -32,19 +31,10 @@
 
   let { viewport, items, scale, top, isSelected, trackId, kind }: Props = $props();
 
-  const isVisibleAtFrame = $derived(
-    kind !== "tagging" &&
-      items.some(
-        (item) =>
-          item.startRange <= vp.video.currentFrame.value &&
-          item.endRange >= vp.video.currentFrame.value &&
-          !annotation.isHidden(item.rawData),
-      ),
-  );
-  const firstAnnotation = $derived(items[0].rawData);
-  const shapeType = $derived(firstAnnotation.shape_type);
+  const firstAnnotation = $derived(items[0]?.rawData);
+  const shapeType = $derived(firstAnnotation?.shape_type ?? "");
   const config = $derived(getDriver().config[shapeType]);
-  const category = $derived(config.values.find((v) => v.id === firstAnnotation.category));
+  const category = $derived(config?.values.find((v) => v.id === firstAnnotation.category));
   const foundCategory = $derived(category !== undefined);
 
   // Only render items visible in the viewport
@@ -117,8 +107,9 @@
   role="button"
   tabindex="-1"
   class={cn("track border-b", {
-    "hover:bg-primary/5 bg-clip-padding": isVisibleAtFrame && foundCategory,
-    "border-primary bg-primary/15 hover:bg-primary/15 border-t border-b bg-clip-padding": isSelected && !foundCategory,
+    "hover:bg-primary/5": !isSelected,
+    "border-primary bg-primary/15 hover:bg-primary/15 border-t border-b bg-clip-padding": isSelected && (kind === "tagging" || foundCategory),
+    "border-destructive/50 bg-destructive/10 hover:bg-destructive/10 border-t border-b": isSelected && kind !== "tagging" && !foundCategory,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"

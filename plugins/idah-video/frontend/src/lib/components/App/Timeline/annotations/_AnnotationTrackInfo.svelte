@@ -43,7 +43,15 @@
     return ann ? resolveAnnotationColor(ann) : "gray";
   });
   const isGroupSelected = $derived(selection.isGroupSelected(id));
-  const isGroupHidden = $derived(annotation.isHidden(id));
+  const isGroupHidden = $derived(items.length > 0 && items.every((item) => annotation.isHidden(item.rawData)));
+  const isVisibleAtFrame = $derived(
+    items.some(
+      (item) =>
+        item.startRange <= viewport.video.currentFrame.value &&
+        item.endRange >= viewport.video.currentFrame.value &&
+        !annotation.isHidden(item.rawData),
+    ),
+  );
   const isGroupLocked = $derived(annotation.isLocked(id));
   const showTooltip = $derived(isGroupHidden || title.length > 17);
   const menus = $derived(getGroupContextMenus({ track }));
@@ -92,10 +100,12 @@
 {#snippet AnnotationTrackInfo()}
   <button
     class={cn(
-      "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
+      "relative box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
       {
-        "border-primary/50 bg-primary/10 border-t border-b": isGroupSelected && foundCategory,
-        "border-destructive/50 bg-destructive/10 border-t border-b": isGroupSelected && !foundCategory,
+        "hover:bg-primary/5": !isGroupSelected,
+        "before:bg-primary before:pointer-events-none before:absolute before:inset-y-1.5 before:left-px before:w-1 before:rounded-full before:content-['']": isVisibleAtFrame,
+        "border-primary/50 bg-primary/10 hover:bg-primary/10 border-t border-b": isGroupSelected && foundCategory,
+        "border-destructive/50 bg-destructive/10 hover:bg-destructive/10 border-t border-b": isGroupSelected && !foundCategory,
       },
     )}
     style:height="{TRACK_HEIGHT}px;"
@@ -104,12 +114,14 @@
   >
     <div class="group relative flex items-center gap-2 px-2">
       {#if foundCategory}
-        <ShapeIcon {shapeType} {color} />
+        <span class="shrink-0" class:opacity-50={isGroupHidden}>
+          <ShapeIcon {shapeType} {color} />
+        </span>
       {:else}
-        <CircleAlertIcon class="fill-destructive text-primary-foreground size-5 shrink-0" />
+        <CircleAlertIcon class={cn("fill-destructive text-primary-foreground size-5 shrink-0", { "opacity-50": isGroupHidden })} />
       {/if}
 
-      <div class="flex min-w-0 flex-col">
+      <div class="flex min-w-0 flex-col" class:opacity-50={isGroupHidden}>
         <!-- SUBTITLE::CATEGORY -->
         <span id="subtitle" class="text-muted-foreground truncate text-xs">
           {subtitle}
@@ -121,6 +133,7 @@
             class={cn("font-regular min-w-64 truncate text-left text-xs group-hover:min-w-32", {
               "text-primary font-bold": isGroupSelected && foundCategory,
               "text-destructive font-bold": isGroupSelected && !foundCategory,
+              "font-semibold": isVisibleAtFrame && !isGroupSelected,
               "min-w-44": isGroupLocked,
               "min-w-32": isGroupHidden,
             })}
@@ -137,6 +150,7 @@
           <span
             class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
               "text-primary font-bold": isGroupSelected,
+              "font-semibold": isVisibleAtFrame && !isGroupSelected,
               "min-w-44": isGroupLocked,
               "min-w-32": isGroupHidden,
             })}
