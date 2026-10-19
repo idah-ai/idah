@@ -290,7 +290,7 @@
   }
 
   function addNewProperty() {
-    controller.setProperty({
+    controller.addProperty({
       id: `property-${new Date().getTime()}`,
       label: "New Property",
       type: "text",

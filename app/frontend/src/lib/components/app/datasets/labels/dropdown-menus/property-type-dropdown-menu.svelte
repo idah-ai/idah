@@ -9,7 +9,7 @@
   import { truncate } from "@/utils/string";
 
   import { fieldTypes, type FieldType } from "@/data/model/dataset/labels";
-  import type { IConfigPropertyType } from "@/plugin/interface/Activity";
+  import type { IConfigPropertyType } from "@/plugin/v2/types";
 
   // Props
   interface Props {
@@ -45,7 +45,15 @@
     <Command>
       <CommandList>
         <CommandGroup heading="Label">
-          <InputField name={label} value={label} onblur={(e) => onSetLabel({ label: e.currentTarget.value })} />
+          <!-- A rejected name (e.g. a duplicate) puts the current name back in the input. -->
+          <InputField
+            name={label}
+            value={label}
+            onblur={(e) => {
+              onSetLabel({ label: e.currentTarget.value });
+              e.currentTarget.value = label;
+            }}
+          />
         </CommandGroup>
 
         <CommandGroup heading="Type">
