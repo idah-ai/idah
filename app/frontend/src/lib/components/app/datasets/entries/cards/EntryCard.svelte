@@ -5,6 +5,7 @@
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { getContext, onDestroy, onMount } from "svelte";
 
+  import EntryAnnotationErrorBadge from "@/components/app/datasets/entries/badges/EntryAnnotationErrorBadge.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
@@ -446,6 +447,8 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
+          <EntryAnnotationErrorBadge />
+
           {#if jobProgress < 1}
             <div class="flex flex-col gap-1">
               <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">

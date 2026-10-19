@@ -10,6 +10,7 @@
   import { TRACK_HEIGHT } from "$lib/components/App/Timeline/constants";
   import { isInViewport } from "$lib/components/App/Timeline/utils";
   import { cn } from "$lib/utils";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport as vp } from "$lib/state/viewport.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
@@ -29,6 +30,12 @@
   }
 
   let { viewport, items, scale, top, isSelected, trackId, kind }: Props = $props();
+
+  const firstAnnotation = $derived(items[0].rawData);
+  const shapeType = $derived(firstAnnotation.shape_type);
+  const config = $derived(getDriver().config[shapeType]);
+  const category = $derived(config.values.find((v) => v.id === firstAnnotation.category));
+  const foundCategory = $derived(category !== undefined);
 
   // Only render items visible in the viewport
   const visibleItems = $derived(
@@ -100,7 +107,8 @@
   role="button"
   tabindex="-1"
   class={cn("track border-b", {
-    "border-primary/50 bg-primary/10 border-t border-b": isSelected,
+    "border-primary/50 bg-primary/10 border-t border-b": isSelected && foundCategory,
+    "border-destructive/50 bg-destructive/10 border-t border-b": isSelected && !foundCategory,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"

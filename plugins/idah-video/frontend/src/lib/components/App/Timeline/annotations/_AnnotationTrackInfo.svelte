@@ -1,11 +1,12 @@
 <script lang="ts">
-  import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
-  import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
+  import { CircleAlertIcon } from "@lucide/svelte";
 
-  import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
-  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
+  import AnnotationLabelNotFound from "$lib/components/App/Error/AnnotationLabelNotFound.svelte";
+  import * as HoverCard from "$lib/components/ui/HoverCard/index";
   import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
-  import Icon from "$lib/components/ui/Icon/Icon.svelte";
+  import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
+  import Tooltips from "$lib/components/ui/Tooltips/Tooltips.svelte";
+  import TrackInfoContextMenu from "$lib/components/App/Timeline/annotations/_TrackInfoContextMenu.svelte";
 
   import {
     showContextMenu,
@@ -17,8 +18,8 @@
   import { selection } from "$lib/state/selection.svelte";
   import { cn } from "$lib/utils";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { sidebarTabs } from "$lib/state/sidebar-tabs.svelte";
 
@@ -31,16 +32,20 @@
   let { track }: Props = $props();
 
   // Variables
-  let { id, title, subtitle, items } = $derived(track);
-  let shapeType = $derived(items[0]?.rawData.shape_type ?? "");
-  let color = $derived.by(() => {
-    const ann = items[0]?.rawData;
+  const { id, title, subtitle, items } = $derived(track);
+  const firstAnnotation = $derived(items[0].rawData);
+  const shapeType = $derived(firstAnnotation.shape_type ?? "");
+  const config = $derived(getDriver().config[shapeType]);
+  const category = $derived(config.values.find((v) => v.id === firstAnnotation.category));
+  const foundCategory = $derived(category !== undefined);
+  const color = $derived.by(() => {
+    const ann = firstAnnotation;
     return ann ? resolveAnnotationColor(ann) : "gray";
   });
-  let isGroupSelected = $derived(selection.isGroupSelected(id));
-  let isGroupHidden = $derived(annotation.isHidden(id));
-  let isGroupLocked = $derived(annotation.isLocked(id));
-  let showTooltip = $derived(isGroupHidden || title.length > 17);
+  const isGroupSelected = $derived(selection.isGroupSelected(id));
+  const isGroupHidden = $derived(annotation.isHidden(id));
+  const isGroupLocked = $derived(annotation.isLocked(id));
+  const showTooltip = $derived(isGroupHidden || title.length > 17);
   const menus = $derived(getGroupContextMenus({ track }));
 
   // Functions
@@ -84,76 +89,94 @@
   }
 </script>
 
-<button
-  class={cn(
-    "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
-    {
-      "border-primary/50 bg-primary/10 border-t border-b": isGroupSelected,
-    },
-  )}
-  style:height="{TRACK_HEIGHT}px;"
-  oncontextmenu={handleOnContextMenu}
-  onclick={handleClick}
->
-  <div class="group relative flex items-center gap-2 px-2">
-    {#if shapeType === VIDEO_BOUNDING_BOX}
-      <Icon src={vectorSquareIconSvg} {color} />
-    {:else if shapeType === VIDEO_POLYGON}
-      <Icon src={polygonIconSvg} {color} />
-    {/if}
-
-    <div class="flex min-w-0 flex-col">
-      <!-- SUBTITLE::CATEGORY -->
-      <span id="subtitle" class="text-muted-foreground truncate text-xs">
-        {subtitle}
-      </span>
-
-      <!-- TITLE::CATEGORY WITH GROUP ID -->
-      {#if showTooltip}
-        <Tooltips
-          class={cn("font-regular min-w-64 truncate text-left text-xs group-hover:min-w-32", {
-            "text-primary font-bold": isGroupSelected,
-            "min-w-44": isGroupLocked,
-            "min-w-32": isGroupHidden,
-          })}
-        >
-          {#snippet trigger()}
-            {title}
-          {/snippet}
-
-          {#snippet content()}
-            {title}
-          {/snippet}
-        </Tooltips>
+{#snippet AnnotationTrackInfo()}
+  <button
+    class={cn(
+      "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
+      {
+        "border-primary/50 bg-primary/10 border-t border-b": isGroupSelected && foundCategory,
+        "border-destructive/50 bg-destructive/10 border-t border-b": isGroupSelected && !foundCategory,
+      },
+    )}
+    style:height="{TRACK_HEIGHT}px;"
+    oncontextmenu={handleOnContextMenu}
+    onclick={handleClick}
+  >
+    <div class="group relative flex items-center gap-2 px-2">
+      {#if foundCategory}
+        <ShapeIcon {shapeType} {color} />
       {:else}
-        <span
-          class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
-            "text-primary font-bold": isGroupSelected,
-            "min-w-44": isGroupLocked,
-            "min-w-32": isGroupHidden,
-          })}
-        >
-          {title}
+        <CircleAlertIcon class="fill-destructive text-primary-foreground size-5 shrink-0" />
+      {/if}
+
+      <div class="flex min-w-0 flex-col">
+        <!-- SUBTITLE::CATEGORY -->
+        <span id="subtitle" class="text-muted-foreground truncate text-xs">
+          {subtitle}
         </span>
+
+        <!-- TITLE::CATEGORY WITH GROUP ID -->
+        {#if showTooltip}
+          <Tooltips
+            class={cn("font-regular min-w-64 truncate text-left text-xs group-hover:min-w-32", {
+              "text-primary font-bold": isGroupSelected && foundCategory,
+              "text-destructive font-bold": isGroupSelected && !foundCategory,
+              "min-w-44": isGroupLocked,
+              "min-w-32": isGroupHidden,
+            })}
+          >
+            {#snippet trigger()}
+              {title}
+            {/snippet}
+
+            {#snippet content()}
+              {title}
+            {/snippet}
+          </Tooltips>
+        {:else}
+          <span
+            class={cn("font-regular min-w-64 truncate text-xs group-hover:min-w-32", {
+              "text-primary font-bold": isGroupSelected,
+              "min-w-44": isGroupLocked,
+              "min-w-32": isGroupHidden,
+            })}
+          >
+            {title}
+          </span>
+        {/if}
+      </div>
+
+      {#if id !== "__entry_notes__"}
+        <div class="ml-auto flex shrink-0 items-center">
+          {#each Object.entries(menus.actions.items) as [key, { label, icon, disabled, alwaysShow, onClick }] (key)}
+            <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+              <KbdTooltipButton
+                {label}
+                {icon}
+                variant="ghost"
+                size="icon-sm"
+                class="focus:outline-none"
+                {disabled}
+                onclick={onClick}
+              />
+            </div>
+          {/each}
+        </div>
       {/if}
     </div>
+  </button>
+{/snippet}
 
-    {#if id !== "__entry_notes__"}
-      <div class="ml-auto flex shrink-0 items-center">
-        {#each Object.entries(menus.actions.items) as [key, { label, icon, disabled, alwaysShow, onClick }] (key)}
-          <div class={cn("", alwaysShow ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-            <KbdTooltipButton
-              {label}
-              {icon}
-              variant="ghost"
-              size="icon-sm"
-              class="focus:outline-none"
-              {disabled}
-              onclick={onClick}
-            />
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </div>
-</button>
+{#if foundCategory}
+  {@render AnnotationTrackInfo()}
+{:else}
+  <HoverCard.Root>
+    <HoverCard.Trigger>
+      {@render AnnotationTrackInfo()}
+    </HoverCard.Trigger>
+
+    <HoverCard.Content side="right">
+      <AnnotationLabelNotFound displayName={title} />
+    </HoverCard.Content>
+  </HoverCard.Root>
+{/if}
