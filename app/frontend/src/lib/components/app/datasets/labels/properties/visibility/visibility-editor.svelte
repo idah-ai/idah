@@ -37,6 +37,8 @@
   }
   let { visibility, categories, properties, propertyId, onChange }: Props = $props();
 
+  const EXAMPLE = 'category = "vehicles/car" and properties.occluded = true';
+
   type Mode = "builder" | "expression";
   type Parsed = { visibility: Visibility; error?: undefined } | { visibility?: undefined; error: string };
 
@@ -158,7 +160,7 @@
         spellcheck={false}
         aria-label="Visibility expression"
         aria-invalid={parsed.error !== undefined}
-        placeholder={'category = "vehicles/car" and properties.occluded = true'}
+        placeholder={EXAMPLE}
         rows={Math.max(3, text.split("\n").length + 1)}
         value={text}
         oninput={(e) => setText(e.currentTarget.value)}
