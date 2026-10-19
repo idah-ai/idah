@@ -2,17 +2,17 @@
   import TrackBlockContextMenu from "$lib/components/App/Timeline/annotations/_TrackBlockContextMenu.svelte";
   import NoteKeyframeContextMenu from "$lib/components/App/Timeline/review/_NoteKeyframeContextMenu.svelte";
 
+  import type { INoteRecord } from "$idah/v2/types";
   import {
     showContextMenu,
     type ContextMenuComponent,
     type ContextMenuComponentProps,
   } from "$lib/components/App/ContextMenu/store";
+  import { annotation as annotationState } from "$lib/state/annotation.svelte";
+  import { activeNoteId, focusNote, notes, pendingNoteScene } from "$lib/state/data.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { notes, activeNoteId, data, focusNote, pendingNoteScene } from "$lib/state/data.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
-  import type { IVideoAnnotationRecord } from "$lib/types";
-  import type { INoteRecord } from "$idah/v2/types";
 
   import type { TimelineItem } from "$lib/components/App/Timeline/types";
 
@@ -51,8 +51,13 @@
   // Compute color using the same annotationColor() as the viewport shapes
   let color = $derived.by(() => resolveAnnotationColor(annotation));
 
+  const isHidden = $derived(annotationState.isHidden(annotation));
+  const isPresent = $derived(
+    startRange <= viewport.video.currentFrame.value && endRange >= viewport.video.currentFrame.value,
+  );
+
   // Check if this specific annotation is selected.
-   let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
+  let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
 
   // Functions
   function handleOnContextMenu(e: MouseEvent) {
@@ -146,8 +151,8 @@
   class="relative h-full w-full cursor-pointer rounded-lg border transition-opacity hover:opacity-80 focus:outline-none"
   class:ring-2={isSelected}
   class:ring-offset-1={isSelected}
-  style:background-color={color + "30"}
-  style:border-color={color}
+  style:background-color={`color-mix(in srgb, ${color} ${isHidden ? 5 : isPresent ? 60 : 12}%, transparent)`}
+  style:border-color={isHidden ? `color-mix(in srgb, ${color} 35%, transparent)` : color}
   style:--tw-ring-color={isSelected ? color : "transparent"}
   onclick={handleAnnotationClick}
   oncontextmenu={(e) => {
@@ -169,7 +174,11 @@
       style:height="calc(100% - {6 * 2}px)"
       style:left="{position}%"
       style:width="{width}%"
-      style:background-color={isPendingFrame(keyframe) ? "var(--muted-foreground)" : color}
+      style:background-color={isPendingFrame(keyframe)
+        ? "var(--muted-foreground)"
+        : isHidden
+          ? `color-mix(in srgb, ${color} 35%, transparent)`
+          : color}
       onclick={(e) => handleKeyframeClick(e, keyframe)}
       oncontextmenu={(e) => handleKeyframeContextMenu(e, keyframe)}
       onkeypress={() => {}}

@@ -22,20 +22,19 @@
     Trash2Icon,
   } from "@lucide/svelte";
 
+  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
   import AnnotationsListItem from "$lib/components/App/SelectionPanel/_AnnotationsListItem.svelte";
-  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
 
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
   import { annotation } from "$lib/state/annotation.svelte";
   import { categorySearch } from "$lib/state/category-search.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
-  import { viewport } from "$lib/state/viewport.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import { viewport } from "$lib/state/viewport.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
   import type { IImageAnnotationRecord } from "$lib/types";
-
 
   type Props = {
     annotations: IImageAnnotationRecord[];
@@ -163,10 +162,10 @@
 
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
-	  <div class="flex items-center gap-2">
-	    <Text weight="semibold">Annotations</Text>
-			<AnnotationsErrorAlertIcon {annotations} />
-	  </div>
+    <div class="flex items-center gap-2">
+      <Text weight="semibold">Annotations</Text>
+      <AnnotationsErrorAlertIcon {annotations} />
+    </div>
 
     <div class="ml-auto flex items-center">
       {#each Object.entries(menus.actions.items) as [key, { label, icon: Icon, onClick, disabled }] (key)}
