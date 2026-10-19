@@ -80,7 +80,8 @@
     }
     // Normalize hyphens↔spaces so searching by id or label both work.
     const q = query.toLowerCase().replace(/-/g, " ");
-    const matches = (ann: IImageAnnotationRecord) => (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
+    const matches = (ann: IImageAnnotationRecord) =>
+      (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
     return [
       { id: "all", label: "All", count: sortedAnnotations.filter(matches).length },
       { id: "hidden", label: "Hidden", count: hiddenAnnotations.filter(matches).length },
@@ -97,11 +98,11 @@
   const categoryFilteredAnnotations = $derived(
     !categorySearch.value
       ? filteredAnnotations
-      : filteredAnnotations.filter((ann) =>
-          (ann.category ?? "")
-            .toLowerCase()
-            .replace(/-/g, " ")
-            .includes(categorySearch.value.toLowerCase().replace(/-/g, " ")),
+      : filteredAnnotations.filter(
+          (ann) =>
+            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
+              categorySearch.value.toLowerCase().replace(/-/g, " "),
+            ),
         ),
   );
 
@@ -196,7 +197,9 @@
           No {activeTab === "all" ? "" : activeTab} annotations
         </div>
       {:else}
-        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No matching annotations</div>
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">
+          No matching annotations
+        </div>
       {/if}
     {/if}
 
