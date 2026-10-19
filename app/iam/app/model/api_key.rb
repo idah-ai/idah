@@ -97,7 +97,7 @@ module ApiKey
 
       return table.where(Sequel.lit("false")) if organization_ids.empty?
 
-      projects = Api[:idah].dataset.projects.index(filter: { organization_id: organization_ids }).data
+      project_ids = ProjectMembership::Lookup.new.project_ids_for_organizations(organization_ids)
 
       # Use <@ (contained by) operator to ensure ALL scope_values are within the
       # user's own org projects/orgs — excludes API keys referencing projects or orgs
@@ -105,7 +105,7 @@ module ApiKey
       table.where(
         Sequel.lit(
           "(scope_type = 'project' AND scope_value <@ ?::text[]) OR (scope_type = 'org' AND scope_value <@ ?::text[])",
-          Sequel.pg_array(projects.map(&:id)),
+          Sequel.pg_array(project_ids),
           Sequel.pg_array(organization_ids)
         )
       )

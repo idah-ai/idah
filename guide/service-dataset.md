@@ -646,8 +646,8 @@ Member creation for real actors goes through the guarded batch endpoint `POST /p
 - Assigning `project_owner` requires effective rank ≥ `org_owner`. A `project_owner` assigns `reviewer`/`annotator` only.
 - Managing existing members (role change, disable, remove): a `project_owner` can manage rows up to and including `project_owner`; org_owner of the project's org and admin manage everything.
 - A project invite **never** modifies the account: dataset calls the IAM invite with `role_name: "user"` and empty scope (a no-op for existing accounts). Access to the project comes from the membership.
-- A disabled account cannot be invited to a project; an explicit error tells the actor that an administrator or org owner must re-enable it.
-- Batch invites are **all-or-nothing**: validate every member first; if any fails, write nothing and return a per-email reason.
+- A disabled account cannot be invited to a project; the per-member error is generic (`This email can't be invited — contact an administrator`), because dataset cannot check the actor's IAM read scope.
+- Batch invites validate every member first; if any fails, write nothing and return a per-email reason. Accounts are then provisioned (IAM invite) **outside** the membership transaction, so a failed membership write does not roll back already-provisioned accounts. Leftover pending accounts are harmless: they are un-joined, expire after 3 days, and are reused on retry.
 - Membership `account_id`, `email`, `name` are resolved server-side from IAM; `invited_by_id` comes from `auth_context`. `role` is validated against the project roles enum.
 
 **Resend invitation** (`POST /project_members/:id/resend_invitation`) is guarded by the project-level resend rule (the actor can manage that member), then delegates to `Api[:idah].iam.accounts.resend_invitation` with the service token. It rejects accounts that already joined and disabled accounts.

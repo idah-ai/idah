@@ -281,12 +281,12 @@ Multi-id calls are composed from per-id entries so a single invalidation never l
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `enabled` | `true` | When `false`, the cache is a no-op passthrough (used in tests) |
-| `ttl` | `nil` | Seconds before an entry expires; `nil` means never |
+| `ttl` | `300` | Seconds before an entry expires |
 | `capacity` | `10000` | LRU capacity (bounds memory) |
 
 **Invalidation.** The cache is invalidated across all workers by `ProjectMembership::CacheExpo` (`common/lib/project_membership/cache_expo.rb`), registered in iam, media and sync. It subscribes in **broadcast** mode (see [`guide/event-system.md`](event-system.md)) to `dataset:project_members`, `dataset:projects` and `iam:accounts` events. Missing metadata flushes the whole cache and logs a warning.
 
-**Failure mode.** Pub/sub has no replay, so a missed invalidation broadcast keeps a stale entry until the next invalidation or a process restart. With `ttl: nil` (the default) that staleness is unbounded; set a TTL when that is a concern.
+**Failure mode.** Pub/sub has no replay, so a missed invalidation broadcast keeps a stale entry until the next invalidation or the TTL expires. The default TTL of 300s bounds that staleness; a `fetch` also drops its computed value if an invalidation fires while its HTTP call is in flight, so a stale result is never stored.
 
 ## Pagination Helper (`Api.all`)
 

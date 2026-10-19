@@ -86,10 +86,20 @@ module ProjectMember
       end
     end
 
-    # Batch invite members to a project. All-or-nothing: validates every member
-    # first (read-only); if any fails, writes nothing and returns a per-index
-    # reason. Only if all are valid does it call the IAM invite and write
-    # memberships in one transaction.
+    # Batch invite members to a project, in three phases:
+    #   1. Validate every member first (read-only); if any fails, write nothing
+    #      and return a per-index reason.
+    #   2. Provision accounts (outside any transaction): for each validated
+    #      member with no existing account, call the IAM invite and keep the
+    #      returned account. This is idempotent — re-inviting an existing email
+    #      as `user` changes nothing. If an IAM call fails, stop; no membership
+    #      has been written yet.
+    #   3. Write memberships in one short transaction. New rows are created and
+    #      disabled rows are re-enabled, exactly as invite_single did before.
+    #
+    # Account provisioning is NOT rolled back if the membership write fails:
+    # leftover pending accounts are harmless (un-joined, expire after 3 days,
+    # reused on retry). "Added to project" emails fire in after_commit.
     def invite(project_id, members:)
       project = system_projects.find!(project_id)
       effective_rank = ProjectAccess::Service.effective_rank(
@@ -101,7 +111,7 @@ module ProjectMember
               "You do not have permission to invite members to this project"
       end
 
-      # Validate every member without writing anything.
+      # Phase 1: validate every member without writing anything.
       errors = {}
       validated = []
 
@@ -139,7 +149,7 @@ module ProjectMember
         account = find_account_by_email(m[:email])
         if account && !account.enabled
           errors["members/#{m[:index]}"] =
-            ["Cannot invite a disabled account; an administrator or org owner must re-enable it"]
+            ["This email can't be invited — contact an administrator"]
           next
         end
 
@@ -165,11 +175,22 @@ module ProjectMember
 
       raise Verse::Error::ValidationFailed, errors_object(errors) unless errors.empty?
 
-      # Only if all valid, call the IAM invite and write memberships in one
-      # transaction. "Added to project" emails fire in after_commit.
+      # Phase 2: provision accounts outside any transaction. The IAM invite with
+      # role_name "user" and an empty scope is a no-op for existing accounts and
+      # creates new ones. Stop on the first failure; no membership is written yet.
+      validated.each do |m|
+        next if m[:account]
+
+        m[:account] = Api[:idah].iam.accounts.invite(
+          attributes: { email: m[:email], role_name: "user", role_scope: {} }
+        )
+      end
+
+      # Phase 3: write memberships in one short transaction. "Added to project"
+      # emails fire in after_commit.
       project_members.transaction do
         validated.map do |m|
-          invite_single(project, m[:email], m[:role], m[:account], m[:existing])
+          invite_single(project, m[:role], m[:account], m[:existing])
         end
       end
     end
@@ -248,15 +269,11 @@ module ProjectMember
     end
 
     # Writes a single membership. The account and the existing row (if any) were
-    # already resolved and validated. If a disabled row exists for
-    # (project_id, account_id) it is re-enabled (re-invite of a removed member);
-    # otherwise a new row is created. The IAM invite with role_name "user" and an
-    # empty scope is a no-op for existing accounts and creates new ones.
-    def invite_single(project, email, role, account, existing)
-      account ||= Api[:idah].iam.accounts.invite(
-        attributes: { email:, role_name: "user", role_scope: {} }
-      )
-
+    # already resolved and validated, and the account was already provisioned by
+    # the caller (invite_single never calls IAM itself). If a disabled row exists
+    # for (project_id, account_id) it is re-enabled (re-invite of a removed
+    # member); otherwise a new row is created.
+    def invite_single(project, role, account, existing)
       # Membership writes run through a plain system repository; only the emitted
       # dataset:project_members events carry the inviter (via `with_actor`). The
       # IAM invite itself is attributed to the service account.

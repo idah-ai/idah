@@ -42,10 +42,23 @@ RSpec.describe ProjectMembership::Cache do
         expect(cache.fetch("k", "s") { :second }).to eq(:second)
       end
 
-      it "never expires entries when ttl is nil" do
-        subject.fetch("k", "s") { :value }
+      it "defaults the TTL to 300 seconds" do
+        expect(subject.send(:ttl_seconds)).to eq(300)
+      end
 
-        expect(subject.fetch("k", "s") { :other }).to eq(:value)
+      it "never expires entries when ttl is explicitly nil" do
+        cache = described_class.new(ttl: nil)
+        cache.fetch("k", "s") { :value }
+
+        expect(cache.fetch("k", "s") { :other }).to eq(:value)
+      end
+
+      it "rejects a ttl of 0" do
+        expect { described_class.new(ttl: 0) }.to raise_error(ArgumentError, /must be a positive Integer/)
+      end
+
+      it "rejects a negative ttl" do
+        expect { described_class.new(ttl: -5) }.to raise_error(ArgumentError, /must be a positive Integer/)
       end
 
       it "deep-freezes cached arrays of structs so callers cannot mutate the shared entry" do
@@ -70,6 +83,29 @@ RSpec.describe ProjectMembership::Cache do
         expect(cache.fetch("b", "s") { 20 }).to eq(2)
         expect(cache.fetch("c", "s") { 30 }).to eq(3)
       end
+
+      it "drops the computed value when an invalidation fires inside the block" do
+        calls = 0
+        first = subject.fetch("k", "s") do
+          calls += 1
+          subject.invalidate_account(1)
+          :stale
+        end
+
+        # The value is returned to the caller, but the invalidation means it is
+        # not stored: the next fetch recomputes.
+        expect(first).to eq(:stale)
+        expect(subject.fetch("k", "s") { calls += 1; :fresh }).to eq(:fresh)
+        expect(calls).to eq(2)
+      end
+
+      it "still caches when no invalidation fires inside the block" do
+        calls = 0
+        subject.fetch("k", "s") { calls += 1; :value }
+
+        expect(subject.fetch("k", "s") { calls += 1; :other }).to eq(:value)
+        expect(calls).to eq(1)
+      end
     end
 
     context "when disabled" do
@@ -78,6 +114,15 @@ RSpec.describe ProjectMembership::Cache do
       it "does not cache (always recomputes)" do
         calls = 0
         2.times { subject.fetch("k", "s") { calls += 1; :value } }
+
+        expect(calls).to eq(2)
+      end
+
+      it "is unaffected by an invalidation fired inside the block" do
+        calls = 0
+        2.times do
+          subject.fetch("k", "s") { calls += 1; subject.invalidate_account(1); :value }
+        end
 
         expect(calls).to eq(2)
       end

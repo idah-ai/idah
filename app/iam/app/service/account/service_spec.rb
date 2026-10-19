@@ -215,6 +215,13 @@ RSpec.describe Account::Service, database: true do
           expect(updated).not_to be_nil
           expect(updated[1]).to include(actor_account_id: 1, actor_account_email: "actor@test.com")
         end
+
+        it "rejects inviting a disabled account with a specific message (readable)" do
+          create_account(base_attrs.merge(email: "disabled@test.com", enabled: false))
+          expect {
+            subject.invite(build_record(base_attrs.merge(email: "disabled@test.com")))
+          }.to raise_error(Verse::Error::Unauthorized, /re-enable/)
+        end
       end
     end
 
@@ -363,18 +370,25 @@ RSpec.describe Account::Service, database: true do
           expect(stored.role_scope).to eq("org" => %w[1 2])
         end
 
-        it "rejects inviting a disabled account" do
+        it "rejects inviting a disabled account with a generic message (unreadable)" do
           create_account(base_attrs.merge(email: "disabled@test.com", enabled: false))
           expect {
             subject.invite(build_record(base_attrs.merge(email: "disabled@test.com")))
-          }.to raise_error(Verse::Error::Unauthorized, /re-enable/)
+          }.to raise_error(Verse::Error::Unauthorized, /contact an administrator/)
         end
 
-        it "rejects inviting an account ranked above the actor" do
+        it "treats an account ranked above the actor as a no-op (unreadable, restricted response)" do
           create_account(base_attrs.merge(email: "admin@test.com", role_name: "admin"))
-          expect {
-            subject.invite(build_record(base_attrs.merge(email: "admin@test.com")))
-          }.to raise_error(Verse::Error::Unauthorized)
+          updated = subject.invite(build_record(base_attrs.merge(email: "admin@test.com")))
+
+          # The account is outside the org_owner's read scope, so the response is
+          # restricted to id/name/email and reveals no role.
+          expect(updated.email).to eq("admin@test.com")
+          expect(updated.role_name).to be_nil
+
+          # No write happened: the account is unchanged.
+          stored = system_repo.find_by({ email: "admin@test.com" })
+          expect(stored.role_name).to eq("admin")
         end
       end
     end

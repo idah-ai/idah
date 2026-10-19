@@ -111,14 +111,43 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(member_repo.index({}).count).to eq(0)
       end
 
-      it "rejects a disabled account with an explicit error" do
+      it "rejects a disabled account with a generic error" do
         allow(Api[:idah].iam.accounts).to receive(:index).and_return(
           double(data: [account_stub(id: 100, email: "disabled@test.com", enabled: false)])
         )
 
         expect {
           subject.invite(project_a, members: [{ email: "disabled@test.com", role: "annotator" }])
-        }.to raise_error(Verse::Error::ValidationFailed, /re-enable/)
+        }.to raise_error(Verse::Error::ValidationFailed, /contact an administrator/)
+      end
+
+      it "provisions accounts outside the transaction: an IAM failure writes no memberships" do
+        allow(Api[:idah].iam.accounts).to receive(:index).and_return(double(data: []))
+        allow(Api[:idah].iam.accounts).to receive(:invite).and_raise(Api::HTTPError.new(500, "boom", "{}"))
+
+        expect {
+          subject.invite(project_a, members: [{ email: "new@test.com", role: "annotator" }])
+        }.to raise_error(Api::HTTPError)
+
+        expect(member_repo.index({}).count).to eq(0)
+      end
+
+      it "provisions accounts before opening the membership transaction" do
+        # The IAM invite must run BEFORE the membership write transaction, so a
+        # failed IAM call never holds a DB transaction open across an HTTP call.
+        order = []
+        allow(Api[:idah].iam.accounts).to receive(:invite) do
+          order << :invite
+          account_stub(id: 100, email: "new@test.com")
+        end
+        allow(subject.project_members).to receive(:transaction) do |&block|
+          order << :transaction
+          block.call
+        end
+
+        subject.invite(project_a, members: [{ email: "new@test.com", role: "annotator" }])
+
+        expect(order).to eq([:invite, :transaction])
       end
 
       it "rejects an already-active member instead of silently changing its role" do

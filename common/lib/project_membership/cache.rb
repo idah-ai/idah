@@ -12,8 +12,12 @@
 # Configuration comes from the service config block `idah.project_membership_cache`
 # (`Verse.config.extra_fields.dig(:idah, :project_membership_cache, ...)`):
 #   enabled:  bool   (default true)  — when false, the cache is a no-op passthrough
-#   ttl:      int|nil (default nil)  — seconds; nil means entries never expire
+#   ttl:      int    (default 300)   — seconds before an entry expires
 #   capacity: int    (default 10_000) — LRU capacity (bounds memory)
+#
+# A default TTL bounds the staleness a missed invalidation broadcast can leave
+# behind: without one, a stale entry would live until the next invalidation or a
+# process restart.
 #
 # The store is a process-wide singleton (`Cache.instance`) so the lookup and the
 # broadcast invalidation expo share the same adapter. `reset!` exists for specs.
@@ -41,6 +45,14 @@ module ProjectMembership
     def initialize(config = nil)
       @config = config ? normalize_config(config) : read_config
       @adapter = Verse::Cache::Impl::MemoryCacheAdapter.new(@config[:capacity])
+      # Global invalidation counter: every invalidation increments it, and a
+      # `fetch` stores its computed value only if the counter is unchanged since
+      # the block started. This closes the fetch/invalidate race (an invalidation
+      # arriving while a fetch's HTTP call is in flight clears nothing, so the
+      # stale result is dropped instead of stored). A single global counter keeps
+      # memory flat; the cost is only an occasional skipped store during bursts.
+      @invalidation_counter = 0
+      @mutex = Mutex.new
     end
 
     def enabled?
@@ -50,7 +62,12 @@ module ProjectMembership
     # Returns the cached value for (key, selector), or computes it from the block
     # and caches it. Any value is cached, including nil and empty arrays (wrapped
     # so a miss — nil from the adapter — is distinguishable from a cached empty
-    # result). `ex:` (TTL) is passed only when a TTL is configured.
+    # result). `ex:` (TTL) is passed on every store (the default is 300s).
+    #
+    # The block (which makes an HTTP call) runs WITHOUT the mutex held. The
+    # invalidation counter is read before the block and the check-then-store runs
+    # under the mutex, so an invalidation that fires while the block is in flight
+    # drops the stale result instead of storing it.
     #
     # Cached values are deep-frozen so a caller mutating a returned array/struct
     # cannot corrupt the shared cache entry. The value is frozen in disabled mode
@@ -58,10 +75,16 @@ module ProjectMembership
     def fetch(key, selector)
       return deep_freeze(yield) unless enabled?
 
+      counter = @mutex.synchronize { @invalidation_counter }
+
       wrapped = @adapter.fetch(key, selector.to_s)
       if wrapped.nil?
         value = yield
-        @adapter.cache(key, selector.to_s, { value: deep_freeze(value) }, ex: ttl_seconds)
+        @mutex.synchronize do
+          if @invalidation_counter == counter
+            @adapter.cache(key, selector.to_s, { value: deep_freeze(value) }, ex: ttl_seconds)
+          end
+        end
         value
       else
         wrapped[:value]
@@ -88,20 +111,24 @@ module ProjectMembership
     end
 
     def invalidate_account(account_id)
+      bump_invalidation_counter
       @adapter.flush(MEMBERSHIPS_KEY, account_id.to_s)
     end
 
     def invalidate_project(project_id, organization_id: nil)
+      bump_invalidation_counter
       @adapter.flush(MEMBER_ACCOUNT_IDS_PROJECT_KEY, project_id.to_s)
       @adapter.flush(PROJECT_IDS_ORG_KEY, organization_id.to_s) if organization_id
     end
 
     def invalidate_organization(org_id)
+      bump_invalidation_counter
       @adapter.flush(MEMBER_ACCOUNT_IDS_ORG_KEY, org_id.to_s)
       @adapter.flush(PROJECT_IDS_ORG_KEY, org_id.to_s)
     end
 
     def flush!
+      bump_invalidation_counter
       @adapter.flush(MEMBERSHIPS_KEY, "*")
       @adapter.flush(MEMBER_ACCOUNT_IDS_PROJECT_KEY, "*")
       @adapter.flush(MEMBER_ACCOUNT_IDS_ORG_KEY, "*")
@@ -116,7 +143,7 @@ module ProjectMembership
       return defaults unless block
 
       defaults[:enabled] = block[:enabled] unless block[:enabled].nil?
-      defaults[:ttl] = block[:ttl] unless block[:ttl].nil?
+      defaults[:ttl] = validate_ttl(block[:ttl]) unless block[:ttl].nil?
       defaults[:capacity] = block[:capacity] unless block[:capacity].nil?
       defaults
     end
@@ -124,13 +151,32 @@ module ProjectMembership
     def normalize_config(config)
       defaults = default_config
       defaults[:enabled] = config[:enabled] unless config[:enabled].nil?
-      defaults[:ttl] = config[:ttl] unless config[:ttl].nil?
+      defaults[:ttl] = validate_ttl(config[:ttl]) unless config[:ttl].nil?
       defaults[:capacity] = config[:capacity] unless config[:capacity].nil?
       defaults
     end
 
+    # A TTL must be a positive Integer. `nil` is allowed only as an explicit
+    # code-level option (entries never expire); 0 or negative values are rejected
+    # because the adapter treats `ex: 0` as "expire immediately".
+    def validate_ttl(ttl)
+      return ttl if ttl.nil?
+
+      unless ttl.is_a?(Integer) && ttl.positive?
+        raise ArgumentError, "project_membership_cache ttl must be a positive Integer (got #{ttl.inspect})"
+      end
+
+      ttl
+    end
+
     def default_config
-      { enabled: true, ttl: nil, capacity: 10_000 }
+      { enabled: true, ttl: 300, capacity: 10_000 }
+    end
+
+    # Every invalidation bumps the global counter so an in-flight `fetch` drops
+    # its stale result instead of storing it.
+    def bump_invalidation_counter
+      @mutex.synchronize { @invalidation_counter += 1 }
     end
 
     # Reads the `idah.project_membership_cache` block from the service config.

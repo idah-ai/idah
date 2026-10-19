@@ -23,9 +23,9 @@ module Account
       accounts.find!(id, included: included)
     end
 
-    # Internal account creation, called only through a system context (e.g. from
-    # #invite). The HTTP route was removed; the check below uses `scope.all?`,
-    # which admin also passes, so it is not a hard "system only" gate — it just
+    # Internal account creation (no HTTP route), called through a system context
+    # (e.g. from #invite). The check below uses `scope.all?`, which admin's
+    # wildcard rights also pass, so it is not a hard "system only" gate — it just
     # keeps direct creation out of reach of the public invite path.
     def create(record, actor: nil)
       auth_context.can!(:create, accounts.class.resource) do |scope|
@@ -468,17 +468,25 @@ module Account
 
     # Invite on an existing email — expand, never reduce.
     def invite_existing_account(existing, target_role, requested_scope, actor_role, actor_orgs)
-      # Disabled accounts are never re-enabled by an invite.
+      # Disabled accounts are never re-enabled by an invite. If the actor can
+      # already read the account, say why; otherwise keep the reason generic so
+      # an invite never reveals the account's status to a caller who could not
+      # read it directly.
       unless existing.enabled
-        raise Verse::Error::Unauthorized,
-              "Cannot invite a disabled account; an administrator or org owner must re-enable it"
+        message =
+          if accounts.scoped(:read).where(id: existing.id).count > 0
+            "Cannot invite a disabled account; an administrator or org owner must re-enable it"
+          else
+            "This email can't be invited — contact an administrator"
+          end
+        raise Verse::Error::Unauthorized, message
       end
 
-      # Anything ranked above the actor is rejected.
-      unless RoleHierarchy.can_assign_account_role?(actor_role, existing.role_name)
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to invite this account"
-      end
+      # An account ranked above the actor is a no-op under the "expand, never
+      # reduce" rule: it already covers whatever this invite would grant. Return
+      # it unchanged (the caller's disclose_account restricts the response), with
+      # no write, no email and no error — whatever target_role was requested.
+      return existing unless RoleHierarchy.can_assign_account_role?(actor_role, existing.role_name)
 
       current_orgs = RoleHierarchy.normalize_orgs(existing.role_scope) || []
 
