@@ -42,7 +42,7 @@
           attributes: {
             name: null,
             description: null,
-            delivery_at: null
+            delivery_at: null,
           },
         }),
   );
@@ -57,8 +57,7 @@
     return {
       name: source.name,
       modality: source.modality,
-                  delivery_at: source.delivery_at
-
+      delivery_at: source.delivery_at,
     };
   }
   const changeTracker = new FormChangeTracker(serializeEditableFields, () => datasetRecord);
@@ -170,7 +169,7 @@
       const validated = validateData(schema, {
         name: draft.name,
         modality: draft.modality,
-         delivery_at: draft.delivery_at,
+        delivery_at: draft.delivery_at,
       });
 
       if (!validated.success) {

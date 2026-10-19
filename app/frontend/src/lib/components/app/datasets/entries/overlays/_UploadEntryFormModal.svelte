@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { getLocalTimeZone, today } from "@internationalized/date";
+  import { isBefore, startOfDay } from "date-fns";
 
+  import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -25,8 +28,9 @@
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
     modality: string;
+    delivery_at: Date | null;
   }
-  let { action, title, open = $bindable(), modality }: CreateEntryFormModalProps = $props();
+  let { action, title, open = $bindable(), modality, delivery_at }: CreateEntryFormModalProps = $props();
 
   // Types
   interface View {
@@ -306,6 +310,20 @@
         </Text>
       {/snippet}
     </FileUpload>
+
+    <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">
+      <DatePickerField
+        name="upload/expires_at"
+        label="Delivery Date"
+        placeholder="Select delivery date"
+        value={delivery_at}
+        minDate={today(getLocalTimeZone()).add({ days: 1 })}
+        disabled={delivery_at !== null && isBefore(startOfDay(delivery_at), startOfDay(new Date()))}
+        onDateSelected={(selectedDate) => {
+          delivery_at = selectedDate ? new Date(selectedDate) : null;
+        }}
+      />
+    </section>
 
     {#if media.any()}
       <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">

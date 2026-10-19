@@ -77,15 +77,14 @@
       />
     {/await}
 
-     <DatePickerField
+    <DatePickerField
       name="{resource}/expires_at"
       label="Delivery Date"
       placeholder="Select delivery date"
       errors={fieldErrors["delivery_at"]}
       value={delivery_at}
       minDate={today(getLocalTimeZone()).add({ days: 1 })}
-      disabled={status === "revoked" ||
-        (delivery_at !== null && isBefore(startOfDay(delivery_at), startOfDay(new Date())))}
+      disabled={delivery_at !== null && isBefore(startOfDay(delivery_at), startOfDay(new Date()))}
       onDateSelected={(selectedDate) => {
         delivery_at = selectedDate ? new Date(selectedDate) : null;
       }}
