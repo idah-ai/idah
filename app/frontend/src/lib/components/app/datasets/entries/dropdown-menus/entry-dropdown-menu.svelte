@@ -94,7 +94,6 @@
       onConfirm: async () => {
         try {
           const entryRes = await entriesBackendDataSource.unassign(entry.id);
-          console.log("dsdqsds", entryRes.data);
 
           onUnAssigned?.(entryRes.data);
 
