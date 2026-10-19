@@ -22,7 +22,7 @@ import { viewport } from "$lib/state/viewport.svelte";
 import { invalidateAll } from "$lib/mask/tile-cache";
 import { annotation } from "$lib/state/annotation.svelte";
 import { showToast } from "$lib/components/ui/Toast/index.svelte";
-import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
 import { humanize } from "$lib/utils/string";
 
 export const command = {
@@ -98,7 +98,7 @@ export function register(driver: IIdahDriverV2): void {
           : "uncategorized";
         const annotationCategory = typeof annotation?.category === "string" ? humanize(annotation.category) : undefined;
 
-        confirmAnnotationsDelete({
+        showConfirmDeleteAnnotationsDialog({
           count: selected.length,
           shape,
           annotation_category: annotationCategory,

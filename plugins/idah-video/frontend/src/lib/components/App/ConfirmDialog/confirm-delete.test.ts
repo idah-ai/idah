@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// confirm-delete.test.ts — confirmAnnotationsDelete shared helper
+// confirm-delete.test.ts — showConfirmDeleteAnnotationsDialog shared helper
 // ---------------------------------------------------------------------------
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -13,15 +13,15 @@ vi.mock("./confirm-dialog", () => ({
   showConfirmDialog: mockShowConfirmDialog,
 }));
 
-import { confirmAnnotationsDelete } from "./confirm-delete";
+import { showConfirmDeleteAnnotationsDialog } from "./confirm-delete";
 
-describe("confirmAnnotationsDelete", () => {
+describe("showConfirmDeleteAnnotationsDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("uses shape/category-specific singular copy when available", () => {
-    confirmAnnotationsDelete({
+    showConfirmDeleteAnnotationsDialog({
       count: 1,
       shape: "bounding box",
       annotation_category: "car",
@@ -37,7 +37,7 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("falls back to generic singular copy when shape/category are unknown", () => {
-    confirmAnnotationsDelete({ count: 1, onConfirm: () => {} });
+    showConfirmDeleteAnnotationsDialog({ count: 1, onConfirm: () => {} });
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -48,7 +48,7 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("uses pluralized copy for multiple annotations", () => {
-    confirmAnnotationsDelete({ count: 3, onConfirm: () => {} });
+    showConfirmDeleteAnnotationsDialog({ count: 3, onConfirm: () => {} });
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -59,7 +59,7 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("honors custom title/description overrides", () => {
-    confirmAnnotationsDelete({
+    showConfirmDeleteAnnotationsDialog({
       count: 5,
       title: "Delete all annotations",
       description: "Are you sure you want to delete all annotations?",
@@ -76,7 +76,7 @@ describe("confirmAnnotationsDelete", () => {
 
   it("passes through the onConfirm callback", () => {
     const onConfirm = vi.fn();
-    confirmAnnotationsDelete({ count: 1, onConfirm });
+    showConfirmDeleteAnnotationsDialog({ count: 1, onConfirm });
 
     const { onConfirm: passed } = mockShowConfirmDialog.mock.calls[0][0];
     passed();
@@ -86,7 +86,7 @@ describe("confirmAnnotationsDelete", () => {
 
   it("passes through the onCancel callback", () => {
     const onCancel = vi.fn();
-    confirmAnnotationsDelete({ count: 1, onConfirm: () => {}, onCancel });
+    showConfirmDeleteAnnotationsDialog({ count: 1, onConfirm: () => {}, onCancel });
 
     const { onCancel: passed } = mockShowConfirmDialog.mock.calls[0][0];
     passed();
@@ -95,7 +95,7 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("uses tag copy when type is 'tag'", () => {
-    confirmAnnotationsDelete({
+    showConfirmDeleteAnnotationsDialog({
       count: 1,
       type: "tag",
       shape: "frame",
@@ -112,7 +112,7 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("derives tag type from frame / entry:root shapes", () => {
-    confirmAnnotationsDelete({
+    showConfirmDeleteAnnotationsDialog({
       count: 1,
       shape: "entry:root",
       annotation_category: "scene",
@@ -128,7 +128,7 @@ describe("confirmAnnotationsDelete", () => {
   });
 
   it("uses tag copy for multiple tags", () => {
-    confirmAnnotationsDelete({ count: 2, type: "tag", onConfirm: () => {} });
+    showConfirmDeleteAnnotationsDialog({ count: 2, type: "tag", onConfirm: () => {} });
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({

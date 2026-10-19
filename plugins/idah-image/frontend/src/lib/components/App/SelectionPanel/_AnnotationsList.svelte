@@ -25,7 +25,7 @@
   import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
-  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -83,8 +83,7 @@
     }
     // Normalize hyphens↔spaces so searching by id or label both work.
     const q = query.toLowerCase().replace(/-/g, " ");
-    const matches = (ann: IImageAnnotationRecord) =>
-      (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
+    const matches = (ann: IImageAnnotationRecord) => (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q);
     return [
       { id: "all", label: "All", count: sortedAnnotations.filter(matches).length },
       { id: "hidden", label: "Hidden", count: hiddenAnnotations.filter(matches).length },
@@ -101,11 +100,11 @@
   const categoryFilteredAnnotations = $derived(
     !categorySearch.value
       ? filteredAnnotations
-      : filteredAnnotations.filter(
-          (ann) =>
-            (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(
-              categorySearch.value.toLowerCase().replace(/-/g, " "),
-            ),
+      : filteredAnnotations.filter((ann) =>
+          (ann.category ?? "")
+            .toLowerCase()
+            .replace(/-/g, " ")
+            .includes(categorySearch.value.toLowerCase().replace(/-/g, " ")),
         ),
   );
 
@@ -151,7 +150,7 @@
           icon: Trash2Icon,
           disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
-            confirmAnnotationsDelete({
+            showConfirmDeleteAnnotationsDialog({
               count: annotations.length,
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations in this entry?",
@@ -236,9 +235,7 @@
           No {activeTab === "all" ? "" : activeTab} annotations
         </div>
       {:else}
-        <div class="text-muted-foreground px-2 py-4 text-center text-xs">
-          No matching annotations
-        </div>
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No matching annotations</div>
       {/if}
     {/if}
 

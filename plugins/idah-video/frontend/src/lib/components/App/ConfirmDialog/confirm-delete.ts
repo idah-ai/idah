@@ -42,7 +42,7 @@ export interface ConfirmAnnotationsDeleteOptions {
   onCancel?: () => void;
 }
 
-export function confirmAnnotationsDelete(opts: ConfirmAnnotationsDeleteOptions): void {
+export function showConfirmDeleteAnnotationsDialog(opts: ConfirmAnnotationsDeleteOptions): void {
   const { count, onConfirm, onCancel, shape, annotation_category } = opts;
   const singular = count === 1;
   const kind = opts.type ?? deletionTargetType(shape);

@@ -6,7 +6,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
-  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
 
   import type { ContextMenuComponentProps } from "$lib/components/App/ContextMenu/store";
   import type { IVideoAnnotationRecord } from "$lib/types";
@@ -26,7 +26,7 @@
     class="mx-1 w-full justify-start"
     disabled={locked || !isEditable()}
     onclick={() => {
-      confirmAnnotationsDelete({
+      showConfirmDeleteAnnotationsDialog({
         count: 1,
         type: "tag",
         title: "Delete Frame Tag",

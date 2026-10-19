@@ -31,7 +31,7 @@
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
-  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
@@ -227,10 +227,14 @@
     // Find entry-root annotation from the global store
     const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => ann.shape_type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
-
   });
 
-  async function addAnnotation(shape: IImageAnnotationShape, shapeType: string, category?: string, properties: AnnotationAttributes = {}) {
+  async function addAnnotation(
+    shape: IImageAnnotationShape,
+    shapeType: string,
+    category?: string,
+    properties: AnnotationAttributes = {},
+  ) {
     if (!editable) return;
 
     getDriver().command.call("idah-image:annotation.add", { shape, shape_type: shapeType, category, properties });
@@ -401,7 +405,6 @@
       const shapeType = ann.shape_type ?? type;
       const updatedShape: IImageAnnotationShape = { points, ...extraProps };
       getDriver().command.call("idah-image:annotation.update", {
-
         annotation: ann,
         shape_type: shapeType,
         shape_args: updatedShape,
@@ -473,7 +476,7 @@
     if (!editable) return;
     const existing = entryRootAnnotation;
     if (existing) {
-      confirmAnnotationsDelete({
+      showConfirmDeleteAnnotationsDialog({
         count: 1,
         title: "Delete Image Tag",
         description: "Are you sure you want to delete the image tag for this entry?",
@@ -496,9 +499,7 @@
   // (entry:root) are excluded so they never render on canvas, appear in the
   // annotation sidebar, or reach the timeline.
   let viewportAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
-    const raw = (data.annotations?.items ?? []).filter(
-      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type),
-    );
+    const raw = (data.annotations?.items ?? []).filter((ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type));
     return raw.map((ann) => ({
       id: ann.id,
       shape_type: ann.shape_type,
@@ -578,14 +579,15 @@
         {#if pendingCategory}
           <SelectionPanel
             selectedCategory={pendingCategory}
-            annotationValue={annotationValue}
+            {annotationValue}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
               pendingCategory = selectedCategory;
               onEditValue(pendingCategory, mode);
             }}
             onEditValue={(value) =>
-              value && onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
+              value &&
+              onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
             disabled={false}
           />
         {:else}
@@ -633,7 +635,7 @@
         <Button
           size="sm"
           onclick={() => {
-          if (shapeSelectionArgs && pendingCategory) {
+            if (shapeSelectionArgs && pendingCategory) {
               showPopOver = false;
               confirmCreateAnnotation(...shapeSelectionArgs);
             }
@@ -692,8 +694,8 @@
                 {onEditValue}
                 onReSelectCategory={reSelectCategory}
                 {entryRootAnnotation}
-                onEntryRootChange={onEntryRootChange}
-                onDeleteEntryRoot={onDeleteEntryRoot}
+                {onEntryRootChange}
+                {onDeleteEntryRoot}
               />
             </section>
           </ResizablePane>

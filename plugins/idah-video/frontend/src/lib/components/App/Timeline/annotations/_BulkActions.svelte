@@ -7,7 +7,10 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { confirmAnnotationsDelete, type DeletionTargetType } from "$lib/components/App/ConfirmDialog/confirm-delete";
+  import {
+    showConfirmDeleteAnnotationsDialog,
+    type DeletionTargetType,
+  } from "$lib/components/App/ConfirmDialog/confirm-delete";
 
   import type { IVideoAnnotationRecord } from "$lib/types";
 
@@ -51,7 +54,7 @@
   function removeAll() {
     const type: DeletionTargetType = label.toLowerCase().includes("tag") ? "tag" : "annotation";
 
-    confirmAnnotationsDelete({
+    showConfirmDeleteAnnotationsDialog({
       count: annotations.length,
       type,
       title: `Delete all ${label}`,

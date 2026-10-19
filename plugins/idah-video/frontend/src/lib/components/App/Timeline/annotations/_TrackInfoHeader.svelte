@@ -7,7 +7,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { isEditable } from "$lib/state/editor.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -45,7 +45,7 @@
           icon: Trash2Icon,
           disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
-            confirmAnnotationsDelete({
+            showConfirmDeleteAnnotationsDialog({
               count: annotations.length,
               type: "annotation",
               title: "Delete all annotations",

@@ -22,7 +22,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 import { annotation } from "$lib/state/annotation.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { showToast } from "$lib/components/ui/Toast/index.svelte";
-import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
 import { humanize } from "$lib/utils/string";
 import { VIDEO_FRAME, ENTRY_ROOT } from "$lib/types";
 
@@ -119,7 +119,7 @@ export function register(driver: IIdahDriverV2): void {
         const annotationCategory = typeof annotation?.category === "string" ? humanize(annotation.category) : undefined;
         const isTag =
           annotation?.shape_type === VIDEO_FRAME || annotation?.shape_type === ENTRY_ROOT;
-        confirmAnnotationsDelete({
+        showConfirmDeleteAnnotationsDialog({
           count: uniqueRecords.length,
           type: isTag ? "tag" : "annotation",
           shape,

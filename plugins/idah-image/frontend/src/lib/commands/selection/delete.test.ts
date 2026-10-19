@@ -85,7 +85,7 @@ vi.mock("$lib/components/ui/Toast/index.svelte", () => ({
 }));
 
 vi.mock("$lib/components/App/ConfirmDialog/confirm-delete", () => ({
-  confirmAnnotationsDelete: mockConfirmDelete,
+  showConfirmDeleteAnnotationsDialog: mockConfirmDelete,
 }));
 
 // Import after mocks

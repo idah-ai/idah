@@ -1,6 +1,6 @@
 import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as IconType } from "@lucide/svelte";
 
-import { confirmAnnotationsDelete } from "$lib/components/App/ConfirmDialog/confirm-delete";
+import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
@@ -78,7 +78,7 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
     destructive: true,
     disabled: !isEditable() || viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
     onClick: () => {
-      confirmAnnotationsDelete({
+      showConfirmDeleteAnnotationsDialog({
         count: 1,
         shape: shape,
         annotation_category: annotationCategory,
