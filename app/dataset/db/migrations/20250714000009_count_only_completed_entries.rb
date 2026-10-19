@@ -34,12 +34,15 @@ Sequel.migration do
             WHERE id = NEW.dataset_id;
           END IF;
 
-          UPDATE datasets
-          SET entries_submitted_count =
-                entries_submitted_count
-                + CASE WHEN NEW.submitted_by_id IS NOT NULL AND NEW.status != 'errored' THEN 1 ELSE 0 END
-                - CASE WHEN OLD.submitted_by_id IS NOT NULL AND OLD.status != 'errored' THEN 1 ELSE 0 END
-          WHERE id = NEW.dataset_id;
+          IF (OLD.submitted_by_id IS DISTINCT FROM NEW.submitted_by_id
+              OR OLD.status IS DISTINCT FROM NEW.status) THEN
+            UPDATE datasets
+            SET entries_submitted_count =
+                  entries_submitted_count
+                  + CASE WHEN NEW.submitted_by_id IS NOT NULL AND NEW.status != 'errored' THEN 1 ELSE 0 END
+                  - CASE WHEN OLD.submitted_by_id IS NOT NULL AND OLD.status != 'errored' THEN 1 ELSE 0 END
+            WHERE id = NEW.dataset_id;
+          END IF;
 
           RETURN NEW;
         END IF;
