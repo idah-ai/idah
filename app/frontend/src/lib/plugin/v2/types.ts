@@ -864,6 +864,24 @@ export interface ISettingsDriverV2 {
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
+// /** Badge variants for stat tags — mirrors BadgeVariant from the UI badge component. */
+export type IStatTagVariant =
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "destructive-outline"
+  | "outline"
+  | "warning"
+  | "success"
+  | "info"
+  | "gray";
+
+/** A small badge rendered next to a stat row label (e.g. "Deleted" for orphan categories). */
+export interface IStatTag {
+  label: string;
+  variant: IStatTagVariant;
+}
+
 /**
  * A single computed statistic for the entry-stats modal.
  *
@@ -885,6 +903,8 @@ export interface IStatEntry {
   unitHeader?: string;
   /** Optional explicit row label; falls back to a humanized key remainder. */
   label?: string;
+  /** Optional badges rendered next to the row label. */
+  tags?: IStatTag[];
 }
 
 /** Contributes a set of stats. Registered by plugins via `driver.stats.register`. */
