@@ -32,12 +32,5 @@ module Workflow
     def reopenable_steps
       aasm.states.map(&:name) - [:start, :done, :error]
     end
-
-    # Returns an [id, email] pair for the member who previously worked on the
-    # given step — used as the assignee when an entry is reopened.
-    # Override in custom workflows; default returns [nil, nil].
-    def assignee_for_step(_step)
-      [nil, nil]
-    end
   end
 end

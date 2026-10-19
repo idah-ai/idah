@@ -50,17 +50,6 @@ module Workflow
       :annotate
     end
 
-    # The annotator is recorded in submitted_by when leaving the annotate step,
-    # and the reviewer in reviewed_by when leaving review — so reopened entries
-    # are assigned back to the member who previously worked on the chosen step.
-    def assignee_for_step(step)
-      case step
-      when :annotate then [@entry.submitted_by_id, @entry.submitted_by_email]
-      when :review then [@entry.reviewed_by_id, @entry.reviewed_by_email]
-      else [nil, nil]
-      end
-    end
-
     def allowed_note_feed?
       # check if current step allows note feeds by state
       ["annotate", "review"].include?(@entry.wf_step)

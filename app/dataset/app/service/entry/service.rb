@@ -200,23 +200,13 @@ module Entry
           raise Verse::Error::ValidationFailed, "Invalid reopen target step \"#{target}\""
         end
 
-        assignee_id, assignee_email = workflow.assignee_for_step(target.to_sym)
-
-        # If the previous assignee no longer has access to the project,
-        # the entry becomes Unassigned.
-        if assignee_id &&
-           !project_members.find_by({ account_id: assignee_id, project_id: entry.project_id, disabled_at: nil })
-          assignee_id = nil
-          assignee_email = nil
-        end
-
         entries.reopen(
           entry.id,
           {
             wf_step: target,
             status: "in_progress",
-            assigned_to_id: assignee_id,
-            assigned_to_email: assignee_email,
+            assigned_to_id: nil,
+            assigned_to_email: nil,
             reopened_by_id: auth_context.metadata[:id],
             reopened_by_email: auth_context.metadata[:email]
           }

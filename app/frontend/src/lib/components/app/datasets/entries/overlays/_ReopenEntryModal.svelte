@@ -111,8 +111,8 @@
     <FieldGroup>
       <SingleSelectField
         name="reopen-target-step"
-        label="Workflow step"
-        placeholder="Select a workflow step"
+        label="Stage"
+        placeholder="Select a stage"
         choices={stepChoices}
         disabled={loadingSteps || availableSteps.length === 0}
         value={selectedStep}
@@ -123,23 +123,25 @@
     </FieldGroup>
   </FieldSet>
 
-  <div class="flex flex-col gap-3">
-    {#if selectedEntryCount > 0}
-      <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "selected entry", "selected entries")}</Text>
-    {/if}
+  <FieldSet class="p-1">
+    <FieldGroup class="gap-1">
+      {#if selectedEntryCount > 0}
+        <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "Selected entry", "Selected entries")}</Text>
+      {/if}
 
-    <ul class="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
-      {#each entryIds as id (id)}
-        <li class="text-muted-foreground truncate text-sm">
-          {getEntryName(id) || id}
-        </li>
-      {/each}
-    </ul>
+      <ul class="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+        {#each entryIds as id (id)}
+          <li class="text-muted-foreground truncate text-sm">
+            {getEntryName(id) || id}
+          </li>
+        {/each}
+      </ul>
 
-    {#if loadError}
-      <Text size="sm" class="text-destructive">{loadError}</Text>
-    {/if}
-  </div>
+      {#if loadError}
+        <Text size="sm" class="text-destructive">{loadError}</Text>
+      {/if}
+    </FieldGroup>
+  </FieldSet>
 
   {#snippet confirm()}
     <Button loading={submitting} loadingLabel="Reopening" disabled={loadingSteps || !selectedStep} onclick={submit}>
