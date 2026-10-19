@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
 
+  import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
   import AnnotationsListItem from "$lib/components/App/SelectionPanel/_AnnotationsListItem.svelte";
   import Badge from "$lib/components/ui/Badge/Badge.svelte";
   import {
@@ -61,7 +62,11 @@
 
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
-    <Text weight="semibold">Annotations</Text>
+    <div class="flex items-center gap-2">
+      <Text weight="semibold">Annotations</Text>
+      <AnnotationsErrorAlertIcon {annotations} />
+    </div>
+
     <Badge variant="secondary">{annotations.length}</Badge>
     <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
   </div>

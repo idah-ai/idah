@@ -137,7 +137,7 @@
   <div class="flex items-center gap-2">
 	  <div class="flex items-center gap-2">
 	    <Text weight="semibold">Annotations</Text>
-			<AnnotationsErrorAlertIcon />
+			<AnnotationsErrorAlertIcon {annotations} />
 	  </div>
 
     <div class="ml-auto flex items-center">

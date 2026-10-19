@@ -12,6 +12,7 @@
   import { categoryValueToLabel } from "$lib/utils/annotation";
   import { getDriver } from "$lib/state/driver.svelte";
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
+  import { resolveAnnotationLabel } from "$lib/utils/label";
   import { selection } from "$lib/state/selection.svelte";
   import type { IImageAnnotationRecord } from "$lib/types";
 
@@ -26,7 +27,7 @@
 	const category = $derived(config.values.find((v) => v.id === annotation.category))
 	const foundCategory = $derived(category !== undefined);
 	const categoryColor = $derived(category?.color)
-	const displayName = $derived(category?.label ?? annotation.category ?? "Uncategorized")
+	const displayName = $derived(category?.label ?? resolveAnnotationLabel(annotation)?.text ?? "Uncategorized")
 	const parentLabel = $derived(foundCategory ? categoryValueToLabel(category!.id) : "")
 </script>
 

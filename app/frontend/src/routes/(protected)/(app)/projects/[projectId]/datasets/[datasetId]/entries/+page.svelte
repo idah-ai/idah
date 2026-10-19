@@ -39,6 +39,7 @@
   // Auth-gated flags (resolved on mount)
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  let showOrphanCategories = $state(false);
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: { projectId, projectMemberRoles: ["project_owner"] },
@@ -59,13 +60,29 @@
       account?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
     ]);
   });
+
+  async function handleOrphanFilterChange(checked: boolean) {
+    await controller.applyFilter({
+      filters: {
+        orphan_categories: checked ? true : undefined,
+      },
+    });
+
+    showOrphanCategories = checked;
+  }
 </script>
 
-<DatasetEntriesAnnotationErrorAlert />
+<DatasetEntriesAnnotationErrorAlert
+  {datasetId}
+  checked={showOrphanCategories}
+  onCheckedChange={handleOrphanFilterChange}
+/>
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+    {#if !showOrphanCategories}
+      <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+    {/if}
   {/snippet}
 </PageHeader>
 

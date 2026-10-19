@@ -447,7 +447,7 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
-          <EntryAnnotationErrorBadge />
+          <EntryAnnotationErrorBadge {entryId} />
 
           {#if jobProgress < 1}
             <div class="flex flex-col gap-1">
