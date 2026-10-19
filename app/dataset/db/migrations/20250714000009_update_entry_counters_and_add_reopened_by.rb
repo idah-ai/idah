@@ -14,7 +14,6 @@ Sequel.migration do
     end
 
     run <<~SQL
-
       CREATE OR REPLACE FUNCTION update_dataset_entry_counters()
       RETURNS TRIGGER AS $$
       BEGIN
