@@ -68,7 +68,7 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
 
   const annotationCategory = items[0].category  ? humanize(items[0].category)  : undefined;
   const shape = items[0].shape_type
-    ? humanize(items[0].shape_type.replace("idah-image:", ""), {capitalize: false, capitalizeFirstWord: false})
+    ? humanize(items[0].shape_type.replace("idah-image:", ""))
     : undefined;
 
   return {

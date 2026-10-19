@@ -41,7 +41,7 @@ export function getAnnotationActions(ann: IVideoAnnotationRecord, annDisplayName
                 count: 1,
                 title: "Delete Annotation",
                 type: isTag ? "tag" : "annotation",
-                shape: ann.shape_type === ENTRY_ROOT ? "video" : humanize(ann.shape_type.split(":")[1]),
+                shape: ann.shape_type === ENTRY_ROOT ? "Video" : humanize(ann.shape_type.split(":")[1]),
                 annotation_category: annDisplayName,
                 onConfirm: () => {
                   getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });

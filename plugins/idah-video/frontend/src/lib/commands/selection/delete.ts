@@ -107,13 +107,7 @@ export function register(driver: IIdahDriverV2): void {
 
         const annotation = uniqueRecords.length === 1 ? uniqueRecords[0] : undefined;
         const shape = annotation?.shape_type
-          ? humanize(
-              annotation.shape_type.replace("idah-video:", ""),
-              {
-                capitalize: false,
-                capitalizeFirstWord: false,
-              },
-            )
+          ? humanize(annotation.shape_type.replace("idah-video:", ""))
           : "uncategorized";
 
         const annotationCategory = typeof annotation?.category === "string" ? humanize(annotation.category) : undefined;

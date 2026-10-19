@@ -88,13 +88,7 @@ export function register(driver: IIdahDriverV2): void {
 
         const annotation = selected.length === 1 ? selected[0] : undefined;
         const shape = annotation?.shape_type
-          ? humanize(
-              annotation.shape_type.replace("idah-image:", ""),
-              {
-                capitalize: false,
-                capitalizeFirstWord: false,
-              },
-            )
+          ? humanize(annotation.shape_type.replace("idah-image:", ""))
           : "uncategorized";
         const annotationCategory = typeof annotation?.category === "string" ? humanize(annotation.category) : undefined;
 

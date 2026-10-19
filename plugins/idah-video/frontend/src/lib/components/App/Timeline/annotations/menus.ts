@@ -9,12 +9,13 @@ import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmD
 
 import type { Menus } from "$lib/components/App/ContextMenu/types";
 import type { TrackData } from "$lib/components/App/Timeline/types";
+import { humanize } from "$lib/utils/string";
 
 export function getGroupContextMenus(props: { track: TrackData }): Menus {
   const { track } = props;
   const isSomeHidden = track.items.some((item) => annotation.isHidden(item.rawData));
   const isSomeLocked = track.items.some((item) => annotation.isLocked(item.rawData));
-  const tracksShapeType = track.items[0].rawData.shape_type.split(":")[1];
+  const tracksShapeType = humanize(track.items[0].rawData.shape_type.split(":")[1]);
 
   return {
     actions: {

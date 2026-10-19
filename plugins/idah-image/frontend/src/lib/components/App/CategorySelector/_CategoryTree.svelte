@@ -184,7 +184,12 @@
     e.preventDefault();
 
     // In popover mode, leaf mask categories already used by another mask annotation are disabled
-      if (view === "popover" && modalityShape === IMAGE_MASK && !category.nestedCategories && usedMaskCategories.has(category.id)) {
+    if (
+      view === "popover" &&
+      modalityShape === IMAGE_MASK &&
+      !category.nestedCategories &&
+      usedMaskCategories.has(category.id)
+    ) {
       return;
     }
 
@@ -240,16 +245,19 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = items.filter(
-        (a) => a.category?.startsWith(category.id) && a.shape_type === modalityShape,
-      )}
-      {@const isDisabledMaskInPopover = view === "popover" && modalityShape === IMAGE_MASK && !category.nestedCategories && usedMaskCategories.has(category.id)}
+      {@const annotations = items.filter((a) => a.category?.startsWith(category.id) && a.shape_type === modalityShape)}
+      {@const isDisabledMaskInPopover =
+        view === "popover" &&
+        modalityShape === IMAGE_MASK &&
+        !category.nestedCategories &&
+        usedMaskCategories.has(category.id)}
 
       <CollapsibleTrigger
         title={isDisabledMaskInPopover ? "Already used by another mask on this entry" : undefined}
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs focus-visible:outline-none", {
           "bg-secondary border-primary border": !selAnnotation && selectedCategory == category.id,
-          "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested && !isDisabledMaskInPopover,
+          "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer":
+            !category.requiredNested && !isDisabledMaskInPopover,
           "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape && !isDisabledMaskInPopover,
           "cursor-not-allowed opacity-50": isDisabledMaskInPopover,
         })}
@@ -332,9 +340,7 @@
             <CategoryName name={category.name} />
 
             {#if isDisabledMaskInPopover}
-              <span class="ml-1 text-[0.625rem] text-red-400 dark:text-red-500">
-                Category already in use
-              </span>
+              <span class="ml-1 text-[0.625rem] text-red-400 dark:text-red-500"> Category already in use </span>
             {/if}
 
             <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
@@ -396,17 +402,8 @@
 <ConfirmModal
   title="Delete annotations in this category"
   description={`Are you sure you want to delete all ${
-    modalityShape
-      ? humanize(modalityShape.replace("idah-image:", ""), {
-          capitalize: false,
-          capitalizeFirstWord: false,
-        })
-      : "uncategorized"
-  } annotations in ${
-    categoryToDelete
-      ? `the "${humanize(categoryToDelete)}"`
-      : "this"
-  } category?`}
+    modalityShape ? humanize(modalityShape.replace("idah-image:", "")) : "uncategorized"
+  } annotations in ${categoryToDelete ? `the "${humanize(categoryToDelete)}"` : "this"} category?`}
   onConfirm={() => {
     deleteCategoryAnnotations({
       categoryId: categoryToDelete!,
