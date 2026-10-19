@@ -9,7 +9,8 @@
 //
 // Build: pnpm run build:parser (writes build/parser.js, imported as @build/parser.js)
 
-start = expression
+// Surrounding whitespace is allowed, so error positions match the text as typed.
+start = _ inner:expression _ { return inner }
 
 // ─── Tokens ──────────────────────────────────────────────────────────────
 

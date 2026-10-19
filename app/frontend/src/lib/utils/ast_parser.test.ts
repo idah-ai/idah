@@ -124,6 +124,10 @@ describe("ast_parser grammar", () => {
     });
   });
 
+  it("allows whitespace and blank lines around the condition", () => {
+    expect(parse('\n  category = "a"  \n')).toEqual(parse('category = "a"'));
+  });
+
   it("rejects single-quoted strings", () => {
     expect(() => parse("category = 'vehicles/car'")).toThrow();
   });
