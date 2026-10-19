@@ -23,7 +23,7 @@
 //   has_any / has_all / has_none – list contains any / all / none of a list (binary)
 // ---------------------------------------------------------------------------
 
-import type { ASTNode } from "./types";
+import type { ASTNode } from "../types";
 
 export type ASTValue = string | number | string[] | boolean | undefined;
 export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
