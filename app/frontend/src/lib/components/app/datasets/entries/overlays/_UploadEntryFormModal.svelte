@@ -11,16 +11,21 @@
   import UploadMediaItem from "./_UploadMediaItem.svelte";
 
   import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
+  import {
+    acceptedFileTypes as acceptedFileTypesFor,
+    MAX_RETRIES,
+    showUploadSummaryToast,
+    sumBy,
+    uploadAll,
+  } from "@/components/app/datasets/entries/overlays/upload-pipeline";
   import { showToast } from "@/components/ui/toast/index.svelte";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { mediaBackendDataSource, type ZipFileReport } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
 
   import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
+  import { mergePickedFiles, type PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import type { JsonApiErrorResponse } from "@/data/model/types";
 
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
@@ -36,7 +41,7 @@
   }
 
   interface Media {
-    selected: File[] | null;
+    selected: PickedFile[] | null;
     count(): number;
     any(): boolean;
   }
@@ -51,19 +56,7 @@
   // Variables
   let newRecord: boolean = $derived(action === "create");
 
-  const acceptedFileTypes = $derived.by(() => {
-    switch (modality) {
-      case "idah-video": {
-        return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".ts"];
-      }
-      case "idah-image": {
-        return [".zip", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"];
-      }
-      default: {
-        return [];
-      }
-    }
-  });
+  const acceptedFileTypes = $derived(acceptedFileTypesFor(modality));
 
   let projectId = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
@@ -124,106 +117,15 @@
     view.current = "select";
   }
 
-  function handleFilesSelected(selectedFiles: FileList): void {
-    const newFiles = Array.from(selectedFiles);
-    const existingFiles = media.selected ?? [];
-    // Deduplicate on (name, size, lastModified) to prevent accidental re-upload
-    // of the same file when a user re-opens the picker and selects the same file.
-    const existingKeys = new Set(existingFiles.map((f) => `${f.name}|${f.size}|${f.lastModified}`));
-    const uniqueNewFiles = newFiles.filter((f) => !existingKeys.has(`${f.name}|${f.size}|${f.lastModified}`));
-    media.selected = [...existingFiles, ...uniqueNewFiles];
+  function handleFilesSelected(selectedFiles: PickedFile[]): void {
+    // Deduplicate to prevent accidental re-upload of the same file when a user
+    // re-opens the picker and selects the same file.
+    media.selected = mergePickedFiles(media.selected ?? [], selectedFiles);
   }
 
   function removeMedia(index: number) {
     if (!media.selected) return;
     media.selected = media.selected.filter((_, i) => i !== index);
-  }
-
-  function getFileExtension(filename: string): string {
-    const lastDotIndex = filename.lastIndexOf(".");
-    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
-  }
-
-  const MAX_RETRIES = 3;
-  const INITIAL_DELAY_MS = 2_000;
-  const MAX_DELAY_MS = 30_000;
-
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function retryDelay(attempt: number): number {
-    const base = Math.min(INITIAL_DELAY_MS * 2 ** attempt, MAX_DELAY_MS);
-    const jitter = base * 0.25 * (Math.random() * 2 - 1); // ±25%
-    return base + jitter;
-  }
-
-  function sumBy<T>(items: T[], fn: (item: T) => number): number {
-    return items.reduce((total, item) => total + fn(item), 0);
-  }
-
-  async function uploadSingleMedia(media: UploadItem): Promise<void> {
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      if (attempt > 0) {
-        media.status = "retrying";
-        media.retryCount = attempt;
-        await sleep(retryDelay(attempt - 1));
-      }
-
-      try {
-        if (media.uploadedMedias.length === 0) {
-          const fileExtension = getFileExtension(media.media.name);
-          const resourceKey = `${media.uuid}${fileExtension}`;
-
-          const createdMedias = await mediaBackendDataSource.upload({
-            file: media.media,
-            resource: resourceKey,
-            projectId,
-            key: "",
-            modality,
-          });
-
-          if (!("data" in createdMedias)) throw new Error("Media upload failed");
-
-          media.uploadedMedias = createdMedias.data;
-
-          if (createdMedias.meta?.skipped) {
-            for (const skippedFile of createdMedias.meta.skipped as Array<ZipFileReport>) {
-              media.skippedMedias.push(skippedFile);
-            }
-          }
-
-          if (createdMedias.meta?.errored) {
-            for (const erroredFile of createdMedias.meta.errored as Array<ZipFileReport>) {
-              media.errorMedias.push(erroredFile);
-            }
-          }
-        }
-
-        for (const uploadedMedia of media.uploadedMedias.slice(media.createdEntryCount)) {
-          await entriesBackendDataSource.create(
-            {
-              attributes: { resource: uploadedMedia.resource, name: uploadedMedia.filename, status: "pending" },
-              relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
-            },
-            { showErrorToast: false },
-          );
-          media.createdEntryCount++;
-        }
-
-        media.errorMessage = undefined;
-        media.status = "completed";
-        return; // done
-      } catch (error) {
-        const apiError = error as JsonApiErrorResponse;
-        media.errorMessage = apiError?.errors?.[0]?.detail ?? apiError?.errors?.[0]?.title ?? "Upload failed";
-        if (media.isZip) {
-          media.errorMedias.push({ filename: media.media.name, message: media.errorMessage });
-        }
-      }
-    }
-
-    media.status = "completed"; // exhausted retries, process finished
   }
 
   async function uploadMedia(): Promise<void> {
@@ -232,28 +134,12 @@
       return;
     }
 
-    upload.items = media.selected!.map(createUploadItem);
+    upload.items = media.selected!.map(({ file }) => createUploadItem(file));
 
-    for (const media of upload.items) {
-      await uploadSingleMedia(media); // never throws — loop always continues
-    }
+    await uploadAll(upload.items, { projectId, modality, getDatasetId: async () => datasetId });
 
-    const itemsWithErrors = upload.items.filter((i) => i.errorMessage).length;
-    const itemsWithSkips = upload.items.filter((i) => i.skippedMedias.length > 0).length;
-    const totalUploaded = sumBy(upload.items, (i) => i.uploadedMedias.length);
-    const totalSkipped = sumBy(upload.items, (i) => i.skippedMedias.length);
-
-    if (itemsWithErrors === 0 && itemsWithSkips === 0) {
-      showToast.success({ title: `${totalUploaded} entries created successfully.` });
+    if (showUploadSummaryToast(upload.items) > 0) {
       $refetches.entries.list = new Date();
-    } else if (totalUploaded > 0) {
-      const parts = [`${totalUploaded} entries created`];
-      if (totalSkipped > 0) parts.push(`${totalSkipped} skipped`);
-      if (itemsWithErrors > 0) parts.push(`${itemsWithErrors} failed`);
-      showToast.warning({ title: parts.join(", ") });
-      $refetches.entries.list = new Date();
-    } else {
-      showToast.error({ title: "All uploads failed." });
     }
   }
 
@@ -298,7 +184,7 @@
   {/snippet}
 
   {#if view.isSelect()}
-    <FileUpload class="py-12" {acceptedFileTypes} onFilesSelected={handleFilesSelected}>
+    <FileUpload class="py-12" {acceptedFileTypes} allowFolders onFilesSelected={handleFilesSelected}>
       {#snippet SelectedFilesSlot()}
         <Text class="text-accent-foreground text-wrap" size="sm">
           <span class="font-medium underline underline-offset-2">Click to select files</span>
@@ -310,7 +196,7 @@
     {#if media.any()}
       <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">
         {#each media.selected as file, index (index)}
-          <PreviewUploadMediaItem name={file.name} onDelete={() => removeMedia(index)} />
+          <PreviewUploadMediaItem name={file.path} onDelete={() => removeMedia(index)} />
         {/each}
       </section>
     {/if}

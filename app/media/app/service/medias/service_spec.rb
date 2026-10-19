@@ -137,6 +137,39 @@ RSpec.describe Medias::Service, as: :system, database: true do
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
 
+    it "flattens nested folders at any depth, naming each media by its file name" do
+      require "zip"
+
+      zip_path = Tempfile.create(["nested", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("root.jpg")
+        zip.write("root")
+        zip.put_next_entry("clip_a/")
+        zip.put_next_entry("clip_a/0001.jpg")
+        zip.write("a1")
+        zip.put_next_entry("clip_b/0001.jpg") # same basename, different folder
+        zip.write("b1")
+        zip.put_next_entry("clip_b/deep/er/0002.jpg")
+        zip.write("b2")
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "nested.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      # duplicate names across folders are fine: each media still gets its own resource
+      expect(result[:processed].map(&:filename)).to contain_exactly("root.jpg", "0001.jpg", "0001.jpg", "0002.jpg")
+      expect(result[:processed].map(&:resource).uniq.length).to eq(4)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
     it "skips system artifacts in zip files" do
       require "zip"
 
@@ -152,6 +185,11 @@ RSpec.describe Medias::Service, as: :system, database: true do
         zip.write("ds-store")
         zip.put_next_entry("ehthumbs.db")
         zip.write("win-thumbs")
+        # artifacts nested inside folders (zipped folder uploads)
+        zip.put_next_entry("clip/__MACOSX/._frame.jpg")
+        zip.write("apple-double-nested")
+        zip.put_next_entry("clip/.DS_Store")
+        zip.write("ds-store-nested")
         # near-miss: artifact name as a substring must NOT be skipped
         zip.put_next_entry("my.DS_Store.jpg")
         zip.write("legit-image")

@@ -3,7 +3,14 @@
 
   import Text from "@/components/ui/text/Text.svelte";
 
+  import {
+    collectDroppedFiles,
+    fromInputFiles,
+    partitionAccepted,
+    type PickedFile,
+  } from "@/components/app/forms/fields/upload/file-upload.utils";
   import { cn } from "@/utils";
+  import { pluralizeUnit } from "@/utils/unit";
 
   import type { FileUploadBaseProps } from "@/components/app/forms/fields/upload/file-upload.types";
 
@@ -11,6 +18,7 @@
   let {
     class: className,
     acceptedFileTypes = null,
+    allowFolders = false,
     onFilesSelected,
     SelectedFilesSlot,
     InfoSlot,
@@ -18,10 +26,12 @@
 
   // Variables
   let fileInput: HTMLInputElement;
+  let folderInput: HTMLInputElement | undefined = $state();
   let uploading: boolean = $state(false);
   let isDragging: boolean = $state(false);
   let acceptedFileTypesString: string | null = $derived(acceptedFileTypes ? acceptedFileTypes.join(", ") : null);
-  let selectedFiles: FileList | null = $state(null);
+  let selectedFiles: PickedFile[] | null = $state(null);
+  let ignoredCount: number = $state(0);
 
   // Functions
   function openChooseFile() {
@@ -30,13 +40,19 @@
     }
   }
 
-  function isFileAccepted(file: File): boolean {
-    if (!acceptedFileTypes || acceptedFileTypes.length === 0) return true;
-    return acceptedFileTypes.some((type) => {
-      if (type.startsWith(".")) return file.name.toLowerCase().endsWith(type.toLowerCase());
-      if (type.endsWith("/*")) return file.type.startsWith(type.slice(0, -1));
-      return file.type === type;
-    });
+  function openChooseFolder(event: Event) {
+    event.stopPropagation(); // the whole drop zone opens the file picker otherwise
+    folderInput?.click();
+  }
+
+  // Unsupported files (e.g. .DS_Store inside a folder) are dropped and counted, not silently lost.
+  function select(picked: PickedFile[]): void {
+    const { accepted, ignored } = partitionAccepted(picked, acceptedFileTypes);
+    ignoredCount = ignored;
+    if (accepted.length === 0) return;
+
+    selectedFiles = accepted;
+    onFilesSelected(accepted);
   }
 
   function handleDragOver(event: DragEvent): void {
@@ -49,30 +65,20 @@
     isDragging = false;
   }
 
-  function handleDrop(event: DragEvent): void {
+  async function handleDrop(event: DragEvent): Promise<void> {
     event.preventDefault();
     isDragging = false;
 
-    const newFiles = event.dataTransfer?.files;
-    if (!newFiles || newFiles.length === 0) return;
+    const items = event.dataTransfer?.items;
+    if (!items || items.length === 0) return;
 
-    const dt = new DataTransfer();
-    Array.from(newFiles)
-      .filter(isFileAccepted)
-      .forEach((f) => dt.items.add(f));
-    if (dt.files.length === 0) return;
-
-    selectedFiles = dt.files;
-    onFilesSelected(dt.files);
+    select(allowFolders ? await collectDroppedFiles(items) : fromInputFiles(event.dataTransfer!.files));
   }
 
   const handleChooseFile: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
-    selectedFiles = target.files;
-
-    if (selectedFiles) {
-      onFilesSelected(selectedFiles);
-    }
+    if (target.files) select(fromInputFiles(target.files));
+    target.value = ""; // allow picking the same file/folder again
   };
 </script>
 
@@ -100,18 +106,48 @@
     disabled={uploading}
   />
 
+  {#if allowFolders}
+    <input
+      bind:this={folderInput}
+      webkitdirectory
+      type="file"
+      class="hidden"
+      onchange={handleChooseFile}
+      disabled={uploading}
+    />
+  {/if}
+
   <Text class="text-accent-foreground text-wrap" size="sm">
     {#if SelectedFilesSlot}
       {@render SelectedFilesSlot({ selectedFiles })}
     {:else if selectedFiles}
-      {#each selectedFiles as selectedFile (selectedFile.name)}
-        <span class="line-clamp-1">{selectedFile.name}</span>
+      {#each selectedFiles as selectedFile (selectedFile.path)}
+        <span class="line-clamp-1">{selectedFile.path}</span>
       {/each}
     {:else}
       <span class="font-medium underline underline-offset-2">Click to select files</span>
       <span class="text-muted-foreground">or drag and drop</span>
     {/if}
   </Text>
+
+  {#if allowFolders}
+    <Text class="text-muted-foreground" size="sm">
+      or
+      <button
+        type="button"
+        class="text-accent-foreground font-medium underline underline-offset-2"
+        onclick={openChooseFolder}
+      >
+        select a folder
+      </button>
+    </Text>
+  {/if}
+
+  {#if ignoredCount > 0}
+    <Text class="text-muted-foreground" size="sm">
+      {ignoredCount} unsupported {pluralizeUnit(ignoredCount, "file")} ignored
+    </Text>
+  {/if}
 
   {#if InfoSlot}
     {@render InfoSlot()}
