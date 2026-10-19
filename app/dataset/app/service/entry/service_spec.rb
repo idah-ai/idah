@@ -705,22 +705,22 @@ RSpec.describe Entry::Service, database: true do
         )
       end
 
-      it "moves entry back to the first workflow step and assigns to previous annotator by default" do
+      it "moves entry back to the first workflow step" do
         result = subject.reopen(completed_entry)
 
         expect(result.wf_step).to eq("annotate")
         expect(result.status).to eq("in_progress")
-        expect(result.assigned_to_id).to eq(42)
-        expect(result.assigned_to_email).to eq("annotator@example.com")
+        expect(result.assigned_to_id).to be_nil
+        expect(result.assigned_to_email).to be_nil
       end
 
-      it "moves entry back to the requested step and assigns to its previous worker" do
+      it "moves entry back to the requested step" do
         result = subject.reopen(completed_entry, target_step: "review")
 
         expect(result.wf_step).to eq("review")
         expect(result.status).to eq("in_progress")
-        expect(result.assigned_to_id).to eq(43)
-        expect(result.assigned_to_email).to eq("reviewer@example.com")
+        expect(result.assigned_to_id).to be_nil
+        expect(result.assigned_to_email).to be_nil
       end
 
       it "marks the dataset as in_progress when it was previously completed" do
