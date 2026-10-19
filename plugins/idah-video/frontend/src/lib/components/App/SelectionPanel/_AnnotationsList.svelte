@@ -16,6 +16,7 @@
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
 
+  import { categorySearch } from "$lib/state/category-search.svelte";
   import type { IVideoAnnotationRecord } from "$lib/types";
 
   type Props = {

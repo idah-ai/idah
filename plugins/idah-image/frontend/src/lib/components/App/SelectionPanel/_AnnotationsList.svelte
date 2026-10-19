@@ -28,6 +28,7 @@
 
   import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { categorySearch } from "$lib/state/category-search.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
