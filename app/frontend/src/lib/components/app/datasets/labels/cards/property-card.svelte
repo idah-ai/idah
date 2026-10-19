@@ -7,16 +7,19 @@
 
   import { fieldTypes, type FieldType } from "@/data/model/dataset/labels";
 
-  import type { IConfigProperty } from "@/plugin/interface/Activity";
+  import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { Hash } from "@/utils/types";
 
   // Props
   interface Props {
     property: IConfigProperty;
+    /** Categories and properties of the label config, for visibility conditions. */
+    categories: IConfigValue[];
+    properties: IConfigProperty[];
     onSetProperty: (property: IConfigProperty) => void;
     onRemoveProperty: (propertyId: string) => void;
   }
-  let { property, onSetProperty, onRemoveProperty }: Props = $props();
+  let { property, categories, properties, onSetProperty, onRemoveProperty }: Props = $props();
 
   // Variables
   let { id, label, type } = $derived(property);
@@ -52,7 +55,7 @@
   <!-- CONTENT -->
   {#if showContent}
     <CardContent class="flex flex-col gap-4 px-0">
-      <PropertyOptions {property} onSetValue={setProperty}></PropertyOptions>
+      <PropertyOptions {property} {categories} {properties} onSetValue={setProperty}></PropertyOptions>
     </CardContent>
   {/if}
 </Card>

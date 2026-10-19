@@ -502,7 +502,13 @@
       <CardContent class="flex flex-col gap-2">
         {#if selectedLabelConfig}
           {#each Object.values(selectedLabelConfig.properties) as property (property.id)}
-            <PropertyCard {property} onSetProperty={setProperty} onRemoveProperty={removeProperty} />
+            <PropertyCard
+              {property}
+              categories={selectedLabelConfig.values}
+              properties={selectedLabelConfig.properties}
+              onSetProperty={setProperty}
+              onRemoveProperty={removeProperty}
+            />
           {:else}
             <ResponseBlock
               icon={BoltIcon}
