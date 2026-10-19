@@ -67,6 +67,15 @@ describe("rulesFromAst", () => {
     expect(rules("properties.occluded = false")).toEqual(all(c("properties.occluded", "eq", false)));
   });
 
+  it("reads contains any / all / none with a list", () => {
+    expect(rules('properties.colors contains any ["red", "blue"]')).toEqual(
+      all(c("properties.colors", "has_any", ["red", "blue"])),
+    );
+    expect(rules('properties.colors contains all ["red"] or properties.colors contains none ["blue"]')).toEqual(
+      any(c("properties.colors", "has_all", ["red"]), c("properties.colors", "has_none", ["blue"])),
+    );
+  });
+
   it("reads true/false saved before the grammar had booleans", () => {
     const legacy: ASTNode = [
       "eq",
@@ -110,6 +119,7 @@ describe("rulesFromAst", () => {
     ["a literal on the left", '"vehicles/car" = category'],
     ["a list outside in", 'category = ["a", "b"]'],
     ["in without a list", 'category in "a"'],
+    ["contains without a list", 'properties.colors contains any "red"'],
   ])("returns null for %s", (_, input) => {
     expect(rules(input)).toBeNull();
   });
@@ -187,6 +197,7 @@ const roundTrips = [
     and (properties.plate-readable = true)
     and ((properties.occluded = false) or (properties.occlusion_level = "partial"))`,
   "(properties.lanes >= 2) or (properties.lanes in [4, 6])",
+  '(properties.colors contains any ["red", "blue"]) and (properties.colors contains none ["green"])',
 ];
 
 describe("round trips", () => {
@@ -231,6 +242,12 @@ describe("visibilityToText", () => {
         '  or (properties.level = "partial")',
         ")",
       ].join("\n"),
+    );
+  });
+
+  it("prints contains any / all / none", () => {
+    expect(visibilityToText(parse('properties.colors contains all ["red", "blue"]'))).toBe(
+      'properties.colors contains all ["red", "blue"]',
     );
   });
 

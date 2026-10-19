@@ -32,6 +32,20 @@ const properties: IConfigProperty[] = [
     format: {},
   },
   { id: "plate", label: "Plate", description: "", type: "text", required: false, visibility: true, format: {} },
+  {
+    id: "colors",
+    label: "Colors",
+    description: "",
+    type: "multi-select",
+    required: false,
+    visibility: true,
+    format: {
+      options: [
+        { id: "red", label: "Red" },
+        { id: "blue", label: "Blue" },
+      ],
+    },
+  },
 ];
 
 function renderEditor(visibility: Visibility) {
@@ -67,6 +81,14 @@ describe("VisibilityEditor", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Remove condition" }));
 
     expect(onChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it("opens contains rules on a multi-select property in the builder", () => {
+    renderEditor(parse('properties.colors contains any ["red", "blue"]'));
+
+    expect(tab("Builder")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByLabelText("Operator")).toHaveTextContent("contains any of");
+    expect(screen.getByText("Visible when Colors contains any of Red, Blue")).toBeInTheDocument();
   });
 
   it("opens rules the builder can't show in the expression tab", () => {

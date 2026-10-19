@@ -9,6 +9,7 @@
 import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
 import { humanize } from "@/utils/string";
 import {
+  isListOperator,
   isRuleGroup,
   newCondition,
   type ComparisonOperator,
@@ -18,8 +19,8 @@ import {
   type RuleValue,
 } from "@/utils/visibility_rules";
 
-/** "unsupported" fields (multi-select properties) can't be picked in the builder. */
-export type FieldKind = "category" | "boolean" | "select" | "integer" | "text" | "unsupported";
+/** "multi" is a multi-select property; "unsupported" fields can't be picked in the builder. */
+export type FieldKind = "category" | "boolean" | "select" | "multi" | "integer" | "text" | "unsupported";
 
 export interface FieldOption {
   value: string;
@@ -33,7 +34,7 @@ export interface VisibilityField {
   path: string;
   label: string;
   kind: FieldKind;
-  /** Values of a category or single-select field. */
+  /** Values of a category, single-select or multi-select field. */
   options: FieldOption[];
   /** Parent categories, for "is under". */
   parents: FieldOption[];
@@ -76,6 +77,11 @@ const OPERATORS: Record<FieldKind, OperatorChoice[]> = {
     { value: "neq", label: "is not" },
     { value: "match", label: "matches" },
   ],
+  multi: [
+    { value: "has_any", label: "contains any of" },
+    { value: "has_all", label: "contains all of" },
+    { value: "has_none", label: "contains none of" },
+  ],
   unsupported: [],
 };
 
@@ -84,7 +90,7 @@ const PROPERTY_KINDS: Record<IConfigProperty["type"], FieldKind> = {
   integer: "integer",
   boolean: "boolean",
   "single-select": "select",
-  "multi-select": "unsupported",
+  "multi-select": "multi",
 };
 
 // ─── Fields ─────────────────────────────────────────────────────────────
@@ -177,13 +183,15 @@ export function fieldFor(fields: VisibilityField[], condition: RuleCondition): V
       : typeof value === "number"
         ? "integer"
         : Array.isArray(value)
-          ? "select"
+          ? condition.operator === "in"
+            ? "select"
+            : "multi"
           : "text";
   return {
     path: condition.field,
     label: `${condition.field} (not found)`,
     kind,
-    options: kind === "select" ? values.map((v) => ({ value: String(v), label: String(v) })) : [],
+    options: Array.isArray(value) ? values.map((v) => ({ value: String(v), label: String(v) })) : [],
     parents: [],
     missing: true,
   };
@@ -214,7 +222,7 @@ export function operatorLabel(condition: RuleCondition, field: VisibilityField):
 
 /** The value a new condition starts with. */
 function defaultValue(field: VisibilityField, operator: BuilderOperator): RuleValue {
-  if (operator === "in") return [];
+  if (isListOperator(operator)) return [];
   if (operator === "under") return `${field.parents[0]?.value ?? ""}/*`;
   if (field.kind === "boolean") return true;
   if (field.kind === "integer") return 0;
@@ -248,9 +256,9 @@ export function applyOperator(
 
   if (operator === "under") {
     next = defaultValue(field, operator);
-  } else if (operator === "in") {
-    next = typeof value === "string" && current !== "under" && value !== "" ? [value] : [];
-  } else if (current === "in") {
+  } else if (isListOperator(operator)) {
+    if (!Array.isArray(value)) next = typeof value === "string" && current !== "under" && value !== "" ? [value] : [];
+  } else if (isListOperator(current)) {
     next = Array.isArray(value) && value.length > 0 ? value[0] : defaultValue(field, operator);
   } else if (current === "under") {
     next = defaultValue(field, operator);
@@ -299,7 +307,7 @@ export function canEditInBuilder(item: RuleItem, fields: VisibilityField[]): boo
   if (!operatorsFor(field).some((o) => o.value === operator)) return false;
 
   const { value } = item;
-  if (operator === "in") return Array.isArray(value) && value.every((v) => typeof v === "string");
+  if (isListOperator(operator)) return Array.isArray(value) && value.every((v) => typeof v === "string");
   if (field.kind === "boolean") return typeof value === "boolean";
   if (field.kind === "integer") return typeof value === "number";
   return typeof value === "string";

@@ -55,7 +55,7 @@ describe("visibilityFields", () => {
       ["properties.occluded", "boolean"],
       ["properties.occlusion-level", "select"],
       ["properties.lanes", "integer"],
-      ["properties.colors", "unsupported"],
+      ["properties.colors", "multi"],
     ]);
   });
 
@@ -87,14 +87,26 @@ describe("visibilityFields", () => {
     expect(visibilityFields([], properties, "x").some((f) => f.path === "category")).toBe(false);
   });
 
-  it("keeps multi-select properties out of the field picker", () => {
-    expect(selectableFields(fields).map((f) => f.path)).not.toContain("properties.colors");
+  it("offers multi-select properties with the contains operators only", () => {
+    expect(selectableFields(fields).map((f) => f.path)).toContain("properties.colors");
+    expect(operatorsFor(field("properties.colors"))).toEqual([
+      { value: "has_any", label: "contains any of" },
+      { value: "has_all", label: "contains all of" },
+      { value: "has_none", label: "contains none of" },
+    ]);
   });
 });
 
 describe("fieldFor", () => {
   it("finds a field by path", () => {
     expect(fieldFor(fields, newCondition("properties.lanes", "gt", 2))).toBe(field("properties.lanes"));
+  });
+
+  it("makes a multi-select placeholder for a missing field used with contains", () => {
+    expect(fieldFor(fields, newCondition("properties.gone", "has_any", ["a"]))).toMatchObject({
+      kind: "multi",
+      options: [{ value: "a", label: "a" }],
+    });
   });
 
   it("makes a placeholder field for a path that no longer exists", () => {
@@ -163,6 +175,16 @@ describe("applyField / applyOperator", () => {
     });
   });
 
+  it("starts a multi-select on contains any of, and keeps the list between contains operators", () => {
+    const cond = newCondition("category", "eq", "pedestrian");
+    const colors = applyField(cond, field("properties.colors"));
+    expect(colors).toMatchObject({ field: "properties.colors", operator: "has_any", value: [] });
+    expect(applyOperator({ ...colors, value: ["red"] }, "has_none", field("properties.colors"))).toMatchObject({
+      operator: "has_none",
+      value: ["red"],
+    });
+  });
+
   it("keeps the value between operators of the same kind", () => {
     const lanes = newCondition("properties.lanes", "gt", 3);
     expect(applyOperator(lanes, "lte", field("properties.lanes"))).toMatchObject({ operator: "lte", value: 3 });
@@ -205,8 +227,17 @@ describe("canEditInBuilder", () => {
     expect(canEditInBuilder(group, fields)).toBe(true);
   });
 
-  it("rejects multi-select properties and values of the wrong type", () => {
+  it("accepts contains conditions on a multi-select", () => {
+    expect(canEditInBuilder(newGroup("all", [newCondition("properties.colors", "has_all", ["red"])]), fields)).toBe(
+      true,
+    );
+  });
+
+  it("rejects other operators on a multi-select, and values of the wrong type", () => {
     expect(canEditInBuilder(newGroup("all", [newCondition("properties.colors", "eq", "red")]), fields)).toBe(false);
+    expect(canEditInBuilder(newGroup("all", [newCondition("properties.colors", "has_any", "red")]), fields)).toBe(
+      false,
+    );
     expect(canEditInBuilder(newGroup("all", [newCondition("properties.lanes", "eq", "two")]), fields)).toBe(false);
     expect(canEditInBuilder(newGroup("all", [newCondition("properties.lanes", "in", [1, 2])]), fields)).toBe(false);
     expect(canEditInBuilder(newGroup("all", [newCondition("properties.occluded", "gt", true)]), fields)).toBe(false);
@@ -226,6 +257,11 @@ describe("describeRules", () => {
     expect(describeRules(group, fields)).toBe(
       "Occluded is yes and (Category is under Vehicles or Category is one of Pedestrian) and Lane count ≥ 2",
     );
+  });
+
+  it("describes contains conditions", () => {
+    const group = newGroup("all", [newCondition("properties.colors", "has_any", ["red", "blue"])]);
+    expect(describeRules(group, fields)).toBe("Colors contains any of Red, Blue");
   });
 
   it("marks values and fields that no longer exist", () => {

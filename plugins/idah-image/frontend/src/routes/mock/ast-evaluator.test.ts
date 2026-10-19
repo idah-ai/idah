@@ -270,6 +270,34 @@ describe("AstProcessor", () => {
     });
   });
 
+  // ── contains any / all / none ────────────────────────────────────────────
+
+  describe("has_any / has_all / has_none", () => {
+    const colors = ["get", ["colors"]];
+    const run = (op: string, list: string[], variables: Record<string, unknown> = { colors: ["red", "blue"] }) =>
+      proc(variables).processAST([op, [colors, [list]]] as unknown as ASTNode);
+
+    it("has_any is true when the selection includes one of the values", () => {
+      expect(run("has_any", ["red", "green"])).toBe(true);
+      expect(run("has_any", ["green"])).toBe(false);
+    });
+
+    it("has_all is true when the selection includes every value", () => {
+      expect(run("has_all", ["red", "blue"])).toBe(true);
+      expect(run("has_all", ["red", "green"])).toBe(false);
+    });
+
+    it("has_none is true when the selection includes none of the values", () => {
+      expect(run("has_none", ["green"])).toBe(true);
+      expect(run("has_none", ["blue"])).toBe(false);
+    });
+
+    it("treats a missing selection as empty", () => {
+      expect(run("has_any", ["red"], {})).toBe(false);
+      expect(run("has_none", ["red"], {})).toBe(true);
+    });
+  });
+
   // ── edge cases ──────────────────────────────────────────────────────────
 
   describe("edge cases", () => {

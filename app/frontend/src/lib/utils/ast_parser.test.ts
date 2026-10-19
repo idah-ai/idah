@@ -84,6 +84,24 @@ describe("ast_parser grammar", () => {
     });
   });
 
+  describe("contains any / all / none", () => {
+    it.each([
+      ["any", "has_any"],
+      ["all", "has_all"],
+      ["none", "has_none"],
+    ])("parses contains %s as %s", (kind, op) => {
+      expect(parse(`properties.colors contains ${kind} ["red", "blue"]`)).toEqual([
+        op,
+        [get("properties.colors"), [["red", "blue"]]],
+      ]);
+    });
+
+    it("needs any, all or none after contains", () => {
+      expect(() => parse('properties.colors contains ["red"]')).toThrow();
+      expect(() => parse('properties.colors contains anything ["red"]')).toThrow();
+    });
+  });
+
   describe("and / or", () => {
     it("parses and / or in either case", () => {
       const lower = parse('category = "a" or category = "b"');
@@ -149,5 +167,25 @@ describe("parsed conditions evaluated by AstProcessor", () => {
     const rule = `(properties.occluded = true) and ((category match "vehicles/*") or (category = "pedestrian"))`;
     expect(evaluate(rule, box)).toBe(true);
     expect(evaluate(rule, { ...box, category: "traffic-light" })).toBe(false);
+  });
+  describe("contains any / all / none on a multi-select value", () => {
+    const tagged = { properties: { colors: ["red", "blue"] } };
+
+    it.each([
+      ['contains any ["red", "green"]', true],
+      ['contains any ["green"]', false],
+      ['contains all ["red", "blue"]', true],
+      ['contains all ["red", "green"]', false],
+      ['contains none ["green"]', true],
+      ['contains none ["blue", "green"]', false],
+    ])("%s is %s", (condition, expected) => {
+      expect(evaluate(`properties.colors ${condition}`, tagged)).toBe(expected);
+    });
+
+    it("treats an unanswered multi-select as empty", () => {
+      expect(evaluate('properties.colors contains any ["red"]', {})).toBe(false);
+      expect(evaluate('properties.colors contains all ["red"]', {})).toBe(false);
+      expect(evaluate('properties.colors contains none ["red"]', {})).toBe(true);
+    });
   });
 });

@@ -18,7 +18,7 @@
     type FieldOption,
     type VisibilityField,
   } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
-  import type { RuleCondition, RuleValue } from "@/utils/visibility_rules";
+  import { isListOperator, type RuleCondition, type RuleValue } from "@/utils/visibility_rules";
 
   // Props
   interface Props {
@@ -131,7 +131,7 @@
     </Select>
 
     <!-- CONDITION::VALUE -->
-    {#if operator === "in"}
+    {#if isListOperator(operator)}
       <Select type="multiple" value={(condition.value as string[]) ?? []} onValueChange={(values) => setValue(values)}>
         <SelectTrigger size="sm" class={control} aria-label="Values" aria-invalid={!!problem}>
           <span class="truncate">

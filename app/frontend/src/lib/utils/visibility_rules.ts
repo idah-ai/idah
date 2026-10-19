@@ -14,7 +14,18 @@
 
 import type { ASTNode, ASTNodeValue, ASTValue } from "@/plugin/v2/types";
 
-export type ComparisonOperator = "eq" | "neq" | "lt" | "gt" | "lte" | "gte" | "in" | "match";
+export type ComparisonOperator =
+  | "eq"
+  | "neq"
+  | "lt"
+  | "gt"
+  | "lte"
+  | "gte"
+  | "in"
+  | "match"
+  | "has_any"
+  | "has_all"
+  | "has_none";
 export type RuleValue = string | number | boolean | string[] | number[];
 
 export interface RuleCondition {
@@ -22,7 +33,7 @@ export interface RuleCondition {
   /** Variable path read from the annotation value, e.g. "category" or "properties.occluded". */
   field: string;
   operator: ComparisonOperator;
-  /** A list only with "in". */
+  /** A list with the list operators ("in" and "has_*"), a single value otherwise. */
   value: RuleValue;
 }
 
@@ -46,6 +57,9 @@ const COMPARISON_SYMBOLS: Record<ComparisonOperator, string> = {
   gte: ">=",
   in: "in",
   match: "match",
+  has_any: "contains any",
+  has_all: "contains all",
+  has_none: "contains none",
 };
 
 const LOGICAL = { all: "and", any: "or" } as const;
@@ -60,6 +74,11 @@ export function newCondition(field: string, operator: ComparisonOperator, value:
 
 export function newGroup(mode: RuleGroup["mode"], items: RuleItem[]): RuleGroup {
   return { id: nextRuleId(), mode, items };
+}
+
+/** Operators whose value is a list: "in" and contains any / all / none. */
+export function isListOperator(operator: string): boolean {
+  return operator === "in" || operator === "has_any" || operator === "has_all" || operator === "has_none";
 }
 
 export function isRuleGroup(item: RuleItem): item is RuleGroup {
@@ -132,7 +151,7 @@ function conditionFromAst(node: ASTNode): RuleCondition | null {
 
   const right = args[1];
   const list = listItems(right);
-  if (operator === "in") return list ? newCondition(field, operator, list) : null;
+  if (isListOperator(operator)) return list ? newCondition(field, operator, list) : null;
   if (list) return null;
 
   if (typeof right === "string" || typeof right === "number" || typeof right === "boolean") {

@@ -26,8 +26,10 @@ Operator = op:("AND" / "OR" / "and" / "or") !identChar { return op }
 StringQuotes = '"'
 
 // Maps each comparison symbol to its AstProcessor operator name.
+// contains any / all / none compare a multi-select value (a list) with a list.
 comparisonOperator
-  = op:("=" / "<=" / ">=" / "!=" / "<" / ">" / "in" / "match") {
+  = "contains" [ \t\n\r]+ kind:("any" / "all" / "none") !identChar { return "has_" + kind }
+  / op:("=" / "<=" / ">=" / "!=" / "<" / ">" / "in" / "match") {
     switch(op) {
       case '=': return 'eq'
       case '<=': return 'lte'

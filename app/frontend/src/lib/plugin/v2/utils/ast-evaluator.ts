@@ -20,6 +20,7 @@
 //   or    – logical or (binary)
 //   match – wildcard string matching (binary)
 //   in    – value in array (binary)
+//   has_any / has_all / has_none – list contains any / all / none of a list (binary)
 // ---------------------------------------------------------------------------
 
 import type { ASTNode } from "./types";
@@ -63,6 +64,19 @@ function wildcard_match(pattern1: string, pattern2: string): boolean {
     return false;
   }
   return matchHelper(0, 0);
+}
+
+// ─── List operators ───────────────────────────────────────────────────────
+
+/** A multi-select value as a list. An unanswered one (a missing variable reads as false) is empty. */
+function selection(value: ASTValue): ASTValue[] {
+  if (Array.isArray(value)) return value;
+  return value === undefined || value === null || value === false ? [] : [value];
+}
+
+/** The values a list operator compares with; the parser always gives a list. */
+function wanted(value: ASTValue): ASTValue[] {
+  return Array.isArray(value) ? value : [value];
 }
 
 // ─── AstProcessor ─────────────────────────────────────────────────────────
@@ -168,6 +182,30 @@ export class AstProcessor {
         if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
         const [val, list] = props;
         return Array.isArray(list) ? (list as ASTValue[]).includes(val) : false;
+      },
+    ],
+    [
+      "has_any",
+      (props) => {
+        if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
+        const items = selection(props[0]);
+        return wanted(props[1]).some((v) => items.includes(v));
+      },
+    ],
+    [
+      "has_all",
+      (props) => {
+        if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
+        const items = selection(props[0]);
+        return wanted(props[1]).every((v) => items.includes(v));
+      },
+    ],
+    [
+      "has_none",
+      (props) => {
+        if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
+        const items = selection(props[0]);
+        return !wanted(props[1]).some((v) => items.includes(v));
       },
     ],
   ]);
