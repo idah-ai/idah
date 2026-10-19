@@ -65,15 +65,14 @@
     </Item.Content>
 
     <Item.Actions class="ml-auto flex shrink-0 items-center gap-0">
-      {#each getAnnotationActions(annotation) as { label, icon: Icon, disabled, onclick, alwaysShow }, index (index)}
+      {#each getAnnotationActions(annotation) as { label, icon: Icon, disabled, onclick }, index (index)}
         <CategoryAction
           {label}
           icon={Icon}
           {disabled}
           {onclick}
           class={cn("opacity-0 transition-opacity", {
-            "opacity-100": alwaysShow,
-            "group-hover/item:opacity-100": !alwaysShow && !disabled,
+            "group-hover/item:opacity-100": !disabled,
             "cursor-not-allowed group-hover/item:opacity-30": disabled,
           })}
         ></CategoryAction>
