@@ -20,13 +20,6 @@ module Workflow
       aasm.current_state
     end
 
-    # Stage entries are moved back to when reopened. Subclasses should override
-    # to return the actual first work stage (e.g. :annotate). Used as the
-    # default target when no specific step is requested.
-    def first_workflow_step
-      aasm.states.map(&:name).find { |s| s != :start } || aasm.initial_state
-    end
-
     # Steps a completed entry can be reopened to — excludes non-work states
     # (start pseudo-stage, done, error).
     def reopenable_steps

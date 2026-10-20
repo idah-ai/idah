@@ -687,38 +687,12 @@ RSpec.describe Entry::Service, database: true do
       end
     end
 
-    context "when entry is completed and previous assignee has valid membership" do
-      before do
-        ProjectMember::Repository.new(auth_context).create(
-          project_id:,
-          account_id: 42,
-          email: "annotator@example.com",
-          role: "annotator",
-          invited_by_id: 1
-        )
-        ProjectMember::Repository.new(auth_context).create(
-          project_id:,
-          account_id: 43,
-          email: "reviewer@example.com",
-          role: "reviewer",
-          invited_by_id: 1
-        )
-      end
-
-      it "moves entry back to the first workflow step" do
-        result = subject.reopen(completed_entry)
-
-        expect(result.wf_step).to eq("annotate")
-        expect(result.status).to eq("in_progress")
-        expect(result.assigned_to_id).to be_nil
-        expect(result.assigned_to_email).to be_nil
-      end
-
+    context "when entry is completed, sets the entry to Unassigned" do
       it "moves entry back to the requested step" do
         result = subject.reopen(completed_entry, target_step: "review")
 
         expect(result.wf_step).to eq("review")
-        expect(result.status).to eq("in_progress")
+        expect(result.status).to eq("pending")
         expect(result.assigned_to_id).to be_nil
         expect(result.assigned_to_email).to be_nil
       end
@@ -736,53 +710,9 @@ RSpec.describe Entry::Service, database: true do
         )
 
         # Reopen one entry
-        subject.reopen(completed_entry)
+        subject.reopen(completed_entry, target_step: "review")
 
         expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
-      end
-    end
-
-    context "when previous assignee no longer has access" do
-      it "sets the entry to Unassigned" do
-        result = subject.reopen(completed_entry)
-
-        expect(result.wf_step).to eq("annotate")
-        expect(result.status).to eq("in_progress")
-        expect(result.assigned_to_id).to be_nil
-        expect(result.assigned_to_email).to be_nil
-      end
-    end
-
-    context "when reopening to a step with no previous worker" do
-      it "sets the entry to Unassigned" do
-        entry_without_reviewer = repo.create(
-          {
-            project_id:,
-            dataset_id:,
-            resource: "no-reviewer.mp4",
-            status: "completed",
-            wf_step: "done",
-            submitted_by_id: 42,
-            submitted_by_email: "annotator@example.com",
-            reviewed_by_id: nil,
-            reviewed_by_email: nil
-          }
-        )
-
-        ProjectMember::Repository.new(auth_context).create(
-          project_id:,
-          account_id: 42,
-          email: "annotator@example.com",
-          role: "annotator",
-          invited_by_id: 1
-        )
-
-        result = subject.reopen(entry_without_reviewer, target_step: "review")
-
-        expect(result.wf_step).to eq("review")
-        expect(result.status).to eq("in_progress")
-        expect(result.assigned_to_id).to be_nil
-        expect(result.assigned_to_email).to be_nil
       end
     end
 

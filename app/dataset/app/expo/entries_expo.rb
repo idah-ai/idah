@@ -130,9 +130,9 @@ class EntriesExpo < BaseExpo
     desc "Reopen a completed entry to a specific workflow stage"
     input do
       field :id, String
-      field? :data, Hash do
-        field? :attributes, Hash do
-          field? :target_step, String
+      field :data, Hash do
+        field :attributes, Hash do
+          field :target_step, String
         end
       end
     end

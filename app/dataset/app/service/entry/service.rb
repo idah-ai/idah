@@ -194,7 +194,7 @@ module Entry
         end
 
         workflow = entry.dataset.entry_workflow.new(entries, entry)
-        target = (target_step || workflow.first_workflow_step).to_s
+        target = target_step.to_s
 
         unless workflow.reopenable_steps.map(&:to_s).include?(target)
           raise Verse::Error::ValidationFailed, "Invalid reopen target step \"#{target}\""
@@ -204,7 +204,7 @@ module Entry
           entry.id,
           {
             wf_step: target,
-            status: "in_progress",
+            status: "pending",
             assigned_to_id: nil,
             assigned_to_email: nil,
             reopened_by_id: auth_context.metadata[:id],

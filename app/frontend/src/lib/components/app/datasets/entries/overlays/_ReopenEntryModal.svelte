@@ -3,7 +3,7 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
-  import { FieldGroup, FieldSet } from "@/components/ui/field";
+  import { FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { reopenEntries } from "@/components/app/datasets/entries/util/entry-actions";
@@ -96,8 +96,8 @@
   {action}
   {title}
   description={selectedEntryCount > 1
-    ? `The selected entries will be moved back to ${targetStageLabel} and each entry is assigned back to its previous assignee.`
-    : `This entry will be moved back to ${targetStageLabel} and assigned back to its previous assignee.`}
+    ? `The selected entries will be moved back to ${targetStageLabel}.`
+    : `This entry will be moved back to ${targetStageLabel}.`}
   loading={submitting}
   onCancel={() => {}}
   onConfirm={submit}
@@ -126,10 +126,10 @@
   <FieldSet class="p-1">
     <FieldGroup class="gap-1">
       {#if selectedEntryCount > 0}
-        <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "Selected entry", "Selected entries")}</Text>
+        <FieldLabel>{pluralizeUnit(selectedEntryCount, "Selected entry", "Selected entries")}</FieldLabel>
       {/if}
 
-      <ul class="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+      <ul class="max-h-48 space-y-1 overflow-y-auto rounded-md border px-4 py-2">
         {#each entryIds as id (id)}
           <li class="text-muted-foreground truncate text-sm">
             {getEntryName(id) || id}

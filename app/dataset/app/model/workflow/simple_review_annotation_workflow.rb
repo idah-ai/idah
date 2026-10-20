@@ -44,12 +44,6 @@ module Workflow
       @submit_opts[:approved]
     end
 
-    # Stage entries are moved back to when reopened — the first real work step.
-    # Used as the default target when no specific step is requested.
-    def first_workflow_step
-      :annotate
-    end
-
     def allowed_note_feed?
       # check if current step allows note feeds by state
       ["annotate", "review"].include?(@entry.wf_step)
