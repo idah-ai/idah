@@ -24,6 +24,7 @@
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
   import { AuthContext } from "@/security/AuthContext";
+  import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
@@ -49,6 +50,7 @@
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
   let isFilteringResolved = $derived(noteFeedFilters.status__in.includes("resolved"));
+  let isHidingOutdated = $state(false);
   let contentMd = $state<string>("");
 
   let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
@@ -73,6 +75,13 @@
             }
 
             $refetches.noteFeeds.list = new Date();
+          },
+        },
+        {
+          label: "Hide outdated notes",
+          icon: isHidingOutdated ? SquareCheckBigIcon : SquareIcon,
+          action: () => {
+            isHidingOutdated = !isHidingOutdated;
           },
         },
       ],
@@ -192,6 +201,17 @@
         itemsPerPage: 1000,
       },
       sort: ["-created_at"],
+      // Include the anchored annotation so we can detect soft-deleted anchors
+      // (isAnchorDeleted). Limit annotation fields to id + deleted_at so large
+      // shape_args (masks) aren't transferred just for the badge.
+      included: ["annotation"],
+      fields: {
+        [AnnotationRecord.type]: ["id", "deleted_at"],
+      },
+      // Bypass the cache so a refetch (after annotation delete/restore) returns
+      // fresh `deleted_at` values — otherwise the stale cached response keeps
+      // the "Annotation deleted" badge from appearing without a page reload.
+      noCache: true,
     });
     // Sync the adapter cache so NoteMarkers re-renders
     const adapter = driver.notesAdapter;
@@ -326,7 +346,8 @@
           {#await loadNoteFeeds()}
             <Spinner />
           {:then noteFeeds}
-            {#each noteFeeds as noteFeed (noteFeed.id)}
+            {@const visibleFeeds = isHidingOutdated ? noteFeeds.filter((nf) => !nf.isAnchorDeleted) : noteFeeds}
+            {#each visibleFeeds as noteFeed (noteFeed.id)}
               <NoteFeedCard
                 noteFeedRecord={noteFeed}
                 showReplyCount

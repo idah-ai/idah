@@ -1,6 +1,7 @@
 <script lang="ts">
   import { MapPinIcon, MessageCircleIcon, SquareDashedIcon } from "@lucide/svelte";
 
+  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
   import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
@@ -33,6 +34,7 @@
 
   // Variables
   let { id, content_md, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
+  let isAnchorDeleted = $derived(noteFeedRecord.isAnchorDeleted);
 
   let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
@@ -69,6 +71,7 @@
   editable={isOwner}
   deletable={isOwner}
   {highlighted}
+  dimmed={isAnchorDeleted}
   onClick={selectNoteFeed}
   onUpdateContentMd={updateNoteFeed}
   onDelete={async () => {
@@ -92,6 +95,12 @@
         <MessageCircleIcon class="size-3.5" />
       {/if}
     </div>
+  {/snippet}
+
+  {#snippet headerMeta()}
+    {#if isAnchorDeleted}
+      <Badge variant="warning" rounded="full">Annotation deleted</Badge>
+    {/if}
   {/snippet}
 
   {#snippet headerActions()}

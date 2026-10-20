@@ -24,12 +24,14 @@
     editable?: boolean;
     deletable?: boolean;
     highlighted?: boolean;
+    dimmed?: boolean;
 
     onClick?: () => void;
     onUpdateContentMd: (newContentMd: string) => Promise<void>;
     onDelete?: () => Promise<void>;
 
     headerIcon?: Snippet;
+    headerMeta?: Snippet;
     headerActions?: Snippet;
     contentActions?: Snippet;
   }
@@ -43,10 +45,12 @@
     editable = false,
     deletable = false,
     highlighted = false,
+    dimmed = false,
     onClick,
     onUpdateContentMd,
     onDelete,
     headerIcon,
+    headerMeta,
     headerActions,
     contentActions,
   }: Props = $props();
@@ -96,6 +100,7 @@
   tabindex="0"
   class={cn("hover:bg-secondary group flex cursor-pointer flex-col gap-2 border-1 border-transparent p-2", {
     "bg-secondary": highlighted,
+    "opacity-60": dimmed,
   })}
   onkeypress={handleClickCard}
   onclick={handleClickCard}
@@ -130,6 +135,8 @@
           {/if}
         </div>
       </div>
+
+      {@render headerMeta?.()}
 
       <!-- HEADER::ACTIONS -->
       <div class="ml-auto flex items-center">
