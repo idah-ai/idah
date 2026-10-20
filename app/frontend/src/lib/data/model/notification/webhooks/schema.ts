@@ -16,9 +16,4 @@ export const createWebhookSchema = webhookSchema.pick({
   enabled: true,
 });
 
-export const updateWebhookSchema = createWebhookSchema.pick({
-  name: true,
-  url: true,
-  events: true,
-  enabled: true,
-});
+export const updateWebhookSchema = createWebhookSchema;

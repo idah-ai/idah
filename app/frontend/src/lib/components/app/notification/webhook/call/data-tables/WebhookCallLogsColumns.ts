@@ -31,7 +31,7 @@ export const webhookCallLogsColumns: ColumnsSettings<WebhookCallRecord> = {
       filterKey: "status",
       filterBy: "multiple-select",
       filterOperation: "in",
-      choices: webhookCallHttpStatuses,
+      choices: Array.from(webhookCallHttpStatuses.values()),
     },
     visible: true,
     hidable: false,
