@@ -2,7 +2,7 @@
   import { EyeIcon, InfoIcon } from "@lucide/svelte";
   import { untrack } from "svelte";
 
-  import VisibilityGroup from "@/components/app/datasets/labels/properties/visibility/visibility-group.svelte";
+  import VisibilityGroup from "./_VisibilityGroup.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import Text from "@/components/ui/text/Text.svelte";

@@ -3,7 +3,7 @@ import peggy from "peggy";
 import { tick } from "svelte";
 import { describe, expect, it, vi } from "vitest";
 
-import VisibilityEditor from "@/components/app/datasets/labels/properties/visibility/visibility-editor.svelte";
+import VisibilityEditor from "@/components/app/datasets/labels/properties/visibility/VisibilityEditor.svelte";
 import type { ASTNode, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
 import grammar from "@/utils/ast_parser.pegjs?raw";
 import type { Visibility } from "@/utils/visibility_rules";

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
 
-  import VisibilityCondition from "@/components/app/datasets/labels/properties/visibility/visibility-condition.svelte";
-  import VisibilityGroup from "@/components/app/datasets/labels/properties/visibility/visibility-group.svelte";
+  import VisibilityCondition from "./_VisibilityCondition.svelte";
+  import VisibilityGroup from "./_VisibilityGroup.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 

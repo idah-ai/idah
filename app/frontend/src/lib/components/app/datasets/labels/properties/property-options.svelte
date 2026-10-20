@@ -6,7 +6,7 @@
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import VisibilityEditor from "@/components/app/datasets/labels/properties/visibility/visibility-editor.svelte";
+  import VisibilityEditor from "@/components/app/datasets/labels/properties/visibility/VisibilityEditor.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import Separator from "@/components/ui/separator/separator.svelte";
