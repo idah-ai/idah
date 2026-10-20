@@ -50,8 +50,8 @@ const properties: IConfigProperty[] = [
 
 function renderEditor(visibility: Visibility) {
   const onChange = vi.fn();
-  render(VisibilityEditor, { visibility, categories, properties, propertyId: "plate", onChange });
-  return onChange;
+  const view = render(VisibilityEditor, { visibility, categories, properties, propertyId: "plate", onChange });
+  return Object.assign(onChange, { rerender: view.rerender });
 }
 
 const tab = (name: string) => screen.getByRole("tab", { name });
@@ -117,6 +117,27 @@ describe("VisibilityEditor", () => {
     await fireEvent.click(tab("Builder"));
     await tick();
     expect(screen.getByText("Visible when Occluded is no")).toBeInTheDocument();
+  });
+
+  it("starts over from a visibility it didn't save", async () => {
+    // e.g. another config with a property of the same id reuses this editor.
+    const onChange = renderEditor(parse('category = "pedestrian"'));
+
+    await onChange.rerender({ visibility: parse("properties.occluded = true") });
+    expect(screen.getByText("Visible when Occluded is yes")).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Remove condition" }));
+    expect(onChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it("keeps its state when the visibility it saved comes back", async () => {
+    const onChange = renderEditor(true);
+
+    await fireEvent.click(screen.getByRole("button", { name: "Condition" }));
+    await onChange.rerender({ visibility: onChange.mock.lastCall![0] });
+
+    expect(screen.getAllByRole("button", { name: "Remove condition" })).toHaveLength(1);
+    expect(screen.getByText("Visible when Category is Car")).toBeInTheDocument();
   });
 
   it("holds back incomplete conditions and keeps them in the builder", () => {

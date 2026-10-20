@@ -45,11 +45,20 @@
   // Variables
   let fields = $derived(visibilityFields(categories, properties, propertyId));
 
-  // Set up once from the stored visibility; after that, this editor is the source of changes.
-  const initialRules = untrack(() => builderRules(visibility));
-  let mode: Mode = $state(initialRules ? "builder" : "expression");
-  let rules: RuleGroup = $state.raw(initialRules ?? newGroup("all", []));
-  let text: string = $state(untrack(() => visibilityToText(visibility)));
+  let mode: Mode = $state("builder");
+  let rules: RuleGroup = $state.raw(newGroup("all", []));
+  let text: string = $state("");
+  /** The visibility this editor last loaded or saved. Not reactive: only compared with the prop. */
+  let known = "";
+
+  // Set up from the stored visibility; after that, this editor is the source of changes.
+  untrack(() => load(visibility));
+
+  // A visibility this editor didn't save comes from outside: another config with a property of the
+  // same id (the card is reused), a reload or an applied template. Start over from it.
+  $effect.pre(() => {
+    if (JSON.stringify(visibility) !== known) untrack(() => load(visibility));
+  });
 
   let parsed: Parsed = $derived(parseText(text));
   let textRules: RuleGroup | null = $derived(parsed.error === undefined ? builderRules(parsed.visibility) : null);
@@ -81,16 +90,29 @@
     }
   }
 
+  function load(value: Visibility) {
+    known = JSON.stringify(value);
+    const loaded = builderRules(value);
+    mode = loaded ? "builder" : "expression";
+    rules = loaded ?? newGroup("all", []);
+    text = visibilityToText(value);
+  }
+
+  function save(value: Visibility) {
+    known = JSON.stringify(value);
+    onChange(value);
+  }
+
   function setRules(next: RuleGroup) {
     rules = next;
     // Incomplete conditions are shown with their problem and saved once fixed.
-    if (!hasProblems(next, fields)) onChange(rulesToAst(next));
+    if (!hasProblems(next, fields)) save(rulesToAst(next));
   }
 
   function setText(value: string) {
     text = value;
     const result = parseText(value);
-    if (result.error === undefined) onChange(result.visibility);
+    if (result.error === undefined) save(result.visibility);
   }
 
   function switchMode(next: string) {
