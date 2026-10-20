@@ -114,7 +114,7 @@ describe("showConfirmDeleteAnnotationsDialog", () => {
   it("derives tag type from frame / entry:root shapes", () => {
     showConfirmDeleteAnnotationsDialog({
       count: 1,
-      shape: "entry:root",
+      shape: "Entry:root",
       annotation_category: "scene",
       onConfirm: () => {},
     });

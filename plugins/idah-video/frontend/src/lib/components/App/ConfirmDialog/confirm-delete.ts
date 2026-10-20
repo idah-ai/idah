@@ -16,7 +16,7 @@ export type DeletionTargetType = "annotation" | "tag";
 
 /** Derive the delete-target kind from a shape identifier. */
 export function deletionTargetType(shape?: string): DeletionTargetType {
-  return shape === "frame" || shape === "entry:root" ? "tag" : "annotation";
+  return shape === "frame" || shape === "Entry:root" ? "tag" : "annotation";
 }
 
 export interface ConfirmAnnotationsDeleteOptions {
