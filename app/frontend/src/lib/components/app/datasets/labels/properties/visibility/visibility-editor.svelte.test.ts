@@ -140,6 +140,13 @@ describe("VisibilityEditor", () => {
     expect(screen.getByText("Visible when Category is Car")).toBeInTheDocument();
   });
 
+  it("types a pattern for category matches", () => {
+    renderEditor(parse('category match "veh*"'));
+
+    expect(screen.getByLabelText("Value")).toHaveValue("veh*");
+    expect(screen.getByText('Visible when Category matches "veh*"')).toBeInTheDocument();
+  });
+
   it("holds back incomplete conditions and keeps them in the builder", () => {
     const onChange = renderEditor(["in", [["get", ["category"]], [[]]]] as unknown as ASTNode);
 

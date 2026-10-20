@@ -19,6 +19,7 @@ import {
   hasProblems,
   operatorsFor,
   selectableFields,
+  usesOptions,
   visibilityFields,
 } from "./visibility-fields";
 
@@ -213,6 +214,11 @@ describe("conditionProblem", () => {
     expect(problem(newCondition("properties.lanes", "gt", -5))).toBeUndefined();
   });
 
+  it("asks for a pattern on an empty category match", () => {
+    expect(problem(newCondition("category", "match", ""))).toBe("Enter a value");
+    expect(problem(newCondition("category", "eq", ""))).toBe("Choose a value");
+  });
+
   it("finds a problem anywhere in a group", () => {
     const ok = newGroup("all", [newCondition("category", "eq", "pedestrian")]);
     const bad = newGroup("all", [ok, newGroup("any", [newCondition("category", "in", [])])]);
@@ -249,6 +255,15 @@ describe("canEditInBuilder", () => {
   });
 });
 
+describe("usesOptions", () => {
+  it("picks category and select values from the options, except a category pattern", () => {
+    expect(usesOptions(field("category"), "eq")).toBe(true);
+    expect(usesOptions(field("category"), "match")).toBe(false);
+    expect(usesOptions(field("properties.occlusion-level"), "eq")).toBe(true);
+    expect(usesOptions(field("properties.lanes"), "eq")).toBe(false);
+  });
+});
+
 describe("describeRules", () => {
   it("reads like a sentence, with nested groups in parentheses", () => {
     const group = newGroup("all", [
@@ -277,6 +292,11 @@ describe("describeRules", () => {
     expect(describeRules(group, fields)).toBe(
       'Category is vehicles/van (not found) and properties.removed (not found) is "x"',
     );
+  });
+
+  it("shows a category match pattern as typed", () => {
+    const group = newGroup("all", [newCondition("category", "match", "veh*")]);
+    expect(describeRules(group, fields)).toBe('Category matches "veh*"');
   });
 
   it("is empty for an empty group", () => {

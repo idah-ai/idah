@@ -17,6 +17,7 @@
     type BuilderOperator,
     type FieldOption,
     type VisibilityField,
+    usesOptions,
   } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
   import { isListOperator, type RuleCondition, type RuleValue } from "@/utils/visibility_rules";
 
@@ -163,7 +164,7 @@
         "Value",
         (v) => setValue(v === "true"),
       )}
-    {:else if field.kind === "category" || field.kind === "select"}
+    {:else if usesOptions(field, operator)}
       {@render singleSelect(
         String(condition.value),
         valueChoices,
@@ -186,7 +187,7 @@
         class="h-7 px-2 text-xs"
         aria-label="Value"
         aria-invalid={!!problem}
-        placeholder={operator === "match" ? "e.g. AB-*" : "Value"}
+        placeholder={operator !== "match" ? "Value" : field.kind === "category" ? "e.g. vehicles/c*" : "e.g. AB-*"}
         value={condition.value}
         oninput={(e) => setValue(e.currentTarget.value)}
       />

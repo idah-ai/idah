@@ -220,13 +220,18 @@ export function operatorLabel(condition: RuleCondition, field: VisibilityField):
   return OPERATORS[field.kind].find((o) => o.value === operator)?.label ?? operator;
 }
 
+/** Whether a single value is picked from the field's options; "matches" takes a typed pattern. */
+export function usesOptions(field: VisibilityField, operator: BuilderOperator): boolean {
+  return field.kind === "select" || (field.kind === "category" && operator !== "match");
+}
+
 /** The value a new condition starts with. */
 function defaultValue(field: VisibilityField, operator: BuilderOperator): RuleValue {
   if (isListOperator(operator)) return [];
   if (operator === "under") return `${field.parents[0]?.value ?? ""}/*`;
   if (field.kind === "boolean") return true;
   if (field.kind === "integer") return 0;
-  if (field.kind === "category" || field.kind === "select") return field.options[0]?.value ?? "";
+  if (usesOptions(field, operator)) return field.options[0]?.value ?? "";
   return "";
 }
 
@@ -286,7 +291,9 @@ export function conditionProblem(condition: RuleCondition, field: VisibilityFiel
     return undefined;
   }
   if (typeof value === "string") {
-    if (value === "" || value === "/*") return field.kind === "text" ? "Enter a value" : "Choose a value";
+    if (value === "/*") return "Choose a value";
+    if (value === "")
+      return field.kind === "text" || condition.operator === "match" ? "Enter a value" : "Choose a value";
     if (value.includes('"')) return "Values can't contain double quotes";
   }
   // Unsafe integers print in exponent form, which the parser can't read back.
@@ -338,9 +345,10 @@ export function valueLabel(condition: RuleCondition, field: VisibilityField): st
   const optionLabel = (v: string | number, options: FieldOption[]) =>
     options.find((o) => o.value === v)?.label ?? `${v} (not found)`;
 
+  const operator = builderOperator(condition, field);
   if (Array.isArray(value)) return value.map((v) => optionLabel(v, field.options)).join(", ");
-  if (builderOperator(condition, field) === "under") return optionLabel(String(value).slice(0, -2), field.parents);
+  if (operator === "under") return optionLabel(String(value).slice(0, -2), field.parents);
   if (typeof value === "boolean") return value ? "yes" : "no";
-  if (field.kind === "category" || field.kind === "select") return optionLabel(value, field.options);
+  if (usesOptions(field, operator)) return optionLabel(value, field.options);
   return typeof value === "string" ? `"${value}"` : String(value);
 }
