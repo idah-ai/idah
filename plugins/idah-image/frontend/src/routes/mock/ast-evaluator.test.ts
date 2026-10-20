@@ -318,6 +318,13 @@ describe("AstProcessor", () => {
       expect(proc({}).processAST(rule)).toBe(true);
     });
 
+    it("fails a comparison on an unknown operator instead of comparing the failure", () => {
+      // neq(false, "x") would be true and show the property.
+      const rule = ["neq", [["unknown_op", [1, 2]], "x"]] as unknown as ASTNode;
+      expect(proc({}).processAST(rule)).toBe(false);
+      expect(proc({}).processAST(["and", [rule, ["eq", [1, 1]]]] as unknown as ASTNode)).toBe(false);
+    });
+
     it("evaluates an invalid operator type to false instead of throwing", () => {
       expect(proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode)).toBe(false);
     });

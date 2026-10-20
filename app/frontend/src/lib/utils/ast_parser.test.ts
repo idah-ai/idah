@@ -206,5 +206,10 @@ describe("parsed conditions evaluated by AstProcessor", () => {
       ] as ASTNode;
       expect(processor.processAST(rule)).toBe(true);
     });
+
+    it("fail a comparison on their result, instead of comparing the failure as a value", () => {
+      const processor = new AstProcessor(new Map());
+      expect(processor.processAST(["neq", [["future_op", [1, 2]], "a"]] as ASTNode)).toBe(false);
+    });
   });
 });

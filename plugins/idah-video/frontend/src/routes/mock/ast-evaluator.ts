@@ -196,27 +196,28 @@ export class AstProcessor {
    * evaluated hides the property instead of breaking the properties panel.
    */
   processAST(node: ASTNode): boolean {
-    try {
-      return this.processOperator(node) === true;
-    } catch (error) {
-      console.warn("Invalid visibility condition", node, error);
-      return false;
-    }
+    return this.evaluateSafely(node) === true;
   }
 
   private processOperator(node: ASTNode): ASTValue {
     const [operator, args] = node;
-    if (typeof operator !== "string") {
-      console.warn(`Invalid operator type: ${typeof operator}`);
-      return false;
-    }
+    if (typeof operator !== "string") throw new Error(`Invalid operator type: ${typeof operator}`);
+    // An operator this version doesn't know, e.g. from a config saved by a newer one, fails its condition.
     const cmd = this.operators.get(operator);
-    // An operator this version doesn't know, e.g. from a config saved by a newer one, is false.
-    if (!cmd) {
-      console.warn(`Operator not found: ${operator}`);
+    if (!cmd) throw new Error(`Operator not found: ${operator}`);
+    // A failed operand of and/or is false, so only that branch fails. Elsewhere the failure goes up to
+    // the nearest and/or: a comparison such as neq must not compare the failure as a value.
+    const logical = operator === "and" || operator === "or";
+    return cmd(args.map((a) => (logical ? this.evaluateSafely(a) : this.processValue(a))));
+  }
+
+  private evaluateSafely(value: ASTNodeValue): ASTValue {
+    try {
+      return this.processValue(value);
+    } catch (error) {
+      console.warn("Invalid visibility condition", value, error);
       return false;
     }
-    return cmd(args.map((a) => this.processValue(a)));
   }
 
   private processValue(value: ASTNodeValue): ASTValue {
