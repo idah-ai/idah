@@ -134,9 +134,9 @@
             </TooltipProvider>
           {/if}
         </div>
-      </div>
 
-      {@render headerMeta?.()}
+        {@render headerMeta?.()}
+      </div>
 
       <!-- HEADER::ACTIONS -->
       <div class="ml-auto flex items-center">

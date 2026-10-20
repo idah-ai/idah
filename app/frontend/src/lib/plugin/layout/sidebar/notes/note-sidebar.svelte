@@ -59,7 +59,7 @@
     filters: {
       items: [
         {
-          label: "Show Resolved Notes",
+          label: "Show resolved notes",
           icon: noteFeedFilters.status__in.includes("resolved") ? SquareCheckBigIcon : SquareIcon,
           action: () => {
             noteFeedFilters.status__in = noteFeedFilters.status__in.includes("resolved")
