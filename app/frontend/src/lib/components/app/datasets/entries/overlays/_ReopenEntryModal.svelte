@@ -2,6 +2,8 @@
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { CheckIcon } from "@lucide/svelte";
+  import { CommandItem } from "@/components/ui/command";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import { FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
   import Text from "@/components/ui/text/Text.svelte";
@@ -14,6 +16,7 @@
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { LabelValue } from "@/utils/types";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
+  import { cn } from "@/utils";
 
   // Props
   interface Props extends FormModalBaseProps {
@@ -32,12 +35,18 @@
   let selectedEntryCount: number = $derived(entryIds.length);
 
   let stepChoices: LabelValue<string | number>[] = $derived(
-    availableSteps.map((step) => ({
-      label: humanize(step),
-      value: step,
-    })),
+    availableSteps.map((step) => {
+      const label = humanize(step);
+      return {
+        label,
+        description:
+          selectedEntryCount > 1
+            ? `The selected entries will be moved back to ${label}.`
+            : `This entry will be moved back to ${label}.`,
+        value: step,
+      };
+    }),
   );
-  let targetStageLabel: string = $derived(selectedStep ? humanize(selectedStep) : "");
 
   // Functions
   function getEntryName(id: string): string | undefined {
@@ -92,17 +101,7 @@
   }
 </script>
 
-<FormModal
-  {action}
-  {title}
-  description={selectedEntryCount > 1
-    ? `The selected entries will be moved back to ${targetStageLabel}.`
-    : `This entry will be moved back to ${targetStageLabel}.`}
-  loading={submitting}
-  onCancel={() => {}}
-  onConfirm={submit}
-  bind:open
->
+<FormModal {action} {title} loading={submitting} onCancel={() => {}} onConfirm={submit} bind:open>
   {#snippet modalTitle()}
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
@@ -119,7 +118,24 @@
         onSelected={(value: string | number | null) => {
           if (typeof value === "string") selectedStep = value;
         }}
-      />
+      >
+        {#snippet slotChoice({ choice, select })}
+          {@const { label, description, value } = choice}
+          <CommandItem value={String(value)} onSelect={() => select(choice)}>
+            <CheckIcon
+              class={cn("mr-2 size-4", {
+                "opacity-0": value !== selectedStep,
+              })}
+            />
+            <div class="flex flex-col gap-0">
+              <p>{label}</p>
+              {#if description}
+                <small class="text-muted-foreground">{description}</small>
+              {/if}
+            </div>
+          </CommandItem>
+        {/snippet}
+      </SingleSelectField>
     </FieldGroup>
   </FieldSet>
 
