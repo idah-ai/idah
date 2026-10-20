@@ -48,9 +48,8 @@
   }
 
   function addGroup() {
-    const first = defaultCondition(fields);
-    const second = defaultCondition(fields);
-    if (first && second) onChange({ ...group, items: [...group.items, newGroup("any", [first, second])] });
+    const condition = defaultCondition(fields);
+    if (condition) onChange({ ...group, items: [...group.items, newGroup("any", [condition])] });
   }
 </script>
 
