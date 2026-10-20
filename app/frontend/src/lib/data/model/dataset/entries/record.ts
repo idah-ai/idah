@@ -174,19 +174,17 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
   },
   reopen: async (
     entryId: string,
-    opts?: { targetStep?: string },
+    targetStep: string,
   ): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
       method: "POST",
-      body: opts?.targetStep
-        ? JSON.stringify({
-            data: {
-              attributes: {
-                target_step: opts.targetStep,
-              },
-            },
-          })
-        : undefined,
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            target_step: targetStep,
+          },
+        },
+      }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
 

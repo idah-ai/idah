@@ -74,7 +74,7 @@ export async function deleteEntries(
  */
 export async function reopenEntries(entryIds: string[], targetStep: string): Promise<EntryRecord[] | null> {
   try {
-    const results = await Promise.all(entryIds.map((id) => entriesBackendDataSource.reopen(id, { targetStep })));
+    const results = await Promise.all(entryIds.map((id) => entriesBackendDataSource.reopen(id, targetStep)));
 
     const updatedEntries = unwrapResponses(results);
     const count = updatedEntries.length;
