@@ -15,7 +15,8 @@
   interface Props {
     label: string;
     selectedFieldType: FieldType | undefined;
-    onSetLabel: (params: { label: string }) => void;
+    /** Returns whether the name was accepted. */
+    onSetLabel: (params: { label: string }) => boolean;
     onSetType: (params: { type: IConfigPropertyType }) => void;
   }
   let { label, selectedFieldType, onSetLabel, onSetType }: Props = $props();
@@ -50,8 +51,7 @@
             name={label}
             value={label}
             onblur={(e) => {
-              onSetLabel({ label: e.currentTarget.value });
-              e.currentTarget.value = label;
+              if (!onSetLabel({ label: e.currentTarget.value })) e.currentTarget.value = label;
             }}
           />
         </CommandGroup>

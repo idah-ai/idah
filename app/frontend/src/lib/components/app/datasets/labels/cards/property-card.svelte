@@ -16,7 +16,8 @@
     /** Categories and properties of the label config, for visibility conditions. */
     categories: IConfigValue[];
     properties: IConfigProperty[];
-    onSetProperty: (property: IConfigProperty) => void;
+    /** Returns whether the update was applied. */
+    onSetProperty: (property: IConfigProperty) => boolean;
     onRemoveProperty: (propertyId: string) => void;
   }
   let { property, categories, properties, onSetProperty, onRemoveProperty }: Props = $props();
@@ -32,8 +33,8 @@
     showContent = !showContent;
   }
 
-  function setProperty(valueToSet: Hash) {
-    onSetProperty({ ...property, ...valueToSet });
+  function setProperty(valueToSet: Hash): boolean {
+    return onSetProperty({ ...property, ...valueToSet });
   }
 </script>
 

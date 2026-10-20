@@ -301,8 +301,8 @@
     });
   }
 
-  function setProperty(property: IConfigProperty) {
-    controller.setProperty(property);
+  function setProperty(property: IConfigProperty): boolean {
+    return controller.setProperty(property);
   }
 
   function changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
