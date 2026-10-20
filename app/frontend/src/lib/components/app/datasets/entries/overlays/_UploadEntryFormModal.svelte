@@ -54,20 +54,6 @@
   // Variables
   let newRecord: boolean = $derived(action === "create");
 
-  const acceptedFileTypes = $derived.by(() => {
-    switch (modality) {
-      case "idah-video": {
-        return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".ts"];
-      }
-      case "idah-image": {
-        return [".zip", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"];
-      }
-      default: {
-        return [];
-      }
-    }
-  });
-
   let projectId = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
 
@@ -307,7 +293,7 @@
   {/snippet}
 
   {#if view.isSelect()}
-    <FileUpload class="py-12" {acceptedFileTypes} onFilesSelected={handleFilesSelected}>
+    <FileUpload class="py-12" onFilesSelected={handleFilesSelected}>
       {#snippet SelectedFilesSlot()}
         <Text class="text-accent-foreground text-wrap" size="sm">
           <span class="font-medium underline underline-offset-2">Click to select files</span>
