@@ -9,6 +9,7 @@
     SunIcon,
     SunMoonIcon,
     TabletSmartphoneIcon,
+    WebhookIcon,
   } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
 
@@ -79,6 +80,14 @@
           icon: SettingsIcon,
           action: () => {
             goto(resolve("/settings/notifications"));
+          },
+        },
+        {
+          label: "Webhooks",
+          icon: WebhookIcon,
+          visibleIfRoles: ["admin", "org_owner"],
+          action: () => {
+            goto(resolve("/webhooks"));
           },
         },
         {
