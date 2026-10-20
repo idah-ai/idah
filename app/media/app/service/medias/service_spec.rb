@@ -315,6 +315,44 @@ RSpec.describe Medias::Service, as: :system, database: true do
       expect(result[:skipped]).to eq([{ filename: "video.mp4", message: "File type is not supported" }])
     end
 
+    it "derives the mime type from the extension instead of the browser-supplied type" do
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("video_only").and_return(["^video/.*$"]).at_least(:once)
+
+      # Browsers often report .ts as TypeScript or a Qt Linguist file
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "clip.ts",
+            type: "text/vnd.trolltech.linguist",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "ts_res",
+        project_id: "pid",
+        modality: "video_only"
+      )
+
+      expect(result[:skipped]).to be_empty
+      expect(result[:processed].first.mime_type).to eq("video/mp2t")
+    end
+
+    it "falls back to the browser-supplied type for unknown extensions" do
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "data.unknownext",
+            type: "application/x-custom",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "unknown_res",
+        project_id: "pid"
+      )
+
+      expect(result[:processed].first.mime_type).to eq("application/x-custom")
+    end
+
     it "skips unsupported files within a zip and reports them" do
       expect(Processor::Registry).to receive(:allowed_mime_types)
         .with("image_only").and_return(["image/.*"]).at_least(:once)

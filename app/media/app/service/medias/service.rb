@@ -98,7 +98,7 @@ module Medias
           result = store_media(
             io: file.tempfile,
             filename: file.filename,
-            mime_type: file.type,
+            mime_type: detect_mime_type(file),
             resource:,
             key:,
             project_id:,
@@ -117,6 +117,14 @@ module Medias
     end
 
     private
+
+    # Prefer the extension-based type, as zip entries do: browsers report some
+    # extensions inconsistently (e.g. .ts as TypeScript or Qt Linguist instead
+    # of an MPEG transport stream). Fall back to the browser type when unknown.
+    def detect_mime_type(file)
+      ext = File.extname(file.filename.to_s).downcase
+      Rack::Mime.mime_type(ext, nil) || file.type.to_s.then { |t| t.empty? ? "application/octet-stream" : t }
+    end
 
     # Returns true when the file is a zip archive.
     def zip_file?(file)
