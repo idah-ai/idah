@@ -3,7 +3,7 @@
   import { slide } from "svelte/transition";
 
   import DateText from "@/components/app/texts/date-text.svelte";
-  import PreFormattedText from "@/components/app/texts/pre-formatted-text.svelte";
+  import PreFormattedText from "@/components/app/texts/PreFormattedText.svelte";
   import { Button } from "@/components/ui/button";
   import Label from "@/components/ui/label/label.svelte";
 
