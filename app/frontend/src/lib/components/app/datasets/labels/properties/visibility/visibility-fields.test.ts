@@ -206,6 +206,11 @@ describe("conditionProblem", () => {
     expect(problem(newCondition("properties.removed", "eq", 'say "hi"'))).toBe("Values can't contain double quotes");
     expect(problem(newCondition("properties.lanes", "gt", 1.5))).toBe("Enter a whole number");
     expect(problem(newCondition("properties.lanes", "gt", Number.NaN))).toBe("Enter a whole number");
+    expect(problem(newCondition("properties.lanes", "gt", 1e21))).toBe("Enter a whole number");
+  });
+
+  it("accepts negative whole numbers", () => {
+    expect(problem(newCondition("properties.lanes", "gt", -5))).toBeUndefined();
   });
 
   it("finds a problem anywhere in a group", () => {

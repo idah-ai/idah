@@ -42,6 +42,11 @@ describe("ast_parser grammar", () => {
       expect(parse("properties.lanes > 2")).toEqual(["gt", [get("properties.lanes"), 2]]);
     });
 
+    it("parses negative integers", () => {
+      expect(parse("properties.offset >= -5")).toEqual(["gte", [get("properties.offset"), -5]]);
+      expect(parse("properties.offset in [-1, 2]")).toEqual(["in", [get("properties.offset"), [[-1, 2]]]]);
+    });
+
     it("parses in with a list of strings", () => {
       expect(parse('category in ["pedestrian", "cyclist"]')).toEqual([
         "in",

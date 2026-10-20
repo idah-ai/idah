@@ -289,7 +289,8 @@ export function conditionProblem(condition: RuleCondition, field: VisibilityFiel
     if (value === "" || value === "/*") return field.kind === "text" ? "Enter a value" : "Choose a value";
     if (value.includes('"')) return "Values can't contain double quotes";
   }
-  if (typeof value === "number" && !Number.isInteger(value)) return "Enter a whole number";
+  // Unsafe integers print in exponent form, which the parser can't read back.
+  if (typeof value === "number" && !Number.isSafeInteger(value)) return "Enter a whole number";
   return undefined;
 }
 

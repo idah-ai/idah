@@ -109,5 +109,5 @@ Boolean
   = "true" !identChar { return true }
   / "false" !identChar { return false }
 
-// Whole numbers only: no sign, no decimals.
-Integer = integer:digit+ { return parseInt(integer.join("")) }
+// Whole numbers only, optionally negative: no decimals.
+Integer = integer:$("-"? digit+) { return parseInt(integer, 10) }
