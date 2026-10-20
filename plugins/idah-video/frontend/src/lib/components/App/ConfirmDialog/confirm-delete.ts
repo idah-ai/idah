@@ -8,7 +8,7 @@
 //
 // The delete target can be an annotation or a tag (frame tag / entry:root
 // video tag). Pass `type` explicitly, or rely on the shape-based derivation:
-// shape "frame" / "Entry:root" → tag, everything else → annotation.
+// shape "frame" / "entry:root" → tag, everything else → annotation.
 // ---------------------------------------------------------------------------
 import { showConfirmDialog } from "./confirm-dialog";
 
@@ -16,7 +16,7 @@ export type DeletionTargetType = "annotation" | "tag";
 
 /** Derive the delete-target kind from a shape identifier. */
 export function deletionTargetType(shape?: string): DeletionTargetType {
-  return shape === "frame" || shape === "Entry:root" ? "tag" : "annotation";
+  return shape === "frame" || shape === "entry:root" ? "tag" : "annotation";
 }
 
 export interface ConfirmAnnotationsDeleteOptions {
@@ -32,7 +32,7 @@ export interface ConfirmAnnotationsDeleteOptions {
   annotation_category?: string | undefined;
   /**
    * Whether the delete target is an annotation or a tag (frame / entry:root).
-   * When omitted it is derived from `shape`: "frame" / "Entry:root" → "tag",
+   * When omitted it is derived from `shape`: "frame" / "entry:root" → "tag",
    * anything else → "annotation".
    */
   type?: DeletionTargetType;
@@ -44,7 +44,7 @@ export interface ConfirmAnnotationsDeleteOptions {
 
 // ── Default title & description helpers ──────────────────────────────────
 
-/** Human-friendly shape label shown in the dialog. "Entry:root" → "Video". */
+/** Human-friendly shape label shown in the dialog. "entry:root" → "Video". */
 function displayShape(shape: string | undefined): string {
   if (!shape || shape === "Entry:root") return "Video";
   return shape;
@@ -61,11 +61,14 @@ function defaultDescription(
   kind: DeletionTargetType,
   singular: boolean,
   count: number,
+  /** Raw shape passed by the caller (used only as a boolean check). */
+  hasShape: boolean,
+  /** Human-friendly shape label for the message template. */
   shapeLabel: string | undefined,
   annotation_category: string | undefined,
 ): string {
   if (singular) {
-    return shapeLabel && annotation_category
+    return hasShape && annotation_category
       ? `Are you sure you want to delete this ${shapeLabel} ${kind} ("${annotation_category}")?`
       : `Are you sure you want to delete this ${kind}?`;
   }
@@ -82,7 +85,7 @@ export function showConfirmDeleteAnnotationsDialog(opts: ConfirmAnnotationsDelet
 
   showConfirmDialog({
     title: opts.title ?? defaultTitle(kind, singular, shapeLabel),
-    description: opts.description ?? defaultDescription(kind, singular, count, shapeLabel, annotation_category),
+    description: opts.description ?? defaultDescription(kind, singular, count, !!shape, shapeLabel, annotation_category),
     onConfirm,
     onCancel,
   });

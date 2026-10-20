@@ -105,7 +105,7 @@ describe("showConfirmDeleteAnnotationsDialog", () => {
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Delete tag",
+        title: "Delete frame tag",
         description: 'Are you sure you want to delete this frame tag ("collision")?',
       }),
     );
@@ -121,8 +121,8 @@ describe("showConfirmDeleteAnnotationsDialog", () => {
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Delete tag",
-        description: 'Are you sure you want to delete this entry:root tag ("scene")?',
+        title: "Delete Video tag",
+        description: 'Are you sure you want to delete this Video tag ("scene")?',
       }),
     );
   });
@@ -132,7 +132,7 @@ describe("showConfirmDeleteAnnotationsDialog", () => {
 
     expect(mockShowConfirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Delete tags",
+        title: "Delete all tags",
         description: "Are you sure you want to delete all 2 selected tags in this entry?",
       }),
     );
