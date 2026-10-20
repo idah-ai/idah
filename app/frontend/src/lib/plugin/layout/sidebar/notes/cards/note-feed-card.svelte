@@ -99,9 +99,7 @@
 
   {#snippet headerMeta()}
     {#if isAnchorDeleted}
-      <Badge variant="warning" rounded="full" class="mt-0.5 px-1.5 py-0 text-[10px]">
-        Annotation deleted
-      </Badge>
+      <Badge variant="warning" rounded="full" class="mt-0.5 px-1.5 py-0 text-[10px]">Annotation deleted</Badge>
     {/if}
   {/snippet}
 
