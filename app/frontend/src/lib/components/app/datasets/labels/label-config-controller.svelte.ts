@@ -422,9 +422,10 @@ export class LabelConfigController {
   }
 
   /**
-   * Update a property. Once named, its id is the slugified name, so a name
-   * that gives another property's id is rejected with an error. Returns
-   * whether the update was applied.
+   * Update a property. Renaming it sets its id to the slugified name, so a
+   * name that gives another property's id is rejected with an error. Other
+   * edits keep the id, even one that isn't the slug of the name (older
+   * configs). Returns whether the update was applied.
    */
   setProperty(property: IConfigProperty): boolean {
     const selected = this.labelConfig[this.selectedConfigKey];
@@ -434,7 +435,7 @@ export class LabelConfigController {
     if (idx < 0) return false;
 
     const next = { ...property };
-    if (next.label !== "New Property") {
+    if (next.label !== selected.properties[idx].label && next.label !== "New Property") {
       next.id = slugify(next.label.trim());
       if (!next.id) {
         showToast.error({ title: "Property name required", description: "Enter a name." });

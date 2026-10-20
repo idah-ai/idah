@@ -92,6 +92,18 @@ describe("LabelConfigController properties", () => {
     expect(showToast.error).not.toHaveBeenCalled();
   });
 
+  it("keeps the id on edits that don't rename, even when it isn't the slug of the name", () => {
+    // Older configs can hold names whose slugs collide; they must stay editable.
+    const controller = controllerWith(property("color", "Color"), property("color-1", "color "));
+
+    expect(controller.setProperty(property("color-1", "color ", { required: true }))).toBe(true);
+    expect(propertiesOf(controller)).toEqual([
+      ["color", "Color", "text"],
+      ["color-1", "color ", "text"],
+    ]);
+    expect(showToast.error).not.toHaveBeenCalled();
+  });
+
   it("ignores an update for a property id that no longer exists, instead of adding a copy", () => {
     // A card re-rendered under a new id can still send an update for its old id.
     const controller = controllerWith(property("occluded", "Occluded"));
