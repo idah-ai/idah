@@ -24,13 +24,10 @@ import type {
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
 import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
-import { withNoteRefresh } from "./adapter/note-refresh";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
 import { ToolbarManagerV2 } from "./manager/toolbar-manager.svelte";
 import { AccountSettingsManager } from "./manager/account-settings-manager.svelte";
-import { debounce } from "@/utils/delayed";
-import { refetches } from "@/utils/refetch";
 
 import type { RecordResponse } from "@/data/model/types";
 
@@ -128,22 +125,14 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this.commandMgr.attachOverrides(this.accountSettingsMgr.getShortcutOverrides());
 
     const backendDriver = createBackendCrudDriver(this._id, this.rpc);
-    // Debounced note-list refresh after annotation delete/restore (incl. merge
-    // and undo/redo). Bumping `refetches.noteFeeds.list` re-runs loadNoteFeeds()
-    // in the sidebar, which also re-syncs the notes adapter cache.
-    const refreshNotes = debounce(() => {
-      refetches.update((s) => ({ ...s, noteFeeds: { ...s.noteFeeds, list: new Date() } }));
-    }, 300);
-    const notifyingBackend = withNoteRefresh(backendDriver, refreshNotes);
     const idbDriver = IdbBackedAnnotationsDriverAdapter({
       entryId: this._id,
       pluginId: PLUGIN_ID,
-      backend: notifyingBackend,
+      backend: backendDriver,
       enqueue: (op: Promise<unknown>) => this.#enqueue(op),
     });
     this.idbAnnotationsDriver = idbDriver;
-    this.annotations =
-      idbDriver?.sealed() ?? withNoteRefresh(new AnnotationsDriverAdapter(this._id, this.rpc), refreshNotes);
+    this.annotations = idbDriver?.sealed() ?? new AnnotationsDriverAdapter(this._id, this.rpc);
 
     // Build notes driver with observer-based push interface
     const notesAdapter = new NotesDriverAdapter(this._id);
