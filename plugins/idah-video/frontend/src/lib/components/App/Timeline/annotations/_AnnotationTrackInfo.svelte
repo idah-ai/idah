@@ -95,7 +95,9 @@
       "hover:bg-secondary box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
       {
         "border-primary/50 bg-primary/10 border-t border-b": isGroupSelected && foundCategory,
-        "border-destructive/50 bg-destructive/10 border-t border-b": isGroupSelected && !foundCategory,
+        "border-destructive/50 bg-destructive/5 hover:bg-destructive/10 border-t border-b": !foundCategory,
+        "border-destructive bg-destructive/20 hover:bg-destructive/20 border-t border-b":
+          isGroupSelected && !foundCategory,
       },
     )}
     style:height="{TRACK_HEIGHT}px;"

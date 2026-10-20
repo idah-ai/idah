@@ -22,13 +22,14 @@
 	}
 	let { annotation}: Props = $props();
 
-	const shapeType = $derived(annotation.shape_type)
-	const config = $derived(getDriver().config[shapeType])
-	const category = $derived(config.values.find((v) => v.id === annotation.category))
+	const shapeType = $derived(annotation.shape_type);
+	const config = $derived(getDriver().config[shapeType]);
+	const category = $derived(config.values.find((v) => v.id === annotation.category));
 	const foundCategory = $derived(category !== undefined);
-	const categoryColor = $derived(category?.color)
-	const displayName = $derived(category?.label ?? resolveAnnotationLabel(annotation)?.text ?? "Uncategorized")
-	const parentLabel = $derived(foundCategory ? categoryValueToLabel(category!.id) : "")
+	const categoryColor = $derived(category?.color ?? null);
+	const annotationIdLastPart = $derived(annotation.id.split("-").pop());
+	const displayName = $derived(annotationIdLastPart);
+	const parentLabel = $derived(resolveAnnotationLabel(annotation)?.text ?? "");
 </script>
 
 {#snippet AnnotationListItem()}
@@ -47,7 +48,7 @@
 		</Item.Media>
 
 		<Item.Content class="flex min-w-0">
-			{#if parentLabel}
+			{#if parentLabel.length > 0}
 				<Item.Description class="text-xs">
 					{parentLabel}
 				</Item.Description>
@@ -86,7 +87,7 @@
 		</HoverCard.Trigger>
 
 		<HoverCard.Content align="center" side="left">
-			<AnnotationLabelNotFound {displayName} />
+			<AnnotationLabelNotFound displayName={parentLabel} />
 		</HoverCard.Content>
 	</HoverCard.Root>
 {/snippet}
