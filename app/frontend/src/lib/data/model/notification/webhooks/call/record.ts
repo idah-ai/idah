@@ -1,4 +1,4 @@
-import { webhookCallHttpStatuses } from "@/data/model/notification/webhooks/call/constants";
+import { fallbackWebhookHttpStatus, webhookCallHttpStatuses } from "@/data/model/notification/webhooks/call/constants";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
@@ -17,17 +17,17 @@ export class WebhookCallRecord extends Record {
 
   public get httpStatus(): WebhookCallHttpStatus {
     if (this.status === "pending" || this.status === "running") {
-      return webhookCallHttpStatuses.find((status) => status.value === this.status)!;
+      return webhookCallHttpStatuses.get(this.status) ?? fallbackWebhookHttpStatus;
     }
-    if (this.status === "errored") return webhookCallHttpStatuses[1];
+    if (this.status === "errored") return webhookCallHttpStatuses.get("errored") ?? fallbackWebhookHttpStatus;
     if (this.http_code == null) {
-      return { label: "No response", value: "unknown", success: null, bgColor: "gray" };
+      return fallbackWebhookHttpStatus;
     }
     if (this.http_code >= 200 && this.http_code < 300) {
-      return webhookCallHttpStatuses[0];
+      return webhookCallHttpStatuses.get("completed") ?? fallbackWebhookHttpStatus;
     }
 
-    return webhookCallHttpStatuses[1];
+    return webhookCallHttpStatuses.get("errored") ?? fallbackWebhookHttpStatus;
   }
 }
 
