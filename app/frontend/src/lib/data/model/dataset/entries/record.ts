@@ -172,10 +172,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  reopen: async (
-    entryId: string,
-    targetStep: string,
-  ): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  reopen: async (entryId: string, targetStep: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
       method: "POST",
       body: JSON.stringify({

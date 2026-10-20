@@ -178,7 +178,6 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
           }
         ]
       )
-
     end
 
     it "calls service.reopen with target_step" do
