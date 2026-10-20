@@ -682,12 +682,21 @@ RSpec.describe Entry::Service, database: true do
           }
         )
 
-        expect { subject.reopen(pending_entry) }
+        expect { subject.reopen(pending_entry, target_step: "review") }
           .to raise_error(Verse::Error::ValidationFailed, /Only completed entries can be reopened/)
       end
     end
 
-    context "when entry is completed, sets the entry to Unassigned" do
+    context "when entry is completed, sets the entry to Unassigned", as: :admin do
+      subject { described_class.new(current_auth_context) }
+
+      it "records the actor as reopened_by" do
+        result = subject.reopen(completed_entry, target_step: "review")
+
+        expect(result.reopened_by_id).to eq(1)
+        expect(result.reopened_by_email).to eq("admin@example.com")
+      end
+
       it "moves entry back to the requested step" do
         result = subject.reopen(completed_entry, target_step: "review")
 
@@ -695,6 +704,8 @@ RSpec.describe Entry::Service, database: true do
         expect(result.status).to eq("pending")
         expect(result.assigned_to_id).to be_nil
         expect(result.assigned_to_email).to be_nil
+        expect(result.reopened_by_id).to eq(1)
+        expect(result.reopened_by_email).to eq("admin@example.com")
       end
 
       it "marks the dataset as in_progress when it was previously completed" do

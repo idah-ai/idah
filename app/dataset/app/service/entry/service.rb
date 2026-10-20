@@ -185,7 +185,7 @@ module Entry
       end
     end
 
-    def reopen(entry_id, target_step: nil)
+    def reopen(entry_id, target_step:)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
 

@@ -160,14 +160,10 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   end
 
   describe "#reopen" do
-    it "calls service.reopen with entry_id and no target_step" do
+    it "returns 422 when target_step is missing" do
       post "/entries/#{uuid}/reopen"
 
       expect(last_response.status).to eq 422
-      body = JSON.parse(last_response.body, symbolize_names: true)
-
-      expect(body[:errors]).to be_an(Array)
-      expect(body[:errors].first[:title]).to be_a(String)
       expect(JSON.parse(last_response.body, symbolize_names: true)[:errors]).to eq(
         [
           {
@@ -178,6 +174,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
           }
         ]
       )
+      expect(service).not_to receive(:reopen)
     end
 
     it "calls service.reopen with target_step" do
@@ -195,8 +192,6 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       expect(last_response.status).to eq 200
       record = deserialize(JSON.parse(last_response.body, symbolize_names: true))
       expect(record.id).to eq uuid
-      expect(record.reopened_by).to be_nil
-      expect(record.reopened_by_email).to be_nil
     end
   end
 
