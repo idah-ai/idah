@@ -47,6 +47,9 @@ class ExportsExpo < BaseExpo
       field :dataset_ids, type: Array, required: true
       field :exporter, type: String, required: true
       field :options, Hash, default: {} do
+        # Beside these, an exporter can declare options of its own (see
+        # Exports::Options); the service validates them.
+        extra_fields
         field :include_medias, String, default: "original"
         field :completed_entries, TrueClass, default: true
       end
