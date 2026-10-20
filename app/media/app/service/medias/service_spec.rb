@@ -337,6 +337,55 @@ RSpec.describe Medias::Service, as: :system, database: true do
       expect(result[:processed].first.mime_type).to eq("video/mp2t")
     end
 
+    {
+      "clip.mkv" => "video/x-matroska",
+      "clip.mts" => "video/mp2t",
+      "clip.m2ts" => "video/mp2t",
+      "clip.vob" => "video/mpeg"
+    }.each do |filename, expected|
+      it "maps #{File.extname(filename)} to #{expected} for single uploads" do
+        result = subject.upload(
+          Verse::Http::UploadedFileStruct.new(
+            { filename:, type: "application/octet-stream", tempfile: File.open(file_path, "rb") }
+          ),
+          resource: "res_#{filename}",
+          project_id: "pid"
+        )
+
+        expect(result[:processed].first.mime_type).to eq(expected)
+      end
+    end
+
+    it "maps extensions missing from Rack for zip entries" do
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("video_only").and_return(["^video/.*$"]).at_least(:once)
+
+      require "zip"
+      zip_path = Tempfile.create(["videos", ".zip"]).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        %w[clip.mkv clip.mts clip.m2ts clip.vob].each do |name|
+          zip.put_next_entry(name)
+          zip.write("fake-video")
+        end
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        { filename: "videos.zip", type: "application/zip", tempfile: File.open(zip_path, "rb") }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid", modality: "video_only")
+
+      expect(result[:skipped]).to be_empty
+      expect(result[:processed].to_h { |m| [m.filename, m.mime_type] }).to eq(
+        "clip.mkv" => "video/x-matroska",
+        "clip.mts" => "video/mp2t",
+        "clip.m2ts" => "video/mp2t",
+        "clip.vob" => "video/mpeg"
+      )
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
     it "falls back to the browser-supplied type for unknown extensions" do
       result = subject.upload(
         Verse::Http::UploadedFileStruct.new(

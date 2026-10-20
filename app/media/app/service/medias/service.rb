@@ -63,7 +63,7 @@ module Medias
                   io: entry_io, # Stream directly from zip entry to storage - no tempfiles
                   filename: File.basename(zip_entry.name),
                   size: zip_entry.size,
-                  mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
+                  mime_type: mime_type_for(ext) || "application/octet-stream",
                   resource: "#{SecureRandom.hex(8)}#{ext}",
                   key:,
                   project_id:,
@@ -123,7 +123,12 @@ module Medias
     # of an MPEG transport stream). Fall back to the browser type when unknown.
     def detect_mime_type(file)
       ext = File.extname(file.filename.to_s).downcase
-      Rack::Mime.mime_type(ext, nil) || file.type.to_s.then { |t| t.empty? ? "application/octet-stream" : t }
+      mime_type_for(ext) || file.type.to_s.then { |t| t.empty? ? "application/octet-stream" : t }
+    end
+
+    # MIME type for a lowercase extension (".mp4"), or nil when unknown.
+    def mime_type_for(ext)
+      UploadConstants::MIME_TYPE_OVERRIDES[ext] || Rack::Mime.mime_type(ext, nil)
     end
 
     # Returns true when the file is a zip archive.
