@@ -24,8 +24,10 @@ module Processor
       Verse::Plugin[:shrine].with_storage do |storage|
         file = storage.open(media.id)
 
-        # Copy the file to a temporary location:
-        tempfile = Tempfile.create("idah_media_#{media.id}_", binmode: true)
+        # Copy the file to a temporary location, keeping the extension last:
+        # decoders like ImageMagick detect some formats (e.g. ICO) by extension only.
+        ext = File.extname(media.id)
+        tempfile = Tempfile.create(["idah_media_#{File.basename(media.id, ext)}_", ext], binmode: true)
 
         tempfile.write(file.read)
         tempfile.close

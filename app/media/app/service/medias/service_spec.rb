@@ -108,7 +108,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     it "extracts zip and returns multiple records" do
       require "zip"
 
-      zip_path = Tempfile.create(["sample", ".zip"]).path
+      zip_path = Tempfile.create(["sample", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("photo1.jpg")
         zip.write("fake-jpg-content-1")
@@ -140,7 +140,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     it "skips system artifacts in zip files" do
       require "zip"
 
-      zip_path = Tempfile.create(["system", ".zip"]).path
+      zip_path = Tempfile.create(["system", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("photo1.jpg")
         zip.write("fake-jpg-content-1")
@@ -176,7 +176,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     it "continues extracting when one zip entry fails to store" do
       require "zip"
 
-      zip_path = Tempfile.create(["partial", ".zip"]).path
+      zip_path = Tempfile.create(["partial", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("bad.jpg")
         zip.write("fake-jpg-bad")
@@ -211,7 +211,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     it "streams entries with their real size when the zip uses data descriptors" do
       require "zip"
 
-      zip_path = Tempfile.create(["descriptor", ".zip"]).path
+      zip_path = Tempfile.create(["descriptor", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("clip.mp4")
         zip.write("fake-video-content")
@@ -250,7 +250,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
 
     it "raises validation error for a corrupted zip file" do
-      corrupt_path = Tempfile.create(["corrupt", ".zip"]).path
+      corrupt_path = Tempfile.create(["corrupt", ".zip"]).tap(&:close).path
       File.write(corrupt_path, "this is not a zip archive")
 
       zip_file = Verse::Http::UploadedFileStruct.new(
@@ -271,7 +271,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     it "detects zip file by extension even if mime type is generic" do
       require "zip"
 
-      zip_path = Tempfile.create(["ext", ".zip"]).path
+      zip_path = Tempfile.create(["ext", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("test.txt")
         zip.write("content")
@@ -315,12 +315,104 @@ RSpec.describe Medias::Service, as: :system, database: true do
       expect(result[:skipped]).to eq([{ filename: "video.mp4", message: "File type is not supported" }])
     end
 
+    it "derives the mime type from the extension instead of the browser-supplied type" do
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("video_only").and_return(["^video/.*$"]).at_least(:once)
+
+      # Browsers often report .ts as TypeScript or a Qt Linguist file
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "clip.ts",
+            type: "text/vnd.trolltech.linguist",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "ts_res",
+        project_id: "pid",
+        modality: "video_only"
+      )
+
+      expect(result[:skipped]).to be_empty
+      expect(result[:processed].first.mime_type).to eq("video/mp2t")
+    end
+
+    {
+      "clip.mkv" => "video/x-matroska",
+      "clip.mts" => "video/mp2t",
+      "clip.m2ts" => "video/mp2t",
+      "clip.vob" => "video/mpeg"
+    }.each do |filename, expected|
+      it "maps #{File.extname(filename)} to #{expected} for single uploads" do
+        expect(Processor::Registry).to receive(:allowed_mime_types)
+          .with("video_only").and_return(["^video/.*$"]).at_least(:once)
+
+        result = subject.upload(
+          Verse::Http::UploadedFileStruct.new(
+            { filename:, type: "application/octet-stream", tempfile: File.open(file_path, "rb") }
+          ),
+          resource: "res_#{filename}",
+          project_id: "pid",
+          modality: "video_only"
+        )
+
+        expect(result[:skipped]).to be_empty
+        expect(result[:processed].first.mime_type).to eq(expected)
+      end
+    end
+
+    it "maps extensions missing from Rack for zip entries" do
+      expect(Processor::Registry).to receive(:allowed_mime_types)
+        .with("video_only").and_return(["^video/.*$"]).at_least(:once)
+
+      require "zip"
+      zip_path = Tempfile.create(["videos", ".zip"]).tap(&:close).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        %w[clip.mkv clip.mts clip.m2ts clip.vob].each do |name|
+          zip.put_next_entry(name)
+          zip.write("fake-video")
+        end
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        { filename: "videos.zip", type: "application/zip", tempfile: File.open(zip_path, "rb") }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid", modality: "video_only")
+
+      expect(result[:skipped]).to be_empty
+      expect(result[:processed].to_h { |m| [m.filename, m.mime_type] }).to eq(
+        "clip.mkv" => "video/x-matroska",
+        "clip.mts" => "video/mp2t",
+        "clip.m2ts" => "video/mp2t",
+        "clip.vob" => "video/mpeg"
+      )
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "falls back to the browser-supplied type for unknown extensions" do
+      result = subject.upload(
+        Verse::Http::UploadedFileStruct.new(
+          {
+            filename: "data.unknownext",
+            type: "application/x-custom",
+            tempfile: File.open(file_path, "rb")
+          }
+        ),
+        resource: "unknown_res",
+        project_id: "pid"
+      )
+
+      expect(result[:processed].first.mime_type).to eq("application/x-custom")
+    end
+
     it "skips unsupported files within a zip and reports them" do
       expect(Processor::Registry).to receive(:allowed_mime_types)
         .with("image_only").and_return(["image/.*"]).at_least(:once)
 
       require "zip"
-      zip_path = Tempfile.create(["mixed", ".zip"]).path
+      zip_path = Tempfile.create(["mixed", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("image.jpg")
         zip.write("fake-jpg")
@@ -348,7 +440,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
     it "rejects the whole archive when an entry's compression ratio is suspicious" do
       require "zip"
 
-      zip_path = Tempfile.create(["bomb", ".zip"]).path
+      zip_path = Tempfile.create(["bomb", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("bomb.bin")
         zip.write("0" * 1_000_000) # ~1 MB of zeros deflates to ~1 KB → ratio far above 100:1
@@ -373,7 +465,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
       require "zip"
       stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 10)
 
-      zip_path = Tempfile.create(["oversized", ".zip"]).path
+      zip_path = Tempfile.create(["oversized", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("big.jpg")
         zip.write("x" * 50) # 50 bytes > 10-byte cap (ratio stays well under 100:1)
@@ -401,7 +493,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
       require "zip"
       stub_const("Medias::UploadConstants::MAX_TOTAL_UNCOMPRESSED_SIZE", 10)
 
-      zip_path = Tempfile.create(["toobig", ".zip"]).path
+      zip_path = Tempfile.create(["toobig", ".zip"]).tap(&:close).path
       Zip::OutputStream.open(zip_path) do |zip|
         zip.put_next_entry("a.jpg")
         zip.write("x" * 8)
