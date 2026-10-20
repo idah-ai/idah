@@ -26,18 +26,20 @@
     class="mx-1 w-full justify-start"
     disabled={locked || !isEditable()}
     onclick={() => {
+      const id = ann.id;
+      if (!id) return;
       showConfirmDeleteAnnotationsDialog({
         count: 1,
         type: "tag",
         title: "Delete Frame Tag",
         description: "Are you sure you want to delete this frame tag?",
         onConfirm: () => {
-          getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+          getDriver().command.call("idah-video:annotation.delete", { annotationId: id });
         },
       });
     }}
   >
     <Trash2Icon />
-    Delete frame
+    Delete frame tag
   </Button>
 </div>
