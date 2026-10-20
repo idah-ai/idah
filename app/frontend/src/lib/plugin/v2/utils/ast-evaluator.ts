@@ -79,6 +79,14 @@ function wanted(value: ASTValue): ASTValue[] {
   return Array.isArray(value) ? value : [value];
 }
 
+/** A list operator: tests a multi-select value against the wanted values. */
+function listOperator(test: (items: ASTValue[], values: ASTValue[]) => boolean): OperatorCallback {
+  return (props) => {
+    if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
+    return test(selection(props[0]), wanted(props[1]));
+  };
+}
+
 // ─── AstProcessor ─────────────────────────────────────────────────────────
 
 export class AstProcessor {
@@ -184,30 +192,9 @@ export class AstProcessor {
         return Array.isArray(list) ? (list as ASTValue[]).includes(val) : false;
       },
     ],
-    [
-      "has_any",
-      (props) => {
-        if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
-        const items = selection(props[0]);
-        return wanted(props[1]).some((v) => items.includes(v));
-      },
-    ],
-    [
-      "has_all",
-      (props) => {
-        if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
-        const items = selection(props[0]);
-        return wanted(props[1]).every((v) => items.includes(v));
-      },
-    ],
-    [
-      "has_none",
-      (props) => {
-        if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
-        const items = selection(props[0]);
-        return !wanted(props[1]).some((v) => items.includes(v));
-      },
-    ],
+    ["has_any", listOperator((items, values) => values.some((v) => items.includes(v)))],
+    ["has_all", listOperator((items, values) => values.every((v) => items.includes(v)))],
+    ["has_none", listOperator((items, values) => !values.some((v) => items.includes(v)))],
   ]);
 
   /**
