@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import WebhookCallLogsContentModal from "@/components/app/notification/webhook/call/overlays/webhook-call-logs-content-modal.svelte";
-  import WebhookFormModal from "@/components/app/notification/webhook/overlays/webhook-form-modal.svelte";
+  import WebhookCallLogsContentModal from "@/components/app/notification/webhook/call/overlays/_WebhookCallLogsContentModal.svelte";
+  import WebhookFormModal from "@/components/app/notification/webhook/overlays/WebhookFormModal.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import Button from "@/components/ui/button/button.svelte";

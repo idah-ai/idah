@@ -10,6 +10,9 @@
   // Props
   let { record: webhook, contexts }: DataTableCellBaseProps<WebhookRecord> = $props();
 
+  let expanded = $state(false);
+  const visibleLimit = 3;
+
   const events: WebhookEventRecord[] = $derived(contexts?.webhookEvents ?? []);
   const eventsById = $derived(new Map(events.map((event) => [event.id, event])));
   const webhookEvents = $derived(
@@ -20,10 +23,16 @@
   );
 </script>
 
-{#each webhookEvents as eventType (eventType.id)}
+{#each expanded ? webhookEvents : webhookEvents.slice(0, visibleLimit) as eventType (eventType.id)}
   <div class="flex w-full items-center justify-between py-0.5">
     <Badge variant="outline">{eventType.label}</Badge>
   </div>
 {:else}
   <Text>No event types available</Text>
 {/each}
+
+{#if webhookEvents.length > visibleLimit}
+  <button type="button" class="cursor-pointer py-0.5" onclick={() => (expanded = !expanded)}>
+    <Badge variant="outline">{expanded ? "Show less" : `+ ${webhookEvents.length - visibleLimit} more`}</Badge>
+  </button>
+{/if}

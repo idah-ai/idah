@@ -3,13 +3,13 @@
   import { onMount } from "svelte";
 
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
-  import WebhookFormModal from "@/components/app/notification/webhook/overlays/webhook-form-modal.svelte";
+  import WebhookFormModal from "@/components/app/notification/webhook/overlays/WebhookFormModal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
-  import { webhookColumns } from "@/components/app/notification/webhook/data-tables/webhook-columns";
+  import { webhookColumns } from "@/components/app/notification/webhook/data-tables/WebhookColumns";
   import { webhookBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";

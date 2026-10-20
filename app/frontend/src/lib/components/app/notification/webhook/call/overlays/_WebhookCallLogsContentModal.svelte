@@ -1,7 +1,7 @@
 <script lang="ts">
   import DataTableHeadLabel from "@/components/app/datasource-table/datasource-table-head-label.svelte";
   import DataTableHeadOptions from "@/components/app/datasource-table/datasource-table-head-options.svelte";
-  import { webhookCallLogsColumns } from "@/components/app/notification/webhook/call/data-tables/webhook-call-logs-columns";
+  import { webhookCallLogsColumns } from "@/components/app/notification/webhook/call/data-tables/WebhookCallLogsColumns";
   import AppPaginator from "@/components/app/paginators/app-paginator.svelte";
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";

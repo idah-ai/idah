@@ -178,7 +178,11 @@
                   </div>
 
                   {#each tableChoices as choice (choice.value)}
-                    <CommandItem value={String(choice.value)} onclick={() => toggleChoice(choice)} class="pl-10">
+                    <CommandItem
+                      value={String(choice.value)}
+                      onclick={() => toggleChoice(choice)}
+                      class="pl-10 [&_svg:not([class*='text-'])]:text-white"
+                    >
                       <Checkbox
                         checked={isSelected(choice)}
                         onclick={(event) => event.stopPropagation()}

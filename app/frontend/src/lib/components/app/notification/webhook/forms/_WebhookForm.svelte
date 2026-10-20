@@ -1,6 +1,6 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import SelectMultipleWebhookEventTypes from "@/components/app/notification/webhook/select/select-multiple-webhook-event-types.svelte";
+  import SelectMultipleWebhookEventTypes from "@/components/app/notification/webhook/select/SelectMultipleWebhookEventTypes.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";

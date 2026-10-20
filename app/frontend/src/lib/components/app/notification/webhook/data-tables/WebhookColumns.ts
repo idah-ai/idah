@@ -1,9 +1,9 @@
-import FilterByWebhookEvents from "@/components/app/notification/webhook/data-tables/filters/filter-by-webhook-events.svelte";
-import WebhookEnabledCell from "@/components/app/notification/webhook/data-tables/webhook-enabled-cell.svelte";
-import WebhookEventTypesCell from "@/components/app/notification/webhook/data-tables/webhook-event-types-cell.svelte";
-import WebhookNameCell from "@/components/app/notification/webhook/data-tables/webhook-name-cell.svelte";
-import WebhookRowActionCell from "@/components/app/notification/webhook/data-tables/webhook-row-action-cell.svelte";
-import WebhookUrlCell from "@/components/app/notification/webhook/data-tables/webhook-url-cell.svelte";
+import FilterByWebhookEvents from "@/components/app/notification/webhook/data-tables/filters/_FilterByWebhookEvents.svelte";
+import WebhookEnabledCell from "@/components/app/notification/webhook/data-tables/_WebhookEnabledCell.svelte";
+import WebhookEventTypesCell from "@/components/app/notification/webhook/data-tables/_WebhookEventTypesCell.svelte";
+import WebhookNameCell from "@/components/app/notification/webhook/data-tables/_WebhookNameCell.svelte";
+import WebhookRowActionCell from "@/components/app/notification/webhook/data-tables/_WebhookRowActionCell.svelte";
+import WebhookUrlCell from "@/components/app/notification/webhook/data-tables/_WebhookUrlCell.svelte";
 
 import { WebhookRecord } from "@/data/model/notification/webhooks/record";
 

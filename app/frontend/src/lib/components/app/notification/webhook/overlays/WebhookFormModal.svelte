@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "@/components/ui/button/button.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import WebhookForm from "@/components/app/notification/webhook/forms/webhook-form.svelte";
+  import WebhookForm from "@/components/app/notification/webhook/forms/_WebhookForm.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";

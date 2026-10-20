@@ -1,5 +1,5 @@
-import WebhookCallCreatedAtCell from "@/components/app/notification/webhook/call/data-tables/webhook-call-created-at-cell.svelte";
-import WebhookCallHttpStatusCell from "@/components/app/notification/webhook/call/data-tables/webhook-call-http-status-cell.svelte";
+import WebhookCallCreatedAtCell from "@/components/app/notification/webhook/call/data-tables/_WebhookCallCreatedAtCell.svelte";
+import WebhookCallHttpStatusCell from "@/components/app/notification/webhook/call/data-tables/_WebhookCallHttpStatusCell.svelte";
 import { webhookCallHttpStatuses } from "@/data/model/notification/webhooks/call/constants";
 
 import { WebhookCallRecord } from "@/data/model/notification/webhooks/call/record";

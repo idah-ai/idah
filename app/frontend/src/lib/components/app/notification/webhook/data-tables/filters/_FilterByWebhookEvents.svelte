@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends Record">
-  import SelectMultipleWebhookEventTypes from "@/components/app/notification/webhook/select/select-multiple-webhook-event-types.svelte";
+  import SelectMultipleWebhookEventTypes from "@/components/app/notification/webhook/select/SelectMultipleWebhookEventTypes.svelte";
 
   import { Record } from "@/data/model/Record";
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
