@@ -62,6 +62,7 @@ import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { register as registerAnnotationSplit } from "./annotation/split";
+import { register as registerAnnotationMerge } from "./annotation/merge";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
@@ -134,6 +135,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
   registerAnnotationSplit(driver, () => viewport.video.currentFrame.value);
+  registerAnnotationMerge(driver);
   registerAnnotationExtendPrev(driver);
   registerAnnotationExtendNext(driver);
   registerAnnotationGoToNextKeyframe(driver);
