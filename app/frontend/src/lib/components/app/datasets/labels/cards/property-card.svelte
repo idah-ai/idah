@@ -6,6 +6,7 @@
   import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
   import { fieldTypes, type FieldType } from "@/data/model/dataset/labels";
+  import { cn } from "@/utils";
 
   import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { Hash } from "@/utils/types";
@@ -25,12 +26,15 @@
   // Variables
   let { id, label, type } = $derived(property);
   let showContent: boolean = $state(false);
+  // Once opened, the options stay mounted while collapsed, so unsaved builder conditions survive.
+  let opened: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
 
   // Functions
   function toggleContent() {
     showContent = !showContent;
+    opened ||= showContent;
   }
 
   function setProperty(valueToSet: Hash): boolean {
@@ -54,8 +58,8 @@
   </CardHeader>
 
   <!-- CONTENT -->
-  {#if showContent}
-    <CardContent class="flex flex-col gap-4 px-0">
+  {#if opened}
+    <CardContent class={cn("flex flex-col gap-4 px-0", !showContent && "hidden")}>
       <PropertyOptions {property} {categories} {properties} onSetValue={setProperty}></PropertyOptions>
     </CardContent>
   {/if}
