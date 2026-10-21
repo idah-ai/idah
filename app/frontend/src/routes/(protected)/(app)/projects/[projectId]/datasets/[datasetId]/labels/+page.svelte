@@ -28,6 +28,7 @@
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { refetches } from "@/utils/refetch";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
@@ -111,6 +112,7 @@
 
       controller.markSaved(updatedDatasetRes.data.labeling_configuration);
 
+      $refetches.entries.list = new Date();
       clearCache(resourcePath(entryStatsBasePath, null, undefined));
       clearCache(resourcePath(entriesBasePath, null, undefined));
 

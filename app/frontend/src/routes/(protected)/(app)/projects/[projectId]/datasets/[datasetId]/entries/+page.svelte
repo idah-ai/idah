@@ -20,6 +20,7 @@
   import { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { refetches } from "@/utils/refetch";
   import { authStatus } from "@/security/AuthContext";
 
   import type { ProjectMemberScope } from "@/security/types";
@@ -72,11 +73,13 @@
   }
 </script>
 
-<DatasetEntriesAnnotationErrorAlert
-  {datasetId}
-  checked={showOrphanCategories}
-  onCheckedChange={handleOrphanFilterChange}
-/>
+{#key $refetches.entries.list}
+  <DatasetEntriesAnnotationErrorAlert
+    {datasetId}
+    checked={showOrphanCategories}
+    onCheckedChange={handleOrphanFilterChange}
+  />
+{/key}
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}

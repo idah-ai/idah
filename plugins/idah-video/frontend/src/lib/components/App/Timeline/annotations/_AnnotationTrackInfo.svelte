@@ -178,7 +178,10 @@
     </HoverCard.Trigger>
 
     <HoverCard.Content side="right">
-      <AnnotationLabelNotFound displayName={title} />
+      <AnnotationLabelNotFound
+        displayName={title}
+        content="This annotation label was renamed or deleted from the label configuration. Reassign this annotation to a valid label."
+      />
     </HoverCard.Content>
   </HoverCard.Root>
 {/if}

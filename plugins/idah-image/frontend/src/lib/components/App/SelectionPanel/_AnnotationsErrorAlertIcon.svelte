@@ -26,7 +26,7 @@
 		{/snippet}
 
 		{#snippet content()}
-			{errorCount} {pluralizeUnit(errorCount, "annotation")} has no label found
+			{errorCount} {pluralizeUnit(errorCount, "annotation")} error
 		{/snippet}
 	</Tooltips>
 {/if}

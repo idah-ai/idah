@@ -29,7 +29,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { labelCenterPx, resolveAnnotationLabel } from "$lib/utils/label";
+  import { isAnnotationLabelVisible, labelCenterPx, resolveAnnotationLabel } from "$lib/utils/label";
   import { LABEL_FONT, wrapText } from "$lib/utils/text-wrap";
 
   type Props = { annotations: IAnnotationRecord[] };
@@ -73,18 +73,17 @@
   };
 
   let labels = $derived.by<PositionedLabel[]>(() => {
-    if (ui.labelVisibility === "never") return [];
     if (!w || !h) return [];
 
     const out: PositionedLabel[] = [];
     for (const ann of annotations) {
-      if (!isVisible(ann.id)) continue;
-
       const center = labelCenterPx(ann, w, h);
       if (!center) continue;
 
       const label = resolveAnnotationLabel(ann);
       if (!label) continue;
+
+      if (!isAnnotationLabelVisible(label, ui.labelVisibility, isVisible(ann.id))) continue;
 
       // An unresolved category id is a data problem worth surfacing — render a
       // warning icon (with a hover card) instead of a blank or misleading text.

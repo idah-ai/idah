@@ -2,9 +2,10 @@
   import { TriangleAlertIcon } from "@lucide/svelte";
 
   interface Props {
+    content?: string;
     displayName: string;
   }
-  let { displayName }: Props = $props();
+  let { content, displayName }: Props = $props();
 </script>
 
 <div class="flex flex-col gap-2">
@@ -13,7 +14,11 @@
     <span class="font-semibold">Label not found</span>
   </div>
   <span>
-    This label <strong>{displayName}</strong> was renamed or deleted from the label configuration. Reassign this annotation
-    to a valid label.
+    {#if content}
+      {content}
+    {:else}
+      This label <strong>{displayName}</strong> was renamed or deleted from the label configuration. Reassign this annotation
+      to a valid label.
+    {/if}
   </span>
 </div>

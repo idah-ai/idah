@@ -26,6 +26,7 @@
         dataset_id: datasetId,
         orphan_categories: true,
       },
+      noCache: true,
     });
 
     return res.data;
@@ -45,6 +46,7 @@
 
       <Alert.Action class="mt-1 flex items-center gap-2">
         <CheckboxField
+          checkboxClass="border-destructive data-[state=checked]:border-destructive data-[state=checked]:bg-destructive focus-visible:ring-destructive/50"
           name="{resource}/orphan_categories"
           label="Show only entries with errors"
           {checked}

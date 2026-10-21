@@ -76,12 +76,12 @@
 
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
-    <div class="flex items-center gap-2">
-      <Text weight="semibold">Annotations</Text>
-      <AnnotationsErrorAlertIcon {annotations} />
-    </div>
+    <Text weight="semibold">Annotations</Text>
 
     <Badge variant="secondary">{annotations.length}</Badge>
+
+    <AnnotationsErrorAlertIcon {annotations} />
+
     <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
   </div>
 
