@@ -35,8 +35,15 @@ class EntryStatsExpo < BaseExpo
 
   expose on_resource_event(Resource::Dataset::Datasets, "updated")
   def recompute_stats_on_dataset_updated
-    return unless message.content[:metadata][:labeling_configuration_updated]
+    return unless message.content.dig(:metadata, :labeling_configuration_updated)
 
-    service.recompute_all_for_dataset(message.content[:resource_id])
+    removed_ids = message.content.dig(:metadata, :removed_category_ids) || []
+    removed_set = removed_ids.to_set
+    if removed_set.any?
+      service.recompute_all_for_dataset(
+        message.content[:resource_id],
+        removed_category_ids: removed_ids
+      )
+    end
   end
 end

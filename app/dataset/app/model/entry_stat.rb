@@ -91,6 +91,21 @@ module EntryStat
       table.where(entry_id:).delete
     end
 
+    def upsert_orphan_count(entry_id, value)
+      now = Time.now
+      transaction do
+        table.where(entry_id: entry_id, key: "orphan_category.count").delete
+        table.db[:entry_stats].insert(
+          id: UUIDv7.generate,
+          entry_id: entry_id,
+          key: "orphan_category.count",
+          value: value.to_s,
+          created_at: now,
+          updated_at: now
+        )
+      end
+    end
+
     def bulk_insert(entry_id, stats_hash)
       now = Time.now
       rows = stats_hash.map do |key, value|

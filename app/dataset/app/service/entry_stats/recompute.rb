@@ -67,5 +67,17 @@ module EntryStats
         repo.bulk_insert(entry_id, stats)
       end
     end
+
+    # Computes and persists ONLY the orphan_category.count stat for the given entry.
+    # Used for pending/in-progress entries when a category is removed from the
+    # labeling configuration — we want to track orphan categories without writing
+    # annotation/category/shape stats (which could go stale before submit).
+    #
+    # @param entry [Entry::Record] entry with dataset, project, and annotations preloaded
+    def self.orphan_only(entry)
+      stats = EntryStats::CoreStats.call(entry)
+      repo = EntryStat::Repository.new(nil)
+      repo.upsert_orphan_count(entry.id, stats["orphan_category.count"])
+    end
   end
 end
