@@ -10,9 +10,8 @@ user:
     - "iam:accounts.logout.*"
 
     # Accounts
-    - "iam:accounts.create.*"
     - "iam:accounts.update.own"
-    - "iam:accounts.read.*"
+    - "iam:accounts.read.as_user"
 
     # Organizations
     - "iam:organizations.read.as_user"

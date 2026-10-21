@@ -356,10 +356,16 @@ Accessed in templates via the `$authStatus` store auto-subscription.
 | `can(action, resource, scopes?)` | Async check against role rights (ActionMap trie) + optional `as_user` project member scope |
 | `hasScope(action, resource, scope?)` | Sync check against the ActionMap (no project membership lookup) |
 | `isRole(roleToCheck)` | Compares `roleName` to a specific role constant |
+| `effectiveProjectRank(projectId)` | Async; the actor's effective rank on a project (mirrors backend `ProjectAccess::Service.effective_rank`). Highest of the account role if it covers the project, or the actor's enabled membership role; `null` when no access |
+| `membershipOn(projectId)` | Async; the actor's enabled `ProjectMember` record on a project, or `null` |
 
 #### `as_user` Scope
 
-When the `scopes` array contains an `{ as_user: { projectId, projectMemberRoles } }` object, `can()` fetches the current account's `ProjectMember` record for the given project and checks if their role is in the allowed list. This enables project-level authorization beyond global role-based permissions.
+When the `scopes` array contains an `{ as_user: { projectId, projectMemberRoles } }` object, `can()` fetches the current account's `ProjectMember` record for the given project and checks if their role is in the allowed list. The lookup filters `enabled: true` (disabled memberships grant nothing). This enables project-level authorization beyond global role-based permissions.
+
+#### Role Hierarchy (`src/lib/security/roleHierarchy.ts`)
+
+Pure helpers mirroring the backend `RoleHierarchy`: `rank`, `canAssignAccountRole`, `canAssignProjectRole`, `canManageProjectMember`, and the `filterAssignable*` helpers used to limit role dropdowns to what the actor may assign.
 
 #### ActionMap (`src/lib/security/ActionMap.ts`)
 

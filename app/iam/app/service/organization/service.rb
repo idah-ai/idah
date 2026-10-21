@@ -32,8 +32,18 @@ module Organization
     end
 
     def delete(id)
-      projects = Api[:idah].dataset.projects.index(filter: { organization_id: id }).data
-      raise Verse::Error::Unauthorized, "Unable to delete organization that still has project(s)" unless projects.empty?
+      # This check guards a destructive action, so it must read live data: bypass
+      # the cached ProjectMembership::Lookup (whose TTL could leave a stale
+      # "no projects" answer for up to 5 minutes) and query the dataset service
+      # directly. index_all, not the paginated index, so orgs with many projects
+      # are not under-counted.
+      projects = Api[:idah].dataset.projects.index_all(
+        filter: { organization_id: id },
+        fields: { Resource::Dataset::Projects => %w[id] }
+      )
+      unless projects.empty?
+        raise Verse::Error::Unauthorized, "Unable to delete organization that still has project(s)"
+      end
 
       organizations.delete!(id)
     end

@@ -262,7 +262,31 @@ Api[:idah].register(:iam, :accounts, :create) do |attributes:|
 end
 ```
 
----
+### ProjectMembership::Lookup (cached membership data)
+
+Services other than dataset (iam, media, sync) scope their `as_org_owner` queries through `ProjectMembership::Lookup` (`common/lib/project_membership/lookup.rb`) — the single entry point for membership data. It always queries dataset via `index_all` + `filter:` + minimal `fields`, so pagination never truncates results:
+
+```ruby
+lookup = ProjectMembership::Lookup.new
+lookup.memberships_for(account_id)                       # [{ project_id, role, organization_id }]
+lookup.member_account_ids(project_ids: [...])            # enabled members' account ids
+lookup.member_account_ids(organization_ids: [...])       # enabled members' account ids by org
+lookup.project_ids_for_organizations(org_ids)            # project ids belonging to the orgs
+```
+
+Multi-id calls are composed from per-id entries so a single invalidation never leaves a stale aggregate.
+
+**Cache.** The lookup is backed by an optional per-process in-memory cache (`ProjectMembership::Cache`, `common/lib/project_membership/cache.rb`), built on a dedicated `Verse::Cache::Impl::MemoryCacheAdapter` (LRU, `MonitorMixin`-synchronised). It is a process-wide singleton shared by the lookup and the invalidation expo. Configuration comes from the `idah.project_membership_cache` block in each service's `config.yml`:
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `enabled` | `true` | When `false`, the cache is a no-op passthrough (used in tests) |
+| `ttl` | `300` | Seconds before an entry expires |
+| `capacity` | `10000` | LRU capacity (bounds memory) |
+
+**Invalidation.** The cache is invalidated across all workers by `ProjectMembership::CacheExpo` (`common/lib/project_membership/cache_expo.rb`), registered in iam, media and sync. It subscribes in **broadcast** mode (see [`guide/event-system.md`](event-system.md)) to `dataset:project_members`, `dataset:projects` and `iam:accounts` events. Missing metadata flushes the whole cache and logs a warning.
+
+**Failure mode.** Pub/sub has no replay, so a missed invalidation broadcast keeps a stale entry until the next invalidation or the TTL expires. The default TTL of 300s bounds that staleness; a `fetch` also drops its computed value if an invalidation fires while its HTTP call is in flight, so a stale result is never stored.
 
 ## Pagination Helper (`Api.all`)
 
