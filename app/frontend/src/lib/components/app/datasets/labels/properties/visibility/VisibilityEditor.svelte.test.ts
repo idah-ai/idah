@@ -75,6 +75,14 @@ describe("VisibilityEditor", () => {
     expect(onChange).toHaveBeenLastCalledWith(parse('category = "vehicles/car"'));
   });
 
+  it("starts a new group with two values of the first field", async () => {
+    const onChange = renderEditor(true);
+
+    await fireEvent.click(screen.getByRole("button", { name: "Group" }));
+
+    expect(onChange).toHaveBeenLastCalledWith(parse('(category = "vehicles/car") or (category = "pedestrian")'));
+  });
+
   it("saves true when the last condition is removed", async () => {
     const onChange = renderEditor(parse('category = "pedestrian"'));
 

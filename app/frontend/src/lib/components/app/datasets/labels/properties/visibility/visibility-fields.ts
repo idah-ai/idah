@@ -243,6 +243,20 @@ export function defaultCondition(fields: VisibilityField[]): RuleCondition | und
   return newCondition(field.path, operator, defaultValue(field, operator));
 }
 
+/**
+ * The conditions a new "any" group starts with: the default condition and
+ * the same one on the field's second value, so the group means something from
+ * the start. Just the default condition when the field has no second value.
+ */
+export function defaultGroupConditions(fields: VisibilityField[]): RuleCondition[] {
+  const first = defaultCondition(fields);
+  if (!first) return [];
+
+  const field = fieldFor(fields, first);
+  const second = usesOptions(field, first.operator) ? field.options[1] : undefined;
+  return second ? [first, newCondition(first.field, first.operator, second.value)] : [first];
+}
+
 /** The condition compared on another field, with that field's first operator. */
 export function applyField(condition: RuleCondition, field: VisibilityField): RuleCondition {
   const operator = operatorsFor(field)[0]?.value ?? "eq";

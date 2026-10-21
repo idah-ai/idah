@@ -8,6 +8,7 @@
 
   import {
     defaultCondition,
+    defaultGroupConditions,
     selectableFields,
     type VisibilityField,
   } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
@@ -48,8 +49,8 @@
   }
 
   function addGroup() {
-    const condition = defaultCondition(fields);
-    if (condition) onChange({ ...group, items: [...group.items, newGroup("any", [condition])] });
+    const conditions = defaultGroupConditions(fields);
+    if (conditions.length > 0) onChange({ ...group, items: [...group.items, newGroup("any", conditions)] });
   }
 </script>
 

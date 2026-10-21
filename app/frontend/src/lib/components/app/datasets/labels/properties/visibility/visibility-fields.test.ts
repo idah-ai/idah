@@ -14,6 +14,7 @@ import {
   canEditInBuilder,
   conditionProblem,
   defaultCondition,
+  defaultGroupConditions,
   describeRules,
   fieldFor,
   hasProblems,
@@ -146,6 +147,27 @@ describe("defaultCondition", () => {
 
   it("is undefined when there is nothing to compare", () => {
     expect(defaultCondition(visibilityFields([], [], "x"))).toBeUndefined();
+  });
+});
+
+describe("defaultGroupConditions", () => {
+  it("starts on the first two values of the first field", () => {
+    expect(defaultGroupConditions(fields)).toMatchObject([
+      { field: "category", operator: "eq", value: "vehicles/car" },
+      { field: "category", operator: "eq", value: "vehicles/heavy/truck" },
+    ]);
+  });
+
+  it("starts with one condition when the field has no second value", () => {
+    const oneCategory = visibilityFields([category("pedestrian", "Pedestrian")], [], "x");
+    expect(defaultGroupConditions(oneCategory)).toMatchObject([{ field: "category", value: "pedestrian" }]);
+
+    const booleanOnly = visibilityFields([], [property("occluded", "Occluded", "boolean")], "x");
+    expect(defaultGroupConditions(booleanOnly)).toMatchObject([{ field: "properties.occluded", value: true }]);
+  });
+
+  it("is empty when there is nothing to compare", () => {
+    expect(defaultGroupConditions(visibilityFields([], [], "x"))).toEqual([]);
   });
 });
 
