@@ -110,6 +110,49 @@ RSpec.describe NoteFeed::Service, database: true do
           expect(result.anchor_type).to eq("annotation")
         end
       end
+      context "when feedback_keys is provided" do
+        let(:system_dataset_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
+
+        before do
+          system_dataset_repo.update!(
+            dataset_id,
+            { feedback_configuration: {
+              "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
+            } }
+          )
+        end
+
+        it "creates a note feed with feedback_keys and no content_md" do
+          params = note_feed_attributes.merge(
+            feedback_keys: ["aB3kF9mN2q"],
+            content_md: nil
+          )
+
+          result = subject.create_from_params(params)
+
+          expect(result.feedback_keys).to eq(["aB3kF9mN2q"])
+          expect(result.content_md).to be_nil
+        end
+
+        it "raises error when a feedback_key does not exist in dataset config" do
+          params = note_feed_attributes.merge(
+            feedback_keys: ["nonexistent"],
+            content_md: nil
+          )
+
+          expect { subject.create_from_params(params) }
+            .to raise_error(Verse::Error::ValidationFailed, /do not exist/)
+        end
+      end
+
+      context "when neither feedback_keys nor content_md is provided" do
+        it "does not raise service-level error (validation is at expo layer)" do
+          params = note_feed_attributes.reject { |k, _| k == :content_md }
+
+          expect { subject.create_from_params(params) }
+            .not_to raise_error
+        end
+      end
 
       context "when entry is not provided" do
         it "raises a not found error" do
