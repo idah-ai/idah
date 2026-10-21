@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { parseDate } from "@internationalized/date";
+  import { Badge } from "@/components/ui/badge";
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { getContext, onDestroy, onMount } from "svelte";
@@ -32,11 +34,18 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    localToday: string;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
     onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let { entry, localToday, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+
+  let overdue = $derived(
+    entry.status !== "completed" &&
+      !!entry.delivery_date &&
+      parseDate(entry.delivery_date).compare(parseDate(localToday)) < 0,
+  );
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -381,6 +390,15 @@
                   weight="light"
                   showTooltip
                 />
+              {/snippet}
+            </DataDisplay>
+
+            <DataDisplay label="Delivery Date">
+              {#snippet slotValue()}
+                <div class="flex items-center gap-2">
+                  <Text size="sm">{entry.delivery_date ?? "—"}</Text>
+                  {#if overdue}<Badge variant="destructive">Overdue</Badge>{/if}
+                </div>
               {/snippet}
             </DataDisplay>
 

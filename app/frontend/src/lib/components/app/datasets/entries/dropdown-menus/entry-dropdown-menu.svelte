@@ -1,8 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { EllipsisVerticalIcon } from "@lucide/svelte";
+  import { CalendarIcon, EllipsisVerticalIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
+  import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
+  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
@@ -30,6 +33,9 @@
     onAssigned?: (entry: EntryRecord) => void;
   }
   let { entry, onUnAssigned, onAssigned }: Props = $props();
+
+  let openDeliveryDate = $state(false);
+  let datasetDeliveryDate = $state<string | null>(null);
 
   // Records
   let projectId = page.params.projectId as string;
@@ -69,6 +75,20 @@
   });
 
   // Functions
+  async function openDeliveryDateModal() {
+    try {
+      const [currentEntry, dataset] = await Promise.all([
+        entriesBackendDataSource.get(entry.id, { noCache: true }),
+        datasetsBackendDataSource.get(entry.dataset_id, { noCache: true }),
+      ]);
+      entryRecord = currentEntry.data;
+      datasetDeliveryDate = dataset.data.delivery_date ?? null;
+      openDeliveryDate = true;
+    } catch (error) {
+      showActionFailedToast(error);
+    }
+  }
+
   async function openAssignEntryModal(): Promise<void> {
     const entryRes = await entriesBackendDataSource.get(entry.id, {
       noCache: true,
@@ -152,6 +172,11 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
+        {#if canUpdateEntry}
+          <DropdownMenuItem onclick={openDeliveryDateModal}
+            ><CalendarIcon class="size-4" />Set Delivery Date</DropdownMenuItem
+          >
+        {/if}
         {#each menus as { label, icon: Icon, action, hidden, destructive, disabled }, index (index)}
           {#if !hidden}
             <DropdownMenuItem variant={destructive ? "destructive" : "default"} {disabled} onclick={action}>
@@ -172,4 +197,8 @@
     entryIds={[entry.id]}
     bind:open={openAssignEntryFormModal}
   />
+{/if}
+
+{#if openDeliveryDate && entryRecord}
+  <UpdateEntryDeliveryDateFormModal entry={entryRecord} {datasetDeliveryDate} bind:open={openDeliveryDate} />
 {/if}

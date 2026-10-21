@@ -81,6 +81,15 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     visible: true,
     hidable: false,
   },
+  delivery_date: {
+    label: "Delivery Date",
+    dataType: "date",
+    clickable: false,
+    sortable: true,
+    filterable: false,
+    visible: true,
+    hidable: true,
+  },
   created_at: {
     label: "Created at",
     dataType: "date",

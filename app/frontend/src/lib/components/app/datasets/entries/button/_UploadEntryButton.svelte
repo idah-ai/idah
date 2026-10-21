@@ -1,10 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { PlusIcon } from "@lucide/svelte";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import UploadEntryModal from "@/components/app/datasets/entries/overlays/_UploadEntryFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { authStatus } from "@/security/AuthContext";
   import Can from "@/security/can.svelte";
 
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
@@ -21,6 +22,13 @@
   };
 
   let open = $state(false);
+  let canUpdateEntry = $state(false);
+  const currentAccount = $authStatus.authContext;
+
+  onMount(async () => {
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
 </script>
 
 <Can action="create" resource="dataset:entries" scopes={["as_org_owner", as_project_owner]}>
@@ -31,5 +39,12 @@
     Add Entry
   </Button>
 
-  <UploadEntryModal title="Entry" action="create" modality={dataset.modality} bind:open />
+  <UploadEntryModal
+    title="Entry"
+    action="create"
+    modality={dataset.modality}
+    datasetDeliveryDate={dataset.delivery_date ?? null}
+    canEditDeliveryDate={canUpdateEntry}
+    bind:open
+  />
 </Can>

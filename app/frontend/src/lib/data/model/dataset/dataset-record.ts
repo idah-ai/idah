@@ -26,7 +26,7 @@ export class DatasetRecord extends Record {
   @field() public entries_total_count!: number;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
-  @field() public delivery_at!: Date | null;
+  @field() public delivery_date!: string | null;
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];
