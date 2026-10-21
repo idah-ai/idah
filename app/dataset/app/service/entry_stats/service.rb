@@ -5,6 +5,7 @@ module EntryStats
     use entry_stats: EntryStat::Repository
     use_system system_entries: Entry::Repository
     use_system system_datasets: Dataset::Repository
+    use_system system_annotations: Annotation::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entry_stats.index(
@@ -24,6 +25,19 @@ module EntryStats
     def recompute(entry_id)
       entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
       EntryStats::Recompute.call(entry)
+    end
+
+    def recompute_from_annotation(annotation_id)
+      annotation = system_annotations.find!(annotation_id)
+      entry_id = annotation.entry_id
+
+      # If the entry doesn't have an orphan stat yet, no need to recompute.
+      return unless EntryStat::Repository.new(nil).orphan_category(entry_id)
+
+      entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
+      return unless entry.status == "in_progress"
+
+      EntryStats::Recompute.orphan_only(entry)
     end
 
     def recompute_all_for_dataset(dataset_id, removed_category_ids: [])
