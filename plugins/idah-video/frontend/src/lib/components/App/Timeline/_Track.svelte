@@ -108,7 +108,6 @@
   tabindex="-1"
   class={cn("track border-b", {
     "border-primary/50 bg-primary/10 border-t border-b": isSelected && foundCategory,
-    "border-destructive/50 bg-destructive/5 border-t border-b": !foundCategory,
     "border-destructive bg-destructive/20 border-t border-b": isSelected && !foundCategory,
   })}
   style:height="{TRACK_HEIGHT}px"
