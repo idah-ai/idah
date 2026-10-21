@@ -1,7 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { onMount } from "svelte";
   import { page } from "$app/state";
+  import { authStatus } from "@/security/AuthContext";
 
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -10,7 +12,11 @@
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
+  import {
+    createDatasetSchema,
+    updateDatasetSchema,
+    deliveryDateChangeSchema,
+  } from "@/data/model/dataset/datasets/schema";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -18,6 +24,7 @@
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { IConfig } from "@/plugin/v2/types";
+  import type { ProjectMemberScope } from "@/security/types";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -25,6 +32,17 @@
     datasetRecord?: DatasetRecord;
   }
   let { action, open = $bindable(), title, datasetRecord }: Props = $props();
+
+  let canEditDeliveryDate = $state(false);
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    if (!projectId) return;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: { projectId, projectMemberRoles: ["project_owner"] },
+    };
+    canEditDeliveryDate =
+      (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+  });
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
@@ -42,6 +60,7 @@
           attributes: {
             name: null,
             description: null,
+            delivery_date: null,
           },
         }),
   );
@@ -56,6 +75,7 @@
     return {
       name: source.name,
       modality: source.modality,
+      delivery_date: source.delivery_date ?? null,
     };
   }
   const changeTracker = new FormChangeTracker(serializeEditableFields, () => datasetRecord);
@@ -104,6 +124,7 @@
         attributes: {
           name: draft.name,
           modality: draft.modality,
+          ...(canEditDeliveryDate && draft.delivery_date ? { delivery_date: draft.delivery_date } : {}),
           labeling_configuration: labelConfig,
           workflow_configuration: {},
         },
@@ -139,6 +160,9 @@
         attributes: {
           name: draft.name,
           modality: draft.modality,
+          ...(canEditDeliveryDate && (draft.delivery_date ?? null) !== (datasetRecord?.delivery_date ?? null)
+            ? { delivery_date: draft.delivery_date ?? null }
+            : {}),
           labeling_configuration: labelConfig,
         },
       },
@@ -162,9 +186,18 @@
     const schema: ZodSchema = newRecord ? createDatasetSchema : updateDatasetSchema;
 
     try {
+      const dateValidation = deliveryDateChangeSchema.safeParse({
+        delivery_date: canEditDeliveryDate ? draft.delivery_date : undefined,
+        original_delivery_date: datasetRecord?.delivery_date ?? null,
+      });
+      if (!dateValidation.success) {
+        fieldErrors = getFieldErrors(dateValidation.error);
+        return;
+      }
       const validated = validateData(schema, {
         name: draft.name,
         modality: draft.modality,
+        delivery_date: draft.delivery_date,
       });
 
       if (!validated.success) {
@@ -181,6 +214,8 @@
     } catch (error) {
       submitting = false;
       showActionFailedToast(error);
+    } finally {
+      submitting = false;
     }
   }
 </script>
@@ -194,5 +229,5 @@
   onConfirm={submit}
   bind:open
 >
-  <DatasetForm {dataset} {fieldErrors} {newRecord} onValueChange={setValue}></DatasetForm>
+  <DatasetForm {dataset} {fieldErrors} {newRecord} {canEditDeliveryDate} onValueChange={setValue}></DatasetForm>
 </FormModal>

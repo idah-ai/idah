@@ -61,7 +61,7 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name", "modality"],
+        [DatasetRecord.type]: ["name", "modality", "delivery_date"],
       },
     });
     dataset = datasetRes.data;
@@ -98,6 +98,7 @@
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
             <DatasetModalityBadge modality={datasetRecord.modality} />
+            <Text size="sm">Delivery Date: {datasetRecord.delivery_date ?? "—"}</Text>
             <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}

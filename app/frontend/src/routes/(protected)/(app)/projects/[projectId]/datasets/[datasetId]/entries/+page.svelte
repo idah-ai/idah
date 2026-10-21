@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getLocalTimeZone, today } from "@internationalized/date";
   import { page } from "$app/state";
   import { LayoutListIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
@@ -23,6 +24,19 @@
   import { authStatus } from "@/security/AuthContext";
 
   import type { ProjectMemberScope } from "@/security/types";
+
+  let localToday = $state(today(getLocalTimeZone()).toString());
+  onMount(() => {
+    const refreshToday = () => {
+      localToday = today(getLocalTimeZone()).toString();
+    };
+    const interval = setInterval(refreshToday, 60_000);
+    window.addEventListener("focus", refreshToday);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refreshToday);
+    };
+  });
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -71,6 +85,7 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
+      {localToday}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

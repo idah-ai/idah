@@ -1,6 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
+  import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
+  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { getFieldErrors } from "@/utils/validate";
 
+  import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -28,8 +33,20 @@
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
     modality: string;
+    datasetDeliveryDate: string | null;
+    canEditDeliveryDate: boolean;
   }
-  let { action, title, open = $bindable(), modality }: CreateEntryFormModalProps = $props();
+  let {
+    action,
+    title,
+    open = $bindable(),
+    modality,
+    datasetDeliveryDate,
+    canEditDeliveryDate,
+  }: CreateEntryFormModalProps = $props();
+
+  let selectedDeliveryDate = $state<string | null>(null);
+  let dateErrors = $state<string[]>([]);
 
   // Types
   interface View {
@@ -107,6 +124,8 @@
 
   // Functions
   function resetForm(): void {
+    selectedDeliveryDate = null;
+    dateErrors = [];
     uploading = false;
     media.selected = null;
     upload.items = [];
@@ -198,7 +217,12 @@
         for (const uploadedMedia of media.uploadedMedias.slice(media.createdEntryCount)) {
           await entriesBackendDataSource.create(
             {
-              attributes: { resource: uploadedMedia.resource, name: uploadedMedia.filename, status: "pending" },
+              attributes: {
+                resource: uploadedMedia.resource,
+                name: uploadedMedia.filename,
+                status: "pending",
+                ...(canEditDeliveryDate && selectedDeliveryDate ? { delivery_date: selectedDeliveryDate } : {}),
+              },
               relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
             },
             { showErrorToast: false },
@@ -253,10 +277,23 @@
   }
 
   async function submit(): Promise<void> {
+    if (uploading) return;
     uploading = true;
-    view.current = "upload";
-
+    dateErrors = [];
     try {
+      // Refresh only the selection bound; never populate the Entry date from it.
+      if (selectedDeliveryDate && canEditDeliveryDate) {
+        const currentDataset = await datasetsBackendDataSource.get(datasetId, { noCache: true });
+        const result = deliveryDateChangeSchema.safeParse({
+          delivery_date: selectedDeliveryDate,
+          dataset_delivery_date: currentDataset.data.delivery_date ?? null,
+        });
+        if (!result.success) {
+          dateErrors = (getFieldErrors(result.error) as { delivery_date?: string[] }).delivery_date ?? [];
+          return;
+        }
+      }
+      view.current = "upload";
       await uploadMedia();
     } catch (error) {
       showActionFailedToast(error);
@@ -301,6 +338,41 @@
         </Text>
       {/snippet}
     </FileUpload>
+
+    {#if canEditDeliveryDate}
+      <section class="mt-4 flex flex-col gap-2">
+        {#key selectedDeliveryDate}
+          <DatePickerField
+            name="upload/delivery_date"
+            label="Delivery Date"
+            placeholder="Select delivery date (optional)"
+            value={selectedDeliveryDate ? parseDate(selectedDeliveryDate).toDate(getLocalTimeZone()) : null}
+            minDate={today(getLocalTimeZone())}
+            maxDate={datasetDeliveryDate ? parseDate(datasetDeliveryDate) : undefined}
+            disabled={uploading ||
+              (!!datasetDeliveryDate && parseDate(datasetDeliveryDate).compare(today(getLocalTimeZone())) < 0)}
+            errors={dateErrors}
+            onDateSelected={(date) => {
+              selectedDeliveryDate = date;
+              dateErrors = [];
+            }}
+          />
+        {/key}
+        {#if selectedDeliveryDate}
+          <Button
+            variant="outline"
+            disabled={uploading}
+            onclick={() => {
+              selectedDeliveryDate = null;
+              dateErrors = [];
+            }}>Clear Delivery Date</Button
+          >
+        {/if}
+        {#if datasetDeliveryDate && parseDate(datasetDeliveryDate).compare(today(getLocalTimeZone())) < 0}
+          <Text size="sm">The Dataset Delivery Date has passed. You can upload without an Entry Delivery Date.</Text>
+        {/if}
+      </section>
+    {/if}
 
     {#if media.any()}
       <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">

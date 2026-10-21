@@ -31,6 +31,7 @@ export class EntryRecord extends Record {
   @field() public resource!: string;
 
   @field() public name!: string;
+  @field() public delivery_date!: string | null;
 
   @field() public assigned_to_id!: number | null;
   @field() public assigned_to_email!: string | null;

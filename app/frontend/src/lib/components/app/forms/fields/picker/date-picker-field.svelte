@@ -54,7 +54,7 @@
 
   $effect(() => {
     if (calendarValue) {
-      value = new Date(calendarValue.toString());
+      value = calendarValue.toDate(getLocalTimeZone());
     } else if (value) {
       value = value;
       const dateValue = new Date(value);
