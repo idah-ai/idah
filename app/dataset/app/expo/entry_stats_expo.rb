@@ -10,6 +10,7 @@ class EntryStatsExpo < BaseExpo
     Stats are recomputed:
       - when an entry transitions to submitted or errored
       - when the dataset's labeling_configuration is updated (e.g. categories renamed/deleted)
+      - when an annotation is updated on an in-progress entry
   MD
 
   json_api EntryStat::Record do
@@ -35,8 +36,20 @@ class EntryStatsExpo < BaseExpo
 
   expose on_resource_event(Resource::Dataset::Datasets, "updated")
   def recompute_stats_on_dataset_updated
-    return unless message.content[:metadata][:labeling_configuration_updated]
+    return unless message.content.dig(:metadata, :labeling_configuration_updated)
 
-    service.recompute_all_for_dataset(message.content[:resource_id])
+    removed_ids = message.content.dig(:metadata, :removed_category_ids) || []
+    removed_set = removed_ids.to_set
+    return unless removed_set.any?
+
+    service.recompute_all_for_dataset(
+      message.content[:resource_id],
+      removed_category_ids: removed_ids
+    )
+  end
+
+  expose on_resource_event(Resource::Dataset::Annotations, "updated")
+  def compute_stats_on_annotation_updated
+    service.recompute_from_annotation(message.content[:resource_id])
   end
 end

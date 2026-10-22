@@ -73,17 +73,55 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "#compute_stats_on_annotation_updated" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with the annotation id from the event" do
+      expect(service).to receive(:recompute_from_annotation).with(annotation_id)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "updated",
+        payload: { resource_id: annotation_id }
+      )
+    end
+  end
+
   describe "#recompute_stats_on_dataset_updated" do
     let(:dataset_id) { UUIDv7.generate }
 
-    it "recomputes all stats for the dataset when labeling configuration is updated" do
-      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id)
+    it "recomputes all stats for the dataset when categories are removed" do
+      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id, removed_category_ids: ["cat"])
 
       Verse.publish_resource_event(
         resource_type: Resource::Dataset::Datasets,
         resource_id: dataset_id,
         event: "updated",
-        payload: { resource_id: dataset_id, metadata: { labeling_configuration_updated: true } }
+        payload: {
+          resource_id: dataset_id,
+          metadata: {
+            labeling_configuration_updated: true,
+            removed_category_ids: ["cat"]
+          }
+        }
+      )
+    end
+
+    it "does not recompute when labeling_configuration_updated is true but no categories were removed" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: {
+            labeling_configuration_updated: true,
+            removed_category_ids: []
+          }
+        }
       )
     end
 

@@ -111,11 +111,58 @@ RSpec.describe EntryStats::Service, database: true do
     end
   end
 
+  describe "#recompute_from_annotation" do
+    let(:annotation_repo) { Annotation::Repository.new(auth_context) }
+    let(:annotation_id) do
+      annotation_repo.create(
+        entry_id: entry_id,
+        project_id: project_id,
+        dataset_id: dataset_id,
+        shape_type: "idah-image:bbox",
+        shape_args: { x: 0, y: 0, width: 100, height: 100 },
+        category: "orphaned_cat",
+        created_by_email: "user@example.com"
+      )
+    end
+
+    before do
+      # Simulate a previous recompute that found 1 orphan annotation
+      stat_repo.bulk_insert(
+        entry_id,
+        { "orphan_category.count" => "1" }
+      )
+    end
+
+    it "recomputes orphan-only stats when entry is in_progress and has orphans" do
+      subject.recompute_from_annotation(annotation_id)
+
+      orphan_stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(orphan_stat.value).to eq("1") # still 1 orphan
+    end
+
+    it "does not recompute when the entry is not in_progress" do
+      entry_repo.update!(entry_id, { status: "completed" })
+
+      expect(EntryStats::Recompute).not_to receive(:orphan_only)
+      subject.recompute_from_annotation(annotation_id)
+    end
+
+    it "does not recompute when there is no orphan stat" do
+      stat_repo.delete_by_entry_id(entry_id)
+
+      expect(EntryStats::Recompute).not_to receive(:orphan_only)
+      subject.recompute_from_annotation(annotation_id)
+    end
+  end
+
   describe "#recompute_all_for_dataset" do
     before do
-      # create a second entry in the same dataset
+      # Set the first entry to completed so the full recompute path runs
+      entry_repo.update!(entry_id, { status: "completed" })
+
+      # create a second entry in the same dataset (also completed)
       entry_repo.create(
-        priority: 1, wf_step: "annotate", status: "in_progress", project_id:, dataset_id:
+        priority: 1, wf_step: "annotate", status: "completed", project_id:, dataset_id:
       )
     end
 

@@ -21,6 +21,8 @@ module Dataset
     field :entries_completed_count, type: Integer, readonly: true
     field :entries_in_progress_count, type: Integer, readonly: true
 
+    field :syncing_stats, type: [TrueClass]
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -196,12 +198,25 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        labeling_config_changed = attributes.key?(:labeling_configuration)
+        labeling_config_changed = false
+        removed_ids = []
+
+        if attributes.key?(:labeling_configuration)
+          old_config = dataset[:labeling_configuration] || {}
+          new_config = attributes[:labeling_configuration] || {}
+
+          old_ids = configured_category_ids(old_config)
+          new_ids = configured_category_ids(new_config)
+
+          removed_ids = (old_ids.to_set - new_ids.to_set).to_a
+          labeling_config_changed = removed_ids.any?
+        end
 
         add_event_metadata(
           project_id: attributes[:project_id] || dataset.project_id,
           dataset_id: id,
-          **({ labeling_configuration_updated: true } if labeling_config_changed).to_h
+          labeling_configuration_updated: labeling_config_changed,
+          removed_category_ids: removed_ids
         )
 
         super(id, attributes, scope:)
@@ -256,6 +271,16 @@ module Dataset
         actor_account_role_name: auth_context.metadata[:role],
         **opts
       )
+    end
+
+    # Extracts all configured category IDs from a labeling_configuration hash.
+    # Flattens values[*][:id] across all tool-type keys.
+    def configured_category_ids(labeling_config)
+      labeling_config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
+
+        Array(tool_config[:values]).filter_map { |v| v[:id] }
+      end
     end
   end
 end
