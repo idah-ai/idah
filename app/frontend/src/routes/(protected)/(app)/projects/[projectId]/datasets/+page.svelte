@@ -6,7 +6,7 @@
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
 
-  import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
+  import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/projectDataset.columns";
   import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
