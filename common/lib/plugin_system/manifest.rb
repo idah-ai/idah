@@ -17,6 +17,9 @@ module PluginSystem
       field :id, String
       field? :label, String
       field? :description, String
+      # Media files the upload pickers accept, e.g. [".jpg", ".png"] (extensions or MIME patterns);
+      # zip archives are accepted by the platform on top of these
+      field? :accepted_file_types, Array, of: String, key: :acceptedFileTypes
 
       shape_type = define do
         field :label, String

@@ -64,15 +64,21 @@ describe("uploadAll", () => {
     expect(entryDatasetIds()).toEqual(["ds1", "ds1", "ds1"]);
   });
 
-  it("retries a failed dataset creation without re-uploading the media", async () => {
+  it("stops at once when the dataset cannot be created: no retry, remaining files not uploaded", async () => {
     upload.mockResolvedValue(uploaded("a.jpg"));
-    const createDataset = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValue("ds1");
+    const createDataset = vi
+      .fn()
+      .mockRejectedValue({ errors: [{ title: "Forbidden", detail: "You cannot create datasets here" }] });
+    const items = [item("a.jpg"), item("b.jpg"), item("c.jpg")];
 
-    await run([item("a.jpg")], once(createDataset));
+    await run(items, once(createDataset));
 
-    expect(upload).toHaveBeenCalledTimes(1);
-    expect(createDataset).toHaveBeenCalledTimes(2);
-    expect(entryDatasetIds()).toEqual(["ds1"]);
+    expect(createDataset).toHaveBeenCalledTimes(1);
+    expect(upload).toHaveBeenCalledTimes(1); // b.jpg and c.jpg never sent
+    expect(createEntry).not.toHaveBeenCalled();
+    expect(items.map((i) => i.status)).toEqual(["completed", "completed", "completed"]);
+    expect(items[0].errorMessage).toBe("You cannot create datasets here");
+    expect(items[1].errorMessage).toBeTruthy();
   });
 
   it("names entries by file name only, even for files picked inside folders", async () => {

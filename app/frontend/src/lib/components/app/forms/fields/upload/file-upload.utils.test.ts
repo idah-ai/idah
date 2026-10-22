@@ -85,21 +85,40 @@ describe("fromInputFiles", () => {
 describe("partitionAccepted", () => {
   const pick = (path: string) => ({ file: new File(["x"], path.split("/").pop()!), path });
 
-  it("keeps accepted types and counts the rest as ignored", () => {
+  it("keeps accepted types and returns the rest as ignored", () => {
     const { accepted, ignored } = partitionAccepted(
-      [pick("clip/a.JPG"), pick("clip/.DS_Store"), pick("clip/notes.txt"), pick("batch.zip")],
+      [pick("clip/a.JPG"), pick("clip/notes.txt"), pick("batch.zip")],
       [".zip", ".jpg"],
     );
 
     expect(paths(accepted)).toEqual(["batch.zip", "clip/a.JPG"]);
-    expect(ignored).toBe(2);
+    expect(paths(ignored)).toEqual(["clip/notes.txt"]);
+  });
+
+  it("silently drops OS metadata files, like the backend does inside zips", () => {
+    const { accepted, ignored } = partitionAccepted(
+      [
+        pick("clip/a.jpg"),
+        pick("clip/__MACOSX/._a.jpg"), // AppleDouble sidecar inside the macOS container
+        pick("__MACOSX/clip/b.jpg"),
+        pick("clip/._loose.jpg"), // AppleDouble sidecar outside it
+        pick("clip/.DS_Store"),
+        pick("clip/Thumbs.db"),
+        pick("clip/desktop.ini"),
+        pick("clip/my.DS_Store.jpg"), // near-miss: a real image
+      ],
+      [".jpg"],
+    );
+
+    expect(paths(accepted)).toEqual(["clip/a.jpg", "clip/my.DS_Store.jpg"]);
+    expect(ignored).toEqual([]);
   });
 
   it("accepts everything when no types are configured", () => {
     const { accepted, ignored } = partitionAccepted([pick("a.txt")], null);
 
     expect(accepted).toHaveLength(1);
-    expect(ignored).toBe(0);
+    expect(ignored).toEqual([]);
   });
 });
 

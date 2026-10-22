@@ -6,19 +6,19 @@
   import * as Item from "@/components/ui/item";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
-  import UploadItemCollapsibleSection from "./_UploadItemCollapsibleSection.svelte";
-  import UploadItemStatusIcon from "./_UploadItemStatusIcon.svelte";
+  import UploadItemCollapsibleSection from "./upload-item-collapsible-section.svelte";
+  import UploadItemStatusIcon from "./upload-item-status-icon.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { pluralizeUnit } from "@/utils/unit";
-  import { getStatusLabel } from "./_upload-item-utils";
+  import { getStatusLabel } from "./upload-item-utils";
 
-  import type { UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
+  import type { UploadItemView } from "@/components/app/datasets/upload/upload-item.types";
 
   // Props
   interface Props {
-    uploadItem: UploadItem;
+    uploadItem: UploadItemView;
     maxRetries?: number;
   }
   let { uploadItem, maxRetries = 3 }: Props = $props();
@@ -80,7 +80,7 @@
       {/if}
     </div>
 
-    <!-- Only show collapsible when upload item is zip -->
+    <!-- Only show collapsible for a zip or a folder (see upload-rows.ts) -->
     {#if status === "completed" && isZip && hasIssues}
       <Collapsible.Root bind:open={openCollapsible}>
         <Collapsible.Trigger

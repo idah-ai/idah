@@ -13,6 +13,7 @@
     {
       "id": "idah-image",
       "label": "Image",
+      "acceptedFileTypes": [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"],
       "shapes": {
         "bounding-box": {
           "label": "Bounding Box",

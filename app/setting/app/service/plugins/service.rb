@@ -52,7 +52,7 @@ module Plugins
     # Return a hash in the form of:
     #
     # {
-    #   modalities: { id: {label: "...", description: "..."} },
+    #   modalities: { id: {label: "...", description: "...", accepted_file_types: [...]} },
     #   plugins: { "modA": ["plugin1", "plugin2"], ... }
     # }
     def show_modalities
@@ -70,6 +70,7 @@ module Plugins
           mod_hash = (output[:modalities][mod_id] ||= {})
           mod_hash[:label] ||= mod.label
           mod_hash[:description] ||= mod.description
+          mod_hash[:accepted_file_types] ||= mod.accepted_file_types
 
           plugin_arr = (output[:plugins][mod_id] ||= [])
           plugin_arr << name

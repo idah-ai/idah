@@ -33,12 +33,33 @@ export function isFileAccepted(file: File, acceptedFileTypes: string[] | null | 
   });
 }
 
+// OS-generated metadata, mirroring the backend's zip rules (Medias::UploadConstants):
+// exact basenames, a __MACOSX path segment, or a "._" AppleDouble sidecar.
+const SYSTEM_ARTIFACT_FILES = new Set([".DS_Store", "Thumbs.db", "ehthumbs.db", "desktop.ini"]);
+const SYSTEM_ARTIFACT_DIRS = new Set(["__MACOSX"]);
+
+function isSystemArtifact(path: string): boolean {
+  const segments = path.split("/");
+  const basename = segments.at(-1)!;
+  return (
+    SYSTEM_ARTIFACT_FILES.has(basename) ||
+    basename.startsWith("._") ||
+    segments.some((segment) => SYSTEM_ARTIFACT_DIRS.has(segment))
+  );
+}
+
+// OS metadata is dropped silently; other unsupported files are returned as ignored.
 export function partitionAccepted(
   picked: PickedFile[],
   acceptedFileTypes: string[] | null | undefined,
-): { accepted: PickedFile[]; ignored: number } {
-  const accepted = picked.filter((p) => isFileAccepted(p.file, acceptedFileTypes));
-  return { accepted, ignored: picked.length - accepted.length };
+): { accepted: PickedFile[]; ignored: PickedFile[] } {
+  const accepted: PickedFile[] = [];
+  const ignored: PickedFile[] = [];
+  for (const p of picked) {
+    if (isSystemArtifact(p.path)) continue;
+    (isFileAccepted(p.file, acceptedFileTypes) ? accepted : ignored).push(p);
+  }
+  return { accepted, ignored };
 }
 
 // Appends a further selection, skipping files already selected. The path (not the

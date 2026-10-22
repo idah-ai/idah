@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { FileArchiveIcon, FileIcon, FolderIcon } from "@lucide/svelte";
   import type { ChangeEventHandler } from "svelte/elements";
 
+  import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import {
@@ -10,49 +12,33 @@
     type PickedFile,
   } from "@/components/app/forms/fields/upload/file-upload.utils";
   import { cn } from "@/utils";
-  import { pluralizeUnit } from "@/utils/unit";
 
-  import type { FileUploadBaseProps } from "@/components/app/forms/fields/upload/file-upload.types";
+  import type { FileUploadBaseProps, FileUploadPicker } from "@/components/app/forms/fields/upload/file-upload.types";
 
   // Props
   let {
     class: className,
     acceptedFileTypes = null,
-    allowFolders = false,
+    pickers,
+    dropHint,
     onFilesSelected,
-    SelectedFilesSlot,
-    InfoSlot,
   }: FileUploadBaseProps = $props();
 
   // Variables
-  let fileInput: HTMLInputElement;
-  let folderInput: HTMLInputElement | undefined = $state();
-  let uploading: boolean = $state(false);
+  let inputs: HTMLInputElement[] = $state([]);
   let isDragging: boolean = $state(false);
-  let acceptedFileTypesString: string | null = $derived(acceptedFileTypes ? acceptedFileTypes.join(", ") : null);
-  let selectedFiles: PickedFile[] | null = $state(null);
-  let ignoredCount: number = $state(0);
+  let allowFolders: boolean = $derived(pickers.some((picker) => picker.kind === "folder"));
 
   // Functions
-  function openChooseFile() {
-    if (fileInput) {
-      fileInput.click();
-    }
-  }
-
-  function openChooseFolder(event: Event) {
-    event.stopPropagation(); // the whole drop zone opens the file picker otherwise
-    folderInput?.click();
-  }
-
-  // Unsupported files (e.g. .DS_Store inside a folder) are dropped and counted, not silently lost.
+  // Unsupported files (e.g. notes.txt inside a folder) are reported, not silently lost.
   function select(picked: PickedFile[]): void {
     const { accepted, ignored } = partitionAccepted(picked, acceptedFileTypes);
-    ignoredCount = ignored;
-    if (accepted.length === 0) return;
+    onFilesSelected(accepted, ignored);
+  }
 
-    selectedFiles = accepted;
-    onFilesSelected(accepted);
+  function iconFor(picker: FileUploadPicker) {
+    if (picker.kind === "folder") return FolderIcon;
+    return picker.accept?.length === 1 && picker.accept[0] === ".zip" ? FileArchiveIcon : FileIcon;
   }
 
   function handleDragOver(event: DragEvent): void {
@@ -82,78 +68,42 @@
   };
 </script>
 
+<!-- A single native input can pick files OR folders, never both, hence one button each. -->
 <div
-  role="button"
-  tabindex="0"
+  role="region"
+  aria-label="Upload drop zone"
   class={cn(
-    "bg-secondary group flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4",
+    "bg-secondary flex w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-4",
     isDragging && "border-primary bg-primary/5",
     className,
   )}
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
-  onkeypress={openChooseFile}
-  onclick={openChooseFile}
 >
-  <input
-    bind:this={fileInput}
-    multiple
-    type="file"
-    class="hidden"
-    accept={acceptedFileTypesString}
-    onchange={handleChooseFile}
-    disabled={uploading}
-  />
+  <div class="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
+    {#each pickers as picker, index (picker.kind)}
+      {@const Icon = iconFor(picker)}
+      {#if picker.kind === "folder"}
+        <input bind:this={inputs[index]} webkitdirectory type="file" class="hidden" onchange={handleChooseFile} />
+      {:else}
+        <input
+          bind:this={inputs[index]}
+          multiple
+          type="file"
+          class="hidden"
+          accept={(picker.accept ?? acceptedFileTypes)?.join(", ") ?? null}
+          onchange={handleChooseFile}
+        />
+      {/if}
 
-  {#if allowFolders}
-    <input
-      bind:this={folderInput}
-      webkitdirectory
-      type="file"
-      class="hidden"
-      onchange={handleChooseFile}
-      disabled={uploading}
-    />
-  {/if}
+      <Button type="button" variant="outline" size="sm" class="justify-start" onclick={() => inputs[index]?.click()}>
+        <Icon />
+        {picker.label}
+      </Button>
+      <Text class="text-muted-foreground" size="sm">{picker.description}</Text>
+    {/each}
+  </div>
 
-  <Text class="text-accent-foreground text-wrap" size="sm">
-    {#if SelectedFilesSlot}
-      {@render SelectedFilesSlot({ selectedFiles })}
-    {:else if selectedFiles}
-      {#each selectedFiles as selectedFile (selectedFile.path)}
-        <span class="line-clamp-1">{selectedFile.path}</span>
-      {/each}
-    {:else}
-      <span class="font-medium underline underline-offset-2">Click to select files</span>
-      <span class="text-muted-foreground">or drag and drop</span>
-    {/if}
-  </Text>
-
-  {#if allowFolders}
-    <Text class="text-muted-foreground" size="sm">
-      or
-      <button
-        type="button"
-        class="text-accent-foreground font-medium underline underline-offset-2"
-        onclick={openChooseFolder}
-      >
-        select a folder
-      </button>
-    </Text>
-  {/if}
-
-  {#if ignoredCount > 0}
-    <Text class="text-muted-foreground" size="sm">
-      {ignoredCount} unsupported {pluralizeUnit(ignoredCount, "file")} ignored
-    </Text>
-  {/if}
-
-  {#if InfoSlot}
-    {@render InfoSlot()}
-  {:else}
-    <Text class="text-muted-foreground text-center" size="sm">
-      Supported file types: {acceptedFileTypesString ?? "All file types"}
-    </Text>
-  {/if}
+  <Text class="text-muted-foreground" size="sm">{dropHint}</Text>
 </div>

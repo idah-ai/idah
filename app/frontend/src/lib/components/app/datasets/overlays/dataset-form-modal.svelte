@@ -3,20 +3,33 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
-  import UploadMediaItem from "@/components/app/datasets/entries/overlays/_UploadMediaItem.svelte";
+  import UploadMediaItem from "@/components/app/datasets/upload/upload-media-item.svelte";
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
+  import Button from "@/components/ui/button/button.svelte";
+  import { DialogClose, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+  import Text from "@/components/ui/text/Text.svelte";
+  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
   import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
 
-  import { createUploadItem, type UploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
+  import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
+  import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
+  import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
+  import {
+    assignIgnored,
+    looseRow,
+    folderRow,
+    rowItems,
+    rowView,
+    type UploadRow,
+  } from "@/components/app/datasets/upload/upload-rows";
   import {
     MAX_RETRIES,
     once,
     showUploadSummaryToast,
     uploadAll,
-  } from "@/components/app/datasets/entries/overlays/upload-pipeline";
+  } from "@/components/app/datasets/upload/upload-pipeline";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
@@ -43,11 +56,26 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
   let selectedDatasetId = $state<string | null>(null);
-  // Set while creating the dataset from a folder/zip upload.
-  let uploadItems = $state<UploadItem[]>([]);
+  // Create mode: an empty dataset, or datasets created from folders/zips.
+  let createMode = $state<"empty" | "upload">("empty");
+  let uploadMode: boolean = $derived(newRecord && createMode === "upload");
+
+  // One run per dataset to create; set from submit until the modal is closed.
+  interface UploadRun {
+    name: string;
+    rows: UploadRow[]; // the dataset's zip, or its folder summed up like a zip
+    datasetId: string | null;
+    // Report-only sections (nothing to upload): a folder where every file was skipped, or loose files.
+    reportOnly?: "folder" | "loose";
+  }
+  let runs = $state<UploadRun[]>([]);
+  let createdDatasets = false; // refresh the datasets list once the modal closes
+  let uploading: boolean = $derived(runs.length > 0);
+  const allRows: UploadRow[] = $derived(runs.flatMap((run) => run.rows));
+  const allRunsCompleted: boolean = $derived(uploading && allRows.every((row) => rowView(row).status === "completed"));
   const uploadProgressText = $derived.by<string>(() => {
-    const done = uploadItems.filter((i) => i.status === "completed").length;
-    return `${done} of ${uploadItems.length} ${pluralizeUnit(uploadItems.length, "item")} uploaded`;
+    const done = allRows.filter((row) => rowView(row).status === "completed").length;
+    return `${done} of ${allRows.length} ${pluralizeUnit(allRows.length, "item")} uploaded`;
   });
 
   // Read-only seed for <DatasetForm>; never mutated here.
@@ -64,6 +92,9 @@
   );
   // Local edit buffer holding the current form values.
   let draft: Hash = $state({});
+  const datasetsToCreate: number = $derived(
+    uploadMode ? groupIntoDatasets((draft.picked as PickedFile[] | undefined) ?? []).groups.length : 0,
+  );
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
   // fields the form emits via onValueChange — used for BOTH the original-record
@@ -83,11 +114,17 @@
 
   // Functions
   function resetForm(): void {
+    // Refresh on close, not right after upload: the datasets table is rebuilt on refresh
+    // and may hold the button this modal lives in (and the open summary with it).
+    if (createdDatasets) $refetches.datasets.list = new Date();
+    createdDatasets = false;
     fieldErrors = {};
     changeTracker.reset();
     selectedDatasetId = null;
     draft = {};
-    uploadItems = [];
+    runs = [];
+    createMode = "empty";
+    submitting = false;
   }
 
   function setValue(value: Hash): void {
@@ -114,13 +151,11 @@
     return labelConfig;
   }
 
-  async function createDataset(): Promise<string> {
-    const labelConfig = await getLabelConfig();
-
+  async function createDataset(name: string, labelConfig: IConfig): Promise<string> {
     const createdDatasetRes = await datasetsBackendDataSource.create(
       {
         attributes: {
-          name: draft.name,
+          name,
           modality: draft.modality,
           labeling_configuration: labelConfig,
           workflow_configuration: {},
@@ -148,24 +183,54 @@
     goto(resolve(`/projects/${projectId}/datasets/${datasetId}/entries`));
   }
 
-  // The dataset is only created once an upload actually produced media, so an
-  // empty/unsupported/corrupt selection never leaves an empty dataset behind.
-  async function createDatasetFromUpload(): Promise<void> {
-    let datasetId: string | null = null;
-    const createOnce = once(async () => (datasetId = await createDataset()));
-
-    uploadItems = (draft.picked as PickedFile[]).map(({ file }) => createUploadItem(file));
-    await uploadAll(uploadItems, { projectId: projectId!, modality: draft.modality, getDatasetId: createOnce });
-
-    if (!datasetId) {
-      uploadItems = []; // back to the form so the user can pick other files
-      submitting = false;
-      showToast.error({ title: "No supported files found", description: "The dataset was not created." });
+  // Each dataset is only created once one of its files actually produced media, so an
+  // empty/unsupported/corrupt folder or zip never leaves an empty dataset behind.
+  async function createDatasetsFromUpload(): Promise<void> {
+    const { groups } = groupIntoDatasets(draft.picked as PickedFile[]);
+    if (groups.length === 0) {
+      fieldErrors = { files: ["Select at least one folder or zip file"] };
       return;
     }
 
-    showUploadSummaryToast(uploadItems);
-    openDataset(datasetId);
+    // One fetch shared by every dataset, so they all get the same copied configuration.
+    const labelConfig = once(getLabelConfig);
+    const { byGroup, skippedGroups, loose } = assignIgnored(groups, (draft.ignored as PickedFile[] | undefined) ?? []);
+    runs = groups.map((group) => {
+      const isZip = group.files.length === 1 && !group.files[0].path.includes("/");
+      const row: UploadRow = isZip
+        ? { kind: "file", item: createUploadItem(group.files[0].file) }
+        : folderRow(group.name, group.files, byGroup.get(group.key) ?? []);
+      return { name: group.name, rows: [row], datasetId: null };
+    });
+    for (const group of skippedGroups) {
+      runs.push({
+        name: group.name,
+        rows: [folderRow(group.name, [], group.files)],
+        datasetId: null,
+        reportOnly: "folder",
+      });
+    }
+    if (loose.length > 0) {
+      runs.push({ name: "Loose files", rows: [looseRow(loose)], datasetId: null, reportOnly: "loose" });
+    }
+
+    for (const run of runs) {
+      await uploadAll(rowItems(run.rows), {
+        projectId: projectId!,
+        modality: draft.modality,
+        getDatasetId: once(async () => (run.datasetId = await createDataset(run.name, await labelConfig()))),
+      });
+    }
+
+    // Like Add Entry, the modal stays open on the summary; the user closes it.
+    const created = runs.filter((run) => run.datasetId).length;
+    if (created === 0) {
+      showToast.error({ title: "No datasets created", description: "No supported files could be uploaded." });
+      return;
+    }
+
+    showUploadSummaryToast(allRows.map(rowView), created);
+    createdDatasets = true;
   }
 
   async function updateDataset() {
@@ -197,7 +262,12 @@
   async function submit(): Promise<void> {
     fieldErrors = {};
     submitting = true;
-    const schema: ZodSchema = newRecord ? createDatasetSchema : updateDatasetSchema;
+    // Upload mode names datasets after the folders/zips, so only the modality is validated.
+    const schema: ZodSchema = uploadMode
+      ? createDatasetSchema.pick({ modality: true })
+      : newRecord
+        ? createDatasetSchema
+        : updateDatasetSchema;
 
     try {
       const validated = validateData(schema, {
@@ -207,19 +277,13 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-        submitting = false;
         return;
       }
 
-      if (newRecord && draft.uploadNow) {
-        if (!draft.picked?.length) {
-          fieldErrors = { files: ["Select a folder or files to upload"] };
-          submitting = false;
-          return;
-        }
-        await createDatasetFromUpload();
+      if (uploadMode) {
+        await createDatasetsFromUpload();
       } else if (newRecord) {
-        openDataset(await createDataset());
+        openDataset(await createDataset(draft.name, await getLabelConfig()));
         showToast.success({
           title: "Dataset created",
           description: `The dataset "${draft.name}" has been created.`,
@@ -228,8 +292,9 @@
         await updateDataset();
       }
     } catch (error) {
-      submitting = false;
       showActionFailedToast(error);
+    } finally {
+      submitting = false; // success paths included: the modal may stay mounted for the next open
     }
   }
 </script>
@@ -241,37 +306,88 @@
   disabled={action === "update" ? !(changeTracker.hasUnsavedChanges || hasCopyLabelConfigSelected) : false}
   onCancel={resetForm}
   onConfirm={submit}
-  closeOnOutsideClick={uploadItems.length === 0}
-  actions={uploadItems.length > 0 ? uploadingActions : undefined}
+  closeOnOutsideClick={!uploading}
+  actions={uploading ? progressActions : newRecord ? createActions : undefined}
   bind:open
 >
   {#snippet modalTitle()}
-    {#if uploadItems.length > 0}
-      <DialogTitle>Creating dataset from upload...</DialogTitle>
+    {#if allRunsCompleted}
+      <DialogTitle>Upload completed</DialogTitle>
+    {:else if uploading}
+      <DialogTitle>Creating datasets from upload...</DialogTitle>
     {:else}
       <DialogTitle>{newRecord ? `Add New ${title}` : `Edit ${title}`}</DialogTitle>
     {/if}
   {/snippet}
 
   {#snippet modalDescription()}
-    <DialogDescription>{uploadItems.length > 0 ? uploadProgressText : ""}</DialogDescription>
+    <DialogDescription></DialogDescription>
   {/snippet}
 
-  {#if uploadItems.length > 0}
+  {#if uploading}
     <section class="flex h-auto max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
-      {#each uploadItems as uploadItem, uploadItemIndex (uploadItemIndex)}
-        <UploadMediaItem {uploadItem} maxRetries={MAX_RETRIES} />
+      {#each runs as run, runIndex (runIndex)}
+        {@const runCompleted = run.rows.every((row) => rowView(row).status === "completed")}
+        <h3 class="text-sm font-semibold">
+          {run.name}
+          {#if run.datasetId}
+            <span class="text-muted-foreground font-normal">· created</span>
+          {:else if run.reportOnly === "loose"}
+            <span class="text-muted-foreground font-normal">· not in a folder or zip</span>
+          {:else if runCompleted}
+            <span class="text-destructive font-normal">· not created</span>
+          {/if}
+        </h3>
+        {#each run.rows as row, rowIndex (rowIndex)}
+          <UploadMediaItem uploadItem={rowView(row)} maxRetries={MAX_RETRIES} />
+        {/each}
       {/each}
     </section>
-  {/if}
+  {:else}
+    {#if newRecord}
+      <Tabs
+        class="mb-4 px-1"
+        value={createMode}
+        onValueChange={(value) => {
+          createMode = value as "empty" | "upload";
+          fieldErrors = {};
+        }}
+      >
+        <TabsList class="w-full">
+          <TabsTrigger value="empty">Empty dataset</TabsTrigger>
+          <TabsTrigger value="upload">From upload</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    {/if}
 
-  <!-- Hidden, not unmounted, during upload: the form keeps its values if nothing gets imported. -->
-  <div class:hidden={uploadItems.length > 0}>
-    <DatasetForm {dataset} {fieldErrors} {newRecord} onValueChange={setValue}></DatasetForm>
-  </div>
+    <DatasetForm {dataset} {fieldErrors} {newRecord} {uploadMode} onValueChange={setValue}></DatasetForm>
+  {/if}
 </FormModal>
 
-<!-- No Cancel while uploading: the upload would keep running behind a closed modal. -->
-{#snippet uploadingActions()}
-  <DialogDescription>Please keep this window open until the upload finishes.</DialogDescription>
+<!-- Same layout as Add Entry: selection summary on the left, buttons on the right. -->
+{#snippet createActions()}
+  <section class="flex w-full items-center">
+    <Text>
+      {#if uploadMode}
+        <DialogDescription>
+          {selectionSummary(datasetsToCreate, "dataset", "to create", draft.ignored?.length ?? 0)}
+        </DialogDescription>
+      {/if}
+    </Text>
+
+    <div class="ml-auto flex items-center gap-2">
+      <DialogClose>
+        <Button variant="outline" class="w-full lg:w-auto" onclick={resetForm}>Cancel</Button>
+      </DialogClose>
+
+      <Button loading={submitting} loadingLabel="Creating" onclick={submit}>
+        {uploadMode && datasetsToCreate > 1 ? `Create ${datasetsToCreate} Datasets` : `Create ${title}`}
+      </Button>
+    </div>
+  </section>
+{/snippet}
+
+<!-- Same as Add Entry: progress only, no Cancel (the upload would keep running behind a closed modal). -->
+{#snippet progressActions()}
+  <DialogDescription>{uploadProgressText}</DialogDescription>
 {/snippet}
