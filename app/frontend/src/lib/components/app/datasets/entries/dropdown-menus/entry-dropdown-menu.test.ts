@@ -49,7 +49,6 @@ describe("getEntryDropdownMenuActions", () => {
     expect(exportItem?.hidden).toBe(true);
   });
 
-
   it("includes a Reopen action when onReopen is provided", () => {
     const items = getEntryDropdownMenuActions({
       ...defaultParams,

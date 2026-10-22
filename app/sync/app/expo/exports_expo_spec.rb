@@ -204,7 +204,8 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
         .with(project_id,
               dataset_ids,
               exporter,
-              { include_medias: "original", completed_entries: true, task: "segment", val_percent: 20 })
+              { include_medias: "original", completed_entries: true, task: "segment", val_percent: 20 },
+              entry_ids: nil)
         .and_return(export_without_file)
 
       post "/exports/export",
