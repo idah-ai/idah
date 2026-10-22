@@ -19,11 +19,15 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
 
   // Zero-fill all configured category ids
   const categoryCounts = new Map<string, number>();
+  const configuredIds = new Set<string>();
   for (const shapeConfig of Object.values(rawConfig)) {
     if (typeof shapeConfig !== "object" || !shapeConfig || !("values" in shapeConfig)) continue;
     const values = (shapeConfig as { values?: { id?: string }[] }).values ?? [];
     for (const v of values) {
-      if (typeof v.id === "string") categoryCounts.set(v.id, 0);
+      if (typeof v.id === "string") {
+        configuredIds.add(v.id);
+        categoryCounts.set(v.id, 0);
+      }
     }
   }
 
@@ -65,12 +69,42 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   // Total count of live (non-deleted) representative annotations
   const liveCount = [...representativeByGroup.values()].filter((a) => !a.deleted_at).length;
 
+  // Count annotations whose category is not present in the labeling config
+  // (mirrors backend EntryStats::CoreStats "orphan_category.count"). Computed
+  // over the same deduplicated live set as the other counts so orphan ≤ total.
+  let orphanCategoryCount = 0;
+  for (const ann of representativeByGroup.values()) {
+    if (ann.deleted_at) continue;
+    const category = ann.category;
+    if (typeof category === "string" && category && !configuredIds.has(category)) {
+      orphanCategoryCount += 1;
+    }
+  }
+
   const stats: IStatEntry[] = [
-    { ...ANNOTATION_SECTION, key: "annotation.count", value: String(liveCount), label: "Total" },
+    {
+      ...ANNOTATION_SECTION,
+      key: "annotation.count",
+      value: String(liveCount),
+      label: "Total",
+    },
+    {
+      ...ANNOTATION_SECTION,
+      key: "orphan_category.count",
+      value: String(orphanCategoryCount),
+      label: "Label Not Found",
+    },
   ];
 
   for (const [id, count] of categoryCounts) {
-    stats.push({ ...CATEGORY_SECTION, key: `category.${id}.count`, value: String(count) });
+    stats.push({
+      ...CATEGORY_SECTION,
+      key: `category.${id}.count`,
+      value: String(count),
+      // Category ids not present in the labeling config are orphans — their
+      // label was deleted, renamed, or never configured.
+      tags: !configuredIds.has(id) ? [{ label: "Deleted", variant: "destructive-outline" }] : undefined,
+    });
   }
 
   for (const [shape, count] of shapeCounts) {

@@ -12,11 +12,13 @@
   // Props
   interface Props extends FormFieldBaseProps {
     bordered?: boolean;
+    checkboxClass?: string;
     checked: boolean;
     onCheckedChange?: (checked: boolean) => void;
   }
   let {
     bordered = false,
+    checkboxClass,
     checked = $bindable(false),
     onCheckedChange,
     name,
@@ -31,26 +33,45 @@
     slotInfo,
     slotErrors,
   }: Props = $props();
+
+  // The checkbox renders a <button role="checkbox"> (not a native input),
+  // so clicking the <label> won't toggle it automatically. Forward the click
+  // to the checkbox so label clicks behave exactly like checkbox clicks.
+  let checkboxRef = $state<HTMLButtonElement | null>(null);
+
+  function handleLabelClick() {
+    checkboxRef?.click();
+  }
 </script>
 
 <FormField
   id={name}
   class={cn(
-    "flex flex-row items-start gap-3",
+    "flex flex-row items-center gap-3",
     {
       "hover:bg-accent/50 has-[[aria-checked=true]]:border-primary/60 has-[[aria-checked=true]]:bg-primary/10 dark:has-[[aria-checked=true]]:border-primary/90 dark:has-[[aria-checked=true]]:bg-primary/90 rounded-lg border p-3":
         bordered,
+      "items-start": slotInfo || info,
     },
     className,
   )}
 >
-  <Checkbox {name} {disabled} {readonly} {required} bind:checked {onCheckedChange}></Checkbox>
+  <Checkbox
+    bind:ref={checkboxRef}
+    class={checkboxClass}
+    {name}
+    {disabled}
+    {readonly}
+    {required}
+    bind:checked
+    {onCheckedChange}
+  ></Checkbox>
 
   <div class="grid flex-1 gap-1.5 font-normal">
     {#if slotLabel}
       {@render slotLabel()}
     {:else}
-      <FormFieldLabel {required}>{label}</FormFieldLabel>
+      <FormFieldLabel {required} onclick={handleLabelClick}>{label}</FormFieldLabel>
     {/if}
 
     {#if slotInfo}
