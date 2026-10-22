@@ -1,42 +1,44 @@
 <script lang="ts">
+  import { FileArchiveIcon, FileIcon, FolderIcon } from "@lucide/svelte";
   import type { ChangeEventHandler } from "svelte/elements";
 
+  import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import {
+    collectDroppedFiles,
+    fromInputFiles,
+    partitionAccepted,
+    type PickedFile,
+  } from "@/components/app/forms/fields/upload/file-upload.utils";
   import { cn } from "@/utils";
 
-  import type { FileUploadBaseProps } from "@/components/app/forms/fields/upload/file-upload.types";
+  import type { FileUploadBaseProps, FileUploadPicker } from "@/components/app/forms/fields/upload/file-upload.types";
 
   // Props
   let {
     class: className,
     acceptedFileTypes = null,
+    pickers,
+    dropHint,
     onFilesSelected,
-    SelectedFilesSlot,
-    InfoSlot,
   }: FileUploadBaseProps = $props();
 
   // Variables
-  let fileInput: HTMLInputElement;
-  let uploading: boolean = $state(false);
+  let inputs: HTMLInputElement[] = $state([]);
   let isDragging: boolean = $state(false);
-  let acceptedFileTypesString: string | null = $derived(acceptedFileTypes ? acceptedFileTypes.join(", ") : null);
-  let selectedFiles: FileList | null = $state(null);
+  let allowFolders: boolean = $derived(pickers.some((picker) => picker.kind === "folder"));
 
   // Functions
-  function openChooseFile() {
-    if (fileInput) {
-      fileInput.click();
-    }
+  // Unsupported files (e.g. notes.txt inside a folder) are reported, not silently lost.
+  function select(picked: PickedFile[]): void {
+    const { accepted, ignored } = partitionAccepted(picked, acceptedFileTypes);
+    onFilesSelected(accepted, ignored);
   }
 
-  function isFileAccepted(file: File): boolean {
-    if (!acceptedFileTypes || acceptedFileTypes.length === 0) return true;
-    return acceptedFileTypes.some((type) => {
-      if (type.startsWith(".")) return file.name.toLowerCase().endsWith(type.toLowerCase());
-      if (type.endsWith("/*")) return file.type.startsWith(type.slice(0, -1));
-      return file.type === type;
-    });
+  function iconFor(picker: FileUploadPicker) {
+    if (picker.kind === "folder") return FolderIcon;
+    return picker.accept?.length === 1 && picker.accept[0] === ".zip" ? FileArchiveIcon : FileIcon;
   }
 
   function handleDragOver(event: DragEvent): void {
@@ -49,75 +51,59 @@
     isDragging = false;
   }
 
-  function handleDrop(event: DragEvent): void {
+  async function handleDrop(event: DragEvent): Promise<void> {
     event.preventDefault();
     isDragging = false;
 
-    const newFiles = event.dataTransfer?.files;
-    if (!newFiles || newFiles.length === 0) return;
+    const items = event.dataTransfer?.items;
+    if (!items || items.length === 0) return;
 
-    const dt = new DataTransfer();
-    Array.from(newFiles)
-      .filter(isFileAccepted)
-      .forEach((f) => dt.items.add(f));
-    if (dt.files.length === 0) return;
-
-    selectedFiles = dt.files;
-    onFilesSelected(dt.files);
+    select(allowFolders ? await collectDroppedFiles(items) : fromInputFiles(event.dataTransfer!.files));
   }
 
   const handleChooseFile: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
-    selectedFiles = target.files;
-
-    if (selectedFiles) {
-      onFilesSelected(selectedFiles);
-    }
+    if (target.files) select(fromInputFiles(target.files));
+    target.value = ""; // allow picking the same file/folder again
   };
 </script>
 
+<!-- A single native input can pick files OR folders, never both, hence one button each. -->
 <div
-  role="button"
-  tabindex="0"
+  role="region"
+  aria-label="Upload drop zone"
   class={cn(
-    "bg-secondary group flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4",
+    "bg-secondary flex w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-4",
     isDragging && "border-primary bg-primary/5",
     className,
   )}
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
-  onkeypress={openChooseFile}
-  onclick={openChooseFile}
 >
-  <input
-    bind:this={fileInput}
-    multiple
-    type="file"
-    class="hidden"
-    accept={acceptedFileTypesString}
-    onchange={handleChooseFile}
-    disabled={uploading}
-  />
+  <div class="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
+    {#each pickers as picker, index (picker.kind)}
+      {@const Icon = iconFor(picker)}
+      {#if picker.kind === "folder"}
+        <input bind:this={inputs[index]} webkitdirectory type="file" class="hidden" onchange={handleChooseFile} />
+      {:else}
+        <input
+          bind:this={inputs[index]}
+          multiple
+          type="file"
+          class="hidden"
+          accept={(picker.accept ?? acceptedFileTypes)?.join(", ") ?? null}
+          onchange={handleChooseFile}
+        />
+      {/if}
 
-  <Text class="text-accent-foreground text-wrap" size="sm">
-    {#if SelectedFilesSlot}
-      {@render SelectedFilesSlot({ selectedFiles })}
-    {:else if selectedFiles}
-      {#each selectedFiles as selectedFile (selectedFile.name)}
-        <span class="line-clamp-1">{selectedFile.name}</span>
-      {/each}
-    {:else}
-      <span class="font-medium underline underline-offset-2">Click to select files</span>
-      <span class="text-muted-foreground">or drag and drop</span>
-    {/if}
-  </Text>
+      <Button type="button" variant="outline" size="sm" class="justify-start" onclick={() => inputs[index]?.click()}>
+        <Icon />
+        {picker.label}
+      </Button>
+      <Text class="text-muted-foreground" size="sm">{picker.description}</Text>
+    {/each}
+  </div>
 
-  {#if InfoSlot}
-    {@render InfoSlot()}
-  {:else if acceptedFileTypesString}
-    <Text class="text-muted-foreground text-center" size="sm">
-      Supported file types: {acceptedFileTypesString}
-    </Text>
-  {/if}
+  <Text class="text-muted-foreground" size="sm">{dropHint}</Text>
 </div>
