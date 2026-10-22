@@ -88,10 +88,7 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
           version: "1.0.0",
           title: "Foo plugin",
           description: "Foo ipsum",
-          modalities: [
-            { id: "modA", label: "modality A", description: "", acceptedFileTypes: [".jpg", ".png"] },
-            { id: "modB", label: "modality B" }
-          ],
+          modalities: [{ id: "modA", label: "modality A", description: "" }, { id: "modB", label: "modality B" }],
           entryPoints: {}
         )
       )
@@ -123,9 +120,9 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(output).to eq(
         {
           modalities: {
-            "modA" => { label: "modality A", description: "", accepted_file_types: [".jpg", ".png"] },
-            "modB" => { label: "modality B", description: nil, accepted_file_types: nil },
-            "modC" => { label: nil, description: nil, accepted_file_types: nil }
+            "modA" => { label: "modality A", description: "" },
+            "modB" => { label: "modality B", description: nil },
+            "modC" => { label: nil, description: nil }
           },
           plugins: {
             "modA" => ["foo"],

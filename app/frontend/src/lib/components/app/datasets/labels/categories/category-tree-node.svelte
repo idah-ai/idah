@@ -64,7 +64,7 @@
   {@const hasChildren = children.length > 0}
 
   <div
-    class={cn("group relative flex w-full items-center rounded-sm", {
+    class={cn("group relative flex min-w-0 items-center rounded-sm", {
       "before:bg-primary before:absolute before:inset-x-0 before:-top-px before:h-0.5":
         drag.dragOverId === id && drag.dropPosition === "before",
       "after:bg-primary after:absolute after:inset-x-0 after:-bottom-px after:h-0.5":

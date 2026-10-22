@@ -7,7 +7,6 @@
 
   import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
   import { mergePickedFiles, type PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
-  import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
 
   import type { FileUploadPicker } from "@/components/app/forms/fields/upload/file-upload.types";
 
@@ -16,7 +15,6 @@
   // - "entries": everything is flattened into one dataset (Add Entry)
   // - "datasets": folders/zips only, each becoming one or more new datasets
   interface Props {
-    modality: string;
     picked: PickedFile[];
     // Picked/dropped but not accepted (unsupported type, or loose in "datasets" mode); deduplicated.
     ignored?: PickedFile[];
@@ -24,7 +22,6 @@
     class?: string;
   }
   let {
-    modality,
     picked = $bindable([]),
     ignored = $bindable([]),
     mode = "entries",
@@ -56,13 +53,6 @@
   const groups = $derived(mode === "datasets" ? groupIntoDatasets(picked).groups : []);
 
   // Functions
-  // Media types come from the modality's plugin manifest; zip archives are a platform feature on top.
-  async function loadAcceptedFileTypes(modality: string): Promise<string[]> {
-    const { modalities } = await pluginsBackendDataSource.modalities();
-    const mediaTypes = modalities[modality]?.accepted_file_types;
-    return mediaTypes ? [".zip", ...mediaTypes] : []; // [] = accept anything
-  }
-
   function handleFilesSelected(added: PickedFile[], unsupported: PickedFile[]): void {
     let newlyIgnored = unsupported;
     if (mode === "datasets") {
@@ -82,9 +72,8 @@
   }
 </script>
 
-{#await loadAcceptedFileTypes(modality) then acceptedFileTypes}
-  <FileUpload class={className} {acceptedFileTypes} {...PICKERS[mode]} onFilesSelected={handleFilesSelected} />
-{/await}
+<!-- No media-type filter here: the server decides per file and reports what it skipped. -->
+<FileUpload class={className} {...PICKERS[mode]} onFilesSelected={handleFilesSelected} />
 
 {#if mode === "datasets" && groups.length > 0}
   <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">

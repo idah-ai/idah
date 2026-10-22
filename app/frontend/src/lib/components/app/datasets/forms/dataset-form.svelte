@@ -80,8 +80,6 @@
         value={modality}
         onSelected={(selectedValue) => {
           modality = selectedValue as string;
-          picked = []; // accepted file types depend on the modality
-          ignored = [];
         }}
       />
     {/await}
@@ -118,7 +116,7 @@
     {#if uploadMode}
       <div>
         {#if modality}
-          <MediaPicker class="py-8" {modality} mode="datasets" bind:picked bind:ignored />
+          <MediaPicker class="py-8" mode="datasets" bind:picked bind:ignored />
         {:else}
           <Text class="text-muted-foreground" size="sm">Select a modality to choose folders or zip files.</Text>
         {/if}

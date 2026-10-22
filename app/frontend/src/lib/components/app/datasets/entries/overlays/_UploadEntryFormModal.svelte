@@ -12,6 +12,9 @@
   import { buildEntryRows, rowItems, rowView } from "@/components/app/datasets/upload/upload-rows";
   import { MAX_RETRIES, showUploadSummaryToast, uploadAll } from "@/components/app/datasets/upload/upload-pipeline";
   import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
+  import { datasetBasePath } from "@/data/model/dataset/dataset-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
   import { refetches } from "@/utils/refetch";
@@ -72,10 +75,17 @@
   });
 
   // Functions
+  // New entries change the dataset's counts and progress too.
+  function refetchEntriesAndDatasets(): void {
+    clearCache(resourcePath(datasetBasePath, null, undefined));
+    $refetches.entries.list = new Date();
+    $refetches.datasets.list = new Date();
+  }
+
   function resetForm(): void {
     // Refresh on close, not right after upload: this modal can be opened from the empty
     // state, which the refreshed list removes (and the open summary with it).
-    if (createdEntries) $refetches.entries.list = new Date();
+    if (createdEntries) refetchEntriesAndDatasets();
     createdEntries = false;
     uploading = false;
     ignored = [];
@@ -140,7 +150,7 @@
   {/snippet}
 
   {#if view.isSelect()}
-    <MediaPicker {modality} bind:picked bind:ignored />
+    <MediaPicker bind:picked bind:ignored />
   {/if}
 
   {#if view.isUpload()}

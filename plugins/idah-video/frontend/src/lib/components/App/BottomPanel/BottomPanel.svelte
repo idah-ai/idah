@@ -32,7 +32,14 @@
     player: Video | undefined;
     volume: { level: number; muted: boolean };
   }
-  let { viewportAnnotations, frameAnnotations, entryRootAnnotation, length, player = $bindable(), volume }: Props = $props();
+  let {
+    viewportAnnotations,
+    frameAnnotations,
+    entryRootAnnotation,
+    length,
+    player = $bindable(),
+    volume,
+  }: Props = $props();
 
   // Internal state
   let panelHeight: number = $state(0);
@@ -92,15 +99,19 @@
   });
 
   let entryNotes: INoteRecord[] = $derived(viewport.isReviewWorkspace ? notes.list : []);
-  let pinnedNotes = $derived(entryNotes.filter((n) => {
-    const pos = n.anchor.position as { frame?: number } | undefined;
-    return pos?.frame !== undefined && n.anchor.anchor_type === "entry";
-  }))
-  let sortedPinnedNotes = $derived(pinnedNotes.sort((a, b) => {
-    const fa = (a.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
-    const fb = (b.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
-    return fa - fb;
-  }))
+  let pinnedNotes = $derived(
+    entryNotes.filter((n) => {
+      const pos = n.anchor.position as { frame?: number } | undefined;
+      return pos?.frame !== undefined && n.anchor.anchor_type === "entry";
+    }),
+  );
+  let sortedPinnedNotes = $derived(
+    pinnedNotes.sort((a, b) => {
+      const fa = (a.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
+      const fb = (b.anchor.position as { frame?: number } | undefined)?.frame ?? 0;
+      return fa - fb;
+    }),
+  );
 
   let items = $derived.by(() => {
     const query = categorySearch.value;
@@ -112,26 +123,28 @@
     }
     // Normalize hyphens↔spaces so searching by id or label both work.
     const q = query.toLowerCase().replace(/-/g, " ");
-    const annotations = viewportAnnotations.filter(
-      (ann) => (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q),
+    const annotations = viewportAnnotations.filter((ann) =>
+      (ann.category ?? "").toLowerCase().replace(/-/g, " ").includes(q),
     );
     return transformAnnotationsToTracks({
       annotations,
       labelConfig: getDriver().config,
     });
-  })
+  });
 
   // Entry notes row — rendered as a sticky row between ruler and tracks
   let noteItems = $derived.by(() => {
     if (!viewport.isReviewWorkspace || sortedPinnedNotes.length === 0) return [];
-    return [{
-      trackId: "__entry_notes__",
-      startRange: (sortedPinnedNotes.at(0)?.anchor.position as {frame: number}).frame,
-      endRange: (sortedPinnedNotes.at(-1)?.anchor.position as {frame: number}).frame,
-      rawData: sortedPinnedNotes,
-      component: EntryTrackBlock,
-    }]
-  })
+    return [
+      {
+        trackId: "__entry_notes__",
+        startRange: (sortedPinnedNotes.at(0)?.anchor.position as { frame: number }).frame,
+        endRange: (sortedPinnedNotes.at(-1)?.anchor.position as { frame: number }).frame,
+        rawData: sortedPinnedNotes,
+        component: EntryTrackBlock,
+      },
+    ];
+  });
 
   // Tagging rows — rendered as normal tracks in the scrollable body, grouped under a
   // collapsible "Tagging" header. One row for the entry:root annotation and one row per
@@ -152,13 +165,15 @@
         subtitle: "Entry",
         kind: "tagging",
         top: 0,
-        items: [{
-          trackId: "__entry_tag__",
-          startRange: entryRootAnnotation.shape_args.start,
-          endRange: entryRootAnnotation.shape_args.end,
-          rawData: { type: "entry" as TaggingRowKind, annotations: [entryRootAnnotation] },
-          component: EntryTaggingTrackBlock,
-        }],
+        items: [
+          {
+            trackId: "__entry_tag__",
+            startRange: entryRootAnnotation.shape_args.start,
+            endRange: entryRootAnnotation.shape_args.end,
+            rawData: { type: "entry" as TaggingRowKind, annotations: [entryRootAnnotation] },
+            component: EntryTaggingTrackBlock,
+          },
+        ],
       });
     }
 
@@ -176,18 +191,20 @@
         subtitle: "Frame",
         kind: "tagging",
         top: 0,
-        items: [{
-          trackId: `__frame_tag:${category}`,
-          startRange: anns[0]?.shape_args.start ?? 0,
-          endRange: anns[anns.length - 1]?.shape_args.start ?? 0,
-          rawData: { type: "frame" as TaggingRowKind, category, annotations: anns },
-          component: FrameCategoryTrackBlock,
-        }],
+        items: [
+          {
+            trackId: `__frame_tag:${category}`,
+            startRange: anns[0]?.shape_args.start ?? 0,
+            endRange: anns[anns.length - 1]?.shape_args.start ?? 0,
+            rawData: { type: "frame" as TaggingRowKind, category, annotations: anns },
+            component: FrameCategoryTrackBlock,
+          },
+        ],
       });
     }
 
     return tracks;
-  })
+  });
 </script>
 
 <TimelinePanel bind:panelHeight>
@@ -233,11 +250,7 @@
     {/snippet}
 
     {#snippet NoteTrackInfoSlot()}
-      <div
-        role="button"
-        tabindex="-1"
-        class="flex h-full cursor-pointer items-center px-2 select-none"
-      >
+      <div role="button" tabindex="-1" class="flex h-full cursor-pointer items-center px-2 select-none">
         <p class="text-xs font-medium">Notes</p>
       </div>
     {/snippet}

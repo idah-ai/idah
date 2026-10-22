@@ -8,11 +8,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { clipboard } from "$lib/state/clipboard.svelte";
 import { register as registerCopy } from "./copy";
 import { register as registerPaste } from "./paste";
+import { register as registerBatchMove } from "./batch_move";
 import { VIDEO_FRAME, ENTRY_ROOT } from "$lib/types";
 
 // ── Hoisted mutable state for mocks ────────────────────────────────────────
 const mockDataItems = vi.hoisted(() => [] as any[]);
 const mockCreateFn = vi.hoisted(() => vi.fn<(...args: any[]) => any>());
+const mockDeleteFn = vi.hoisted(() => vi.fn<(...args: any[]) => any>());
+const mockRestoreFn = vi.hoisted(() => vi.fn<(...args: any[]) => any>());
+const mockUpdateFn = vi.hoisted(() => vi.fn<(...args: any[]) => any>());
 const mockSelectedAnnotationIds = vi.hoisted(() => new Set<string>());
 const mockSelectedGroupIds = vi.hoisted(() => new Set<string>());
 const mockSelectAnnotations = vi.hoisted(() => vi.fn());
@@ -35,6 +39,9 @@ vi.mock("$lib/state/data.svelte", () => ({
     annotations: {
       get items() { return mockDataItems; },
       create: mockCreateFn,
+      delete: mockDeleteFn,
+      restore: mockRestoreFn,
+      update: mockUpdateFn,
     },
   },
 }));
@@ -121,13 +128,19 @@ function makeFrameAnn(
 }
 
 /** Create a mock driver and register copy/paste commands. Returns { copyCallback, pasteCallback }. */
-function registerCommands(): { copyCallback: (...args: any[]) => any; pasteCallback: (...args: any[]) => any } {
+function registerCommands(): {
+  copyCallback: (...args: any[]) => any;
+  pasteCallback: (...args: any[]) => any;
+  batchMoveCallback: (...args: any[]) => any;
+} {
   const result: any = {};
   mockRegister.mockImplementation((opts: any) => {
     if (opts.name === "idah-video:selection.copy") {
       result.copyCallback = opts.callback;
     } else if (opts.name === "idah-video:selection.paste") {
       result.pasteCallback = opts.callback;
+    } else if (opts.name === "idah-video:selection.batch-move") {
+      result.batchMoveCallback = opts.callback;
     }
   });
   const mockDriver = {
@@ -136,6 +149,7 @@ function registerCommands(): { copyCallback: (...args: any[]) => any; pasteCallb
   };
   registerCopy(mockDriver as any);
   registerPaste(mockDriver as any);
+  registerBatchMove(mockDriver as any);
   return result;
 }
 
@@ -144,6 +158,12 @@ function resetMocks(): void {
   mockDataItems.splice(0, mockDataItems.length);
   mockCreateFn.mockReset();
   mockCreateFn.mockResolvedValue({ id: "created" });
+  mockDeleteFn.mockReset();
+  mockDeleteFn.mockResolvedValue(undefined);
+  mockRestoreFn.mockReset();
+  mockRestoreFn.mockResolvedValue({ id: "restored" });
+  mockUpdateFn.mockReset();
+  mockUpdateFn.mockResolvedValue(undefined);
   mockSelectedAnnotationIds.clear();
   mockSelectedGroupIds.clear();
   mockSelectAnnotations.mockReset();
@@ -671,6 +691,100 @@ describe("selection.copy + selection.paste", () => {
         }),
       );
       expect(mockToastSuccess).toHaveBeenCalledTimes(1); // from copy step only
+    });
+  });
+
+  // ── Bug 4: paste redo must reuse ids ─────────────────────────────────────
+
+  describe("Bug 4 — paste redo reuses ids", () => {
+    it("do → undo → do creates once, then restores with the same ids", async () => {
+      const ann = makeAnn("bbox-001");
+      mockDataItems.push(ann);
+      mockSelectedAnnotationIds.add("bbox-001");
+      mockCurrentFrameValue.value = 15;
+
+      const { copyCallback, pasteCallback } = registerCommands();
+      const copyAction = copyCallback();
+      copyAction.do();
+      expect(clipboard.hasData).toBe(true);
+
+      mockCurrentFrameValue.value = 20;
+
+      const pasteAction = pasteCallback();
+      await pasteAction.do();
+
+      expect(mockCreateFn).toHaveBeenCalledTimes(1);
+      const createdId = mockCreateFn.mock.calls[0][0].id;
+
+      // Undo deletes the created annotation
+      mockCreateFn.mockClear();
+      await pasteAction.undo!();
+      expect(mockDeleteFn).toHaveBeenCalledWith(createdId);
+
+      // Redo restores the same id, never re-creates
+      mockDeleteFn.mockClear();
+      await pasteAction.do();
+      expect(mockCreateFn).not.toHaveBeenCalled();
+      expect(mockRestoreFn).toHaveBeenCalledTimes(1);
+      expect(mockRestoreFn.mock.calls[0][0].id).toBe(createdId);
+    });
+
+    it("paste → batch move → undo both → redo both updates the restored ids", async () => {
+      const ann = makeAnn("bbox-001");
+      mockDataItems.push(ann);
+      mockSelectedAnnotationIds.add("bbox-001");
+      mockCurrentFrameValue.value = 15;
+
+      const { copyCallback, pasteCallback, batchMoveCallback } = registerCommands();
+      const copyAction = copyCallback();
+      copyAction.do();
+
+      mockCurrentFrameValue.value = 20;
+      const pasteAction = pasteCallback();
+      await pasteAction.do();
+
+      const createdId = mockCreateFn.mock.calls[0][0].id;
+      const createdShape = mockCreateFn.mock.calls[0][0].shape_args;
+
+      // Batch move the pasted annotation
+      const moveAction = batchMoveCallback({
+        updates: [
+          {
+            annotationId: createdId,
+            selection: { frame: 20, angle: 0, points: [[5, 5], [6, 6]] },
+            snapshot: {
+              id: createdId,
+              shape_type: "idah-video:bounding-box",
+              shape_args: createdShape,
+              category: "test/cat",
+            },
+          },
+        ],
+      });
+      await moveAction.do();
+      expect(mockUpdateFn).toHaveBeenCalledTimes(1);
+      expect(mockUpdateFn.mock.calls[0][0].id).toBe(createdId);
+
+      // Undo both (move first, then paste)
+      mockUpdateFn.mockClear();
+      await moveAction.undo!();
+      await pasteAction.undo!();
+
+      // Redo both (paste first, then move)
+      mockCreateFn.mockClear();
+      mockRestoreFn.mockClear();
+      mockUpdateFn.mockClear();
+      await pasteAction.do();
+      await moveAction.do();
+
+      // Paste restored the same id (no new create)
+      expect(mockCreateFn).not.toHaveBeenCalled();
+      expect(mockRestoreFn).toHaveBeenCalledTimes(1);
+      expect(mockRestoreFn.mock.calls[0][0].id).toBe(createdId);
+
+      // Move updated the restored id — no failure
+      expect(mockUpdateFn).toHaveBeenCalledTimes(1);
+      expect(mockUpdateFn.mock.calls[0][0].id).toBe(createdId);
     });
   });
 });

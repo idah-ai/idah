@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { InfoIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import VisibilityEditor from "@/components/app/datasets/labels/properties/visibility/VisibilityEditor.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import Separator from "@/components/ui/separator/separator.svelte";
@@ -14,22 +14,21 @@
 
   import { borderTypes } from "@/data/model/dataset/labels";
 
-  import type { IConfigProperty } from "@/plugin/interface/Activity";
+  import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { Hash } from "@/utils/types";
-
-  import { ASTNodeToFunctionString } from "@/utils/ast_resolution";
-  import * as parser from "@build/parser.js";
 
   // Props
   interface Props {
     property: IConfigProperty;
+    /** Categories and properties of the label config, for visibility conditions. */
+    categories: IConfigValue[];
+    properties: IConfigProperty[];
     onSetValue: (valueToSet: Hash) => void;
   }
-  let { property, onSetValue }: Props = $props();
+  let { property, categories, properties, onSetValue }: Props = $props();
 
   // Variables
   let { id, description, type, format, required, visibility } = $derived(property);
-  let visibilityError: string | undefined = $state();
 </script>
 
 {#snippet SectionHeading(heading: string)}
@@ -111,7 +110,7 @@
 
     <!-- PROPERTY OPTIONS::TYPE::[SINGLE SELECT, MULTIPLE SELECT] -->
     {#if type.includes("select")}
-      {#each format.options as option, index (index)}
+      {#each format.options ?? [] as option, index (index)}
         <Card class="gap-1">
           <CardHeader>
             <CardTitle class="text-sm">Option {index + 1}</CardTitle>
@@ -257,72 +256,13 @@
 
   <!-- PROPERTY::CONDITIONAL VISIBLE -->
   <Separator />
-  <div class="flex flex-col gap-2 px-6 pb-4">
-    <TextareaField
-      name="{id}/visibility"
-      class="col-span-1 md:col-span-2"
-      placeholder="e.g. task_name match '...' and status = '...'"
-      value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
-      oninput={(e) => {
-        const value = e.currentTarget.value.trim();
-
-        if (!value) {
-          visibilityError = undefined;
-          onSetValue({ visibility: true });
-          return;
-        }
-
-        try {
-          const visibility = parser.parse(value);
-          visibilityError = undefined;
-          if (visibility.length) onSetValue({ visibility: visibility });
-        } catch (error) {
-          if (error instanceof Error) {
-            visibilityError = error.message;
-          }
-        }
-      }}
-      errors={visibilityError ? [visibilityError] : undefined}
-    >
-      {#snippet slotLabel()}
-        <div class="flex items-center gap-1">
-          <Text size="sm" class="text-accent-foreground/70">Visibility</Text>
-          <Tooltips align="center">
-            {#snippet trigger()}
-              <InfoIcon class="text-muted-foreground size-4" />
-            {/snippet}
-
-            {#snippet content()}
-              <div>
-                <Text size="sm" weight="bold">How to set visibility</Text>
-                <br />
-                <p>Leave this field empty to apply the property to all categories.</p>
-                <br />
-
-                <p>
-                  To target a specific category, enter a condition:<br />
-                  <code class="bg-secondary/20 rounded">category = "[category_id]"</code><br />
-                  Example: <code class="bg-secondary/20 rounded">category = "vehicles/car"</code>
-                </p>
-                <br />
-
-                <p>
-                  To target multiple categories, combine conditions using "or":<br />
-                  Example:
-                  <code class="bg-secondary/20 rounded"
-                    >(category = "vehicles/car") or (category = "traffic-light")</code
-                  >
-                </p>
-                <br />
-
-                <p>
-                  You can find <code class="bg-secondary/20 rounded">[category_id]</code> in the Categories section.
-                </p>
-              </div>
-            {/snippet}
-          </Tooltips>
-        </div>
-      {/snippet}
-    </TextareaField>
+  <div class="px-6 pb-4">
+    <VisibilityEditor
+      {visibility}
+      {categories}
+      {properties}
+      propertyId={id}
+      onChange={(visibility) => onSetValue({ visibility })}
+    />
   </div>
 </div>

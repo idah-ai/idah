@@ -17,7 +17,6 @@
     {
       "id": "idah-video",
       "label": "Video",
-      "acceptedFileTypes": [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".ts"],
       "shapes": {
         "bounding-box": {
           "label": "Bounding Box",
