@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
-  
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
