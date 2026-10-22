@@ -17,7 +17,7 @@
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
-  import EntryExportFormModal from "@/components/app/projects/exports/overlays/entry-export-form-modal.svelte";
+  import EntryExportFormModal from "@/components/app/projects/exports/overlays/_EntryExportFormModal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";

@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
-  import EntryExportFormModal from "@/components/app/projects/exports/overlays/entry-export-form-modal.svelte";
+  import EntryExportFormModal from "@/components/app/projects/exports/overlays/_EntryExportFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
