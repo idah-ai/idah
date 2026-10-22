@@ -184,7 +184,7 @@
   <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
 
   <ExportFormModal
-    title="Export Dataset(s)"
+    title="Export Datasets"
     action="create"
     datasetRecords={datasetRecord ? [datasetRecord] : []}
     bind:open={openExportFormModal}

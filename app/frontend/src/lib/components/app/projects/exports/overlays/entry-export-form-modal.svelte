@@ -5,7 +5,6 @@
 
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import SwitchField from "@/components/app/forms/fields/input/switch-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { CommandItem } from "@/components/ui/command";
@@ -158,17 +157,8 @@
       {/snippet}
     </SingleSelectField>
 
-    <!-- SWITCH TO EXPORT ONLY THE COMPLETED ENTRIES FROM THE SELECTION -->
-    <SwitchField
-      name="{resource}/completed_entries"
-      label="Completed Entries Only"
-      info="Only the completed entries from your selection will be included in the export."
-      bordered
-      bind:checked={completedEntriesOnly}
-    />
-
     <div class="flex flex-col gap-1">
-      <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "Selected entry", "selected entries")}</Text>
+      <Text size="sm" weight="medium">{pluralizeUnit(selectedEntryCount, "Selected entry", "Selected entries")}</Text>
       <ScrollArea class="h-40">
         {#each entries as entry (entry.id)}
           <Item class="py-1.5">

@@ -16,5 +16,5 @@
 {#if kind === "entry"}
   <Badge variant="default">Entry</Badge>
 {:else}
-  <Badge variant="secondary">Dataset</Badge>
+  <Badge variant="default">Dataset</Badge>
 {/if}

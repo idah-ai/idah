@@ -186,18 +186,14 @@
       {:else if kind === "switch"}
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2">
-            <Switch
-              id={name}
-              checked={optionValues[field.name] === true}
-              onCheckedChange={(checkedValue) => {
-                optionValues[field.name] = checkedValue;
-              }}
+            <SwitchField
+              {name}
+              label={exportOptionLabel(field)}
+              info={field.description}
+              bordered
+              bind:checked={optionValues[field.name] as boolean}
             />
-            <Label for={name}>{exportOptionLabel(field)}</Label>
           </div>
-          {#if field.description}
-            <small class="text-muted-foreground">{field.description}</small>
-          {/if}
         </div>
       {:else if kind === "number"}
         <NumberField
@@ -258,12 +254,12 @@
     />
 
     <div class="flex flex-col gap-1">
-      <Text size="sm" weight="medium">Dataset(s)</Text>
+      <Text size="sm" weight="medium">Selected datasets</Text>
       <ScrollArea class="h-40">
         {#each datasetRecords as datasetRecord (datasetRecord.id)}
           <Item class="py-1.5">
             <ItemContent>
-              <ItemDescription>{datasetRecord.name}</ItemDescription>
+              <ItemDescription class="text-accent-foreground">{datasetRecord.name}</ItemDescription>
             </ItemContent>
           </Item>
         {/each}

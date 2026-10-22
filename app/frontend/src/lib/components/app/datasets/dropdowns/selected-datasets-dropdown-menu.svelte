@@ -117,7 +117,7 @@
   </DropdownMenus>
 
   <ExportFormModal
-    title="Export Dataset(s)"
+    title="Export Datasets"
     action="create"
     datasetRecords={$selectedDatasets}
     bind:open={openExportFormModal}
