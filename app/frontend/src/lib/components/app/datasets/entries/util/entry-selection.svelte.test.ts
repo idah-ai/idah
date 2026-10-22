@@ -47,6 +47,46 @@ describe("EntrySelection", () => {
     });
   });
 
+  describe("reopenableEntryIds", () => {
+    it("returns ids of selected entries whose status is 'completed'", () => {
+      const entries: MockEntry[] = [
+        { id: "1", status: "completed" },
+        { id: "2", status: "in_progress" },
+        { id: "3", status: "completed" },
+      ];
+      const sel = createSelection(entries, ["1", "2", "3"]);
+
+      expect(sel.reopenableEntryIds).toEqual(["1", "3"]);
+    });
+
+    it("returns empty array when no completed entries are selected", () => {
+      const entries: MockEntry[] = [
+        { id: "1", status: "in_progress" },
+        { id: "2", status: "pending" },
+      ];
+      const sel = createSelection(entries, ["1", "2"]);
+
+      expect(sel.reopenableEntryIds).toEqual([]);
+    });
+
+    it("returns empty array when no entries are selected", () => {
+      const entries: MockEntry[] = [{ id: "1", status: "completed" }];
+      const sel = createSelection(entries, []);
+
+      expect(sel.reopenableEntryIds).toEqual([]);
+    });
+
+    it("excludes entries not in selection even if completed", () => {
+      const entries: MockEntry[] = [
+        { id: "1", status: "completed" },
+        { id: "2", status: "completed" },
+      ];
+      const sel = createSelection(entries, ["2"]);
+
+      expect(sel.reopenableEntryIds).toEqual(["2"]);
+    });
+  });
+
   describe("assignableEntryIds", () => {
     it("includes non-done entries", () => {
       const entries: MockEntry[] = [

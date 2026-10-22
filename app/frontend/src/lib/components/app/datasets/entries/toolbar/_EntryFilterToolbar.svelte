@@ -15,6 +15,7 @@
   // Inlined entry modals + actions (mirrors entry-dropdown-menu.svelte)
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
+  import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
   import EntryExportFormModal from "@/components/app/projects/exports/overlays/entry-export-form-modal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
@@ -49,6 +50,7 @@
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
   let openExport = $state(false);
+  let openReopen = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
@@ -63,10 +65,14 @@
       onExport: () => {
         openExport = true;
       },
+      onReopen: () => {
+        openReopen = true;
+      },
       isAssigned: sel.checkAnyAssigned(controller.selectedIds),
       isAssignDisabled: sel.assignableEntryIds.length === 0,
       isUnassignDisabled: sel.unAssignableEntryIds.length === 0,
       isExportHidden: !canExportEntry,
+      isReopenHidden: sel.reopenableEntryIds.length === 0,
     }),
   );
 
@@ -212,3 +218,15 @@
 
 <!-- BULK-ACTION MODAL::EXPORT SELECTED ENTRIES -->
 <EntryExportFormModal action="create" entries={sel.selectedEntryRecords} bind:open={openExport} />
+
+<ReopenEntryModal
+  action="update"
+  entryIds={sel.reopenableEntryIds}
+  entryMap={sel.entryMap}
+  onReopened={async (updated) => {
+    controller.patchRecords(updated);
+    controller.clearSelection();
+    await controller.fetch();
+  }}
+  bind:open={openReopen}
+/>

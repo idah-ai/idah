@@ -174,11 +174,16 @@ esac
 # The plugins' idahVersion check must understand the stamped version, including
 # release candidates such as 0.4.0-rc.1. idah-video is handled last, so once
 # its line has been logged any compatibility warning would have been too.
+#
+# A service loads idah-video's backend when the plugin ships one for it
+# (backends/<service>): media, dataset and sync (sync gained its video export
+# backend) log "Starting plugin"; setting has no such backend, so it logs the
+# "backend path ... does not exist, skipping load" line instead.
 case "$service" in
   media | dataset | setting | sync)
     case "$service" in
-      media | dataset) expect_log "Starting plugin idah-video" ;;
-      setting | sync) expect_log "Plugin \`idah-video\` backend path" ;;
+      media | dataset | sync) expect_log "Starting plugin idah-video" ;;
+      setting) expect_log "Plugin \`idah-video\` backend path" ;;
     esac
     expect_no_log "compatibility check failed"
     ;;

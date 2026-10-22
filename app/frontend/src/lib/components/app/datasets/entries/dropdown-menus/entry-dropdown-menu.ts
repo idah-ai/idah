@@ -1,4 +1,5 @@
-import { DownloadIcon, FlagIcon, Trash2Icon, UserRoundPlusIcon } from "@lucide/svelte";
+import { DownloadIcon, FlagIcon, Trash2Icon, UserRoundPlusIcon, RotateCcwIcon } from "@lucide/svelte";
+// import { FlagIcon, RotateCcwIcon, Trash2Icon, UserRoundPlusIcon } from "@lucide/svelte";
 
 import type { IDropdownMenuItem } from "@/components/app/dropdown-menus/types";
 
@@ -8,10 +9,12 @@ interface Params {
   onSetPriority: () => Promise<void> | void;
   onDelete: () => Promise<void> | void;
   onExport?: () => Promise<void> | void;
+  onReopen?: () => Promise<void> | void;
+  isExportHidden?: boolean;
   isAssigned?: boolean;
   isAssignDisabled?: boolean;
   isUnassignDisabled?: boolean;
-  isExportHidden?: boolean;
+  isReopenHidden?: boolean;
 }
 export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[] {
   const {
@@ -20,10 +23,12 @@ export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[]
     onSetPriority,
     onDelete,
     onExport,
+    onReopen,
     isAssigned,
     isAssignDisabled,
     isUnassignDisabled,
     isExportHidden,
+    isReopenHidden,
   } = params;
 
   return [
@@ -50,6 +55,12 @@ export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[]
       icon: DownloadIcon,
       action: onExport,
       hidden: isExportHidden,
+    },
+    {
+      label: "Reopen",
+      icon: RotateCcwIcon,
+      action: onReopen,
+      hidden: isReopenHidden,
     },
     {
       label: "Delete",

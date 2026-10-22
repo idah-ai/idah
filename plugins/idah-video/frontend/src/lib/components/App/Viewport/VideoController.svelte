@@ -6,6 +6,7 @@
     ChevronRightIcon,
     ChevronsLeftIcon,
     ChevronsRightIcon,
+    MergeIcon,
     PauseIcon,
     PlayIcon,
     SquareSplitHorizontalIcon,
@@ -23,6 +24,8 @@
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
+  import { resolveTargets } from "$lib/commands/annotation/_extend_utils";
+  import { canMerge } from "$lib/commands/annotation/_merge_utils";
 
   // Props
   interface Props {
@@ -42,6 +45,12 @@
     if (!ann) return true;
     if (annotation.isLocked(ann)) return true;
     if (ann.shape_args?.end < viewport.video.currentFrame.value) return true;
+  });
+
+  let disabledMergeButton = $derived.by(() => {
+    if (!isEditable()) return true;
+    if (viewport.isReviewWorkspace) return true;
+    return !canMerge(resolveTargets());
   });
 
   // Sync frameInputValue from currentFrame (0→1 for display)
@@ -212,6 +221,17 @@
             at: viewport.video.currentFrame.value,
           });
         }}
+      />
+
+      <!-- ANNOTATION::MERGE -->
+      <KbdTooltipButton
+        label="Merge annotations"
+        commandName="idah-video:annotation.merge"
+        icon={MergeIcon}
+        variant="outline"
+        size="icon-sm"
+        disabled={disabledMergeButton}
+        onclick={() => getDriver().command.call("idah-video:annotation.merge")}
       />
     {/if}
   </div>

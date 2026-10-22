@@ -30,6 +30,9 @@ module Exports
       # Ensure that the exporter class is valid
       sanitize_export_class!(exporter)
 
+      # Validate the exporter's own options and fill in their defaults
+      options = Exports::Options.validate!(exporter_options_schema(exporter), options)
+
       # Filter the dataset IDs based on the user's rights and the project they belong to
       dataset_ids = filter_dataset_ids_by_rights(project_id, dataset_ids)
 
@@ -67,10 +70,11 @@ module Exports
       end
     end
 
-    # Upload the exported file to the export record
-    def upload(id, file)
+    # Upload the exported file to the export record, under `filename`, or the
+    # file's own name.
+    def upload(id, file, filename: nil)
       export = exports.find!(id)
-      filename = File.basename(file.path)
+      filename ||= File.basename(file.path)
 
       Verse::Plugin[:shrine].with_storage do |storage|
         file = storage.upload(file)
@@ -97,6 +101,12 @@ module Exports
     end
 
     protected
+
+    # Unknown classes are refused by sanitize_export_class! first.
+    def exporter_options_schema(exporter)
+      klass = Exports::Registry.export_class(exporter)
+      klass ? Exports::Registry.options_schema(klass) : Verse::Schema.empty
+    end
 
     def sanitize_export_class!(export)
       return if Exports::Registry.valid_export_class?(export)
