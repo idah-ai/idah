@@ -207,10 +207,10 @@
   {/if}
 {:else if selection.selectedAnnotationIds.size > 1}
   <!-- Multiple annotations selected: show a compact list of selected items -->
-  <SelectedAnnotationsList />
+  <SelectedAnnotationsList disabled={effectiveDisabled} />
 {:else if selection.selectedGroupIds.size > 1}
   <!-- Multiple groups selected: show the annotations belonging to those groups -->
-  <SelectedAnnotationsList items={groupAnnotations} />
+  <SelectedAnnotationsList items={groupAnnotations} disabled={effectiveDisabled} />
 {:else if sel.type === "group"}
   <!-- Group edit mode -->
   <GroupEditMode
