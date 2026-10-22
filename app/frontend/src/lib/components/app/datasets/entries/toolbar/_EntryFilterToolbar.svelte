@@ -17,6 +17,7 @@
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
+  import EntryExportFormModal from "@/components/app/projects/exports/overlays/_EntryExportFormModal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
@@ -34,18 +35,21 @@
     sel,
     canUpdateEntry,
     canDeleteEntry,
+    canExportEntry,
     projectId,
   }: {
     controller: ListViewController<EntryRecord>;
     sel: EntrySelection;
     canUpdateEntry: boolean;
     canDeleteEntry: boolean;
+    canExportEntry: boolean;
     projectId: string;
   } = $props();
 
   // Modal visibility - owned here
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
+  let openExport = $state(false);
   let openReopen = $state(false);
 
   const bulkActions = $derived(
@@ -58,12 +62,16 @@
         openSetPriority = true;
       },
       onDelete: confirmDelete,
+      onExport: () => {
+        openExport = true;
+      },
       onReopen: () => {
         openReopen = true;
       },
       isAssigned: sel.checkAnyAssigned(controller.selectedIds),
       isAssignDisabled: sel.assignableEntryIds.length === 0,
       isUnassignDisabled: sel.unAssignableEntryIds.length === 0,
+      isExportHidden: !canExportEntry,
       isReopenHidden: sel.reopenableEntryIds.length === 0,
     }),
   );
@@ -107,7 +115,7 @@
   <div class="flex w-full flex-col items-center justify-between gap-4 lg:flex-row">
     <div class="flex flex-1 items-center gap-4">
       <!-- SELECT ALL -->
-      {#if canUpdateEntry || canDeleteEntry}
+      {#if canUpdateEntry || canDeleteEntry || canExportEntry}
         <div class="pl-6">
           <Checkbox
             checked={controller.selectedIds.length > 0 &&
@@ -207,6 +215,9 @@
 />
 
 <UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedIds} bind:open={openSetPriority} />
+
+<!-- BULK-ACTION MODAL::EXPORT SELECTED ENTRIES -->
+<EntryExportFormModal action="create" entries={sel.selectedEntryRecords} bind:open={openExport} />
 
 <ReopenEntryModal
   action="update"

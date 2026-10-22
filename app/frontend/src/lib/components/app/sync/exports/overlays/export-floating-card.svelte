@@ -18,6 +18,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
+  import { buildExportItemName, exportSummaryLabel } from "@/components/app/sync/exports/util/export-records";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource, exportsBasePath } from "@/data/model/sync/exports/record";
   import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
@@ -35,19 +36,26 @@
     ).length > 0,
   );
 
+  /** Computed once per state change — avoids re-classifying every export in each template branch. */
+  let summaryLabel: string = $derived.by(() => {
+    const status = isDownloadReady ? "ready" : isDownloadError ? "error" : "inProgress";
+    return exportSummaryLabel($exportingExportRecords, status);
+  });
+
   // Functions
   function hideFloatingCard(): void {
     isDownloadReady = false;
     $exportingExportRecords = [];
   }
 
-  async function getExportDatasetsName(jobId: string): Promise<Array<string>> {
+  async function getExportDatasetNames(jobId: string): Promise<Array<string>> {
     const jobRes = await SyncJobsBackendDataSource.get(jobId, {
       fields: {
         [SyncJobRecord.type]: ["id", "arguments"],
       },
     });
-    const datasetIds = jobRes.data.arguments.dataset_ids;
+    const jobArguments = jobRes.data.arguments as Record<string, unknown>;
+    const datasetIds = jobArguments.dataset_ids as Array<string>;
 
     const datasetsRes = await datasetsBackendDataSource.list({
       fields: {
@@ -82,7 +90,7 @@
             const exportRes = await ExportsBackendDataSource.get(exportingExportRecord.id, {
               included: ["job"],
               fields: {
-                [SyncJobRecord.type]: ["id", "status", "progress"],
+                [SyncJobRecord.type]: ["id", "status", "progress", "arguments"],
                 [ExportRecord.type]: ["id", "job_id", "filename"],
               },
               noCache: true,
@@ -145,13 +153,13 @@
         >
           {#if isDownloadReady}
             <CircleCheckBigIcon />
-            Dataset export ready
+            {summaryLabel}
           {:else if isDownloadError}
             <CircleAlertIcon />
-            Dataset export error
+            {summaryLabel}
           {:else}
             <Spinner size="sm" />
-            Dataset export in progress...
+            {summaryLabel}
           {/if}
 
           <div class="ml-auto flex items-center gap-2">
@@ -172,16 +180,17 @@
         <div class="border-t">
           {#each $exportingExportRecords as exportingExportRecord (exportingExportRecord.id)}
             {@const { id, job_id, job, filename } = exportingExportRecord}
-            {#await getExportDatasetsName(job_id) then datasetsName}
+            {#await getExportDatasetNames(job_id) then datasetNames}
+              {@const itemName = buildExportItemName(exportingExportRecord, datasetNames)}
               <Item>
                 <ItemContent>
                   <Tooltips>
                     {#snippet trigger()}
-                      <ItemTitle>{truncate(datasetsName.join(", "), 40)}</ItemTitle>
+                      <ItemTitle>{truncate(itemName, 40)}</ItemTitle>
                     {/snippet}
 
                     {#snippet content()}
-                      {datasetsName.join(", ")}
+                      {itemName}
                     {/snippet}
                   </Tooltips>
                 </ItemContent>
