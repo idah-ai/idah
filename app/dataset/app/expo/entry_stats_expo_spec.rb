@@ -6,6 +6,7 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
   let(:uuid) { UUIDv7.generate }
   let(:entry_id) { UUIDv7.generate }
+  let(:dataset_id) { UUIDv7.generate }
 
   let(:stat_record) do
     EntryStat::Record.new(
@@ -69,6 +70,87 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
         resource_id: entry_id,
         event: "errored",
         payload: { resource_id: entry_id }
+      )
+    end
+  end
+
+  describe "#compute_stats_on_annotation_updated" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with the correct arguments" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        old_category: "cat",
+        new_category: "dog"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "updated",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { old_category: "cat", entry_id: entry_id, dataset_id: dataset_id },
+          args: [{ category: "dog" }]
+        }
+      )
+    end
+  end
+
+  describe "#recompute_stats_on_labeling_config_updated" do
+    let(:dataset_id) { UUIDv7.generate }
+
+    it "recomputes all stats for the dataset when categories are removed" do
+      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id, changed_category_ids: ["cat"])
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "labeling_configuration_updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { changed_category_ids: ["cat"] }
+        }
+      )
+    end
+
+    it "recomputes all stats when categories are added back" do
+      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id, changed_category_ids: ["dog"])
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "labeling_configuration_updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { changed_category_ids: ["dog"] }
+        }
+      )
+    end
+
+    it "does not recompute when the dataset update did not touch labeling configuration" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: { resource_id: dataset_id, metadata: {} }
+      )
+    end
+
+    it "does not recompute on a generic 'updated' event (no listener)" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { labeling_configuration_updated: false }
+        }
       )
     end
   end

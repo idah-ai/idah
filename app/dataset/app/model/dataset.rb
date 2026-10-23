@@ -21,6 +21,8 @@ module Dataset
     field :entries_completed_count, type: Integer, readonly: true
     field :entries_in_progress_count, type: Integer, readonly: true
 
+    field :syncing_stats, type: [TrueClass], readonly: true
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -29,6 +31,17 @@ module Dataset
     has_many :entries, repository: "Entry::Repository", foreign_key: :dataset_id
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :dataset_id
     has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :dataset_id
+
+    # Returns the set of configured category IDs from this dataset's
+    # labeling_configuration. Flattens values[*][:id] across all tool-type keys.
+    def configured_category_ids
+      config = labeling_configuration || {}
+      config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
+
+        Array(tool_config[:values]).filter_map { |v| v[:id] }
+      end
+    end
 
     def entry_workflow
       Workflow::SimpleReviewAnnotationWorkflow
@@ -242,6 +255,17 @@ module Dataset
     event(name: "duplicated")
     def duplicate(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
       # NOTE: just publish the event
+    end
+
+    event(name: "labeling_configuration_updated")
+    def labeling_configuration_updated(dataset_id, changed_category_ids: [])
+      no_event do
+        update!(dataset_id, { syncing_stats: true })
+        add_event_metadata(
+          dataset_id: dataset_id,
+          changed_category_ids: changed_category_ids
+        )
+      end
     end
 
     private
