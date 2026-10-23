@@ -34,22 +34,34 @@ class EntryStatsExpo < BaseExpo
     service.recompute(message.content[:resource_id])
   end
 
-  expose on_resource_event(Resource::Dataset::Datasets, "updated")
-  def recompute_stats_on_dataset_updated
-    return unless message.content.dig(:metadata, :labeling_configuration_updated)
-
-    removed_ids = message.content.dig(:metadata, :removed_category_ids) || []
-    removed_set = removed_ids.to_set
-    return unless removed_set.any?
+  expose on_resource_event(Resource::Dataset::Datasets, "labeling_configuration_updated")
+  def recompute_stats_on_labeling_config_updated
+    changed_ids = message.content.dig(:metadata, :changed_category_ids) || []
 
     service.recompute_all_for_dataset(
       message.content[:resource_id],
-      removed_category_ids: removed_ids
+      changed_category_ids: changed_ids
     )
   end
 
   expose on_resource_event(Resource::Dataset::Annotations, "updated")
   def compute_stats_on_annotation_updated
-    service.recompute_from_annotation(message.content[:resource_id])
+    args = message.content.dig(:args, 0)
+
+    return unless args
+
+    entry_id = message.content.dig(:metadata, :entry_id) || args[:entry_id]
+    dataset_id = message.content.dig(:metadata, :dataset_id)
+    old_category = message.content.dig(:metadata, :old_category)
+    new_category = args[:category]
+
+    return if old_category.nil? || old_category == new_category
+
+    service.recompute_from_annotation(
+      entry_id: entry_id,
+      dataset_id: dataset_id,
+      old_category: old_category,
+      new_category: new_category
+    )
   end
 end

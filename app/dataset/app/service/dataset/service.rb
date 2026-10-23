@@ -45,8 +45,23 @@ module Dataset
     end
 
     def update(record)
-      datasets.update!(record.id, record.attributes)
-      datasets.find!(record.id)
+      datasets.transaction do
+        old_dataset = datasets.find!(record.id)
+        datasets.update!(record.id, record.attributes)
+
+        if record.attributes.key?(:labeling_configuration)
+          old_ids = old_dataset.configured_category_ids
+
+          new_ids = Dataset::Record.new(record.attributes).configured_category_ids
+          changed = (old_ids.to_set ^ new_ids.to_set).to_a
+
+          if changed.any?
+            datasets.labeling_configuration_updated(record.id, changed_category_ids: changed)
+          end
+        end
+
+        datasets.find!(record.id)
+      end
     end
 
     def delete(id)

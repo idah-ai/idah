@@ -3,9 +3,9 @@
 module EntryStats
   class Service < Verse::Service::Base
     use entry_stats: EntryStat::Repository
-    use_system system_entries: Entry::Repository
-    use_system system_datasets: Dataset::Repository
-    use_system system_annotations: Annotation::Repository
+    use_system system_entries: Entry::Repository,
+               system_datasets: Dataset::Repository,
+               system_entry_stats: EntryStat::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entry_stats.index(
@@ -27,36 +27,53 @@ module EntryStats
       EntryStats::Recompute.call(entry)
     end
 
-    def recompute_from_annotation(annotation_id)
-      annotation = system_annotations.find!(annotation_id)
-      entry_id = annotation.entry_id
+    def recompute_from_annotation(entry_id:, dataset_id:, old_category:, new_category:)
+      scope = system_entry_stats.table
+                                .where(entry_id: entry_id, key: "orphan_category.count")
+      row = scope.first
 
-      # If the entry doesn't have an orphan stat yet, no need to recompute.
-      return unless EntryStat::Repository.new(nil).orphan_category(entry_id)
+      return unless row && row[:value] != "0"
 
-      entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
-      return unless entry.status == "in_progress"
+      dataset = system_datasets.find!(dataset_id)
+      config = dataset.labeling_configuration || {}
+      configured_ids = config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
 
-      EntryStats::Recompute.orphan_only(entry)
+        Array(tool_config[:values]).filter_map { |v| v[:id] }
+      end
+
+      # Only decrement if old category was orphaned AND new category is valid
+      return if configured_ids.include?(old_category)
+      return unless configured_ids.include?(new_category)
+
+      new_count = [row[:value].to_i - 1, 0].max
+      scope.update(value: new_count.to_s, updated_at: Time.now)
     end
 
-    def recompute_all_for_dataset(dataset_id, removed_category_ids: [])
-      removed_set = removed_category_ids.to_set
-      system_datasets.update!(dataset_id, { syncing_stats: true })
+    def recompute_all_for_dataset(dataset_id, changed_category_ids: [])
+      changed_set = changed_category_ids.to_set
 
       entries = system_entries.chunked_index({ dataset_id__eq: dataset_id }, included: [:dataset, :annotations])
       entries.each do |entry|
+        # Only recompute entries that have annotations matching a changed
+        # category. If changed_set is empty (no IDs changed), every entry is
+        # skipped and the sweep finishes instantly — no unnecessary recomputes.
+        live_annotations = (entry.annotations || []).reject(&:deleted_at)
+        next unless live_annotations.any? { |a| changed_set.include?(a.category) }
+
         if %w[completed errored].include?(entry.status)
           EntryStats::Recompute.call(entry)
         elsif %w[pending in_progress].include?(entry.status)
-          live_annotations = (entry.annotations || []).reject(&:deleted_at)
-          next unless live_annotations.any? { |a| removed_set.include?(a.category) }
-
           EntryStats::Recompute.orphan_only(entry)
         end
+      rescue StandardError => e
+        Verse.logger.error(
+          "[EntryStats] Failed to recompute stats for entry #{entry.id} " \
+          "(dataset #{dataset_id}): #{e.message}"
+        )
       end
     ensure
-      system_datasets.update!(dataset_id, { syncing_stats: false })
+      entry_stats.no_event { system_datasets.update!(dataset_id, { syncing_stats: false }) }
     end
   end
 end
