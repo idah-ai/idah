@@ -38,7 +38,7 @@ Shrine-backed export file record stored in the `exports` table.
 | `project_id` | `uuid` | The project being exported |
 | `created_by_id` | `uuid` | Account ID that requested the export |
 | `file_id` | `text` | Shrine file identifier |
-| `filename` | `text` | Original export filename |
+| `filename` | `text` | Download filename: the exporter's name and the export time, such as `idah-coco-image_2026-10-16_0430.zip` (`Exports::Job.filename`) |
 | `mime_type` | `text` | MIME type of the export file |
 | `size` | `bigint` | File size in bytes |
 | `created_at` | `timestamptz` | Creation timestamp |
@@ -222,6 +222,47 @@ Exports::Registry.register(/idah-video/, MyVideoExporter)
 
 Registration happens at boot time via the `PluginLifecycleContext` (see below).
 
+### Exporter options
+
+Every export takes two general options, `include_medias` and
+`completed_entries`. An exporter can declare options of its own in its
+`options` method, as a `Verse::Schema`; the export dialog shows them as form
+fields when the format is selected. Display hints go in each field's `meta`:
+
+```ruby
+def options
+  Verse::Schema.define do
+    field(:task, String).default("detect").meta(
+      label: "Task", description: "…",
+      choices: [{ value: "detect", label: "Detection (boxes)", info: "One upright box per object." }, "obb"]
+    )
+    field(:val_percent, Integer).default(0).meta(label: "Validation videos (%)", min: 0, max: 50)
+  end
+end
+```
+
+`Exports::Options` (`app/service/exports/options.rb`) handles them:
+
+- **Registration:** `Exports::Registry.register` calls `Options.check!`, which
+  rejects types the dialog cannot show (only `String`, `TrueClass`, `Integer`
+  and `Float` are allowed) and names taken by the general options. A mistake
+  in a plugin fails at boot.
+- **`GET /exports/formats`:** each format lists its options (`Options.describe`):
+  `name`, `type` (`string`, `boolean`, `integer`, `number`), `default`,
+  `required`, and the `label`, `description`, `choices`, `min` and `max` hints.
+  A choice is a plain value or `{ value, label, info }`; `/formats` always
+  returns `{ value, label, info }`, the label being the value when not given.
+  The dialog shows each choice's `info` under it.
+- **`POST /exports/export`:** `options` accepts keys beyond the general ones.
+  `Exports::Service#create` validates them against the chosen exporter's schema
+  (`Options.validate!`): unknown options, wrong types, and values outside
+  `choices`, `min` or `max` are refused with a 422 naming the field
+  (`options.task: must be one of: …`). The job stores the options with their
+  defaults filled in, and the exporter reads them from `context.options`.
+
+An exporter without options returns `Verse::Schema.empty` and behaves as
+before.
+
 ### Exports::Job
 
 Wraps exporter execution in the job system.
@@ -386,7 +427,7 @@ POST /exports { project_id, dataset_id, format: "upd" }
                                     → Collect data from context layers
                                     → Run updcli-static binary
                                     → Generate output file
-                                  → Upload file via Shrine
+                                  → Upload file via Shrine, named after the exporter and the time
                                   → Update Exports::Record (file_id, filename, size)
                                   → Mark Job completed
 

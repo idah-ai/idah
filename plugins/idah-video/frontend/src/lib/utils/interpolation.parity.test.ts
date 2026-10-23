@@ -1,0 +1,173 @@
+// ---------------------------------------------------------------------------
+// interpolation.parity.test.ts — Shared fixtures for the Ruby port
+//
+// The sync backend exports interpolated frames to COCO with a Ruby port of
+// getInterpolatedFrame and flubber (backends/sync/idah_video/export/helpers/). Both
+// sides check themselves against the same fixture file, so the export draws
+// exactly what annotators see on screen.
+//
+// After changing the cases below, interpolation.ts or the flubber version,
+// regenerate the fixtures and run the Ruby specs:
+//
+//   npx vitest run -u src/lib/utils/interpolation.parity.test.ts
+// ---------------------------------------------------------------------------
+import { describe, it, expect } from "vitest";
+import { getInterpolatedFrame } from "./interpolation";
+import {
+  VIDEO_BOUNDING_BOX,
+  VIDEO_POLYGON,
+  type IVideoAnnotationShape,
+  type IVideoFrameSelection,
+} from "$lib/types";
+
+const FIXTURE_PATH = "../../../../backends/spec_data/interpolation_parity.json";
+
+type Point = [number, number];
+
+interface ParityCase {
+  name: string;
+  shape_type: string;
+  shape_args: IVideoAnnotationShape;
+  frames: number[];
+}
+
+/** A keyframe. Leaving out the angle tests keyframes stored without one. */
+function frame(frame: number, points: Point[], angle?: number): IVideoFrameSelection {
+  return (angle === undefined ? { frame, points } : { frame, angle, points }) as IVideoFrameSelection;
+}
+
+const CASES: ParityCase[] = [
+  {
+    name: "bounding box with rotation",
+    shape_type: VIDEO_BOUNDING_BOX,
+    shape_args: {
+      start: 10,
+      end: 20,
+      frames: [
+        frame(10, [[0.1, 0.1], [0.3, 0.1], [0.3, 0.2], [0.1, 0.2]], 0),
+        frame(20, [[0.5, 0.4], [0.8, 0.4], [0.8, 0.6], [0.5, 0.6]], 0.5),
+      ],
+    },
+    frames: [9, 10, 11, 13, 15, 19, 20, 21],
+  },
+  {
+    name: "bounding box without angle",
+    shape_type: VIDEO_BOUNDING_BOX,
+    shape_args: {
+      start: 0,
+      end: 30,
+      frames: [
+        frame(0, [[0.2, 0.2], [0.4, 0.2], [0.4, 0.4], [0.2, 0.4]]),
+        frame(30, [[0.25, 0.3], [0.45, 0.3], [0.45, 0.5], [0.25, 0.5]]),
+      ],
+    },
+    frames: [0, 7, 29, 30],
+  },
+  {
+    name: "bounding box with unordered keyframes and a range wider than its keyframes",
+    shape_type: VIDEO_BOUNDING_BOX,
+    shape_args: {
+      start: 0,
+      end: 100,
+      frames: [
+        frame(60, [[0.6, 0.6], [0.7, 0.6], [0.7, 0.7], [0.6, 0.7]], -0.3),
+        frame(20, [[0.1, 0.1], [0.2, 0.1], [0.2, 0.2], [0.1, 0.2]], 0.2),
+        frame(40, [[0.3, 0.3], [0.5, 0.3], [0.5, 0.5], [0.3, 0.5]], 0),
+      ],
+    },
+    frames: [0, 19, 20, 33, 40, 41, 59, 60, 61, 100],
+  },
+  {
+    name: "polygon with the same point count",
+    shape_type: VIDEO_POLYGON,
+    shape_args: {
+      start: 0,
+      end: 10,
+      frames: [
+        frame(0, [[0.1, 0.1], [0.4, 0.1], [0.4, 0.4], [0.1, 0.4]], 0),
+        frame(10, [[0.2, 0.15], [0.55, 0.2], [0.5, 0.5], [0.15, 0.45]], 0),
+      ],
+    },
+    frames: [0, 1, 5, 9, 10],
+  },
+  {
+    name: "polygon growing from a triangle to a hexagon",
+    shape_type: VIDEO_POLYGON,
+    shape_args: {
+      start: 0,
+      end: 12,
+      frames: [
+        frame(0, [[0.5, 0.1], [0.8, 0.7], [0.2, 0.7]], 0),
+        frame(12, [[0.5, 0.2], [0.7, 0.3], [0.7, 0.6], [0.5, 0.7], [0.3, 0.6], [0.3, 0.3]], 0),
+      ],
+    },
+    frames: [1, 4, 6, 11],
+  },
+  {
+    name: "polygon shrinking from a hexagon to a quadrilateral, opposite winding",
+    shape_type: VIDEO_POLYGON,
+    shape_args: {
+      start: 0,
+      end: 8,
+      frames: [
+        frame(0, [[0.3, 0.3], [0.3, 0.6], [0.5, 0.7], [0.7, 0.6], [0.7, 0.3], [0.5, 0.2]], 0),
+        frame(8, [[0.35, 0.25], [0.75, 0.3], [0.7, 0.75], [0.3, 0.7]], 0),
+      ],
+    },
+    frames: [1, 3, 7],
+  },
+  {
+    name: "polygon with a closing point and a different starting vertex",
+    shape_type: VIDEO_POLYGON,
+    shape_args: {
+      start: 0,
+      end: 4,
+      frames: [
+        frame(0, [[0.1, 0.1], [0.4, 0.1], [0.4, 0.4], [0.1, 0.4], [0.1, 0.1]], 0),
+        frame(4, [[0.45, 0.45], [0.15, 0.45], [0.15, 0.15], [0.45, 0.15]], 0),
+      ],
+    },
+    frames: [1, 2, 3],
+  },
+  {
+    name: "polygon with repeated consecutive points",
+    shape_type: VIDEO_POLYGON,
+    shape_args: {
+      start: 0,
+      end: 6,
+      frames: [
+        frame(0, [[0.2, 0.2], [0.2, 0.2], [0.6, 0.2], [0.6, 0.6], [0.2, 0.6]], 0),
+        frame(6, [[0.25, 0.25], [0.65, 0.25], [0.65, 0.65], [0.45, 0.8], [0.25, 0.65], [0.1, 0.4], [0.15, 0.3]], 0),
+      ],
+    },
+    frames: [2, 5],
+  },
+];
+
+function compute(c: ParityCase) {
+  return c.frames.map((f) => {
+    const result = getInterpolatedFrame(c.shape_args, f, true, c.shape_type);
+    return {
+      frame: f,
+      expected: result?.points ? { points: result.points, angle: result.angle } : null,
+    };
+  });
+}
+
+function buildFixtures() {
+  return {
+    note: "Generated by plugins/idah-video/frontend/src/lib/utils/interpolation.parity.test.ts. Do not edit by hand.",
+    cases: CASES.map((c) => ({
+      name: c.name,
+      shape_type: c.shape_type,
+      shape_args: c.shape_args,
+      results: compute(c),
+    })),
+  };
+}
+
+describe("interpolation parity fixtures", () => {
+  it("match the current getInterpolatedFrame output", async () => {
+    await expect(JSON.stringify(buildFixtures(), null, 2) + "\n").toMatchFileSnapshot(FIXTURE_PATH);
+  });
+});
