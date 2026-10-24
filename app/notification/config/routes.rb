@@ -3,6 +3,8 @@
 Verse.on_boot do
   [
     HealthcheckExpo,
-    EmailsExpo
+    EmailsExpo,
+    WebhooksExpo,
+    WebhookJobsExpo
   ].each(&:register)
 end
