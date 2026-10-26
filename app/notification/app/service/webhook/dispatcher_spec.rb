@@ -439,4 +439,41 @@ RSpec.describe Webhook::Dispatcher, database: true do
       expect(webhooks.find!(owner_hook).enabled).to be false
     end
   end
+
+  describe "dataset payloads" do
+    it "delivers a created project with its attributes to admins" do
+      create_webhook(events: ["dataset.project.created"], role_name: "admin", account_id: 1)
+      stub_show("dataset/projects/7", { name: "New" })
+
+      publish("dataset:projects", "created", resource_id: "7")
+
+      expect(jobs.index({}).first.arguments.dig(:body, :payload)).to eq(project: { name: "New" })
+    end
+
+    it "delivers a completed dataset with its attributes" do
+      create_webhook(events: ["dataset.dataset.completed"])
+      stub_show("dataset/datasets/9", { name: "D" })
+
+      publish("dataset:datasets", "completed", resource_id: "9")
+
+      expect(jobs.index({}).first.arguments.dig(:body, :payload)).to eq(dataset: { name: "D" })
+    end
+
+    it "delivers a completed entry with its attributes" do
+      create_webhook(events: ["dataset.entry.completed"])
+      stub_show("dataset/entries/8", { wf_step: "done" })
+
+      publish("dataset:entries", "submitted", resource_id: "8", args: [{ wf_step: "done" }])
+
+      expect(jobs.index({}).first.arguments.dig(:body, :payload)).to eq(entry: { wf_step: "done" })
+    end
+
+    it "delivers a deleted dataset's id and project, since the row is gone" do
+      create_webhook(events: ["dataset.dataset.deleted"])
+
+      publish("dataset:datasets", "deleted", resource_id: "9", metadata: { project_id: "7" })
+
+      expect(jobs.index({}).first.arguments.dig(:body, :payload)).to eq(dataset: { id: "9", project_id: "7" })
+    end
+  end
 end

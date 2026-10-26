@@ -60,13 +60,6 @@ module Jobs
       end
     end
 
-    event(name: "progressed")
-    def update_progress(id, value)
-      no_event do # avoid updated event being dispatched
-        update!(id, { progress: value })
-      end
-    end
-
     event(name: "completed")
     def complete(id)
       no_event do # avoid updated event being dispatched

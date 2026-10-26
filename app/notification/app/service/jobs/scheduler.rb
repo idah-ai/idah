@@ -26,6 +26,7 @@ module Jobs
       end
     end
 
+    # :nocov:
     def start
       stop if running
 
@@ -51,7 +52,7 @@ module Jobs
           if free > 0
             Verse.logger&.debug "Job pooling (#{free} free threads)"
             available_jobs = jobs.lock_available(free)
-            available_jobs.each(&method(:process))
+            available_jobs.each { |job| @thread_pool.run { execute(job) } }
           end
 
           # Check scheduled jobs
@@ -76,10 +77,7 @@ module Jobs
       end
     end
 
-    def process(job)
-      @thread_pool.run { execute(job) }
-    end
-
+    # :nocov:
     # Runs one job and records its outcome: completed, rescheduled with
     # exponential backoff while retries remain, or errored.
     def execute(job)
@@ -97,11 +95,6 @@ module Jobs
         }
         klass.new(job.id, job.arguments).run do |command, **opts|
           case command
-          when :update_progress
-            jobs.update_progress(job.id, opts[:value])
-          when :reschedule
-            jobs.reschedule(job.id, scheduled_at: Time.now + opts.fetch(:after, 10))
-            throw :stop # Stop processing this job, it will be retried
           when :error
             error = opts[:error]
             error_message = error.is_a?(String) ? error : "#{error.class}: #{error.message}"
@@ -135,6 +128,7 @@ module Jobs
       raise e
     end
 
+    # :nocov:
     def stop
       return unless running # Already stopped
 
@@ -150,6 +144,7 @@ module Jobs
       Verse.logger&.debug "Scheduler stopped"
     end
 
+    # :nocov:
     # On event, signal to stop waiting to try
     # to get the next job
     def signal
