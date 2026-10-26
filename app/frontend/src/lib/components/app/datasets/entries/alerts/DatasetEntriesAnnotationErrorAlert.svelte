@@ -40,8 +40,8 @@
       <TriangleAlertIcon />
 
       <Alert.Description class=" text-destructive inline-flex text-sm">
-        <strong>{totalErrorEntries} {pluralizeUnit(totalErrorEntries, "entry", "entries")}</strong>
-        <span>have annotation errors.</span>
+        <strong>{totalErrorEntries} {pluralizeUnit(totalErrorEntries, "entry has", "entries have")}</strong>
+        <span>annotation errors.</span>
       </Alert.Description>
 
       <Alert.Action class="mt-1 flex items-center gap-2">
