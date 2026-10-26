@@ -26,6 +26,7 @@
   import { resourcePath } from "@/data/BackendDataSource";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { datasetStatsSyncContext, type DatasetStatsSyncContext } from "@/utils/dataset-stats-sync.svelte";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { refetches } from "@/utils/refetch";
@@ -37,6 +38,7 @@
   // Contexts
   const project: ProjectRecord = getContext("project");
   const dataset: DatasetRecord = getContext("dataset");
+  const datasetStatsSync: DatasetStatsSyncContext = getContext(datasetStatsSyncContext);
 
   // Variables
   const projectId: string = page.params.projectId as string;
@@ -111,6 +113,7 @@
       );
 
       controller.markSaved(updatedDatasetRes.data.labeling_configuration);
+      datasetStatsSync.start();
 
       $refetches.entries.list = new Date();
       clearCache(resourcePath(entryStatsBasePath, null, undefined));

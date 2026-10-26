@@ -24,6 +24,7 @@ export class DatasetRecord extends Record {
   @field() public status!: string;
   @field() public progress!: number;
   @field() public entries_total_count!: number;
+  @field() public readonly syncing_stats!: boolean;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
 
