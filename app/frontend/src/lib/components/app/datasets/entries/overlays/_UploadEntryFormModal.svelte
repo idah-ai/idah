@@ -16,6 +16,9 @@
 
   import { createUploadItem } from "@/components/app/datasets/entries/overlays/upload-item.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
+  import { datasetBasePath } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource, type ZipFileReport } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -58,20 +61,6 @@
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
-
-  const acceptedFileTypes = $derived.by(() => {
-    switch (modality) {
-      case "idah-video": {
-        return [".zip", ".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".ts"];
-      }
-      case "idah-image": {
-        return [".zip", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"];
-      }
-      default: {
-        return [];
-      }
-    }
-  });
 
   let projectId = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
@@ -172,6 +161,12 @@
     return items.reduce((total, item) => total + fn(item), 0);
   }
 
+  function refetchEntriesAndDatasets(): void {
+    clearCache(resourcePath(datasetBasePath, null, undefined));
+    $refetches.entries.list = new Date();
+    $refetches.datasets.list = new Date();
+  }
+
   async function uploadSingleMedia(media: UploadItem): Promise<void> {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -260,13 +255,13 @@
 
     if (itemsWithErrors === 0 && itemsWithSkips === 0) {
       showToast.success({ title: `${totalUploaded} entries created successfully.` });
-      $refetches.entries.list = new Date();
+      refetchEntriesAndDatasets();
     } else if (totalUploaded > 0) {
       const parts = [`${totalUploaded} entries created`];
       if (totalSkipped > 0) parts.push(`${totalSkipped} skipped`);
       if (itemsWithErrors > 0) parts.push(`${itemsWithErrors} failed`);
       showToast.warning({ title: parts.join(", ") });
-      $refetches.entries.list = new Date();
+      refetchEntriesAndDatasets();
     } else {
       showToast.error({ title: "All uploads failed." });
     }
@@ -323,7 +318,7 @@
   {/snippet}
 
   {#if view.isSelect()}
-    <FileUpload class="py-12" {acceptedFileTypes} onFilesSelected={handleFilesSelected}>
+    <FileUpload class="py-12" onFilesSelected={handleFilesSelected}>
       {#snippet SelectedFilesSlot()}
         <Text class="text-accent-foreground text-wrap" size="sm">
           <span class="font-medium underline underline-offset-2">Click to select files</span>

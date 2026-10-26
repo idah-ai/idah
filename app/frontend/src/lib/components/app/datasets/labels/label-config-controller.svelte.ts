@@ -417,21 +417,40 @@ export class LabelConfigController {
   }
 
   // -------------------------------------------------------- property mutations
-  setProperty(property: IConfigProperty) {
+  addProperty(property: IConfigProperty) {
+    this.labelConfig[this.selectedConfigKey].properties.push(property);
+  }
+
+  /**
+   * Update a property. Renaming it sets its id to the slugified name, so a
+   * name that gives another property's id is rejected with an error. Other
+   * edits keep the id, even one that isn't the slug of the name (older
+   * configs). Returns whether the update was applied.
+   */
+  setProperty(property: IConfigProperty): boolean {
     const selected = this.labelConfig[this.selectedConfigKey];
     const idx = selected.properties.findIndex((p) => p.id === property.id);
-    if (idx >= 0) {
-      /** Update existing property */
-      const propertyToCreate = property;
-      /** If user update the label, update the property.id with slugified label */
-      if (propertyToCreate.label !== "New Property") {
-        propertyToCreate.id = slugify(propertyToCreate.label);
+    // Renaming re-renders the property's card under its new id; a late update
+    // from the old card must not add a copy.
+    if (idx < 0) return false;
+
+    const next = { ...property };
+    if (next.label !== selected.properties[idx].label && next.label !== "New Property") {
+      next.id = slugify(next.label.trim());
+      if (!next.id) {
+        showToast.error({ title: "Property name required", description: "Enter a name." });
+        return false;
       }
-      selected.properties[idx] = { ...propertyToCreate };
-    } else {
-      /** Add new property */
-      selected.properties.push(property);
+      if (selected.properties.some((p, i) => i !== idx && p.id === next.id)) {
+        showToast.error({
+          title: "Duplicate property",
+          description: `A property named "${next.label}" already exists.`,
+        });
+        return false;
+      }
     }
+    selected.properties[idx] = next;
+    return true;
   }
 
   removeProperty(propertyId: string) {

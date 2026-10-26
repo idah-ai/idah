@@ -63,6 +63,8 @@
     submitted_by_email,
     reviewed_by_id,
     reviewed_by_email,
+    reopened_by_id,
+    reopened_by_email,
   } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
@@ -287,7 +289,7 @@
 
   function getEntry(entryId: string) {
     return entriesBackendDataSource.get(entryId, {
-      included: ["dataset", "assigned_to", "reviewed_by"],
+      included: ["dataset", "assigned_to", "reviewed_by", "reopened_by"],
       noCache: true,
     });
   }
@@ -448,6 +450,20 @@
                     <ProjectMemberAvatar member={entry.reviewed_by} />
                   {:else if reviewed_by_email}
                     <AccountAvatar size="sm" email={reviewed_by_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
+                {/snippet}
+              </DataDisplay>
+            {/if}
+
+            {#if reopened_by_id}
+              <DataDisplay label="Reopened by">
+                {#snippet slotValue()}
+                  {#if entry.reopened_by}
+                    <ProjectMemberAvatar member={entry.reopened_by} />
+                  {:else if reopened_by_email}
+                    <AccountAvatar size="sm" email={reopened_by_email} showEmail />
                   {:else}
                     <Text size="sm">Unassigned</Text>
                   {/if}
