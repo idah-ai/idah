@@ -10,7 +10,7 @@ org_owner:
     - "iam:accounts.logout.*"
 
     # Accounts
-    - "iam:accounts.create.*"
+    - "iam:accounts.invite.as_org_owner"
     - "iam:accounts.update.as_org_owner"
     - "iam:accounts.read.as_org_owner"
 

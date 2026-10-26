@@ -20,8 +20,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     children: Snippet;
@@ -44,13 +42,7 @@
   // Lifecycle
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
-    const canReadExport = await currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]);
+    const canReadExport = await currentAccount?.canOnProject("read", "sync:exports", projectId, "project_owner");
 
     if (!canReadExport) {
       tabs = projectTabs.filter((tab) => tab.value !== "exports");

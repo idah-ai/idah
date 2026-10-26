@@ -33,7 +33,7 @@ module Jobs
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { scope_with_org_projects_medias }
+        scope.as_org_owner? { scope_with_org_and_member_projects_medias }
 
         scope.as_user? { scope_with_member_projects_medias }
       end
@@ -125,11 +125,7 @@ module Jobs
 
     def scope_with_org_projects_medias
       org_ids = auth_context.custom_scopes[:org]
-
-      project_ids = Api[:idah].dataset.projects.index_all(
-        filter: { organization_id: org_ids },
-        fields: { "dataset:projects": ["id"] }
-      ).map(&:id)
+      project_ids = ProjectMembership::Lookup.new.project_ids_for_organizations(org_ids)
 
       frag = <<-SQL
         EXISTS (
@@ -143,13 +139,30 @@ module Jobs
       table.where(Sequel.lit(frag, project_ids:))
     end
 
+    # as_org_owner union: org projects ∪ projects where the actor is an enabled
+    # member.
+    def scope_with_org_and_member_projects_medias
+      account_id = auth_context.metadata[:id]
+      lookup = ProjectMembership::Lookup.new
+
+      project_ids = lookup.project_ids_for_organizations(auth_context.custom_scopes[:org])
+      project_ids += lookup.memberships_for(account_id).map(&:project_id)
+
+      frag = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM medias
+          WHERE medias.resource = (arguments->>'resource')
+            AND medias.project_id IN :project_ids
+        )
+      SQL
+
+      table.where(Sequel.lit(frag, project_ids: project_ids.uniq))
+    end
+
     def scope_with_member_projects_medias
       account_id = auth_context.metadata[:id]
-
-      project_ids = Api[:idah].dataset.project_members.index_all(
-        filter: { account_id:, enabled: true },
-        fields: { "dataset:project_members": ["project_id"] }
-      ).map(&:project_id).uniq
+      project_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:project_id)
 
       frag = <<-SQL
         EXISTS (

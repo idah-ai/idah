@@ -13,6 +13,7 @@
   import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
+  import { canAssignAccountRole } from "@/security/roleHierarchy";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
@@ -64,8 +65,14 @@
     canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
 
     const alreadyJoined = account.joined_at !== null;
-    canResentInvitation = !alreadyJoined;
     canCancelInvitation = alreadyJoined;
+
+    // Resend is allowed only when the actor could invite the account with its
+    // current role and scope (account-level resend rule): the actor must hold
+    // the `iam:accounts.invite` right and be able to assign the account's role.
+    const canInvite = (await currentAccount?.can("invite", "iam:accounts")) || false;
+    canResentInvitation =
+      !alreadyJoined && canInvite && canAssignAccountRole(currentAccount?.roleName || "", account.role_name || "user");
   });
 
   // Functions
