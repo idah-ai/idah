@@ -3,7 +3,7 @@
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
-   // Props
+  // Props
   let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
   let { delivery_date } = $derived(dataset);
 </script>

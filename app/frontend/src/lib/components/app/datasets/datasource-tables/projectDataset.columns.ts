@@ -73,7 +73,7 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
     hidable: false,
     cellComponent: ProjectDatasetModalityCell,
   },
-   delivery_date: {
+  delivery_date: {
     label: "Delivery Date",
     dataType: "datetime",
     clickable: false,
