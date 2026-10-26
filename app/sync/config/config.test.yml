@@ -3,6 +3,12 @@ em:
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "debug") %>
 
+# Disable the membership cache in tests so specs stay deterministic; the cache
+# and invalidation specs enable it explicitly.
+idah:
+  project_membership_cache:
+    enabled: false
+
 plugins:
   - name: http
     config:

@@ -165,6 +165,25 @@ Roles are defined as YAML files in `common/data/roles/` with a **version-prefixe
 | `9.9.9_system.yml` | `system` | No | `9.9.9` | Internal system (unrestricted `*.*.*`) |
 | `api_scopes/*.yml` | `api/*` | No | varies | API key sub-roles for compound resolution |
 
+**Role hierarchy (single chain).** Account and project roles form one ordered chain, compared numerically part-by-part via `SemanticVersion` (`common/lib/semantic_version.rb`):
+
+```
+admin (8.0.0) > org_owner (2.0.0) > project_owner (1.30.0) > reviewer (1.20.0) > annotator (1.10.0) > user (1.0.0)
+```
+
+- Account roles keep their `mask` in `common/data/roles/*.yml`.
+- Project roles get masks in a new file `common/data/project_roles.yml` (outside `roles/` so it is not loaded as account roles). Masks are spaced by ten to leave room for future roles.
+- `system (9.9.9)` stays non-assignable.
+- `RoleHierarchy` (`common/lib/role_hierarchy.rb`) is the single source of truth for rank and assignment rules; the frontend mirrors it in `app/frontend/src/lib/security/roleHierarchy.ts`.
+
+**Assignment rules:**
+- An actor may assign a role ranked **strictly below** their own, with two exceptions: `admin → admin`, and `org_owner → org_owner` (restricted to the actor's own orgs).
+- `role_scope` changes: added or removed org ids must be within the actor's orgs (admin unrestricted). Org ids outside the actor's reach are always preserved server-side; never trust a full scope sent by the client. A `user` has an empty scope.
+- When an org_owner's org list becomes empty after a scope change, the server demotes them to `user`.
+- Toggling `enabled` requires a strictly higher rank than the target and the target being within the actor's update scope.
+
+**Effective rank on a project** is the highest of: the account role if it covers the project (`admin`/`system` everywhere, `org_owner` when the project's `organization_id` is in `role_scope.org`), or the actor's **enabled** membership role on that project. Resolved by `ProjectAccess::Service` in dataset and `AuthContext.effectiveProjectRank` in the frontend.
+
 **YAML structure:**
 
 ```yaml
@@ -193,6 +212,31 @@ end
 ```
 
 The `RoleRepository` is an in-memory repository (stored as module-level class data), not a database table. It implements `unfold_rights` and `find_template` to support the template system.
+
+### Account Invitation & Update Guards
+
+**Account creation is internal.** `Account::Service#create` is only called through a system context (e.g. from `#invite`); the `POST /accounts` route was removed. Everyone else goes through `POST /accounts/invite`. The `admin` role keeps wildcard rights (`iam:accounts.*.*`); the internal-only restriction on `create` is enforced in service code, not by narrowing admin's rights.
+
+**Invite rights:**
+
+| Role | Right |
+|------|-------|
+| `admin` | `iam:accounts.invite.*` (via `iam:accounts.*.*`) |
+| `org_owner` | `iam:accounts.invite.as_org_owner` |
+| `user` | none |
+
+**Account-level invite rules** (enforced in `Account::Service#invite`):
+- An actor may assign a role ranked strictly below their own, with the `admin → admin` and `org_owner → org_owner` exceptions (org_owner restricted to the actor's own orgs).
+- Inviting on an existing email **expands, never reduces**: a `user` becomes `org_owner` of the actor's org; an `org_owner` of B invited as `org_owner` of A keeps scope `[B, A]`; an `org_owner` of B invited as `user` is a no-op. An account ranked above the actor is also a no-op (it already covers whatever the invite would grant) — returned unchanged, no error, no email. Disabled accounts are rejected (invite never re-enables); the error is specific when the actor can read the account, generic otherwise. No change → return the account, no error, no email. Change → send `Account::RoleChangeNotification`.
+- An invitee the org_owner cannot currently see (no shared project) is allowed: it only grants the actor's own org.
+
+**Resend invitation** follows the same guard-first pattern: the low-level `resend_pending_invitations` runs only with a `system` context; the guarded `POST /accounts/:id/resend_invitation` is authorised by the `iam:accounts.invite` right and allowed only if the actor could invite the account with its current role and scope, then delegates to a system-context service.
+
+**Account update guards** (`Account::Service#update`):
+- Self-update (`own`): only `name` may change; `role_name`, `role_scope`, `enabled` are always rejected.
+- Toggling `enabled` requires a strictly higher rank than the target and the target being within the actor's update scope.
+- `role_scope` changes go through `RoleHierarchy.merge_role_scope` (add/remove only within the actor's reach; out-of-reach orgs preserved).
+- When an org_owner's org list becomes empty, the server demotes them to `user`.
 
 ### Permission String Format
 
@@ -406,6 +450,24 @@ end
 | `scope.as_user? { ... }` | `as_user` | User-scoped access — filter by project membership or ownership; `auth_context.metadata[:id]` is the current user's ID |
 | `scope.own { ... }` | `own` | Personal records only (account settings, own account) |
 | `scope.array? { ... }` | `{...}` (compound) | Used for API key create scopes — validates the scope array is acceptable |
+
+### Org_owner membership union
+
+`Verse::Auth::Context#can?` returns the **first** matching right only, so an `org_owner` always resolves to `as_org_owner` and never reaches the `as_user` branch. To let an org_owner who is also a member of a project in another org see that project with their **membership** role (not org_owner powers), every `as_org_owner` scope is a **union**:
+
+```
+as_org_owner = (projects of the actor's orgs)  ∪  (projects where the actor is an enabled member)
+```
+
+The membership side is evaluated with the same per-action role rules as `as_user`. In the repositories this is implemented by producing each branch as a Sequel **condition** and combining with `Sequel.|` (see the dataset repositories). The same union is applied in IAM (accounts, organizations), media (medias, jobs) and sync (exports, jobs) via `ProjectMembership::Lookup`.
+
+**Per-service notes:**
+- **IAM accounts**: the read scope is `self ∪ members of the actor's org projects ∪ co-members of the actor's own memberships`; **updates stay limited** to accounts reachable through the actor's own orgs (foreign memberships never widen update scope).
+- **IAM `api_keys`**: excluded from the union — an org_owner must not manage API keys for another org just because they are a member of one of its projects.
+- **Sync**: the union follows sync's `as_user` rule (enabled `project_owner` only). An org_owner who is a reviewer on a foreign project gets dataset/media access there but **no sync access** — this asymmetry is intended.
+- **API-key contexts** (`custom_scopes[:project]`) do not get the membership union.
+
+Membership data is resolved through `ProjectMembership::Lookup` (`common/lib/project_membership/lookup.rb`), which is backed by an optional per-process in-memory cache (`ProjectMembership::Cache`) invalidated by broadcast resource events. See [`guide/inter-service-api.md`](inter-service-api.md) for the cache design.
 
 ### `auth_context.custom_scopes`
 

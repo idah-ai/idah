@@ -17,8 +17,6 @@
 
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     children: Snippet;
@@ -41,16 +39,12 @@
   // Lifecycle
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
-    const canUpdateDataset = await currentAccount?.can("update", "dataset:datasets", [
-      "as_org_owner",
-      as_project_owner,
-    ]);
+    const canUpdateDataset = await currentAccount?.canOnProject(
+      "update",
+      "dataset:datasets",
+      projectId,
+      "project_owner",
+    );
 
     if (!canUpdateDataset) {
       tabs = datasetTabs.filter((tab) => tab.value !== "labels");

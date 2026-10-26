@@ -82,26 +82,19 @@
   }
 
   async function createAccount(): Promise<void> {
-    await accountsBackendDataSource.create(
-      {
-        attributes: {
-          name: draft.name,
-          email: draft.email,
-          sso_channel: accountRecord?.sso_channel ?? null,
-          enabled: draft.enabled,
-          role_name: draft.role_name,
-        },
-      },
-      {
-        showErrorToast: false,
-      },
-    );
+    // Account creation goes through the guarded invite endpoint; the backend
+    // decides the assignable role and scope.
+    await accountsBackendDataSource.invite({
+      name: draft.name,
+      email: draft.email,
+      role_name: draft.role_name,
+    });
 
     closeThisModal();
     $refetches.accounts.list = new Date();
     showToast.success({
-      title: "Account created",
-      description: `The account has been created and an invitation email has been sent to "${draft.email}".`,
+      title: "Account invited",
+      description: `The account has been invited and an invitation email has been sent to "${draft.email}".`,
     });
   }
 
