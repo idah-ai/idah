@@ -13,7 +13,7 @@ export const command = {
   group: "Annotation",
   modes: [] as string[],
   shortcut: null,
-  shortDescription: "Update selected annotation categories",
+  shortDescription: "Update selected annotation categories and properties",
   longDescription: null,
 };
 

@@ -45,6 +45,25 @@ describe("annotation.bulk-update", () => {
     expect(update).toHaveBeenCalledTimes(4);
   });
 
+  it("applies a property-only update while preserving each category and other values", async () => {
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: { [shape]: { values: [
+      { id: "vehicle" }, { id: "pedestrian" },
+    ] } } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: [
+      { id: "a", category: "vehicle", properties: { occluded: "Yes" } },
+      { id: "b", category: "pedestrian", properties: { occluded: "Yes", crossing: "Yes" } },
+    ] });
+
+    await action.do();
+    expect(items.map((item) => item.category)).toEqual(["vehicle", "pedestrian"]);
+    expect(items.map((item) => item.properties)).toEqual([
+      { occluded: "Yes" }, { occluded: "Yes", crossing: "Yes" },
+    ]);
+    await action.undo();
+    expect(items).toEqual(original());
+  });
+
   it("does not write when a target is locked", async () => {
     locked.add("b");
     const registerCommand = vi.fn();

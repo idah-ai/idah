@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryCounts, prepareBulkCategory } from "./bulk-category";
+import { categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedProperties } from "./bulk-category";
 import type { IAnnotationRecord, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
 
 const box = "idah-image:bounding-box";
@@ -73,5 +73,89 @@ describe("bulk category preparation", () => {
     const result = prepareBulkCategory([record("a", "pedestrian", {})], "vehicle", requiredDriver, valid);
     expect(result.error).toContain("helmet");
     expect(result.updates).toEqual([]);
+  });
+
+  it("shows Mixed for different values, including multi-select arrays", () => {
+    const items = [
+      record("a", "vehicle", { occluded: "No", tags: ["red", "blue"] }),
+      record("b", "vehicle", { occluded: "Yes", tags: ["blue", "red"] }),
+    ];
+    expect(propertyState(items, "occluded")).toEqual({ mixed: true, value: undefined });
+    expect(propertyState(items, "tags")).toEqual({ mixed: false, value: ["red", "blue"] });
+  });
+
+  it("offers only properties visible for every selected annotation", () => {
+    const items = [record("a", "vehicle", {}), record("b", "pedestrian", {})];
+    expect(sharedProperties(items, driver).map((field) => field.id)).toEqual(["occluded"]);
+  });
+
+  it("changes one property without copying other values", () => {
+    const result = prepareBulkProperties([
+      record("a", "vehicle", { occluded: "No", condition: "Good" }),
+      record("b", "vehicle", { occluded: "Yes", condition: "Damaged" }),
+    ], { occluded: "Yes" }, driver, valid);
+    expect(result.error).toBeUndefined();
+    expect(result.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes", condition: "Damaged" } },
+    ]);
+  });
+
+  it("accepts false and zero as explicit property changes", () => {
+    const specialDriver = {
+      ...driver,
+      getFilteredConfig: () => ({ values: [], properties: [
+        { ...property("enabled"), type: "boolean" },
+        { ...property("score"), type: "integer" },
+      ] }),
+    } as IIdahDriverV2;
+    const result = prepareBulkProperties([
+      record("a", "vehicle", { enabled: true, score: 1 }),
+      record("b", "vehicle", { enabled: true, score: 2 }),
+    ], { enabled: false, score: 0 }, specialDriver, valid);
+    expect(result.error).toBeUndefined();
+    expect(result.updates.map((update) => update.properties)).toEqual([
+      { enabled: false, score: 0 }, { enabled: false, score: 0 },
+    ]);
+  });
+
+  it("rejects a field hidden for any target before queuing updates", () => {
+    const result = prepareBulkProperties([
+      record("a", "vehicle", { condition: "Good" }),
+      record("b", "pedestrian", { crossing: "Yes" }),
+    ], { condition: "Damaged" }, driver, valid);
+    expect(result.error).toMatch(/not available/);
+    expect(result.updates).toEqual([]);
+  });
+
+  it("distinguishes clearing a value from setting an empty multi-select", () => {
+    const listDriver = {
+      ...driver,
+      getFilteredConfig: () => ({ values: [], properties: [
+        { ...property("tags"), type: "multi-select" }, property("note"),
+      ] }),
+    } as IIdahDriverV2;
+    const items = [record("a", "vehicle", { tags: ["red"], note: "A" }),
+      record("b", "vehicle", { tags: ["blue"], note: "B" })];
+    const result = prepareBulkProperties(items, { tags: [], note: undefined }, listDriver, valid);
+    expect(result.error).toBeUndefined();
+    expect(result.updates.map((update) => update.properties)).toEqual([{ tags: [] }, { tags: [] }]);
+  });
+
+  it("removes values hidden after a property edit", () => {
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
+        values: [], properties: value.properties.mode === "advanced"
+          ? [property("mode"), property("detail")]
+          : [property("mode")],
+      }),
+    } as IIdahDriverV2;
+    const result = prepareBulkProperties([
+      record("a", "vehicle", { mode: "advanced", detail: "A" }),
+      record("b", "vehicle", { mode: "advanced", detail: "B" }),
+    ], { mode: "basic" }, conditionalDriver, valid);
+    expect(result.error).toBeUndefined();
+    expect(result.updates.map((update) => update.properties)).toEqual([{ mode: "basic" }, { mode: "basic" }]);
   });
 });

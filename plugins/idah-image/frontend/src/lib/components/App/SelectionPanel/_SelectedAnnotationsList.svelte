@@ -14,6 +14,7 @@
   } from "$lib/components/ui/Pagination";
   import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
   import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
+  import BulkPropertiesSection from "$lib/components/App/SelectionPanel/_BulkPropertiesSection.svelte";
   import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
@@ -22,10 +23,11 @@
   import { isEditable } from "$lib/state/editor.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
-  import { categoryCounts, prepareBulkCategory } from "$lib/utils/bulk-category";
+  import { categoryCounts, prepareBulkCategory, prepareBulkProperties, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
 
   import {  IMAGE_MASK } from "$lib/types";
   import type { IAnnotationRecord } from "$idah/v2/types";
+    import type Dice_1 from "@lucide/svelte/icons/dice-1";
 
   // Optional — when provided, show these items instead of selection.selectedAnnotations.
   // This lets the component be reused for group-selection annotations.
@@ -48,18 +50,24 @@
 
   const countLabel = $derived(`${sourceItems.length} selected`);
   let draftCategory = $state<string | undefined>();
+  let draftProperties = $state<Record<string, PropertyValue>>({});
   let feedback = $state("");
   const selectionKey = $derived([...selection.selectedAnnotationIds].sort().join("|"));
   const shapeType = $derived(sourceItems[0]?.shape_type);
   const sameShape = $derived(sourceItems.length > 0 && sourceItems.every((item) => item.shape_type === shapeType));
   const counts = $derived(categoryCounts(sourceItems, getDriver().config));
+  const fields = $derived(sharedProperties(sourceItems, getDriver()));
+  const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
   const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
   const configValues = $derived(shapeType ? (getDriver().config[shapeType]?.values ?? []) : []);
   const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
   const category = $derived(configValues.find((value) => value.id === selectedCategory));
-  const preview = $derived(
-    draftCategory ? prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled) : undefined,
-  );
+  const preview = $derived.by(() => {
+    if (draftCategory && hasPropertyEdit) return undefined;
+    if (draftCategory) return prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled);
+    if (hasPropertyEdit) return prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
+    return undefined;
+  });
   const blockReason = $derived.by(() => {
     if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size) return "Selection is incomplete.";
     if (items) return "Group editing is not available in this step.";
@@ -68,25 +76,37 @@
     if (disabled || !isEditable() || ["completed", "errored"].includes(getDriver().entryStatus)) return "This workspace cannot be edited right now.";
     if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (sourceItems.some((item) => annotation.isHidden(item))) return "One or more selected annotations are hidden. Deselect them before applying.";
-    if (!draftCategory) return "Choose a category to apply.";
+    if (draftCategory && hasPropertyEdit) return "Applying category and properties together comes in Scenario 3.";
+    if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";
     if (preview?.error) return preview.error;
-    if (sourceItems.every((item) => item.category === draftCategory)) return "All selected annotations already use this category.";
+    if (draftCategory && sourceItems.every((item) => item.category === draftCategory)) return "All selected annotations already use this category.";
     return undefined;
   });
 
   $effect(() => {
     selectionKey;
     draftCategory = undefined;
+    draftProperties = {};
     feedback = "";
   });
 
-  function applyCategory() {
-    if (blockReason || !draftCategory) return;
-    const result = prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled);
+  function applyBulk() {
+    if (blockReason) return;
+    const result = draftCategory
+      ? prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled)
+      : prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
     if (result.error || !result.updates.length) return;
     getDriver().command.call("idah-image:annotation.bulk-update", { updates: result.updates });
     draftCategory = undefined;
-    feedback = "Category update queued. Check the workspace sync indicator for save status.";
+    draftProperties = {};
+    feedback = "Bulk update queued. Check the workspace sync indicator for save status.";
+  }
+
+  function resetProperty(id: string) {
+    const next = { ...draftProperties };
+    delete next[id];
+    draftProperties = next;
+    feedback = "";
   }
 
   $effect(() => {
@@ -101,7 +121,7 @@
   </div>
 
   <div class="bg-primary/10 flex flex-col gap-2 rounded-lg px-2 py-3 text-xs">
-    <strong>{sourceItems.length} {sourceItems.length === 1 ? "annotation" : "annotations"} selected</strong>
+    <strong>Selected Annotations</strong>
     <div class="flex flex-wrap items-center gap-1.5">
       {#each [...counts] as [id, { count, label }] (id)}
         <Badge variant="outline" class="bg-accent">{count} {label}</Badge>
@@ -109,7 +129,7 @@
     </div>
   </div>
 
-  <div class="grid gap-1">
+  <div class="grid gap-4">
 	  <CategorySelect
 	    {configValues}
 	    {category}
@@ -119,6 +139,17 @@
 	    disabled={disabled || !sameShape || shapeType === IMAGE_MASK}
 	    placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
 	  />
+
+		<Separator />
+
+	  <BulkPropertiesSection
+	    items={sourceItems}
+	    {fields}
+	    draft={draftProperties}
+	    disabled={disabled || Boolean(draftCategory) || !sameShape || shapeType === IMAGE_MASK}
+	    onValueChange={(id, value) => { draftProperties = { ...draftProperties, [id]: value }; feedback = ""; }}
+	    onReset={resetProperty}
+	  />
 	  {#if feedback}
 	    <p role="status" class="text-muted-foreground text-xs">{feedback}</p>
 	  {:else if blockReason}
@@ -126,7 +157,7 @@
 	  {/if}
   </div>
 
-  <Button size="sm" disabled={Boolean(blockReason)} onclick={applyCategory}>
+  <Button size="sm" disabled={Boolean(blockReason)} onclick={applyBulk}>
   	Apply to {sourceItems.length}
   </Button>
 
