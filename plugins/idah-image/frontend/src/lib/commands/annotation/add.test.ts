@@ -6,9 +6,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
-const { mockCreate, mockDelete, mockSetShape, mockSetShapes, mockSelectAnnotation } = vi.hoisted(() => ({
+const { mockCreate, mockDelete, mockRestore, mockSetShape, mockSetShapes, mockSelectAnnotation } = vi.hoisted(() => ({
   mockCreate: vi.fn(),
   mockDelete: vi.fn(),
+  mockRestore: vi.fn(),
   mockSetShape: vi.fn(),
   mockSetShapes: vi.fn(),
   mockSelectAnnotation: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock("$lib/state/data.svelte", () => ({
       items: [] as Array<{ id: string; shape: Record<string, unknown>; value?: Record<string, unknown> }>,
       create: mockCreate,
       delete: mockDelete,
+      restore: mockRestore,
       setShape: mockSetShape,
       setShapes: mockSetShapes,
     },
@@ -110,6 +112,8 @@ describe("annotation.add (mask path)", () => {
     _mockMaskToolActive = "brush";
 
     mockCreate.mockResolvedValue({ id: "created-ann-id" });
+    // Resolve to a record carrying the original id, like the real store now does.
+    mockRestore.mockImplementation((record: any) => Promise.resolve({ ...record }));
 
     mockDriver = {
       command: { register: vi.fn() },
@@ -155,6 +159,61 @@ describe("annotation.add (mask path)", () => {
     // Session cleanup is deferred to beginSession on the next gesture,
     // so reset() should NOT have been called here.
     expect(_mockResetCalled).toBe(false);
+  });
+
+  it("redo of a mask add calls restore (not create) and re-flushes tiles", async () => {
+    _mockDirtyTiles = ["0:0", "0:1"];
+    _mockTileBuffers.set("0:0", createFullBuffer());
+    _mockTileBuffers.set("0:1", createFullBuffer());
+
+    register(mockDriver);
+    const registered = mockDriver.command.register.mock.calls[0][0];
+    const action = registered.callback({
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
+    });
+
+    // First run: create
+    await action.do();
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockCreate).toHaveBeenCalledWith({
+      id: "generated-uuid-123",
+      shape_type: "idah-image:mask",
+      shape_args: {},
+      category: "cat",
+      properties: undefined,
+    });
+
+    // Undo: soft-deletes
+    await action.undo();
+    expect(mockDelete).toHaveBeenCalledWith("generated-uuid-123");
+
+    // Redo: restore with the same id, never re-create
+    mockCreate.mockClear();
+    mockRestore.mockClear();
+    mockSetShapes.mockClear();
+    mockSelectAnnotation.mockClear();
+    await action.do();
+
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockRestore).toHaveBeenCalledTimes(1);
+    expect(mockRestore).toHaveBeenCalledWith({
+      id: "generated-uuid-123",
+      shape_type: "idah-image:mask",
+      shape_args: {},
+      category: "cat",
+      properties: undefined,
+    });
+    // do() finishes: the restored record is selected...
+    expect(mockSelectAnnotation).toHaveBeenCalledWith(expect.objectContaining({ id: "generated-uuid-123" }));
+    // ...and tiles are still flushed on redo (backend upserts; soft-deleted tiles restore)
+    expect(mockSetShapes).toHaveBeenCalledWith(
+      "generated-uuid-123",
+      expect.arrayContaining([
+        expect.objectContaining({ key: "tile-0x0", value: expect.objectContaining({ rle: expect.any(String) }) }),
+        expect.objectContaining({ key: "tile-0x1", value: expect.objectContaining({ rle: expect.any(String) }) }),
+      ]),
+    );
   });
 
   it("undo deletes the annotation (cascade cleans up tiles)", async () => {

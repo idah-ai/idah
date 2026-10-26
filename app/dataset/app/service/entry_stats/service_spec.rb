@@ -112,17 +112,16 @@ RSpec.describe EntryStats::Service, database: true do
   end
 
   describe "#recompute_from_annotation" do
-    let(:annotation_repo) { Annotation::Repository.new(auth_context) }
-    let(:annotation_id) do
-      annotation_repo.create(
-        entry_id: entry_id,
-        project_id: project_id,
-        dataset_id: dataset_id,
-        shape_type: "idah-image:bbox",
-        shape_args: { x: 0, y: 0, width: 100, height: 100 },
-        category: "orphaned_cat",
-        created_by_email: "user@example.com"
-      )
+    let(:config) do
+      {
+        "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+      }
+    end
+
+    let!(:ds_id) do
+      # Override the shared dataset with one that has known configured categories
+      dataset_repo.update!(dataset_id, { labeling_configuration: config })
+      dataset_id
     end
 
     before do
@@ -133,41 +132,122 @@ RSpec.describe EntryStats::Service, database: true do
       )
     end
 
-    it "recomputes orphan-only stats when entry is in_progress and has orphans" do
-      subject.recompute_from_annotation(annotation_id)
+    it "decrements orphan count when an orphaned category is fixed to a valid one" do
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        old_category: "cat",
+        new_category: "cat"
+      )
 
       orphan_stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      expect(orphan_stat.value).to eq("1") # still 1 orphan
+      expect(orphan_stat.value).to eq("1") # no change (old == new → early return)
     end
 
-    it "does not recompute when the entry is not in_progress" do
-      entry_repo.update!(entry_id, { status: "completed" })
+    it "skips when old_category equals new_category" do
+      original = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first.value
 
-      expect(EntryStats::Recompute).not_to receive(:orphan_only)
-      subject.recompute_from_annotation(annotation_id)
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        old_category: "cat",
+        new_category: "cat"
+      )
+
+      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(stat.value).to eq(original)
     end
 
-    it "does not recompute when there is no orphan stat" do
+    it "does not decrement when there is no orphan stat" do
       stat_repo.delete_by_entry_id(entry_id)
 
-      expect(EntryStats::Recompute).not_to receive(:orphan_only)
-      subject.recompute_from_annotation(annotation_id)
+      expect {
+        subject.recompute_from_annotation(
+          entry_id: entry_id,
+          dataset_id: ds_id,
+          old_category: "cat",
+          new_category: "dog"
+        )
+      }.not_to(change {
+        stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      })
+    end
+
+    it "does not decrement when the old category was not an orphan" do
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        old_category: "dog",
+        new_category: "cat"
+      )
+
+      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(stat.value).to eq("1") # not decremented
+    end
+
+    it "does not decrement when the new category is still orphaned" do
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        old_category: "cat",
+        new_category: "bird"
+      )
+
+      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(stat.value).to eq("1") # not decremented
+    end
+
+    it "decrements orphan count when old was orphaned and new is valid" do
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        old_category: "cat-old",
+        new_category: "dog"
+      )
+
+      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(stat.value).to eq("0") # decremented
     end
   end
 
   describe "#recompute_all_for_dataset" do
+    let(:annotation_repo) { Annotation::Repository.new(auth_context) }
+    let!(:second_entry_id) do
+      eid = entry_repo.create(
+        priority: 1, wf_step: "annotate", status: "completed", project_id:, dataset_id:
+      )
+
+      # Annotations with a known category so the pre-check guard passes
+      annotation_repo.create(
+        entry_id: eid,
+        project_id: project_id,
+        dataset_id: dataset_id,
+        shape_type: "idah-image:bbox",
+        category: "changed_cat",
+        shape_args: {},
+        created_by_email: "user@example.com"
+      )
+      eid
+    end
+
     before do
       # Set the first entry to completed so the full recompute path runs
       entry_repo.update!(entry_id, { status: "completed" })
 
-      # create a second entry in the same dataset (also completed)
-      entry_repo.create(
-        priority: 1, wf_step: "annotate", status: "completed", project_id:, dataset_id:
+      # Give the first entry an annotation too
+      annotation_repo.create(
+        entry_id: entry_id,
+        project_id: project_id,
+        dataset_id: dataset_id,
+        shape_type: "idah-image:bbox",
+        category: "changed_cat",
+        shape_args: {},
+        created_by_email: "user@example.com"
       )
     end
 
     it "recomputes stats for all entries in the dataset" do
-      subject.recompute_all_for_dataset(dataset_id)
+      subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["changed_cat"])
 
       dataset_entry_ids = entry_repo.index({ dataset_id__eq: dataset_id }).map(&:id)
 
@@ -180,12 +260,45 @@ RSpec.describe EntryStats::Service, database: true do
     it "recomputes stats for an entry that previously had stale stats" do
       stat_repo.bulk_insert(entry_id, { "annotation.count" => "99", "stale.key" => "old" })
 
-      subject.recompute_all_for_dataset(dataset_id)
+      subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["changed_cat"])
 
       refreshed = stat_repo.index({ entry_id__eq: entry_id })
       keys = refreshed.map(&:key)
       expect(keys).not_to include("stale.key")
-      expect(refreshed.find { |s| s.key == "annotation.count" }.value).to eq("0")
+      expect(refreshed.find { |s| s.key == "annotation.count" }.value).to eq("1")
+    end
+
+    it "runs orphan_only for in_progress entries with matching annotations" do
+      entry_repo.update!(entry_id, { status: "in_progress" })
+
+      subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["changed_cat"])
+
+      stats = stat_repo.index({ entry_id__eq: entry_id })
+      expect(stats.map(&:key)).to include("orphan_category.count")
+      # orphan_only does not persist full stat keys like annotation.count
+      expect(stats.map(&:key)).not_to include("annotation.count")
+    end
+
+    it "skips in_progress entries when their annotations do not match changed_set" do
+      entry_repo.update!(entry_id, { status: "in_progress" })
+
+      subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["other_cat"])
+
+      stats = stat_repo.index({ entry_id__eq: entry_id })
+      expect(stats).to be_empty
+    end
+
+    it "logs error per entry and clears syncing_stats even when Recompute.call raises" do
+      allow(Verse.logger).to receive(:error)
+      allow(EntryStats::Recompute).to receive(:call).and_raise("mock failure")
+
+      # Simulate the event method setting the flag before the sweep
+      dataset_repo.update!(dataset_id, { syncing_stats: true })
+
+      subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["changed_cat"])
+
+      expect(Verse.logger).to have_received(:error).with(/mock failure/).at_least(:once)
+      expect(dataset_repo.find!(dataset_id).syncing_stats).to be false
     end
   end
 end

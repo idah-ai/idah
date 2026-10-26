@@ -270,6 +270,34 @@ describe("AstProcessor", () => {
     });
   });
 
+  // ── contains any / all / none ────────────────────────────────────────────
+
+  describe("has_any / has_all / has_none", () => {
+    const colors = ["get", ["colors"]];
+    const run = (op: string, list: string[], variables: Record<string, unknown> = { colors: ["red", "blue"] }) =>
+      proc(variables).processAST([op, [colors, [list]]] as unknown as ASTNode);
+
+    it("has_any is true when the selection includes one of the values", () => {
+      expect(run("has_any", ["red", "green"])).toBe(true);
+      expect(run("has_any", ["green"])).toBe(false);
+    });
+
+    it("has_all is true when the selection includes every value", () => {
+      expect(run("has_all", ["red", "blue"])).toBe(true);
+      expect(run("has_all", ["red", "green"])).toBe(false);
+    });
+
+    it("has_none is true when the selection includes none of the values", () => {
+      expect(run("has_none", ["green"])).toBe(true);
+      expect(run("has_none", ["blue"])).toBe(false);
+    });
+
+    it("treats a missing selection as empty", () => {
+      expect(run("has_any", ["red"], {})).toBe(false);
+      expect(run("has_none", ["red"], {})).toBe(true);
+    });
+  });
+
   // ── edge cases ──────────────────────────────────────────────────────────
 
   describe("edge cases", () => {
@@ -281,16 +309,24 @@ describe("AstProcessor", () => {
       expect(true).toBe(true);
     });
 
-    it("throws on unknown operator", () => {
-      expect(() =>
-        proc({}).processAST(["unknown_op", [1, 2]] as unknown as ASTNode),
-      ).toThrow("Operator not found: unknown_op");
+    it("evaluates an unknown operator to false instead of throwing", () => {
+      expect(proc({}).processAST(["unknown_op", [1, 2]] as unknown as ASTNode)).toBe(false);
     });
 
-    it("throws on invalid operator type", () => {
-      expect(() =>
-        proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode),
-      ).toThrow("Invalid operator type");
+    it("fails only the branch with the unknown operator", () => {
+      const rule = ["or", [["unknown_op", [1, 2]], ["eq", [1, 1]]]] as unknown as ASTNode;
+      expect(proc({}).processAST(rule)).toBe(true);
+    });
+
+    it("fails a comparison on an unknown operator instead of comparing the failure", () => {
+      // neq(false, "x") would be true and show the property.
+      const rule = ["neq", [["unknown_op", [1, 2]], "x"]] as unknown as ASTNode;
+      expect(proc({}).processAST(rule)).toBe(false);
+      expect(proc({}).processAST(["and", [rule, ["eq", [1, 1]]]] as unknown as ASTNode)).toBe(false);
+    });
+
+    it("evaluates an invalid operator type to false instead of throwing", () => {
+      expect(proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode)).toBe(false);
     });
   });
 });

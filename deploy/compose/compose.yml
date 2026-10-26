@@ -31,9 +31,9 @@ x-logging: &logging
     tag: "{{.Name}}"
 
 # Every Ruby service gets these. Service-specific values are set per service.
-# They all run one image, service (media: its own, which adds ffmpeg and
-# ImageMagick to it), holding every service in /app/<service>; working_dir
-# picks the service a container runs.
+# They all run one image, service (media and sync: the media image, which adds
+# ffmpeg and ImageMagick to it), holding every service in /app/<service>;
+# working_dir picks the service a container runs.
 #
 # No env_file: .env is read only to fill in the ${...} below, so each service
 # sees the settings it uses and nothing else — not the others' secrets — and a
@@ -239,10 +239,11 @@ services:
       - ./config/certs:/certs:ro
 
   # sync writes export files, on the sync_files volume by default; set
-  # SYNC_FILES_ADAPTER=s3 in .env to use S3, as for media.
+  # SYNC_FILES_ADAPTER=s3 in .env to use S3, as for media. It runs the media
+  # image for ffmpeg, which the video plugin's exports use to extract frames.
   sync:
     <<: *service
-    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}service:${IDAH_VERSION:?set IDAH_VERSION in .env}
+    image: ${IDAH_IMAGE_PREFIX:-ghcr.io/idah-ai/idah-}media:${IDAH_VERSION:?set IDAH_VERSION in .env}
     working_dir: /app/sync
     environment:
       <<: *service-env

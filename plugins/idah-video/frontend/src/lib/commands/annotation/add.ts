@@ -9,6 +9,7 @@
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
+import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
@@ -50,16 +51,34 @@ export function register(driver: IIdahDriverV2): void {
       const createdId = uuidv7();
       const shapeType = props.shape_type;
 
+      // Tracks whether do() has run before. On the first run the annotation is
+      // created; on later runs (redo after undo soft-deleted it) it is restored
+      // instead, because the backend row still exists (deleted_at set) and a
+      // plain create would collide with it.
+      let hasRun = false;
+
       return {
         command: { ...command },
         async do() {
-          const created = await data.annotations!.create({
-            id: createdId,
-            shape_type: shapeType,
-            shape_args: props.shape,
-            category: props.category ?? "",
-            properties: props.properties,
-          });
+          let created: AnnotationItem;
+          if (hasRun) {
+            created = await data.annotations!.restore({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          } else {
+            created = await data.annotations!.create({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          }
+          hasRun = true;
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Seek to the frame the annotation was created on

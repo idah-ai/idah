@@ -72,6 +72,22 @@ module Annotation
       end
     end
 
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        annotation = find!(id)
+        old_category = annotation.category
+
+        add_metadata(
+          project_id: annotation.project_id,
+          dataset_id: annotation.dataset_id,
+          entry_id: annotation.entry_id,
+          old_category: old_category
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
     # Actions                       | Roles
     # read, create, update, delete  | project_owner, annotator, reviewer
     #

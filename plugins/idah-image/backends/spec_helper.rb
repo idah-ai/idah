@@ -19,16 +19,20 @@ require "zeitwerk"
 
 loader = Zeitwerk::Loader.new
 loader.push_dir("./media")
+loader.push_dir("./sync")
 loader.setup
 
 SimpleCov.start do
   add_group "Media Service", "media"
+  add_group "Sync Service", "sync"
 
   add_filter /_spec.rb$/
   add_filter /spec_data/
 end
 
 require_relative "spec_data/fake_processor_context"
+require_relative "spec_data/fake_export_context"
+require_relative "spec_data/mask_tiles"
 
 RSpec.configure do |config|
   config.before :each do

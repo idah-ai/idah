@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
+import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import { DEFAULT_MODE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK, type IImageAnnotationShape } from "$lib/types";
 import { noopAction } from "..";
@@ -80,16 +81,36 @@ export function register(driver: IIdahDriverV2): void {
         maskPolygonDraft.closedPoints = null;
       }
 
+      // Tracks whether do() has run before. On the first run the annotation is
+      // created; on later runs (redo after undo soft-deleted it) it is restored
+      // instead, because the backend row still exists (deleted_at set) and a
+      // plain create would collide with it. The mask tile flush below still runs
+      // on redo: the backend upserts tiles, and soft-deleted tiles come back
+      // with restore().
+      let hasRun = false;
+
       return {
         command: { ...command },
         async do() {
-          const created = await data.annotations!.create({
-            id: createdId,
-            shape_type: shapeType,
-            shape_args: props.shape,
-            category: props.category ?? "",
-            properties: props.properties,
-          });
+          let created: AnnotationItem;
+          if (hasRun) {
+            created = await data.annotations!.restore({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          } else {
+            created = await data.annotations!.create({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          }
+          hasRun = true;
           selection.selectAnnotation(created as any);
 
           if (shapeType === IMAGE_MASK && dirtyTileKeys.length > 0) {

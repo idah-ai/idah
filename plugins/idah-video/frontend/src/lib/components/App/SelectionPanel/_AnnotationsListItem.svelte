@@ -71,7 +71,7 @@
     </Item.Content>
 
     <Item.Actions class="ml-auto flex shrink-0 items-center gap-0">
-      {#each getAnnotationActions(annotation) as { label, icon: Icon, disabled, onclick }, index (index)}
+      {#each getAnnotationActions(annotation, displayName) as { label, icon: Icon, disabled, onclick }, index (index)}
         <CategoryAction
           {label}
           icon={Icon}
