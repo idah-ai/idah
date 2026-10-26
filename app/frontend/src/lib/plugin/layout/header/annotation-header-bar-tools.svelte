@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
+  import { CheckCheckIcon, ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -8,6 +8,7 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import * as Kbd from "@/components/ui/kbd";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import { cn } from "@/utils";
@@ -49,13 +50,43 @@
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
+  // ── Coverage mask state ───────────────────────────────────────────
+  // NOTE: driver.mode is a plain getter (not Svelte $state), so a $derived
+  // cannot track it. coverageMaskMode is a $state updated in cycleCoverageMaskMode
+  // (before the command call, for instant visuals) and in the onModeChange
+  // handler below (so Escape/tool switches reset the button).
+  let coverageMaskMode = $state<"off" | "add" | "remove">("off");
+  const COVERAGE_MASK_MODES = new Set(["idah-video:coverage-mask-bbox", "idah-image:coverage-mask-bbox"]);
+
+  function cycleCoverageMaskMode() {
+    if (coverageMaskMode === "off") {
+      coverageMaskMode = "add";
+      driver.command.call("coverage-mask-set-mode", { mode: "add" });
+    } else if (coverageMaskMode === "add") {
+      coverageMaskMode = "remove";
+      driver.command.call("coverage-mask-set-mode", { mode: "remove" });
+    } else {
+      coverageMaskMode = "off";
+      driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    }
+  }
+
   function refreshToolbar() {
-    currentMode = driver.mode;
+    // Keep the toolbar looking at editor/review mode even while the viewport
+    // is in a mask mode — mask is a sub-mode, not a separate toolbar context.
+    currentMode = COVERAGE_MASK_MODES.has(driver.mode) ? "editor" : driver.mode;
     canUndo = driver.command.canUndo();
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((_) => refreshToolbar());
+  driver.onModeChange((event) => {
+    refreshToolbar();
+    // Leaving mask mode (editor/review): reset the button AND deactivate the plugin.
+    if (!COVERAGE_MASK_MODES.has(event.newValue)) {
+      coverageMaskMode = "off";
+      driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    }
+  });
   driver.onSyncChange(() => refreshToolbar());
   driver.command.onStackChange(() => refreshToolbar());
 
@@ -230,4 +261,33 @@
       onclick={handleClick}
     />
   {/each}
+
+  <Separator orientation="vertical"></Separator>
+
+  <!-- Coverage mask tool — check icon, no label -->
+  <TooltipProvider>
+    <Tooltip delayDuration={100}>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="duration-0"
+          style={coverageMaskMode === "add"
+            ? "background-color:rgba(24,131,91,0.12)"
+            : coverageMaskMode === "remove"
+              ? "background-color:rgba(180,50,57,0.12)"
+              : ""}
+          onclick={cycleCoverageMaskMode}
+        >
+          <CheckCheckIcon
+            class="size-4"
+            style={coverageMaskMode === "add" ? "color:#18835b" : coverageMaskMode === "remove" ? "color:#b43239" : ""}
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        Done Area
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
 </div>

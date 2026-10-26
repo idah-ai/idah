@@ -16,13 +16,16 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return ["idah-video:polygon", "idah-video:bounding-box", "note"].includes(this.#mode);
+    return ["idah-video:polygon", "idah-video:bounding-box", "note", "idah-video:coverage-mask-bbox"].includes(this.#mode);
   }
   get isEditorWorkspace() {
     return this.#mode === EDITOR_MODE;
   }
   get isReviewWorkspace() {
     return this.#mode === REVIEW_MODE || this.#mode === NOTE_MODE;
+  }
+  get isCoverageMaskMode() {
+    return this.#mode === "idah-video:coverage-mask-bbox";
   }
 
   set mode(val: string) {

@@ -68,6 +68,7 @@ import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeMaskBrush } from "./mode/mask_brush";
 import { register as registerModeMaskPolygon } from "./mode/mask_polygon";
+import { register as registerCoverageSetMode } from "./coverage-mask/coverage_set_mode";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
@@ -126,6 +127,9 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
     registerModeMaskBrush(driver);
     registerModeMaskPolygon(driver);
   }
+
+  // ── Coverage mask (Done Area) ────────────────────────────────────────
+  registerCoverageSetMode(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);
