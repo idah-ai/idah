@@ -180,11 +180,12 @@
 	    onValueChange={setDraftProperty}
 	    onReset={resetProperty}
 	  />
-	  {#if feedback}
-	    <p role="status" class="text-muted-foreground text-xs">{feedback}</p>
-	  {:else if blockReason}
-	    <p role="alert" class="text-muted-foreground text-xs">{blockReason}</p>
-	  {/if}
+    {#if blockReason && !(feedback && blockReason === "Choose a category or property to apply.")}
+      <p role="alert" class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{blockReason}</p>
+    {/if}
+    {#if feedback}
+      <p role="status" class="text-muted-foreground text-xs">{feedback}</p>
+    {/if}
   </div>
 
   <Button size="sm" disabled={Boolean(blockReason)} onclick={applyBulk}>

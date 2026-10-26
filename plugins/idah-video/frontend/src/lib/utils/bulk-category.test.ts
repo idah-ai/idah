@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedProperties } from "./bulk-category";
+import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
 import type { IAnnotationRecord, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
 
 const box = "idah-video:bounding-box";
@@ -147,6 +148,61 @@ describe("bulk category preparation", () => {
     expect(prepareBulkCategory(items, "vehicle", requiredDriver, valid).error).toContain("helmet");
     expect(prepareBulkCategory(items, "vehicle", requiredDriver, valid, { helmet: "Yes" }).error)
       .toBeUndefined();
+  });
+
+  it("blocks every target until a newly visible required choice is valid", () => {
+    const helmet = {
+      ...property("helmet", true),
+      label: "Helmet",
+      type: "single-select",
+      format: { options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] },
+    } as IConfigProperty;
+    const cyclistDriver = {
+      ...driver,
+      config: { [box]: { values: [
+        { id: "vehicle", label: "Vehicle", color: null, text_color: null },
+        { id: "cyclist", label: "Cyclist", color: null, text_color: null },
+      ], properties: [] } },
+      getFilteredConfig: (_shape: string, value: { category: string }) => ({
+        values: [], properties: value.category === "cyclist" ? [helmet] : [],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { helmet: "yes" }),
+      record("b", "vehicle", {}),
+    ];
+
+    const missing = prepareBulkCategory(items, "cyclist", cyclistDriver, propertyFullfilled);
+    expect(missing).toEqual({ updates: [], error: "Helmet needs a valid value." });
+    const invalid = prepareBulkCategory(items, "cyclist", cyclistDriver, propertyFullfilled, { helmet: "unknown" });
+    expect(invalid.updates).toEqual([]);
+    expect(invalid.error).toContain("Helmet");
+    const valid = prepareBulkCategory(items, "cyclist", cyclistDriver, propertyFullfilled, { helmet: "no" });
+    expect(valid.error).toBeUndefined();
+    expect(valid.updates).toEqual([
+      { id: "a", category: "cyclist", properties: { helmet: "no" } },
+      { id: "b", category: "cyclist", properties: { helmet: "no" } },
+    ]);
+  });
+
+  it("accepts false and zero for newly required fields", () => {
+    const requiredDriver = {
+      ...driver,
+      getFilteredConfig: () => ({
+        values: [], properties: [
+          { ...property("helmet", true), type: "boolean" },
+          { ...property("score", true), type: "integer", format: { minimum: 0 } },
+        ],
+      }),
+    } as IIdahDriverV2;
+    const items = [record("a", "pedestrian", {}), record("b", "pedestrian", {})];
+    const result = prepareBulkCategory(items, "vehicle", requiredDriver, propertyFullfilled, {
+      helmet: false, score: 0,
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.updates.map((update) => update.properties)).toEqual([
+      { helmet: false, score: 0 }, { helmet: false, score: 0 },
+    ]);
   });
 
   it("changes one property without copying other values", () => {
