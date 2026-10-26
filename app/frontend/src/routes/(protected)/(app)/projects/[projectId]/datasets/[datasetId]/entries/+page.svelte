@@ -27,13 +27,18 @@
 
   let localToday = $state(today(getLocalTimeZone()).toString());
   onMount(() => {
+    let midnightTimer: ReturnType<typeof setTimeout>;
     const refreshToday = () => {
       localToday = today(getLocalTimeZone()).toString();
+      clearTimeout(midnightTimer);
+      const now = new Date();
+      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      midnightTimer = setTimeout(refreshToday, nextDay.getTime() - now.getTime());
     };
-    const interval = setInterval(refreshToday, 60_000);
+    refreshToday();
     window.addEventListener("focus", refreshToday);
     return () => {
-      clearInterval(interval);
+      clearTimeout(midnightTimer);
       window.removeEventListener("focus", refreshToday);
     };
   });

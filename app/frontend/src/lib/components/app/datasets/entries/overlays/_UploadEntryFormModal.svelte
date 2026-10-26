@@ -2,7 +2,6 @@
   import { page } from "$app/state";
   import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { getFieldErrors } from "@/utils/validate";
 
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
@@ -30,17 +29,9 @@
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
     modality: string;
-    datasetDeliveryDate: string | null;
     canEditDeliveryDate: boolean;
   }
-  let {
-    action,
-    title,
-    open = $bindable(),
-    modality,
-    datasetDeliveryDate,
-    canEditDeliveryDate,
-  }: CreateEntryFormModalProps = $props();
+  let { action, title, open = $bindable(), modality, canEditDeliveryDate }: CreateEntryFormModalProps = $props();
 
   let selectedDeliveryDate = $state<string | null>(null);
   let dateErrors = $state<string[]>([]);
@@ -286,12 +277,9 @@
     uploading = true;
     dateErrors = [];
     try {
-      // Refresh only the selection bound; never populate the Entry date from it.
       if (selectedDeliveryDate && canEditDeliveryDate) {
-        const currentDataset = await datasetsBackendDataSource.get(datasetId, { noCache: true });
         const result = deliveryDateChangeSchema.safeParse({
           delivery_date: selectedDeliveryDate,
-          dataset_delivery_date: currentDataset.data.delivery_date ?? null,
         });
         if (!result.success) {
           dateErrors = (getFieldErrors(result.error) as { delivery_date?: string[] }).delivery_date ?? [];
@@ -353,9 +341,7 @@
             placeholder="Select delivery date (optional)"
             value={selectedDeliveryDate ? parseDate(selectedDeliveryDate).toDate(getLocalTimeZone()) : null}
             minDate={today(getLocalTimeZone())}
-            maxDate={datasetDeliveryDate ? parseDate(datasetDeliveryDate) : undefined}
-            disabled={uploading ||
-              (!!datasetDeliveryDate && parseDate(datasetDeliveryDate).compare(today(getLocalTimeZone())) < 0)}
+            disabled={uploading}
             errors={dateErrors}
             onDateSelected={(date) => {
               selectedDeliveryDate = date;
@@ -372,9 +358,6 @@
               dateErrors = [];
             }}>Clear Delivery Date</Button
           >
-        {/if}
-        {#if datasetDeliveryDate && parseDate(datasetDeliveryDate).compare(today(getLocalTimeZone())) < 0}
-          <Text size="sm">The Dataset Delivery Date has passed. You can upload without an Entry Delivery Date.</Text>
         {/if}
       </section>
     {/if}

@@ -4,9 +4,7 @@
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
   import { showToast } from "@/components/ui/toast/index.svelte";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
   import { entriesBackendDataSource, type EntryRecord } from "@/data/model/dataset/entries/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -15,11 +13,9 @@
 
   let {
     entry,
-    datasetDeliveryDate,
     open = $bindable(false),
   }: {
     entry: EntryRecord;
-    datasetDeliveryDate: string | null;
     open?: boolean;
   } = $props();
 
@@ -37,14 +33,9 @@
     submitting = true;
     errors = [];
     try {
-      if (selectedDeliveryDate !== null) {
-        const dataset = await datasetsBackendDataSource.get(entry.dataset_id, { noCache: true });
-        datasetDeliveryDate = dataset.data.delivery_date ?? null;
-      }
       const result = deliveryDateChangeSchema.safeParse({
         delivery_date: selectedDeliveryDate,
         original_delivery_date: entry.delivery_date ?? null,
-        dataset_delivery_date: datasetDeliveryDate,
       });
       if (!result.success) {
         errors = (getFieldErrors(result.error) as { delivery_date?: string[] }).delivery_date ?? [];
@@ -84,9 +75,7 @@
       placeholder="Select delivery date (optional)"
       value={selectedDeliveryDate ? parseDate(selectedDeliveryDate).toDate(getLocalTimeZone()) : null}
       minDate={today(getLocalTimeZone())}
-      maxDate={datasetDeliveryDate ? parseDate(datasetDeliveryDate) : undefined}
-      disabled={submitting ||
-        (!!datasetDeliveryDate && parseDate(datasetDeliveryDate).compare(today(getLocalTimeZone())) < 0)}
+      disabled={submitting}
       {errors}
       onDateSelected={(date) => {
         selectedDeliveryDate = date;
@@ -102,11 +91,6 @@
         selectedDeliveryDate = null;
         errors = [];
       }}>Clear Delivery Date</Button
-    >
-  {/if}
-  {#if datasetDeliveryDate}
-    <Text size="sm"
-      >New dates must be on or before {datasetDeliveryDate}. Existing dates stay unchanged until you change them.</Text
     >
   {/if}
 </FormModal>

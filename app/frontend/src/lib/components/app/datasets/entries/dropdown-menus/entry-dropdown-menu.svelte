@@ -4,7 +4,6 @@
   import { onMount } from "svelte";
 
   import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -35,7 +34,6 @@
   let { entry, onUnAssigned, onAssigned }: Props = $props();
 
   let openDeliveryDate = $state(false);
-  let datasetDeliveryDate = $state<string | null>(null);
 
   // Records
   let projectId = page.params.projectId as string;
@@ -77,12 +75,8 @@
   // Functions
   async function openDeliveryDateModal() {
     try {
-      const [currentEntry, dataset] = await Promise.all([
-        entriesBackendDataSource.get(entry.id, { noCache: true }),
-        datasetsBackendDataSource.get(entry.dataset_id, { noCache: true }),
-      ]);
+      const currentEntry = await entriesBackendDataSource.get(entry.id, { noCache: true });
       entryRecord = currentEntry.data;
-      datasetDeliveryDate = dataset.data.delivery_date ?? null;
       openDeliveryDate = true;
     } catch (error) {
       showActionFailedToast(error);
@@ -200,5 +194,5 @@
 {/if}
 
 {#if openDeliveryDate && entryRecord}
-  <UpdateEntryDeliveryDateFormModal entry={entryRecord} {datasetDeliveryDate} bind:open={openDeliveryDate} />
+  <UpdateEntryDeliveryDateFormModal entry={entryRecord} bind:open={openDeliveryDate} />
 {/if}
