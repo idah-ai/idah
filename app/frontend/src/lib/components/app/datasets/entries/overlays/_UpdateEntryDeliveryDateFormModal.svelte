@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -10,6 +8,8 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors } from "@/utils/validate";
+  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
+  import { onMount } from "svelte";
 
   let {
     entry,
@@ -22,10 +22,10 @@
   let selectedDeliveryDate = $state<string | null>(null);
   let submitting = $state(false);
   let errors = $state<string[]>([]);
-  let changed = $derived(selectedDeliveryDate !== (entry.delivery_date ?? null));
+  let changed = $derived(selectedDeliveryDate !== (entry.delivery_date || entry.dataset?.delivery_date || null));
 
   onMount(() => {
-    selectedDeliveryDate = entry.delivery_date ?? null;
+    selectedDeliveryDate = entry.delivery_date || entry.dataset?.delivery_date || null;
   });
 
   async function submit() {

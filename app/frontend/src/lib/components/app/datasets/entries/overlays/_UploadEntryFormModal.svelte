@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
   import { getFieldErrors } from "@/utils/validate";
+  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
 
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
@@ -333,7 +333,7 @@
           <DatePickerField
             name="upload/delivery_date"
             label="Delivery Date"
-            placeholder="Select delivery date (optional)"
+            placeholder="Select delivery date"
             value={selectedDeliveryDate ? parseDate(selectedDeliveryDate).toDate(getLocalTimeZone()) : null}
             minDate={today(getLocalTimeZone())}
             disabled={uploading}
@@ -351,7 +351,7 @@
             onclick={() => {
               selectedDeliveryDate = null;
               dateErrors = [];
-            }}>Clear Delivery Date</Button
+            }}>Use Dataset default</Button
           >
         {/if}
       </section>

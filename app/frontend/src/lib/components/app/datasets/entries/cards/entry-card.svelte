@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { parseDate } from "@internationalized/date";
-  import { Badge } from "@/components/ui/badge";
   import { page } from "$app/state";
+  import { Badge } from "@/components/ui/badge";
+  import { parseDate } from "@internationalized/date";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { getContext, onDestroy, onMount } from "svelte";
 
@@ -398,7 +398,12 @@
             <DataDisplay label="Delivery Date">
               {#snippet slotValue()}
                 <div class="flex items-center gap-2">
-                  <Text size="sm">{entry.delivery_date ?? "—"}</Text>
+                  {#if entry.delivery_date || dataset.delivery_date}
+  <DateText size="sm" showTooltip datetime={new Date(entry.delivery_date || dataset.delivery_date) as Date} datetimeFormat="MMM dd, yyyy"  weight="light"/>
+{:else}
+  <span>—</span>
+{/if}
+
                   {#if overdue}<Badge variant="destructive">Overdue</Badge>{/if}
                 </div>
               {/snippet}

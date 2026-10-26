@@ -98,7 +98,6 @@
           <div class="flex items-center gap-2">
             <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
             <DatasetModalityBadge modality={datasetRecord.modality} />
-            <Text size="sm">Delivery Date: {datasetRecord.delivery_date ?? "—"}</Text>
             <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
           </div>
         {/snippet}

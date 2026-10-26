@@ -1,4 +1,6 @@
 <script lang="ts">
+  import DateText from "@/components/app/texts/date-text.svelte";
+  
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -8,4 +10,8 @@
   let { delivery_date } = $derived(dataset);
 </script>
 
-<span>{delivery_date}</span>
+{#if delivery_date}
+  <DateText size="sm" showTooltip datetime={new Date(delivery_date) as Date} datetimeFormat="MMM dd, yyyy" />
+{:else}
+  <span>—</span>
+{/if}

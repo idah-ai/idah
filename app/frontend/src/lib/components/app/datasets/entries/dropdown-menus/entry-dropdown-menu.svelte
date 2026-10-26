@@ -3,18 +3,18 @@
   import { CalendarIcon, EllipsisVerticalIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
-  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
+  import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
@@ -22,7 +22,7 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
-  import { datasetBasePath } from "@/data/model/dataset/dataset-record";
+  import { datasetBasePath, DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -84,7 +84,13 @@
   // Functions
   async function openDeliveryDateModal() {
     try {
-      const currentEntry = await entriesBackendDataSource.get(entry.id, { noCache: true });
+      const currentEntry = await entriesBackendDataSource.get(entry.id, { 
+        noCache: true,
+        fields: {
+           [DatasetRecord.type]: ["delivery_date"],
+        },
+        included: ["dataset"]
+      });
       entryRecord = currentEntry.data;
       openDeliveryDate = true;
     } catch (error) {
