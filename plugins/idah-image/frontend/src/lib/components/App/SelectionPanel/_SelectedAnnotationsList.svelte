@@ -56,15 +56,24 @@
   const shapeType = $derived(sourceItems[0]?.shape_type);
   const sameShape = $derived(sourceItems.length > 0 && sourceItems.every((item) => item.shape_type === shapeType));
   const counts = $derived(categoryCounts(sourceItems, getDriver().config));
-  const fields = $derived(sharedProperties(sourceItems, getDriver()));
+  const fields = $derived.by(() => {
+    const visible = sharedProperties(sourceItems, getDriver(), draftCategory, draftProperties);
+    const cleared = sharedProperties(sourceItems, getDriver(), draftCategory).filter((field) =>
+      Object.hasOwn(draftProperties, field.id) &&
+      draftProperties[field.id] === undefined &&
+      !visible.some((candidate) => candidate.id === field.id),
+    );
+    return [...visible, ...cleared];
+  });
   const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
   const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
   const configValues = $derived(shapeType ? (getDriver().config[shapeType]?.values ?? []) : []);
   const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
   const category = $derived(configValues.find((value) => value.id === selectedCategory));
   const preview = $derived.by(() => {
-    if (draftCategory && hasPropertyEdit) return undefined;
-    if (draftCategory) return prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled);
+    if (draftCategory && hasPropertyEdit && sourceItems.every((item) => item.category === draftCategory))
+      return prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
+    if (draftCategory) return prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled, draftProperties);
     if (hasPropertyEdit) return prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
     return undefined;
   });
@@ -76,10 +85,10 @@
     if (disabled || !isEditable() || ["completed", "errored"].includes(getDriver().entryStatus)) return "This workspace cannot be edited right now.";
     if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (sourceItems.some((item) => annotation.isHidden(item))) return "One or more selected annotations are hidden. Deselect them before applying.";
-    if (draftCategory && hasPropertyEdit) return "Applying category and properties together comes in Scenario 3.";
     if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";
     if (preview?.error) return preview.error;
-    if (draftCategory && sourceItems.every((item) => item.category === draftCategory)) return "All selected annotations already use this category.";
+    if (draftCategory && !hasPropertyEdit && sourceItems.every((item) => item.category === draftCategory))
+      return "All selected annotations already use this category.";
     return undefined;
   });
 
@@ -93,7 +102,7 @@
   function applyBulk() {
     if (blockReason) return;
     const result = draftCategory
-      ? prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled)
+      ? prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled, draftProperties)
       : prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
     if (result.error || !result.updates.length) return;
     getDriver().command.call("idah-image:annotation.bulk-update", { updates: result.updates });
@@ -107,6 +116,27 @@
     delete next[id];
     draftProperties = next;
     feedback = "";
+  }
+
+  function keepVisibleDrafts(next: Record<string, PropertyValue>, category: string | undefined) {
+    const visible = new Set(sharedProperties(sourceItems, getDriver(), category, next).map((field) => field.id));
+    const removable = new Set(sharedProperties(sourceItems, getDriver(), category).map((field) => field.id));
+    const retained = Object.fromEntries(Object.entries(next).filter(([id, value]) =>
+      visible.has(id) || (value === undefined && removable.has(id)),
+    ));
+    feedback = Object.keys(retained).length < Object.keys(next).length
+      ? "Property changes hidden by the current category or values were cleared from the draft."
+      : "";
+    draftProperties = retained;
+  }
+
+  function setDraftCategory(value?: string) {
+    draftCategory = value;
+    keepVisibleDrafts(draftProperties, value);
+  }
+
+  function setDraftProperty(id: string, value: PropertyValue) {
+    keepVisibleDrafts({ ...draftProperties, [id]: value }, draftCategory);
   }
 
   $effect(() => {
@@ -135,7 +165,7 @@
 	    {category}
 	    {selectedCategory}
 	    {shapeType}
-	    onValueChange={(value) => { draftCategory = value; feedback = ""; }}
+	    onValueChange={setDraftCategory}
 	    disabled={disabled || !sameShape || shapeType === IMAGE_MASK}
 	    placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
 	  />
@@ -146,8 +176,8 @@
 	    items={sourceItems}
 	    {fields}
 	    draft={draftProperties}
-	    disabled={disabled || Boolean(draftCategory) || !sameShape || shapeType === IMAGE_MASK}
-	    onValueChange={(id, value) => { draftProperties = { ...draftProperties, [id]: value }; feedback = ""; }}
+	    disabled={disabled || !sameShape || shapeType === IMAGE_MASK}
+	    onValueChange={setDraftProperty}
 	    onReset={resetProperty}
 	  />
 	  {#if feedback}

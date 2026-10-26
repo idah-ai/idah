@@ -26,11 +26,30 @@ export function propertyState(items: IAnnotationRecord[], id: string): { mixed: 
   return { mixed, value: mixed ? undefined : value };
 }
 
-export function sharedProperties(items: IAnnotationRecord[], driver: IIdahDriverV2): IConfigProperty[] {
+export function sharedProperties(
+  items: IAnnotationRecord[],
+  driver: IIdahDriverV2,
+  category?: string,
+  changes: Record<string, PropertyValue> = {},
+): IConfigProperty[] {
   if (!items.length) return [];
-  const fields = items.map((item) => driver.getFilteredConfig(item.shape_type, {
-    category: item.category, properties: item.properties,
-  })?.properties);
+  const fields = items.map((item) => {
+    const properties = { ...item.properties };
+    for (const [id, value] of Object.entries(changes)) {
+      if (value === undefined) delete properties[id];
+      else properties[id] = value;
+    }
+    for (;;) {
+      const visible = driver.getFilteredConfig(item.shape_type, {
+        category: category ?? item.category, properties,
+      })?.properties;
+      if (!visible) return undefined;
+      const ids = new Set(visible.map((field) => field.id));
+      const hiddenKeys = Object.keys(properties).filter((id) => !ids.has(id));
+      if (!hiddenKeys.length) return visible;
+      for (const id of hiddenKeys) delete properties[id];
+    }
+  });
   if (fields.some((value) => !value)) return [];
   return fields[0]!.filter((field) => fields.every((list) =>
     list!.some((candidate) => candidate.id === field.id && candidate.type === field.type),
@@ -87,6 +106,10 @@ export function prepareBulkCategory(
       const hiddenKeys = Object.keys(properties).filter((key) => !visibleIds.has(key));
       if (!hiddenKeys.length) break;
       for (const key of hiddenKeys) delete properties[key];
+    }
+
+    if (Object.entries(changes).some(([id, value]) => value !== undefined && !Object.hasOwn(properties, id))) {
+      return { updates: [], error: "A chosen property becomes hidden after this change." };
     }
 
     const invalid = visible.find((property) => !propertyValid(properties[property.id] as PropertyValue, property));

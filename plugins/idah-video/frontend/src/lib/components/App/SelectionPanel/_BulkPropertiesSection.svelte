@@ -36,7 +36,7 @@
       {@const untouchedMixed = state.mixed && !changed}
       <div class="flex flex-col gap-1">
         <PropertiesSection
-          properties={untouchedMixed ? [{ ...field, required: false }] : [field]}
+          properties={[field]}
           annotationValue={{ properties: { [field.id]: value } }}
           onValueChange={(_, next) => {
             if (typeof next === "number" && Number.isNaN(next)) return;

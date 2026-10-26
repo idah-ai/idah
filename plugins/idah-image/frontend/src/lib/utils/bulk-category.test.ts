@@ -89,6 +89,66 @@ describe("bulk category preparation", () => {
     expect(sharedProperties(items, driver).map((field) => field.id)).toEqual(["occluded"]);
   });
 
+  it("offers fields exposed by the draft category", () => {
+    const items = [record("a", "vehicle", { condition: "Good" }),
+      record("b", "pedestrian", { crossing: "Yes" })];
+    expect(sharedProperties(items, driver, "vehicle").map((field) => field.id))
+      .toEqual(["occluded", "condition"]);
+  });
+
+  it("rechecks conditional fields after pruning old-category values", () => {
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { category: string; properties: Record<string, unknown> }) => ({
+        values: [], properties: value.category === "vehicle"
+          ? value.properties.crossing === undefined
+            ? [property("condition")]
+            : []
+          : [property("crossing")],
+      }),
+    } as IIdahDriverV2;
+    const items = [record("a", "pedestrian", { crossing: "Yes" }),
+      record("b", "pedestrian", { crossing: "No" })];
+    expect(sharedProperties(items, conditionalDriver, "vehicle").map((field) => field.id))
+      .toEqual(["condition"]);
+  });
+
+  it("applies category and chosen properties together while preserving other visible values", () => {
+    const result = prepareBulkCategory([
+      record("a", "vehicle", { occluded: "No", condition: "Good" }),
+      record("b", "pedestrian", { occluded: "Yes", crossing: "Yes" }),
+    ], "vehicle", driver, valid, { condition: "Damaged" });
+
+    expect(result.error).toBeUndefined();
+    expect(result.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "No", condition: "Damaged" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes", condition: "Damaged" } },
+    ]);
+  });
+
+  it("rejects a chosen property hidden by the resulting category", () => {
+    const result = prepareBulkCategory([
+      record("a", "vehicle", { condition: "Good" }),
+      record("b", "pedestrian", { crossing: "Yes" }),
+    ], "pedestrian", driver, valid, { condition: "Damaged" });
+
+    expect(result.error).toMatch(/hidden|available/);
+    expect(result.updates).toEqual([]);
+  });
+
+  it("accepts a newly required property supplied with the category change", () => {
+    const requiredDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { category: string }) => ({
+        values: [], properties: value.category === "vehicle" ? [property("helmet", true)] : [],
+      }),
+    } as IIdahDriverV2;
+    const items = [record("a", "pedestrian", {}), record("b", "pedestrian", {})];
+    expect(prepareBulkCategory(items, "vehicle", requiredDriver, valid).error).toContain("helmet");
+    expect(prepareBulkCategory(items, "vehicle", requiredDriver, valid, { helmet: "Yes" }).error)
+      .toBeUndefined();
+  });
+
   it("changes one property without copying other values", () => {
     const result = prepareBulkProperties([
       record("a", "vehicle", { occluded: "No", condition: "Good" }),
