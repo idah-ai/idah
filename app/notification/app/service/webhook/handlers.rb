@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 
 module Webhook
-  # Registry of subscribable events. Each service declares its events in
-  # handlers/<service>.rb with `define`.
-  #
-  # - id: public event id users subscribe to ("<service>.<resource>.<action>")
-  # - event: bus channel it listens to ("<service>:<resource>:<event>")
-  # - allowed_roles: account roles allowed to subscribe
-  # - match: whether a bus message is this event (several events can share a channel)
-  # - payload: builds the delivered `payload` from the bus message
+  # Subscribable events, declared per service in handlers/<service>.rb.
+  #   id: public event id; event: bus channel; allowed_roles: roles that may subscribe;
+  #   match: selects the messages of this event; check: access rule for the owners
+  #   (nil means none); payload: builds the delivered payload.
   module Handlers
-    Definition = Data.define(:id, :event, :label, :desc, :allowed_roles, :match, :payload)
+    Definition = Data.define(:id, :event, :label, :desc, :allowed_roles, :match, :check, :payload)
 
     extend self
 
-    def define(id, event:, label:, desc:, allowed_roles:, payload:, match: ->(_message) { true })
-      registry << Definition.new(id:, event:, label:, desc:, allowed_roles:, match:, payload:)
+    def define(id, event:, label:, desc:, allowed_roles:, payload:, match: ->(_message) { true }, check: nil)
+      registry << Definition.new(id:, event:, label:, desc:, allowed_roles:, match:, check:, payload:)
     end
 
     # Definition files register on load; eager-load the namespace once.
@@ -32,9 +28,9 @@ module Webhook
 
     def channels = all.map(&:event).uniq
 
-    # Attributes of a dataset resource, read through the API as the service account.
-    def fetch(resource, id)
-      Api[:idah].dataset.public_send(resource).show(id:).attributes
+    # Resource attributes, read through the API as the service account.
+    def fetch(resource, id, service: :dataset)
+      Api[:idah].public_send(service).public_send(resource).show(id:).attributes
     end
 
     def resource_id(message) = message.content[:resource_id]
@@ -43,6 +39,14 @@ module Webhook
     def changes(message) = message.content.dig(:args, 0) || {}
 
     def metadata(message) = message.content[:metadata] || {}
+
+    # Access rule for the owners: the owning service checks `action` on row `id`.
+    # `own_account_id` is also allowed when that account can read the row.
+    def allowed(service, resource, id, action: "read", own_account_id: nil)
+      { rule: "allowed", service:, action:, resource:, id:, own_account_id: }
+    end
+
+    def org(*organization_ids) = { rule: "org", organization_ids: organization_ids.compact }
 
     private
 

@@ -211,3 +211,19 @@ Api[:idah].register(
     deserialize(output.body)
   end
 end
+
+# Accounts allowed to perform an action on a dataset row (system only).
+Api[:idah].register(
+  :dataset, :access, :check
+) do |**params|
+  output = post(
+    "dataset/access/_rpc",
+    params: { jsonrpc: "2.0", method: "check", params:, id: 1 },
+    options: { auth: :bearer }
+  )
+
+  body = JSON.parse(output.body, symbolize_names: true)
+  raise "dataset access check failed: #{body[:error].to_json}" if body[:error]
+
+  body.dig(:result, :allowed)
+end

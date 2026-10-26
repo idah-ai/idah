@@ -46,7 +46,8 @@ class WebhooksExpo < BaseExpo
     Webhook::Dispatcher.new(auth_context).dispatch(message)
   end
 
-  Webhook::Handlers.channels.each do |channel|
+  # Account deletions have no handler, so their channel is subscribed here.
+  (Webhook::Handlers.channels + ["iam:accounts:deleted"]).uniq.each do |channel|
     resource, _, event = channel.rpartition(":")
 
     attach_exposition(

@@ -17,6 +17,7 @@ class ExportsExpo < BaseExpo
 
     index do
       allowed_filters :id__in,
+                      :job_id,
                       :created_at__gte,
                       :created_at__lte
     end

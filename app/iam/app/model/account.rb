@@ -97,6 +97,22 @@ module Account
       valid ? account : nil
     end
 
+    # Update events carry the previous role, scope and enabled flag, so consumers
+    # can tell an actual change from a re-sent value.
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        previous = table.where(id:).select(:role_name, :role_scope, :enabled).first || {}
+
+        add_metadata(
+          previous_role_name: previous[:role_name],
+          previous_role_scope: previous[:role_scope]&.to_h,
+          previous_enabled: previous[:enabled]
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
     def delete!(id)
       with_metadata do
         find!(id)

@@ -27,6 +27,11 @@ module Webhook
 
     encoder :events, Verse::Sequel::PgArrayEncoder
 
+    # Switches off without deleting, so the rows stay traceable.
+    def disable_for_account(account_id)
+      table.where(account_id: account_id.to_i, enabled: true).update(enabled: false)
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }

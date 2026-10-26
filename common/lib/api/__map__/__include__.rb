@@ -13,6 +13,7 @@ Api[:idah].base_url = \
 Api[:idah].register_service(:media).base_path = "media"
 Api[:idah].register_service(:iam).base_path = "iam"
 Api[:idah].register_service(:dataset).base_path = "dataset"
+Api[:idah].register_service(:sync).base_path = "sync"
 
 # Configure authentication with dynamic token generation
 Api[:idah].add_auth(:bearer) do |request|
