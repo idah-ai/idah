@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getLocalTimeZone, today } from "@internationalized/date";
   import { page } from "$app/state";
+  import { getLocalTimeZone, today } from "@internationalized/date";
   import { LayoutListIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
@@ -17,7 +17,7 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
 
-  import { createEntriesController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
+  import { createEntriesController } from "@/components/app/datasets/entries/overlays/entriesList.svelte";
   import { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";

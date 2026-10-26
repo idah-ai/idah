@@ -8,11 +8,11 @@
   import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-      DropdownMenu,
-      DropdownMenuContent,
-      DropdownMenuGroup,
-      DropdownMenuItem,
-      DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
@@ -84,12 +84,12 @@
   // Functions
   async function openDeliveryDateModal() {
     try {
-      const currentEntry = await entriesBackendDataSource.get(entry.id, { 
+      const currentEntry = await entriesBackendDataSource.get(entry.id, {
         noCache: true,
         fields: {
-           [DatasetRecord.type]: ["delivery_date"],
+          [DatasetRecord.type]: ["delivery_date"],
         },
-        included: ["dataset"]
+        included: ["dataset"],
       });
       entryRecord = currentEntry.data;
       openDeliveryDate = true;

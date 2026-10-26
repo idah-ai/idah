@@ -3,7 +3,8 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { Badge } from "@/components/ui/badge";
-  import { parseDate } from "@internationalized/date";
+  import { parseISO } from "date-fns";
+  import { isOverdue } from "@/utils/date";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { getContext, onDestroy, onMount } from "svelte";
 
@@ -41,11 +42,11 @@
   }
   let { entry, localToday, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
-  let overdue = $derived(
-    entry.status !== "completed" &&
-      !!entry.delivery_date &&
-      parseDate(entry.delivery_date).compare(parseDate(localToday)) < 0,
-  );
+  let overdue = $derived.by(() => {
+    // Recheck when the parent refreshes the local day at midnight or on focus.
+    void localToday;
+    return entry.status !== "completed" && isOverdue(entry.delivery_date);
+  });
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -398,11 +399,17 @@
             <DataDisplay label="Delivery Date">
               {#snippet slotValue()}
                 <div class="flex items-center gap-2">
-                  {#if entry.delivery_date || dataset.delivery_date}
-  <DateText size="sm" showTooltip datetime={new Date(entry.delivery_date || dataset.delivery_date) as Date} datetimeFormat="MMM dd, yyyy"  weight="light"/>
-{:else}
-  <span>—</span>
-{/if}
+                  {#if entry.delivery_date}
+                    <DateText
+                      size="sm"
+                      showTooltip
+                      datetime={parseISO(entry.delivery_date)}
+                      datetimeFormat="MMM dd, yyyy"
+                      weight="light"
+                    />
+                  {:else}
+                    <span>—</span>
+                  {/if}
 
                   {#if overdue}<Badge variant="destructive">Overdue</Badge>{/if}
                 </div>
