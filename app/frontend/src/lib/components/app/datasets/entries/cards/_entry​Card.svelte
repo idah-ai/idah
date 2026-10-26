@@ -3,9 +3,9 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { Badge } from "@/components/ui/badge";
-  import { parseISO } from "date-fns";
   import { isOverdue } from "@/utils/date";
   import { ExternalLinkIcon } from "@lucide/svelte";
+  import { parseISO } from "date-fns";
   import { getContext, onDestroy, onMount } from "svelte";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
@@ -45,7 +45,7 @@
   let overdue = $derived.by(() => {
     // Recheck when the parent refreshes the local day at midnight or on focus.
     void localToday;
-    return entry.status !== "completed" && isOverdue(entry.delivery_date);
+    return entry.status !== "completed" && isOverdue(entry.delivery_date || entry.dataset?.delivery_date);
   });
 
   const dataset: DatasetRecord = getContext("dataset");
@@ -399,11 +399,11 @@
             <DataDisplay label="Delivery Date">
               {#snippet slotValue()}
                 <div class="flex items-center gap-2">
-                  {#if entry.delivery_date}
+                  {#if entry.delivery_date || entry.dataset?.delivery_date}
                     <DateText
                       size="sm"
                       showTooltip
-                      datetime={parseISO(entry.delivery_date)}
+                      datetime={parseISO(entry.delivery_date || entry.dataset?.delivery_date)}
                       datetimeFormat="MMM dd, yyyy"
                       weight="light"
                     />
