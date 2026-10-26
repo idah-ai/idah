@@ -45,6 +45,7 @@ export function register(driver: IIdahDriverV2): void {
             viewport.mode = "idah-video:coverage-mask-bbox";
           }
           driver.settings.invalidate();
+          driver.toolbar.invalidate();
         },
         isCombinable() {
           return false;
