@@ -78,10 +78,9 @@
 {#if mode === "datasets" && groups.length > 0}
   <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">
     {#each groups as group (group.key)}
-      {@const isZip = group.files.length === 1 && !group.files[0].path.includes("/")}
       <PreviewUploadMediaItem
         name={group.name}
-        icon={isZip ? FileArchiveIcon : FolderIcon}
+        icon={group.isZip ? FileArchiveIcon : FolderIcon}
         onDelete={() => remove(group.files)}
       />
     {/each}

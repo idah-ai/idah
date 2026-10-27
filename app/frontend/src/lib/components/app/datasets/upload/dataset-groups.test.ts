@@ -52,4 +52,36 @@ describe("groupIntoDatasets", () => {
       ["c", ["c/3.jpg"]],
     ]);
   });
+
+  it("makes each zip directly inside a picked folder its own dataset, next to the sub-folders", () => {
+    expect(summary(["batch/clip_a/1.jpg", "batch/clip_b/2.jpg", "batch/x.zip", "batch/y.zip"]).datasets).toEqual([
+      ["clip_a", ["batch/clip_a/1.jpg"]],
+      ["clip_b", ["batch/clip_b/2.jpg"]],
+      ["x", ["batch/x.zip"]],
+      ["y", ["batch/y.zip"]],
+    ]);
+  });
+
+  it("splits a zip out of a folder that otherwise holds only files", () => {
+    expect(summary(["flat/1.jpg", "flat/x.zip"]).datasets).toEqual([
+      ["flat", ["flat/1.jpg"]],
+      ["x", ["flat/x.zip"]],
+    ]);
+  });
+
+  it("keeps a zip deeper inside a sub-folder as part of that sub-folder's dataset", () => {
+    expect(summary(["batch/clip_a/1.jpg", "batch/clip_a/frames.zip"]).datasets).toEqual([
+      ["clip_a", ["batch/clip_a/1.jpg", "batch/clip_a/frames.zip"]],
+    ]);
+  });
+
+  it("marks which datasets come from a zip", () => {
+    const { groups } = groupIntoDatasets(["flat/1.jpg", "flat/x.zip", "top.zip"].map(pick));
+
+    expect(groups.map((g) => [g.name, g.isZip])).toEqual([
+      ["flat", false],
+      ["x", true],
+      ["top", true],
+    ]);
+  });
 });

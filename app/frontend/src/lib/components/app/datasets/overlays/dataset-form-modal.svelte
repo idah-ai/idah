@@ -188,8 +188,7 @@
     const labelConfig = once(getLabelConfig);
     const loose = (draft.ignored as PickedFile[] | undefined) ?? []; // only loose files are ever ignored here
     runs = groups.map((group) => {
-      const isZip = group.files.length === 1 && !group.files[0].path.includes("/");
-      const row: UploadRow = isZip
+      const row: UploadRow = group.isZip
         ? { kind: "file", item: createUploadItem(group.files[0].file) }
         : folderRow(group.name, group.files);
       return { name: group.name, rows: [row], datasetId: null };
