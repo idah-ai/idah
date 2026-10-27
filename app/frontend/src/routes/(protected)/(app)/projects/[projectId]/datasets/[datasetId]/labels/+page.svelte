@@ -98,6 +98,14 @@
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
+    if (controller.hasVisibilityErrors) {
+      showToast.error({
+        title: "Fix visibility conditions",
+        description: "Resolve all invalid property visibility conditions before saving.",
+      });
+      return;
+    }
+
     saving = true;
     try {
       const updatedDatasetRes = await datasetsBackendDataSource.update(
@@ -207,7 +215,7 @@
           class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
-          disabled={!controller.hasUnsavedChanges}
+          disabled={!controller.hasUnsavedChanges || controller.hasVisibilityErrors}
           onclick={saveLabelConfigChanges}
         >
           <SaveIcon />
