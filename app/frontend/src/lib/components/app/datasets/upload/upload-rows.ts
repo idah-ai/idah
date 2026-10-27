@@ -12,7 +12,7 @@ export type UploadRow =
 const LOOSE = "Not in a folder or zip";
 
 export function folderRow(name: string, files: PickedFile[]): UploadRow {
-  return { kind: "folder", title: `${name}/`, items: files.map((p) => createUploadItem(p.file, p.path)), skipped: [] };
+  return { kind: "folder", title: name, items: files.map((p) => createUploadItem(p.file, p.path)), skipped: [] };
 }
 
 // Add Entry: loose files and zips get their own row, each picked folder one row.

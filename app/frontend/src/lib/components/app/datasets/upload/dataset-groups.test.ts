@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from "vitest";
-import { groupIntoDatasets } from "./dataset-groups";
+import { groupIntoDatasets, pickedItems } from "./dataset-groups";
 
 const pick = (path: string) => ({ file: new File(["x"], path.split("/").pop()!), path });
 
@@ -82,6 +82,33 @@ describe("groupIntoDatasets", () => {
       ["flat", false],
       ["x", true],
       ["top", true],
+    ]);
+  });
+
+  it("splits a base folder of sub-folders and zips into one dataset each", () => {
+    const picked = [
+      "base/sub1/1.jpg",
+      "base/sub1/2.jpg",
+      "base/sub2/1.jpg",
+      "base/sub2/2.jpg",
+      "base/sub3/1.jpg",
+      "base/sub3/2.jpg",
+      "base/zip1.zip",
+      "base/zip2.zip",
+    ];
+
+    expect(summary(picked).datasets.map(([name]) => name)).toEqual(["sub1", "sub2", "sub3", "zip1", "zip2"]);
+  });
+});
+
+describe("pickedItems", () => {
+  it("lists what was picked: one item per top-level folder or zip, leaving loose files out", () => {
+    const items = pickedItems(["base/sub1/1.jpg", "base/zip1.zip", "batch.zip", "loose.jpg", "flat/2.jpg"].map(pick));
+
+    expect(items.map((item) => [item.name, item.isZip, item.files.length])).toEqual([
+      ["base", false, 2],
+      ["batch.zip", true, 1],
+      ["flat", false, 1],
     ]);
   });
 });

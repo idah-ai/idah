@@ -17,7 +17,7 @@ describe("buildEntryRows", () => {
 
     expect(rows.map((r) => (r.kind === "folder" ? `${r.title} (${r.items.length})` : r.item.name))).toEqual([
       "a.jpg",
-      "clip/ (2)",
+      "clip (2)",
       "batch.zip",
     ]);
   });
@@ -36,7 +36,7 @@ describe("rowView of a folder", () => {
     Object.assign(failed, { status: "completed", errorMessage: "Upload failed" });
 
     expect(rowView(row)).toMatchObject({
-      name: "clip/",
+      name: "clip",
       isZip: true,
       status: "completed",
       createdEntryCount: 1,

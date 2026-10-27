@@ -13,7 +13,7 @@
 
   import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
 
-  import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
+  import { groupIntoDatasets, pickedItems } from "@/components/app/datasets/upload/dataset-groups";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
   import { looseRow, folderRow, rowItems, rowView, type UploadRow } from "@/components/app/datasets/upload/upload-rows";
@@ -84,8 +84,9 @@
   );
   // Local edit buffer holding the current form values.
   let draft: Hash = $state({});
-  const datasetsToCreate: number = $derived(
-    uploadMode ? groupIntoDatasets((draft.picked as PickedFile[] | undefined) ?? []).groups.length : 0,
+  // Folders/zips picked; how many datasets they make is only known after upload.
+  const itemsSelected: number = $derived(
+    uploadMode ? pickedItems((draft.picked as PickedFile[] | undefined) ?? []).length : 0,
   );
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
@@ -353,7 +354,7 @@
     <Text>
       {#if uploadMode}
         <DialogDescription>
-          {selectionSummary(datasetsToCreate, "dataset", "to create")}
+          {selectionSummary(itemsSelected, "item", "selected")}
         </DialogDescription>
       {/if}
     </Text>
@@ -364,7 +365,7 @@
       </DialogClose>
 
       <Button loading={submitting} loadingLabel="Creating" onclick={submit}>
-        {uploadMode && datasetsToCreate > 1 ? `Create ${datasetsToCreate} Datasets` : `Create ${title}`}
+        {uploadMode ? "Create Datasets" : `Create ${title}`}
       </Button>
     </div>
   </section>

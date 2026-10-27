@@ -5,7 +5,7 @@
 
   import PreviewUploadMediaItem from "./preview-upload-media-item.svelte";
 
-  import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
+  import { groupIntoDatasets, pickedItems } from "@/components/app/datasets/upload/dataset-groups";
   import { mergePickedFiles, type PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
 
   import type { FileUploadPicker } from "@/components/app/forms/fields/upload/file-upload.types";
@@ -57,7 +57,9 @@
   };
 
   // Variables
-  const groups = $derived(mode === "datasets" ? groupIntoDatasets(picked).groups : []);
+  // "datasets" mode lists what was picked, not a prediction of the datasets: that is
+  // only known after upload (the summary shows it).
+  const items = $derived(mode === "datasets" ? pickedItems(picked) : []);
 
   // Functions
   function handleFilesSelected(added: PickedFile[], unsupported: PickedFile[]): void {
@@ -82,13 +84,13 @@
 <!-- No media-type filter here: the server decides per file and reports what it skipped. -->
 <FileUpload class={className} {...PICKERS[mode]} onFilesSelected={handleFilesSelected} />
 
-{#if mode === "datasets" && groups.length > 0}
+{#if mode === "datasets" && items.length > 0}
   <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">
-    {#each groups as group (group.key)}
+    {#each items as item (item.key)}
       <PreviewUploadMediaItem
-        name={group.name}
-        icon={group.isZip ? FileArchiveIcon : FolderIcon}
-        onDelete={() => remove(group.files)}
+        name={item.name}
+        icon={item.isZip ? FileArchiveIcon : FolderIcon}
+        onDelete={() => remove(item.files)}
       />
     {/each}
   </section>

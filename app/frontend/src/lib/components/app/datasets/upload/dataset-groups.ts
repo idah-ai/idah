@@ -70,3 +70,29 @@ export function groupIntoDatasets(picked: PickedFile[]): { groups: DatasetGroup[
 
   return { groups: [...groups, ...zips] };
 }
+
+// What was picked, for the selection list: one item per top-level folder or zip (loose
+// files are left out). How it splits into datasets is only known after upload, when the
+// server has accepted or skipped each file.
+export interface PickedItem {
+  key: string;
+  name: string;
+  isZip: boolean;
+  files: PickedFile[];
+}
+
+export function pickedItems(picked: PickedFile[]): PickedItem[] {
+  const items = new Map<string, PickedItem>();
+  for (const p of picked) {
+    const slash = p.path.indexOf("/");
+    if (slash === -1) {
+      if (ZIP.test(p.path)) items.set(p.path, { key: p.path, name: p.path, isZip: true, files: [p] });
+      continue;
+    }
+    const folder = p.path.slice(0, slash);
+    const item = items.get(`${folder}/`) ?? { key: `${folder}/`, name: folder, isZip: false, files: [] };
+    item.files.push(p);
+    items.set(item.key, item);
+  }
+  return [...items.values()];
+}
