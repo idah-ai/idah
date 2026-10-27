@@ -1,7 +1,7 @@
 import { pluralizeUnit } from "@/utils/unit";
-import type { UploadItem } from "./upload-item.types";
+import type { UploadItemView } from "./upload-item.types";
 
-export function getStatusLabel(item: UploadItem, maxRetries: number): string {
+export function getStatusLabel(item: UploadItemView, maxRetries: number): string {
   const { status, isZip, errorMessage, retryCount, uploadedMedias, skippedMedias } = item;
 
   const totalUploaded = uploadedMedias.length;
@@ -10,7 +10,7 @@ export function getStatusLabel(item: UploadItem, maxRetries: number): string {
   if (isZip) {
     switch (status) {
       case "uploading": {
-        return "Uploading archive...";
+        return item.isFolder ? `Uploading folder... (${totalUploaded} uploaded)` : "Uploading archive...";
       }
       case "retrying": {
         return `Retrying... (Attempt ${retryCount} of ${maxRetries})`;
