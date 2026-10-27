@@ -49,8 +49,8 @@
   // Modal visibility - owned here
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
-  let openExport = $state(false);
-  let openReopen = $state(false);
+  let openExportModal = $state(false);
+  let openReopenModal = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
@@ -63,10 +63,10 @@
       },
       onDelete: confirmDelete,
       onExport: () => {
-        openExport = true;
+        openExportModal = true;
       },
       onReopen: () => {
-        openReopen = true;
+        openReopenModal = true;
       },
       isAssigned: sel.checkAnyAssigned(controller.selectedIds),
       isAssignDisabled: sel.assignableEntryIds.length === 0,
@@ -217,7 +217,7 @@
 <UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedIds} bind:open={openSetPriority} />
 
 <!-- BULK-ACTION MODAL::EXPORT SELECTED ENTRIES -->
-<EntryExportFormModal action="create" entries={sel.selectedEntryRecords} bind:open={openExport} />
+<EntryExportFormModal action="create" entries={sel.selectedEntryRecords} bind:open={openExportModal} />
 
 <ReopenEntryModal
   action="update"
@@ -228,5 +228,5 @@
     controller.clearSelection();
     await controller.fetch();
   }}
-  bind:open={openReopen}
+  bind:open={openReopenModal}
 />

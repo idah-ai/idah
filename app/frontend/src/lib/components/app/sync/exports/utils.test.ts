@@ -6,7 +6,7 @@ import {
   exportSummaryLabel,
   getExportJobArguments,
   summarizeExportKinds,
-} from "./export-records";
+} from "./utils";
 
 import type { ExportRecord } from "@/data/model/sync/exports/record";
 

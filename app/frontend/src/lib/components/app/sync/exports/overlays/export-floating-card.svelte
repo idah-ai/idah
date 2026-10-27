@@ -18,7 +18,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
-  import { buildExportItemName, exportSummaryLabel } from "@/components/app/sync/exports/util/export-records";
+  import { buildExportItemName, exportSummaryLabel } from "@/components/app/sync/exports/utils";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource, exportsBasePath } from "@/data/model/sync/exports/record";
   import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
