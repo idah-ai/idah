@@ -16,14 +16,7 @@
   import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
-  import {
-    assignIgnored,
-    looseRow,
-    folderRow,
-    rowItems,
-    rowView,
-    type UploadRow,
-  } from "@/components/app/datasets/upload/upload-rows";
+  import { looseRow, folderRow, rowItems, rowView, type UploadRow } from "@/components/app/datasets/upload/upload-rows";
   import {
     MAX_RETRIES,
     once,
@@ -65,8 +58,7 @@
     name: string;
     rows: UploadRow[]; // the dataset's zip, or its folder summed up like a zip
     datasetId: string | null;
-    // Report-only sections (nothing to upload): a folder where every file was skipped, or loose files.
-    reportOnly?: "folder" | "loose";
+    loose?: true; // report-only section: files outside any folder or zip (nothing to upload)
   }
   let runs = $state<UploadRun[]>([]);
   let createdDatasets = false; // refresh the datasets list once the modal closes
@@ -194,24 +186,16 @@
 
     // One fetch shared by every dataset, so they all get the same copied configuration.
     const labelConfig = once(getLabelConfig);
-    const { byGroup, skippedGroups, loose } = assignIgnored(groups, (draft.ignored as PickedFile[] | undefined) ?? []);
+    const loose = (draft.ignored as PickedFile[] | undefined) ?? []; // only loose files are ever ignored here
     runs = groups.map((group) => {
       const isZip = group.files.length === 1 && !group.files[0].path.includes("/");
       const row: UploadRow = isZip
         ? { kind: "file", item: createUploadItem(group.files[0].file) }
-        : folderRow(group.name, group.files, byGroup.get(group.key) ?? []);
+        : folderRow(group.name, group.files);
       return { name: group.name, rows: [row], datasetId: null };
     });
-    for (const group of skippedGroups) {
-      runs.push({
-        name: group.name,
-        rows: [folderRow(group.name, [], group.files)],
-        datasetId: null,
-        reportOnly: "folder",
-      });
-    }
     if (loose.length > 0) {
-      runs.push({ name: "Loose files", rows: [looseRow(loose)], datasetId: null, reportOnly: "loose" });
+      runs.push({ name: "Loose files", rows: [looseRow(loose)], datasetId: null, loose: true });
     }
 
     for (const run of runs) {
@@ -332,7 +316,7 @@
           {run.name}
           {#if run.datasetId}
             <span class="text-muted-foreground font-normal">· created</span>
-          {:else if run.reportOnly === "loose"}
+          {:else if run.loose}
             <span class="text-muted-foreground font-normal">· not in a folder or zip</span>
           {:else if runCompleted}
             <span class="text-destructive font-normal">· not created</span>
@@ -370,7 +354,7 @@
     <Text>
       {#if uploadMode}
         <DialogDescription>
-          {selectionSummary(datasetsToCreate, "dataset", "to create", draft.ignored?.length ?? 0)}
+          {selectionSummary(datasetsToCreate, "dataset", "to create")}
         </DialogDescription>
       {/if}
     </Text>

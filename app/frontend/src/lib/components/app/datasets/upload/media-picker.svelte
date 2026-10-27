@@ -16,7 +16,7 @@
   // - "datasets": folders/zips only, each becoming one or more new datasets
   interface Props {
     picked: PickedFile[];
-    // Picked/dropped but not accepted (unsupported type, or loose in "datasets" mode); deduplicated.
+    // "datasets" mode: loose files (outside any folder or zip), reported in the summary; deduplicated.
     ignored?: PickedFile[];
     mode?: "entries" | "datasets";
     class?: string;

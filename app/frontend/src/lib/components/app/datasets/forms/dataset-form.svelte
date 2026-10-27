@@ -115,11 +115,7 @@
     <!-- DATASET::MEDIA (create from upload) -->
     {#if uploadMode}
       <div>
-        {#if modality}
-          <MediaPicker class="py-8" mode="datasets" bind:picked bind:ignored />
-        {:else}
-          <Text class="text-muted-foreground" size="sm">Select a modality to choose folders or zip files.</Text>
-        {/if}
+        <MediaPicker class="py-8" mode="datasets" bind:picked bind:ignored />
         {#if fieldErrors["files"]}
           <Text class="text-destructive mt-2" size="sm">{fieldErrors["files"][0]}</Text>
         {/if}

@@ -54,7 +54,6 @@
   });
 
   let picked = $state<PickedFile[]>([]);
-  let ignored = $state<PickedFile[]>([]);
   let createdEntries = false; // refresh the entries list once the modal closes
 
   // Summary rows: loose files and zips, and each picked folder summed up like a zip.
@@ -88,7 +87,6 @@
     if (createdEntries) refetchEntriesAndDatasets();
     createdEntries = false;
     uploading = false;
-    ignored = [];
     picked = [];
     rows = [];
     view.current = "select";
@@ -100,7 +98,7 @@
       return;
     }
 
-    rows = buildEntryRows(picked, ignored);
+    rows = buildEntryRows(picked);
 
     await uploadAll(rowItems(rows), { projectId, modality, getDatasetId: async () => datasetId });
 
@@ -150,7 +148,7 @@
   {/snippet}
 
   {#if view.isSelect()}
-    <MediaPicker bind:picked bind:ignored />
+    <MediaPicker bind:picked />
   {/if}
 
   {#if view.isUpload()}
@@ -165,7 +163,7 @@
     <section class="flex w-full items-center">
       <Text>
         {#if view.isSelect()}
-          <DialogDescription>{selectionSummary(picked.length, "item", "to upload", ignored.length)}</DialogDescription>
+          <DialogDescription>{selectionSummary(picked.length, "item", "to upload")}</DialogDescription>
         {/if}
 
         {#if view.isUpload()}
