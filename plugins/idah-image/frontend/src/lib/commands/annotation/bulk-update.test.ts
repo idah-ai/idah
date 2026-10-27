@@ -73,5 +73,60 @@ describe("annotation.bulk-update", () => {
     ] });
     await action.do();
     expect(update).not.toHaveBeenCalled();
+    expect(items).toEqual(original());
+  });
+
+  it("does not write if a target becomes locked before the action runs", async () => {
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: { [shape]: { values: [{ id: "vehicle" }] } } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: [
+      { id: "a", category: "vehicle", properties: {} },
+      { id: "b", category: "vehicle", properties: {} },
+    ] });
+    locked.add("b");
+
+    await action.do();
+    expect(update).not.toHaveBeenCalled();
+    expect(items).toEqual(original());
+    await action.undo();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("updates mixed shape types when each supports its target category", async () => {
+    const polygon = "idah-image:polygon";
+    items[1] = { ...items[1], shape_type: polygon };
+    const before = structuredClone(items);
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: {
+      [shape]: { values: [{ id: "vehicle" }] },
+      [polygon]: { values: [{ id: "vehicle" }] },
+    } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: [
+      { id: "a", category: "vehicle", properties: { occluded: "No" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes" } },
+    ] });
+
+    await action.do();
+    expect(items.map((item) => item.category)).toEqual(["vehicle", "vehicle"]);
+    expect(update).toHaveBeenCalledTimes(2);
+    await action.undo();
+    expect(items).toEqual(before);
+  });
+
+  it("rejects all targets when one shape does not support its target category", async () => {
+    const polygon = "idah-image:polygon";
+    items[1] = { ...items[1], shape_type: polygon };
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: {
+      [shape]: { values: [{ id: "vehicle" }] },
+      [polygon]: { values: [{ id: "pedestrian" }] },
+    } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: [
+      { id: "a", category: "vehicle", properties: {} },
+      { id: "b", category: "vehicle", properties: {} },
+    ] });
+
+    await action.do();
+    expect(update).not.toHaveBeenCalled();
   });
 });

@@ -88,6 +88,8 @@
     if (items || selection.selectedGroupIds.size) return "Group editing is not available in this step.";
     if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size)
       return "Selection is incomplete.";
+    if (sourceItems.some((item) => annotation.isLocked(item)))
+      return "One or more selected annotations are locked or cannot be edited.";
     if (!hasSharedChoices) return "Selected shape types have no category or property in common.";
     if (
       disabled ||
@@ -96,8 +98,6 @@
       ["completed", "errored"].includes(getDriver().entryStatus)
     )
       return "This workspace cannot be edited right now.";
-    if (sourceItems.some((item) => annotation.isLocked(item)))
-      return "One or more selected annotations are locked or cannot be edited.";
     if (sourceItems.some((item) => annotation.isHidden(item)))
       return "One or more selected annotations are hidden. Deselect them before applying.";
     if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";

@@ -82,10 +82,10 @@
   const blockReason = $derived.by(() => {
     if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size) return "Selection is incomplete.";
     if (items) return "Group editing is not available in this step.";
+    if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (!hasSharedChoices) return "Selected shape types have no category or property in common.";
     if (hasImageMask) return "Image mask bulk editing comes later.";
     if (disabled || !isEditable() || ["completed", "errored"].includes(getDriver().entryStatus)) return "This workspace cannot be edited right now.";
-    if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (sourceItems.some((item) => annotation.isHidden(item))) return "One or more selected annotations are hidden. Deselect them before applying.";
     if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";
     if (preview?.error) return preview.error;

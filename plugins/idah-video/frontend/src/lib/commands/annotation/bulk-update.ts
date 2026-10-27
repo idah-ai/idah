@@ -32,9 +32,8 @@ export function register(driver: IIdahDriverV2): void {
       const snapshots = updates.map((update) => data.annotations!.items.find((item) => item.id === update.id));
       if (snapshots.some((item) => !item || annotation.isLocked(item) || annotation.isHidden(item))) return noopAction(command);
       const originals = snapshots.map((item) => ({ ...item!, properties: { ...item!.properties } }));
-      const shapeType = originals[0].shape_type;
-      if (originals.some((item) => item.shape_type !== shapeType) ||
-        updates.some((update) => !driver.config[shapeType]?.values.some((value) => value.id === update.category))) {
+      if (originals.some((item, index) =>
+        !driver.config[item.shape_type]?.values.some((value) => value.id === updates[index].category))) {
         return noopAction(command);
       }
 
@@ -43,16 +42,27 @@ export function register(driver: IIdahDriverV2): void {
         for (const record of records) await data.annotations.update(record);
       };
 
+      let didApply = false;
       return {
         command: { ...command },
         async do() {
+          if (!isEditable() || viewport.isReviewWorkspace || ["completed", "errored"].includes(driver.entryStatus) ||
+            !data.annotations || updates.some((update) => {
+              const item = data.annotations!.items.find((candidate) => candidate.id === update.id);
+              return !item || annotation.isLocked(item) || annotation.isHidden(item);
+            })) return;
+          didApply = true;
           await write(originals.map((item, index) => ({
             ...item,
             category: updates[index].category,
             properties: { ...updates[index].properties },
           })));
         },
-        async undo() { await write(originals); },
+        async undo() {
+          if (!didApply) return;
+          await write(originals);
+          didApply = false;
+        },
         isCombinable() { return false; },
         combine(previous: ICommandAction) { return previous; },
       };
