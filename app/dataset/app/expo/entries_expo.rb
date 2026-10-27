@@ -30,7 +30,9 @@ class EntriesExpo < BaseExpo
                       :assigned_to_email__match,
                       :wf_step__in,
                       :participated,
-                      :name__match
+                      :name__match,
+                      :delivery_date__gte,
+                      :delivery_date__lte
     end
     create do
       authorized_relationships dataset: [:link]
