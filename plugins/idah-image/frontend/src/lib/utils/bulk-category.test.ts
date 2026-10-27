@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedProperties } from "./bulk-category";
+import { categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
 import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
 import type { IAnnotationRecord, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
 
 const box = "idah-image:bounding-box";
+const otherShape = "idah-image:polygon";
+const category = (id: string) => ({ id, label: id, color: null, text_color: null });
 const property = (id: string, required = false): IConfigProperty => ({
   id, label: id, description: "", type: "text", required, visibility: true, format: {},
 });
@@ -88,6 +90,145 @@ describe("bulk category preparation", () => {
   it("offers only properties visible for every selected annotation", () => {
     const items = [record("a", "vehicle", {}), record("b", "pedestrian", {})];
     expect(sharedProperties(items, driver).map((field) => field.id)).toEqual(["occluded"]);
+  });
+
+  it("offers only category IDs available to both shape types", () => {
+    const config = {
+      [box]: { values: [category("vehicle"), category("pedestrian")], properties: [] },
+      [otherShape]: { values: [category("vehicle"), category("cyclist")], properties: [] },
+    };
+    const items = [record("a", "vehicle", {}),
+      { ...record("b", "cyclist", {}), shape_type: otherShape }];
+    expect(sharedCategories(items, config).map((value) => value.id)).toEqual(["vehicle"]);
+  });
+
+  it("applies a shared property across shapes and preserves their other values", () => {
+    const mixedDriver = {
+      ...driver,
+      config: {
+        [box]: { values: [category("vehicle")], properties: [] },
+        [otherShape]: { values: [category("pedestrian")], properties: [] },
+      },
+      getFilteredConfig: (shape: string) => ({
+        values: [], properties: shape === box
+          ? [property("occluded"), property("condition")]
+          : [property("occluded")],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { occluded: "No", condition: "Good" }),
+      { ...record("b", "pedestrian", { occluded: "No" }), shape_type: otherShape },
+    ];
+    expect(sharedCategories(items, mixedDriver.config)).toEqual([]);
+    expect(sharedProperties(items, mixedDriver).map((field) => field.id)).toEqual(["occluded"]);
+    expect(prepareBulkProperties(items, { occluded: "Yes" }, mixedDriver, valid).updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
+      { id: "b", category: "pedestrian", properties: { occluded: "Yes" } },
+    ]);
+  });
+
+  it("applies a shared category and property across different shapes", () => {
+    const mixedDriver = {
+      ...driver,
+      config: {
+        [box]: { values: [category("vehicle"), category("pedestrian")], properties: [] },
+        [otherShape]: { values: [category("vehicle"), category("pedestrian")], properties: [] },
+      },
+      getFilteredConfig: (shape: string, value: { category: string }) => ({
+        values: [], properties: shape === box
+          ? [property("occluded"), property("condition")]
+          : value.category === "vehicle"
+            ? [property("occluded")]
+            : [property("occluded"), property("crossing")],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { occluded: "No", condition: "Good" }),
+      { ...record("b", "pedestrian", { occluded: "No", crossing: "Yes" }), shape_type: otherShape },
+    ];
+    expect(sharedProperties(items, mixedDriver).map((field) => field.id)).toEqual(["occluded"]);
+    const result = prepareBulkCategory(items, "vehicle", mixedDriver, valid, { occluded: "Yes" });
+    expect(result.error).toBeUndefined();
+    expect(result.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes" } },
+    ]);
+  });
+
+  it("allows a shared category when the shapes share no property", () => {
+    const mixedDriver = {
+      ...driver,
+      config: {
+        [box]: { values: [category("vehicle"), category("pedestrian")], properties: [] },
+        [otherShape]: { values: [category("vehicle"), category("pedestrian")], properties: [] },
+      },
+      getFilteredConfig: (shape: string) => ({
+        values: [], properties: shape === box ? [property("condition")] : [property("crossing")],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { condition: "Good" }),
+      { ...record("b", "pedestrian", { crossing: "Yes" }), shape_type: otherShape },
+    ];
+    expect(sharedProperties(items, mixedDriver)).toEqual([]);
+    expect(sharedCategories(items, mixedDriver.config).map((value) => value.id))
+      .toEqual(["vehicle", "pedestrian"]);
+    expect(prepareBulkCategory(items, "vehicle", mixedDriver, valid).updates).toEqual([
+      { id: "a", category: "vehicle", properties: { condition: "Good" } },
+      { id: "b", category: "vehicle", properties: { crossing: "Yes" } },
+    ]);
+  });
+
+  it("finds no choices when mixed shapes have no shared configuration", () => {
+    const mixedDriver = {
+      ...driver,
+      config: {
+        [box]: { values: [category("vehicle")], properties: [] },
+        [otherShape]: { values: [category("road")], properties: [] },
+      },
+      getFilteredConfig: (shape: string) => ({
+        values: [], properties: shape === box ? [property("occluded")] : [property("surface")],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { occluded: "No" }),
+      { ...record("b", "road", { surface: "Asphalt" }), shape_type: otherShape },
+    ];
+    expect(sharedCategories(items, mixedDriver.config)).toEqual([]);
+    expect(sharedProperties(items, mixedDriver)).toEqual([]);
+  });
+
+  it("excludes same-ID fields with different types or option sets", () => {
+    const choice = (options: string[]) => ({
+      ...property("occluded"), type: "single-select",
+      format: { options: options.map((id) => ({ id, label: id })) },
+    }) as IConfigProperty;
+    const first = choice(["yes", "no"]);
+    const differentOptions = choice(["yes"]);
+    const mixedDriver = {
+      ...driver,
+      config: {
+        [box]: { values: [category("vehicle")], properties: [] },
+        [otherShape]: { values: [category("vehicle")], properties: [] },
+      },
+      getFilteredConfig: (shape: string) => ({
+        values: [], properties: [shape === box ? first : differentOptions],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { occluded: "no" }),
+      { ...record("b", "vehicle", { occluded: "yes" }), shape_type: otherShape },
+    ];
+    expect(sharedProperties(items, mixedDriver)).toEqual([]);
+    expect(prepareBulkCategory(items, "vehicle", mixedDriver, valid, { occluded: "yes" }).error)
+      .toMatch(/not available|shared/);
+    const differentTypeDriver = {
+      ...mixedDriver,
+      getFilteredConfig: (shape: string) => ({
+        values: [], properties: [shape === box ? first : { ...first, type: "boolean", format: {} }],
+      }),
+    } as IIdahDriverV2;
+    expect(sharedProperties(items, differentTypeDriver)).toEqual([]);
   });
 
   it("offers fields exposed by the draft category", () => {

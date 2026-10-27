@@ -1,4 +1,4 @@
-import type { IAnnotationRecord, IConfig, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
+import type { IAnnotationRecord, IConfig, IConfigProperty, IConfigValue, IIdahDriverV2 } from "$idah/v2/types";
 import { annotationLabel } from "./label";
 
 export interface BulkCategoryUpdate {
@@ -18,6 +18,37 @@ function sameValue(a: unknown, b: unknown): boolean {
     return sortedA.every((value, index) => value === sortedB[index]);
   }
   return a === b;
+}
+
+function normalized(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalized);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, entry]) => [key, normalized(entry)]),
+    );
+  }
+  return value;
+}
+
+function compatibleProperty(a: IConfigProperty, b: IConfigProperty): boolean {
+  return a.id === b.id &&
+    a.type === b.type &&
+    a.required === b.required &&
+    JSON.stringify(normalized(a.format)) === JSON.stringify(normalized(b.format));
+}
+
+export function sharedCategories(items: IAnnotationRecord[], config: IConfig): IConfigValue[] {
+  if (!items.length) return [];
+  const first = config[items[0].shape_type]?.values ?? [];
+  const seen = new Set<string>();
+  return first.filter((value) => {
+    if (seen.has(value.id)) return false;
+    seen.add(value.id);
+    return items.every((item) =>
+      config[item.shape_type]?.values.some((candidate) => candidate.id === value.id),
+    );
+  });
 }
 
 export function propertyState(items: IAnnotationRecord[], id: string): { mixed: boolean; value: PropertyValue } {
@@ -52,7 +83,7 @@ export function sharedProperties(
   });
   if (fields.some((value) => !value)) return [];
   return fields[0]!.filter((field) => fields.every((list) =>
-    list!.some((candidate) => candidate.id === field.id && candidate.type === field.type),
+    list!.some((candidate) => compatibleProperty(field, candidate)),
   ));
 }
 
@@ -83,6 +114,11 @@ export function prepareBulkCategory(
   changes: Record<string, PropertyValue> = {},
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
+
+  const available = new Set(sharedProperties(items, driver, category, changes).map((field) => field.id));
+  if (Object.entries(changes).some(([id, value]) => value !== undefined && !available.has(id))) {
+    return { updates: [], error: "The chosen property is not available for every selected annotation." };
+  }
 
   const updates: BulkCategoryUpdate[] = [];
   for (const item of items) {

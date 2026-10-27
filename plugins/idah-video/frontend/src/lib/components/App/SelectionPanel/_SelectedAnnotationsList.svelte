@@ -28,6 +28,7 @@
     categoryCounts,
     prepareBulkCategory,
     prepareBulkProperties,
+    sharedCategories,
     sharedProperties,
     type PropertyValue,
   } from "$lib/utils/bulk-category";
@@ -72,7 +73,8 @@
   });
   const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
   const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
-  const configValues = $derived(shapeType ? (getDriver().config[shapeType]?.values ?? []) : []);
+  const configValues = $derived(sharedCategories(sourceItems, getDriver().config));
+  const hasSharedChoices = $derived(configValues.length > 0 || fields.length > 0);
   const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
   const category = $derived(configValues.find((value) => value.id === selectedCategory));
   const preview = $derived.by(() => {
@@ -86,7 +88,7 @@
     if (items || selection.selectedGroupIds.size) return "Group editing is not available in this step.";
     if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size)
       return "Selection is incomplete.";
-    if (!sameShape) return "Select one shape type to edit. Mixed shape editing comes later.";
+    if (!hasSharedChoices) return "Selected shape types have no category or property in common.";
     if (
       disabled ||
       !isEditable() ||
@@ -178,8 +180,9 @@
       {category}
       {selectedCategory}
       {shapeType}
+      showShapeIcon={sameShape}
       onValueChange={setDraftCategory}
-      disabled={disabled || Boolean(items) || !sameShape}
+      disabled={disabled || Boolean(items) || configValues.length === 0}
       placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
     />
 
@@ -189,7 +192,7 @@
       items={sourceItems}
       {fields}
       draft={draftProperties}
-      disabled={disabled || Boolean(items) || !sameShape || viewport.isReviewWorkspace}
+      disabled={disabled || Boolean(items) || viewport.isReviewWorkspace}
       onValueChange={setDraftProperty}
       onReset={resetProperty}
     />

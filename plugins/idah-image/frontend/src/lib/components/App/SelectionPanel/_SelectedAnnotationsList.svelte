@@ -23,7 +23,7 @@
   import { isEditable } from "$lib/state/editor.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
-  import { categoryCounts, prepareBulkCategory, prepareBulkProperties, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
+  import { categoryCounts, prepareBulkCategory, prepareBulkProperties, sharedCategories, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
 
   import {  IMAGE_MASK } from "$lib/types";
   import type { IAnnotationRecord } from "$idah/v2/types";
@@ -55,6 +55,7 @@
   const selectionKey = $derived([...selection.selectedAnnotationIds].sort().join("|"));
   const shapeType = $derived(sourceItems[0]?.shape_type);
   const sameShape = $derived(sourceItems.length > 0 && sourceItems.every((item) => item.shape_type === shapeType));
+  const hasImageMask = $derived(sourceItems.some((item) => item.shape_type === IMAGE_MASK));
   const counts = $derived(categoryCounts(sourceItems, getDriver().config));
   const fields = $derived.by(() => {
     const visible = sharedProperties(sourceItems, getDriver(), draftCategory, draftProperties);
@@ -67,7 +68,8 @@
   });
   const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
   const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
-  const configValues = $derived(shapeType ? (getDriver().config[shapeType]?.values ?? []) : []);
+  const configValues = $derived(sharedCategories(sourceItems, getDriver().config));
+  const hasSharedChoices = $derived(configValues.length > 0 || fields.length > 0);
   const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
   const category = $derived(configValues.find((value) => value.id === selectedCategory));
   const preview = $derived.by(() => {
@@ -80,8 +82,8 @@
   const blockReason = $derived.by(() => {
     if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size) return "Selection is incomplete.";
     if (items) return "Group editing is not available in this step.";
-    if (!sameShape) return "Select one shape type to edit. Mixed shape editing comes later.";
-    if (shapeType === IMAGE_MASK) return "Image mask bulk editing comes later.";
+    if (!hasSharedChoices) return "Selected shape types have no category or property in common.";
+    if (hasImageMask) return "Image mask bulk editing comes later.";
     if (disabled || !isEditable() || ["completed", "errored"].includes(getDriver().entryStatus)) return "This workspace cannot be edited right now.";
     if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (sourceItems.some((item) => annotation.isHidden(item))) return "One or more selected annotations are hidden. Deselect them before applying.";
@@ -165,8 +167,9 @@
 	    {category}
 	    {selectedCategory}
 	    {shapeType}
+	    showShapeIcon={sameShape}
 	    onValueChange={setDraftCategory}
-	    disabled={disabled || !sameShape || shapeType === IMAGE_MASK}
+	    disabled={disabled || configValues.length === 0 || hasImageMask}
 	    placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
 	  />
 
@@ -176,7 +179,7 @@
 	    items={sourceItems}
 	    {fields}
 	    draft={draftProperties}
-	    disabled={disabled || !sameShape || shapeType === IMAGE_MASK}
+	    disabled={disabled || hasImageMask}
 	    onValueChange={setDraftProperty}
 	    onReset={resetProperty}
 	  />
