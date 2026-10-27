@@ -8,6 +8,7 @@ module Dataset
     field :project_id, type: String, readonly: true
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
     field :labels, type: Array
     field :modality, type: String, readonly: true
 

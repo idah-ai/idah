@@ -18,6 +18,7 @@ module Entry
     field :resource, type: String
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
 
     field :assigned_to_id, type: [Integer, NilClass]
     field :assigned_to_email, type: [String, NilClass]
@@ -349,6 +350,18 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
+    end
+
+    protected
+
+    # Isolate date-list sorting; preserve the framework's ordering for all other requests.
+    def prepare_ordering(query, sort)
+      keys = sort.is_a?(String) ? sort.split(",") : sort
+      return super unless keys == ["delivery_date"] || keys == ["-delivery_date"]
+
+      column = Sequel[:entries][:delivery_date]
+      direction = keys.first.start_with?("-") ? :desc : :asc
+      query.order(Sequel.public_send(direction, column, nulls: :last), Sequel.asc(Sequel[:entries][:id]))
     end
 
     private
