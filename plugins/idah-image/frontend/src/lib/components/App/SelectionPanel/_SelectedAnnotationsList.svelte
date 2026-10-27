@@ -19,11 +19,12 @@
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
+  import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
-  import { categoryCounts, prepareBulkCategory, prepareBulkProperties, sharedCategories, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
+  import { categoryCounts, hasMaskCategoryCollision, prepareBulkCategory, prepareBulkProperties, sharedCategories, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
 
   import {  IMAGE_MASK } from "$lib/types";
   import type { IAnnotationRecord } from "$idah/v2/types";
@@ -84,11 +85,14 @@
     if (items) return "Group editing is not available in this step.";
     if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (!hasSharedChoices) return "Selected shape types have no category or property in common.";
-    if (hasImageMask) return "Image mask bulk editing comes later.";
     if (disabled || !isEditable() || ["completed", "errored"].includes(getDriver().entryStatus)) return "This workspace cannot be edited right now.";
     if (sourceItems.some((item) => annotation.isHidden(item))) return "One or more selected annotations are hidden. Deselect them before applying.";
     if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";
     if (preview?.error) return preview.error;
+    if (draftCategory && hasImageMask && !data.annotations) return "Entry annotations are unavailable.";
+    if (draftCategory && preview?.updates.length && data.annotations &&
+      hasMaskCategoryCollision(preview.updates, data.annotations.items))
+      return "Another image mask already uses this category. Choose a different category.";
     if (draftCategory && !hasPropertyEdit && sourceItems.every((item) => item.category === draftCategory))
       return "All selected annotations already use this category.";
     return undefined;
@@ -107,6 +111,7 @@
       ? prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled, draftProperties)
       : prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
     if (result.error || !result.updates.length) return;
+    if (draftCategory && hasImageMask && (!data.annotations || hasMaskCategoryCollision(result.updates, data.annotations.items))) return;
     getDriver().command.call("idah-image:annotation.bulk-update", { updates: result.updates });
     draftCategory = undefined;
     draftProperties = {};
@@ -169,7 +174,7 @@
 	    {shapeType}
 	    showShapeIcon={sameShape}
 	    onValueChange={setDraftCategory}
-	    disabled={disabled || configValues.length === 0 || hasImageMask}
+	    disabled={disabled || configValues.length === 0}
 	    placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
 	  />
 
@@ -179,7 +184,7 @@
 	    items={sourceItems}
 	    {fields}
 	    draft={draftProperties}
-	    disabled={disabled || hasImageMask}
+	    {disabled}
 	    onValueChange={setDraftProperty}
 	    onReset={resetProperty}
 	  />

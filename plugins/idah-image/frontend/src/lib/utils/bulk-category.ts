@@ -1,10 +1,23 @@
 import type { IAnnotationRecord, IConfig, IConfigProperty, IConfigValue, IIdahDriverV2 } from "$idah/v2/types";
+import { IMAGE_MASK } from "$lib/types";
 import { annotationLabel } from "./label";
 
 export interface BulkCategoryUpdate {
   id: string;
   category: string;
   properties: Record<string, unknown>;
+}
+
+export function hasMaskCategoryCollision(updates: BulkCategoryUpdate[], entryItems: IAnnotationRecord[]): boolean {
+  const nextCategories = new Map(updates.map((update) => [update.id, update.category]));
+  const used = new Set<string>();
+  for (const item of entryItems) {
+    if (item.shape_type !== IMAGE_MASK) continue;
+    const category = nextCategories.get(item.id) ?? item.category;
+    if (used.has(category)) return true;
+    used.add(category);
+  }
+  return false;
 }
 
 export type PropertyValue = string | number | string[] | boolean | undefined;

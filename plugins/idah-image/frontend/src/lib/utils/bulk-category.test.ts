@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
+import { categoryCounts, hasMaskCategoryCollision, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
 import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
+import { IMAGE_MASK } from "$lib/types";
 import type { IAnnotationRecord, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
 
 const box = "idah-image:bounding-box";
@@ -414,5 +415,28 @@ describe("bulk category preparation", () => {
     ], { mode: "basic" }, conditionalDriver, valid);
     expect(result.error).toBeUndefined();
     expect(result.updates.map((update) => update.properties)).toEqual([{ mode: "basic" }, { mode: "basic" }]);
+  });
+
+  it("detects a mask category used by an unselected mask", () => {
+    const entry = [
+      { ...record("a", "road", {}), shape_type: IMAGE_MASK },
+      { ...record("b", "sidewalk", {}), shape_type: IMAGE_MASK },
+      record("c", "sidewalk", {}),
+    ];
+    expect(hasMaskCategoryCollision([{ id: "a", category: "sidewalk", properties: {} }], entry)).toBe(true);
+    expect(hasMaskCategoryCollision([{ id: "a", category: "vehicle", properties: {} }], entry)).toBe(false);
+  });
+
+  it("detects a collision between selected masks but ignores non-mask categories", () => {
+    const entry = [
+      { ...record("a", "road", {}), shape_type: IMAGE_MASK },
+      { ...record("b", "sidewalk", {}), shape_type: IMAGE_MASK },
+      record("c", "road", {}),
+    ];
+    expect(hasMaskCategoryCollision([
+      { id: "a", category: "vehicle", properties: {} },
+      { id: "b", category: "vehicle", properties: {} },
+    ], entry)).toBe(true);
+    expect(hasMaskCategoryCollision([{ id: "a", category: "road", properties: {} }], entry)).toBe(false);
   });
 });
