@@ -12,6 +12,7 @@ module Resource
     NoteComments = "dataset:note_comments"
     EntryStats = "dataset:entry_stats"
     LabelConfigTemplates = "dataset:label_config_templates"
+    AccessChecks = "dataset:access_checks"
     # rubocop:enable Naming/ConstantName
   end
 end
