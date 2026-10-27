@@ -28,13 +28,19 @@
     class: className = "py-12",
   }: Props = $props();
 
+  // A browser folder dialog picks one folder at a time, so the texts say how to add more:
+  // pick again (each pick is appended) or drop several folders at once.
   const PICKERS: Record<"entries" | "datasets", { pickers: FileUploadPicker[]; dropHint: string }> = {
     entries: {
       pickers: [
         { kind: "files", label: "Select files", description: "Media files or .zip archives, added to this dataset" },
-        { kind: "folder", label: "Select folder", description: "Everything in the folder and its sub-folders" },
+        {
+          kind: "folder",
+          label: "Select folder",
+          description: "Everything in the folder and its sub-folders (pick again to add more)",
+        },
       ],
-      dropHint: "or drag and drop files and folders",
+      dropHint: "or drag and drop files and folders, several at once",
     },
     datasets: {
       pickers: [
@@ -42,10 +48,11 @@
         {
           kind: "folder",
           label: "Select folder",
-          description: "Each folder becomes one dataset, or one per sub-folder if it has sub-folders",
+          description:
+            "Each folder becomes one dataset, or one per sub-folder and zip inside it (pick again to add more)",
         },
       ],
-      dropHint: "or drag and drop zip files and folders",
+      dropHint: "or drag and drop zip files and folders, several at once",
     },
   };
 
