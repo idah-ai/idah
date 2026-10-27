@@ -1,7 +1,6 @@
 <script lang="ts">
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
   import { entriesBackendDataSource, type EntryRecord } from "@/data/model/dataset/entries/record";
@@ -75,6 +74,7 @@
       placeholder="Select delivery date (optional)"
       value={selectedDeliveryDate ? parseDate(selectedDeliveryDate).toDate(getLocalTimeZone()) : null}
       minDate={today(getLocalTimeZone())}
+      clearable
       disabled={submitting}
       {errors}
       onDateSelected={(date) => {
@@ -83,14 +83,4 @@
       }}
     />
   {/key}
-  {#if selectedDeliveryDate}
-    <Button
-      variant="outline"
-      disabled={submitting}
-      onclick={() => {
-        selectedDeliveryDate = null;
-        errors = [];
-      }}>Clear Delivery Date</Button
-    >
-  {/if}
 </FormModal>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
+  import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry.columns";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
   import Button from "@/components/ui/button/button.svelte";

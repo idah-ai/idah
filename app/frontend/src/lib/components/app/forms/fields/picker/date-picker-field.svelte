@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CalendarDate, DateFormatter, getLocalTimeZone, type DateValue } from "@internationalized/date";
-  import { CalendarIcon } from "@lucide/svelte";
+  import { CalendarIcon, XIcon } from "@lucide/svelte";
   import { format } from "date-fns";
 
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
@@ -20,6 +20,7 @@
     value: Date | null | undefined;
     minDate?: DateValue;
     maxDate?: DateValue;
+    clearable?: boolean;
   }
   let {
     name,
@@ -29,6 +30,7 @@
     dateStyle = "medium",
     required = false,
     disabled = false,
+    clearable = false,
     value = $bindable(null),
     minDate,
     maxDate,
@@ -76,17 +78,37 @@
   <Popover>
     <PopoverTrigger>
       {#snippet child({ props })}
-        <Button
-          variant="outline"
-          class={cn("w-full justify-start text-left font-normal", {
-            "text-muted-foreground": !value,
-          })}
-          {disabled}
-          {...props}
-        >
-          <CalendarIcon class="size-4"></CalendarIcon>
-          {value ? format(value, placeholderDateFormat || "MMM dd, yyyy") : placeholder}
-        </Button>
+        <div class="relative w-full">
+          <Button
+            {...props}
+            variant="outline"
+            class={cn(props.class, "w-full justify-start text-left font-normal", {
+              "text-muted-foreground": !value,
+              "has-[>svg]:pr-10": clearable && !!value,
+            })}
+            {disabled}
+          >
+            <CalendarIcon class="size-4"></CalendarIcon>
+            {value ? format(value, placeholderDateFormat || "MMM dd, yyyy") : placeholder}
+          </Button>
+          {#if clearable && value}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground absolute top-1/2 right-1 -translate-y-1/2"
+              aria-label={`Clear ${label || "date"}`}
+              {disabled}
+              onclick={() => {
+                calendarValue = undefined;
+                value = null;
+                onDateSelected?.(null);
+              }}
+            >
+              <XIcon class="size-4" />
+            </Button>
+          {/if}
+        </div>
       {/snippet}
     </PopoverTrigger>
 

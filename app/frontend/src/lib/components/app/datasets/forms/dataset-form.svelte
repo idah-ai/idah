@@ -6,7 +6,6 @@
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import Button from "@/components/ui/button/button.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -86,21 +85,13 @@
         errors={fieldErrors["delivery_date"]}
         value={delivery_date ? parseDate(delivery_date).toDate(getLocalTimeZone()) : null}
         minDate={today(getLocalTimeZone())}
+        clearable={canEditDeliveryDate}
         disabled={!canEditDeliveryDate}
         onDateSelected={(selectedDate) => {
           delivery_date = selectedDate;
         }}
       />
     {/key}
-    {#if canEditDeliveryDate && delivery_date}
-      <Button
-        variant="outline"
-        type="button"
-        onclick={() => {
-          delivery_date = null;
-        }}>Clear Delivery Date</Button
-      >
-    {/if}
 
     <!-- DATASET::LABELING CONFIGURATION -->
     {#key modality}
