@@ -148,8 +148,7 @@ export const selection = {
       next.add(annotationId);
     }
     _selectedAnnotationIds = next;
-    // Clear group selection when toggling annotations
-    _selectedGroupIds = new Set();
+    // Shift+click can add an annotation alongside selected groups.
   },
 
   /**

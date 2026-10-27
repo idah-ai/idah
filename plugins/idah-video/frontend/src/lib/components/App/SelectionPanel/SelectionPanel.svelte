@@ -3,7 +3,6 @@
   import SelectedAnnotationsList from "$lib/components/App/SelectionPanel/_SelectedAnnotationsList.svelte";
   import CreateMode from "$lib/components/App/SelectionPanel/_CreateMode.svelte";
   import EditMode from "$lib/components/App/SelectionPanel/_EditMode.svelte";
-  import GroupEditMode from "$lib/components/App/SelectionPanel/_GroupEditMode.svelte";
 
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -71,33 +70,7 @@
   );
   let configValues = $derived(config?.values ?? []);
 
-  // Flatten all annotations from selected groups (for displaying multi-group selection)
-  let groupAnnotations = $derived(selection.selectedGroupAnnotations);
-
-  // Annotation from the selected group (for group edit mode display)
-  let groupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
-    if (sel?.type !== "group" || !data.annotations) return undefined;
-    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
-    return items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-  });
-
-  let groupAnnDisplayName = $derived.by<string>(() => {
-    if (!groupAnnotation || !sel || sel.type !== "group") return "";
-    const gAnn = groupAnnotation;
-    const gShapeType = gAnn.shape_type as string;
-    const gConfig = getDriver().config[gShapeType];
-    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.category);
-    const lastPart = sel.groupId.split("-").pop() ?? "";
-    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.category ?? "Uncategorized");
-  });
-
-  // When a group is selected, always use the annotation's current category from the data store,
-  // so it stays in sync even when the parent doesn't update the selectedCategory prop.
-  let effectiveSelectedCategory = $derived(
-    sel?.type === "group" ? groupAnnotation?.category || "" : selectedCategory,
-  );
-
-  let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
+  let category = $derived(configValues.find((c) => c.id == selectedCategory));
   let properties = $derived(config?.properties ?? []);
 
   // Human-readable mode title from shape type
@@ -205,24 +178,9 @@
       disabled={effectiveDisabled}
     />
   {/if}
-{:else if selection.selectedAnnotationIds.size > 1}
-  <!-- Multiple annotations selected: show a compact list of selected items -->
+{:else if selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 0}
+  <!-- Bulk editing includes complete selected groups and directly selected annotations. -->
   <SelectedAnnotationsList disabled={effectiveDisabled} />
-{:else if selection.selectedGroupIds.size > 1}
-  <!-- Multiple groups selected: show the annotations belonging to those groups -->
-  <SelectedAnnotationsList items={groupAnnotations} disabled={effectiveDisabled} />
-{:else if sel.type === "group"}
-  <!-- Group edit mode -->
-  <GroupEditMode
-    {modeTitle}
-    {shapeType}
-    {configValues}
-    {category}
-    selectedCategory={effectiveSelectedCategory}
-    displayName={groupAnnDisplayName}
-    onReSelectCategory={reselectCategory}
-    disabled={effectiveDisabled}
-  />
 {:else if sel.type === "annotation"}
   <!-- Edit mode: edit a single selected annotation -->
   <EditMode

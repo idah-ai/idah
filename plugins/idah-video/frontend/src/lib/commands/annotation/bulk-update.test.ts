@@ -130,4 +130,26 @@ describe("annotation.bulk-update", () => {
     await action.do();
     expect(update).not.toHaveBeenCalled();
   });
+
+  it("updates an off-frame group member with the others and restores all three on Undo", async () => {
+    items.splice(0, items.length,
+      { ...original()[0], metadata: { group_id: "track-7" } },
+      { ...original()[1], metadata: { group_id: "track-7" } },
+      { id: "off-frame", shape_type: shape, shape_args: { start: 100, end: 101 },
+        category: "pedestrian", properties: { occluded: "No" }, metadata: { group_id: "track-7" } },
+    );
+    const before = structuredClone(items);
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: { [shape]: { values: [{ id: "vehicle" }] } } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: items.map((item) => ({
+      id: item.id, category: "vehicle", properties: item.properties,
+    })) });
+
+    await action.do();
+    expect(items.map((item) => item.category)).toEqual(["vehicle", "vehicle", "vehicle"]);
+    expect(update).toHaveBeenCalledTimes(3);
+    await action.undo();
+    expect(items).toEqual(before);
+    expect(update).toHaveBeenCalledTimes(6);
+  });
 });

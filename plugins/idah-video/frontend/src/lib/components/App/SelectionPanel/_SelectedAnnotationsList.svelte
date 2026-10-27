@@ -19,6 +19,7 @@
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
+  import { data, type AnnotationItem } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -32,19 +33,58 @@
     sharedProperties,
     type PropertyValue,
   } from "$lib/utils/bulk-category";
+  import { resolveBulkTargets } from "$lib/utils/bulk-targets";
 
   import type { IAnnotationRecord } from "$idah/v2/types";
 
-  // Optional — when provided, show these items instead of selection.selectedAnnotations.
-  // This lets the component be reused for group-selection annotations.
   interface Props {
-    items?: IAnnotationRecord[];
     disabled?: boolean;
   }
-  let { items, disabled = false }: Props = $props();
+  let { disabled = false }: Props = $props();
 
-  // Source of truth: explicit items prop, or fall back to the selection model.
-  let sourceItems = $derived(items ?? selection.selectedAnnotations);
+  const selectionKey = $derived([
+    ...[...selection.selectedAnnotationIds].map((id) => `a:${id}`),
+    ...[...selection.selectedGroupIds].map((id) => `g:${id}`),
+  ].sort().join("|"));
+  let groupSnapshot = $state<{ key: string; items: IAnnotationRecord[] } | null>(null);
+  let groupLoadError = $state("");
+
+  $effect(() => {
+    const key = selectionKey;
+    const groupIds = [...selection.selectedGroupIds];
+    const store = data.annotations;
+    if (!groupIds.length || !store) {
+      groupSnapshot = null;
+      groupLoadError = "";
+      return;
+    }
+
+    let active = true;
+    groupSnapshot = null;
+    groupLoadError = "";
+    getDriver().annotations.fetch().then((items) => {
+      if (!active) return;
+      const allItems = [...items, ...store.items] as IAnnotationRecord[];
+      const targets = resolveBulkTargets(selection.selectedAnnotationIds, groupIds, allItems).items;
+      const loadedIds = new Set(store.items.map((item) => item.id));
+      for (const item of targets) {
+        if (!loadedIds.has(item.id)) store.upsert(item as AnnotationItem);
+      }
+      groupSnapshot = { key, items };
+    }).catch(() => {
+      if (active) groupLoadError = "Could not load all selected group annotations. Reselect the group and try again.";
+    });
+    return () => { active = false; };
+  });
+
+  const targetResolution = $derived.by(() => {
+    const currentItems = (data.annotations?.items ?? []) as IAnnotationRecord[];
+    if (selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey)
+      return resolveBulkTargets(selection.selectedAnnotationIds, selection.selectedGroupIds, []);
+    const fetchedItems = groupSnapshot?.key === selectionKey ? groupSnapshot.items : [];
+    return resolveBulkTargets(selection.selectedAnnotationIds, selection.selectedGroupIds, [...fetchedItems, ...currentItems]);
+  });
+  let sourceItems = $derived(targetResolution.items);
 
   const PAGE_SIZE = 10;
   let page = $state(1);
@@ -54,11 +94,11 @@
   const showPagination = $derived(sourceItems.length > PAGE_SIZE);
   const placeholderCount = $derived(showPagination ? PAGE_SIZE - pagedAnnotations.length : 0);
 
-  const countLabel = $derived(`${sourceItems.length} selected`);
+  const countLabel = $derived(selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey
+    ? "Loading selection" : `${sourceItems.length} selected`);
   let draftCategory = $state<string | undefined>();
   let draftProperties = $state<Record<string, PropertyValue>>({});
   let feedback = $state("");
-  const selectionKey = $derived([...selection.selectedAnnotationIds, ...selection.selectedGroupIds].sort().join("|"));
   const shapeType = $derived(sourceItems[0]?.shape_type);
   const sameShape = $derived(sourceItems.length > 0 && sourceItems.every((item) => item.shape_type === shapeType));
   const counts = $derived(categoryCounts(sourceItems, getDriver().config));
@@ -85,8 +125,9 @@
     return undefined;
   });
   const blockReason = $derived.by(() => {
-    if (items || selection.selectedGroupIds.size) return "Group editing is not available in this step.";
-    if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size)
+    if (selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey)
+      return groupLoadError || "Loading all selected group annotations.";
+    if (!sourceItems.length || targetResolution.missingAnnotationIds.length || targetResolution.missingGroupIds.length)
       return "Selection is incomplete.";
     if (sourceItems.some((item) => annotation.isLocked(item)))
       return "One or more selected annotations are locked or cannot be edited.";
@@ -182,7 +223,7 @@
       {shapeType}
       showShapeIcon={sameShape}
       onValueChange={setDraftCategory}
-      disabled={disabled || Boolean(items) || configValues.length === 0}
+      disabled={disabled || configValues.length === 0}
       placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
     />
 
@@ -192,7 +233,7 @@
       items={sourceItems}
       {fields}
       draft={draftProperties}
-      disabled={disabled || Boolean(items) || viewport.isReviewWorkspace}
+      disabled={disabled || viewport.isReviewWorkspace}
       onValueChange={setDraftProperty}
       onReset={resetProperty}
     />
@@ -232,7 +273,7 @@
       </div>
     {/each}
 
-    {#if sourceItems.length === 0}
+    {#if sourceItems.length === 0 && !(selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey)}
       <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations selected</div>
     {/if}
 
