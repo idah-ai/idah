@@ -69,6 +69,8 @@ module Entry
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = dataset.project_id
       attributes[:dataset_id] = dataset.id
+      validate_delivery_date!(attributes)
+      attributes[:delivery_date] = dataset.delivery_date unless attributes.key?(:delivery_date)
 
       entries.transaction do
         id = entries.create(attributes)
@@ -94,7 +96,12 @@ module Entry
     end
 
     def update(record)
-      entries.update!(record.id, record.attributes)
+      attributes = record.attributes
+      if attributes.key?(:delivery_date)
+        current = entries.find!(record.id)
+        validate_delivery_date!(attributes, current.delivery_date)
+      end
+      entries.update!(record.id, attributes)
       entries.find!(record.id)
     end
 
@@ -270,6 +277,7 @@ module Entry
         entry_id = UUIDv7.generate
         attributes = {
           **duping_entry.fields,
+          delivery_date: nil,
           id: entry_id,
           project_id: duping_entry.project_id,
           dataset_id: dataset_id,
@@ -317,6 +325,17 @@ module Entry
           end
           next
         end
+      end
+    end
+
+    private def validate_delivery_date!(attributes, original = nil)
+      return unless attributes.key?(:delivery_date)
+
+      value = attributes[:delivery_date]
+      return if value.nil? || value == original
+
+      if value < Date.today
+        raise Verse::Error::ValidationFailed, "Delivery Date must be today or later"
       end
     end
   end

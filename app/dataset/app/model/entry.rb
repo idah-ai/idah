@@ -354,14 +354,19 @@ module Entry
 
     protected
 
-    # Isolate date-list sorting; preserve the framework's ordering for all other requests.
+    # Preserve all requested sort fields in one ORDER BY, before pagination.
     def prepare_ordering(query, sort)
       keys = sort.is_a?(String) ? sort.split(",") : sort
-      return super unless keys == ["delivery_date"] || keys == ["-delivery_date"]
+      return super unless keys.is_a?(Array) && !keys.empty?
 
-      column = Sequel[:entries][:delivery_date]
-      direction = keys.first.start_with?("-") ? :desc : :asc
-      query.order(Sequel.public_send(direction, column, nulls: :last), Sequel.asc(Sequel[:entries][:id]))
+      ordering = keys.map do |key|
+        direction = key.start_with?("-") ? :desc : :asc
+        parts = key.delete_prefix("-").split(".", 2).map(&:to_sym)
+        column = parts.length == 2 ? Sequel.qualify(*parts) : parts.first
+        options = parts.last == :delivery_date ? { nulls: :last } : {}
+        Sequel.public_send(direction, column, **options)
+      end
+      query.order(*ordering)
     end
 
     private
