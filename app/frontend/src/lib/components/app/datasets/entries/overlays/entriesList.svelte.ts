@@ -19,7 +19,7 @@ export function createEntriesController(datasetId: string): ListViewController<E
       filters: { dataset_id: datasetId },
       included: ["assigned_to", "submitted_by", "reviewed_by", "reopened_by", "dataset"],
       fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"], [DatasetRecord.type]: ["delivery_date"] },
-      sort: ["-created_at"],
+      sort: ["delivery_date", "priority", "created_at", "id"],
     },
   });
 }
