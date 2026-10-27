@@ -18,6 +18,7 @@ import {
   builderOperator,
   canEditInBuilder,
   conditionProblem,
+  conditionReferenceProblems,
   defaultCondition,
   defaultGroupConditions,
   describeRules,
@@ -252,6 +253,35 @@ describe("conditionProblem", () => {
     const bad = newGroup("all", [ok, newGroup("any", [newCondition("category", "in", [])])]);
     expect(hasProblems(ok, fields)).toBe(false);
     expect(hasProblems(bad, fields)).toBe(true);
+  });
+});
+
+describe("conditionReferenceProblems", () => {
+  it("marks a missing field selector", () => {
+    expect(
+      conditionReferenceProblems(
+        newCondition("properties.removed", "eq", "x"),
+        fieldFor(fields, newCondition("properties.removed", "eq", "x")),
+      ),
+    ).toEqual({
+      field: 'Field "properties.removed" no longer exists.',
+    });
+  });
+
+  it("marks a missing category value selector", () => {
+    expect(conditionReferenceProblems(newCondition("category", "eq", "vehicles/van"), field("category"))).toEqual({
+      value: 'Value "vehicles/van" no longer exists.',
+    });
+  });
+
+  it("marks a missing parent category selector", () => {
+    expect(conditionReferenceProblems(newCondition("category", "match", "missing/*"), field("category"))).toEqual({
+      value: 'Value "missing/*" no longer exists.',
+    });
+  });
+
+  it("accepts typed category patterns", () => {
+    expect(conditionReferenceProblems(newCondition("category", "match", "veh*"), field("category"))).toEqual({});
   });
 });
 

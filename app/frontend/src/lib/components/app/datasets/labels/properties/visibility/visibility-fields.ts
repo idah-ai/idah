@@ -47,6 +47,11 @@ export interface VisibilityReferenceError {
   message: string;
 }
 
+export interface ConditionReferenceProblems {
+  field?: string;
+  value?: string;
+}
+
 /** "under" is shown in the builder only; it is stored as category match "<parent>/*". */
 export type BuilderOperator = ComparisonOperator | "under";
 
@@ -411,6 +416,30 @@ export function conditionProblem(condition: RuleCondition, field: VisibilityFiel
   // Unsafe integers print in exponent form, which the parser can't read back.
   if (typeof value === "number" && !Number.isSafeInteger(value)) return "Enter a whole number";
   return undefined;
+}
+
+/** Identifies which builder control contains a stale configuration reference. */
+export function conditionReferenceProblems(
+  condition: RuleCondition,
+  field: VisibilityField,
+): ConditionReferenceProblems {
+  if (field.missing) {
+    return { field: `Field "${condition.field}" no longer exists.` };
+  }
+
+  if (condition.operator === "match" && typeof condition.value === "string" && !condition.value.endsWith("/*")) {
+    return {};
+  }
+
+  const values = Array.isArray(condition.value) ? condition.value.map(String) : [String(condition.value)];
+  const options =
+    condition.operator === "match" && values.length === 1 && values[0].endsWith("/*") ? field.parents : field.options;
+  const missing = values.filter((value) => value !== "" && !options.some((option) => option.value === value));
+  if (missing.length === 0) return {};
+
+  return {
+    value: `Value${missing.length > 1 ? "s" : ""} ${missing.map((value) => `"${value}"`).join(", ")} no longer exist${missing.length > 1 ? "" : "s"}.`,
+  };
 }
 
 export function hasProblems(item: RuleItem, fields: VisibilityField[]): boolean {

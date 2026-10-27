@@ -163,4 +163,17 @@ describe("VisibilityEditor", () => {
     expect(tab("Expression")).toBeDisabled();
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("marks a missing category value control as invalid", () => {
+    renderEditor(parse('category = "vehicles/van"'));
+
+    expect(screen.getByLabelText("Field")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByLabelText("Value")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("marks a missing property field control as invalid", () => {
+    renderEditor(parse("properties.removed = true"));
+
+    expect(screen.getByLabelText("Field")).toHaveAttribute("aria-invalid", "true");
+  });
 });

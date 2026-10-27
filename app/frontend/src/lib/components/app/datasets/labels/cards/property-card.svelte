@@ -47,13 +47,7 @@
   }
 </script>
 
-<Card
-  class={cn(
-    "w-full gap-2 py-2",
-    visibilityErrors.length > 0 &&
-      "bg-destructive/5 border-destructive/50 hover:bg-destructive/10 hover:border-destructive",
-  )}
->
+<Card class={cn("w-full gap-2 py-2", visibilityErrors.length > 0 && "border-destructive/50 hover:border-destructive")}>
   <!-- HEADER -->
   <CardHeader class="flex items-center gap-0 px-2">
     <!-- HEADER::TOGGLE SHOW CONTENT -->
