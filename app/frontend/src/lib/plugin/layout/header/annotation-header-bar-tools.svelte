@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
+  import { CheckCheckIcon, ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -8,6 +8,7 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import * as Kbd from "@/components/ui/kbd";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import { cn } from "@/utils";
@@ -49,13 +50,65 @@
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
+  // ── Coverage mask state ───────────────────────────────────────────
+  // Tracks current coverage mask mode. Each tool (add/remove) is a toggle:
+  // click once to activate, click again or Escape to deactivate.
+  let coverageMaskMode = $state<"off" | "add" | "remove">("off");
+  function isCoverageMaskMode(mode: string): boolean {
+    return mode.includes("coverage-mask");
+  }
+
+  function isCoverageMaskAdd(mode: string): boolean {
+    return mode.endsWith("-bbox");
+  }
+
+  function isCoverageMaskRemove(mode: string): boolean {
+    return mode.includes("-remove");
+  }
+
+  function enterCoverageAdd() {
+    if (coverageMaskMode === "add") {
+      coverageMaskMode = "off";
+      driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    } else {
+      coverageMaskMode = "add";
+      driver.command.call("coverage-mask-set-mode", { mode: "add" });
+    }
+  }
+
+  function enterCoverageRemove() {
+    if (coverageMaskMode === "remove") {
+      coverageMaskMode = "off";
+      driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    } else {
+      coverageMaskMode = "remove";
+      driver.command.call("coverage-mask-set-mode", { mode: "remove" });
+    }
+  }
+
+  function clearCoverageMasks() {
+    coverageMaskMode = "off";
+    driver.command.call("coverage-mask-clear");
+    driver.command.call("coverage-mask-set-mode", { mode: "off" });
+  }
+
   function refreshToolbar() {
-    currentMode = driver.mode;
+    // Keep the toolbar looking at editor/review mode even while the viewport
+    // is in a mask mode — mask is a sub-mode, not a separate toolbar context.
+    currentMode = isCoverageMaskMode(driver.mode) ? "editor" : driver.mode;
     canUndo = driver.command.canUndo();
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((_) => refreshToolbar());
+  driver.onModeChange((event) => {
+    refreshToolbar();
+    if (isCoverageMaskMode(event.newValue)) {
+      coverageMaskMode = isCoverageMaskRemove(event.newValue) ? "remove" : "add";
+    } else {
+      coverageMaskMode = "off";
+      driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    }
+  });
   driver.onSyncChange(() => refreshToolbar());
   driver.command.onStackChange(() => refreshToolbar());
 
@@ -230,4 +283,42 @@
       onclick={handleClick}
     />
   {/each}
+
+  <Separator orientation="vertical"></Separator>
+
+  <!-- Coverage mask tool — dropdown with add/remove/clear -->
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="w-auto gap-0.5 px-1.5 duration-0"
+        style={coverageMaskMode === "add"
+          ? "background-color:rgba(24,131,91,0.12)"
+          : coverageMaskMode === "remove"
+            ? "background-color:rgba(180,50,57,0.12)"
+            : ""}
+      >
+        <CheckCheckIcon
+          class="size-4"
+          style={coverageMaskMode === "add" ? "color:#18835b" : coverageMaskMode === "remove" ? "color:#b43239" : ""}
+        />
+        <ChevronDownIcon class="size-3" />
+      </Button>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start" side="bottom">
+      <DropdownMenu.Item onclick={enterCoverageAdd}>
+          <CheckCheckIcon class="size-3" style="color:#18835b" />
+          Done Area — Add
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onclick={enterCoverageRemove}>
+        <CheckCheckIcon class="size-3" style="color:#b43239" />
+        Done Area — Remove
+      </DropdownMenu.Item>
+      <Separator />
+      <DropdownMenu.Item onclick={clearCoverageMasks}>
+        Remove All
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
 </div>

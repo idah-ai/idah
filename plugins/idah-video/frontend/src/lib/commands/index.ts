@@ -73,6 +73,7 @@ import { register as registerToggleDebugConsole } from "./display/toggle-debug-c
 import { register as registerToggleRenderMode } from "./display/toggle-render-mode";
 import { register as registerToggleTimeDisplay } from "./display/toggle-time-display";
 import { register as registerSidebarTab } from "./sidebar/sidebar_tab";
+import { register as registerCoverageSetMode } from "./coverage-mask/coverage_set_mode";
 import { register as registerTimelineFocus } from "./timeline/focus";
 import { register as registerTimelineGoToFirst } from "./timeline/go-to-first";
 import { register as registerTimelineGoToLast } from "./timeline/go-to-last";
@@ -165,6 +166,9 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerToggleDebugConsole(driver);
   registerToggleRenderMode(driver);
   registerSidebarTab(driver);
+
+  // ── Coverage mask (Done Area) ────────────────────────────────────────
+  registerCoverageSetMode(driver);
 
   // ── Snap ─────────────────────────────────────────────────────────────
   registerSnapMagneticToggle(driver);
