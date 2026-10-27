@@ -147,6 +147,23 @@ RSpec.describe Webhook::Dispatcher, database: true do
     expect(jobs.index({}).map(&:webhook_id)).to contain_exactly(removed.to_i, role_updated.to_i)
   end
 
+  it "sends member.added, not role_updated, when a removed member is invited again" do
+    added = create_webhook(events: ["dataset.project.member.added"])
+    create_webhook(events: ["dataset.project.member.role_updated"])
+    stub_show("dataset/project_members/5", { account_id: 4, role: "reviewer" })
+
+    publish(
+      "dataset:project_members",
+      "updated",
+      resource_id: "5",
+      args: [{ role: "reviewer", disabled_at: nil }],
+      metadata: { project_id: "p1", project_member_account_id: 4 }
+    )
+
+    expect(jobs.index({}).map(&:webhook_id)).to eq [added.to_i]
+    expect(dataset_checks).to contain_exactly(include(own_account_id: 4))
+  end
+
   it "only sends entry.completed when the entry reaches the done step" do
     create_webhook(events: ["dataset.entry.completed"])
     stub_show("dataset/entries/9", { wf_step: "done" })
@@ -165,6 +182,17 @@ RSpec.describe Webhook::Dispatcher, database: true do
     2.times { publish("dataset:projects", "updated", resource_id: "7") }
 
     expect(jobs.index({}).count).to eq 1
+  end
+
+  it "enqueues each occurrence of an event, even within the same second" do
+    create_webhook(events: ["dataset.project.updated"])
+    stub_show("dataset/projects/7", { name: "Renamed" })
+    second = Time.utc(2026, 10, 12, 8)
+
+    publish("dataset:projects", "updated", resource_id: "7", metadata: { at: second + 0.1 })
+    publish("dataset:projects", "updated", resource_id: "7", metadata: { at: second + 0.2 })
+
+    expect(jobs.index({}).count).to eq 2
   end
 
   describe "permission checks" do
@@ -232,21 +260,12 @@ RSpec.describe Webhook::Dispatcher, database: true do
   end
 
   describe "sync.export.completed" do
-    def stub_exports(exports)
-      stub_request(:get, %r{\Ahttp://idah\.test/sync/exports\?})
-        .to_return(
-          status: 200,
-          body: JSON.generate(data: exports.map { { type: "sync:exports", id: _1[:id], attributes: _1.except(:id) } }),
-          headers: { "Content-Type": "application/json" }
-        )
-    end
-
     before { create_webhook(events: ["sync.export.completed"]) }
 
-    it "delivers the export of a finished export job to owners who can read it" do
-      stub_exports([{ id: "42", job_id: "j1", project_id: "p1", filename: "export.zip", size: 10 }])
+    it "delivers an export once its file is attached, to owners who can read it" do
+      stub_show("sync/exports/42", { project_id: "p1", filename: "export.zip", size: 10 })
 
-      publish("sync:jobs", "completed", resource_id: "j1")
+      publish("sync:exports", "updated", resource_id: "42", args: [{ file_id: "f1", filename: "export.zip", size: 10 }])
 
       expect(sync_checks).to contain_exactly(
         include(
@@ -257,17 +276,12 @@ RSpec.describe Webhook::Dispatcher, database: true do
         )
       )
       body = jobs.index({}).first.arguments[:body]
-      expect(body).to include(event: "sync.export.completed", resource_id: "j1")
-      expect(body[:payload]).to eq(
-        export: { id: "42", job_id: "j1", project_id: "p1", filename: "export.zip",
-                  size: 10 }
-      )
+      expect(body).to include(event: "sync.export.completed", resource_id: "42")
+      expect(body[:payload]).to eq(export: { project_id: "p1", filename: "export.zip", size: 10 })
     end
 
-    it "ignores finished jobs that aren't exports" do
-      stub_exports([])
-
-      publish("sync:jobs", "completed", resource_id: "j2")
+    it "ignores export updates that don't attach the file" do
+      publish("sync:exports", "updated", resource_id: "42", args: [{ filename: "renamed.zip" }])
 
       expect(sync_checks).to be_empty
       expect(jobs.index({}).count).to eq 0
@@ -342,7 +356,7 @@ RSpec.describe Webhook::Dispatcher, database: true do
       expect(delivered(admin_hook)).to include("iam.organization.owner.added")
       expect(delivered(org_owner_hook)).to eq ["iam.organization.owner.added"]
       expect(jobs.index({ webhook_id: org_owner_hook }).first.arguments.dig(:body, :payload))
-        .to include(organization_ids: %w[1 3])
+        .to eq(account: { id: "9" }, organization_ids: %w[1 3])
     end
 
     it "sends owner.removed when organizations leave an org owner's scope, by edit or org deletion" do
@@ -353,6 +367,8 @@ RSpec.describe Webhook::Dispatcher, database: true do
       )
 
       expect(delivered(org_owner_hook)).to eq ["iam.organization.owner.removed"]
+      expect(jobs.index({ webhook_id: org_owner_hook }).first.arguments.dig(:body, :payload))
+        .to eq(account: { id: "9" }, organization_ids: ["1"])
     end
 
     it "treats a demotion from org owner as removal from all its organizations" do

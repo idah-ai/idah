@@ -3,6 +3,9 @@
 module Webhook
   module Handlers
     module Dataset
+      # A removed member invited again has their row re-enabled instead of created.
+      rejoined = ->(m) { Handlers.changes(m).key?(:disabled_at) && Handlers.changes(m)[:disabled_at].nil? }
+
       Handlers.define "dataset.project.created",
                       event: "dataset:projects:created",
                       label: "Project Created",
@@ -35,10 +38,11 @@ module Webhook
                       }
 
       Handlers.define "dataset.project.member.added",
-                      event: "dataset:project_members:created",
+                      event: %w[dataset:project_members:created dataset:project_members:updated],
                       label: "Project Member Added",
                       desc: "Triggered when a member is added to a project",
                       allowed_roles: %w[admin org_owner user],
+                      match: ->(m) { m.event.end_with?(":created") || rejoined.call(m) },
                       check: ->(m) {
                         member_account_id = Handlers.changes(m)[:account_id] ||
                                             Handlers.metadata(m)[:project_member_account_id]
@@ -57,7 +61,7 @@ module Webhook
                       label: "Project Member Role Updated",
                       desc: "Triggered when a project member's role is changed",
                       allowed_roles: %w[admin org_owner user],
-                      match: ->(m) { Handlers.changes(m).key?(:role) },
+                      match: ->(m) { Handlers.changes(m).key?(:role) && !rejoined.call(m) },
                       check: ->(m) {
                         Handlers.allowed(
                           "dataset",

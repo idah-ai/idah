@@ -2,7 +2,7 @@
 
 module Webhook
   # Subscribable events, declared per service in handlers/<service>.rb.
-  #   id: public event id; event: bus channel; allowed_roles: roles that may subscribe;
+  #   id: public event id; event: bus channel, or a list of them; allowed_roles: roles that may subscribe;
   #   match: selects the messages of this event; check: access rule for the owners
   #   (nil means none); payload: builds the delivered payload.
   module Handlers
@@ -24,9 +24,9 @@ module Webhook
 
     def allowed_for(role) = all.select { _1.allowed_roles.include?(role.to_s) }
 
-    def for_event(event) = all.select { _1.event == event }
+    def for_event(event) = all.select { Array(_1.event).include?(event) }
 
-    def channels = all.map(&:event).uniq
+    def channels = all.flat_map { Array(_1.event) }.uniq
 
     # Resource attributes, read through the API as the service account.
     def fetch(resource, id, service: :dataset)

@@ -51,6 +51,16 @@ RSpec.describe WebhooksExpo, type: :exposition, database: true do
       expect(record.secret).to match(/\Awhsec_\h{64}\z/)
     end
 
+    it "doesn't publish the new webhook, whose event would carry the secret" do
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      as_user(:user) { post "/webhooks", payload(attributes) }
+
+      expect(last_response.status).to eq 201
+      expect(Verse).not_to have_received(:publish_resource_event)
+        .with(hash_including(resource_type: Resource::Notification::Webhooks))
+    end
+
     it "ignores ownership and secret sent in the body" do
       as_user(:user) do
         post "/webhooks", payload({ **attributes, account_id: 99, role_name: "admin", secret: "mine" })
@@ -167,6 +177,15 @@ RSpec.describe WebhooksExpo, type: :exposition, database: true do
       expect(last_response.status).to eq 422
     end
 
+    it "validates events against the role the webhook was created with" do
+      id = create_webhook(account_id: 2, role_name: "user")
+
+      as_user(:org_owner) { patch "/webhooks/#{id}", payload({ events: ["dataset.project.created"] }, id:) }
+
+      expect(last_response.status).to eq 422
+      expect(system_repo.find!(id).events).to eq ["dataset.project.updated"]
+    end
+
     it "cannot update other accounts' webhooks" do
       id = create_webhook(account_id: 4, role_name: "user")
 
@@ -239,6 +258,9 @@ RSpec.describe WebhooksExpo, type: :exposition, database: true do
       expect(event.event).to eq "dataset:project_members:updated"
       expect(event.label).to eq "Project Member Removed"
       expect(event.allowed_roles).to eq %w[admin org_owner user]
+
+      added = response_records.find { _1.id == "dataset.project.member.added" }
+      expect(added.event).to eq "dataset:project_members:created"
     end
   end
 

@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 Api[:idah].register(
-  :sync, :exports, :index
-) do |params = {}|
+  :sync, :exports, :show
+) do |id:, **opts|
   output = get(
-    "sync/exports",
-    params:,
+    "sync/exports/:id",
+    params: {
+      id:, **opts
+    },
     options: { auth: :bearer }
   )
 

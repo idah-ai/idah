@@ -40,6 +40,8 @@ module Webhook
 
       resource_id = message.content[:resource_id]
       payload = handler.payload.call(message)
+      at = message.content.dig(:metadata, :at)
+      at = at.iso8601(6) if at.is_a?(Time)
 
       recipients.each do |webhook|
         jobs.enqueue(
@@ -47,7 +49,7 @@ module Webhook
           arguments: { webhook_id: webhook.id, body: Delivery.envelope(event: handler.id, resource_id:, payload:) },
           webhook_id: webhook.id,
           # A bus event can be delivered twice: one job per webhook, event and occurrence.
-          unicity: [webhook.id, handler.id, resource_id, message.content.dig(:metadata, :at)].join(":"),
+          unicity: [webhook.id, handler.id, resource_id, at].join(":"),
           scheduled_at: Time.now
         )
       end

@@ -95,6 +95,7 @@ module Webhook
                       allowed_roles: %w[admin],
                       payload: ->(m) { { organization: { id: Handlers.resource_id(m) } } }
 
+      # Org owners receive these without read access to the account, so only its id is sent.
       Handlers.define "iam.organization.owner.added",
                       event: "iam:accounts:updated",
                       label: "Organization Owner Added",
@@ -102,7 +103,9 @@ module Webhook
                       allowed_roles: %w[admin org_owner],
                       match: ->(m) { Iam.added_orgs(m).any? },
                       check: ->(m) { Handlers.org(*Iam.added_orgs(m)) },
-                      payload: ->(m) { { **Iam.account(m), organization_ids: Iam.added_orgs(m) } }
+                      payload: ->(m) {
+                        { account: { id: Handlers.resource_id(m) }, organization_ids: Iam.added_orgs(m) }
+                      }
 
       Handlers.define "iam.organization.owner.removed",
                       event: "iam:accounts:updated",
@@ -111,7 +114,9 @@ module Webhook
                       allowed_roles: %w[admin org_owner],
                       match: ->(m) { Iam.removed_orgs(m).any? },
                       check: ->(m) { Handlers.org(*Iam.removed_orgs(m)) },
-                      payload: ->(m) { { **Iam.account(m), organization_ids: Iam.removed_orgs(m) } }
+                      payload: ->(m) {
+                        { account: { id: Handlers.resource_id(m) }, organization_ids: Iam.removed_orgs(m) }
+                      }
     end
   end
 end
