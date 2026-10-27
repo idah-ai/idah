@@ -37,6 +37,10 @@ export const resources = [
   /** SYNC */
   "sync:jobs",
   "sync:exports",
+
+  /** NOTIFICATION */
+  "notification:webhooks",
+  "notification:webhook:calls",
 ] as const;
 
 export type Resource = (typeof resources)[number];
