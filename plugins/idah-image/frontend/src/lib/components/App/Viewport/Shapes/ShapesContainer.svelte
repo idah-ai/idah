@@ -968,9 +968,11 @@
           if (x > sx) newList.push({ type: "bbox", points: [sx, Math.max(sy, y), x - sx, Math.min(sy2, ey2) - Math.max(sy, y)] });
           if (ex2 < sx2) newList.push({ type: "bbox", points: [ex2, Math.max(sy, y), sx2 - ex2, Math.min(sy2, ey2) - Math.max(sy, y)] });
         }
-        ui.coverageMaskShapes = newList;
+        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
       } else {
-        ui.coverageMaskShapes = [...ui.coverageMaskShapes, { type: "bbox", points: [x, y, w, h] }];
+        const before = [...ui.coverageMaskShapes];
+        const after = [...before, { type: "bbox", points: [x, y, w, h] }];
+        getDriver().command.call("coverage-mask-draw", { before, after });
       }
       return;
     }

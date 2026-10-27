@@ -51,38 +51,60 @@
   let canRedo = $state(driver.command.canRedo());
 
   // ── Coverage mask state ───────────────────────────────────────────
-  // NOTE: driver.mode is a plain getter (not Svelte $state), so a $derived
-  // cannot track it. coverageMaskMode is a $state updated in cycleCoverageMaskMode
-  // (before the command call, for instant visuals) and in the onModeChange
-  // handler below (so Escape/tool switches reset the button).
+  // Tracks current coverage mask mode. Each tool (add/remove) is a toggle:
+  // click once to activate, click again or Escape to deactivate.
   let coverageMaskMode = $state<"off" | "add" | "remove">("off");
-  const COVERAGE_MASK_MODES = new Set(["idah-video:coverage-mask-bbox", "idah-image:coverage-mask-bbox"]);
+  function isCoverageMaskMode(mode: string): boolean {
+    return mode.includes("coverage-mask");
+  }
 
-  function cycleCoverageMaskMode() {
-    if (coverageMaskMode === "off") {
-      coverageMaskMode = "add";
-      driver.command.call("coverage-mask-set-mode", { mode: "add" });
-    } else if (coverageMaskMode === "add") {
-      coverageMaskMode = "remove";
-      driver.command.call("coverage-mask-set-mode", { mode: "remove" });
-    } else {
+  function isCoverageMaskAdd(mode: string): boolean {
+    return mode.endsWith("-bbox");
+  }
+
+  function isCoverageMaskRemove(mode: string): boolean {
+    return mode.includes("-remove");
+  }
+
+  function enterCoverageAdd() {
+    if (coverageMaskMode === "add") {
       coverageMaskMode = "off";
       driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    } else {
+      coverageMaskMode = "add";
+      driver.command.call("coverage-mask-set-mode", { mode: "add" });
     }
+  }
+
+  function enterCoverageRemove() {
+    if (coverageMaskMode === "remove") {
+      coverageMaskMode = "off";
+      driver.command.call("coverage-mask-set-mode", { mode: "off" });
+    } else {
+      coverageMaskMode = "remove";
+      driver.command.call("coverage-mask-set-mode", { mode: "remove" });
+    }
+  }
+
+  function clearCoverageMasks() {
+    coverageMaskMode = "off";
+    driver.command.call("coverage-mask-clear");
+    driver.command.call("coverage-mask-set-mode", { mode: "off" });
   }
 
   function refreshToolbar() {
     // Keep the toolbar looking at editor/review mode even while the viewport
     // is in a mask mode — mask is a sub-mode, not a separate toolbar context.
-    currentMode = COVERAGE_MASK_MODES.has(driver.mode) ? "editor" : driver.mode;
+    currentMode = isCoverageMaskMode(driver.mode) ? "editor" : driver.mode;
     canUndo = driver.command.canUndo();
     canRedo = driver.command.canRedo();
   }
 
   driver.onModeChange((event) => {
     refreshToolbar();
-    // Leaving mask mode (editor/review): reset the button AND deactivate the plugin.
-    if (!COVERAGE_MASK_MODES.has(event.newValue)) {
+    if (isCoverageMaskMode(event.newValue)) {
+      coverageMaskMode = isCoverageMaskRemove(event.newValue) ? "remove" : "add";
+    } else {
       coverageMaskMode = "off";
       driver.command.call("coverage-mask-set-mode", { mode: "off" });
     }
@@ -264,30 +286,39 @@
 
   <Separator orientation="vertical"></Separator>
 
-  <!-- Coverage mask tool — check icon, no label -->
-  <TooltipProvider>
-    <Tooltip delayDuration={100}>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          class="duration-0"
-          style={coverageMaskMode === "add"
-            ? "background-color:rgba(24,131,91,0.12)"
-            : coverageMaskMode === "remove"
-              ? "background-color:rgba(180,50,57,0.12)"
-              : ""}
-          onclick={cycleCoverageMaskMode}
-        >
-          <CheckCheckIcon
-            class="size-4"
-            style={coverageMaskMode === "add" ? "color:#18835b" : coverageMaskMode === "remove" ? "color:#b43239" : ""}
-          />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>
-        Done Area
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+  <!-- Coverage mask tool — dropdown with add/remove/clear -->
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="w-auto gap-0.5 px-1.5 duration-0"
+        style={coverageMaskMode === "add"
+          ? "background-color:rgba(24,131,91,0.12)"
+          : coverageMaskMode === "remove"
+            ? "background-color:rgba(180,50,57,0.12)"
+            : ""}
+      >
+        <CheckCheckIcon
+          class="size-4"
+          style={coverageMaskMode === "add" ? "color:#18835b" : coverageMaskMode === "remove" ? "color:#b43239" : ""}
+        />
+        <ChevronDownIcon class="size-3" />
+      </Button>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start" side="bottom">
+      <DropdownMenu.Item onclick={enterCoverageAdd}>
+          <CheckCheckIcon class="size-3" style="color:#18835b" />
+          Done Area — Add
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onclick={enterCoverageRemove}>
+        <CheckCheckIcon class="size-3" style="color:#b43239" />
+        Done Area — Remove
+      </DropdownMenu.Item>
+      <Separator />
+      <DropdownMenu.Item onclick={clearCoverageMasks}>
+        Remove All
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
 </div>

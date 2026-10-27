@@ -25,7 +25,7 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_MASK, "idah-image:coverage-mask-bbox"].includes(this.#mode);
+    return [IMAGE_POLYGON, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_MASK, "idah-image:coverage-mask-bbox", "idah-image:coverage-mask-bbox-remove"].includes(this.#mode);
   }
   get isEditorWorkspace() {
     return this.#mode === DEFAULT_MODE;
@@ -34,7 +34,7 @@ class Viewport {
     return this.#mode === REVIEW_MODE || this.#mode === NOTE_MODE;
   }
   get isCoverageMaskMode() {
-    return this.#mode === "idah-image:coverage-mask-bbox";
+    return this.#mode === "idah-image:coverage-mask-bbox" || this.#mode === "idah-image:coverage-mask-bbox-remove";
   }
 
   set mode(val: string) {
