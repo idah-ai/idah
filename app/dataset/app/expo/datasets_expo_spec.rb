@@ -97,8 +97,12 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
 
         it "rejects an invalid date before calling the service" do
           expect(service).not_to receive(action)
-          public_send(verb, path, { data: { type: Resource::Dataset::Datasets,
-                                           attributes: { delivery_date: "2030-02-30" } } })
+          public_send(
+            verb,
+            path,
+            { data: { type: Resource::Dataset::Datasets,
+                      attributes: { delivery_date: "2030-02-30" } } }
+          )
           expect(last_response.status).to eq(422)
         end
 
@@ -110,8 +114,12 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
               expect(record.attributes[:delivery_date]).to eq(date)
               Dataset::Record.new(dataset_record.fields.merge(delivery_date: date))
             end
-            public_send(verb, path, { data: { type: Resource::Dataset::Datasets,
-                                             attributes: { delivery_date: value } } })
+            public_send(
+              verb,
+              path,
+              { data: { type: Resource::Dataset::Datasets,
+                        attributes: { delivery_date: value } } }
+            )
             expect(last_response.status).to eq(verb == :post ? 201 : 200)
             expect(JSON.parse(last_response.body).dig("data", "attributes", "delivery_date")).to eq(value)
           end

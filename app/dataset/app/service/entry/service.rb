@@ -334,9 +334,9 @@ module Entry
       value = attributes[:delivery_date]
       return if value.nil? || value == original
 
-      if value < Date.today
-        raise Verse::Error::ValidationFailed, "Delivery Date must be today or later"
-      end
+      return unless value < Date.today
+
+      raise Verse::Error::ValidationFailed, "Delivery Date must be today or later"
     end
   end
 end

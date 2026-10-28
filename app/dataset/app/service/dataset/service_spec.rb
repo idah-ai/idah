@@ -38,11 +38,13 @@ RSpec.describe Dataset::Service, database: true do
 
     it "rejects an explicitly selected past date on creation" do
       allow(subject).to receive(:authorize_creation).and_return(true)
-      record = deserialize(data: {
-        type: Resource::Dataset::Datasets,
-        attributes: attributes.merge(delivery_date: Date.today - 1),
-        relationships: { project: { data: { type: Resource::Dataset::Projects, id: project_id } } }
-      })
+      record = deserialize(
+        data: {
+          type: Resource::Dataset::Datasets,
+          attributes: attributes.merge(delivery_date: Date.today - 1),
+          relationships: { project: { data: { type: Resource::Dataset::Projects, id: project_id } } }
+        }
+      )
       expect { subject.create(record) }.to raise_error(Verse::Error::ValidationFailed)
     end
 

@@ -77,8 +77,10 @@ RSpec.describe Entry::Service, database: true do
 
     it "rejects a changed past date without persisting unrelated fields" do
       created = entry
-      record = deserialize(data: { type: Resource::Dataset::Entries, id: created.id,
-                                  attributes: { name: "must not persist", delivery_date: Date.today - 1 } })
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: created.id,
+                attributes: { name: "must not persist", delivery_date: Date.today - 1 } }
+      )
       expect { subject.update(record) }.to raise_error(Verse::Error::ValidationFailed)
       expect(repo.find!(created.id).name).to eq(created.name)
     end
@@ -86,8 +88,10 @@ RSpec.describe Entry::Service, database: true do
     it "allows an unchanged past date and unrelated updates" do
       dataset_repo.update!(dataset_id, { delivery_date: Date.today - 10 })
       created = entry
-      record = deserialize(data: { type: Resource::Dataset::Entries, id: created.id,
-                                  attributes: { name: "renamed", delivery_date: created.delivery_date } })
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: created.id,
+                attributes: { name: "renamed", delivery_date: created.delivery_date } }
+      )
       expect(subject.update(record).name).to eq("renamed")
     end
 
@@ -169,7 +173,10 @@ RSpec.describe Entry::Service, database: true do
       dataset_repo.update!(dataset_id, { delivery_date: date })
       created = entry
       Dataset::Service.new(auth_context).update(
-        deserialize(data: { type: Resource::Dataset::Datasets, id: dataset_id, attributes: { delivery_date: Date.today + 1 } })
+        deserialize(
+          data: { type: Resource::Dataset::Datasets, id: dataset_id,
+                  attributes: { delivery_date: Date.today + 1 } }
+        )
       )
       expect(repo.find!(created.id).delivery_date).to eq(date)
     end
@@ -177,14 +184,24 @@ RSpec.describe Entry::Service, database: true do
     it "clears a deadline without restoring the Dataset date" do
       dataset_repo.update!(dataset_id, { delivery_date: Date.today + 10 })
       created = entry
-      result = subject.update(deserialize(data: { type: Resource::Dataset::Entries, id: created.id, attributes: { delivery_date: nil } }))
+      result = subject.update(
+        deserialize(
+          data: { type: Resource::Dataset::Entries, id: created.id,
+                  attributes: { delivery_date: nil } }
+        )
+      )
       expect(result.delivery_date).to be_nil
     end
 
     it "leaves a null deadline unchanged on unrelated updates" do
       created = entry
       dataset_repo.update!(dataset_id, { delivery_date: Date.today + 10 })
-      result = subject.update(deserialize(data: { type: Resource::Dataset::Entries, id: created.id, attributes: { name: "renamed" } }))
+      result = subject.update(
+        deserialize(
+          data: { type: Resource::Dataset::Entries, id: created.id,
+                  attributes: { name: "renamed" } }
+        )
+      )
       expect(result.delivery_date).to be_nil
     end
   end
