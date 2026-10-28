@@ -8,6 +8,7 @@
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Checkbox } from "@/components/ui/checkbox";
   import { DialogClose, DialogDescription, DialogTitle } from "@/components/ui/dialog";
   import Text from "@/components/ui/text/Text.svelte";
 
@@ -33,11 +34,21 @@
   interface CreateEntryFormModalProps extends FormModalBaseProps {
     modality: string;
     canEditDeliveryDate: boolean;
+    datasetDeliveryDate: string | null;
   }
-  let { action, title, open = $bindable(), modality, canEditDeliveryDate }: CreateEntryFormModalProps = $props();
+  let {
+    action,
+    title,
+    open = $bindable(),
+    modality,
+    canEditDeliveryDate,
+    datasetDeliveryDate,
+  }: CreateEntryFormModalProps = $props();
 
+  let sameAsDatasetDeliveryDate = $state(true);
   let selectedDeliveryDate = $state<string | null>(null);
   let dateErrors = $state<string[]>([]);
+  let displayedDeliveryDate = $derived(sameAsDatasetDeliveryDate ? datasetDeliveryDate : selectedDeliveryDate);
 
   // Types
   interface View {
@@ -115,6 +126,7 @@
 
   // Functions
   function resetForm(): void {
+    sameAsDatasetDeliveryDate = true;
     selectedDeliveryDate = null;
     dateErrors = [];
     uploading = false;
@@ -212,7 +224,7 @@
                 resource: uploadedMedia.resource,
                 name: uploadedMedia.filename,
                 status: "pending",
-                ...(canEditDeliveryDate && selectedDeliveryDate ? { delivery_date: selectedDeliveryDate } : {}),
+                ...(canEditDeliveryDate && !sameAsDatasetDeliveryDate ? { delivery_date: selectedDeliveryDate } : {}),
               },
               relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
             },
@@ -272,7 +284,7 @@
     uploading = true;
     dateErrors = [];
     try {
-      if (selectedDeliveryDate && canEditDeliveryDate) {
+      if (canEditDeliveryDate && !sameAsDatasetDeliveryDate && selectedDeliveryDate) {
         const result = deliveryDateChangeSchema.safeParse({
           delivery_date: selectedDeliveryDate,
         });
@@ -329,14 +341,15 @@
 
     {#if canEditDeliveryDate}
       <section class="mt-4 flex flex-col gap-2">
-        {#key selectedDeliveryDate}
+        {#key displayedDeliveryDate}
           <DatePickerField
             name="upload/delivery_date"
             label="Delivery Date"
             placeholder="Select delivery date"
-            value={selectedDeliveryDate ? parseDate(selectedDeliveryDate).toDate(getLocalTimeZone()) : null}
+            value={displayedDeliveryDate ? parseDate(displayedDeliveryDate).toDate(getLocalTimeZone()) : null}
             minDate={today(getLocalTimeZone())}
-            disabled={uploading}
+            disabled={uploading || sameAsDatasetDeliveryDate}
+            clearable={!sameAsDatasetDeliveryDate}
             errors={dateErrors}
             onDateSelected={(date) => {
               selectedDeliveryDate = date;
@@ -344,16 +357,19 @@
             }}
           />
         {/key}
-        {#if selectedDeliveryDate}
-          <Button
-            variant="outline"
+        <div class="flex items-center gap-2">
+          <Checkbox
+            id="upload-same-as-dataset-delivery-date"
+            checked={sameAsDatasetDeliveryDate}
             disabled={uploading}
-            onclick={() => {
+            onCheckedChange={(checked) => {
+              sameAsDatasetDeliveryDate = checked;
               selectedDeliveryDate = null;
               dateErrors = [];
-            }}>Use Dataset default</Button
-          >
-        {/if}
+            }}
+          />
+          <Text size="sm" class="text-muted-foreground">Same as dataset delivery date</Text>
+        </div>
       </section>
     {/if}
 

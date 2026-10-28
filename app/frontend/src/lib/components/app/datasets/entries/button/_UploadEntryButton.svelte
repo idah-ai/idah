@@ -43,6 +43,7 @@
     title="Entry"
     action="create"
     modality={dataset.modality}
+    datasetDeliveryDate={dataset.delivery_date}
     canEditDeliveryDate={canUpdateEntry}
     bind:open
   />

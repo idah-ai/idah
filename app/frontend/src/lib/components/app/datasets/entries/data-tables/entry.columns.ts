@@ -87,7 +87,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     clickable: false,
     sortable: true,
     filterable: true,
-     filterOptions: {
+    filterOptions: {
       filterKey: "delivery_date",
       filterBy: "date-range",
       filterOperation: "eq",
