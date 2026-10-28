@@ -38,9 +38,7 @@
             onValueChange(field.id, next);
           }}
           showTitle={false}
-          placeholder={untouchedMixed
-            ? `Mixed${field.required ? " · Required" : ""} — unchanged until edited`
-            : undefined}
+          placeholder={untouchedMixed ? "Mixed — leave unchanged" : undefined}
           {disabled}
         />
 

@@ -45,7 +45,7 @@
       {options
         ?.filter(({ id }) => value?.includes(id))
         .map((o) => o.label)
-        .join(", ") || "Select property"}
+        .join(", ") || placeholder || "Select property"}
     </Select.Trigger>
     <Select.Content>
       <Select.Group>

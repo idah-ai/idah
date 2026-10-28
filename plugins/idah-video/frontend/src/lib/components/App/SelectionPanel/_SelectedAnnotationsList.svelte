@@ -25,6 +25,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { truncateMiddle } from "$lib/utils/string";
   import {
     categoryCounts,
     prepareBulkCategory,
@@ -210,7 +211,9 @@
     <strong>Selected Annotations</strong>
     <div class="flex flex-wrap items-center gap-1.5">
       {#each [...counts] as [id, { count, label }] (id)}
-        <Badge variant="outline" class="bg-accent">{count} {label}</Badge>
+        <Badge variant="outline" class="bg-accent" title={label} aria-label={`${count} ${label}`}>
+          {count} {truncateMiddle(label)}
+        </Badge>
       {/each}
     </div>
   </div>

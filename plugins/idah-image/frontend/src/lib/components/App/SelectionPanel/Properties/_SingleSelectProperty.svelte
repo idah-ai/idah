@@ -42,7 +42,7 @@
       class="data-placeholder:text-secondary-foreground bg-background w-full text-xs"
       {placeholder}
     >
-      {options?.find(({ id }) => id == value)?.label || "Select property"}
+      {options?.find(({ id }) => id == value)?.label || placeholder || "Select property"}
     </Select.Trigger>
     <Select.Content>
       <Select.Group>

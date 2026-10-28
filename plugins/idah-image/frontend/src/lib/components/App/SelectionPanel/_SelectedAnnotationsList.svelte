@@ -24,6 +24,7 @@
   import { isEditable } from "$lib/state/editor.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { truncateMiddle } from "$lib/utils/string";
   import { categoryCounts, hasMaskCategoryCollision, prepareBulkCategory, prepareBulkProperties, sharedCategories, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
 
   import {  IMAGE_MASK } from "$lib/types";
@@ -161,7 +162,9 @@
     <strong>Selected Annotations</strong>
     <div class="flex flex-wrap items-center gap-1.5">
       {#each [...counts] as [id, { count, label }] (id)}
-        <Badge variant="outline" class="bg-accent">{count} {label}</Badge>
+        <Badge variant="outline" class="bg-accent" title={label} aria-label={`${count} ${label}`}>
+          {count} {truncateMiddle(label)}
+        </Badge>
       {/each}
     </div>
   </div>
