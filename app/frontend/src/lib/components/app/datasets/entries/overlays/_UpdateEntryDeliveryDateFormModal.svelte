@@ -13,6 +13,7 @@
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors } from "@/utils/validate";
 
+  import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
@@ -85,14 +86,11 @@
   }
 </script>
 
-<FormModal
-  action="update"
-  title="Entry Delivery Date"
-  bind:open
-  loading={submitting}
-  disabled={!changed}
-  onConfirm={submit}
->
+<FormModal action="update" bind:open loading={submitting} disabled={!changed} onConfirm={submit}>
+  {#snippet modalTitle()}
+    <DialogTitle>Set Entry Delivery Date</DialogTitle>
+  {/snippet}
+
   {#key displayedDeliveryDate}
     <DatePickerField
       name="entry/delivery_date"
