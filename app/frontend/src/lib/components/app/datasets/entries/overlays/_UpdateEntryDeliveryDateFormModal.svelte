@@ -5,6 +5,8 @@
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import { Checkbox } from "@/components/ui/checkbox";
+  import { Item, ItemContent, ItemDescription } from "@/components/ui/item";
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import Text from "@/components/ui/text/Text.svelte";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -15,10 +17,12 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
   let {
-    entry,
+    entries,
+    onUpdated,
     open = $bindable(false),
   }: {
-    entry: EntryRecord;
+    entries: EntryRecord[];
+    onUpdated?: () => Promise<void>;
     open?: boolean;
   } = $props();
 
@@ -26,13 +30,15 @@
   let selectedDeliveryDate = $state<string | null>(null);
   let submitting = $state(false);
   let errors = $state<string[]>([]);
-  let datasetDeliveryDate = $derived(entry.dataset?.delivery_date ?? null);
+  let datasetDeliveryDate = $derived(entries[0]?.dataset?.delivery_date ?? null);
   let displayedDeliveryDate = $derived(sameAsDatasetDeliveryDate ? datasetDeliveryDate : selectedDeliveryDate);
-  let changed = $derived(selectedDeliveryDate !== (entry.delivery_date ?? null));
+  let changed = $derived(entries.some((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null)));
 
   onMount(() => {
-    selectedDeliveryDate = entry.delivery_date ?? null;
-    sameAsDatasetDeliveryDate = entry.delivery_date == null || entry.delivery_date === datasetDeliveryDate;
+    const entry = entries[0];
+    selectedDeliveryDate = entries.length === 1 ? (entry?.delivery_date ?? null) : datasetDeliveryDate;
+    sameAsDatasetDeliveryDate =
+      entries.length > 1 || entry?.delivery_date == null || entry.delivery_date === datasetDeliveryDate;
   });
 
   async function submit() {
@@ -40,23 +46,30 @@
     submitting = true;
     errors = [];
     try {
-      const result = deliveryDateChangeSchema.safeParse({
-        delivery_date: selectedDeliveryDate,
-        original_delivery_date: entry.delivery_date ?? null,
-      });
-      if (!result.success) {
-        errors = (getFieldErrors(result.error) as { delivery_date?: string[] }).delivery_date ?? [];
-        return;
+      const changedEntries = entries.filter((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null));
+      for (const entry of changedEntries) {
+        const result = deliveryDateChangeSchema.safeParse({
+          delivery_date: selectedDeliveryDate,
+          original_delivery_date: entry.delivery_date ?? null,
+        });
+        if (!result.success) {
+          errors = (getFieldErrors(result.error) as { delivery_date?: string[] }).delivery_date ?? [];
+          return;
+        }
       }
-      await entriesBackendDataSource.update(
-        entry.id,
-        {
-          attributes: { delivery_date: selectedDeliveryDate },
-        },
-        { showErrorToast: false },
-      );
-      $refetches.entries.list = new Date();
-      $refetches.entries.get = new Date();
+      try {
+        for (const entry of changedEntries) {
+          await entriesBackendDataSource.update(
+            entry.id,
+            { attributes: { delivery_date: selectedDeliveryDate } },
+            { showErrorToast: false },
+          );
+        }
+      } finally {
+        $refetches.entries.list = new Date();
+        $refetches.entries.get = new Date();
+      }
+      await onUpdated?.();
       showToast.success({ title: "Entry Delivery Date updated" });
       open = false;
     } catch (error) {
@@ -103,5 +116,17 @@
       }}
     />
     <Text size="sm" class="text-muted-foreground">Same as dataset delivery date</Text>
+  </div>
+  <div class="mt-4 flex flex-col gap-1">
+    <Text size="sm" weight="medium">{entries.length === 1 ? "Selected Entry" : "Selected Entries"}</Text>
+    <ScrollArea class="max-h-40">
+      {#each entries as entry (entry.id)}
+        <Item class="py-1">
+          <ItemContent>
+            <ItemDescription>{entry.name}</ItemDescription>
+          </ItemContent>
+        </Item>
+      {/each}
+    </ScrollArea>
   </div>
 </FormModal>

@@ -223,5 +223,5 @@
 {/if}
 
 {#if openDeliveryDate && entryRecord}
-  <UpdateEntryDeliveryDateFormModal entry={entryRecord} bind:open={openDeliveryDate} />
+  <UpdateEntryDeliveryDateFormModal entries={[entryRecord]} bind:open={openDeliveryDate} />
 {/if}

@@ -16,13 +16,21 @@
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
+  import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { pluralizeUnit } from "@/utils/unit";
 
-  import { ArrowDownAZIcon, ArrowDownZAIcon, ArrowUpDownIcon, ChevronsUpDownIcon, FunnelIcon } from "@lucide/svelte";
+  import {
+    ArrowDownAZIcon,
+    ArrowDownZAIcon,
+    ArrowUpDownIcon,
+    CalendarIcon,
+    ChevronsUpDownIcon,
+    FunnelIcon,
+  } from "@lucide/svelte";
 
   import type { ListViewController } from "@/components/app/data-view/list-view-controller.svelte";
   import type { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
@@ -46,6 +54,8 @@
   // Modal visibility - owned here
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
+  let openDeliveryDate = $state(false);
+  let selectedEntries = $derived(controller.response.data.filter((entry) => controller.selectedIds.includes(entry.id)));
   let openReopen = $state(false);
 
   const bulkActions = $derived(
@@ -175,6 +185,12 @@
 
           <DropdownMenuContent>
             <DropdownMenuGroup>
+              {#if canUpdateEntry}
+                <DropdownMenuItem onclick={() => (openDeliveryDate = true)}>
+                  <CalendarIcon class="mr-2 size-4" />
+                  Set Delivery Date
+                </DropdownMenuItem>
+              {/if}
               {#each bulkActions as { label, icon: Icon, action, disabled, hidden }, index (index)}
                 {#if !hidden}
                   <DropdownMenuItem {disabled} onclick={action}>
@@ -219,3 +235,14 @@
   }}
   bind:open={openReopen}
 />
+
+{#if canUpdateEntry && openDeliveryDate && selectedEntries.length > 0}
+  <UpdateEntryDeliveryDateFormModal
+    entries={selectedEntries}
+    bind:open={openDeliveryDate}
+    onUpdated={async () => {
+      controller.clearSelection();
+      await controller.fetch();
+    }}
+  />
+{/if}
