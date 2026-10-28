@@ -281,6 +281,10 @@
 
   async function submit(): Promise<void> {
     if (uploading) return;
+    if (canEditDeliveryDate && !sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
+      dateErrors = ["Select a Delivery Date or use the Dataset delivery date."];
+      return;
+    }
     uploading = true;
     dateErrors = [];
     try {
@@ -346,6 +350,7 @@
             name="upload/delivery_date"
             label="Delivery Date"
             placeholder="Select delivery date"
+            required={!sameAsDatasetDeliveryDate}
             value={displayedDeliveryDate ? parseDate(displayedDeliveryDate).toDate(getLocalTimeZone()) : null}
             minDate={today(getLocalTimeZone())}
             disabled={uploading || sameAsDatasetDeliveryDate}

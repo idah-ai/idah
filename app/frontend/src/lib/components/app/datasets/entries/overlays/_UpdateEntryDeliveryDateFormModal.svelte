@@ -42,7 +42,12 @@
   });
 
   async function submit() {
-    if (!changed || submitting) return;
+    if (submitting) return;
+    if (!sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
+      errors = ["Select a Delivery Date or use the Dataset delivery date."];
+      return;
+    }
+    if (!changed) return;
     submitting = true;
     errors = [];
     try {
@@ -92,7 +97,8 @@
     <DatePickerField
       name="entry/delivery_date"
       label="Delivery Date"
-      placeholder="Select delivery date (optional)"
+      placeholder="Select delivery date"
+      required={!sameAsDatasetDeliveryDate}
       value={displayedDeliveryDate ? parseDate(displayedDeliveryDate).toDate(getLocalTimeZone()) : null}
       minDate={today(getLocalTimeZone())}
       clearable={!sameAsDatasetDeliveryDate}
