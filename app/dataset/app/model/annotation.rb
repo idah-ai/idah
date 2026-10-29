@@ -88,6 +88,100 @@ module Annotation
       end
     end
 
+    # Write (upsert) or delete a single annotation_shape row: a Hash value
+    # upserts, nil deletes (idempotent — deleting a non-existent key succeeds
+    # silently). Publishes no event.
+    def write_shape(annotation_id, key, value)
+      raise Verse::Error::ValidationFailed, "key is required" if key.nil? || key.empty?
+
+      unless value.nil? || value.is_a?(Hash)
+        raise Verse::Error::ValidationFailed,
+              "value must be null (to delete) or a Hash (to upsert)"
+      end
+
+      write_shapes(annotation_id, [{ key:, value: }])
+    end
+
+    # Write (upsert) or delete several annotation_shape rows as one write:
+    # entries is [{ key: String, value: Hash | nil }]. Upserts rows with a
+    # Hash value, deletes rows with a nil value (idempotent for keys with no
+    # row). Locks the annotation row, so a concurrent soft-delete cannot slip
+    # between the service's guard and this write. Publishes no event.
+    def write_shapes(annotation_id, entries)
+      with_db_mode(:rw) do
+        transaction do
+          row = scoped(:update).where(id: annotation_id).for_update.first
+          raise Verse::Error::RecordNotFound, annotation_id unless row
+
+          if row[:deleted_at]
+            raise Verse::Error::ValidationFailed,
+                  "Cannot write shape to a deleted annotation"
+          end
+
+          keys = entries.map { |e| e[:key] }
+          existing = client do |db|
+            db[:annotation_shape].where(annotation_id:, key: keys).all
+          end
+          existing_by_key = existing.each_with_object({}) do |shape, out|
+            out[shape[:key].to_s] = shape[:value]
+          end
+
+          old_shapes = {}
+          new_shapes = {}
+
+          entries.each do |entry|
+            key = entry[:key].to_s
+            value = entry[:value]
+
+            old_shapes[key] = existing_by_key[key] if existing_by_key.key?(key)
+            new_shapes[key] = value unless value.nil?
+          end
+
+          # Build the change list as if every key were part of shape_args, so
+          # paths are shape_args.<key>... — history replay expects tiles under
+          # shape_args. A new key gives +, a nil value on an existing key gives
+          # -, a nil value on a key with no row gives nothing, and changed
+          # values recurse.
+          changes = AnnotationDiff.call(
+            { shape_args: old_shapes },
+            { shape_args: new_shapes }
+          )
+
+          return true if changes.empty?
+
+          now = Time.now.utc
+
+          client do |db|
+            entries.each do |entry|
+              key = entry[:key]
+              value = entry[:value]
+
+              if value.nil?
+                db[:annotation_shape].where(annotation_id:, key:).delete
+              else
+                db[:annotation_shape]
+                  .insert_conflict(
+                    target: %i[annotation_id key],
+                    update: { value: ::Sequel.lit("EXCLUDED.value") }
+                  )
+                  .insert(annotation_id:, key:, value: ::Sequel.pg_jsonb(value))
+              end
+            end
+          end
+
+          # Touch the parent annotation's updated_at so the IDB sync mechanism
+          # (which uses updated_at__gt) picks up shape changes on reconnect.
+          update_impl(
+            annotation_id,
+            { updated_at: now },
+            scope: scoped(:update)
+          )
+
+          true
+        end
+      end
+    end
+
     # Actions                       | Roles
     # read, create, update, delete  | project_owner, annotator, reviewer
     #

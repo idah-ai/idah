@@ -169,22 +169,12 @@ module Annotation
     # ─── Shape child-record operations ───────────────────────────────────
 
     #
-    # Write (upsert) or delete a single annotation_shape row.
-    #
-    # +value+ must be a Hash (upsert) or nil (delete).  A null value is
-    # idempotent — deleting a non-existent key succeeds silently.
-    #
-    # Permission and entry-completion guards are enforced uniformly
-    # regardless of direction (write or delete).
+    # Write (upsert) or delete annotation_shape rows. Key/value validation now
+    # lives in the repository, which also owns the SQL. The service keeps the
+    # permission and entry-completion guards, enforced uniformly regardless of
+    # direction (write or delete).
     #
     def write_shape(annotation_id, key, value)
-      raise Verse::Error::ValidationFailed, "key is required" if key.nil? || key.empty?
-
-      unless value.nil? || value.is_a?(Hash)
-        raise Verse::Error::ValidationFailed,
-              "value must be null (to delete) or a Hash (to upsert)"
-      end
-
       annotations.transaction do
         annotation = annotations.find!(annotation_id, included: [:entry])
 
@@ -198,30 +188,7 @@ module Annotation
                 "Cannot write shape to a deleted annotation"
         end
 
-        now = Time.now.utc
-
-        shape_table = nil
-        annotations.client { |db| shape_table = db.from(:annotation_shape) }
-
-        if value.nil?
-          # Idempotent delete: succeeds even if the row doesn't exist.
-          shape_table.where(annotation_id:, key:).delete
-        else
-          shape_table
-            .insert_conflict(
-              target: %i[annotation_id key],
-              update: { value: ::Sequel.lit("EXCLUDED.value") }
-            )
-            .insert(annotation_id:, key:, value: ::Sequel.pg_jsonb(value))
-        end
-
-        # Touch the parent annotation's updated_at so the IDB sync mechanism
-        # (which uses updated_at__gt) picks up shape changes on reconnect.
-        annotations.client do |db|
-          db[:annotations]
-            .where(id: annotation_id)
-            .update(updated_at: now)
-        end
+        annotations.write_shape(annotation_id, key, value)
       end
     end
 
