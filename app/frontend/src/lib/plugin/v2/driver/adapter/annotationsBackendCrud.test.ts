@@ -7,8 +7,12 @@ vi.mock("@/data/model/dataset/annotations/record", () => ({ annotationsBackendDa
 import { AnnotationsDriverAdapter } from "./annotationsBackendCrud";
 
 const record = (id: string) => ({
-  id, shape_type: "idah-video:bounding-box", shape_args: { start: 0, end: 1 },
-  category: "vehicle", properties: {}, metadata: { group_id: "track-7" },
+  id,
+  shape_type: "idah-video:bounding-box",
+  shape_args: { start: 0, end: 1 },
+  category: "vehicle",
+  properties: {},
+  metadata: { group_id: "track-7" },
 });
 
 describe("AnnotationsDriverAdapter.fetch", () => {
