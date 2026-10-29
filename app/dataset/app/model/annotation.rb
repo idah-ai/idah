@@ -15,8 +15,13 @@ module Annotation
     field :properties, type: Hash
     field :metadata, type: Hash
 
-    field :deleted_at, type: Time
-    field :deleted_by_email, type: String
+    # Soft-delete fields. Read-only over the API: only `soft_delete`, `restore`
+    # and `create` (when duplicating a soft-deleted annotation) set them; they
+    # are still returned by the API.
+    field :deleted_at, type: Time, readonly: true
+    field :deleted_by_email, type: String, readonly: true
+
+    field :version, type: Integer, readonly: true
 
     field :created_by_email, type: String, readonly: true
     field :created_at, type: Time, readonly: true
@@ -69,6 +74,17 @@ module Annotation
         end
 
         scope.as_user? { user_project_scoped_query(action) }
+      end
+    end
+
+    # New annotations always start at version 1, whatever `attributes` carries
+    # (duplication in `Entry::Service#duplicate_entries` copies `annotation.fields`,
+    # which includes the source's `version`).
+    def create(attributes)
+      with_db_mode(:rw) do
+        transaction do
+          super(attributes.merge(version: 1))
+        end
       end
     end
 
