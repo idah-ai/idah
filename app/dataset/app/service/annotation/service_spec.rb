@@ -334,6 +334,45 @@ RSpec.describe Annotation::Service, database: true do
         expect(raw).not_to have_key("tile-0x0")
       end
 
+      it "drops a shape key that already sits in the column on its next update" do
+        annotation_id = repo.create(attributes)
+
+        # Simulate a tile key that leaked into the column through the old RPC
+        # update path, where reads showed the annotation_shape value.
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "OLD" })
+        leaked_args = attributes[:shape_args].merge("tile-0x0" => { "rle" => "OLD" })
+        subject.annotations.client do |db|
+          db[:annotations].where(id: annotation_id)
+                          .update(shape_args: Sequel.pg_jsonb(leaked_args))
+        end
+
+        record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                shape_args: {
+                  x: 10, y: 20, width: 50, height: 40,
+                  "tile-0x0" => { "rle" => "OLD" }
+                }
+              }
+            }
+          }
+        )
+
+        subject.update(record)
+
+        raw_shape_args = nil
+        subject.annotations.client do |db|
+          raw_shape_args = db[:annotations].where(id: annotation_id).get(:shape_args)
+        end
+        raw = raw_shape_args.respond_to?(:to_h) ? raw_shape_args.to_h : raw_shape_args
+
+        expect(raw).not_to have_key("tile-0x0")
+        expect(raw["width"]).to eq(50)
+      end
+
       it "works normally for a non-mask annotation (no shape rows at all)" do
         annotation_id = repo.create(attributes)
 
@@ -355,9 +394,50 @@ RSpec.describe Annotation::Service, database: true do
         expect(updated_annotation.properties).to eq({ label: "dog" })
         expect(updated_annotation.shape_args).to include(x: 10, y: 20)
       end
+
+      it "ignores deleted_at and deleted_by_email (read-only) and never writes version" do
+        annotation_id = repo.create(attributes)
+        before = repo.client { |db| db[:annotations].where(id: annotation_id).first }
+
+        record = deserialize(
+          {
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: {
+                deleted_at: Time.now.utc.iso8601,
+                deleted_by_email: "attacker@example.com",
+                version: 99,
+              }
+            }
+          }
+        )
+
+        subject.update(record)
+
+        after = repo.client { |db| db[:annotations].where(id: annotation_id).first }
+        expect(after[:deleted_at]).to eq(before[:deleted_at])
+        expect(after[:deleted_by_email]).to eq(before[:deleted_by_email])
+        expect(after[:version]).to eq(1)
+      end
     end
 
     describe "#update_attr" do
+      def create_annotation(overrides = {})
+        repo.create(attributes.merge(overrides))
+      end
+
+      def other_entry_id(status: "pending", assigned_to_id: 1)
+        entry_repo.create(
+          priority: 1,
+          wf_step: "start",
+          status:,
+          assigned_to_id:,
+          project_id:,
+          dataset_id:
+        )
+      end
+
       it "raises error when annotation belongs to a completed entry" do
         completed_entry_id = entry_repo.create(
           priority: 1,
@@ -373,6 +453,41 @@ RSpec.describe Annotation::Service, database: true do
         expect {
           subject.update_attr(annotation_id, { properties: { label: "dog" } })
         }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
+      end
+
+      it "ignores a different entry_id (read-only field), like JSON:API update does" do
+        annotation_id = create_annotation
+        other = other_entry_id
+
+        subject.update_attr(annotation_id, { properties: { label: "dog" }, entry_id: other })
+
+        updated = repo.find!(annotation_id)
+        expect(updated.entry_id).to eq(entry_id)
+        expect(updated.properties).to eq({ label: "dog" })
+      end
+
+      it "is a no-op when only read-only fields are sent" do
+        annotation_id = create_annotation
+        before = repo.client { |db| db[:annotations].where(id: annotation_id).first }
+
+        subject.update_attr(annotation_id, { entry_id: other_entry_id })
+
+        after = repo.client { |db| db[:annotations].where(id: annotation_id).first }
+        expect(after).to eq(before)
+      end
+
+      it "rejects a nil or blank category, like JSON:API update does" do
+        annotation_id = create_annotation
+
+        expect {
+          subject.update_attr(annotation_id, { category: nil })
+        }.to raise_error(Verse::Error::ValidationFailed, /category is required to update an annotation/)
+
+        expect {
+          subject.update_attr(annotation_id, { category: "   " })
+        }.to raise_error(Verse::Error::ValidationFailed, /category is required to update an annotation/)
+
+        expect(repo.find!(annotation_id).category).to eq("cat")
       end
     end
 

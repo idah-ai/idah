@@ -88,6 +88,44 @@ module Annotation
       end
     end
 
+    # Read-only fields an op may still write. Only soft_delete and restore pass
+    # these ops.
+    OP_WRITABLE_FIELDS = {
+      deleted: %i[deleted_at deleted_by_email],
+      restored: %i[deleted_at deleted_by_email],
+    }.freeze
+
+    # Update an annotation. Enforces the fields this op may write, rejects a
+    # blank category, and keeps `annotation_shape` keys out of the `shape_args`
+    # column — the rules JSON:API update and RPC update now share, because they
+    # live below both entry points.
+    #
+    # `op` selects which read-only fields the write may still touch (the
+    # soft_delete / restore ops); it is not passed to `super`, so both paths
+    # publish the same `updated` event. `scope` keeps the base-method default
+    # (`scoped(:update)`) so callers such as `update!` pass one.
+    def update(id, attributes, scope: scoped(:update), op: :updated) # rubocop:disable Naming/MethodParameterName
+      with_db_mode(:rw) do
+        transaction do
+          allowed = OP_WRITABLE_FIELDS.fetch(op, [])
+          attributes = attributes.reject do |key, _|
+            field = Annotation::Record.fields[key.to_sym]
+            key.to_sym == :id || field.nil? || (field[:readonly] && !allowed.include?(key.to_sym))
+          end
+
+          if attributes.key?(:category) &&
+             (attributes[:category].nil? || attributes[:category].to_s.strip.empty?)
+            raise Verse::Error::ValidationFailed,
+                  "category is required to update an annotation"
+          end
+
+          strip_shape_store_keys(id, attributes)
+
+          super(id, attributes, scope:)
+        end
+      end
+    end
+
     # Write (upsert) or delete a single annotation_shape row: a Hash value
     # upserts, nil deletes (idempotent — deleting a non-existent key succeeds
     # silently). Publishes no event.
@@ -180,6 +218,28 @@ module Annotation
           true
         end
       end
+    end
+
+    private
+
+    # Remove keys from `attributes[:shape_args]` that exist in annotation_shape
+    # for this annotation — tile keys must live only in the child table, never
+    # in the parent's jsonb column. Keys that already sit in the column (sent
+    # by the editor through RPC update before this change) are dropped on the
+    # next write, with no history entry, since reads already show the
+    # annotation_shape values; the live tile values are unaffected.
+    def strip_shape_store_keys(id, attributes)
+      return unless attributes[:shape_args].is_a?(Hash)
+
+      shape_keys = client do |db|
+        db[:annotation_shape]
+          .where(annotation_id: id)
+          .select_map(:key)
+          .map(&:to_s)
+      end
+      return if shape_keys.empty?
+
+      attributes[:shape_args] = attributes[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
     end
 
     # Actions                       | Roles

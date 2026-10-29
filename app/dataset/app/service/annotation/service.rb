@@ -100,29 +100,7 @@ module Annotation
 
         check_entry_not_completed!(annotation.entry, :update)
 
-        # Strip any keys from dimensions that exist in annotation_shape
-        # (guards against tile keys being persisted into the parent
-        #  annotations.dimensions jsonb column)
-        attrs = record.attributes
-        if attrs[:shape_args].is_a?(Hash)
-          annotations.client do |db|
-            shape_keys = db[:annotation_shape]
-                         .where(annotation_id: record.id)
-                         .select_map(:key)
-                         .map(&:to_s)
-            unless shape_keys.empty?
-              attrs[:shape_args] = attrs[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
-            end
-          end
-        end
-
-        # Reject attempts to set category to nil/blank the same way create does.
-        if attrs.key?(:category) && (attrs[:category].nil? || attrs[:category].to_s.strip.empty?)
-          raise Verse::Error::ValidationFailed,
-                "category is required to update an annotation"
-        end
-
-        annotations.update!(record.id, attrs)
+        annotations.update!(record.id, record.attributes)
         annotations.find!(record.id)
       end
     end
@@ -144,12 +122,15 @@ module Annotation
 
         check_entry_not_completed!(annotation.entry, :delete)
 
-        annotations.update!(
+        # `deleted_at` / `deleted_by_email` are read-only on the record, so the
+        # op must allow them. Commit 5 moves this into `soft_delete`.
+        annotations.update(
           id,
           {
             deleted_at: Time.now.utc,
             deleted_by_email: auth_context.metadata[:email],
-          }
+          },
+          op: :deleted
         )
         annotations.find!(id) # return the tombstoned record, not nil
       end
@@ -159,7 +140,7 @@ module Annotation
       annotations.transaction do
         annotation = annotations.find!(id, included: [:entry])
         check_entry_not_completed!(annotation.entry, :update)
-        annotations.update!(id, { deleted_at: nil, deleted_by_email: nil })
+        annotations.update(id, { deleted_at: nil, deleted_by_email: nil }, op: :restored)
         record = annotations.find!(id)
         merge_annotation_shapes([record])
         record
