@@ -122,12 +122,12 @@
     <Text size="sm" class="text-muted-foreground">Same as dataset delivery date</Text>
   </div>
   <div class="mt-4 flex flex-col gap-1">
-    <Text size="sm" weight="medium">{entries.length === 1 ? "Selected Entry" : "Selected Entries"}</Text>
+    <Text size="sm" weight="medium">Selected entries</Text>
     <ScrollArea class="max-h-40">
       {#each entries as entry (entry.id)}
         <Item class="py-1">
           <ItemContent>
-            <ItemDescription>{entry.name}</ItemDescription>
+            <ItemDescription class="text-foreground">{entry.name}</ItemDescription>
           </ItemContent>
         </Item>
       {/each}

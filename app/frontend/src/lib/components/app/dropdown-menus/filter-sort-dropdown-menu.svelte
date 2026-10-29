@@ -508,7 +508,7 @@
       {#if sortable}
         <CommandGroup heading="Sort">
           {#each sortOptionItems as { label, value, icon: Icon, onSelect } (value)}
-            <CommandItem disabled={sort.includes(value)} onclick={onSelect}>
+            <CommandItem disabled={value === "none" ? !isSorting : sort.includes(value)} onclick={onSelect}>
               <Icon class="size-4"></Icon>
               {label}
             </CommandItem>
