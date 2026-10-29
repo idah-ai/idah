@@ -119,94 +119,62 @@ RSpec.describe EntryStats::Service, database: true do
     end
 
     let!(:ds_id) do
-      # Override the shared dataset with one that has known configured categories
       dataset_repo.update!(dataset_id, { labeling_configuration: config })
       dataset_id
     end
 
     before do
-      # Simulate a previous recompute that found 1 orphan annotation
       stat_repo.bulk_insert(
         entry_id,
         { "orphan_category.count" => "1" }
       )
     end
 
-    it "decrements orphan count when an orphaned category is fixed to a valid one" do
+    it "recomputes when entry has existing orphans" do
       subject.recompute_from_annotation(
         entry_id: entry_id,
         dataset_id: ds_id,
-        old_category: "cat",
-        new_category: "cat"
-      )
-
-      orphan_stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      expect(orphan_stat.value).to eq("1") # no change (old == new → early return)
-    end
-
-    it "skips when old_category equals new_category" do
-      original = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first.value
-
-      subject.recompute_from_annotation(
-        entry_id: entry_id,
-        dataset_id: ds_id,
-        old_category: "cat",
-        new_category: "cat"
-      )
-
-      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      expect(stat.value).to eq(original)
-    end
-
-    it "does not decrement when there is no orphan stat" do
-      stat_repo.delete_by_entry_id(entry_id)
-
-      expect {
-        subject.recompute_from_annotation(
-          entry_id: entry_id,
-          dataset_id: ds_id,
-          old_category: "cat",
-          new_category: "dog"
-        )
-      }.not_to(change {
-        stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      })
-    end
-
-    it "does not decrement when the old category was not an orphan" do
-      subject.recompute_from_annotation(
-        entry_id: entry_id,
-        dataset_id: ds_id,
-        old_category: "dog",
-        new_category: "cat"
-      )
-
-      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      expect(stat.value).to eq("1") # not decremented
-    end
-
-    it "does not decrement when the new category is still orphaned" do
-      subject.recompute_from_annotation(
-        entry_id: entry_id,
-        dataset_id: ds_id,
-        old_category: "cat",
-        new_category: "bird"
-      )
-
-      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      expect(stat.value).to eq("1") # not decremented
-    end
-
-    it "decrements orphan count when old was orphaned and new is valid" do
-      subject.recompute_from_annotation(
-        entry_id: entry_id,
-        dataset_id: ds_id,
-        old_category: "cat-old",
         new_category: "dog"
       )
 
-      stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
-      expect(stat.value).to eq("0") # decremented
+      orphan_stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(orphan_stat.value).to eq("0") # was 1, decremented to 0
+    end
+
+    it "recomputes when new_category is orphaned even if no orphans exist yet" do
+      stat_repo.delete_by_entry_id(entry_id)
+
+      Annotation::Repository.new(auth_context).create(
+        entry_id: entry_id,
+        project_id: project_id,
+        dataset_id: dataset_id,
+        shape_type: "idah-image:rect",
+        category: "bird",
+        shape_args: {},
+        created_by_email: "user@example.com"
+      )
+
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        new_category: "bird"
+      )
+
+      orphan_stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+      expect(orphan_stat.value).to eq("1")
+    end
+
+    it "skips when no orphans exist and new_category is valid" do
+      stat_repo.delete_by_entry_id(entry_id)
+
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        new_category: "dog"
+      )
+
+      stats = stat_repo.index({ entry_id__eq: entry_id })
+      expect(stats).to be_empty
     end
   end
 

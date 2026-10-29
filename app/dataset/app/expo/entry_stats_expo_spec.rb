@@ -81,7 +81,6 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
       expect(service).to receive(:recompute_from_annotation).with(
         entry_id: entry_id,
         dataset_id: dataset_id,
-        old_category: "cat",
         new_category: "dog"
       )
 

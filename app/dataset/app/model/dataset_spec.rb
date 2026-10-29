@@ -70,8 +70,55 @@ RSpec.describe Dataset, database: true do
 
         sys_subject.labeling_configuration_updated(dataset_id, changed_category_ids: %w[cat dog])
 
-        dataset = sys_subject.find!(dataset_id)
-        expect(dataset.syncing_stats).to be true
+        sys_subject.find!(dataset_id)
+      end
+    end
+
+    describe "#distinct_annotation_categories" do
+      let(:annotation_repo) { Annotation::Repository.new(auth_context) }
+
+      def add_annotation(category)
+        eid = entry_repo.create(
+          priority: 1,
+          project_id:,
+          dataset_id:,
+          wf_step: "start",
+          status: "in_progress"
+        )
+        annotation_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          entry_id: eid,
+          shape_type: "idah-image:rect",
+          category: category,
+          shape_args: {},
+          created_by_email: "user@example.com"
+        )
+      end
+
+      before do
+        add_annotation("cat")
+        add_annotation("cat")
+        add_annotation("dog")
+      end
+
+      it "returns distinct categories from live annotations" do
+        result = sys_subject.distinct_annotation_categories(dataset_id)
+        expect(result).to match_array(%w[cat dog])
+      end
+
+      it "excludes deleted annotations" do
+        annotation_repo.table.where(category: "dog").update(deleted_at: Time.now)
+
+        result = sys_subject.distinct_annotation_categories(dataset_id)
+        expect(result).to eq(["cat"])
+      end
+
+      it "returns empty array when no live annotations exist" do
+        annotation_repo.table.where(dataset_id: dataset_id).update(deleted_at: Time.now)
+
+        result = sys_subject.distinct_annotation_categories(dataset_id)
+        expect(result).to be_empty
       end
     end
 

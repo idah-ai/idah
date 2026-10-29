@@ -27,15 +27,27 @@ module EntryStats
       EntryStats::Recompute.call(entry)
     end
 
-    def recompute_from_annotation(entry_id)
-      ## need to fix after handling orphan categories correctly
-      return unless system_entry_stats.orphan_category(entry_id)
-      # binding.pry
+    def recompute_from_annotation(entry_id:, dataset_id:, new_category:)
+      # Skip if there are no orphan categories for this entry
+      # or if there are no orphan categories for this entry
+      # but the category of this annotation was updated to be orphaned now
+      return unless system_entry_stats.orphan_category(entry_id) ||
+                    dataset_orphan_category?(dataset_id, new_category)
+
       entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
       EntryStats::Recompute.orphan_only(entry)
     end
 
+    def dataset_orphan_category?(dataset_id, category)
+      return false unless category
+
+      dataset = system_datasets.find!(dataset_id)
+      !dataset.configured_category_ids.include?(category)
+    end
+
     def recompute_all_for_dataset(dataset_id, changed_category_ids: [])
+      system_datasets.no_event { system_datasets.update!(dataset_id, { syncing_stats: true }) }
+
       changed_set = changed_category_ids.to_set
 
       entries = system_entries.chunked_index({ dataset_id__eq: dataset_id }, included: [:dataset, :annotations])
@@ -58,7 +70,7 @@ module EntryStats
         )
       end
     ensure
-      entry_stats.no_event { system_datasets.update!(dataset_id, { syncing_stats: false }) }
+      system_datasets.no_event { system_datasets.update!(dataset_id, { syncing_stats: false }) }
     end
   end
 end

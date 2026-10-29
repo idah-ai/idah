@@ -260,12 +260,21 @@ module Dataset
     event(name: "labeling_configuration_updated")
     def labeling_configuration_updated(dataset_id, changed_category_ids: [])
       no_event do
-        update!(dataset_id, { syncing_stats: true })
         add_event_metadata(
           dataset_id: dataset_id,
           changed_category_ids: changed_category_ids
         )
       end
+    end
+
+    # Returns all distinct category IDs currently used by live (non-deleted)
+    # annotations in the given dataset. Used to check if a re-added category
+    # was previously in use.
+    def distinct_annotation_categories(dataset_id)
+      table.db[:annotations]
+           .where(dataset_id: dataset_id, deleted_at: nil)
+           .distinct(:category)
+           .select_map(:category)
     end
 
     private
