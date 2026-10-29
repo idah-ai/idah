@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { classifyExport } from "@/components/app/sync/exports/util/export-records";
+  import { classifyExport } from "@/components/app/sync/exports/utils";
   import { Badge } from "@/components/ui/badge";
 
   import { ExportRecord } from "@/data/model/sync/exports/record";

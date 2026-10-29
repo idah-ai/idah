@@ -19,7 +19,6 @@ export function classifyExport(exportRecord: ExportRecord): ExportKind {
 /** Single kind when every export is the same type, "mixed" otherwise. */
 export function summarizeExportKinds(records: ExportRecord[]): ExportKind | "mixed" {
   const kinds = new Set(records.map(classifyExport));
-  console.log("ddd", kinds);
 
   if (kinds.size === 1) return [...kinds][0] as ExportKind;
   return "mixed";
@@ -37,7 +36,6 @@ const statusWords: Record<ExportStatus, string> = {
  */
 export function exportSummaryLabel(records: ExportRecord[], status: ExportStatus): string {
   const kind = summarizeExportKinds(records);
-  console.log(kind);
 
   const verb = statusWords[status];
   if (records.length === 0) return `Export ${verb}`;
