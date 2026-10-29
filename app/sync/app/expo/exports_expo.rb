@@ -17,7 +17,6 @@ class ExportsExpo < BaseExpo
 
     index do
       allowed_filters :id__in,
-                      :dataset_id__eq,
                       :created_at__gte,
                       :created_at__lte
     end
