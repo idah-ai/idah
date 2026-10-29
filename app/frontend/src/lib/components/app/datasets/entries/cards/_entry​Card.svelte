@@ -4,8 +4,8 @@
   import { page } from "$app/state";
   import { Badge } from "@/components/ui/badge";
   import { isOverdue } from "@/utils/date";
-  import { ExternalLinkIcon } from "@lucide/svelte";
-  import { parseISO } from "date-fns";
+  import { ExternalLinkIcon, TriangleAlertIcon } from "@lucide/svelte";
+  import { format, isAfter, parseISO } from "date-fns";
   import { getContext, onDestroy, onMount } from "svelte";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
@@ -21,6 +21,7 @@
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import Progress from "@/components/ui/progress/progress.svelte";
   import Text from "@/components/ui/text/Text.svelte";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -47,6 +48,14 @@
     void localToday;
     return entry.status !== "completed" && isOverdue(entry.delivery_date || entry.dataset?.delivery_date);
   });
+
+  let deliveryDateWarning = $derived(
+    entry.delivery_date &&
+      entry.dataset?.delivery_date &&
+      isAfter(parseISO(entry.delivery_date), parseISO(entry.dataset.delivery_date))
+      ? `Entry delivery date is later than the dataset delivery date (${format(parseISO(entry.dataset.delivery_date), "dd MMM, yyyy")})`
+      : null,
+  );
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -409,6 +418,17 @@
                     />
                   {:else}
                     <span>—</span>
+                  {/if}
+
+                  {#if deliveryDateWarning}
+                    <TooltipProvider>
+                      <Tooltip delayDuration={200}>
+                        <TooltipTrigger aria-label={deliveryDateWarning}>
+                          <TriangleAlertIcon class="size-4 text-amber-600" />
+                        </TooltipTrigger>
+                        <TooltipContent>{deliveryDateWarning}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   {/if}
 
                   {#if overdue}<Badge variant="destructive">Overdue</Badge>{/if}
