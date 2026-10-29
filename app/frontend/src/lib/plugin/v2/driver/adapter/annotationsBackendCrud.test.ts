@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { JsonRpcDatasource } from "@/data/jsonrpc";
 
 const list = vi.hoisted(() => vi.fn());
 vi.mock("@/data/model/dataset/annotations/record", () => ({ annotationsBackendDataSource: { list } }));
@@ -16,7 +17,7 @@ describe("AnnotationsDriverAdapter.fetch", () => {
   it("fetches every page for the current entry", async () => {
     list.mockResolvedValueOnce({ data: Array.from({ length: 100 }, (_, index) => record(`ann-${index}`)) });
     list.mockResolvedValueOnce({ data: [record("off-frame")] });
-    const driver = new AnnotationsDriverAdapter("entry-1", {} as any);
+    const driver = new AnnotationsDriverAdapter("entry-1", {} as JsonRpcDatasource);
 
     const annotations = await driver.fetch();
 
