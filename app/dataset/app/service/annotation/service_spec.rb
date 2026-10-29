@@ -675,6 +675,128 @@ RSpec.describe Annotation::Service, database: true do
       end
     end
 
+    describe "#write_shapes" do
+      let!(:annotation_id) { repo.create(attributes) }
+
+      def shape_rows
+        subject.annotations.client { |db| db[:annotation_shape].where(annotation_id:).all }
+      end
+
+      it "writes several rows in one call" do
+        subject.write_shapes(
+          annotation_id,
+          [
+            { key: "tile-0x0", value: { rle: "A" } },
+            { key: "tile-0x1", value: { rle: "B" } }
+          ]
+        )
+
+        rows = shape_rows
+        expect(rows.size).to eq(2)
+        expect(rows.map { |r| r[:key] }).to contain_exactly("tile-0x0", "tile-0x1")
+      end
+
+      it "updates an existing row in place" do
+        subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: { rle: "A" } }])
+        subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: { rle: "B" } }])
+
+        expect(shape_rows.size).to eq(1)
+        expect(shape_rows.first[:value]).to eq({ "rle" => "B" })
+      end
+
+      it "deletes a row when value is nil" do
+        subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: { rle: "A" } }])
+        subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: nil }])
+
+        expect(shape_rows).to be_empty
+      end
+
+      it "deleting a missing key succeeds silently" do
+        expect {
+          subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: nil }])
+        }.not_to raise_error
+
+        expect(shape_rows).to be_empty
+      end
+
+      it "rejects an empty entries list" do
+        expect {
+          subject.write_shapes(annotation_id, [])
+        }.to raise_error(Verse::Error::ValidationFailed, /entries must not be empty/)
+      end
+
+      it "rejects duplicate keys" do
+        expect {
+          subject.write_shapes(
+            annotation_id,
+            [
+              { key: "tile-0x0", value: { rle: "A" } },
+              { key: "tile-0x0", value: { rle: "B" } }
+            ]
+          )
+        }.to raise_error(Verse::Error::ValidationFailed, /keys must be unique/)
+      end
+
+      it "rejects a missing or blank key" do
+        expect {
+          subject.write_shapes(annotation_id, [{ key: "", value: { rle: "A" } }])
+        }.to raise_error(Verse::Error::ValidationFailed, /key is required/)
+
+        expect {
+          subject.write_shapes(annotation_id, [{ key: nil, value: { rle: "A" } }])
+        }.to raise_error(Verse::Error::ValidationFailed, /key is required/)
+      end
+
+      it "rejects a value that is neither nil nor a Hash" do
+        expect {
+          subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: "not-a-hash" }])
+        }.to raise_error(Verse::Error::ValidationFailed, /value must be null/)
+      end
+
+      it "rejects over the entry limit" do
+        entries = (1..(Annotation::Service::WRITE_SHAPES_MAX_ENTRIES + 1)).map do |i|
+          { key: "tile-#{i}", value: { rle: "A" } }
+        end
+
+        expect {
+          subject.write_shapes(annotation_id, entries)
+        }.to raise_error(Verse::Error::ValidationFailed, /too many entries/)
+      end
+
+      it "rejects write on a completed entry" do
+        completed_entry_id = entry_repo.create(
+          priority: 1,
+          wf_step: "done",
+          status: "completed",
+          assigned_to_id: 1,
+          project_id:,
+          dataset_id:
+        )
+        completed_annotation_id = repo.create(attributes.merge(entry_id: completed_entry_id))
+
+        expect {
+          subject.write_shapes(completed_annotation_id, [{ key: "tile-0x0", value: { rle: "A" } }])
+        }.to raise_error(Verse::Error::ValidationFailed, /Cannot update annotations on a completed entry/)
+      end
+
+      it "rejects write on a deleted annotation" do
+        subject.delete(annotation_id)
+
+        expect {
+          subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: { rle: "A" } }])
+        }.to raise_error(Verse::Error::ValidationFailed, /deleted annotation/)
+
+        expect(shape_rows).to be_empty
+      end
+
+      it "write_shape behaves as a one-entry write_shapes" do
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+
+        expect(shape_rows.size).to eq(1)
+        expect(shape_rows.first[:value]).to eq({ "rle" => "ABC" })
+      end
+    end
+
     describe "#show with annotation_shape aggregation" do
       let!(:annotation_id) { repo.create(attributes) }
 

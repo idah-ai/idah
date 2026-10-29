@@ -122,4 +122,18 @@ class AnnotationsExpo < BaseExpo
       params[:value]
     )
   end
+
+  expose json_rpc_method(:write_shapes) do
+    desc "Write or delete several annotation_shape entries of one annotation as one change"
+    input do
+      field(:annotation_id, String)
+      field(:entries, Array) do
+        field(:key, String)
+        field?(:value, [Hash, NilClass]) # nil or omitted (delete) or Hash (upsert), as in write_shape
+      end
+    end
+  end
+  def rpc_write_shapes
+    service.write_shapes(params[:annotation_id], params[:entries])
+  end
 end

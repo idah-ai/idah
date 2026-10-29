@@ -196,5 +196,75 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
       body = JSON.parse(last_response.body, symbolize_names: true)
       expect(body.size).to eq(3)
     end
+
+    it "write_shapes" do
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [
+          { key: "tile-0x0", value: { "rle" => "ABC" } },
+          { key: "tile-0x1", value: { "rle" => "DEF" } }
+        ]
+      ).and_return(1)
+
+      rpc_call rpc_cmd(
+        "write_shapes",
+        {
+          annotation_id: uuid,
+          entries: [
+            { key: "tile-0x0", value: { rle: "ABC" } },
+            { key: "tile-0x1", value: { rle: "DEF" } }
+          ]
+        }
+      )
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shapes with a nil value (delete)" do
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [{ key: "tile-0x0", value: nil }]
+      ).and_return(0)
+
+      rpc_call rpc_cmd(
+        "write_shapes",
+        { annotation_id: uuid, entries: [{ key: "tile-0x0", value: nil }] }
+      )
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shapes with an omitted value is accepted (value absent)" do
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [{ key: "tile-0x0" }]
+      ).and_return(0)
+
+      rpc_call rpc_cmd(
+        "write_shapes",
+        { annotation_id: uuid, entries: [{ key: "tile-0x0" }] }
+      )
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shapes in a batch with other calls" do
+      expect(service).to receive(:show).with(uuid).and_return(annotation_record)
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [{ key: "tile-0x0", value: { "rle" => "ALPHA" } }]
+      ).and_return(1)
+      expect(service).to receive(:delete).with(uuid).and_return(true)
+
+      rpc_call [
+        rpc_cmd("show", { id: uuid }),
+        rpc_cmd("write_shapes", { annotation_id: uuid, entries: [{ key: "tile-0x0", value: { rle: "ALPHA" } }] }),
+        rpc_cmd("delete", { id: uuid }),
+      ]
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body.size).to eq(3)
+    end
   end
 end

@@ -141,12 +141,47 @@ module Annotation
     # ─── Shape child-record operations ───────────────────────────────────
 
     #
-    # Write (upsert) or delete annotation_shape rows. Key/value validation now
-    # lives in the repository, which also owns the SQL. The service keeps the
-    # permission and entry-completion guards, enforced uniformly regardless of
-    # direction (write or delete).
+    # Write (upsert) or delete several annotation_shape rows as one write.
+    # entries is [{ key: String, value: Hash | nil }]. The RPC schema validates
+    # each entry's shape; this method validates what the schema cannot express:
+    # non-empty, unique non-empty keys, at most WRITE_SHAPES_MAX_ENTRIES, and a
+    # missing value meaning nil (delete). The repository owns the SQL; the
+    # service keeps the permission and entry-completion guards, enforced
+    # uniformly regardless of direction (write or delete).
     #
-    def write_shape(annotation_id, key, value)
+    WRITE_SHAPES_MAX_ENTRIES = 1000
+
+    def write_shapes(annotation_id, entries)
+      entries = entries.to_a
+
+      raise Verse::Error::ValidationFailed, "entries must not be empty" if entries.empty?
+
+      if entries.size > WRITE_SHAPES_MAX_ENTRIES
+        raise Verse::Error::ValidationFailed,
+              "too many entries (max #{WRITE_SHAPES_MAX_ENTRIES})"
+      end
+
+      normalized = entries.map do |entry|
+        key = entry[:key]
+        value = entry[:value]
+
+        if key.nil? || key.to_s.strip.empty?
+          raise Verse::Error::ValidationFailed, "key is required"
+        end
+
+        unless value.nil? || value.is_a?(Hash)
+          raise Verse::Error::ValidationFailed,
+                "value must be null (to delete) or a Hash (to upsert)"
+        end
+
+        { key: key.to_s, value: }
+      end
+
+      keys = normalized.map { |e| e[:key] }
+      if keys.uniq.size != keys.size
+        raise Verse::Error::ValidationFailed, "keys must be unique"
+      end
+
       annotations.transaction do
         annotation = annotations.find!(annotation_id, included: [:entry])
 
@@ -160,8 +195,12 @@ module Annotation
                 "Cannot write shape to a deleted annotation"
         end
 
-        annotations.write_shape(annotation_id, key, value)
+        annotations.write_shapes(annotation_id, normalized)
       end
+    end
+
+    def write_shape(annotation_id, key, value)
+      write_shapes(annotation_id, [{ key:, value: }])
     end
 
     private
