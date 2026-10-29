@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require_relative "../../spec_data/annotation_fixture"
 
 RSpec.describe Annotation::Service, database: true do
   let(:auth_context){ Verse::Auth::Context.new }
@@ -954,6 +955,330 @@ RSpec.describe Annotation::Service, database: true do
         fetched = subject.show(annotation_id)
         expect(fetched.shape_args["tile-0x0"]).to eq({ "rle" => "ABC" })
         expect(fetched.shape_args["tile-0x1"]).to eq({ "rle" => "DEF" })
+      end
+    end
+
+    # ─── Change history (annotation_changes) ────────────────────────────
+
+    describe "change history" do
+      # Reads go through AnnotationChange::Repository, whose `changes` encoder
+      # decodes the jsonb column into plain values (symbol-keyed hashes), so
+      # assertions can compare against plain Ruby values.
+      let(:change_repo) { AnnotationChange::Repository.new(Verse::Auth::Context[:system]) }
+
+      def history_rows(annotation_id)
+        change_repo.index({ annotation_id: }, items_per_page: 10_000).sort_by(&:version)
+      end
+
+      def history_changes(annotation_id, op: nil) # rubocop:disable Naming/MethodParameterName
+        rows = history_rows(annotation_id)
+        rows = rows.select { |r| r.op == op } if op
+        rows.map(&:changes)
+      end
+
+      # Created through the admin subject's repository so account_id is the
+      # caller (admin, id 1).
+      let!(:annotation_id) { subject.annotations.create(attributes) }
+
+      it "create writes version 1 and one created row, with the caller as account_id" do
+        row = subject.annotations.client { |db| db[:annotations].where(id: annotation_id).first }
+        expect(row[:version]).to eq(1)
+
+        rows = history_rows(annotation_id)
+        expect(rows.size).to eq(1)
+        expect(rows.first.op).to eq("created")
+        expect(rows.first.version).to eq(1)
+        expect(rows.first.account_id).to eq(1) # admin
+        expect(rows.first.entry_id).to eq(entry_id)
+        expect(rows.first.project_id).to eq(project_id)
+
+        changes = rows.first.changes
+        expect(changes).to include(["+", "shape_type", nil, "bounding-box"])
+        expect(changes).to include(["+", "category", nil, "cat"])
+        expect(changes).to include(["+", "shape_args", nil, { "x" => 10, "y" => 20, "width" => 30, "height" => 40 }])
+        expect(changes).to include(["+", "properties", nil, { "label" => "cat" }])
+        expect(changes.none? { |c| c[1] == "id" }).to be(true)
+        expect(changes.none? { |c| c[1] == "created_by_email" }).to be(true)
+      end
+
+      it "records a null account_id under a system context" do
+        system_service = described_class.new(Verse::Auth::Context[:system])
+        id = system_service.annotations.create(attributes)
+
+        rows = history_rows(id)
+        expect(rows.size).to eq(1)
+        expect(rows.first.account_id).to be_nil
+      end
+
+      it "version is never client-settable" do
+        # Repository create with version: 7 stores 1.
+        id = subject.annotations.create(attributes.merge(version: 7))
+        expect(subject.annotations.client { |db| db[:annotations].where(id:).get(:version) }).to eq(1)
+
+        # JSON:API update with a version attribute leaves it as the repository sets it.
+        subject.update(
+          deserialize(data: { type: "annotations", id: annotation_id, attributes: { version: 99, category: "dog" } })
+        )
+        expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(2)
+
+        # RPC update with a version param leaves it as the repository sets it.
+        subject.update_attr(annotation_id, { version: 99, category: "cat" })
+        expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(3)
+      end
+
+      it "records a video keyframe move under shape_args.frames[frame=N]" do
+        video_attributes = attributes.merge(
+          shape_type: "idah-video:bounding-box",
+          shape_args: AnnotationFixture::VIDEO_SHAPE_ARGS
+        )
+        video_id = subject.annotations.create(video_attributes)
+
+        subject.update(
+          deserialize(
+            data: {
+              type: "annotations",
+              id: video_id,
+              attributes: { shape_args: AnnotationFixture::VIDEO_SHAPE_ARGS_MOVED_FRAME_57 }
+            }
+          )
+        )
+
+        rows = history_rows(video_id)
+        expect(rows[1].changes).to contain_exactly(
+          [
+            "~", "shape_args.frames[frame=57].points",
+            AnnotationFixture::VIDEO_SHAPE_ARGS["frames"].find { |f| f["frame"] == 57 }["points"],
+            AnnotationFixture::VIDEO_SHAPE_ARGS_MOVED_FRAME_57["frames"].find { |f| f["frame"] == 57 }["points"]
+          ]
+        )
+      end
+
+      it "update records exactly the written fields at version 2, with the diff" do
+        subject.update(
+          deserialize(
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: { category: "dog", properties: { label: "dog" } }
+            }
+          )
+        )
+
+        rows = history_rows(annotation_id)
+        expect(rows.map(&:version)).to eq([1, 2])
+        expect(rows[1].op).to eq("updated")
+        expect(rows[1].changes).to contain_exactly(
+          ["~", "category", "cat", "dog"],
+          ["~", "properties.label", "cat", "dog"]
+        )
+      end
+
+      it "a no-op update writes nothing and keeps the version" do
+        subject.update(
+          deserialize(
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: { category: "cat" }
+            }
+          )
+        )
+
+        rows = history_rows(annotation_id)
+        expect(rows.size).to eq(1)
+        expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(1)
+      end
+
+      it "two sequential updates record versions 2 and 3, the second row's old values " \
+         "matching the first row's new values" do
+        subject.update(
+          deserialize(data: { type: "annotations", id: annotation_id, attributes: { category: "dog" } })
+        )
+        subject.update(
+          deserialize(
+            data: {
+              type: "annotations",
+              id: annotation_id,
+              attributes: { properties: { label: "cat2" } }
+            }
+          )
+        )
+
+        rows = history_rows(annotation_id)
+        expect(rows.map(&:version)).to eq([1, 2, 3])
+        expect(rows[1].changes).to contain_exactly(["~", "category", "cat", "dog"])
+        expect(rows[2].changes).to contain_exactly(["~", "properties.label", "cat", "cat2"])
+      end
+
+      it "soft delete then restore record two rows with the tombstone entries and exact events" do
+        allow(Verse).to receive(:publish_resource_event).and_call_original
+
+        subject.delete(annotation_id)
+        subject.restore(annotation_id)
+
+        rows = history_rows(annotation_id)
+        expect(rows.map(&:op)).to eq(["created", "deleted", "restored"])
+        expect(rows.map(&:version)).to eq([1, 2, 3])
+
+        deleted = rows[1].changes
+        expect(deleted[0][0..1]).to eq(["~", "deleted_at"])
+        expect(deleted[0][2]).to be_nil
+        # ISO 8601 UTC string with microseconds
+        expect(deleted[0][3]).to match(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z\z/)
+        expect(deleted[1]).to eq(["~", "deleted_by_email", nil, "admin@example.com"])
+
+        restored = rows[2].changes
+        expect(restored[0]).to eq(["~", "deleted_at", deleted[0][3], nil])
+        expect(restored[1]).to eq(["~", "deleted_by_email", "admin@example.com", nil])
+
+        expect(Verse).to have_received(:publish_resource_event).with(hash_including(event: "deleted")).once
+        expect(Verse).to have_received(:publish_resource_event).with(hash_including(event: "restored")).once
+        expect(Verse).to have_received(:publish_resource_event).with(hash_including(event: "updated")).exactly(0).times
+      end
+
+      it "delete twice: one deleted row, no second write, unchanged state, one event" do
+        allow(Verse).to receive(:publish_resource_event).and_call_original
+
+        subject.delete(annotation_id)
+        state_after_first = subject.annotations.client { |db| db[:annotations].where(id: annotation_id).first }
+
+        result = subject.delete(annotation_id)
+        expect(result).to be_a(Annotation::Record)
+
+        rows = history_rows(annotation_id)
+        expect(rows.select { |r| r.op == "deleted" }.size).to eq(1)
+        state_after_second = subject.annotations.client { |db| db[:annotations].where(id: annotation_id).first }
+        expect(state_after_second[:deleted_at]).to eq(state_after_first[:deleted_at])
+        expect(state_after_second[:version]).to eq(2)
+        expect(Verse).to have_received(:publish_resource_event).with(hash_including(event: "deleted")).once
+      end
+
+      it "restoring a live annotation writes nothing and returns the record" do
+        allow(Verse).to receive(:publish_resource_event).and_call_original
+
+        result = subject.restore(annotation_id)
+        expect(result).to be_a(Annotation::Record)
+
+        rows = history_rows(annotation_id)
+        expect(rows.size).to eq(1)
+        expect(Verse).not_to have_received(:publish_resource_event)
+      end
+
+      it "write_shape records one updated row per shape write" do
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "DEF" })
+
+        rows = history_rows(annotation_id)
+        expect(rows.map(&:op)).to eq(["created", "updated", "updated"])
+        expect(rows[1].changes).to contain_exactly(["+", "shape_args.tile-0x0", nil, { "rle" => "ABC" }])
+        expect(rows[2].changes).to contain_exactly(["~", "shape_args.tile-0x0.rle", "ABC", "DEF"])
+      end
+
+      it "write_shape with a nil value removes the tile (a `-` entry)" do
+        subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+        subject.write_shape(annotation_id, "tile-0x0", nil)
+
+        rows = history_rows(annotation_id)
+        expect(rows[2].changes).to contain_exactly(["-", "shape_args.tile-0x0", { "rle" => "ABC" }, nil])
+      end
+
+      it "write_shape with a nil value on a missing key writes nothing" do
+        rows_before = history_rows(annotation_id).size
+        subject.write_shape(annotation_id, "tile-0x0", nil)
+
+        expect(history_rows(annotation_id).size).to eq(rows_before)
+        expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(1)
+      end
+
+      it "deletion and restoration entries are ISO 8601 UTC strings" do
+        subject.delete(annotation_id)
+        subject.restore(annotation_id)
+
+        changes = history_changes(annotation_id)
+        tombstone = changes[1]
+        expect(tombstone.first[3]).to match(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z\z/)
+      end
+
+      describe "event payloads stay serializable for production" do
+        require "verse/ext"
+
+        it "msgpack-packs every resource event payload" do
+          captured = []
+          allow(Verse).to receive(:publish_resource_event) do |payload: nil, **|
+            captured << payload
+            nil
+          end
+
+          subject.update(
+            deserialize(data: { type: "annotations", id: annotation_id, attributes: { category: "cat2" } })
+          )
+          subject.delete(annotation_id)
+          subject.restore(annotation_id)
+          subject.update(
+            deserialize(data: { type: "annotations", id: annotation_id, attributes: { category: "cat3" } })
+          )
+
+          # `let!` created the annotation before the stub, so only the four
+          # writes above are captured: updated + deleted + restored + updated.
+          expect(captured.size).to eq(4)
+          captured.each do |payload|
+            expect { payload.to_msgpack }.not_to raise_error
+          end
+        end
+      end
+
+      describe "atomicity" do
+        it "rolls back the annotation write when the history insert fails" do
+          before = subject.annotations.client { |db| db[:annotations].where(id: annotation_id).first }
+
+          allow_any_instance_of(Annotation::Repository).to receive(:record_change!).and_raise("boom")
+
+          # The spec harness wraps each example in an outer transaction without
+          # auto_savepoint, so the service's transactions would join it and a
+          # caught exception would not roll back. A real savepoint mirrors
+          # production, where the service's transaction is a real transaction.
+          expect {
+            subject.annotations.client do |db|
+              db.transaction(savepoint: true, auto_savepoint: true) do
+                subject.update(
+                  deserialize(data: { type: "annotations", id: annotation_id, attributes: { category: "dog" } })
+                )
+              end
+            end
+          }.to raise_error("boom")
+
+          after = subject.annotations.client { |db| db[:annotations].where(id: annotation_id).first }
+          expect(after).to eq(before)
+        end
+      end
+
+      describe "the full cycle" do
+        it "yields versions 1 to 5 and revert of all rows gives the created state" do
+          subject.write_shape(annotation_id, "tile-0x0", { rle: "ABC" })
+          subject.update(
+            deserialize(data: { type: "annotations", id: annotation_id, attributes: { category: "dog" } })
+          )
+          subject.delete(annotation_id)
+          subject.restore(annotation_id)
+
+          rows = history_rows(annotation_id)
+          expect(rows.map(&:version)).to eq([1, 2, 3, 4, 5])
+
+          # Revert from the current state (version 5) back to the created state.
+          # The created row's `+` entries describe what v1 added; reverting it
+          # would remove the fields, so only rows 2..5 are reverted.
+          current = {
+            shape_args: subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:shape_args) },
+            category: "dog",
+            properties: { label: "cat" }
+          }
+          changes = rows[1..].reverse.flat_map(&:changes)
+
+          reverted = AnnotationDiff.revert(current, changes)
+          expect(reverted["category"]).to eq("cat")
+          expect(reverted["properties"]).to eq({ "label" => "cat" })
+          expect(reverted["shape_args"]).to eq({ "x" => 10, "y" => 20, "width" => 30, "height" => 40 })
+        end
       end
     end
   end

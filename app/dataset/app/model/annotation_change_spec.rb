@@ -84,9 +84,9 @@ RSpec.describe AnnotationChange::Repository, database: true do
           annotation_id:,
           entry_id:,
           project_id:,
-          op: "created",
-          version: 1,
-          changes: Sequel.pg_jsonb([["+", "shape_args", nil, { x: 1 }]]),
+          op: "updated",
+          version: 2,
+          changes: Sequel.pg_jsonb([["~", "shape_args.x", nil, 1]]),
           changed_at: Time.now.utc
         )
       end

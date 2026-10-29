@@ -79,11 +79,16 @@ module Annotation
 
     # New annotations always start at version 1, whatever `attributes` carries
     # (duplication in `Entry::Service#duplicate_entries` copies `annotation.fields`,
-    # which includes the source's `version`).
+    # which includes the source's `version`). Records a `created` history row
+    # with one `+` entry per tracked field that is not nil, inside the same
+    # transaction as the insert.
     def create(attributes)
       with_db_mode(:rw) do
         transaction do
-          super(attributes.merge(version: 1))
+          attributes = attributes.dup.merge(version: 1)
+          id = super(attributes)
+          record_create_change!(id, attributes)
+          id
         end
       end
     end
@@ -100,10 +105,15 @@ module Annotation
     # column — the rules JSON:API update and RPC update now share, because they
     # live below both entry points.
     #
+    # Records one `updated` history row with the exact diff at `version + 1`.
+    # A write that changes nothing (after the field filter, blank-category
+    # check and tile stripping) writes nothing, does not bump the version and
+    # records nothing.
+    #
     # `op` selects which read-only fields the write may still touch (the
-    # soft_delete / restore ops); it is not passed to `super`, so both paths
-    # publish the same `updated` event. `scope` keeps the base-method default
-    # (`scoped(:update)`) so callers such as `update!` pass one.
+    # soft_delete / restore ops) and names the history row; it is not passed
+    # to `super`. `scope` keeps its base-method default (`scoped(:update)`) so
+    # callers such as `update!` pass one.
     def update(id, attributes, scope: scoped(:update), op: :updated) # rubocop:disable Naming/MethodParameterName
       with_db_mode(:rw) do
         transaction do
@@ -119,17 +129,28 @@ module Annotation
                   "category is required to update an annotation"
           end
 
+          row = scope.where(id:).for_update.first
+          return false unless row
+
           strip_shape_store_keys(id, attributes)
 
-          super(id, attributes, scope:)
+          changes = diff_for_update(row, attributes)
+          return true if changes.empty?
+
+          version = row[:version] + 1
+          success = super(id, attributes.merge(version:), scope:)
+          return false unless success
+
+          record_change!(id, op:, changes:, version:, entry_id: row[:entry_id], project_id: row[:project_id])
+          true
         end
       end
     end
 
     # Soft-delete an annotation: set `deleted_at` / `deleted_by_email`, bump the
-    # version, record history (commit 6). A second delete is a no-op — it keeps
-    # the original `deleted_at` and `deleted_by_email`, writes nothing and
-    # publishes no `deleted` event.
+    # version and record a `deleted` history row. A second delete is a no-op —
+    # it keeps the original `deleted_at` and `deleted_by_email`, writes nothing
+    # and publishes no `deleted` event.
     event(name: "deleted")
     def soft_delete(id, deleted_by_email:)
       no_event do
@@ -141,8 +162,9 @@ module Annotation
       end
     end
 
-    # Restore a soft-deleted annotation: clear the tombstone, bump the version,
-    # record history (commit 6). A restore on a live annotation is a no-op.
+    # Restore a soft-deleted annotation: clear the tombstone, bump the version
+    # and record a `restored` history row. A restore on a live annotation is a
+    # no-op.
     event(name: "restored")
     def restore(id)
       no_event do
@@ -235,12 +257,24 @@ module Annotation
             end
           end
 
-          # Touch the parent annotation's updated_at so the IDB sync mechanism
-          # (which uses updated_at__gt) picks up shape changes on reconnect.
+          # Touch the parent annotation's updated_at (the IDB sync mechanism
+          # uses updated_at__gt) and bump version once for the whole call.
+          # update_impl writes the two columns directly, skipping the `update`
+          # override, and publishes nothing.
+          version = row[:version] + 1
           update_impl(
             annotation_id,
-            { updated_at: now },
+            { updated_at: now, version: },
             scope: scoped(:update)
+          ) or raise Verse::Error::RecordNotFound, annotation_id
+
+          record_change!(
+            annotation_id,
+            op: "updated",
+            changes:,
+            version:,
+            entry_id: row[:entry_id],
+            project_id: row[:project_id]
           )
 
           true
@@ -268,6 +302,84 @@ module Annotation
       return if shape_keys.empty?
 
       attributes[:shape_args] = attributes[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
+    end
+
+    # The diff of the tracked fields that were written. The old side is the
+    # locked row, sliced to the written keys, with the `annotation_shape` keys
+    # dropped from its `shape_args` column (reads replace those keys with the
+    # child-table values, so removing the leak is not a visible change and
+    # records no entry). Identity keys come from the plugin manifests, keyed by
+    # the row's shape_type — or the new one when the same write changes it.
+    def diff_for_update(row, attributes)
+      old_for_diff = row.slice(*attributes.keys.map(&:to_sym))
+
+      if attributes.key?(:shape_args) && old_for_diff[:shape_args].is_a?(Hash)
+        old_for_diff[:shape_args] = old_for_diff[:shape_args].reject do |k, _|
+          shape_keys_include?(row[:id], k.to_s)
+        end
+      end
+
+      identity_keys = AnnotationDiff::IdentityKeys.for(attributes.fetch(:shape_type, row[:shape_type]))
+      AnnotationDiff.call(old_for_diff, attributes, identity_keys: identity_keys)
+    end
+
+    def shape_keys_include?(annotation_id, key)
+      @shape_keys_include ||= {}
+      @shape_keys_include[annotation_id] ||= client do |db|
+        db[:annotation_shape].where(annotation_id:).select_map(:key).map(&:to_s)
+      end
+      @shape_keys_include[annotation_id].include?(key)
+    end
+
+    # Insert one history row, inside the write's transaction. `version` is the
+    # integer the write just stored (1 for create, row[:version] + 1 otherwise).
+    # Any failure here raises and rolls back the annotation write.
+    def record_change!(annotation_id, op:, changes:, version:, entry_id:, project_id:) # rubocop:disable Naming/MethodParameterName
+      client do |db|
+        db[:annotation_changes].insert(
+          id: UUIDv7.generate,
+          annotation_id:,
+          entry_id:,
+          project_id:,
+          account_id: change_actor_id,
+          op: op.to_s,
+          version:,
+          changes: Verse::Sequel::JsonEncoder.encode(changes),
+          changed_at: Time.now.utc
+        )
+      end
+    end
+
+    # One `+` entry per tracked field that is not nil: shape_type, shape_args,
+    # category, properties, metadata, and deleted_at / deleted_by_email when a
+    # soft-deleted annotation is copied (Entry::Service#duplicate_entries).
+    TRACKED_CREATE_FIELDS = %i[shape_type shape_args category properties metadata deleted_at deleted_by_email].freeze
+
+    def record_create_change!(annotation_id, attributes)
+      changes = TRACKED_CREATE_FIELDS.filter_map do |field|
+        value = attributes[field]
+        next if value.nil?
+
+        ["+", field.to_s, nil, value]
+      end
+
+      return if changes.empty?
+
+      record_change!(
+        annotation_id,
+        op: "created",
+        changes:,
+        version: 1,
+        entry_id: attributes[:entry_id],
+        project_id: attributes[:project_id]
+      )
+    end
+
+    # The only place that decides the actor of a history row: the repository
+    # metadata's actor (when the record is created inside `with_actor`) or the
+    # auth context's account id; nil on a system context.
+    def change_actor_id
+      @metadata[:actor_account_id] || auth_context.metadata[:id]
     end
 
     # Actions                       | Roles

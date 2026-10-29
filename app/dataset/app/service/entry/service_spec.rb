@@ -1018,6 +1018,52 @@ RSpec.describe Entry::Service, database: true do
         duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
         expect(duplicated_annotations.count).to eq(0)
       end
+
+      it "starts every duplicated annotation at version 1 with its own created history row" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        duplicated_annotation = annotation_repo.index({ entry_id: duplicated_entries.first.id }).first
+
+        expect(duplicated_annotation.version).to eq(1)
+
+        rows = subject.annotations.client do |db|
+          db[:annotation_changes].where(annotation_id: duplicated_annotation.id).all
+        end
+        expect(rows.size).to eq(1)
+        expect(rows.first[:op]).to eq("created")
+        expect(rows.first[:version]).to eq(1)
+      end
+
+      it "records deleted_at / deleted_by_email as + entries when copying a soft-deleted annotation" do
+        annotation_repo.client do |db|
+          db[:annotations].where(entry_id: entry_processed)
+                          .update(deleted_at: Time.now.utc, deleted_by_email: "user@example.com")
+        end
+
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        duplicated_annotation = annotation_repo.index({ entry_id: duplicated_entries.first.id }).first
+        expect(duplicated_annotation.deleted_at).not_to be_nil
+
+        rows = subject.annotations.client do |db|
+          db[:annotation_changes].where(annotation_id: duplicated_annotation.id).all
+        end
+        changes = rows.first[:changes]
+        expect(changes).to include(["+", "deleted_by_email", nil, "user@example.com"])
+        expect(changes.any? { |c| c[1] == "deleted_at" && c[0] == "+" }).to be(true)
+      end
     end
   end
 end
