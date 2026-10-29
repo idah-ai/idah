@@ -53,6 +53,9 @@ module Dataset
           old_ids = old_dataset.configured_category_ids
 
           new_ids = Dataset::Record.new(record.attributes).configured_category_ids
+
+          removed_category_ids = old_ids - new_ids
+
           changed = (old_ids.to_set ^ new_ids.to_set).to_a
 
           if changed.any?

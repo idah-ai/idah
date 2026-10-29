@@ -27,27 +27,12 @@ module EntryStats
       EntryStats::Recompute.call(entry)
     end
 
-    def recompute_from_annotation(entry_id:, dataset_id:, old_category:, new_category:)
-      scope = system_entry_stats.table
-                                .where(entry_id: entry_id, key: "orphan_category.count")
-      row = scope.first
-
-      return unless row && row[:value] != "0"
-
-      dataset = system_datasets.find!(dataset_id)
-      config = dataset.labeling_configuration || {}
-      configured_ids = config.each_value.flat_map do |tool_config|
-        next [] unless tool_config.is_a?(Hash)
-
-        Array(tool_config[:values]).filter_map { |v| v[:id] }
-      end
-
-      # Only decrement if old category was orphaned AND new category is valid
-      return if configured_ids.include?(old_category)
-      return unless configured_ids.include?(new_category)
-
-      new_count = [row[:value].to_i - 1, 0].max
-      scope.update(value: new_count.to_s, updated_at: Time.now)
+    def recompute_from_annotation(entry_id)
+      ## need to fix after handling orphan categories correctly
+      return unless system_entry_stats.orphan_category(entry_id)
+      # binding.pry
+      entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
+      EntryStats::Recompute.orphan_only(entry)
     end
 
     def recompute_all_for_dataset(dataset_id, changed_category_ids: [])

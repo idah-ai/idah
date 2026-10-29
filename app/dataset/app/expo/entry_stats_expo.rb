@@ -46,22 +46,12 @@ class EntryStatsExpo < BaseExpo
 
   expose on_resource_event(Resource::Dataset::Annotations, "updated")
   def compute_stats_on_annotation_updated
-    args = message.content.dig(:args, 0)
-
-    return unless args
+    args = message.content.dig(:args, 0) || {}
+    # binding.pry
+    return unless args.key?(:category) || args.key?(:deleted_at)
 
     entry_id = message.content.dig(:metadata, :entry_id) || args[:entry_id]
-    dataset_id = message.content.dig(:metadata, :dataset_id)
-    old_category = message.content.dig(:metadata, :old_category)
-    new_category = args[:category]
 
-    return if old_category.nil? || old_category == new_category
-
-    service.recompute_from_annotation(
-      entry_id: entry_id,
-      dataset_id: dataset_id,
-      old_category: old_category,
-      new_category: new_category
-    )
+    service.recompute_from_annotation(entry_id)
   end
 end
