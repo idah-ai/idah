@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { onMount } from "svelte";
   import { page } from "$app/state";
   import { authStatus } from "@/security/AuthContext";
+  import { onMount } from "svelte";
 
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -11,12 +11,15 @@
   import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import {
-    createDatasetSchema,
-    updateDatasetSchema,
-    deliveryDateChangeSchema,
+      createDatasetSchema,
+      deliveryDateChangeSchema,
+      updateDatasetSchema,
   } from "@/data/model/dataset/datasets/schema";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -151,8 +154,10 @@
     });
   }
 
-  async function updateDataset() {
+  async function updateDataset(): Promise<void> {
     const labelConfig = await getLabelConfig();
+    const deliveryDateChanged =
+      canEditDeliveryDate && (draft.delivery_date ?? null) !== (datasetRecord?.delivery_date ?? null);
 
     await datasetsBackendDataSource.update(
       datasetRecord!.id,
@@ -160,9 +165,7 @@
         attributes: {
           name: draft.name,
           modality: draft.modality,
-          ...(canEditDeliveryDate && (draft.delivery_date ?? null) !== (datasetRecord?.delivery_date ?? null)
-            ? { delivery_date: draft.delivery_date ?? null }
-            : {}),
+          ...(deliveryDateChanged ? { delivery_date: draft.delivery_date ?? null } : {}),
           labeling_configuration: labelConfig,
         },
       },
@@ -171,6 +174,10 @@
       },
     );
 
+    if (deliveryDateChanged) {
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+      $refetches.entries.list = new Date();
+    }
     open = false;
     $refetches.datasets.list = new Date();
     $refetches.datasets.get = new Date();

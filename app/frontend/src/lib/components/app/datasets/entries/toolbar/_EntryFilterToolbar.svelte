@@ -139,7 +139,10 @@
             filters={controller.listOptions.filters || {}}
             sort={controller.listOptions.sort || []}
             onFilter={controller.applyFilter.bind(controller)}
-            onSort={controller.applySort.bind(controller)}
+            onSort={async (params) => {
+              if (params.sortDirection !== "none") controller.sort = [];
+              await controller.applySort(params);
+            }}
             onHide={() => {}}
           >
             {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}

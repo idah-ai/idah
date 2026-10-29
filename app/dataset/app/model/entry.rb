@@ -363,6 +363,10 @@ module Entry
         direction = key.start_with?("-") ? :desc : :asc
         parts = key.delete_prefix("-").split(".", 2).map(&:to_sym)
         column = parts.length == 2 ? Sequel.qualify(*parts) : parts.first
+        if [[:delivery_date], [:entries, :delivery_date]].include?(parts)
+          dataset_date = query.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+          column = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        end
         options = parts.last == :delivery_date ? { nulls: :last } : {}
         Sequel.public_send(direction, column, **options)
       end

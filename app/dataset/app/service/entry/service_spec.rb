@@ -127,11 +127,12 @@ RSpec.describe Entry::Service, database: true do
       expect(page.map(&:id)).to eq(expected[2, 2])
     end
 
-    it "honors the requested field precedence and directions before pagination" do
+    it "sorts Dataset fallback dates in both directions while preserving field precedence and pagination" do
+      dataset_repo.update!(dataset_id, { delivery_date: Date.today + 1 })
       values = [
         { delivery_date: Date.today, priority: 0 },
         { delivery_date: Date.today + 2, priority: -2 },
-        { delivery_date: Date.today + 1, priority: -2 },
+        { delivery_date: nil, priority: -2 },
       ]
       ids = values.map do |value|
         repo.no_event do
@@ -142,6 +143,13 @@ RSpec.describe Entry::Service, database: true do
       expect(result.first.id).to eq(ids[1])
       result = subject.index({ dataset_id: dataset_id }, sort: ["-priority", "delivery_date"])
       expect(result.map(&:id)).to eq([ids[0], ids[2], ids[1]])
+      result = subject.index({ dataset_id: dataset_id }, sort: ["-delivery_date"])
+      expect(result.map(&:id)).to eq([ids[1], ids[2], ids[0]])
+      page = subject.index({ dataset_id: dataset_id }, sort: ["delivery_date"], page: 2, items_per_page: 1)
+      expect(page.map(&:id)).to eq([ids[2]])
+      expect(repo.find!(ids[2]).delivery_date).to be_nil
+      result = subject.index({ dataset_id: dataset_id }, sort: ["priority", "created_at", "id"])
+      expect(result.map(&:priority)).to eq([-2, -2, 0])
     end
 
     it "copies the Dataset date only when omitted, including a past date" do
