@@ -6,7 +6,7 @@ import { data } from "$lib/state/data.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { stripTileKeys } from "$lib/mask/strip-tile-keys";
 import { IMAGE_MASK } from "$lib/types";
-import { hasMaskCategoryCollision } from "$lib/utils/bulk-category";
+import { hasMaskCategoryCollision, hasMixedShapeTypes } from "$lib/utils/bulk-category";
 import { noopAction } from "..";
 
 export const command = {
@@ -38,6 +38,7 @@ export function register(driver: IIdahDriverV2): void {
       const originals = snapshots.map((item) => ({
         ...item!, properties: { ...item!.properties }, shape_args: { ...item!.shape_args },
       }));
+      if (hasMixedShapeTypes(originals)) return noopAction(command);
       if (originals.some((item, index) =>
         !driver.config[item.shape_type]?.values.some((value) => value.id === updates[index].category))) {
         return noopAction(command);
@@ -60,10 +61,11 @@ export function register(driver: IIdahDriverV2): void {
         command: { ...command },
         async do() {
           if (!isEditable() || ["completed", "errored"].includes(driver.entryStatus) ||
-            !data.annotations || updates.some((update) => {
+            !data.annotations || updates.some((update, index) => {
               const item = data.annotations!.items.find((candidate) => candidate.id === update.id);
-              return !item || annotation.isLocked(item) || annotation.isHidden(item);
-            }) || (originals.some((item, index) => item.shape_type === IMAGE_MASK && item.category !== updates[index].category) &&
+              return !item || item.shape_type !== originals[index].shape_type || annotation.isLocked(item) || annotation.isHidden(item);
+            }) ||
+            (originals.some((item, index) => item.shape_type === IMAGE_MASK && item.category !== updates[index].category) &&
               hasMaskCategoryCollision(updates, data.annotations.items))) return;
           didApply = true;
           await write(originals.map((item, index) => ({

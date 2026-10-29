@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
+import { bulkFields, bulkPreview, categoryCounts, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
 import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
 import type { IAnnotationRecord, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
 
@@ -25,6 +25,59 @@ const driver = {
 const valid = (value: unknown, field: IConfigProperty) => !field.required || value !== undefined;
 
 describe("bulk category preparation", () => {
+  it("keeps an explicitly cleared field visible in the bulk draft", () => {
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
+        values: [],
+        properties: value.properties.mode === "hide"
+          ? [property("mode")]
+          : [property("mode"), property("detail")],
+      }),
+    } as IIdahDriverV2;
+    const items = [record("a", "vehicle", { mode: "show", detail: "A" }),
+      record("b", "vehicle", { mode: "show", detail: "B" })];
+
+    expect(bulkFields(items, conditionalDriver, undefined, { mode: "hide" }).map((field) => field.id))
+      .toEqual(["mode"]);
+    expect(bulkFields(items, conditionalDriver, undefined, { mode: "hide", detail: undefined }).map((field) => field.id))
+      .toEqual(["mode", "detail"]);
+  });
+
+  it("shows fields for the draft category instead of the mixed original categories", () => {
+    const items = [record("a", "vehicle", {}), record("b", "pedestrian", {})];
+    expect(bulkFields(items, driver, undefined, {}).map((field) => field.id)).toEqual(["occluded"]);
+    expect(bulkFields(items, driver, "vehicle", {}).map((field) => field.id))
+      .toEqual(["occluded", "condition"]);
+  });
+
+  it("previews category-only, property-only, and combined changes from the same draft rules", () => {
+    const items = [record("a", "vehicle", { occluded: "No", condition: "Good" }),
+      record("b", "pedestrian", { occluded: "Yes", crossing: "Yes" })];
+
+    expect(bulkPreview(items, driver, undefined, {}, valid)).toBeUndefined();
+    expect(bulkPreview(items, driver, "vehicle", {}, valid)?.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "No", condition: "Good" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes" } },
+    ]);
+    expect(bulkPreview(items, driver, undefined, { occluded: "Yes" }, valid)?.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
+      { id: "b", category: "pedestrian", properties: { occluded: "Yes", crossing: "Yes" } },
+    ]);
+    expect(bulkPreview(items, driver, "vehicle", { occluded: "Yes" }, valid)?.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes" } },
+    ]);
+  });
+
+  it("treats a draft of the already shared category plus a property as a property edit", () => {
+    const items = [record("a", "vehicle", { occluded: "No" }), record("b", "vehicle", { occluded: "Yes" })];
+    expect(bulkPreview(items, driver, "vehicle", { occluded: "Yes" }, valid)?.updates).toEqual([
+      { id: "a", category: "vehicle", properties: { occluded: "Yes" } },
+      { id: "b", category: "vehicle", properties: { occluded: "Yes" } },
+    ]);
+  });
+
   it("counts every selected annotation by its current category", () => {
     expect(categoryCounts([
       record("a", "vehicle", {}), record("b", "pedestrian", {}), record("c", "vehicle", {}),
@@ -102,7 +155,7 @@ describe("bulk category preparation", () => {
     expect(sharedCategories(items, config).map((value) => value.id)).toEqual(["vehicle"]);
   });
 
-  it("applies a shared property across shapes and preserves their other values", () => {
+  it("rejects property edits across shapes even when a property is shared", () => {
     const mixedDriver = {
       ...driver,
       config: {
@@ -121,13 +174,12 @@ describe("bulk category preparation", () => {
     ];
     expect(sharedCategories(items, mixedDriver.config)).toEqual([]);
     expect(sharedProperties(items, mixedDriver).map((field) => field.id)).toEqual(["occluded"]);
-    expect(prepareBulkProperties(items, { occluded: "Yes" }, mixedDriver, valid).updates).toEqual([
-      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
-      { id: "b", category: "pedestrian", properties: { occluded: "Yes" } },
-    ]);
+    expect(prepareBulkProperties(items, { occluded: "Yes" }, mixedDriver, valid)).toEqual({
+      updates: [], error: "Editing is unavailable because the selected annotations have different shapes.",
+    });
   });
 
-  it("applies a shared category and property across different shapes", () => {
+  it("rejects category and property edits across different shapes", () => {
     const mixedDriver = {
       ...driver,
       config: {
@@ -148,14 +200,12 @@ describe("bulk category preparation", () => {
     ];
     expect(sharedProperties(items, mixedDriver).map((field) => field.id)).toEqual(["occluded"]);
     const result = prepareBulkCategory(items, "vehicle", mixedDriver, valid, { occluded: "Yes" });
-    expect(result.error).toBeUndefined();
-    expect(result.updates).toEqual([
-      { id: "a", category: "vehicle", properties: { occluded: "Yes", condition: "Good" } },
-      { id: "b", category: "vehicle", properties: { occluded: "Yes" } },
-    ]);
+    expect(result).toEqual({
+      updates: [], error: "Editing is unavailable because the selected annotations have different shapes.",
+    });
   });
 
-  it("allows a shared category when the shapes share no property", () => {
+  it("rejects a shared category when the shapes differ", () => {
     const mixedDriver = {
       ...driver,
       config: {
@@ -173,10 +223,9 @@ describe("bulk category preparation", () => {
     expect(sharedProperties(items, mixedDriver)).toEqual([]);
     expect(sharedCategories(items, mixedDriver.config).map((value) => value.id))
       .toEqual(["vehicle", "pedestrian"]);
-    expect(prepareBulkCategory(items, "vehicle", mixedDriver, valid).updates).toEqual([
-      { id: "a", category: "vehicle", properties: { condition: "Good" } },
-      { id: "b", category: "vehicle", properties: { crossing: "Yes" } },
-    ]);
+    expect(prepareBulkCategory(items, "vehicle", mixedDriver, valid)).toEqual({
+      updates: [], error: "Editing is unavailable because the selected annotations have different shapes.",
+    });
   });
 
   it("finds no choices when mixed shapes have no shared configuration", () => {
@@ -221,7 +270,7 @@ describe("bulk category preparation", () => {
     ];
     expect(sharedProperties(items, mixedDriver)).toEqual([]);
     expect(prepareBulkCategory(items, "vehicle", mixedDriver, valid, { occluded: "yes" }).error)
-      .toMatch(/not available|shared/);
+      .toBe("Editing is unavailable because the selected annotations have different shapes.");
     const differentTypeDriver = {
       ...mixedDriver,
       getFilteredConfig: (shape: string) => ({

@@ -10,6 +10,10 @@ export interface BulkCategoryUpdate {
 export type PropertyValue = string | number | string[] | boolean | undefined;
 type PropertyValidator = (value: PropertyValue, property: IConfigProperty) => boolean;
 
+export function hasMixedShapeTypes(items: IAnnotationRecord[]): boolean {
+  return items.some((item) => item.shape_type !== items[0].shape_type);
+}
+
 function sameValue(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
@@ -87,6 +91,21 @@ export function sharedProperties(
   ));
 }
 
+export function bulkFields(
+  items: IAnnotationRecord[],
+  driver: IIdahDriverV2,
+  draftCategory: string | undefined,
+  draftProperties: Record<string, PropertyValue>,
+): IConfigProperty[] {
+  const visible = sharedProperties(items, driver, draftCategory, draftProperties);
+  const cleared = sharedProperties(items, driver, draftCategory).filter((field) =>
+    Object.hasOwn(draftProperties, field.id) &&
+    draftProperties[field.id] === undefined &&
+    !visible.some((candidate) => candidate.id === field.id),
+  );
+  return [...visible, ...cleared];
+}
+
 export function categoryCounts(items: IAnnotationRecord[], config: IConfig): Map<string, { count: number; label: string }> {
   const counts = new Map<string, { count: number; label: string }>();
   for (const item of items) {
@@ -111,6 +130,7 @@ export function prepareBulkCategory(
   changes: Record<string, PropertyValue> = {},
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
+  if (hasMixedShapeTypes(items)) return { updates: [], error: "Editing is unavailable because the selected annotations have different shapes." };
 
   const available = new Set(sharedProperties(items, driver, category, changes).map((field) => field.id));
   if (Object.entries(changes).some(([id, value]) => value !== undefined && !available.has(id))) {
@@ -162,6 +182,7 @@ export function prepareBulkProperties(
   propertyValid: PropertyValidator,
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
+  if (hasMixedShapeTypes(items)) return { updates: [], error: "Editing is unavailable because the selected annotations have different shapes." };
   const ids = Object.keys(changes);
   if (!ids.length) return { updates: [], error: "Choose a property to apply." };
 
@@ -183,4 +204,19 @@ export function prepareBulkProperties(
     updates.push(result.updates[0]);
   }
   return { updates };
+}
+
+export function bulkPreview(
+  items: IAnnotationRecord[],
+  driver: IIdahDriverV2,
+  draftCategory: string | undefined,
+  draftProperties: Record<string, PropertyValue>,
+  propertyValid: PropertyValidator,
+): { updates: BulkCategoryUpdate[]; error?: string } | undefined {
+  const hasPropertyEdit = Object.keys(draftProperties).length > 0;
+  if (draftCategory && hasPropertyEdit && items.every((item) => item.category === draftCategory))
+    return prepareBulkProperties(items, draftProperties, driver, propertyValid);
+  if (draftCategory) return prepareBulkCategory(items, draftCategory, driver, propertyValid, draftProperties);
+  if (hasPropertyEdit) return prepareBulkProperties(items, draftProperties, driver, propertyValid);
+  return undefined;
 }

@@ -5,6 +5,7 @@ import { annotation } from "$lib/state/annotation.svelte";
 import { data } from "$lib/state/data.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
+import { hasMixedShapeTypes } from "$lib/utils/bulk-category";
 import { noopAction } from "..";
 
 export const command = {
@@ -32,6 +33,7 @@ export function register(driver: IIdahDriverV2): void {
       const snapshots = updates.map((update) => data.annotations!.items.find((item) => item.id === update.id));
       if (snapshots.some((item) => !item || annotation.isLocked(item) || annotation.isHidden(item))) return noopAction(command);
       const originals = snapshots.map((item) => ({ ...item!, properties: { ...item!.properties } }));
+      if (hasMixedShapeTypes(originals)) return noopAction(command);
       if (originals.some((item, index) =>
         !driver.config[item.shape_type]?.values.some((value) => value.id === updates[index].category))) {
         return noopAction(command);
@@ -47,9 +49,9 @@ export function register(driver: IIdahDriverV2): void {
         command: { ...command },
         async do() {
           if (!isEditable() || viewport.isReviewWorkspace || ["completed", "errored"].includes(driver.entryStatus) ||
-            !data.annotations || updates.some((update) => {
+            !data.annotations || updates.some((update, index) => {
               const item = data.annotations!.items.find((candidate) => candidate.id === update.id);
-              return !item || annotation.isLocked(item) || annotation.isHidden(item);
+              return !item || item.shape_type !== originals[index].shape_type || annotation.isLocked(item) || annotation.isHidden(item);
             })) return;
           didApply = true;
           await write(originals.map((item, index) => ({

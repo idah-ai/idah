@@ -27,9 +27,9 @@
   import { categoryValueToLabel } from "$lib/utils/annotation";
   import { truncateMiddle } from "$lib/utils/string";
   import {
+    bulkFields,
+    bulkPreview,
     categoryCounts,
-    prepareBulkCategory,
-    prepareBulkProperties,
     sharedCategories,
     sharedProperties,
     type PropertyValue,
@@ -43,10 +43,14 @@
   }
   let { disabled = false }: Props = $props();
 
-  const selectionKey = $derived([
-    ...[...selection.selectedAnnotationIds].map((id) => `a:${id}`),
-    ...[...selection.selectedGroupIds].map((id) => `g:${id}`),
-  ].sort().join("|"));
+  const selectionKey = $derived(
+    [
+      ...[...selection.selectedAnnotationIds].map((id) => `a:${id}`),
+      ...[...selection.selectedGroupIds].map((id) => `g:${id}`),
+    ]
+      .sort()
+      .join("|"),
+  );
   let groupSnapshot = $state<{ key: string; items: IAnnotationRecord[] } | null>(null);
   let groupLoadError = $state("");
 
@@ -63,19 +67,24 @@
     let active = true;
     groupSnapshot = null;
     groupLoadError = "";
-    getDriver().annotations.fetch().then((items) => {
-      if (!active) return;
-      const allItems = [...items, ...store.items] as IAnnotationRecord[];
-      const targets = resolveBulkTargets(selection.selectedAnnotationIds, groupIds, allItems).items;
-      const loadedIds = new Set(store.items.map((item) => item.id));
-      for (const item of targets) {
-        if (!loadedIds.has(item.id)) store.upsert(item as AnnotationItem);
-      }
-      groupSnapshot = { key, items };
-    }).catch(() => {
-      if (active) groupLoadError = "Could not load all selected group annotations. Reselect the group and try again.";
-    });
-    return () => { active = false; };
+    getDriver()
+      .annotations.fetch()
+      .then((items) => {
+        if (!active) return;
+        const allItems = [...items, ...store.items] as IAnnotationRecord[];
+        const targets = resolveBulkTargets(selection.selectedAnnotationIds, groupIds, allItems).items;
+        const loadedIds = new Set(store.items.map((item) => item.id));
+        for (const item of targets) {
+          if (!loadedIds.has(item.id)) store.upsert(item as AnnotationItem);
+        }
+        groupSnapshot = { key, items };
+      })
+      .catch(() => {
+        if (active) groupLoadError = "Could not load all selected group annotations. Reselect the group and try again.";
+      });
+    return () => {
+      active = false;
+    };
   });
 
   const targetResolution = $derived.by(() => {
@@ -83,7 +92,10 @@
     if (selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey)
       return resolveBulkTargets(selection.selectedAnnotationIds, selection.selectedGroupIds, []);
     const fetchedItems = groupSnapshot?.key === selectionKey ? groupSnapshot.items : [];
-    return resolveBulkTargets(selection.selectedAnnotationIds, selection.selectedGroupIds, [...fetchedItems, ...currentItems]);
+    return resolveBulkTargets(selection.selectedAnnotationIds, selection.selectedGroupIds, [
+      ...fetchedItems,
+      ...currentItems,
+    ]);
   });
   let sourceItems = $derived(targetResolution.items);
 
@@ -95,36 +107,25 @@
   const showPagination = $derived(sourceItems.length > PAGE_SIZE);
   const placeholderCount = $derived(showPagination ? PAGE_SIZE - pagedAnnotations.length : 0);
 
-  const countLabel = $derived(selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey
-    ? "Loading selection" : `${sourceItems.length} selected`);
+  const countLabel = $derived(
+    selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey
+      ? "Loading selection"
+      : `${sourceItems.length} selected`,
+  );
   let draftCategory = $state<string | undefined>();
   let draftProperties = $state<Record<string, PropertyValue>>({});
   let feedback = $state("");
   const shapeType = $derived(sourceItems[0]?.shape_type);
   const sameShape = $derived(sourceItems.length > 0 && sourceItems.every((item) => item.shape_type === shapeType));
   const counts = $derived(categoryCounts(sourceItems, getDriver().config));
-  const fields = $derived.by(() => {
-    const visible = sharedProperties(sourceItems, getDriver(), draftCategory, draftProperties);
-    const cleared = sharedProperties(sourceItems, getDriver(), draftCategory).filter((field) =>
-      Object.hasOwn(draftProperties, field.id) &&
-      draftProperties[field.id] === undefined &&
-      !visible.some((candidate) => candidate.id === field.id),
-    );
-    return [...visible, ...cleared];
-  });
+  const fields = $derived(bulkFields(sourceItems, getDriver(), draftCategory, draftProperties));
   const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
   const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
   const configValues = $derived(sharedCategories(sourceItems, getDriver().config));
   const hasSharedChoices = $derived(configValues.length > 0 || fields.length > 0);
   const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
   const category = $derived(configValues.find((value) => value.id === selectedCategory));
-  const preview = $derived.by(() => {
-    if (draftCategory && hasPropertyEdit && sourceItems.every((item) => item.category === draftCategory))
-      return prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
-    if (draftCategory) return prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled, draftProperties);
-    if (hasPropertyEdit) return prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
-    return undefined;
-  });
+  const preview = $derived(bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled));
   const blockReason = $derived.by(() => {
     if (selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey)
       return groupLoadError || "Loading all selected group annotations.";
@@ -132,7 +133,8 @@
       return "Selection is incomplete.";
     if (sourceItems.some((item) => annotation.isLocked(item)))
       return "One or more selected annotations are locked or cannot be edited.";
-    if (!hasSharedChoices) return "Selected shape types have no category or property in common.";
+    if (!sameShape) return "Editing is unavailable because the selected annotations have different shapes.";
+    if (!hasSharedChoices) return "No category or property is available for all selected annotations.";
     if (
       disabled ||
       !isEditable() ||
@@ -158,10 +160,8 @@
 
   function applyBulk() {
     if (blockReason) return;
-    const result = draftCategory
-      ? prepareBulkCategory(sourceItems, draftCategory, getDriver(), propertyFullfilled, draftProperties)
-      : prepareBulkProperties(sourceItems, draftProperties, getDriver(), propertyFullfilled);
-    if (result.error || !result.updates.length) return;
+    const result = bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled);
+    if (!result || result.error || !result.updates.length) return;
     getDriver().command.call("idah-video:annotation.bulk-update", { updates: result.updates });
     draftCategory = undefined;
     draftProperties = {};
@@ -178,12 +178,13 @@
   function keepVisibleDrafts(next: Record<string, PropertyValue>, category: string | undefined) {
     const visible = new Set(sharedProperties(sourceItems, getDriver(), category, next).map((field) => field.id));
     const removable = new Set(sharedProperties(sourceItems, getDriver(), category).map((field) => field.id));
-    const retained = Object.fromEntries(Object.entries(next).filter(([id, value]) =>
-      visible.has(id) || (value === undefined && removable.has(id)),
-    ));
-    feedback = Object.keys(retained).length < Object.keys(next).length
-      ? "Property changes hidden by the current category or values were cleared from the draft."
-      : "";
+    const retained = Object.fromEntries(
+      Object.entries(next).filter(([id, value]) => visible.has(id) || (value === undefined && removable.has(id))),
+    );
+    feedback =
+      Object.keys(retained).length < Object.keys(next).length
+        ? "Property changes hidden by the current category or values were cleared from the draft."
+        : "";
     draftProperties = retained;
   }
 
@@ -212,7 +213,8 @@
     <div class="flex flex-wrap items-center gap-1.5">
       {#each [...counts] as [id, { count, label }] (id)}
         <Badge variant="outline" class="bg-accent" title={label} aria-label={`${count} ${label}`}>
-          {count} {truncateMiddle(label)}
+          {count}
+          {truncateMiddle(label)}
         </Badge>
       {/each}
     </div>
@@ -226,7 +228,7 @@
       {shapeType}
       showShapeIcon={sameShape}
       onValueChange={setDraftCategory}
-      disabled={disabled || configValues.length === 0}
+      disabled={disabled || !sameShape || configValues.length === 0}
       placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
     />
 
@@ -236,12 +238,20 @@
       items={sourceItems}
       {fields}
       draft={draftProperties}
-      disabled={disabled || viewport.isReviewWorkspace}
+      disabled={disabled || viewport.isReviewWorkspace || !sameShape}
       onValueChange={setDraftProperty}
       onReset={resetProperty}
     />
-    {#if blockReason && !(feedback && blockReason === "Choose a category or property to apply.")}
-      <p role="alert" class="bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs">{blockReason}</p>
+    {#if blockReason}
+      {@const isPrompt = blockReason === "Choose a category or property to apply."}
+      {#if !(feedback && isPrompt)}
+        <p
+          role={isPrompt ? "status" : "alert"}
+          class={isPrompt
+            ? "text-muted-foreground text-xs"
+            : "bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs"}
+        >{blockReason}</p>
+      {/if}
     {/if}
     {#if feedback}
       <p role="status" class="text-muted-foreground text-xs">{feedback}</p>

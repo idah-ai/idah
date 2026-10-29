@@ -93,9 +93,10 @@ describe("annotation.bulk-update", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
-  it("updates mixed shape types when each supports its target category", async () => {
+  it("rejects mixed shape types even when they share a category ID", async () => {
     const polygon = "idah-video:polygon";
     items[1] = { ...items[1], shape_type: polygon };
+    items[1] = { ...items[1], category: "vehicle" };
     const before = structuredClone(items);
     const registerCommand = vi.fn();
     register({ command: { register: registerCommand }, config: {
@@ -108,10 +109,37 @@ describe("annotation.bulk-update", () => {
     ] });
 
     await action.do();
-    expect(items.map((item) => item.category)).toEqual(["vehicle", "vehicle"]);
-    expect(update).toHaveBeenCalledTimes(2);
-    await action.undo();
     expect(items).toEqual(before);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("does not write if a target changes shape before the action runs", async () => {
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: { [shape]: { values: [{ id: "vehicle" }] } } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: [
+      { id: "a", category: "vehicle", properties: {} },
+      { id: "b", category: "vehicle", properties: {} },
+    ] });
+    items[1] = { ...items[1], shape_type: "idah-video:polygon" };
+
+    await action.do();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("rejects mixed shape types in an off-frame group member", async () => {
+    items.push({ id: "off-frame", shape_type: "idah-video:polygon", shape_args: { start: 100, end: 101 },
+      category: "vehicle", properties: {}, metadata: { group_id: "track-7" } });
+    const registerCommand = vi.fn();
+    register({ command: { register: registerCommand }, config: {
+      [shape]: { values: [{ id: "vehicle" }] },
+      "idah-video:polygon": { values: [{ id: "vehicle" }] },
+    } } as any);
+    const action = registerCommand.mock.calls[0][0].callback({ updates: items.map((item) => ({
+      id: item.id, category: "vehicle", properties: {},
+    })) });
+
+    await action.do();
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("rejects all targets when one shape does not support its target category", async () => {
