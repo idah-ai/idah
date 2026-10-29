@@ -122,16 +122,7 @@ module Annotation
 
         check_entry_not_completed!(annotation.entry, :delete)
 
-        # `deleted_at` / `deleted_by_email` are read-only on the record, so the
-        # op must allow them. Commit 5 moves this into `soft_delete`.
-        annotations.update(
-          id,
-          {
-            deleted_at: Time.now.utc,
-            deleted_by_email: auth_context.metadata[:email],
-          },
-          op: :deleted
-        )
+        annotations.soft_delete(id, deleted_by_email: auth_context.metadata[:email])
         annotations.find!(id) # return the tombstoned record, not nil
       end
     end
@@ -140,7 +131,7 @@ module Annotation
       annotations.transaction do
         annotation = annotations.find!(id, included: [:entry])
         check_entry_not_completed!(annotation.entry, :update)
-        annotations.update(id, { deleted_at: nil, deleted_by_email: nil }, op: :restored)
+        annotations.restore(id)
         record = annotations.find!(id)
         merge_annotation_shapes([record])
         record

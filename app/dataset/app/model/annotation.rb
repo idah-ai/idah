@@ -126,6 +126,34 @@ module Annotation
       end
     end
 
+    # Soft-delete an annotation: set `deleted_at` / `deleted_by_email`, bump the
+    # version, record history (commit 6). A second delete is a no-op — it keeps
+    # the original `deleted_at` and `deleted_by_email`, writes nothing and
+    # publishes no `deleted` event.
+    event(name: "deleted")
+    def soft_delete(id, deleted_by_email:)
+      no_event do
+        row = scoped(:delete).where(id:).for_update.first or raise Verse::Error::RecordNotFound, id
+        next false if row[:deleted_at] # already deleted: no write, no history row, no event
+
+        update(id, { deleted_at: Time.now.utc, deleted_by_email: }, scope: scoped(:delete), op: :deleted) or
+          raise Verse::Error::RecordNotFound, id
+      end
+    end
+
+    # Restore a soft-deleted annotation: clear the tombstone, bump the version,
+    # record history (commit 6). A restore on a live annotation is a no-op.
+    event(name: "restored")
+    def restore(id)
+      no_event do
+        row = scoped(:update).where(id:).for_update.first or raise Verse::Error::RecordNotFound, id
+        next false if row[:deleted_at].nil? # live annotation: no write, no history row, no event
+
+        update(id, { deleted_at: nil, deleted_by_email: nil }, scope: scoped(:update), op: :restored) or
+          raise Verse::Error::RecordNotFound, id
+      end
+    end
+
     # Write (upsert) or delete a single annotation_shape row: a Hash value
     # upserts, nil deletes (idempotent — deleting a non-existent key succeeds
     # silently). Publishes no event.

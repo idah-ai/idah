@@ -141,4 +141,73 @@ RSpec.describe Annotation::Repository, database: true do
         .to raise_error(Verse::Error::RecordNotFound)
     end
   end
+
+  describe "#soft_delete / #restore" do
+    it "publishes exactly one deleted event, with no extra updated" do
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      result = subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+      expect(result).to be_truthy
+
+      expect(Verse).to have_received(:publish_resource_event)
+        .with(hash_including(event: "deleted")).once
+      expect(Verse).to have_received(:publish_resource_event)
+        .with(hash_including(event: "updated")).exactly(0).times
+    end
+
+    it "publishes exactly one restored event, with no extra updated" do
+      subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      result = subject.restore(annotation_id)
+      expect(result).to be_truthy
+
+      expect(Verse).to have_received(:publish_resource_event)
+        .with(hash_including(event: "restored")).once
+      expect(Verse).to have_received(:publish_resource_event)
+        .with(hash_including(event: "updated")).exactly(0).times
+    end
+
+    it "soft_delete twice is a no-op on the second call: no event, unchanged state" do
+      subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+      state_after_first = subject.client { |db| db[:annotations].where(id: annotation_id).first }
+
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+      result = subject.soft_delete(annotation_id, deleted_by_email: "someone@else.com")
+      expect(result).to be(false)
+
+      expect(Verse).not_to have_received(:publish_resource_event)
+      state_after_second = subject.client { |db| db[:annotations].where(id: annotation_id).first }
+      expect(state_after_second).to eq(state_after_first)
+    end
+
+    it "restore on a live annotation is a no-op: no event, unchanged state" do
+      state_before = subject.client { |db| db[:annotations].where(id: annotation_id).first }
+
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+      result = subject.restore(annotation_id)
+      expect(result).to be(false)
+
+      expect(Verse).not_to have_received(:publish_resource_event)
+      state_after = subject.client { |db| db[:annotations].where(id: annotation_id).first }
+      expect(state_after).to eq(state_before)
+    end
+
+    it "raises not-found for an unknown annotation" do
+      expect { subject.soft_delete(UUIDv7.generate, deleted_by_email: "x@example.com") }
+        .to raise_error(Verse::Error::RecordNotFound)
+      expect { subject.restore(UUIDv7.generate) }
+        .to raise_error(Verse::Error::RecordNotFound)
+    end
+
+    it "rejects writing shapes to a soft-deleted annotation" do
+      subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+
+      expect { subject.write_shapes(annotation_id, [{ key: "tile-0x0", value: { rle: "A" } }]) }
+        .to raise_error(Verse::Error::ValidationFailed, /deleted annotation/)
+
+      rows = subject.client { |db| db[:annotation_shape].where(annotation_id:).all }
+      expect(rows).to be_empty
+    end
+  end
 end
