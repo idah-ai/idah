@@ -344,6 +344,9 @@ export interface IAnnotationRecord<ShapeArgs = Record<string, unknown>, Properti
   created_at?: Date;
   updated_at?: Date;
 
+  /** Server-set version, bumped on every write. Absent on locally-built records until the next sync. */
+  version?: number;
+
   /** Allow extensibility. */
   [key: string]: unknown;
 }

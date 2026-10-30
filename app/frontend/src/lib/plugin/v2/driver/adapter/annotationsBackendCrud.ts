@@ -23,6 +23,7 @@ function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
     created_by_id: rec.created_by_id,
     created_at: rec.created_at,
     updated_at: rec.updated_at,
+    version: rec.version,
   };
 }
 

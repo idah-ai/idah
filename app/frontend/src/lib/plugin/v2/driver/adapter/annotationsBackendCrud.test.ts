@@ -11,13 +11,21 @@ function makeRpc() {
   return { call } as unknown as JsonRpcDatasource;
 }
 
+/** The write_shapes call params passed to rpc.call — typed for assertions. */
+function writeShapesCall(
+  rpc: JsonRpcDatasource,
+  index: number,
+): { method: string; params: { annotation_id: string; entries: Array<{ key: string; value: unknown }> } } {
+  return vi.mocked(rpc.call).mock.calls[index][0] as ReturnType<typeof writeShapesCall>;
+}
+
 describe("createBackendCrudDriver", () => {
   const entryId = "entry-1";
   const rpc = makeRpc();
   const driver = createBackendCrudDriver(entryId, rpc);
 
   beforeEach(() => {
-    rpc.call.mockClear();
+    vi.mocked(rpc.call).mockClear();
   });
 
   it("setShapes with three entries makes one write_shapes call with all three", async () => {
@@ -47,8 +55,8 @@ describe("createBackendCrudDriver", () => {
     await driver.setShapes("ann-1", entries);
 
     expect(rpc.call).toHaveBeenCalledTimes(2);
-    const first = rpc.call.mock.calls[0][0];
-    const second = rpc.call.mock.calls[1][0];
+    const first = writeShapesCall(rpc, 0);
+    const second = writeShapesCall(rpc, 1);
     expect(first.method).toBe("write_shapes");
     expect(first.params.entries).toHaveLength(1000);
     expect(second.method).toBe("write_shapes");
@@ -73,7 +81,7 @@ describe("AnnotationsDriverAdapter", () => {
   const driver = new AnnotationsDriverAdapter(entryId, rpc);
 
   beforeEach(() => {
-    rpc.call.mockClear();
+    vi.mocked(rpc.call).mockClear();
   });
 
   it("setShapes with three entries makes one write_shapes call with all three", async () => {
@@ -103,8 +111,8 @@ describe("AnnotationsDriverAdapter", () => {
     await driver.setShapes("ann-1", entries);
 
     expect(rpc.call).toHaveBeenCalledTimes(2);
-    const first = rpc.call.mock.calls[0][0];
-    const second = rpc.call.mock.calls[1][0];
+    const first = writeShapesCall(rpc, 0);
+    const second = writeShapesCall(rpc, 1);
     expect(first.params.entries).toHaveLength(1000);
     expect(second.params.entries).toHaveLength(1);
   });
