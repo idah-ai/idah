@@ -18,15 +18,17 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
   let {
-    entries,
+    entryIds,
     onUpdated,
     open = $bindable(false),
   }: {
-    entries: EntryRecord[];
-    onUpdated?: () => Promise<void>;
+    entryIds: string[];
+    onUpdated?: () => void | Promise<void>;
     open?: boolean;
   } = $props();
 
+  let entries = $state<EntryRecord[]>([]);
+  let loading = $state(true);
   let sameAsDatasetDeliveryDate = $state(false);
   let selectedDeliveryDate = $state<string | null>(null);
   let submitting = $state(false);
@@ -35,15 +37,32 @@
   let displayedDeliveryDate = $derived(sameAsDatasetDeliveryDate ? datasetDeliveryDate : selectedDeliveryDate);
   let changed = $derived(entries.some((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null)));
 
-  onMount(() => {
-    const entry = entries[0];
-    selectedDeliveryDate = entries.length === 1 ? (entry?.delivery_date ?? null) : datasetDeliveryDate;
-    sameAsDatasetDeliveryDate =
-      entries.length > 1 || entry?.delivery_date == null || entry.delivery_date === datasetDeliveryDate;
+  onMount(async () => {
+    try {
+      const response = await entriesBackendDataSource.list({
+        filters: { id__in: entryIds },
+        included: ["dataset"],
+        pagination: { page: 1, itemsPerPage: entryIds.length },
+        noCache: true,
+      });
+      if (response.data.length !== entryIds.length) {
+        throw new Error("Some selected entries could not be loaded. Please reopen this form.");
+      }
+      entries = response.data;
+      const entry = entries[0];
+      selectedDeliveryDate = entries.length === 1 ? (entry?.delivery_date ?? null) : datasetDeliveryDate;
+      sameAsDatasetDeliveryDate =
+        entries.length > 1 || entry?.delivery_date == null || entry.delivery_date === datasetDeliveryDate;
+    } catch (error) {
+      errors = ["Some selected entries could not be loaded. Please reopen this form."];
+      showActionFailedToast(error);
+    } finally {
+      loading = false;
+    }
   });
 
   async function submit() {
-    if (submitting) return;
+    if (submitting || loading || entries.length !== entryIds.length) return;
     if (!sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
       errors = ["Select a Delivery Date or use the Dataset delivery date."];
       return;
@@ -86,7 +105,13 @@
   }
 </script>
 
-<FormModal action="update" bind:open loading={submitting} disabled={!changed} onConfirm={submit}>
+<FormModal
+  action="update"
+  bind:open
+  loading={submitting || loading}
+  disabled={loading || !changed || entries.length !== entryIds.length}
+  onConfirm={submit}
+>
   {#snippet modalTitle()}
     <DialogTitle>Set Entry Delivery Date</DialogTitle>
   {/snippet}
@@ -100,7 +125,7 @@
       value={displayedDeliveryDate ? parseDate(displayedDeliveryDate).toDate(getLocalTimeZone()) : null}
       minDate={today(getLocalTimeZone())}
       clearable={!sameAsDatasetDeliveryDate}
-      disabled={submitting || sameAsDatasetDeliveryDate}
+      disabled={loading || submitting || sameAsDatasetDeliveryDate}
       {errors}
       onDateSelected={(date) => {
         selectedDeliveryDate = date;
@@ -112,7 +137,7 @@
     <Checkbox
       id="entry-same-as-dataset-delivery-date"
       checked={sameAsDatasetDeliveryDate}
-      disabled={submitting}
+      disabled={loading || submitting}
       onCheckedChange={(checked) => {
         sameAsDatasetDeliveryDate = checked;
         selectedDeliveryDate = checked ? datasetDeliveryDate : null;

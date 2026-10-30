@@ -34,7 +34,7 @@ module Dataset
 
       # Assign attributes
       attributes = record.attributes
-      validate_delivery_date!(attributes)
+      DeliveryDate.validate!(attributes)
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = record.project.id
       # attributes[:created_by_email] ||= auth_context.metadata[:email]
@@ -49,7 +49,7 @@ module Dataset
       attributes = record.attributes
       if attributes.key?(:delivery_date)
         current = datasets.find!(record.id)
-        validate_delivery_date!(attributes, current.delivery_date)
+        DeliveryDate.validate!(attributes, current.delivery_date)
       end
       datasets.update!(record.id, attributes)
       datasets.find!(record.id)
@@ -147,17 +147,6 @@ module Dataset
         raise Verse::Error::Unauthorized,
               "You do not have permission to create dataset on this project"
       end
-    end
-
-    private def validate_delivery_date!(attributes, original = nil)
-      return unless attributes.key?(:delivery_date)
-
-      value = attributes[:delivery_date]
-      return if value.nil? || value == original
-
-      return unless value < Date.today
-
-      raise Verse::Error::ValidationFailed, "Delivery Date must be today or later"
     end
   end
 end

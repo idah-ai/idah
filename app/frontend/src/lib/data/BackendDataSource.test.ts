@@ -203,6 +203,12 @@ describe(createBackendDataSource, () => {
       );
     });
 
+    it("omits an empty sort parameter", async () => {
+      mockList();
+      await ds.list({ sort: [], noCache: true });
+      expect(new URL(fetch.mock.lastCall![0]).searchParams.has("sort")).toBe(false);
+    });
+
     it("with sort", async () => {
       mockList();
 

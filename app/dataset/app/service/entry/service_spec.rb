@@ -224,6 +224,56 @@ RSpec.describe Entry::Service, database: true do
       expect(subject.index({ dataset_id: dataset_id }, sort: ["-delivery_date"]).last.id).to eq(ids[2])
     end
 
+    it "uses ID to keep tied Delivery Date pages stable in both directions" do
+      date = Date.today + 1
+      dataset_repo.update!(dataset_id, { delivery_date: date })
+      ids = Array.new(5) { UUIDv7.generate }.reverse
+      ids.each_with_index do |id, i|
+        repo.no_event do
+          repo.create(
+            attributes.merge(
+              id: id,
+              delivery_date: i.even? ? nil : date,
+              project_id: project_id,
+              resource: UUIDv7.generate
+            )
+          )
+        end
+      end
+      ["delivery_date", "-delivery_date"].each do |sort|
+        expected = sort.start_with?("-") ? ids.sort.reverse : ids.sort
+        pages = (1..3).flat_map do |page|
+          subject.index({ dataset_id: dataset_id }, sort: [sort], page: page, items_per_page: 2).map(&:id)
+        end
+        expect(pages).to eq(expected)
+        expect(pages.uniq.length).to eq(ids.length)
+      end
+    end
+
+    it "filters by displayed dates with inclusive bounds before pagination" do
+      dataset_repo.update!(dataset_id, { delivery_date: Date.new(2026, 11, 5) })
+      ids = [nil, Date.new(2026, 11, 1), Date.new(2026, 11, 10), Date.new(2026, 11, 20)].map do |date|
+        repo.no_event do
+          repo.create(attributes.merge(delivery_date: date, project_id: project_id, resource: UUIDv7.generate))
+        end
+      end
+      filters = { dataset_id: dataset_id, delivery_date__gte: "2026-11-01", delivery_date__lte: "2026-11-10" }
+      expect(subject.index(filters).map(&:id)).to match_array(ids.first(3))
+      timestamp_filters = filters.merge(
+        delivery_date__gte: "2026-11-01 00:00:00", delivery_date__lte: "2026-11-10 23:59:59"
+      )
+      expect(subject.index(timestamp_filters).map(&:id)).to match_array(ids.first(3))
+      page = subject.index(filters, sort: ["delivery_date"], page: 2, items_per_page: 1)
+      expect(page.map(&:id)).to eq([ids[0]])
+      expect(repo.find!(ids[0]).delivery_date).to be_nil
+      expect(subject.index({ dataset_id: dataset_id, delivery_date__gte: "2026-11-05" }).map(&:id))
+        .to match_array([ids[0], ids[2], ids[3]])
+      expect(subject.index({ dataset_id: dataset_id, delivery_date__lte: "2026-11-05" }).map(&:id))
+        .to match_array([ids[0], ids[1]])
+      dataset_repo.update!(dataset_id, { delivery_date: nil })
+      expect(subject.index(filters).map(&:id)).to match_array([ids[1], ids[2]])
+    end
+
     it "keeps non-date list sorting on the framework path" do
       expect(subject.entries).not_to receive(:index_by_delivery_date)
       ids = [1, -2].map do |priority|

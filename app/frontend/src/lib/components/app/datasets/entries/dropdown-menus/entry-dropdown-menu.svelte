@@ -14,7 +14,6 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
@@ -22,7 +21,7 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
-  import { datasetBasePath, DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { datasetBasePath } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -82,22 +81,6 @@
   });
 
   // Functions
-  async function openDeliveryDateModal() {
-    try {
-      const currentEntry = await entriesBackendDataSource.get(entry.id, {
-        noCache: true,
-        fields: {
-          [DatasetRecord.type]: ["delivery_date"],
-        },
-        included: ["dataset"],
-      });
-      entryRecord = currentEntry.data;
-      openDeliveryDate = true;
-    } catch (error) {
-      showActionFailedToast(error);
-    }
-  }
-
   async function openAssignEntryModal(): Promise<void> {
     const entryRes = await entriesBackendDataSource.get(entry.id, {
       noCache: true,
@@ -184,7 +167,7 @@
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
         {#if canUpdateEntry}
-          <DropdownMenuItem onclick={openDeliveryDateModal}
+          <DropdownMenuItem onclick={() => (openDeliveryDate = true)}
             ><CalendarIcon class="size-4" />Set Delivery Date</DropdownMenuItem
           >
         {/if}
@@ -222,6 +205,6 @@
   />
 {/if}
 
-{#if openDeliveryDate && entryRecord}
-  <UpdateEntryDeliveryDateFormModal entries={[entryRecord]} bind:open={openDeliveryDate} />
+{#if openDeliveryDate}
+  <UpdateEntryDeliveryDateFormModal entryIds={[entry.id]} bind:open={openDeliveryDate} />
 {/if}

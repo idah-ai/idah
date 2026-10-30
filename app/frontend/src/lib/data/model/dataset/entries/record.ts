@@ -79,7 +79,7 @@ export class EntryRecord extends Record {
   }
 
   public get overdue(): boolean {
-    return this.status !== "completed" && isOverdue(this.delivery_date || this.dataset.delivery_date);
+    return this.status !== "completed" && isOverdue(this.delivery_date || this.dataset?.delivery_date);
   }
 }
 

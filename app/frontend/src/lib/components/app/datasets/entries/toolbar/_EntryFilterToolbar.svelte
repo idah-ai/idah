@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry.columns";
+  import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -55,7 +55,6 @@
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
   let openDeliveryDate = $state(false);
-  let selectedEntries = $derived(controller.response.data.filter((entry) => controller.selectedIds.includes(entry.id)));
   let openReopen = $state(false);
 
   const bulkActions = $derived(
@@ -140,8 +139,10 @@
             sort={controller.listOptions.sort || []}
             onFilter={controller.applyFilter.bind(controller)}
             onSort={async (params) => {
-              if (params.sortDirection !== "none") controller.sort = [];
-              await controller.applySort(params);
+              controller.sort = [];
+              await controller.applySort(
+                params.sortDirection === "none" ? { columnKey: "created_at", sortDirection: "desc" } : params,
+              );
             }}
             onHide={() => {}}
           >
@@ -239,13 +240,10 @@
   bind:open={openReopen}
 />
 
-{#if canUpdateEntry && openDeliveryDate && selectedEntries.length > 0}
+{#if canUpdateEntry && openDeliveryDate && controller.selectedIds.length > 0}
   <UpdateEntryDeliveryDateFormModal
-    entries={selectedEntries}
+    entryIds={controller.selectedIds}
     bind:open={openDeliveryDate}
-    onUpdated={async () => {
-      controller.clearSelection();
-      await controller.fetch();
-    }}
+    onUpdated={() => controller.clearSelection()}
   />
 {/if}

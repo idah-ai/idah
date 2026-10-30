@@ -3,12 +3,13 @@
   import { LayoutListIcon } from "@lucide/svelte";
   import { addDays, startOfDay } from "date-fns";
   import { getContext, onMount } from "svelte";
+  import { writable } from "svelte/store";
 
   import { resolve } from "$app/paths";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DataView from "@/components/app/data-view/data-view.svelte";
-  import EntryCard from "@/components/app/datasets/entries/cards/_entry​Card.svelte";
+  import EntryCard from "@/components/app/datasets/entries/cards/entryCard.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
 
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
@@ -17,7 +18,7 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
 
-  import { createEntriesController } from "@/components/app/datasets/entries/overlays/entriesList.svelte";
+  import { createEntriesController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
   import { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
@@ -25,11 +26,14 @@
 
   import type { ProjectMemberScope } from "@/security/types";
 
+  const today = writable(startOfDay(new Date()));
+
   onMount(() => {
     let midnightTimer: ReturnType<typeof setTimeout>;
     const refreshToday = () => {
       clearTimeout(midnightTimer);
       const now = new Date();
+      today.set(startOfDay(now));
       const nextDay = startOfDay(addDays(now, 1));
       midnightTimer = setTimeout(refreshToday, nextDay.getTime() - now.getTime());
     };
@@ -88,6 +92,7 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
+      today={$today}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

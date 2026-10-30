@@ -89,7 +89,7 @@ module Entry
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = dataset.project_id
       attributes[:dataset_id] = dataset.id
-      validate_delivery_date!(attributes)
+      DeliveryDate.validate!(attributes)
       attributes[:delivery_date] = dataset.delivery_date unless attributes.key?(:delivery_date)
 
       entries.transaction do
@@ -119,7 +119,7 @@ module Entry
       attributes = record.attributes
       if attributes.key?(:delivery_date)
         current = entries.find!(record.id)
-        validate_delivery_date!(attributes, current.delivery_date)
+        DeliveryDate.validate!(attributes, current.delivery_date)
       end
       entries.update!(record.id, attributes)
       entries.find!(record.id)
@@ -346,17 +346,6 @@ module Entry
           next
         end
       end
-    end
-
-    private def validate_delivery_date!(attributes, original = nil)
-      return unless attributes.key?(:delivery_date)
-
-      value = attributes[:delivery_date]
-      return if value.nil? || value == original
-
-      return unless value < Date.today
-
-      raise Verse::Error::ValidationFailed, "Delivery Date must be today or later"
     end
   end
 end

@@ -91,12 +91,23 @@ module Entry
       end
     end
 
+    { delivery_date__gte: :>=, delivery_date__lte: :<= }.each do |name, operator|
+      custom_filter name do |collection, value|
+        dataset_date = collection.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+        date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        collection.where(date.public_send(operator, value))
+      end
+    end
+
     def index_by_delivery_date(filters = {}, sort:, **options)
       with_db_mode :r do
         dataset_date = table.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
         date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
         direction = Array(sort).first.start_with?("-") ? :desc : :asc
-        scope = scoped(:read).order(Sequel.public_send(direction, date, nulls: :last))
+        scope = scoped(:read).order(
+          Sequel.public_send(direction, date, nulls: :last),
+          Sequel.public_send(direction, Sequel[:entries][:id])
+        )
         # Keep the prepared ordering while reusing framework filtering and pagination.
         index(filters, scope: scope, sort: [], **options)
       end

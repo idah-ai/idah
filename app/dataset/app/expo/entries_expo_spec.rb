@@ -53,6 +53,17 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     expect(record[0].status).to eq "pending"
   end
 
+  it "passes Delivery Date range filters to the service" do
+    expect(service).to receive(:index) do |filters, **_options|
+      expect(filters.transform_keys(&:to_s)).to include(
+        "delivery_date__gte" => "2026-11-01", "delivery_date__lte" => "2026-11-10"
+      )
+      [entry_record]
+    end
+    get "/entries?filter[delivery_date__gte]=2026-11-01&filter[delivery_date__lte]=2026-11-10"
+    expect(last_response.status).to eq(200)
+  end
+
   it "show" do
     expect(service).to receive(:show).with(uuid, included: []).and_return(entry_record)
     get "/entries/#{uuid}"
