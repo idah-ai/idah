@@ -43,18 +43,20 @@ export const ExportsBackendDataSource = createBackendDataSource(ExportRecord, ex
   export: async (params: {
     projectId: string;
     datasetIds: Array<string>;
+    entryIds?: Array<string>;
     exporter: string;
     includeMedias: string;
     completedEntries: boolean;
     /** The format's own options (see `ExportFormat.options`). */
     options?: ExportOptionValues;
   }) => {
-    const { projectId, datasetIds, exporter, includeMedias, completedEntries, options = {} } = params;
+    const { projectId, datasetIds, exporter, includeMedias, completedEntries, entryIds, options = {} } = params;
     const res = await fetch(`${exportsBasePath}/export`, {
       method: "POST",
       body: JSON.stringify({
         project_id: projectId,
         dataset_ids: datasetIds,
+        ...(entryIds && entryIds.length > 0 ? { entry_ids: entryIds } : {}),
         exporter: exporter,
         options: {
           ...options,

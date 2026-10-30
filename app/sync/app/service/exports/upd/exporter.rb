@@ -23,9 +23,9 @@ module Exports
         # unique in a UPD file: keep track of the resources already appended.
         exported_resources = Set.new
 
-        # Export only the completed entries unless explicitly told otherwise.
+        # Export all entries unless explicitly requested to export only completed ones.
         entries_filter =
-          context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
+          context.options.fetch(:completed_entries, false) ? { status: "completed" } : {}
 
         # Keep references to media tempfiles so they are not garbage collected
         # before updcli-static reads them during the append call.

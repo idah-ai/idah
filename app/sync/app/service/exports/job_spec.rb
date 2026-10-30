@@ -79,7 +79,8 @@ RSpec.describe Exports::Job do
         expect(Exports::Context).to receive(:new).with(
           subject,
           dataset_ids,
-          export_options
+          export_options,
+          nil
         ).and_return(mock_export_context)
 
         subject.run_impl
@@ -197,7 +198,8 @@ RSpec.describe Exports::Job do
         expect(Exports::Context).to receive(:new).with(
           subject,
           dataset_ids,
-          export_options
+          export_options,
+          nil
         ).and_return(mock_export_context)
 
         allow(mock_io_context).to receive(:mode).and_return(:file)
@@ -219,7 +221,8 @@ RSpec.describe Exports::Job do
         expect(Exports::Context).to receive(:new).with(
           subject,
           [],
-          export_options
+          export_options,
+          nil
         ).and_return(mock_export_context)
 
         subject.run_impl

@@ -65,9 +65,9 @@ module IdahVideo
                 "(#{dataset.record.id}) is #{modality}."
         end
 
-        # Only completed entries, unless the export says otherwise.
+        # Export all entries unless explicitly requested to export only completed ones.
         def entries_filter(context)
-          context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
+          context.options.fetch(:completed_entries, false) ? { status: "completed" } : {}
         end
       end
     end
