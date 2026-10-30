@@ -165,13 +165,6 @@
     getDriver().command.call("idah-video:annotation.bulk-update", { updates: result.updates });
     draftCategory = undefined;
     draftProperties = {};
-    feedback = "Bulk update queued. Check the workspace sync indicator for save status.";
-  }
-
-  function resetProperty(id: string) {
-    const next = { ...draftProperties };
-    delete next[id];
-    draftProperties = next;
     feedback = "";
   }
 
@@ -238,9 +231,9 @@
       items={sourceItems}
       {fields}
       draft={draftProperties}
+      {draftCategory}
       disabled={disabled || viewport.isReviewWorkspace || !sameShape}
       onValueChange={setDraftProperty}
-      onReset={resetProperty}
     />
     {#if blockReason}
       {@const isPrompt = blockReason === "Choose a category or property to apply."}
@@ -250,7 +243,9 @@
           class={isPrompt
             ? "text-muted-foreground text-xs"
             : "bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs"}
-        >{blockReason}</p>
+        >
+          {blockReason}
+        </p>
       {/if}
     {/if}
     {#if feedback}

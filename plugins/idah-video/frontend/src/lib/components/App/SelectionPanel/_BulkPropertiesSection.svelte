@@ -1,28 +1,26 @@
 <script lang="ts">
   import Text from "$lib/components/ui/Text/Text.svelte";
   import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
-  import { propertyState, type PropertyValue } from "$lib/utils/bulk-category";
+  import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
+  import { bulkPropertyValidity, propertyState, type PropertyValue } from "$lib/utils/bulk-category";
+  import { getDriver } from "$lib/state/driver.svelte";
   import type { IAnnotationRecord, IConfigProperty } from "$idah/v2/types";
 
   let {
     items,
     fields,
     draft,
+    draftCategory,
     disabled,
     onValueChange,
-    onReset,
   }: {
     items: IAnnotationRecord[];
     fields: IConfigProperty[];
     draft: Record<string, PropertyValue>;
+    draftCategory?: string;
     disabled: boolean;
     onValueChange: (id: string, value: PropertyValue) => void;
-    onReset: (id: string) => void;
   } = $props();
-
-  function resetField(id: string) {
-    onReset(id);
-  }
 </script>
 
 {#if fields.length}
@@ -34,6 +32,7 @@
       {@const changed = Object.hasOwn(draft, field.id)}
       {@const value = changed ? draft[field.id] : state.value}
       {@const untouchedMixed = state.mixed && !changed}
+      {@const valid = bulkPropertyValidity(items, field, getDriver(), draftCategory, draft, propertyFullfilled)}
       <div class="flex flex-col gap-1">
         <PropertiesSection
           properties={[field]}
@@ -44,26 +43,9 @@
           }}
           showTitle={false}
           placeholder={untouchedMixed ? "Mixed — leave unchanged" : undefined}
+          validationOverride={!valid}
           {disabled}
         />
-
-        <!-- {#if !field.required && field.type !== "single-select" && !changed}
-          <Button
-            variant="ghost"
-            size="sm"
-            class="self-start"
-            {disabled}
-            onclick={() => onValueChange(field.id, undefined)}
-          >
-            Remove property
-          </Button>
-        {/if} -->
-
-        <!-- {#if changed}
-          <Button variant="ghost" size="sm" class="self-start" onclick={() => resetField(field.id)}>
-            Keep original values
-          </Button>
-        {/if} -->
       </div>
     {/each}
   </section>

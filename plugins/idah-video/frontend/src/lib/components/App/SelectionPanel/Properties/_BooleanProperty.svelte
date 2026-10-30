@@ -12,15 +12,17 @@
     onValueChange,
     disabled,
     placeholder,
+    validationOverride,
   }: {
     property: IConfigProperty;
     value: boolean | undefined;
     onValueChange: (v: boolean) => void;
     disabled: boolean;
     placeholder?: string;
+    validationOverride?: boolean;
   } = $props();
 
-  const invalid = $derived(!propertyFullfilled(value, property));
+  const invalid = $derived(validationOverride ?? !propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
 
   let checked = $derived(value ?? false);

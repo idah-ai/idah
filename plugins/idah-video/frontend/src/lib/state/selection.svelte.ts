@@ -37,9 +37,7 @@ function resolveGroups(): { groupId: string; annotations: IAnnotationRecord[] }[
   const items = data.annotations?.items ?? [];
   return Array.from(_selectedGroupIds).map((gid) => ({
     groupId: gid,
-    annotations: items.filter(
-      (a) => (a as any).metadata?.group_id === gid || a.id === gid,
-    ) as IAnnotationRecord[],
+    annotations: items.filter((a) => (a as any).metadata?.group_id === gid || a.id === gid) as IAnnotationRecord[],
   }));
 }
 
@@ -148,7 +146,6 @@ export const selection = {
       next.add(annotationId);
     }
     _selectedAnnotationIds = next;
-    // Shift+click can add an annotation alongside selected groups.
   },
 
   /**

@@ -12,16 +12,18 @@
     onValueChange,
     disabled,
     placeholder,
+    validationOverride,
   }: {
     property: IConfigProperty;
     value: string[] | undefined;
     onValueChange: (v: string[]) => void;
     disabled: boolean;
     placeholder?: string;
+    validationOverride?: boolean;
   } = $props();
 
   const options = $derived(property.format?.options);
-  const invalid = $derived(!propertyFullfilled(value, property));
+  const invalid = $derived(validationOverride ?? !propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, (v: unknown) => string>([
     ["required", (_: unknown) => [property.label, "is required"].join(" ")],

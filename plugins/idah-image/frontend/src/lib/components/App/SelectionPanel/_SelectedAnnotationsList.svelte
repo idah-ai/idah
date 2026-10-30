@@ -28,19 +28,15 @@
   import { bulkFields, bulkPreview, categoryCounts, hasMaskCategoryCollision, sharedCategories, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
 
   import {  IMAGE_MASK } from "$lib/types";
-  import type { IAnnotationRecord } from "$idah/v2/types";
-    import type Dice_1 from "@lucide/svelte/icons/dice-1";
 
   // Optional — when provided, show these items instead of selection.selectedAnnotations.
   // This lets the component be reused for group-selection annotations.
   interface Props {
-    items?: IAnnotationRecord[];
     disabled?: boolean;
   }
-  let { items, disabled = false }: Props = $props();
+  let { disabled = false }: Props = $props();
 
-  // Source of truth: explicit items prop, or fall back to the selection model.
-  let sourceItems = $derived(items ?? selection.selectedAnnotations);
+  let sourceItems = $derived(selection.selectedAnnotations);
 
   const PAGE_SIZE = 10;
   let page = $state(1);
@@ -69,7 +65,6 @@
   const preview = $derived(bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled));
   const blockReason = $derived.by(() => {
     if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size) return "Selection is incomplete.";
-    if (items) return "Group editing is not available in this step.";
     if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
     if (!sameShape) return "Editing is unavailable because the selected annotations have different shapes.";
     if (!hasSharedChoices) return "No category or property is available for all selected annotations.";
@@ -101,13 +96,6 @@
     getDriver().command.call("idah-image:annotation.bulk-update", { updates: result.updates });
     draftCategory = undefined;
     draftProperties = {};
-    feedback = "Bulk update queued. Check the workspace sync indicator for save status.";
-  }
-
-  function resetProperty(id: string) {
-    const next = { ...draftProperties };
-    delete next[id];
-    draftProperties = next;
     feedback = "";
   }
 
@@ -170,11 +158,11 @@
 
 	  <BulkPropertiesSection
 	    items={sourceItems}
-	    {fields}
-	    draft={draftProperties}
-	    disabled={disabled || !sameShape}
+      {fields}
+      draft={draftProperties}
+      draftCategory={draftCategory}
+      disabled={disabled || !sameShape}
 	    onValueChange={setDraftProperty}
-	    onReset={resetProperty}
 	  />
     {#if blockReason}
       {@const isPrompt = blockReason === "Choose a category or property to apply."}

@@ -10,6 +10,38 @@ export interface BulkCategoryUpdate {
 export type PropertyValue = string | number | string[] | boolean | undefined;
 type PropertyValidator = (value: PropertyValue, property: IConfigProperty) => boolean;
 
+export function bulkPropertyValidity(
+  items: IAnnotationRecord[],
+  field: IConfigProperty,
+  driver: IIdahDriverV2,
+  category: string | undefined,
+  changes: Record<string, PropertyValue>,
+  propertyValid: PropertyValidator,
+): boolean {
+  return items.every((item) => {
+    const properties = { ...item.properties } as Record<string, unknown>;
+    for (const [id, value] of Object.entries(changes)) {
+      if (value === undefined) delete properties[id];
+      else properties[id] = value;
+    }
+
+    for (;;) {
+      const filtered = driver.getFilteredConfig(item.shape_type, {
+        category: category ?? item.category,
+        properties,
+      });
+      if (!filtered) return false;
+      const visibleIds = new Set(filtered.properties.map((property) => property.id));
+      const hiddenKeys = Object.keys(properties).filter((id) => !visibleIds.has(id));
+      if (!hiddenKeys.length) {
+        const targetField = filtered.properties.find((property) => property.id === field.id);
+        return !targetField || propertyValid(properties[field.id] as PropertyValue, targetField);
+      }
+      for (const id of hiddenKeys) delete properties[id];
+    }
+  });
+}
+
 export function hasMixedShapeTypes(items: IAnnotationRecord[]): boolean {
   return items.some((item) => item.shape_type !== items[0].shape_type);
 }
@@ -28,7 +60,8 @@ function normalized(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalized);
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).sort(([a], [b]) => a.localeCompare(b))
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, entry]) => [key, normalized(entry)]),
     );
   }
@@ -36,10 +69,12 @@ function normalized(value: unknown): unknown {
 }
 
 function compatibleProperty(a: IConfigProperty, b: IConfigProperty): boolean {
-  return a.id === b.id &&
+  return (
+    a.id === b.id &&
     a.type === b.type &&
     a.required === b.required &&
-    JSON.stringify(normalized(a.format)) === JSON.stringify(normalized(b.format));
+    JSON.stringify(normalized(a.format)) === JSON.stringify(normalized(b.format))
+  );
 }
 
 export function sharedCategories(items: IAnnotationRecord[], config: IConfig): IConfigValue[] {
@@ -49,9 +84,7 @@ export function sharedCategories(items: IAnnotationRecord[], config: IConfig): I
   return first.filter((value) => {
     if (seen.has(value.id)) return false;
     seen.add(value.id);
-    return items.every((item) =>
-      config[item.shape_type]?.values.some((candidate) => candidate.id === value.id),
-    );
+    return items.every((item) => config[item.shape_type]?.values.some((candidate) => candidate.id === value.id));
   });
 }
 
@@ -76,7 +109,8 @@ export function sharedProperties(
     }
     for (;;) {
       const visible = driver.getFilteredConfig(item.shape_type, {
-        category: category ?? item.category, properties,
+        category: category ?? item.category,
+        properties,
       })?.properties;
       if (!visible) return undefined;
       const ids = new Set(visible.map((field) => field.id));
@@ -86,9 +120,9 @@ export function sharedProperties(
     }
   });
   if (fields.some((value) => !value)) return [];
-  return fields[0]!.filter((field) => fields.every((list) =>
-    list!.some((candidate) => compatibleProperty(field, candidate)),
-  ));
+  return fields[0]!.filter((field) =>
+    fields.every((list) => list!.some((candidate) => compatibleProperty(field, candidate))),
+  );
 }
 
 export function bulkFields(
@@ -98,24 +132,28 @@ export function bulkFields(
   draftProperties: Record<string, PropertyValue>,
 ): IConfigProperty[] {
   const visible = sharedProperties(items, driver, draftCategory, draftProperties);
-  const cleared = sharedProperties(items, driver, draftCategory).filter((field) =>
-    Object.hasOwn(draftProperties, field.id) &&
-    draftProperties[field.id] === undefined &&
-    !visible.some((candidate) => candidate.id === field.id),
+  const cleared = sharedProperties(items, driver, draftCategory).filter(
+    (field) =>
+      Object.hasOwn(draftProperties, field.id) &&
+      draftProperties[field.id] === undefined &&
+      !visible.some((candidate) => candidate.id === field.id),
   );
   return [...visible, ...cleared];
 }
 
-export function categoryCounts(items: IAnnotationRecord[], config: IConfig): Map<string, { count: number; label: string }> {
+export function categoryCounts(
+  items: IAnnotationRecord[],
+  config: IConfig,
+): Map<string, { count: number; label: string }> {
   const counts = new Map<string, { count: number; label: string }>();
   for (const item of items) {
     const existing = counts.get(item.category);
     if (existing) {
       existing.count += 1;
     } else {
-      const label = annotationLabel(item, (categoryId) =>
-        config[item.shape_type]?.values.find((value) => value.id === categoryId),
-      )?.text ?? item.category;
+      const label =
+        annotationLabel(item, (categoryId) => config[item.shape_type]?.values.find((value) => value.id === categoryId))
+          ?.text ?? item.category;
       counts.set(item.category, { count: 1, label });
     }
   }
@@ -130,7 +168,8 @@ export function prepareBulkCategory(
   changes: Record<string, PropertyValue> = {},
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
-  if (hasMixedShapeTypes(items)) return { updates: [], error: "Editing is unavailable because the selected annotations have different shapes." };
+  if (hasMixedShapeTypes(items))
+    return { updates: [], error: "Editing is unavailable because the selected annotations have different shapes." };
 
   const available = new Set(sharedProperties(items, driver, category, changes).map((field) => field.id));
   if (Object.entries(changes).some(([id, value]) => value !== undefined && !available.has(id))) {
@@ -165,9 +204,7 @@ export function prepareBulkCategory(
       return { updates: [], error: "A chosen property becomes hidden after this change." };
     }
 
-    const invalid = visible.find((property) =>
-      !propertyValid(properties[property.id] as PropertyValue, property),
-    );
+    const invalid = visible.find((property) => !propertyValid(properties[property.id] as PropertyValue, property));
     if (invalid) return { updates: [], error: `${invalid.label} needs a valid value.` };
 
     updates.push({ id: item.id, category, properties });
@@ -182,7 +219,8 @@ export function prepareBulkProperties(
   propertyValid: PropertyValidator,
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
-  if (hasMixedShapeTypes(items)) return { updates: [], error: "Editing is unavailable because the selected annotations have different shapes." };
+  if (hasMixedShapeTypes(items))
+    return { updates: [], error: "Editing is unavailable because the selected annotations have different shapes." };
   const ids = Object.keys(changes);
   if (!ids.length) return { updates: [], error: "Choose a property to apply." };
 

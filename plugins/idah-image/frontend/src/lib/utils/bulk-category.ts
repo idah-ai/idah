@@ -23,6 +23,37 @@ export function hasMaskCategoryCollision(updates: BulkCategoryUpdate[], entryIte
 export type PropertyValue = string | number | string[] | boolean | undefined;
 type PropertyValidator = (value: PropertyValue, property: IConfigProperty) => boolean;
 
+export function bulkPropertyValidity(
+  items: IAnnotationRecord[],
+  field: IConfigProperty,
+  driver: IIdahDriverV2,
+  category: string | undefined,
+  changes: Record<string, PropertyValue>,
+  propertyValid: PropertyValidator,
+): boolean {
+  return items.every((item) => {
+    const properties = { ...item.properties } as Record<string, unknown>;
+    for (const [id, value] of Object.entries(changes)) {
+      if (value === undefined) delete properties[id];
+      else properties[id] = value;
+    }
+
+    for (;;) {
+      const filtered = driver.getFilteredConfig(item.shape_type, {
+        category: category ?? item.category, properties,
+      });
+      if (!filtered) return false;
+      const visibleIds = new Set(filtered.properties.map((property) => property.id));
+      const hiddenKeys = Object.keys(properties).filter((id) => !visibleIds.has(id));
+      if (!hiddenKeys.length) {
+        const targetField = filtered.properties.find((property) => property.id === field.id);
+        return !targetField || propertyValid(properties[field.id] as PropertyValue, targetField);
+      }
+      for (const id of hiddenKeys) delete properties[id];
+    }
+  });
+}
+
 export function hasMixedShapeTypes(items: IAnnotationRecord[]): boolean {
   return items.some((item) => item.shape_type !== items[0].shape_type);
 }

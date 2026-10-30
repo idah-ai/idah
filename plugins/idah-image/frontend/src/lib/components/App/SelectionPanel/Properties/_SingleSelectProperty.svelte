@@ -12,6 +12,7 @@
 	  onValueChange: (v: string | undefined) => void;
 	  disabled: boolean;
 	  placeholder?: string;
+    validationOverride?: boolean;
   }
 
   let {
@@ -20,10 +21,11 @@
     onValueChange,
     disabled,
     placeholder,
+    validationOverride,
   }: Props = $props();
 
   const options = $derived(property.format.options);
-  const invalid = $derived(!propertyFullfilled(value, property));
+  const invalid = $derived(validationOverride ?? !propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, (v: unknown) => string>([
     ["required", (_: unknown) => [property.label, "is required"].join(" ")],

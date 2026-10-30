@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bulkFields, bulkPreview, categoryCounts, hasMaskCategoryCollision, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
+import { bulkFields, bulkPreview, bulkPropertyValidity, categoryCounts, hasMaskCategoryCollision, prepareBulkCategory, prepareBulkProperties, propertyState, sharedCategories, sharedProperties } from "./bulk-category";
 import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
 import { IMAGE_MASK } from "$lib/types";
 import type { IAnnotationRecord, IConfigProperty, IIdahDriverV2 } from "$idah/v2/types";
@@ -139,6 +139,51 @@ describe("bulk category preparation", () => {
     ];
     expect(propertyState(items, "occluded")).toEqual({ mixed: true, value: undefined });
     expect(propertyState(items, "tags")).toEqual({ mixed: false, value: ["red", "blue"] });
+  });
+
+  it("keeps mixed required values valid when every target has a valid value", () => {
+    const required = { ...property("wheel", true), type: "integer", format: { minimum: 1 } } as IConfigProperty;
+    const requiredDriver = {
+      ...driver,
+      getFilteredConfig: () => ({ values: [], properties: [required] }),
+    } as IIdahDriverV2;
+    const items = [record("a", "vehicle", { wheel: 4 }), record("b", "vehicle", { wheel: 6 })];
+
+    expect(propertyState(items, "wheel")).toEqual({ mixed: true, value: undefined });
+    expect(bulkPropertyValidity(items, required, requiredDriver, undefined, {}, propertyFullfilled)).toBe(true);
+  });
+
+  it("marks a required mixed field invalid when one target is missing it", () => {
+    const required = { ...property("wheel", true), type: "integer", format: { minimum: 1 } } as IConfigProperty;
+    const requiredDriver = {
+      ...driver,
+      getFilteredConfig: () => ({ values: [], properties: [required] }),
+    } as IIdahDriverV2;
+    const items = [record("a", "vehicle", { wheel: 4 }), record("b", "vehicle", {})];
+
+    expect(bulkPropertyValidity(items, required, requiredDriver, undefined, {}, propertyFullfilled)).toBe(false);
+  });
+
+  it("evaluates dependent visibility from final boolean, numeric, and text values", () => {
+    const dependent = property("detail", true);
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
+        values: [],
+        properties: [property("occluded"), property("score"), property("note"),
+          ...(value.properties.occluded === true && Number(value.properties.score) > 4 && value.properties.note !== ""
+            ? [dependent] : [])],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("a", "vehicle", { occluded: true, score: 5, note: "yes", detail: "high" }),
+      record("b", "vehicle", { occluded: true, score: 8, note: "yes", detail: "low" }),
+    ];
+
+    expect(bulkPropertyValidity(items, dependent, conditionalDriver, undefined, {}, propertyFullfilled)).toBe(true);
+    expect(bulkPropertyValidity(items, dependent, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)).toBe(true);
+    expect(bulkPreview(items, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)?.updates[0].properties)
+      .not.toHaveProperty("detail");
   });
 
   it("offers only properties visible for every selected annotation", () => {

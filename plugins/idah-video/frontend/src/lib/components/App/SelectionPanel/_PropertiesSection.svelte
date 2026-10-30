@@ -17,9 +17,18 @@
     disabled: boolean;
     showTitle?: boolean;
     placeholder?: string;
+    validationOverride?: boolean;
   };
 
-  let { properties, annotationValue, onValueChange, disabled, showTitle = true, placeholder }: Props = $props();
+  let {
+    properties,
+    annotationValue,
+    onValueChange,
+    disabled,
+    showTitle = true,
+    placeholder,
+    validationOverride,
+  }: Props = $props();
 </script>
 
 <section class="flex flex-col gap-2">
@@ -37,6 +46,7 @@
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "integer"}
@@ -45,6 +55,7 @@
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "boolean"}
@@ -53,6 +64,7 @@
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "single-select"}
@@ -61,6 +73,7 @@
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "multi-select"}
@@ -69,6 +82,7 @@
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
           {placeholder}
+          {validationOverride}
           {disabled}
         />
       {/if}

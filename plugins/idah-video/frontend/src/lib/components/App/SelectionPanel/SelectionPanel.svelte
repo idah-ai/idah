@@ -3,6 +3,7 @@
   import SelectedAnnotationsList from "$lib/components/App/SelectionPanel/_SelectedAnnotationsList.svelte";
   import CreateMode from "$lib/components/App/SelectionPanel/_CreateMode.svelte";
   import EditMode from "$lib/components/App/SelectionPanel/_EditMode.svelte";
+  import GroupEditMode from "$lib/components/App/SelectionPanel/_GroupEditMode.svelte";
 
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -44,6 +45,24 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
+  let selectedGroupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
+    if (sel?.type !== "group" || !data.annotations) return undefined;
+    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
+    return items.find((item) => (item.metadata?.group_id ?? item.id) === sel.groupId);
+  });
+
+  let selectedGroupCategory = $derived(
+    selectedGroupAnnotation
+      ? getDriver().config[selectedGroupAnnotation.shape_type]?.values?.find(
+          (value) => value.id === selectedGroupAnnotation.category,
+        )
+      : undefined,
+  );
+
+  let isSingleGroupSelection = $derived(
+    sel?.type === "group" && selection.selectedGroupIds.size === 1 && selection.selectedAnnotationIds.size === 0,
+  );
+
   // A selected tagging annotation (entry:root / idah-video:frame) is never shown
   // in the Annotations tab — it's edited through the Tagging tab instead. Treat it
   // as no selection here so the annotations list renders rather than the tagging form.
@@ -70,7 +89,9 @@
   );
   let configValues = $derived(config?.values ?? []);
 
-  let category = $derived(configValues.find((c) => c.id == selectedCategory));
+  let category = $derived(
+    isSingleGroupSelection ? selectedGroupCategory : configValues.find((c) => c.id == selectedCategory),
+  );
   let properties = $derived(config?.properties ?? []);
 
   // Human-readable mode title from shape type
@@ -84,8 +105,11 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   });
 
-  // Display name for the selected single annotation (edit mode)
+  // Display name for the selected single annotation or group (edit mode)
   let annotationDisplayName = $derived.by<string | undefined>(() => {
+    if (sel?.type === "group") {
+      return selectedGroupCategory?.label ?? sel.groupId;
+    }
     if (sel?.type !== "annotation") return undefined;
     const groupId = sel.annotation.metadata?.group_id ?? sel.annotation.id;
     const lastPart = groupId.split("-").pop();
@@ -133,10 +157,7 @@
     return sorted;
   });
 
-  let showAnnotationsList = $derived(
-    !shapeTypeOverride &&
-      (viewport.mode === "editor" || viewport.isReviewWorkspace),
-  );
+  let showAnnotationsList = $derived(!shapeTypeOverride && (viewport.mode === "editor" || viewport.isReviewWorkspace));
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -178,6 +199,18 @@
       disabled={effectiveDisabled}
     />
   {/if}
+{:else if isSingleGroupSelection}
+  <!-- A single timeline group changes category for the group only; properties are per annotation. -->
+  <GroupEditMode
+    {modeTitle}
+    {shapeType}
+    {configValues}
+    {category}
+    selectedCategory={selectedGroupAnnotation?.category ?? ""}
+    displayName={annotationDisplayName ?? ""}
+    onReSelectCategory={reselectCategory}
+    disabled={effectiveDisabled}
+  />
 {:else if selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 0}
   <!-- Bulk editing includes complete selected groups and directly selected annotations. -->
   <SelectedAnnotationsList disabled={effectiveDisabled} />
