@@ -16,6 +16,7 @@
     onValueChange: (value?: string) => void;
     disabled: boolean;
     placeholder?: string;
+    showShapeIcon?: boolean;
     /** Category ids to disable in the picker (e.g. already-used categories). */
     disabledValues?: Set<string>;
   };
@@ -28,6 +29,7 @@
     onValueChange,
     disabled,
     placeholder,
+    showShapeIcon = true,
     disabledValues,
   }: Props = $props();
 </script>
@@ -45,7 +47,9 @@
             <div class="whitespace-break-spaces">{parentLabel}</div>
           {/if}
           <div class="flex items-center justify-start gap-1">
-            <ShapeIcon {shapeType} color={category.color} />
+            {#if showShapeIcon}
+              <ShapeIcon {shapeType} color={category.color} />
+            {/if}
             <b>{category.label}</b>
           </div>
         </div>
@@ -63,7 +67,9 @@
             class={"text-xs " + (selectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
             disabled={selectedCategory == value || disabledValues?.has(value)}
           >
-            <ShapeIcon {shapeType} {color} />
+            {#if showShapeIcon}
+              <ShapeIcon {shapeType} {color} />
+            {/if}
             {valueLabel}
           </SelectItem>
         {/each}

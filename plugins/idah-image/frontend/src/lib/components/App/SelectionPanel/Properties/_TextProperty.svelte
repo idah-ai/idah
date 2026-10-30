@@ -1,24 +1,30 @@
 <script lang="ts">
   import Input from "$lib/components/ui/Input/Input.svelte";
-  import Label from "$lib/components/ui/Label/Label.svelte";
+  import * as Field from "$lib/components/ui/Field";
 
   import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
 
   import type { IConfigProperty } from "$idah/v2/types";
+
+  interface Props {
+	  property: IConfigProperty;
+	  value: string | undefined;
+	  onValueChange: (v: string) => void;
+	  disabled: boolean;
+	  placeholder?: string;
+    validationOverride?: boolean;
+  }
 
   let {
     property,
     value,
     onValueChange,
     disabled,
-  }: {
-    property: IConfigProperty;
-    value: string;
-    onValueChange: (v: string) => void;
-    disabled: boolean;
-  } = $props();
+    placeholder,
+    validationOverride,
+  }: Props = $props();
 
-  const invalid = $derived(!propertyFullfilled(value, property));
+  const invalid = $derived(validationOverride ?? !propertyFullfilled(value, property));
 
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, (v: unknown) => string>([
@@ -37,15 +43,26 @@
   ]);
 </script>
 
-<div class="flex flex-col gap-1">
-  <Label for={property.id} class="text-xs">
+<Field.Field>
+  <Field.Label for={property.id} class="text-xs" required={property.required}>
     {property.label}
-    {#if property.required}
-      <span class="text-red-500">*</span>
-    {/if}
-  </Label>
+  </Field.Label>
 
-  <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.currentTarget.value)} {disabled} />
+  <Input
+    id={property.id}
+    aria-invalid={invalid}
+    class="placeholder:text-xs"
+    type="text"
+    {disabled}
+    {placeholder}
+    {value}
+    onchange={(e) => onValueChange(e.currentTarget.value)}
+  />
+
+  {#if property.description}
+    <Field.Description class="text-[10px]">{property.description}</Field.Description>
+  {/if}
+
   {#if invalid}
     <ul class="text-xs">
       {#each format as entry, index (index)}
@@ -54,10 +71,8 @@
 
         {#if formatter && formatter(v)}
           <li style:color="red">{formatter(v)}</li>
-          <!-- {:else}
-          <li style:color="red">{k}:<span>{v}</span></li> -->
         {/if}
       {/each}
     </ul>
   {/if}
-</div>
+</Field.Field>

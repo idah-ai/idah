@@ -45,6 +45,24 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
+  let selectedGroupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
+    if (sel?.type !== "group" || !data.annotations) return undefined;
+    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
+    return items.find((item) => (item.metadata?.group_id ?? item.id) === sel.groupId);
+  });
+
+  let selectedGroupCategory = $derived(
+    selectedGroupAnnotation
+      ? getDriver().config[selectedGroupAnnotation.shape_type]?.values?.find(
+          (value) => value.id === selectedGroupAnnotation.category,
+        )
+      : undefined,
+  );
+
+  let isSingleGroupSelection = $derived(
+    sel?.type === "group" && selection.selectedGroupIds.size === 1 && selection.selectedAnnotationIds.size === 0,
+  );
+
   // A selected tagging annotation (entry:root / idah-video:frame) is never shown
   // in the Annotations tab — it's edited through the Tagging tab instead. Treat it
   // as no selection here so the annotations list renders rather than the tagging form.
@@ -71,33 +89,9 @@
   );
   let configValues = $derived(config?.values ?? []);
 
-  // Flatten all annotations from selected groups (for displaying multi-group selection)
-  let groupAnnotations = $derived(selection.selectedGroupAnnotations);
-
-  // Annotation from the selected group (for group edit mode display)
-  let groupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
-    if (sel?.type !== "group" || !data.annotations) return undefined;
-    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
-    return items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-  });
-
-  let groupAnnDisplayName = $derived.by<string>(() => {
-    if (!groupAnnotation || !sel || sel.type !== "group") return "";
-    const gAnn = groupAnnotation;
-    const gShapeType = gAnn.shape_type as string;
-    const gConfig = getDriver().config[gShapeType];
-    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.category);
-    const lastPart = sel.groupId.split("-").pop() ?? "";
-    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.category ?? "Uncategorized");
-  });
-
-  // When a group is selected, always use the annotation's current category from the data store,
-  // so it stays in sync even when the parent doesn't update the selectedCategory prop.
-  let effectiveSelectedCategory = $derived(
-    sel?.type === "group" ? groupAnnotation?.category || "" : selectedCategory,
+  let category = $derived(
+    isSingleGroupSelection ? selectedGroupCategory : configValues.find((c) => c.id == selectedCategory),
   );
-
-  let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
   let properties = $derived(config?.properties ?? []);
 
   // Human-readable mode title from shape type
@@ -111,8 +105,11 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   });
 
-  // Display name for the selected single annotation (edit mode)
+  // Display name for the selected single annotation or group (edit mode)
   let annotationDisplayName = $derived.by<string | undefined>(() => {
+    if (sel?.type === "group") {
+      return selectedGroupCategory?.label ?? sel.groupId;
+    }
     if (sel?.type !== "annotation") return undefined;
     const groupId = sel.annotation.metadata?.group_id ?? sel.annotation.id;
     const lastPart = groupId.split("-").pop();
@@ -160,10 +157,7 @@
     return sorted;
   });
 
-  let showAnnotationsList = $derived(
-    !shapeTypeOverride &&
-      (viewport.mode === "editor" || viewport.isReviewWorkspace),
-  );
+  let showAnnotationsList = $derived(!shapeTypeOverride && (viewport.mode === "editor" || viewport.isReviewWorkspace));
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -184,7 +178,7 @@
   }
 </script>
 
-{#if !sel || isTaggingAnnotation}
+{#if (!sel || isTaggingAnnotation) && selection.selectedGroupIds.size === 0}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} {currentFrame} />
@@ -205,25 +199,22 @@
       disabled={effectiveDisabled}
     />
   {/if}
-{:else if selection.selectedAnnotationIds.size > 1}
-  <!-- Multiple annotations selected: show a compact list of selected items -->
-  <SelectedAnnotationsList />
-{:else if selection.selectedGroupIds.size > 1}
-  <!-- Multiple groups selected: show the annotations belonging to those groups -->
-  <SelectedAnnotationsList items={groupAnnotations} />
-{:else if sel.type === "group"}
-  <!-- Group edit mode -->
+{:else if isSingleGroupSelection}
+  <!-- A single timeline group changes category for the group only; properties are per annotation. -->
   <GroupEditMode
     {modeTitle}
     {shapeType}
     {configValues}
     {category}
-    selectedCategory={effectiveSelectedCategory}
-    displayName={groupAnnDisplayName}
+    selectedCategory={selectedGroupAnnotation?.category ?? ""}
+    displayName={annotationDisplayName ?? ""}
     onReSelectCategory={reselectCategory}
     disabled={effectiveDisabled}
   />
-{:else if sel.type === "annotation"}
+{:else if selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 0}
+  <!-- Group selections use category-only bulk editing; direct annotation selections also support properties. -->
+  <SelectedAnnotationsList disabled={effectiveDisabled} />
+{:else if sel?.type === "annotation"}
   <!-- Edit mode: edit a single selected annotation -->
   <EditMode
     {modeTitle}
