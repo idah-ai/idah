@@ -12,7 +12,7 @@ module Dataset
     field :modality, type: String, readonly: true
 
     field :labeling_configuration, type: Hash
-    field :feedback_configuration, type: Hash
+    field :feedback_configuration, type: Hash, readonly: true
     field :workflow_configuration, type: Hash
 
     field :status, type: String, readonly: true
