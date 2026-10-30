@@ -193,11 +193,11 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(output).to eq(
         {
           shapes: {
-            shapeA: { label: "Shape A", icon: "iconA.svg" },
-            shapeB: { label: "Shape B", icon: "iconB.svg" }
+            shapeA: { label: "Shape A", icon: "iconA.svg", args: nil },
+            shapeB: { label: "Shape B", icon: "iconB.svg", args: nil }
           },
           tagging: {
-            tagA: { label: "Tag A", icon: "tagA.svg" }
+            tagA: { label: "Tag A", icon: "tagA.svg", args: nil }
           },
           label: "modality A"
         }
