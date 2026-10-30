@@ -3,10 +3,10 @@ import { createBackendDataSource, encodeModel } from "./BackendDataSource";
 import { Record, RecordFactory, field, type } from "./model/Record";
 
 const TransformerTest = {
-  from(value: string | null | undefined) {
+  from(value: any) {
     return value && value + "from";
   },
-  to(value: string | null | undefined) {
+  to(value: any) {
     return value && value + "to";
   },
 };
@@ -62,7 +62,7 @@ describe(encodeModel, () => {
 
 describe(createBackendDataSource, () => {
   const fetch = vi.fn();
-  global.fetch = fetch;
+  global.fetch = <any>fetch;
 
   const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records");
 
