@@ -193,7 +193,7 @@
   />
 
   <!-- MODAL::EXPORT ENTRY -->
-  <EntryExportFormModal action="create" entries={[entry]} bind:open={openExportEntryModal} />
+  <EntryExportFormModal title="Export Entry" action="create" entryIds={[entry.id]} entries={[entry]} bind:open={openExportEntryModal} />
 
   <!-- MODAL::REOPEN ENTRY -->
   <ReopenEntryModal

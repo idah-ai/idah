@@ -52,7 +52,11 @@ class ExportsExpo < BaseExpo
         # Exports::Options); the service validates them.
         extra_fields
         field :include_medias, String, default: "original"
-        field :completed_entries, TrueClass, default: true
+        # Required on purpose: without it, an entry selection could silently
+        # drop non-completed entries (`completed_entries` true is the exporter
+        # default). Requiring the caller to state how non-completed entries
+        # are handled makes that impossible.
+        field :completed_entries, TrueClass, required: true
       end
     end
   end

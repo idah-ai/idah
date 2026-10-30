@@ -13,8 +13,4 @@
   let kind = $derived(classifyExport(exportRecord));
 </script>
 
-{#if kind === "entry"}
-  <Badge variant="default">Entry</Badge>
-{:else}
-  <Badge variant="default">Dataset</Badge>
-{/if}
+<Badge variant="default">{kind === "entry" ? "Entry" : "Dataset"}</Badge>

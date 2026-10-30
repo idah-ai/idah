@@ -111,7 +111,8 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
            {
              project_id:,
              dataset_ids:,
-             exporter:
+             exporter:,
+             options: { include_medias: "original", completed_entries: true }
            }
 
       expect(last_response.status).to eq 200
@@ -125,7 +126,7 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
           project_id,
           dataset_ids,
           exporter,
-          { include_medias: "original", completed_entries: true },
+          { include_medias: "original", completed_entries: false },
           entry_ids:
         )
         .and_return(export_without_file)
@@ -135,26 +136,23 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
              project_id:,
              dataset_ids:,
              exporter:,
-             entry_ids:
+             entry_ids:,
+             options: { include_medias: "original", completed_entries: false }
            }
 
       expect(last_response.status).to eq 200
     end
 
-    it "defaults completed_entries to true when options are given without it" do
-      expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id, dataset_ids, exporter, { include_medias: "all", completed_entries: true }, entry_ids: nil)
-        .and_return(export_without_file)
-
+    it "rejects when completed_entries is omitted" do
       post "/exports/export",
            {
              project_id:,
              dataset_ids:,
              exporter:,
-             options: { include_medias: "all" }
+             options: { include_medias: "original" }
            }
 
-      expect(last_response.status).to eq 200
+      expect(last_response.status).to eq 422
     end
 
     it "forwards completed_entries when set to false" do
@@ -213,7 +211,7 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
              project_id:,
              dataset_ids:,
              exporter:,
-             options: { task: "segment", val_percent: 20 }
+             options: { task: "segment", val_percent: 20, completed_entries: true }
            }
 
       expect(last_response.status).to eq 200

@@ -217,7 +217,13 @@
 <UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedIds} bind:open={openSetPriority} />
 
 <!-- BULK-ACTION MODAL::EXPORT SELECTED ENTRIES -->
-<EntryExportFormModal action="create" entries={sel.selectedEntryRecords} bind:open={openExportModal} />
+<EntryExportFormModal
+  title="Export Selected Entries"
+  action="create"
+  entryIds={controller.selectedIds}
+  entries={sel.selectedEntryRecords}
+  bind:open={openExportModal}
+/>
 
 <ReopenEntryModal
   action="update"

@@ -180,10 +180,16 @@ module Exports
     def filter_entry_ids_by_rights(dataset_ids, entry_ids)
       return entry_ids if entry_ids.nil? || entry_ids.empty?
 
-      accessible_entries = Api[:idah].dataset.entries.index_all(
-        filter: { dataset_id: dataset_ids, id: entry_ids },
-        fields: { "dataset:entries": ["id"] }
-      ).map(&:id)
+      entry_ids = entry_ids.compact.uniq
+
+      # Batch the id filter into chunks
+      accessible_entries =
+        entry_ids.each_slice(100).flat_map do |slice|
+          Api[:idah].dataset.entries.index_all(
+            filter: { dataset_id: dataset_ids, id: slice },
+            fields: { "dataset:entries": ["id"] }
+          ).map(&:id)
+        end
 
       missing = entry_ids - accessible_entries
 

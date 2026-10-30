@@ -26,6 +26,7 @@
     exportOptionPayload,
   } from "@/data/model/sync/exports/options";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
+  import { SyncJobRecord } from "@/data/model/sync/jobs/record";
   import { cn } from "@/utils";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
@@ -71,6 +72,7 @@
     if (!datasetRecords) return [];
 
     const modalities = Array.from(new Set(datasetRecords.map((record) => record.modality)));
+
     exportFormats = await ExportsBackendDataSource.formats({ modalities });
 
     return exportFormats.map((format) => ({
@@ -94,7 +96,18 @@
         options: exportOptionPayload(optionFields, optionValues),
       });
 
-      $exportingExportRecords = [createdExportRecordRes.data];
+      // The create response has no job — refetch with it included so the
+      // floating card can classify entry vs dataset export immediately.
+      const exportRecordRes = await ExportsBackendDataSource.get(createdExportRecordRes.data.id, {
+        included: ["job"],
+        fields: {
+          [SyncJobRecord.type]: ["id", "arguments"],
+          [ExportRecord.type]: ["id", "job_id"],
+        },
+        noCache: true,
+      });
+
+      $exportingExportRecords = [exportRecordRes.data];
       open = false;
       exporting = false;
     } catch (error) {
@@ -161,9 +174,9 @@
           info={field.description}
           required={field.required}
           choices={exportOptionChoices(field)}
-          value={optionValues[field.name] as string | null}
+          value={optionValues[field.name] as string | number | null}
           onSelected={(selectedValue) => {
-            optionValues[field.name] = selectedValue;
+            optionValues[field.name] = selectedValue as string | number;
           }}
         >
           {#snippet slotChoice({ choice, select })}
