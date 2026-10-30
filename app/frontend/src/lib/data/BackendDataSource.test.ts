@@ -8,7 +8,7 @@ const TransformerTest = {
   },
   to(value: any) {
     return value && value + "to";
-  },
+  }
 };
 
 @type("test/backend_data_source")
@@ -25,8 +25,8 @@ describe(encodeModel, () => {
   it("simple", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        foo: "bar",
-      },
+        foo: "bar"
+      }
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"foo":"bar"}}}');
   });
@@ -34,8 +34,8 @@ describe(encodeModel, () => {
   it("with transformer", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        transformed: "bar",
-      },
+        transformed: "bar"
+      }
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"transformed":"barto"}}}');
   });
@@ -43,8 +43,8 @@ describe(encodeModel, () => {
   it("with key", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        camelCase: "bar",
-      },
+        camelCase: "bar"
+      }
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"under_score":"bar"}}}');
   });
@@ -53,8 +53,8 @@ describe(encodeModel, () => {
     const out = encodeModel(TestRecord, {
       attributes: {
         id: "1",
-        foo: "bar",
-      },
+        foo: "bar"
+      }
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","id":"1","attributes":{"foo":"bar"}}}');
   });
@@ -70,7 +70,7 @@ describe(createBackendDataSource, () => {
     const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records", {
       customMethod() {
         return "custom";
-      },
+      }
     });
 
     it("simple", () => {
@@ -89,13 +89,13 @@ describe(createBackendDataSource, () => {
               foo: "foo1",
               bar: "bar1",
               under_score: "camelCase1",
-              transformed: "transformed1",
-            },
-          },
+              transformed: "transformed1"
+            }
+          }
         }),
         json() {
           return JSON.parse(this.body);
-        },
+        }
       });
     };
 
@@ -123,8 +123,8 @@ describe(createBackendDataSource, () => {
                 foo: "foo1",
                 bar: "bar1",
                 under_score: "camelCase1",
-                transformed: "transformed1",
-              },
+                transformed: "transformed1"
+              }
             },
             {
               type: "test/backend_data_source",
@@ -133,14 +133,14 @@ describe(createBackendDataSource, () => {
                 foo: "foo2",
                 bar: "bar2",
                 under_score: "camelCase2",
-                transformed: "transformed2",
-              },
-            },
-          ],
+                transformed: "transformed2"
+              }
+            }
+          ]
         }),
         json() {
           return JSON.parse(this.body);
-        },
+        }
       });
     };
 
@@ -169,8 +169,8 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id: "2",
-        },
+          id: "2"
+        }
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?filter%5Bid%5D=2", { method: "GET" });
@@ -181,8 +181,8 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id: "2",
-        },
+          id: "2"
+        }
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?filter%5Bid%5D=2", { method: "GET" });
@@ -193,13 +193,13 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id__in: ["1", "2"],
-        },
+          id__in: ["1", "2"]
+        }
       });
 
       expect(fetch).toHaveBeenCalledWith(
         "http://example.tld/test_records?filter%5Bid__in%5D%5B%5D=1&filter%5Bid__in%5D%5B%5D=2",
-        { method: "GET" },
+        { method: "GET" }
       );
     });
 
@@ -241,19 +241,19 @@ describe(createBackendDataSource, () => {
               foo: "foo1",
               bar: "bar1",
               under_score: "camelCase1",
-              transformed: "transformed1",
-            },
-          },
+              transformed: "transformed1"
+            }
+          }
         }),
         json() {
           return JSON.parse(this.body);
-        },
+        }
       });
 
       const result = await ds.update("1", {
         attributes: {
-          foo: "bar",
-        },
+          foo: "bar"
+        }
       });
       expect(result.data.id).toBe("1");
     });
