@@ -28,9 +28,8 @@ module EntryStats
     end
 
     def recompute_from_annotation(entry_id:, dataset_id:, new_category:)
-      # Skip if there are no orphan categories for this entry
-      # or if there are no orphan categories for this entry
-      # but the category of this annotation was updated to be orphaned now
+      # Recompute only if the entry already has orphans, or this change makes
+      # the annotation an orphan.
       return unless system_entry_stats.orphan_category(entry_id) ||
                     dataset_orphan_category?(dataset_id, new_category)
 

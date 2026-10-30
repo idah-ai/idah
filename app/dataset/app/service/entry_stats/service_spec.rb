@@ -176,6 +176,17 @@ RSpec.describe EntryStats::Service, database: true do
       stats = stat_repo.index({ entry_id__eq: entry_id })
       expect(stats).to be_empty
     end
+
+    it "skips when new_category is nil (annotation update without category change)" do
+      subject.recompute_from_annotation(
+        entry_id: entry_id,
+        dataset_id: ds_id,
+        new_category: nil
+      )
+
+      stats = stat_repo.index({ entry_id__eq: entry_id })
+      expect(stats.map(&:key)).to include("orphan_category.count") # unchanged
+    end
   end
 
   describe "#recompute_all_for_dataset" do
@@ -248,6 +259,7 @@ RSpec.describe EntryStats::Service, database: true do
     end
 
     it "skips in_progress entries when their annotations do not match changed_set" do
+      stat_repo.delete_by_entry_id(entry_id)
       entry_repo.update!(entry_id, { status: "in_progress" })
 
       subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["other_cat"])

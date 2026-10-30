@@ -267,16 +267,6 @@ module Dataset
       end
     end
 
-    # Returns all distinct category IDs currently used by live (non-deleted)
-    # annotations in the given dataset. Used to check if a re-added category
-    # was previously in use.
-    def distinct_annotation_categories(dataset_id)
-      table.db[:annotations]
-           .where(dataset_id: dataset_id, deleted_at: nil)
-           .distinct(:category)
-           .select_map(:category)
-    end
-
     private
 
     def add_event_metadata(**opts)
