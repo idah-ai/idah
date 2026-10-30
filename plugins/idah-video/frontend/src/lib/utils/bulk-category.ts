@@ -1,5 +1,6 @@
 import type { IAnnotationRecord, IConfig, IConfigProperty, IConfigValue, IIdahDriverV2 } from "$idah/v2/types";
 import { annotationLabel } from "./label";
+import { pruneHiddenProperties } from "./prune-hidden-properties";
 
 export interface BulkCategoryUpdate {
   id: string;
@@ -25,20 +26,10 @@ export function bulkPropertyValidity(
       else properties[id] = value;
     }
 
-    for (;;) {
-      const filtered = driver.getFilteredConfig(item.shape_type, {
-        category: category ?? item.category,
-        properties,
-      });
-      if (!filtered) return false;
-      const visibleIds = new Set(filtered.properties.map((property) => property.id));
-      const hiddenKeys = Object.keys(properties).filter((id) => !visibleIds.has(id));
-      if (!hiddenKeys.length) {
-        const targetField = filtered.properties.find((property) => property.id === field.id);
-        return !targetField || propertyValid(properties[field.id] as PropertyValue, targetField);
-      }
-      for (const id of hiddenKeys) delete properties[id];
-    }
+    const result = pruneHiddenProperties(driver, item.shape_type, category ?? item.category, properties);
+    if (!result) return false;
+    const targetField = result.fields.find((property) => property.id === field.id);
+    return !targetField || propertyValid(result.properties[field.id] as PropertyValue, targetField);
   });
 }
 
@@ -107,17 +98,7 @@ export function sharedProperties(
       if (value === undefined) delete properties[id];
       else properties[id] = value;
     }
-    for (;;) {
-      const visible = driver.getFilteredConfig(item.shape_type, {
-        category: category ?? item.category,
-        properties,
-      })?.properties;
-      if (!visible) return undefined;
-      const ids = new Set(visible.map((field) => field.id));
-      const hiddenKeys = Object.keys(properties).filter((id) => !ids.has(id));
-      if (!hiddenKeys.length) return visible;
-      for (const id of hiddenKeys) delete properties[id];
-    }
+    return pruneHiddenProperties(driver, item.shape_type, category ?? item.category, properties)?.fields;
   });
   if (fields.some((value) => !value)) return [];
   return fields[0]!.filter((field) =>
@@ -166,7 +147,6 @@ export function prepareBulkCategory(
   driver: IIdahDriverV2,
   propertyValid: PropertyValidator,
   changes: Record<string, PropertyValue> = {},
-  preserveHiddenValues = false,
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
   if (hasMixedShapeTypes(items))
@@ -189,29 +169,28 @@ export function prepareBulkCategory(
       if (value === undefined) delete properties[id];
       else properties[id] = value;
     }
-    const visibleProperties = preserveHiddenValues ? { ...properties } : properties;
-    let visible: IConfigProperty[] = [];
-    // Conditional visibility can change as hidden values are removed.
-    for (;;) {
-      const filtered = driver.getFilteredConfig(item.shape_type, { category, properties: visibleProperties });
-      if (!filtered) return { updates: [], error: "The selected shape configuration is unavailable." };
-      visible = filtered.properties;
-      const visibleIds = new Set(visible.map((property) => property.id));
-      const hiddenKeys = Object.keys(visibleProperties).filter((key) => !visibleIds.has(key));
-      if (!hiddenKeys.length) break;
-      for (const key of hiddenKeys) delete visibleProperties[key];
-    }
+    const result = pruneHiddenProperties(driver, item.shape_type, category, properties);
+    if (!result) return { updates: [], error: "The selected shape configuration is unavailable." };
 
-    if (Object.entries(changes).some(([id, value]) => value !== undefined && !Object.hasOwn(visibleProperties, id))) {
+    if (Object.entries(changes).some(([id, value]) => value !== undefined && !Object.hasOwn(result.properties, id))) {
       return { updates: [], error: "A chosen property becomes hidden after this change." };
     }
 
-    const invalid = visible.find((property) => !propertyValid(visibleProperties[property.id] as PropertyValue, property));
+    const invalid = result.fields.find((property) => !propertyValid(result.properties[property.id] as PropertyValue, property));
     if (invalid) return { updates: [], error: `${invalid.label} needs a valid value.` };
 
-    updates.push({ id: item.id, category, properties: preserveHiddenValues ? properties : visibleProperties });
+    updates.push({ id: item.id, category, properties: result.properties });
   }
   return { updates };
+}
+
+export function prepareBulkCategoryOnly(
+  items: IAnnotationRecord[],
+  category: string,
+  driver: IIdahDriverV2,
+): { updates: BulkCategoryUpdate[]; error?: string } {
+  // Group category edits retain visible values without requiring property edits.
+  return prepareBulkCategory(items, category, driver, () => true);
 }
 
 export function prepareBulkProperties(
@@ -226,22 +205,21 @@ export function prepareBulkProperties(
   const ids = Object.keys(changes);
   if (!ids.length) return { updates: [], error: "Choose a property to apply." };
 
-  const available = new Set(sharedProperties(items, driver).map((field) => field.id));
+  const available = new Set(sharedProperties(items, driver, undefined, changes).map((field) => field.id));
   if (ids.some((id) => !available.has(id))) {
     return { updates: [], error: "The chosen property is not available for every selected annotation." };
   }
-  if (items.every((item) => ids.every((id) => sameValue(item.properties?.[id], changes[id])))) {
-    return { updates: [], error: "No changes to apply." };
-  }
-
   const updates: BulkCategoryUpdate[] = [];
   for (const item of items) {
-    const result = prepareBulkCategory([item], item.category, driver, propertyValid, changes, true);
+    const result = prepareBulkCategory([item], item.category, driver, propertyValid, changes);
     if (result.error) return { updates: [], error: result.error };
     if (ids.some((id) => changes[id] !== undefined && !Object.hasOwn(result.updates[0].properties, id))) {
       return { updates: [], error: "The chosen property becomes hidden after this change." };
     }
     updates.push(result.updates[0]);
+  }
+  if (updates.every((update, index) => JSON.stringify(normalized(update.properties)) === JSON.stringify(normalized(items[index].properties ?? {})))) {
+    return { updates: [], error: "No changes to apply." };
   }
   return { updates };
 }

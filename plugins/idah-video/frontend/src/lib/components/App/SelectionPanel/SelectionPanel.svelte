@@ -178,7 +178,7 @@
   }
 </script>
 
-{#if !sel || isTaggingAnnotation}
+{#if (!sel || isTaggingAnnotation) && selection.selectedGroupIds.size === 0}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} {currentFrame} />
@@ -212,9 +212,9 @@
     disabled={effectiveDisabled}
   />
 {:else if selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 0}
-  <!-- Bulk editing includes complete selected groups and directly selected annotations. -->
+  <!-- Group selections use category-only bulk editing; direct annotation selections also support properties. -->
   <SelectedAnnotationsList disabled={effectiveDisabled} />
-{:else if sel.type === "annotation"}
+{:else if sel?.type === "annotation"}
   <!-- Edit mode: edit a single selected annotation -->
   <EditMode
     {modeTitle}

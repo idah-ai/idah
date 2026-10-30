@@ -6,6 +6,7 @@ import {
   bulkPropertyValidity,
   categoryCounts,
   prepareBulkCategory,
+  prepareBulkCategoryOnly,
   prepareBulkProperties,
   propertyState,
   sharedCategories,
@@ -168,6 +169,36 @@ describe("bulk category preparation", () => {
     ]);
   });
 
+  it("changes only the category for group targets and keeps visible property values", () => {
+    const items = [
+      record("car", "vehicle", { occluded: "Yes", condition: "Good" }),
+      record("bus", "pedestrian", { occluded: "No", crossing: "Yes" }),
+    ];
+    const result = prepareBulkCategoryOnly(items, "vehicle", driver);
+
+    expect(result).toEqual({ updates: [
+      { id: "car", category: "vehicle", properties: items[0].properties },
+      { id: "bus", category: "vehicle", properties: { occluded: "No" } },
+    ] });
+    expect(prepareBulkCategoryOnly(items, "unknown", driver).error).toMatch(/not available/);
+  });
+
+  it("removes values hidden by a group category change", () => {
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { category: string }) => ({
+        values: [], properties: value.category === "vehicle"
+          ? [property("occluded")]
+          : [property("occluded"), property("crossing")],
+      }),
+    } as IIdahDriverV2;
+    const result = prepareBulkCategoryOnly([
+      record("a", "pedestrian", { occluded: "Yes", crossing: "Yes" }),
+    ], "vehicle", conditionalDriver);
+
+    expect(result.updates[0].properties).toEqual({ occluded: "Yes" });
+  });
+
   it("rejects a category not available for every target", () => {
     const result = prepareBulkCategory([record("a", "vehicle", {})], "unknown", driver, valid);
     expect(result.error).toMatch(/not available/);
@@ -243,7 +274,7 @@ describe("bulk category preparation", () => {
     ).toBe(true);
     expect(
       bulkPreview(items, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)?.updates[0].properties,
-    ).toHaveProperty("detail", "high");
+    ).not.toHaveProperty("detail");
   });
 
   it("offers only properties visible for every selected annotation", () => {
@@ -597,7 +628,7 @@ describe("bulk category preparation", () => {
     expect(result.updates.map((update) => update.properties)).toEqual([{ tags: [] }, { tags: [] }]);
   });
 
-  it("preserves values hidden after a property edit", () => {
+  it("removes values hidden after a property edit", () => {
     const conditionalDriver = {
       ...driver,
       getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
@@ -616,11 +647,11 @@ describe("bulk category preparation", () => {
     );
     expect(result.error).toBeUndefined();
     expect(result.updates.map((update) => update.properties)).toEqual([
-      { mode: "basic", detail: "A" }, { mode: "basic", detail: "B" },
+      { mode: "basic" }, { mode: "basic" },
     ]);
   });
 
-  it("keeps mixed occlusion levels while toggling off and back on", () => {
+  it("removes mixed occlusion levels after applying false", () => {
     const conditionalDriver = {
       ...driver,
       getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
@@ -642,14 +673,41 @@ describe("bulk category preparation", () => {
     expect(propertyState(items, "occluded_level").mixed).toBe(true);
     const switchedOff = bulkPreview(items, conditionalDriver, undefined, { occluded: false }, valid)?.updates;
     expect(switchedOff?.map((update) => update.properties))
-      .toEqual([{ occluded: false, occluded_level: "100_occluded" },
-        { occluded: false, occluded_level: "50_occluded" }]);
+      .toEqual([{ occluded: false }, { occluded: false }]);
     expect(bulkPreview(items, conditionalDriver, undefined, { occluded: true }, valid)?.error)
       .toBe("No changes to apply.");
     const savedOff = items.map((item, index) => ({ ...item, properties: switchedOff![index].properties }));
     expect(bulkPreview(savedOff, conditionalDriver, undefined, { occluded: true }, valid)?.updates.map((update) => update.properties))
-      .toEqual(items.map((item) => item.properties));
+      .toEqual([{ occluded: true }, { occluded: true }]);
+    const stale = record("old", "vehicle", { occluded: false, occluded_level: "100_occluded" });
+    expect(bulkPreview([stale], conditionalDriver, undefined, { occluded: false }, valid)?.updates[0].properties)
+      .toEqual({ occluded: false });
     expect(items.map((item) => item.properties?.occluded_level))
       .toEqual(["100_occluded", "50_occluded"]);
+  });
+
+  it("accepts a dependent choice revealed by the same bulk draft", () => {
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
+        values: [], properties: [
+          { ...property("occluded"), type: "boolean" },
+          ...(value.properties.occluded === true
+            ? [{ ...property("occluded_level"), type: "single-select", format: { options: [
+              { id: "50_occluded", label: "50_occluded" },
+              { id: "100_occluded", label: "100_occluded" },
+            ] } }] : []),
+        ],
+      }),
+    } as IIdahDriverV2;
+    const items = [record("car", "vehicle", {}), record("bus", "pedestrian", {})];
+    const draft = { occluded: true, occluded_level: "50_occluded" };
+
+    expect(bulkFields(items, conditionalDriver, undefined, { occluded: true }).map((field) => field.id))
+      .toEqual(["occluded", "occluded_level"]);
+    expect(bulkPreview(items, conditionalDriver, undefined, draft, valid)).toEqual({ updates: [
+      { id: "car", category: "vehicle", properties: draft },
+      { id: "bus", category: "pedestrian", properties: draft },
+    ] });
   });
 });

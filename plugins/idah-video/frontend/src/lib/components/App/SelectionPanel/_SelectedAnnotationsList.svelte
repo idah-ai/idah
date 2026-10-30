@@ -14,6 +14,7 @@
   } from "$lib/components/ui/Pagination";
   import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
   import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
+  import GroupEditMode from "$lib/components/App/SelectionPanel/_GroupEditMode.svelte";
   import BulkPropertiesSection from "$lib/components/App/SelectionPanel/_BulkPropertiesSection.svelte";
   import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
@@ -30,6 +31,7 @@
     bulkFields,
     bulkPreview,
     categoryCounts,
+    prepareBulkCategoryOnly,
     sharedCategories,
     sharedProperties,
     type PropertyValue,
@@ -98,6 +100,7 @@
     ]);
   });
   let sourceItems = $derived(targetResolution.items);
+  const categoryOnly = $derived(selection.selectedGroupIds.size > 0);
 
   const PAGE_SIZE = 10;
   let page = $state(1);
@@ -122,10 +125,15 @@
   const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
   const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
   const configValues = $derived(sharedCategories(sourceItems, getDriver().config));
-  const hasSharedChoices = $derived(configValues.length > 0 || fields.length > 0);
+  const hasSharedChoices = $derived(configValues.length > 0 || (!categoryOnly && fields.length > 0));
   const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
   const category = $derived(configValues.find((value) => value.id === selectedCategory));
-  const preview = $derived(bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled));
+  function getPreview() {
+    if (categoryOnly)
+      return draftCategory ? prepareBulkCategoryOnly(sourceItems, draftCategory, getDriver()) : undefined;
+    return bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled);
+  }
+  const preview = $derived(getPreview());
   const blockReason = $derived.by(() => {
     if (selection.selectedGroupIds.size && groupSnapshot?.key !== selectionKey)
       return groupLoadError || "Loading all selected group annotations.";
@@ -144,9 +152,10 @@
       return "This workspace cannot be edited right now.";
     if (sourceItems.some((item) => annotation.isHidden(item)))
       return "One or more selected annotations are hidden. Deselect them before applying.";
-    if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";
+    if (!draftCategory && (categoryOnly || !hasPropertyEdit))
+      return categoryOnly ? "Choose a category to apply." : "Choose a category or property to apply.";
     if (preview?.error) return preview.error;
-    if (draftCategory && !hasPropertyEdit && sourceItems.every((item) => item.category === draftCategory))
+    if (draftCategory && (categoryOnly || !hasPropertyEdit) && sourceItems.every((item) => item.category === draftCategory))
       return "All selected annotations already use this category.";
     return undefined;
   });
@@ -160,7 +169,7 @@
 
   function applyBulk() {
     if (blockReason) return;
-    const result = bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled);
+    const result = getPreview();
     if (!result || result.error || !result.updates.length) return;
     getDriver().command.call("idah-video:annotation.bulk-update", { updates: result.updates });
     draftCategory = undefined;
@@ -196,6 +205,19 @@
 </script>
 
 <section class="flex flex-col gap-4">
+  {#if categoryOnly}
+    <GroupEditMode
+      modeTitle="Group selection"
+      {shapeType}
+      {configValues}
+      {category}
+      {selectedCategory}
+      displayName={countLabel}
+      onReSelectCategory={setDraftCategory}
+      disabled={disabled || viewport.isReviewWorkspace || !sameShape || configValues.length === 0}
+      placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
+    />
+  {:else}
   <div class="flex items-center gap-2">
     <Text weight="semibold">Multiple selection</Text>
     <Badge variant="info" class="ml-auto">{countLabel}</Badge>
@@ -212,8 +234,10 @@
       {/each}
     </div>
   </div>
+  {/if}
 
   <div class="grid gap-4">
+    {#if !categoryOnly}
     <CategorySelect
       {configValues}
       {category}
@@ -235,8 +259,9 @@
       disabled={disabled || viewport.isReviewWorkspace || !sameShape}
       onValueChange={setDraftProperty}
     />
+    {/if}
     {#if blockReason}
-      {@const isPrompt = blockReason === "Choose a category or property to apply." || blockReason === "No changes to apply."}
+      {@const isPrompt = blockReason === "Choose a category to apply." || blockReason === "Choose a category or property to apply." || blockReason === "No changes to apply."}
       {#if !(feedback && isPrompt)}
         <p
           role={isPrompt ? "status" : "alert"}
