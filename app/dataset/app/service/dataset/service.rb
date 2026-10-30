@@ -97,10 +97,12 @@ module Dataset
             name: dataset_name || "#{duping_dataset.name} - duplicated",
             status: "pending",
             labeling_configuration: with_labels ? duping_dataset.labeling_configuration : {},
+            feedback_configuration: duping_dataset.feedback_configuration,
             entries_total_count: 0,
             entries_completed_count: 0,
             entries_in_progress_count: 0,
             created_at: now,
+            updated_at: now,
           }
         )
 
@@ -122,6 +124,9 @@ module Dataset
 
     # Feedback Configuration Management
     def update_feedback_configuration(dataset_id, new_config)
+      # Validate the structure of the payload before storing it.
+      new_config = FeedbackConfigSchema.validate!(new_config)
+
       dataset = datasets.find!(dataset_id)
       old_config = dataset.feedback_configuration || {}
 
@@ -144,12 +149,12 @@ module Dataset
     end
 
     def feedback_keys_in_use(dataset_id)
-      datasets.transaction do
-        # scope the transaction to the dataset
-        datasets.find!(dataset_id)
-        keys = note_feeds.feedback_keys_in_use(dataset_id)
-        { keys: keys }
-      end
+      # Existence + read-authorization check. The keys query below runs on a
+      # system repository, so there is nothing to snapshot here — a transaction
+      # would not wrap it anyway.
+      datasets.find!(dataset_id)
+
+      { keys: note_feeds.feedback_keys_in_use(dataset_id) }
     end
 
     private
