@@ -145,7 +145,9 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
 
     it "defaults completed_entries to false when options are given without it" do
       expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id, dataset_ids, exporter,
+        .with(project_id,
+              dataset_ids,
+              exporter,
               { include_medias: "all", completed_entries: false },
               entry_ids: nil)
         .and_return(export_without_file)
