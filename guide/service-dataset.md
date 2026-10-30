@@ -172,9 +172,14 @@ module Annotation
     field :project_id,      type: String, readonly: true
     field :dataset_id,      type: String, readonly: true
     field :entry_id,        type: String, readonly: true
-    field :dimensions,      type: Hash
-    field :annotation,      type: Hash
+    field :shape_type,      type: String
+    field :shape_args,      type: Hash
+    field :category,        type: String
+    field :properties,      type: Hash
     field :metadata,        type: Hash
+    field :deleted_at,      type: Time, readonly: true
+    field :deleted_by_email,type: String, readonly: true
+    field :version,         type: Integer, readonly: true
     field :created_by_email,type: String, readonly: true
     field :created_at,      type: Time, readonly: true
     field :updated_at,      type: Time, readonly: true
@@ -182,9 +187,12 @@ module Annotation
 end
 ```
 
-- **`dimensions`** (JSONB): Shape information — e.g., `{ type: "idah-video:bounding-box", x: 0.1, y: 0.2, w: 0.5, h: 0.3 }`.
-- **`annotation`** (JSONB): The actual label data — e.g., `{ category: "cat", properties: { ... } }`.
-- **`metadata`** (JSONB, added in migration `20260211000000`): Free-form extra data for plugins.
+- **`shape_type`**: The plugin shape type, e.g. `"idah-video:bounding-box"`.
+- **`shape_args`** (JSONB): The shape geometry. Tile keys written through `write_shape`/`write_shapes` live in the `annotation_shape` child table and are merged into `shape_args` on reads.
+- **`category`**: The annotation category.
+- **`properties`** / **`metadata`** (JSONB): Free-form extra data.
+- **`deleted_at`** / **`deleted_by_email`**: Soft-delete tombstone. Read-only over the API — only `soft_delete`, `restore` and `create` (when duplicating a soft-deleted annotation) set them.
+- **`version`**: Bumped on every write (see "Annotation change history" below). Read-only.
 - **`created_by_email`**: Set from auth context at creation.
 
 **Scoping** (`Annotation::Repository#scoped`):
@@ -404,7 +412,7 @@ Mounted at `/annotations/_rpc`:
 json_rpc http_path: "_rpc", batch_limit: 50, batch_failure: :stop
 ```
 
-**Methods**: `show`, `create`, `update`, `delete`
+**Methods**: `show`, `create`, `update`, `delete`, `restore`, `write_shape`, `write_shapes`
 
 - **Batch limit**: 50 calls per request. Exceeding returns an error.
 - **batch_failure**: `:stop` — on any failure in a batch, processing stops and an error is returned.
@@ -412,11 +420,48 @@ json_rpc http_path: "_rpc", batch_limit: 50, batch_failure: :stop
 
 RPC method schemas:
 - `show`: takes `id` (String).
-- `create`: takes `id`, `entry_id`, `dimensions`, `annotation`, optional `metadata`.
-- `update`: takes `id`, `entry_id`, `dimensions`, `annotation`, optional `metadata`.
+- `create`: takes `id`, `entry_id`, `shape_type`, `shape_args`, `category`, optional `properties`/`metadata`.
+- `update`: takes `id`, `entry_id`, and any mutable field (`shape_type`, `shape_args`, `category`, `properties`, `metadata`).
 - `delete`: takes `id` (String).
+- `restore`: takes `id` (String).
+- `write_shape`: takes `annotation_id`, `key`, optional `value` (Hash to upsert, nil to delete).
+- `write_shapes`: takes `annotation_id` and `entries` (array of `{ key, value }`), writing several `annotation_shape` rows as one change.
 
-The `update` RPC method uses `Annotation::Service#update_attr` which directly updates only the provided attributes (unlike the JSON:API `update` path which expects a full record).
+The `update` RPC method uses `Annotation::Service#update_attr` which directly updates only the provided attributes (unlike the JSON:API `update` path which expects a full record). Both paths enforce the same rules in `Annotation::Repository#update`: read-only fields are ignored, `annotation_shape` keys are stripped from `shape_args`, and a blank `category` is rejected.
+
+---
+
+### Annotation change history
+
+Every annotation write records who made it, what changed (old and new values) and when, in the same database transaction as the write.
+
+**Table** (`annotation_changes`):
+
+| Column | Meaning |
+|--------|---------|
+| `annotation_id` | The annotation (no FK — history outlives the annotation row) |
+| `entry_id`, `project_id` | Denormalized for per-entry/per-project listing |
+| `account_id` | The actor (null for system writes) |
+| `op` | `created` \| `updated` \| `deleted` \| `restored` |
+| `version` | The annotation version this row records |
+| `changes` | `[[op, path, old, new], ...]` |
+| `changed_at` | When the write happened |
+
+**Change format**: each entry is `[op, path, old, new]`.
+
+| Entry op | Meaning | `old` | `new` |
+|----------|---------|-------|-------|
+| `+` | added | `null` | value |
+| `-` | removed | value | `null` |
+| `~` | changed | value | value |
+
+**Versions**: `annotations.version` starts at 1. New annotations are created at version 1 with a `created` row; every later write bumps the version and records that number. A write that changes nothing writes nothing and does not bump the version. Annotations created before this feature start at version 1 with no `created` row — their history starts at version 2.
+
+**Repository write path**: all writes go through `Annotation::Repository` — `create`, `update` (with `op:`), `soft_delete`, `restore`, and `write_shapes`. Each runs inside `with_db_mode(:rw) { transaction { ... } }`, locks the row `FOR UPDATE`, computes the diff with `AnnotationDiff.call` (using manifest-declared identity keys), bumps the version literally, and inserts one history row via `record_change!`.
+
+**Endpoints**: history is listed per annotation or per entry at `GET /annotation_changes` (filters: `annotation_id`, `entry_id`, `account_id`, `op__in`, `changed_at__gte`/`__lte`, `version__gte`/`__lte`), and any past version can be rebuilt at `GET /annotations/:id/versions/:version`.
+
+**Visibility**: history visibility follows annotation visibility exactly — `AnnotationChange::Repository#scoped(:read)` delegates to `Annotation::Repository#scoped(:read)`. History of annotations that no longer exist is only reachable from a system context.
 
 ---
 

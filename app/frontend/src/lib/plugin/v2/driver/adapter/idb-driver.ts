@@ -512,10 +512,9 @@ export const IdbBackedAnnotationsDriverAdapter = <
         tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
       });
 
-      // Enqueue individual backend syncs
-      for (const { key, value } of entries) {
-        enqueue(backend.setShape(annotationId, key, value));
-      }
+      // Enqueue one backend write_shapes call so a stroke is recorded on the
+      // server as one change (one version, one history row).
+      enqueue(backend.setShapes(annotationId, entries));
     },
   };
 };

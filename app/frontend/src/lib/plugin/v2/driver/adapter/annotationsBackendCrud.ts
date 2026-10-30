@@ -7,6 +7,9 @@ import type { ICrudDriver } from "./idb-driver";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
+/** Server-side limit for one `write_shapes` call (Annotation::Service). */
+const ENTRIES_PER_WRITE = 1000;
+
 function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
   return {
     id: rec.id,
@@ -20,6 +23,7 @@ function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
     created_by_id: rec.created_by_id,
     created_at: rec.created_at,
     updated_at: rec.updated_at,
+    version: rec.version,
   };
 }
 
@@ -89,14 +93,19 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
     },
 
     async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-      await Promise.all(
-        entries.map(({ key, value }) =>
-          rpc.call({
-            method: "write_shape",
-            params: { annotation_id: annotationId, key, value: value ?? null },
-          }),
-        ),
-      );
+      // One write_shapes call per up-to-1000-entry chunk: a stroke becomes one
+      // change on the server (one version, one history row). Above the server
+      // limit, split into calls of 1000, one version each.
+      for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
+        const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
+        await rpc.call({
+          method: "write_shapes",
+          params: {
+            annotation_id: annotationId,
+            entries: chunk.map(({ key, value }) => ({ key, value: value ?? null })),
+          },
+        });
+      }
     },
   };
 }
@@ -188,13 +197,17 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   }
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    await Promise.all(
-      entries.map(({ key, value }) =>
-        this.rpc.call({
-          method: "write_shape",
-          params: { annotation_id: annotationId, key, value: value ?? null },
-        }),
-      ),
-    );
+    // One write_shapes call per up-to-1000-entry chunk (same batching as
+    // createBackendCrudDriver): a stroke becomes one server-side change.
+    for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
+      const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
+      await this.rpc.call({
+        method: "write_shapes",
+        params: {
+          annotation_id: annotationId,
+          entries: chunk.map(({ key, value }) => ({ key, value: value ?? null })),
+        },
+      });
+    }
   }
 }
