@@ -183,7 +183,7 @@ describe("bulk category preparation", () => {
     expect(bulkPropertyValidity(items, dependent, conditionalDriver, undefined, {}, propertyFullfilled)).toBe(true);
     expect(bulkPropertyValidity(items, dependent, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)).toBe(true);
     expect(bulkPreview(items, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)?.updates[0].properties)
-      .not.toHaveProperty("detail");
+      .toHaveProperty("detail", "high");
   });
 
   it("offers only properties visible for every selected annotation", () => {
@@ -494,7 +494,7 @@ describe("bulk category preparation", () => {
     expect(result.updates.map((update) => update.properties)).toEqual([{ tags: [] }, { tags: [] }]);
   });
 
-  it("removes values hidden after a property edit", () => {
+  it("preserves values hidden after a property edit", () => {
     const conditionalDriver = {
       ...driver,
       getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
@@ -508,7 +508,42 @@ describe("bulk category preparation", () => {
       record("b", "vehicle", { mode: "advanced", detail: "B" }),
     ], { mode: "basic" }, conditionalDriver, valid);
     expect(result.error).toBeUndefined();
-    expect(result.updates.map((update) => update.properties)).toEqual([{ mode: "basic" }, { mode: "basic" }]);
+    expect(result.updates.map((update) => update.properties)).toEqual([
+      { mode: "basic", detail: "A" }, { mode: "basic", detail: "B" },
+    ]);
+  });
+
+  it("keeps mixed occlusion levels while toggling off and back on", () => {
+    const conditionalDriver = {
+      ...driver,
+      getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
+        values: [], properties: [
+          { ...property("occluded"), type: "boolean" },
+          ...(value.properties.occluded === true
+            ? [{ ...property("occluded_level"), type: "single-select", format: { options: [
+              { id: "50_occluded", label: "50_occluded" },
+              { id: "100_occluded", label: "100_occluded" },
+            ] } }] : []),
+        ],
+      }),
+    } as IIdahDriverV2;
+    const items = [
+      record("car", "vehicle", { occluded: true, occluded_level: "100_occluded" }),
+      record("bus", "pedestrian", { occluded: true, occluded_level: "50_occluded" }),
+    ];
+
+    expect(propertyState(items, "occluded_level").mixed).toBe(true);
+    const switchedOff = bulkPreview(items, conditionalDriver, undefined, { occluded: false }, valid)?.updates;
+    expect(switchedOff?.map((update) => update.properties))
+      .toEqual([{ occluded: false, occluded_level: "100_occluded" },
+        { occluded: false, occluded_level: "50_occluded" }]);
+    expect(bulkPreview(items, conditionalDriver, undefined, { occluded: true }, valid)?.error)
+      .toBe("No changes to apply.");
+    const savedOff = items.map((item, index) => ({ ...item, properties: switchedOff![index].properties }));
+    expect(bulkPreview(savedOff, conditionalDriver, undefined, { occluded: true }, valid)?.updates.map((update) => update.properties))
+      .toEqual(items.map((item) => item.properties));
+    expect(items.map((item) => item.properties?.occluded_level))
+      .toEqual(["100_occluded", "50_occluded"]);
   });
 
   it("detects a mask category used by an unselected mask", () => {

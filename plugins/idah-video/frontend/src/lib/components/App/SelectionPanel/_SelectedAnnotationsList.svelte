@@ -236,7 +236,7 @@
       onValueChange={setDraftProperty}
     />
     {#if blockReason}
-      {@const isPrompt = blockReason === "Choose a category or property to apply."}
+      {@const isPrompt = blockReason === "Choose a category or property to apply." || blockReason === "No changes to apply."}
       {#if !(feedback && isPrompt)}
         <p
           role={isPrompt ? "status" : "alert"}

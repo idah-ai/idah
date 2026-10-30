@@ -166,6 +166,7 @@ export function prepareBulkCategory(
   driver: IIdahDriverV2,
   propertyValid: PropertyValidator,
   changes: Record<string, PropertyValue> = {},
+  preserveHiddenValues = false,
 ): { updates: BulkCategoryUpdate[]; error?: string } {
   if (!items.length) return { updates: [], error: "No annotations selected." };
   if (hasMixedShapeTypes(items))
@@ -188,26 +189,27 @@ export function prepareBulkCategory(
       if (value === undefined) delete properties[id];
       else properties[id] = value;
     }
+    const visibleProperties = preserveHiddenValues ? { ...properties } : properties;
     let visible: IConfigProperty[] = [];
     // Conditional visibility can change as hidden values are removed.
     for (;;) {
-      const filtered = driver.getFilteredConfig(item.shape_type, { category, properties });
+      const filtered = driver.getFilteredConfig(item.shape_type, { category, properties: visibleProperties });
       if (!filtered) return { updates: [], error: "The selected shape configuration is unavailable." };
       visible = filtered.properties;
       const visibleIds = new Set(visible.map((property) => property.id));
-      const hiddenKeys = Object.keys(properties).filter((key) => !visibleIds.has(key));
+      const hiddenKeys = Object.keys(visibleProperties).filter((key) => !visibleIds.has(key));
       if (!hiddenKeys.length) break;
-      for (const key of hiddenKeys) delete properties[key];
+      for (const key of hiddenKeys) delete visibleProperties[key];
     }
 
-    if (Object.entries(changes).some(([id, value]) => value !== undefined && !Object.hasOwn(properties, id))) {
+    if (Object.entries(changes).some(([id, value]) => value !== undefined && !Object.hasOwn(visibleProperties, id))) {
       return { updates: [], error: "A chosen property becomes hidden after this change." };
     }
 
-    const invalid = visible.find((property) => !propertyValid(properties[property.id] as PropertyValue, property));
+    const invalid = visible.find((property) => !propertyValid(visibleProperties[property.id] as PropertyValue, property));
     if (invalid) return { updates: [], error: `${invalid.label} needs a valid value.` };
 
-    updates.push({ id: item.id, category, properties });
+    updates.push({ id: item.id, category, properties: preserveHiddenValues ? properties : visibleProperties });
   }
   return { updates };
 }
@@ -229,12 +231,12 @@ export function prepareBulkProperties(
     return { updates: [], error: "The chosen property is not available for every selected annotation." };
   }
   if (items.every((item) => ids.every((id) => sameValue(item.properties?.[id], changes[id])))) {
-    return { updates: [], error: "All selected annotations already use those property values." };
+    return { updates: [], error: "No changes to apply." };
   }
 
   const updates: BulkCategoryUpdate[] = [];
   for (const item of items) {
-    const result = prepareBulkCategory([item], item.category, driver, propertyValid, changes);
+    const result = prepareBulkCategory([item], item.category, driver, propertyValid, changes, true);
     if (result.error) return { updates: [], error: result.error };
     if (ids.some((id) => changes[id] !== undefined && !Object.hasOwn(result.updates[0].properties, id))) {
       return { updates: [], error: "The chosen property becomes hidden after this change." };
