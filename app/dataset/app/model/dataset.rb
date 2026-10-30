@@ -12,6 +12,7 @@ module Dataset
     field :modality, type: String, readonly: true
 
     field :labeling_configuration, type: Hash
+    field :feedback_configuration, type: Hash, readonly: true
     field :workflow_configuration, type: Hash
 
     field :status, type: String, readonly: true
@@ -40,6 +41,7 @@ module Dataset
     self.resource = Resource::Dataset::Datasets
 
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
+    encoder :feedback_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
@@ -202,6 +204,21 @@ module Dataset
         )
 
         super(id, attributes, scope:)
+      end
+    end
+
+    # Locks the dataset row for update (SELECT ... FOR UPDATE) within the
+    # current transaction, then returns the hydrated record with decoded JSONB
+    # columns. Used to serialize read-modify-write updates of
+    # feedback_configuration so concurrent PATCHes cannot overwrite each
+    # other's committed items. Must be called inside a transaction.
+    def lock!(id, scope: scoped(:update))
+      with_db_mode :rw do
+        row = scope.where(self.class.primary_key => id).for_update.first
+
+        raise Verse::Error::NotFound, "Dataset not found" unless row
+
+        self.class.model_class.new(decode(row))
       end
     end
 

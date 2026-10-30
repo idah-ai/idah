@@ -15,6 +15,7 @@ module NoteFeed
     field :position, type: Hash
     field :status, type: String, readonly: true
     field :content_md, type: String
+    field :feedback_keys, type: Array
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -33,6 +34,7 @@ module NoteFeed
     self.resource = Resource::Dataset::NoteFeeds
 
     encoder :position, Verse::Sequel::JsonEncoder
+    encoder :feedback_keys, Verse::Sequel::PgArrayEncoder
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
@@ -214,6 +216,40 @@ module NoteFeed
     def resolve!(id)
       update!(id, { status: "resolved" }, scope: scoped(:resolve))
       find!(id)
+    end
+
+    # Checks whether any note in the dataset references the given feedback key.
+    # Uses the `@>` containment operator so the GIN index on feedback_keys is
+    # used (the previous `= ANY()` / nested self-subquery form could not).
+    # Intentionally unscoped: only invoked through the system note feeds
+    # repository from the dataset service (delete-prevention check).
+    def feedback_key_in_use?(dataset_id, key)
+      !table.where(
+        Sequel.lit(
+          "dataset_id = :dataset_id AND feedback_keys @> ARRAY[:key]",
+          dataset_id: dataset_id,
+          key: key.to_s
+        )
+      ).empty?
+    end
+
+    def feedback_keys_in_use(dataset_id)
+      rows = table.where(
+        Sequel.lit(
+          <<~SQL,
+            dataset_id = :dataset_id
+            AND feedback_keys IS NOT NULL
+          SQL
+          dataset_id: dataset_id
+        )
+      ).select(
+        Sequel.lit(
+          <<~SQL
+            DISTINCT unnest(feedback_keys) AS key
+          SQL
+        )
+      ).all
+      rows.map { |r| r[:key].to_s }
     end
   end
 end

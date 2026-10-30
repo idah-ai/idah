@@ -279,5 +279,182 @@ RSpec.describe Dataset::Service, database: true do
         with_annotations: true
       )
     end
+
+    it "copies the feedback configuration to the duplicated dataset" do
+      repo.update!(
+        original_dataset_id,
+        { feedback_configuration: {
+          "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
+        } }
+      )
+
+      duplicated = subject.duplicate(original_dataset_id)
+
+      expect(duplicated.feedback_configuration).to eq(
+        aB3kF9mN2q: { label: "Fix this", description: "Annotation is misaligned" }
+      )
+    end
+  end
+
+  describe "#update_feedback_configuration" do
+    let(:system_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
+    let!(:dataset_id) { repo.create(attributes) }
+
+    before do
+      system_repo.update!(
+        dataset_id,
+        { feedback_configuration: {
+          "keep_key" => { label: "Keep me" },
+          "delete_key" => { label: "Delete me" }
+        } }
+      )
+    end
+
+    it "adds new items and keeps existing ones" do
+      new_config = {
+        "keep_key" => { label: "Keep me" },
+        "delete_key" => { label: "Delete me" },
+        "new_key" => { label: "New item", description: "Just added" }
+      }
+
+      result = subject.update_feedback_configuration(dataset_id, new_config)
+
+      expect(result.keys).to match_array(%i[keep_key new_key delete_key])
+      expect(result[:new_key][:label]).to eq("New item")
+    end
+
+    it "deletes an item that is not referenced by any note" do
+      new_config = { "keep_key" => { label: "Keep me" } }
+
+      result = subject.update_feedback_configuration(dataset_id, new_config)
+
+      expect(result.key?(:delete_key)).to be false
+    end
+
+    it "raises error when a deleted key is used by a note" do
+      system_note_repo = NoteFeed::Repository.new(Verse::Auth::Context[:system])
+      entry_id = Entry::Repository.new(Verse::Auth::Context[:system]).create(
+        priority: 1,
+        resource: "http://example.com/img.jpg",
+        wf_step: "review",
+        status: "in_progress",
+        assigned_to_id: 1,
+        project_id: project_id,
+        dataset_id: dataset_id
+      )
+
+      system_note_repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        entry_id: entry_id,
+        anchor_type: "entry",
+        feedback_keys: ["delete_key"],
+        content_md: nil,
+        created_by_email: "user@example.com"
+      )
+
+      new_config = { "keep_key" => { label: "Keep me" } }
+
+      expect {
+        subject.update_feedback_configuration(dataset_id, new_config)
+      }.to raise_error(Verse::Error::ValidationFailed, /already used by a note/)
+    end
+
+    it "updates an existing item's label" do
+      new_config = {
+        "keep_key" => { label: "Updated label" },
+        "delete_key" => { label: "Delete me" }
+      }
+
+      result = subject.update_feedback_configuration(dataset_id, new_config)
+
+      expect(result[:keep_key][:label]).to eq("Updated label")
+    end
+
+    context "structural validation" do
+      it "raises when an item has no label" do
+        expect do
+          subject.update_feedback_configuration(
+            dataset_id,
+            { "new_key" => { description: "no label" } }
+          )
+        end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+      end
+
+      it "raises when an item label is empty" do
+        expect do
+          subject.update_feedback_configuration(
+            dataset_id,
+            { "new_key" => { label: "" } }
+          )
+        end.to raise_error(Verse::Error::ValidationFailed, /can't be empty/)
+      end
+
+      it "raises when an item is not an object" do
+        expect do
+          subject.update_feedback_configuration(
+            dataset_id,
+            { "new_key" => "not a hash" }
+          )
+        end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+      end
+
+      it "raises when the configuration is not an object" do
+        expect do
+          subject.update_feedback_configuration(dataset_id, [])
+        end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+      end
+
+      it "accepts an empty configuration" do
+        result = subject.update_feedback_configuration(dataset_id, {})
+
+        expect(result).to eq({})
+      end
+    end
+  end
+
+  describe "#feedback_keys_in_use" do
+    let!(:dataset_id) { repo.create(attributes) }
+
+    it "returns an empty array when no notes use feedback keys" do
+      result = subject.feedback_keys_in_use(dataset_id)
+      expect(result[:keys]).to eq([])
+    end
+
+    it "returns distinct feedback keys referenced by notes" do
+      system_note_repo = NoteFeed::Repository.new(Verse::Auth::Context[:system])
+      entry_id = Entry::Repository.new(Verse::Auth::Context[:system]).create(
+        priority: 1,
+        resource: "http://example.com/img.jpg",
+        wf_step: "review",
+        status: "in_progress",
+        assigned_to_id: 1,
+        project_id: project_id,
+        dataset_id: dataset_id
+      )
+
+      system_note_repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        entry_id: entry_id,
+        anchor_type: "entry",
+        feedback_keys: %w[key1 key2],
+        content_md: nil,
+        created_by_email: "user@example.com"
+      )
+      system_note_repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        entry_id: entry_id,
+        anchor_type: "entry",
+        feedback_keys: %w[key2 key3],
+        content_md: nil,
+        created_by_email: "user@example.com"
+      )
+
+      result = subject.feedback_keys_in_use(dataset_id)
+
+      expect(result[:keys]).to match_array(%w[key1 key2 key3])
+    end
   end
 end

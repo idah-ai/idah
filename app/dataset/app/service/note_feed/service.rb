@@ -22,9 +22,28 @@ module NoteFeed
     end
 
     def update(record)
-      record.attributes[:edited_at] = Time.now
+      current = note_feeds.find!(record.id)
+      attributes = record.attributes
 
-      note_feeds.update!(record.id, record.attributes)
+      # A note feed must always keep at least one of feedback_keys or content_md
+      # (mirrors the ArgumentsSchema rule enforced on the create endpoint).
+      unless content_remaining?(current, attributes)
+        raise Verse::Error::ValidationFailed,
+              "either feedback_keys or content_md must be provided"
+      end
+
+      # When feedback keys are modified, they must exist in the dataset's
+      # feedback configuration (same rule as the create path).
+      if attributes.key?(:feedback_keys)
+        entry = entries.find!(current.entry_id, included: ["dataset"])
+        validate_feedback_keys!(entry, attributes[:feedback_keys])
+      end
+
+      # Only stamp edited_at when the note's content actually changed, so no-op
+      # PATCHes do not rewrite the "last edited" timestamp.
+      attributes[:edited_at] = Time.now if content_edited?(current, attributes)
+
+      note_feeds.update!(record.id, attributes)
       note_feeds.find!(record.id)
     end
 
@@ -79,6 +98,9 @@ module NoteFeed
               "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
+      # Validate that all feedback_keys exist in the dataset's feedback configuration
+      validate_feedback_keys!(entry, attributes[:feedback_keys])
+
       if attributes[:annotation_id] && attributes[:anchor_type] == "annotation"
         annotation_id = attributes[:annotation_id]
         annotations.find!(annotation_id)
@@ -89,6 +111,44 @@ module NoteFeed
       note_feeds.transaction do
         id = note_feeds.create(attributes)
         note_feeds.find!(id)
+      end
+    end
+
+    private
+
+    # The resulting note must keep at least one of feedback_keys or content_md,
+    # mirroring the ArgumentsSchema rule enforced on the create endpoint.
+    def content_remaining?(current, attributes)
+      feedback_keys =
+        attributes.key?(:feedback_keys) ? attributes[:feedback_keys] : current.feedback_keys
+      content_md =
+        attributes.key?(:content_md) ? attributes[:content_md] : current.content_md
+
+      has_feedback_key = feedback_keys.is_a?(Array) && feedback_keys.any?
+      has_content_md = !content_md.nil? && !content_md.empty?
+
+      has_feedback_key || has_content_md
+    end
+
+    # Validates that every provided feedback key exists in the dataset's
+    # feedback configuration. Shared by the create and update paths.
+    def validate_feedback_keys!(entry, feedback_keys)
+      return unless feedback_keys.is_a?(Array) && feedback_keys.any?
+
+      feedback_config = entry.dataset.feedback_configuration || {}
+      missing = feedback_keys.reject { |key| feedback_config.key?(key.to_sym) }
+
+      return if missing.empty?
+
+      raise Verse::Error::ValidationFailed,
+            "Feedback keys #{missing.inspect} do not exist in the dataset's feedback configuration"
+    end
+
+    # True when one of the editable content fields actually differs from the
+    # stored record. Used to avoid bumping edited_at on no-op updates.
+    def content_edited?(current, attributes)
+      %i[anchor_type position content_md feedback_keys].any? do |field|
+        attributes.key?(field) && attributes[field] != current.public_send(field)
       end
     end
   end
