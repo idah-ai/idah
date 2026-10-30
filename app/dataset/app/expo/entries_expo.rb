@@ -20,7 +20,8 @@ class EntriesExpo < BaseExpo
                      "entry_stats"
     show
     index do
-      allowed_filters :resource__match,
+      allowed_filters :id__in,
+                      :resource__match,
                       :status__in,
                       :priority__in,
                       :assigned_to_id,

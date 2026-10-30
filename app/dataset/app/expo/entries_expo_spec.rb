@@ -53,6 +53,15 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     expect(record[0].status).to eq "pending"
   end
 
+  it "passes selected entry IDs to the service" do
+    expect(service).to receive(:index) do |filters, **_options|
+      expect(filters.transform_keys(&:to_s)).to include("id__in" => [uuid])
+      [entry_record]
+    end
+    get "/entries?filter[id__in][]=#{uuid}&page[size]=1"
+    expect(last_response.status).to eq(200), last_response.body
+  end
+
   it "passes Delivery Date range filters to the service" do
     expect(service).to receive(:index) do |filters, **_options|
       expect(filters.transform_keys(&:to_s)).to include(

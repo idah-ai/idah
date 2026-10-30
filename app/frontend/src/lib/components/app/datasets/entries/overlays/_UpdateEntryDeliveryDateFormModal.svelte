@@ -45,14 +45,18 @@
         pagination: { page: 1, itemsPerPage: entryIds.length },
         noCache: true,
       });
-      if (response.data.length !== entryIds.length) {
+      if (
+        response.data.length !== entryIds.length ||
+        entryIds.some((id) => !response.data.some((entry) => entry.id === id))
+      ) {
         throw new Error("Some selected entries could not be loaded. Please reopen this form.");
       }
       entries = response.data;
       const entry = entries[0];
-      selectedDeliveryDate = entries.length === 1 ? (entry?.delivery_date ?? null) : datasetDeliveryDate;
-      sameAsDatasetDeliveryDate =
-        entries.length > 1 || entry?.delivery_date == null || entry.delivery_date === datasetDeliveryDate;
+      sameAsDatasetDeliveryDate = entryIds.length > 1;
+      selectedDeliveryDate = sameAsDatasetDeliveryDate
+        ? datasetDeliveryDate
+        : entry?.delivery_date || datasetDeliveryDate;
     } catch (error) {
       errors = ["Some selected entries could not be loaded. Please reopen this form."];
       showActionFailedToast(error);
@@ -63,7 +67,7 @@
 
   async function submit() {
     if (submitting || loading || entries.length !== entryIds.length) return;
-    if (!sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
+    if (entryIds.length > 1 && !sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
       errors = ["Select a Delivery Date or use the Dataset delivery date."];
       return;
     }
@@ -121,7 +125,7 @@
       name="entry/delivery_date"
       label="Delivery Date"
       placeholder="Select delivery date"
-      required={!sameAsDatasetDeliveryDate}
+      required={entryIds.length > 1 && !sameAsDatasetDeliveryDate}
       value={displayedDeliveryDate ? parseDate(displayedDeliveryDate).toDate(getLocalTimeZone()) : null}
       minDate={today(getLocalTimeZone())}
       clearable={!sameAsDatasetDeliveryDate}
