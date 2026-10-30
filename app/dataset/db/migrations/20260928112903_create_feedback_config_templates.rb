@@ -2,7 +2,7 @@
 
 # Reusable feedback configuration templates, scoped to an organization.
 Sequel.migration do
-  change do
+  up do
     create_table(:feedback_config_templates) do
       primary_key :id, :bigserial
 
@@ -18,5 +18,10 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :feedback_config_templates)
+  end
+
+  down do
+    drop_trigger :feedback_config_templates, :feedback_config_templates_updated_at
+    drop_table :feedback_config_templates
   end
 end
