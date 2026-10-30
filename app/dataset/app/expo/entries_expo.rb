@@ -41,6 +41,20 @@ class EntriesExpo < BaseExpo
     delete
   end
 
+  expose on_http(:post, "/next") do
+    desc "Claim the next eligible entry"
+    input do
+      field(:dataset_id, String).filled
+      field(:wf_step, String).filled
+    end
+    output do
+      field :data, [Hash, NilClass]
+    end
+  end
+  def select_next
+    service.select_next(dataset_id: params[:dataset_id], wf_step: params[:wf_step])
+  end
+
   expose on_http(:patch, "/:id/assign") do
     desc "Assign a project member to an entry"
     input do

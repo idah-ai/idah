@@ -10,7 +10,15 @@ module Entry
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
-      entries.index(
+      keys = sort.is_a?(String) ? sort.split(",") : sort
+      method = if keys.is_a?(Array) && keys.length == 1 &&
+                  %w[delivery_date -delivery_date entries.delivery_date -entries.delivery_date].include?(keys.first)
+                 :index_by_delivery_date
+               else
+                 :index
+               end
+      entries.public_send(
+        method,
         filter,
         included:,
         page:,
@@ -18,6 +26,18 @@ module Entry
         sort:,
         query_count:
       )
+    end
+
+    def select_next(dataset_id:, wf_step:)
+      dataset = datasets.find!(dataset_id)
+      entries.with_db_mode(:rw) do
+        entries.transaction do
+          id = entries.lock_next_id(dataset_id: dataset_id, wf_step: wf_step, fallback_date: dataset.delivery_date)
+          next unless id
+
+          select(id)
+        end
+      end
     end
 
     def show(id, included: [])

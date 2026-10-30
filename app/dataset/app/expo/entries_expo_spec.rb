@@ -150,6 +150,28 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "POST /entries/next" do
+    it "claims an entry through the service" do
+      expect(service).to receive(:select_next).with(dataset_id: uuid, wf_step: "review").and_return(entry_record)
+      post "/entries/next", { dataset_id: uuid, wf_step: "review" }
+      expect(last_response.status).to eq(200)
+      expect(JSON.parse(last_response.body).dig("data", "id")).to eq(uuid)
+    end
+
+    it "returns null when no entry is claimable" do
+      expect(service).to receive(:select_next).and_return(nil)
+      post "/entries/next", { dataset_id: uuid, wf_step: "review" }
+      expect(last_response.status).to eq(200)
+      expect(JSON.parse(last_response.body)).to eq("data" => nil)
+    end
+
+    it "rejects missing workflow before calling the service" do
+      expect(service).not_to receive(:select_next)
+      post "/entries/next", { dataset_id: uuid }
+      expect(last_response.status).to eq(422)
+    end
+  end
+
   it "destroy" do
     expect(service).to receive(:delete).with(uuid).and_return(true)
     delete "/entries/#{uuid}"

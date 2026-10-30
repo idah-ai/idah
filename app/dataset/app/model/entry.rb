@@ -91,6 +91,39 @@ module Entry
       end
     end
 
+    def index_by_delivery_date(filters = {}, sort:, **options)
+      with_db_mode :r do
+        dataset_date = table.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+        date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        direction = Array(sort).first.start_with?("-") ? :desc : :asc
+        scope = scoped(:read).order(Sequel.public_send(direction, date, nulls: :last))
+        # Keep the prepared ordering while reusing framework filtering and pagination.
+        index(filters, scope: scope, sort: [], **options)
+      end
+    end
+
+    def lock_next_id(dataset_id:, wf_step:, fallback_date: nil)
+      account_id = auth_context.metadata[:id]
+      raise Verse::Error::Unauthorized, "An account is required to claim an entry" unless account_id
+
+      with_db_mode :rw do
+        date = Sequel.function(:coalesce, :delivery_date, fallback_date)
+        scoped(:read)
+          .where(dataset_id: dataset_id, wf_step: wf_step, status: %w[pending in_progress])
+          .where(Sequel.|({ assigned_to_id: account_id }, { assigned_to_id: nil, status: "pending" }))
+          .order(
+            Sequel.asc(Sequel.case({ { assigned_to_id: account_id } => 0 }, 1)),
+            Sequel.asc(date, nulls: :last),
+            Sequel.asc(:priority),
+            Sequel.asc(:created_at),
+            Sequel.asc(:id)
+          )
+          .for_update
+          .skip_locked
+          .get(:id)
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
@@ -350,27 +383,6 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
-    end
-
-    protected
-
-    # Preserve all requested sort fields in one ORDER BY, before pagination.
-    def prepare_ordering(query, sort)
-      keys = sort.is_a?(String) ? sort.split(",") : sort
-      return super unless keys.is_a?(Array) && !keys.empty?
-
-      ordering = keys.map do |key|
-        direction = key.start_with?("-") ? :desc : :asc
-        parts = key.delete_prefix("-").split(".", 2).map(&:to_sym)
-        column = parts.length == 2 ? Sequel.qualify(*parts) : parts.first
-        if [[:delivery_date], [:entries, :delivery_date]].include?(parts)
-          dataset_date = query.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
-          column = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
-        end
-        options = parts.last == :delivery_date ? { nulls: :last } : {}
-        Sequel.public_send(direction, column, **options)
-      end
-      query.order(*ordering)
     end
 
     private
