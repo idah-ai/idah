@@ -13,7 +13,7 @@
     type Icon as IconType,
   } from "@lucide/svelte";
   import type { DateRange } from "bits-ui";
-  import { addDays, addMonths, endOfMonth, endOfWeek, startOfWeek } from "date-fns";
+  import { addDays, addMonths, endOfMonth, endOfWeek, format, startOfWeek } from "date-fns";
   import type { Snippet } from "svelte";
 
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
@@ -330,8 +330,14 @@
 
     onFilter({
       filters: {
-        [`${filterKey}__gte`]: filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
-        [`${filterKey}__lte`]: filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
+        [`${filterKey}__gte`]:
+          filterKey === "delivery_date"
+            ? format(filterStartDate, "yyyy-MM-dd")
+            : filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
+        [`${filterKey}__lte`]:
+          filterKey === "delivery_date"
+            ? format(filterEndDate, "yyyy-MM-dd")
+            : filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
       },
     });
   }
@@ -508,7 +514,7 @@
       {#if sortable}
         <CommandGroup heading="Sort">
           {#each sortOptionItems as { label, value, icon: Icon, onSelect } (value)}
-            <CommandItem disabled={sort.includes(value)} onclick={onSelect}>
+            <CommandItem disabled={value === "none" ? !isSorting : sort.includes(value)} onclick={onSelect}>
               <Icon class="size-4"></Icon>
               {label}
             </CommandItem>

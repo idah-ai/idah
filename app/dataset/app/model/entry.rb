@@ -18,6 +18,7 @@ module Entry
     field :resource, type: String
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
 
     field :assigned_to_id, type: [Integer, NilClass]
     field :assigned_to_email, type: [String, NilClass]
@@ -87,6 +88,50 @@ module Entry
         collection.where(Sequel.lit("assigned_to_id IS NOT NULL"))
       else
         collection.where(Sequel.lit("assigned_to_id IS NULL"))
+      end
+    end
+
+    { delivery_date__gte: :>=, delivery_date__lte: :<= }.each do |name, operator|
+      custom_filter name do |collection, value|
+        dataset_date = collection.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+        date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        collection.where(date.public_send(operator, value))
+      end
+    end
+
+    def index_by_delivery_date(filters = {}, sort:, **options)
+      with_db_mode :r do
+        dataset_date = table.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+        date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        direction = Array(sort).first.start_with?("-") ? :desc : :asc
+        scope = scoped(:read).order(
+          Sequel.public_send(direction, date, nulls: :last),
+          Sequel.public_send(direction, Sequel[:entries][:id])
+        )
+        # Keep the prepared ordering while reusing framework filtering and pagination.
+        index(filters, scope: scope, sort: [], **options)
+      end
+    end
+
+    def lock_next_id(dataset_id:, wf_step:, fallback_date: nil)
+      account_id = auth_context.metadata[:id]
+      raise Verse::Error::Unauthorized, "An account is required to claim an entry" unless account_id
+
+      with_db_mode :rw do
+        date = Sequel.function(:coalesce, :delivery_date, fallback_date)
+        scoped(:read)
+          .where(dataset_id: dataset_id, wf_step: wf_step, status: %w[pending in_progress])
+          .where(Sequel.|({ assigned_to_id: account_id }, { assigned_to_id: nil, status: "pending" }))
+          .order(
+            Sequel.asc(Sequel.case({ { assigned_to_id: account_id } => 0 }, 1)),
+            Sequel.asc(date, nulls: :last),
+            Sequel.asc(:priority),
+            Sequel.asc(:created_at),
+            Sequel.asc(:id)
+          )
+          .for_update
+          .skip_locked
+          .get(:id)
       end
     end
 

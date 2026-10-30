@@ -11,6 +11,7 @@ import {
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { isOverdue } from "@/utils/date";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
@@ -31,6 +32,7 @@ export class EntryRecord extends Record {
   @field() public resource!: string;
 
   @field() public name!: string;
+  @field() public delivery_date!: string | null;
 
   @field() public assigned_to_id!: number | null;
   @field() public assigned_to_email!: string | null;
@@ -74,6 +76,10 @@ export class EntryRecord extends Record {
     const foundEntryStatus = entryStatuses.find((s) => s.value === this.status);
 
     return foundEntryStatus ?? defaultBadgeProps;
+  }
+
+  public get overdue(): boolean {
+    return this.status !== "completed" && isOverdue(this.delivery_date || this.dataset?.delivery_date);
   }
 }
 
@@ -269,19 +275,26 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     throw "No data returned";
   },
   /**
-   * Finds the next entry to redirect to after submission.
+   * Claims the next eligible entry before redirecting after submission.
    * Returns the entry ID if found, or null to fall back to default behavior.
    */
-  findNextEntry: async (datasetId: string, submittedEntryWfStep: EntryWorkflowStep) => {
+  selectNextEntry: async (datasetId: string, submittedEntryWfStep: EntryWorkflowStep) => {
     try {
-      const res = await entriesBackendDataSource.list({
-        fields: { [EntryRecord.type]: ["id"] },
-        filters: { dataset_id: datasetId, wf_step: submittedEntryWfStep },
-        noCache: true,
-        pagination: { page: 1, itemsPerPage: 1 },
-        sort: ["assigned_to_id", "id"],
+      // This request claims the entry before navigation; do not cache or retry it automatically.
+      const res = await fetch(`${entriesBasePath}/next`, {
+        method: "POST",
+        body: JSON.stringify({ dataset_id: datasetId, wf_step: submittedEntryWfStep }),
+        headers: { "Content-Type": "application/vnd.api+json" },
       });
-      return res.data.length > 0 ? res.data[0].id : null;
+      const body = await res.json();
+      if (!res.ok || body.errors) return null;
+      if (body.data) {
+        clearCache(resourcePath(entriesBasePath, body.data.id));
+        clearCache(resourcePath(datasetBasePath, datasetId));
+        clearCache(resourcePath(datasetBasePath, null, undefined));
+      }
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+      return body.data?.id ?? null;
     } catch {
       return null;
     }

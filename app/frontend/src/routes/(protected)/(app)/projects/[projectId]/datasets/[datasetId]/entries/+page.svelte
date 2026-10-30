@@ -1,13 +1,15 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { LayoutListIcon } from "@lucide/svelte";
+  import { addDays, startOfDay } from "date-fns";
   import { getContext, onMount } from "svelte";
+  import { writable } from "svelte/store";
 
   import { resolve } from "$app/paths";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DataView from "@/components/app/data-view/data-view.svelte";
-  import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
+  import EntryCard from "@/components/app/datasets/entries/cards/entryCard.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
 
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
@@ -23,6 +25,25 @@
   import { authStatus } from "@/security/AuthContext";
 
   import type { ProjectMemberScope } from "@/security/types";
+
+  const today = writable(startOfDay(new Date()));
+
+  onMount(() => {
+    let midnightTimer: ReturnType<typeof setTimeout>;
+    const refreshToday = () => {
+      clearTimeout(midnightTimer);
+      const now = new Date();
+      today.set(startOfDay(now));
+      const nextDay = startOfDay(addDays(now, 1));
+      midnightTimer = setTimeout(refreshToday, nextDay.getTime() - now.getTime());
+    };
+    refreshToday();
+    window.addEventListener("focus", refreshToday);
+    return () => {
+      clearTimeout(midnightTimer);
+      window.removeEventListener("focus", refreshToday);
+    };
+  });
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -71,6 +92,7 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
+      today={$today}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

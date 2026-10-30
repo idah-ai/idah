@@ -2,17 +2,18 @@ import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource"
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
+import { isOverdue } from "@/utils/date";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
 import { EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
-import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { DataSourceOptions } from "@/data/DataSource";
+import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { RecordResponse } from "@/data/model/types";
 
-import type { Hash } from "@/utils/types";
 import type { IConfig } from "@/plugin/v2/types";
+import type { Hash } from "@/utils/types";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -26,6 +27,7 @@ export class DatasetRecord extends Record {
   @field() public entries_total_count!: number;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
+  @field() public delivery_date!: string | null;
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];
@@ -40,6 +42,10 @@ export class DatasetRecord extends Record {
     const foundDatasetStatus = datasetsStatuses.find((s) => s.value === this.status);
 
     return foundDatasetStatus ?? defaultBadgeProps;
+  }
+
+  public get overdue(): boolean {
+    return this.status !== "completed" && isOverdue(this.delivery_date);
   }
 }
 

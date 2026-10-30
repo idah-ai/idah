@@ -203,6 +203,12 @@ describe(createBackendDataSource, () => {
       );
     });
 
+    it("omits an empty sort parameter", async () => {
+      mockList();
+      await ds.list({ sort: [], noCache: true });
+      expect(new URL(fetch.mock.lastCall![0]).searchParams.has("sort")).toBe(false);
+    });
+
     it("with sort", async () => {
       mockList();
 
@@ -218,7 +224,7 @@ describe(createBackendDataSource, () => {
 
   describe("#delete", () => {
     it("simple", async () => {
-      fetch.mockResolvedValue({ body: "" });
+      fetch.mockResolvedValue({ ok: true, body: "" });
       const result = await ds.delete("1");
       expect(result).toBe(true);
     });

@@ -34,6 +34,7 @@ module Dataset
 
       # Assign attributes
       attributes = record.attributes
+      DeliveryDate.validate!(attributes)
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = record.project.id
       # attributes[:created_by_email] ||= auth_context.metadata[:email]
@@ -45,7 +46,12 @@ module Dataset
     end
 
     def update(record)
-      datasets.update!(record.id, record.attributes)
+      attributes = record.attributes
+      if attributes.key?(:delivery_date)
+        current = datasets.find!(record.id)
+        DeliveryDate.validate!(attributes, current.delivery_date)
+      end
+      datasets.update!(record.id, attributes)
       datasets.find!(record.id)
     end
 
@@ -92,6 +98,7 @@ module Dataset
         dataset_id = datasets.create(
           {
             **duping_dataset.fields,
+            delivery_date: nil,
             id: UUIDv7.generate,
             name: dataset_name || "#{duping_dataset.name} - duplicated",
             status: "pending",

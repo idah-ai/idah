@@ -1,4 +1,28 @@
 import { z } from "zod";
+import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
+
+const calendarDateSchema = z.string().refine((value) => {
+  try {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) && parseDate(value).toString() === value;
+  } catch {
+    return false;
+  }
+}, "Enter a valid date (YYYY-MM-DD).");
+
+// Validate explicit selections, not unchanged stored dates. Dataset dates are not an upper bound.
+export const deliveryDateChangeSchema = z
+  .object({
+    delivery_date: calendarDateSchema.nullable().optional(),
+    original_delivery_date: calendarDateSchema.nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.delivery_date == null || data.delivery_date === data.original_delivery_date) return;
+    if (!calendarDateSchema.safeParse(data.delivery_date).success) return;
+    const selected = parseDate(data.delivery_date);
+    if (selected.compare(today(getLocalTimeZone())) < 0) {
+      ctx.addIssue({ code: "custom", path: ["delivery_date"], message: "Delivery Date must be today or later." });
+    }
+  });
 
 export const datasetSchema = z.object({
   name: z.string("Dataset name is required."),

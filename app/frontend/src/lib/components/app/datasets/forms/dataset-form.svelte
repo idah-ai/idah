@@ -1,7 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
@@ -16,13 +18,14 @@
   interface Props extends FormBaseProps {
     dataset: DatasetRecord;
     newRecord: boolean;
+    canEditDeliveryDate: boolean;
   }
-  let { dataset, newRecord, fieldErrors, onValueChange }: Props = $props();
+  let { dataset, newRecord, canEditDeliveryDate, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
   const resource: Resource = "dataset:datasets";
   let projectId = $derived(page.params.projectId as string);
-  let { name, modality } = $derived(dataset);
+  let { name, modality, delivery_date } = $derived(dataset);
   let selectedDatasetId = $state<string | null>(null);
 
   // Functions
@@ -30,6 +33,7 @@
     onValueChange({
       name,
       modality,
+      delivery_date,
       selectedDatasetId,
     });
   });
@@ -72,6 +76,22 @@
         }}
       />
     {/await}
+
+    {#key delivery_date}
+      <DatePickerField
+        name="{resource}/delivery_date"
+        label="Delivery Date"
+        placeholder="Select delivery date"
+        errors={fieldErrors["delivery_date"]}
+        value={delivery_date ? parseDate(delivery_date).toDate(getLocalTimeZone()) : null}
+        minDate={today(getLocalTimeZone())}
+        clearable={canEditDeliveryDate}
+        disabled={!canEditDeliveryDate}
+        onDateSelected={(selectedDate) => {
+          delivery_date = selectedDate;
+        }}
+      />
+    {/key}
 
     <!-- DATASET::LABELING CONFIGURATION -->
     {#key modality}

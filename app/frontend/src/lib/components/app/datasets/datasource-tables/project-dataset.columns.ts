@@ -8,6 +8,7 @@ import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 import { datasetsModalities, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
+import ProjectDatasetDeliveryDateCell from "./ProjectDatasetDeliveryDateCell.svelte";
 
 export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
   name: {
@@ -71,6 +72,21 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
     visible: true,
     hidable: false,
     cellComponent: ProjectDatasetModalityCell,
+  },
+  delivery_date: {
+    label: "Delivery Date",
+    dataType: "datetime",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "delivery_date",
+      filterBy: "date-range",
+      filterOperation: "eq",
+    },
+    visible: true,
+    hidable: false,
+    cellComponent: ProjectDatasetDeliveryDateCell,
   },
   created_at: {
     label: "Created at",

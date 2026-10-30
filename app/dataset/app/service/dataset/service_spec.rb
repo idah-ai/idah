@@ -29,6 +29,44 @@ RSpec.describe Dataset::Service, database: true do
     }
   end
 
+  describe "delivery date validation" do
+    let!(:dataset_id) { repo.create(attributes.merge(delivery_date: Date.today - 10)) }
+
+    def date_update(attrs)
+      subject.update(deserialize(data: { type: Resource::Dataset::Datasets, id: dataset_id, attributes: attrs }))
+    end
+
+    it "rejects an explicitly selected past date on creation" do
+      allow(subject).to receive(:authorize_creation).and_return(true)
+      record = deserialize(
+        data: {
+          type: Resource::Dataset::Datasets,
+          attributes: attributes.merge(delivery_date: Date.today - 1),
+          relationships: { project: { data: { type: Resource::Dataset::Projects, id: project_id } } }
+        }
+      )
+      expect { subject.create(record) }.to raise_error(Verse::Error::ValidationFailed)
+    end
+
+    it "rejects a changed past date" do
+      expect { date_update(delivery_date: Date.today - 1) }.to raise_error(Verse::Error::ValidationFailed)
+    end
+
+    it "accepts today and future dates" do
+      expect(date_update(delivery_date: Date.today).delivery_date).to eq(Date.today)
+      expect(date_update(delivery_date: Date.today + 1).delivery_date).to eq(Date.today + 1)
+    end
+
+    it "allows unchanged past dates and unrelated updates" do
+      expect(date_update(name: "Renamed", delivery_date: Date.today - 10).name).to eq("Renamed")
+      expect(date_update(name: "Again").delivery_date).to eq(Date.today - 10)
+    end
+
+    it "allows clearing a past date" do
+      expect(date_update(delivery_date: nil).delivery_date).to be_nil
+    end
+  end
+
   describe "#index" do
     it "returns all datasets" do
       dataset1_id = repo.create(attributes)
@@ -248,6 +286,14 @@ RSpec.describe Dataset::Service, database: true do
 
     before do
       allow(subject).to receive(:authorize_creation).and_return(true)
+    end
+
+    it "resets the duplicated deadline and preserves the original" do
+      date = Date.today + 10
+      repo.update!(original_dataset_id, { delivery_date: date })
+      duplicated = subject.duplicate(original_dataset_id)
+      expect(duplicated.delivery_date).to be_nil
+      expect(repo.find!(original_dataset_id).delivery_date).to eq(date)
     end
 
     it "duplicates the dataset with basic fields reset" do
