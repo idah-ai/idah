@@ -38,6 +38,22 @@ export class NoteFeedRecord extends Record {
 
     return "general";
   }
+
+  /**
+   * True when this note is anchored to an annotation that has been soft-deleted
+   * (annotations.deleted_at set). Derived from the included annotation each time
+   * notes are loaded, so undo/restore clears it automatically.
+   */
+  public get isAnchorDeleted(): boolean {
+    if (this.anchor_type !== "annotation") return false;
+    try {
+      return !!this.annotation?.deleted_at;
+    } catch {
+      // Annotation relationship not loaded (e.g. detail view without include) —
+      // we can't tell, so treat it as not deleted.
+      return false;
+    }
+  }
 }
 
 RecordFactory.registerTypes(NoteFeedRecord);

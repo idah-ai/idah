@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
+  import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -17,6 +18,9 @@
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
+  import { datasetBasePath } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -42,9 +46,13 @@
       onUnassign: confirmUnAssignEntry,
       onSetPriority: () => {},
       onDelete: confirmDeleteEntry,
+      onReopen: () => {
+        openReopenEntryModal = true;
+      },
       isAssigned: !!entry.assigned_to_id,
       isAssignDisabled: entry.wf_step === "done",
       isUnassignDisabled: entry.wf_step === "done",
+      isReopenHidden: entry.status !== "completed",
     }).filter((m) => m.label !== "Set Priority"),
   );
 
@@ -52,6 +60,7 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
+  let openReopenEntryModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -111,7 +120,9 @@
         try {
           await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
 
+          clearCache(resourcePath(datasetBasePath, null, undefined));
           $refetches.entries.list = new Date();
+          $refetches.datasets.list = new Date();
           showToast.success({
             title: "Entry deleted",
             description: `The entry "${entry.name || entry.id}" has been deleted.`,
@@ -131,7 +142,7 @@
     await entriesBackendDataSource
       .get(entry.id, {
         noCache: true,
-        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by"],
+        included: ["assigned_to", "dataset", "reviewed_by", "submitted_by", "reopened_by"],
       })
       .then((res) => {
         entry = res.data;
@@ -171,5 +182,17 @@
     onAssigned={onEntryAssigned}
     entryIds={[entry.id]}
     bind:open={openAssignEntryFormModal}
+  />
+
+  <!-- MODAL::REOPEN ENTRY -->
+  <ReopenEntryModal
+    action="update"
+    entryIds={[entry.id]}
+    entryMap={new Map([[entry.id, entry]])}
+    onReopened={(updated) => {
+      const updatedEntry = updated[0];
+      if (updatedEntry) onAssigned?.(updatedEntry);
+    }}
+    bind:open={openReopenEntryModal}
   />
 {/if}

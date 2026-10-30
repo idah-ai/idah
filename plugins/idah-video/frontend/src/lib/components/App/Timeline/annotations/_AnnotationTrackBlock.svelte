@@ -52,7 +52,7 @@
   let color = $derived.by(() => resolveAnnotationColor(annotation));
 
   // Check if this specific annotation is selected.
-   let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
+  let isSelected = $derived(selection.isAnnotationSelected(annotation.id));
 
   // Functions
   function handleOnContextMenu(e: MouseEvent) {
@@ -69,15 +69,20 @@
       currentFrame: hoverFrame,
     };
 
-    /* Select annotation */
-    selection.selectAnnotation(annotation);
+    /* Select annotation — keep the current selection when this one is already
+       selected (mirrors the track right-click in Timeline/_Track.svelte). */
+    if (!selection.isAnnotationSelected(annotation.id)) selection.selectAnnotation(annotation);
 
     showContextMenu(TrackBlockContextMenu as ContextMenuComponent, contextMenuProps, e.clientX, e.clientY);
   }
 
   function handleAnnotationClick(e: MouseEvent) {
     e.preventDefault();
-    selection.selectAnnotation(annotation);
+    if (e.shiftKey) {
+      selection.toggleAnnotation(annotation.id);
+    } else {
+      selection.selectAnnotation(annotation);
+    }
   }
 
   function handleKeyframeContextMenu(e: MouseEvent, keyframe: number) {

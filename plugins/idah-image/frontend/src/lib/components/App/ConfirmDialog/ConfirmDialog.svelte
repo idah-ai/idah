@@ -10,19 +10,34 @@
   } from "$lib/components/ui/AlertDialog";
   import Button from "$lib/components/ui/Button/Button.svelte";
 
-  import { closeConfirmDialog, confirmDialogState } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { closeConfirmDialog, confirmDialogState, hideConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
 
   // Variables
-  let { open, title, description, onConfirm } = $derived($confirmDialogState);
+  let { open, title, description, onConfirm, onCancel } = $derived($confirmDialogState);
 
   // Functions
   function handleClickConfirm() {
     onConfirm();
-    closeConfirmDialog();
+    // Open → closed, but keep the payload mounted for the exit animation.
+    hideConfirmDialog();
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (next) return;
+    onCancel?.();
+    hideConfirmDialog();
+  }
+
+  function handleOpenChangeComplete(next: boolean) {
+    if (!next) closeConfirmDialog();
   }
 </script>
 
-<AlertDialog bind:open>
+<AlertDialog
+  open={open}
+  onOpenChange={handleOpenChange}
+  onOpenChangeComplete={handleOpenChangeComplete}
+>
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>{title}</AlertDialogTitle>
