@@ -211,6 +211,21 @@ module Dataset
       end
     end
 
+    # Locks the dataset row for update (SELECT ... FOR UPDATE) within the
+    # current transaction, then returns the hydrated record with decoded JSONB
+    # columns. Used to serialize read-modify-write updates of
+    # feedback_configuration so concurrent PATCHes cannot overwrite each
+    # other's committed items. Must be called inside a transaction.
+    def lock!(id, scope: scoped(:update))
+      with_db_mode :rw do
+        row = scope.where(self.class.primary_key => id).for_update.first
+
+        raise Verse::Error::NotFound, "Dataset not found" unless row
+
+        self.class.model_class.new(decode(row))
+      end
+    end
+
     def delete!(id)
       with_metadata do
         dataset = find!(id)

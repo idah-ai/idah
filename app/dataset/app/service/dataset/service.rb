@@ -127,22 +127,26 @@ module Dataset
       # Validate the structure of the payload before storing it.
       new_config = FeedbackConfigSchema.validate!(new_config)
 
-      dataset = datasets.find!(dataset_id)
-      old_config = dataset.feedback_configuration || {}
-
-      old_keys = old_config.keys.map(&:to_s)
-      new_keys = new_config.keys.map(&:to_s)
-
-      removed_keys = old_keys - new_keys
-
-      removed_keys.each do |key|
-        if note_feed_uses_feedback_key?(dataset_id, key)
-          raise Verse::Error::ValidationFailed,
-                "Cannot remove feedback item '#{key}': it is already used by a note"
-        end
-      end
-
       datasets.transaction do
+        # Lock the dataset row (SELECT ... FOR UPDATE) so concurrent
+        # read-modify-write cycles serialize on this row instead of silently
+        # overwriting each other's committed items. The removed-key diff below
+        # therefore always runs against the latest committed configuration.
+        dataset = datasets.lock!(dataset_id)
+        old_config = dataset.feedback_configuration || {}
+
+        old_keys = old_config.keys.map(&:to_s)
+        new_keys = new_config.keys.map(&:to_s)
+
+        removed_keys = old_keys - new_keys
+
+        removed_keys.each do |key|
+          if note_feed_uses_feedback_key?(dataset_id, key)
+            raise Verse::Error::ValidationFailed,
+                  "Cannot remove feedback item '#{key}': it is already used by a note"
+          end
+        end
+
         datasets.update!(dataset_id, { feedback_configuration: new_config })
         datasets.find!(dataset_id).feedback_configuration
       end
