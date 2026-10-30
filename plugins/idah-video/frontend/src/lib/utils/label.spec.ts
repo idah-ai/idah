@@ -2,7 +2,7 @@
 // label.spec.ts — Unit tests for category label text and centre geometry
 // ---------------------------------------------------------------------------
 import { describe, it, expect } from "vitest";
-import { annotationLabel, labelCenterPx } from "./label";
+import { annotationLabel, isAnnotationLabelVisible, labelCenterPx } from "./label";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 
 const W = 1000;
@@ -178,5 +178,15 @@ describe("annotationLabel", () => {
 
   it("flags an unknown single-segment category", () => {
     expect(annotationLabel({ category: "boat" }, lookup)).toEqual({ text: "Boat", unresolved: true });
+  });
+});
+
+describe("isAnnotationLabelVisible", () => {
+  it("always shows unresolved labels when category labels are disabled", () => {
+    expect(isAnnotationLabelVisible({ text: "Missing", unresolved: true }, "never", false)).toBe(true);
+  });
+
+  it("keeps resolved labels hidden when category labels are disabled", () => {
+    expect(isAnnotationLabelVisible({ text: "Car", unresolved: false }, "never", true)).toBe(false);
   });
 });

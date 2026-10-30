@@ -4,6 +4,11 @@
 
 import { describe, expect, it } from "vitest";
 
+import peggy from "peggy";
+import grammar from "@/utils/ast_parser.pegjs?raw";
+
+const parse = (input: string) => peggy.generate(grammar).parse(input);
+
 import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
 import { newCondition, newGroup, type RuleCondition } from "@/utils/visibility_rules";
 
@@ -13,6 +18,7 @@ import {
   builderOperator,
   canEditInBuilder,
   conditionProblem,
+  conditionReferenceProblems,
   defaultCondition,
   defaultGroupConditions,
   describeRules,
@@ -22,6 +28,7 @@ import {
   selectableFields,
   usesOptions,
   visibilityFields,
+  visibilityReferenceErrors,
 } from "./visibility-fields";
 
 const category = (id: string, label: string): IConfigValue => ({ id, label, color: null, text_color: null });
@@ -249,6 +256,35 @@ describe("conditionProblem", () => {
   });
 });
 
+describe("conditionReferenceProblems", () => {
+  it("marks a missing field selector", () => {
+    expect(
+      conditionReferenceProblems(
+        newCondition("properties.removed", "eq", "x"),
+        fieldFor(fields, newCondition("properties.removed", "eq", "x")),
+      ),
+    ).toEqual({
+      field: 'Field "properties.removed" no longer exists.',
+    });
+  });
+
+  it("marks a missing category value selector", () => {
+    expect(conditionReferenceProblems(newCondition("category", "eq", "vehicles/van"), field("category"))).toEqual({
+      value: 'Value "vehicles/van" no longer exists.',
+    });
+  });
+
+  it("marks a missing parent category selector", () => {
+    expect(conditionReferenceProblems(newCondition("category", "match", "missing/*"), field("category"))).toEqual({
+      value: 'Value "missing/*" no longer exists.',
+    });
+  });
+
+  it("accepts typed category patterns", () => {
+    expect(conditionReferenceProblems(newCondition("category", "match", "veh*"), field("category"))).toEqual({});
+  });
+});
+
 describe("canEditInBuilder", () => {
   it("accepts conditions that fit their field", () => {
     const group = newGroup("all", [
@@ -323,5 +359,60 @@ describe("describeRules", () => {
 
   it("is empty for an empty group", () => {
     expect(describeRules(newGroup("all", []), fields)).toBe("");
+  });
+});
+
+describe("visibilityReferenceErrors", () => {
+  it("accepts existing property and category references", () => {
+    expect(
+      visibilityReferenceErrors(
+        parse('category = "vehicles/car" and properties.occluded = true'),
+        categories,
+        properties,
+      ),
+    ).toEqual([]);
+  });
+
+  it("reports missing property references", () => {
+    expect(visibilityReferenceErrors(parse("properties.deleted = true"), categories, properties)).toEqual([
+      {
+        reference: "properties.deleted",
+        message: 'Visibility references missing property "deleted".',
+      },
+    ]);
+  });
+
+  it("reports missing category references in nested expressions and lists", () => {
+    const errors = visibilityReferenceErrors(
+      parse('(category in ["vehicles/car", "vehicle/truck"]) or (category = "missing")'),
+      categories,
+      properties,
+    );
+
+    expect(errors).toEqual([
+      {
+        reference: "category:vehicle/truck",
+        message: 'Visibility references missing category "vehicle/truck".',
+      },
+      {
+        reference: "category:missing",
+        message: 'Visibility references missing category "missing".',
+      },
+    ]);
+  });
+
+  it("accepts category patterns and existing category paths", () => {
+    expect(
+      visibilityReferenceErrors(parse('category match "veh*" and category match "vehicles/*"'), categories, properties),
+    ).toEqual([]);
+  });
+
+  it("reports a missing category path for an under rule", () => {
+    expect(visibilityReferenceErrors(parse('category match "missing/*"'), categories, properties)).toEqual([
+      {
+        reference: "category:missing/*",
+        message: 'Visibility references missing category path "missing".',
+      },
+    ]);
   });
 });

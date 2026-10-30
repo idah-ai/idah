@@ -1,7 +1,9 @@
 // ---------------------------------------------------------------------------
 // utils/annotation.ts — Shared annotation / group helpers
 // ---------------------------------------------------------------------------
+import type { IConfig } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
+import type { IVideoAnnotationRecord } from "$lib/types";
 
 /**
  * Compare two groups for stable timeline track ordering.
@@ -20,7 +22,10 @@ import { data } from "$lib/state/data.svelte";
  * split + delete-left operation the remaining right-side piece has a later start
  * frame and the group dropped to a lower track position).
  */
-export function compareGroups(a: { groupId: string; annotations: { shape_args: { start: number } }[] }, b: { groupId: string; annotations: { shape_args: { start: number } }[] }): number {
+export function compareGroups(
+  a: { groupId: string; annotations: { shape_args: { start: number } }[] },
+  b: { groupId: string; annotations: { shape_args: { start: number } }[] },
+): number {
   const byGroupId = a.groupId.localeCompare(b.groupId);
   if (byGroupId !== 0) return byGroupId;
   return (a.annotations[0]?.shape_args.start ?? Infinity) - (b.annotations[0]?.shape_args.start ?? Infinity);
@@ -65,4 +70,11 @@ export function getSortedGroupIds(): string[] {
   groups.sort(compareGroups);
 
   return groups.map((g) => g.groupId);
+}
+
+/** Return total of orphan annotations */
+export function countOrphanAnnotations(annotations: IVideoAnnotationRecord[], config: IConfig): number {
+  const configured = new Set(Object.values(config).flatMap((shape) => shape.values.map((v) => v.id)));
+
+  return annotations.filter((ann) => !ann.deleted_at && !!ann.category && !configured.has(ann.category)).length;
 }

@@ -6,7 +6,7 @@
 // one of its properties) to a value. The field's kind decides which
 // operators and which value control the builder offers.
 
-import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
+import type { ASTNode, ASTNodeValue, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
 import { humanize } from "@/utils/string";
 import {
   isListOperator,
@@ -40,6 +40,16 @@ export interface VisibilityField {
   parents: FieldOption[];
   /** The condition names a field that is no longer in the label config. */
   missing?: boolean;
+}
+
+export interface VisibilityReferenceError {
+  reference: string;
+  message: string;
+}
+
+export interface ConditionReferenceProblems {
+  field?: string;
+  value?: string;
 }
 
 /** "under" is shown in the builder only; it is stored as category match "<parent>/*". */
@@ -118,6 +128,99 @@ export function visibilityFields(
     });
   }
   return fields;
+}
+
+/**
+ * Finds visibility references that no longer resolve against the current
+ * label configuration. Expression-mode rules are validated here too, so the
+ * check does not depend on whether the builder can represent the expression.
+ */
+export function visibilityReferenceErrors(
+  visibility: boolean | ASTNode,
+  categories: IConfigValue[],
+  properties: IConfigProperty[],
+): VisibilityReferenceError[] {
+  if (typeof visibility === "boolean") return [];
+
+  const propertyIds = new Set(properties.map((property) => property.id));
+  const categoryIds = new Set(categories.map((category) => category.id));
+  const errors: VisibilityReferenceError[] = [];
+
+  function add(reference: string, message: string) {
+    if (!errors.some((error) => error.reference === reference && error.message === message)) {
+      errors.push({ reference, message });
+    }
+  }
+
+  function walk(value: ASTNodeValue): void {
+    if (Array.isArray(value)) {
+      if (isAstNode(value)) {
+        walkNode(value);
+      } else {
+        value.forEach(walk);
+      }
+    }
+  }
+
+  function walkNode(node: ASTNode): void {
+    const [operator, args] = node;
+    const field = getFieldName(args[0]);
+    if (field) {
+      if (field.startsWith("properties.")) {
+        const propertyId = field.slice("properties.".length);
+        if (!propertyIds.has(propertyId)) {
+          add(field, `Visibility references missing property "${propertyId}".`);
+        }
+      } else if (field === "category") {
+        validateCategoryValues(operator, args[1]);
+      }
+    }
+
+    args.forEach(walk);
+  }
+
+  function validateCategoryValues(operator: string, value: ASTNodeValue): void {
+    const values = listValues(value) ?? (typeof value === "string" ? [value] : []);
+    if (values.length === 0) return;
+
+    if (operator === "match") {
+      for (const category of values) {
+        if (category.endsWith("/*") && !hasCategoryPrefix(category.slice(0, -2))) {
+          add(`category:${category}`, `Visibility references missing category path "${category.slice(0, -2)}".`);
+        }
+      }
+      return;
+    }
+
+    if (operator === "eq" || operator === "neq" || operator === "in") {
+      for (const category of values) {
+        if (!categoryIds.has(category)) {
+          add(`category:${category}`, `Visibility references missing category "${category}".`);
+        }
+      }
+    }
+  }
+
+  function hasCategoryPrefix(prefix: string): boolean {
+    return [...categoryIds].some((id) => id === prefix || id.startsWith(`${prefix}/`));
+  }
+
+  walkNode(visibility);
+  return errors;
+}
+
+function isAstNode(value: ASTNodeValue): value is ASTNode {
+  return Array.isArray(value) && value.length === 2 && typeof value[0] === "string" && Array.isArray(value[1]);
+}
+
+function getFieldName(value: ASTNodeValue): string | undefined {
+  return isAstNode(value) && value[0] === "get" && typeof value[1][0] === "string" ? value[1][0] : undefined;
+}
+
+function listValues(value: ASTNodeValue): string[] | undefined {
+  if (!Array.isArray(value) || value.length !== 1 || !Array.isArray(value[0])) return undefined;
+  const values = value[0];
+  return values.every((entry) => typeof entry === "string") ? (values as string[]) : undefined;
 }
 
 /**
@@ -313,6 +416,30 @@ export function conditionProblem(condition: RuleCondition, field: VisibilityFiel
   // Unsafe integers print in exponent form, which the parser can't read back.
   if (typeof value === "number" && !Number.isSafeInteger(value)) return "Enter a whole number";
   return undefined;
+}
+
+/** Identifies which builder control contains a stale configuration reference. */
+export function conditionReferenceProblems(
+  condition: RuleCondition,
+  field: VisibilityField,
+): ConditionReferenceProblems {
+  if (field.missing) {
+    return { field: `Field "${condition.field}" no longer exists.` };
+  }
+
+  if (condition.operator === "match" && typeof condition.value === "string" && !condition.value.endsWith("/*")) {
+    return {};
+  }
+
+  const values = Array.isArray(condition.value) ? condition.value.map(String) : [String(condition.value)];
+  const options =
+    condition.operator === "match" && values.length === 1 && values[0].endsWith("/*") ? field.parents : field.options;
+  const missing = values.filter((value) => value !== "" && !options.some((option) => option.value === value));
+  if (missing.length === 0) return {};
+
+  return {
+    value: `Value${missing.length > 1 ? "s" : ""} ${missing.map((value) => `"${value}"`).join(", ")} no longer exist${missing.length > 1 ? "" : "s"}.`,
+  };
 }
 
 export function hasProblems(item: RuleItem, fields: VisibilityField[]): boolean {

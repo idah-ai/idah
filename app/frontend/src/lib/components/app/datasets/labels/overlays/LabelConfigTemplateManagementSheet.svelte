@@ -109,6 +109,14 @@
 
   async function saveChanges() {
     if (!selectedTemplateId) return;
+    if (controller.hasVisibilityErrors) {
+      showToast.error({
+        title: "Fix visibility conditions",
+        description: "Resolve all invalid property visibility conditions before saving.",
+      });
+      return;
+    }
+
     saving = true;
     try {
       const cleaned = controller.getCleanedConfig();
@@ -226,7 +234,7 @@
                   variant="outline"
                   loading={saving}
                   loadingLabel="Saving"
-                  disabled={!loaded || !controller.hasUnsavedChanges}
+                  disabled={!loaded || !controller.hasUnsavedChanges || controller.hasVisibilityErrors}
                   onclick={saveChanges}
                 >
                   <SaveIcon />

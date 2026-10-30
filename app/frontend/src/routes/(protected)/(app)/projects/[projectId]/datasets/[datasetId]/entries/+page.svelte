@@ -5,13 +5,13 @@
 
   import { resolve } from "$app/paths";
 
-  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DataView from "@/components/app/data-view/data-view.svelte";
-  import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
-  import PageHeader from "@/components/app/page/page-header.svelte";
-
-  import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
+  import DatasetEntriesAnnotationErrorAlert from "@/components/app/datasets/entries/alerts/DatasetEntriesAnnotationErrorAlert.svelte";
   import EntriesFilterToolbar from "@/components/app/datasets/entries/toolbar/_EntryFilterToolbar.svelte";
+  import EntryCard from "@/components/app/datasets/entries/cards/EntryCard.svelte";
+  import PageHeader from "@/components/app/page/page-header.svelte";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
 
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
@@ -20,6 +20,7 @@
   import { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { refetches } from "@/utils/refetch";
   import { authStatus } from "@/security/AuthContext";
 
   import type { ProjectMemberScope } from "@/security/types";
@@ -39,6 +40,7 @@
   // Auth-gated flags (resolved on mount)
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  let showOrphanCategories = $state(false);
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: { projectId, projectMemberRoles: ["project_owner"] },
@@ -59,11 +61,31 @@
       account?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
     ]);
   });
+
+  async function handleOrphanFilterChange(checked: boolean) {
+    await controller.applyFilter({
+      filters: {
+        orphan_categories: checked ? true : undefined,
+      },
+    });
+
+    showOrphanCategories = checked;
+  }
 </script>
+
+{#key $refetches.entries.list}
+  <DatasetEntriesAnnotationErrorAlert
+    {datasetId}
+    checked={showOrphanCategories}
+    onCheckedChange={handleOrphanFilterChange}
+  />
+{/key}
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+    {#if !showOrphanCategories}
+      <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+    {/if}
   {/snippet}
 </PageHeader>
 

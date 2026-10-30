@@ -12,11 +12,13 @@
   // Props
   interface Props extends FormFieldBaseProps {
     bordered?: boolean;
+    checkboxClass?: string;
     checked: boolean;
     onCheckedChange?: (checked: boolean) => void;
   }
   let {
     bordered = false,
+    checkboxClass,
     checked = $bindable(false),
     onCheckedChange,
     name,
@@ -38,20 +40,13 @@
   class={cn(
     "flex flex-row items-start gap-3",
     {
-      "hover:bg-accent/50 has-[[aria-checked=true]]:border-primary/60 has-[[aria-checked=true]]:bg-primary/10 dark:has-[[aria-checked=true]]:border-primary/90 dark:has-[[aria-checked=true]]:bg-primary/90 rounded-lg border p-3":
+      "hover:bg-accent/50 has-aria-checked:border-primary/60 has-aria-checked:bg-primary/10 dark:has-aria-checked:border-primary/90 dark:has-aria-checked:bg-primary/90 rounded-lg border p-3":
         bordered,
     },
     className,
   )}
 >
-  <Checkbox
-    {name}
-    {disabled}
-    {readonly}
-    {required}
-    bind:checked
-    {onCheckedChange}
-  ></Checkbox>
+  <Checkbox class={checkboxClass} {name} {disabled} {readonly} {required} bind:checked {onCheckedChange}></Checkbox>
 
   <div class="grid flex-1 gap-1.5 font-normal">
     {#if slotLabel}
