@@ -213,11 +213,11 @@ describe(createBackendDataSource, () => {
       mockList();
 
       await ds.list({
-        sort: ["-id", "foo"],
+        sort: ["-id", "foo"]
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?sort=-id%2Cfoo", {
-        method: "GET",
+        method: "GET"
       });
     });
   });
