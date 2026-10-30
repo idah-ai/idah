@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { LayoutListIcon } from "@lucide/svelte";
+  import { addDays, startOfDay } from "date-fns";
   import { getContext, onMount } from "svelte";
 
   import { resolve } from "$app/paths";
@@ -29,7 +30,7 @@
     const refreshToday = () => {
       clearTimeout(midnightTimer);
       const now = new Date();
-      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const nextDay = startOfDay(addDays(now, 1));
       midnightTimer = setTimeout(refreshToday, nextDay.getTime() - now.getTime());
     };
     refreshToday();
