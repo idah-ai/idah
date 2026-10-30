@@ -2,6 +2,7 @@ import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource"
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
+import { isOverdue } from "@/utils/date";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
 import { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -42,6 +43,10 @@ export class DatasetRecord extends Record {
 
     return foundDatasetStatus ?? defaultBadgeProps;
   }
+
+   public get overdue(): boolean {
+      return this.status !== "completed" && isOverdue(this.delivery_date);
+    }
 }
 
 RecordFactory.registerTypes(DatasetRecord);

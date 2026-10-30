@@ -11,6 +11,7 @@ import {
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { isOverdue } from "@/utils/date";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
@@ -75,6 +76,10 @@ export class EntryRecord extends Record {
     const foundEntryStatus = entryStatuses.find((s) => s.value === this.status);
 
     return foundEntryStatus ?? defaultBadgeProps;
+  }
+
+  public get overdue(): boolean {
+    return this.status !== "completed" && isOverdue(this.delivery_date || this.dataset.delivery_date);
   }
 }
 

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getLocalTimeZone, today } from "@internationalized/date";
   import { LayoutListIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
@@ -25,11 +24,9 @@
 
   import type { ProjectMemberScope } from "@/security/types";
 
-  let localToday = $state(today(getLocalTimeZone()).toString());
   onMount(() => {
     let midnightTimer: ReturnType<typeof setTimeout>;
     const refreshToday = () => {
-      localToday = today(getLocalTimeZone()).toString();
       clearTimeout(midnightTimer);
       const now = new Date();
       const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -90,7 +87,6 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
-      {localToday}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

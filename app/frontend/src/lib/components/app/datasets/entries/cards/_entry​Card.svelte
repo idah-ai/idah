@@ -3,7 +3,6 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { Badge } from "@/components/ui/badge";
-  import { isOverdue } from "@/utils/date";
   import { ExternalLinkIcon, TriangleAlertIcon } from "@lucide/svelte";
   import { format, isAfter, parseISO } from "date-fns";
   import { getContext, onDestroy, onMount } from "svelte";
@@ -36,18 +35,11 @@
   // Props
   interface Props {
     entry: EntryRecord;
-    localToday: string;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
     onEntryUpdated: () => void;
   }
-  let { entry, localToday, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
-
-  let overdue = $derived.by(() => {
-    // Recheck when the parent refreshes the local day at midnight or on focus.
-    void localToday;
-    return entry.status !== "completed" && isOverdue(entry.delivery_date || entry.dataset?.delivery_date);
-  });
+  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   let deliveryDateWarning = $derived(
     entry.delivery_date &&
@@ -431,7 +423,7 @@
                     </TooltipProvider>
                   {/if}
 
-                  {#if overdue}<Badge variant="destructive">Overdue</Badge>{/if}
+                  {#if entry.overdue}<Badge variant="destructive">Overdue</Badge>{/if}
                 </div>
               {/snippet}
             </DataDisplay>
