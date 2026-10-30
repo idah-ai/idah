@@ -143,16 +143,22 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
       expect(last_response.status).to eq 200
     end
 
-    it "rejects when completed_entries is omitted" do
+    it "defaults completed_entries to false when options are given without it" do
+      expect_any_instance_of(Exports::Service).to receive(:create)
+        .with(project_id, dataset_ids, exporter,
+              { include_medias: "all", completed_entries: false },
+              entry_ids: nil)
+        .and_return(export_without_file)
+
       post "/exports/export",
            {
              project_id:,
              dataset_ids:,
              exporter:,
-             options: { include_medias: "original" }
+             options: { include_medias: "all" }
            }
 
-      expect(last_response.status).to eq 422
+      expect(last_response.status).to eq 200
     end
 
     it "forwards completed_entries when set to false" do

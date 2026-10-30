@@ -14,35 +14,35 @@ Exports are modality-aware — each modality registers its own exporter class vi
 
 Standard job record — identical to the schema described in [`guide/job-system.md`](guide/job-system.md).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `uuid` | Primary key (UUIDv7) |
-| `type` | `text` | Job type discriminator (always `export` for Sync Service) |
-| `status` | `text` | `pending`, `running`, `completed`, `failed` |
-| `metadata` | `jsonb` | Job payload: `export_id`, `exporter_class`, modality info |
-| `scheduled_at` | `timestamptz` | When the job should be picked up |
-| `started_at` | `timestamptz` | When processing started |
-| `completed_at` | `timestamptz` | When processing finished |
-| `error` | `jsonb` | Error details on failure |
-| `created_at` | `timestamptz` | Creation timestamp |
-| `updated_at` | `timestamptz` | Last update timestamp |
+| Field          | Type          | Description                                               |
+| -------------- | ------------- | --------------------------------------------------------- |
+| `id`           | `uuid`        | Primary key (UUIDv7)                                      |
+| `type`         | `text`        | Job type discriminator (always `export` for Sync Service) |
+| `status`       | `text`        | `pending`, `running`, `completed`, `failed`               |
+| `metadata`     | `jsonb`       | Job payload: `export_id`, `exporter_class`, modality info |
+| `scheduled_at` | `timestamptz` | When the job should be picked up                          |
+| `started_at`   | `timestamptz` | When processing started                                   |
+| `completed_at` | `timestamptz` | When processing finished                                  |
+| `error`        | `jsonb`       | Error details on failure                                  |
+| `created_at`   | `timestamptz` | Creation timestamp                                        |
+| `updated_at`   | `timestamptz` | Last update timestamp                                     |
 
 ### Exports::Record
 
 Shrine-backed export file record stored in the `exports` table.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `uuid` | Primary key (UUIDv7) |
-| `job_id` | `uuid` | Foreign key to `jobs.id` |
-| `project_id` | `uuid` | The project being exported |
-| `created_by_id` | `uuid` | Account ID that requested the export |
-| `file_id` | `text` | Shrine file identifier |
-| `filename` | `text` | Download filename: the exporter's name and the export time, such as `idah-coco-image_2026-10-16_0430.zip` (`Exports::Job.filename`) |
-| `mime_type` | `text` | MIME type of the export file |
-| `size` | `bigint` | File size in bytes |
-| `created_at` | `timestamptz` | Creation timestamp |
-| `updated_at` | `timestamptz` | Last update timestamp |
+| Field           | Type          | Description                                                                                                                         |
+| --------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | `uuid`        | Primary key (UUIDv7)                                                                                                                |
+| `job_id`        | `uuid`        | Foreign key to `jobs.id`                                                                                                            |
+| `project_id`    | `uuid`        | The project being exported                                                                                                          |
+| `created_by_id` | `uuid`        | Account ID that requested the export                                                                                                |
+| `file_id`       | `text`        | Shrine file identifier                                                                                                              |
+| `filename`      | `text`        | Download filename: the exporter's name and the export time, such as `idah-coco-image_2026-10-16_0430.zip` (`Exports::Job.filename`) |
+| `mime_type`     | `text`        | MIME type of the export file                                                                                                        |
+| `size`          | `bigint`      | File size in bytes                                                                                                                  |
+| `created_at`    | `timestamptz` | Creation timestamp                                                                                                                  |
+| `updated_at`    | `timestamptz` | Last update timestamp                                                                                                               |
 
 The `file_id` field integrates with Shrine for storage. The actual file data is managed by the `Exports::Uploader` (a Shrine uploader subclass), and the Shrine `file_data` column is stored alongside.
 
@@ -63,13 +63,13 @@ end
 
 ### HTTP — `/exports`
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/exports` | Authenticated | List exports (paginated, filterable) |
-| `GET` | `/exports/:id` | Authenticated | Show export details |
-| `GET` | `/exports/:id/download` | Authenticated | Download the export file (streaming) |
-| `POST` | `/exports` | Authenticated | Request a new export |
-| `GET` | `/exports/formats` | Authenticated | List available export formats (per modality) |
+| Method | Path                    | Auth          | Description                                  |
+| ------ | ----------------------- | ------------- | -------------------------------------------- |
+| `GET`  | `/exports`              | Authenticated | List exports (paginated, filterable)         |
+| `GET`  | `/exports/:id`          | Authenticated | Show export details                          |
+| `GET`  | `/exports/:id/download` | Authenticated | Download the export file (streaming)         |
+| `POST` | `/exports`              | Authenticated | Request a new export                         |
+| `GET`  | `/exports/formats`      | Authenticated | List available export formats (per modality) |
 
 ### Export Request Flow
 
@@ -124,11 +124,11 @@ GET /exports/formats
 
 ### HTTP — `/jobs`
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/jobs` | Authenticated | List export jobs (paginated) |
-| `GET` | `/jobs/:id` | Authenticated | Show job details |
-| `DELETE` | `/jobs/:id` | Authenticated | Cancel/delete a job |
+| Method   | Path        | Auth          | Description                  |
+| -------- | ----------- | ------------- | ---------------------------- |
+| `GET`    | `/jobs`     | Authenticated | List export jobs (paginated) |
+| `GET`    | `/jobs/:id` | Authenticated | Show job details             |
+| `DELETE` | `/jobs/:id` | Authenticated | Cancel/delete a job          |
 
 ---
 
@@ -259,6 +259,14 @@ end
   `choices`, `min` or `max` are refused with a 422 naming the field
   (`options.task: must be one of: …`). The job stores the options with their
   defaults filled in, and the exporter reads them from `context.options`.
+
+The general options default as follows:
+
+- `include_medias` defaults to `"original"`.
+- `completed_entries` defaults to `false`: every entry is exported (completed
+  or not) unless the caller explicitly asks for completed entries only.
+  Exporters read it through `context.options.fetch(:completed_entries, false)`
+  (see`app/service/exports/upd/exporter.rb` and the plugins' `base_exporter.rb`).
 
 An exporter without options returns `Verse::Schema.empty` and behaves as
 before.
@@ -471,13 +479,13 @@ end
 
 ## Related Documentation
 
-| Topic | Guide |
-|-------|-------|
-| Job system (Scheduler, Base, Service) | [`guide/job-system.md`](guide/job-system.md) |
-| Plugin system & lifecycle contexts | [`guide/plugin-system.md`](guide/plugin-system.md) |
-| Verse layered architecture | [`guide/verse-architecture.md`](guide/verse-architecture.md) |
-| Exposition layer (HTTP + events) | [`guide/exposition-layer.md`](guide/exposition-layer.md) |
-| Model & repository patterns | [`guide/model-repository.md`](guide/model-repository.md) |
-| Media Service (Shrine storage) | [`guide/service-media.md`](guide/service-media.md) |
-| Auth & authorization | [`guide/auth-authorization.md`](guide/auth-authorization.md) |
-| Inter-service API client | [`guide/inter-service-api.md`](guide/inter-service-api.md) |
+| Topic                                 | Guide                                                        |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Job system (Scheduler, Base, Service) | [`guide/job-system.md`](guide/job-system.md)                 |
+| Plugin system & lifecycle contexts    | [`guide/plugin-system.md`](guide/plugin-system.md)           |
+| Verse layered architecture            | [`guide/verse-architecture.md`](guide/verse-architecture.md) |
+| Exposition layer (HTTP + events)      | [`guide/exposition-layer.md`](guide/exposition-layer.md)     |
+| Model & repository patterns           | [`guide/model-repository.md`](guide/model-repository.md)     |
+| Media Service (Shrine storage)        | [`guide/service-media.md`](guide/service-media.md)           |
+| Auth & authorization                  | [`guide/auth-authorization.md`](guide/auth-authorization.md) |
+| Inter-service API client              | [`guide/inter-service-api.md`](guide/inter-service-api.md)   |
