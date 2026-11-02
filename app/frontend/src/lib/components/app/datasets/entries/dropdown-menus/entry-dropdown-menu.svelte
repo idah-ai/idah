@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
+  import EntryExportFormModal from "@/components/app/projects/exports/overlays/_EntryExportFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -43,27 +44,33 @@
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
+  let currentAccount = $authStatus.authContext;
+  let canUpdateEntry = $state(false);
+  let canDeleteEntry = $state(false);
+  let canExportEntry = $state(false);
+  let openAssignEntryFormModal: boolean = $state(false);
+  let openReopenEntryModal: boolean = $state(false);
+  let openExportEntryModal: boolean = $state(false);
+
   let menus = $derived(
     getEntryDropdownMenuActions({
       onAssign: openAssignEntryModal,
       onUnassign: confirmUnAssignEntry,
       onSetPriority: () => {},
       onDelete: confirmDeleteEntry,
+      onExport: () => {
+        openExportEntryModal = true;
+      },
       onReopen: () => {
         openReopenEntryModal = true;
       },
       isAssigned: !!entry.assigned_to_id,
       isAssignDisabled: entry.wf_step === "done",
       isUnassignDisabled: entry.wf_step === "done",
+      isExportHidden: !canExportEntry,
       isReopenHidden: entry.status !== "completed",
     }).filter((m) => m.label !== "Set Priority"),
   );
-
-  let currentAccount = $authStatus.authContext;
-  let canUpdateEntry = $state(false);
-  let canDeleteEntry = $state(false);
-  let openAssignEntryFormModal: boolean = $state(false);
-  let openReopenEntryModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -78,6 +85,7 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canExportEntry = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   });
 
   // Functions
@@ -154,7 +162,7 @@
   }
 </script>
 
-{#if canUpdateEntry || canDeleteEntry}
+{#if canUpdateEntry || canDeleteEntry || canExportEntry}
   <DropdownMenu>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
@@ -190,6 +198,15 @@
     onAssigned={onEntryAssigned}
     entryIds={[entry.id]}
     bind:open={openAssignEntryFormModal}
+  />
+
+  <!-- MODAL::EXPORT ENTRY -->
+  <EntryExportFormModal
+    title="Export Entry"
+    action="create"
+    entryIds={[entry.id]}
+    entries={[entry]}
+    bind:open={openExportEntryModal}
   />
 
   <!-- MODAL::REOPEN ENTRY -->
