@@ -45,13 +45,16 @@ class ExportsExpo < BaseExpo
     input do
       field :project_id, type: Integer, required: true
       field :dataset_ids, type: Array, required: true
+      field? :entry_ids, Array, of: String
       field :exporter, type: String, required: true
       field :options, Hash, default: {} do
         # Beside these, an exporter can declare options of its own (see
         # Exports::Options); the service validates them.
         extra_fields
         field :include_medias, String, default: "original"
-        field :completed_entries, TrueClass, default: true
+        # Put completed entries only false by default
+        # It's up to the caller to decide whether to include only completed entries or not.
+        field :completed_entries, TrueClass, default: false
       end
     end
   end
@@ -60,7 +63,8 @@ class ExportsExpo < BaseExpo
       params[:project_id],
       params[:dataset_ids],
       params[:exporter],
-      params[:options]
+      params[:options],
+      entry_ids: params[:entry_ids]
     )
   end
 
