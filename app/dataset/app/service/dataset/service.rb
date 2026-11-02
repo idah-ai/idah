@@ -6,7 +6,8 @@ module Dataset
         projects: Project::Repository,
         entries: Entry::Repository,
         annotations: Annotation::Repository
-    use_system project_members: ProjectMember::Repository
+    use_system project_members: ProjectMember::Repository,
+               annotations_system: Annotation::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -53,7 +54,19 @@ module Dataset
           old_ids = old_dataset.configured_category_ids
 
           new_ids = Dataset::Record.new(record.attributes).configured_category_ids
-          changed = (old_ids.to_set ^ new_ids.to_set).to_a
+
+          removed_category_ids = old_ids - new_ids
+
+          added_ids = new_ids - old_ids
+
+          readded_category_ids =
+            if added_ids.any?
+              added_ids & annotations_system.distinct_annotation_categories(record.id)
+            else
+              []
+            end
+
+          changed = removed_category_ids | readded_category_ids
 
           if changed.any?
             datasets.labeling_configuration_updated(record.id, changed_category_ids: changed)

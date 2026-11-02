@@ -81,7 +81,6 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
       expect(service).to receive(:recompute_from_annotation).with(
         entry_id: entry_id,
         dataset_id: dataset_id,
-        old_category: "cat",
         new_category: "dog"
       )
 
@@ -93,6 +92,21 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
           resource_id: annotation_id,
           metadata: { old_category: "cat", entry_id: entry_id, dataset_id: dataset_id },
           args: [{ category: "dog" }]
+        }
+      )
+    end
+
+    it "does not call service when the annotation update has no category change" do
+      expect(service).not_to receive(:recompute_from_annotation)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "updated",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { old_category: "cat", entry_id: entry_id, dataset_id: dataset_id },
+          args: [{ shape_type: "idah-image:polygon" }]
         }
       )
     end

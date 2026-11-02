@@ -260,7 +260,6 @@ module Dataset
     event(name: "labeling_configuration_updated")
     def labeling_configuration_updated(dataset_id, changed_category_ids: [])
       no_event do
-        update!(dataset_id, { syncing_stats: true })
         add_event_metadata(
           dataset_id: dataset_id,
           changed_category_ids: changed_category_ids

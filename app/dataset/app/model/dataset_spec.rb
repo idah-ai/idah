@@ -70,8 +70,7 @@ RSpec.describe Dataset, database: true do
 
         sys_subject.labeling_configuration_updated(dataset_id, changed_category_ids: %w[cat dog])
 
-        dataset = sys_subject.find!(dataset_id)
-        expect(dataset.syncing_stats).to be true
+        sys_subject.find!(dataset_id)
       end
     end
 

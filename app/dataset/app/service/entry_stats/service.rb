@@ -27,30 +27,26 @@ module EntryStats
       EntryStats::Recompute.call(entry)
     end
 
-    def recompute_from_annotation(entry_id:, dataset_id:, old_category:, new_category:)
-      scope = system_entry_stats.table
-                                .where(entry_id: entry_id, key: "orphan_category.count")
-      row = scope.first
+    def recompute_from_annotation(entry_id:, dataset_id:, new_category:)
+      # Recompute only if the entry already has orphans, or this change makes
+      # the annotation an orphan.
+      return unless system_entry_stats.orphan_category(entry_id) ||
+                    dataset_orphan_category?(dataset_id, new_category)
 
-      return unless row && row[:value] != "0"
+      entry = system_entries.find!(entry_id, included: [:dataset, :annotations])
+      EntryStats::Recompute.orphan_only(entry)
+    end
+
+    def dataset_orphan_category?(dataset_id, category)
+      return false unless category
 
       dataset = system_datasets.find!(dataset_id)
-      config = dataset.labeling_configuration || {}
-      configured_ids = config.each_value.flat_map do |tool_config|
-        next [] unless tool_config.is_a?(Hash)
-
-        Array(tool_config[:values]).filter_map { |v| v[:id] }
-      end
-
-      # Only decrement if old category was orphaned AND new category is valid
-      return if configured_ids.include?(old_category)
-      return unless configured_ids.include?(new_category)
-
-      new_count = [row[:value].to_i - 1, 0].max
-      scope.update(value: new_count.to_s, updated_at: Time.now)
+      !dataset.configured_category_ids.include?(category)
     end
 
     def recompute_all_for_dataset(dataset_id, changed_category_ids: [])
+      system_datasets.no_event { system_datasets.update!(dataset_id, { syncing_stats: true }) }
+
       changed_set = changed_category_ids.to_set
 
       entries = system_entries.chunked_index({ dataset_id__eq: dataset_id }, included: [:dataset, :annotations])
@@ -73,7 +69,7 @@ module EntryStats
         )
       end
     ensure
-      entry_stats.no_event { system_datasets.update!(dataset_id, { syncing_stats: false }) }
+      system_datasets.no_event { system_datasets.update!(dataset_id, { syncing_stats: false }) }
     end
   end
 end
