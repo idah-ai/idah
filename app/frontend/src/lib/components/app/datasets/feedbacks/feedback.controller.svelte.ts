@@ -50,7 +50,9 @@ export class FeedBackConfigController {
   }
 
   public getConfigHash() {
-    return Object.fromEntries(this.config.entries());
+    return Object.fromEntries(
+      Array.from(this.config, ([key, item]) => [key, { ...item, description: item.description ?? "" }]),
+    );
   }
 
   public setConfig(newConfig: IFeedbackConfig) {
