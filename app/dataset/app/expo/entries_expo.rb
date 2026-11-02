@@ -33,7 +33,8 @@ class EntriesExpo < BaseExpo
                       :participated,
                       :name__match,
                       :delivery_date__gte,
-                      :delivery_date__lte
+                      :delivery_date__lte,
+                      :orphan_categories
     end
     create do
       authorized_relationships dataset: [:link]
