@@ -16,7 +16,6 @@ namespace :entry_stats do
 
     dataset_repo.chunked_index({}).each do |dataset|
       configured = dataset.configured_category_ids
-      next if configured.empty?
 
       orphan_entry_ids = annotation_repo.table
                                         .where(dataset_id: dataset.id, deleted_at: nil)
