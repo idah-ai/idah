@@ -13,6 +13,7 @@ api/project_rw_all:
     - "dataset:annotations.*.*"
     - "dataset:note_feeds.*.*"
     - "dataset:note_comments.*.*"
+    - "dataset:entry_stats.read.*"
 
     # Media Service - Read Write (Project level)
     - "media:medias.*.*"
