@@ -5,7 +5,8 @@ module Dataset
     use datasets: Dataset::Repository,
         projects: Project::Repository,
         entries: Entry::Repository,
-        annotations: Annotation::Repository
+        annotations: Annotation::Repository,
+        category_count_rows: EntryCategoryCount::Repository
     use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -21,6 +22,38 @@ module Dataset
 
     def show(id, included: [])
       datasets.find!(id, included: included)
+    end
+
+    def category_counts(id)
+      dataset = datasets.find!(id)
+      if auth_context.can?(:read, Resource::Dataset::Datasets) == :as_user
+        owner = project_members.table.where(
+          project_id: dataset.project_id,
+          account_id: auth_context.metadata[:id],
+          role: "project_owner",
+          disabled_at: nil
+        ).any?
+        raise Verse::Error::Unauthorized, "Project owner access required" unless owner
+      end
+
+      observed = category_count_rows.totals_for_dataset(id).to_h do |row|
+        [row[:category], row[:annotation_count]]
+      end
+      config = dataset.labeling_configuration || {}
+      configured = config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
+
+        Array(tool_config[:values]).filter_map { |value| value[:id] }
+      end
+
+      (configured + observed.keys).uniq.sort.map do |category|
+        DatasetCategoryTotal::Record.new(
+          {
+            id: "#{id}:#{category}", dataset_id: id, category:,
+            annotation_count: observed.fetch(category, 0)
+          }
+        )
+      end
     end
 
     def create(record)

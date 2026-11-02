@@ -22,7 +22,8 @@ class DatasetsExpo < BaseExpo
                       :created_at__gte,
                       :created_at__lte,
                       :updated_at__gte,
-                      :updated_at__lte
+                      :updated_at__lte,
+                      :category_counts
     end
 
     show
@@ -52,6 +53,17 @@ class DatasetsExpo < BaseExpo
       with_labels: params[:with_labels],
       with_annotations: params[:with_annotations]
     )
+  end
+
+  expose on_http(:get, "/:id/category_counts") do
+    desc "Visible annotation totals by category for one dataset"
+    input do
+      field :id, String
+    end
+    output Verse::JsonApi::Util.jsonapi_collection(DatasetCategoryTotal::Record)
+  end
+  def category_counts
+    service.category_counts(params[:id])
   end
 
   expose on_resource_event(Resource::Dataset::Datasets, "completed")
