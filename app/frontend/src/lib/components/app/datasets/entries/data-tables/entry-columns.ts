@@ -89,7 +89,6 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     filterable: true,
     filterOptions: {
       filterKey: "delivery_date",
-      dateOnly: true,
       filterBy: "date-range",
       filterOperation: "eq",
     },
@@ -98,7 +97,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
   },
   created_at: {
     label: "Created at",
-    dataType: "date",
+    dataType: "datetime",
     clickable: false,
     sortable: true,
     filterable: false,

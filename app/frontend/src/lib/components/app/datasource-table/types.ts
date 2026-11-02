@@ -51,7 +51,6 @@ export interface ColumnSettings<T extends Record> {
     filterKey: string;
     filterKeys?: string[];
     filterBy: DataTableColumnFilterBy;
-    dateOnly?: boolean;
     filterOperation: DataTableColumnFilterOperation;
     choices?: LabelValue<string | number | boolean>[];
   };

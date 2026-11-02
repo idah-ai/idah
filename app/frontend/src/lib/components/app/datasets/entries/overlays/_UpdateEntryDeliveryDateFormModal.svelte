@@ -37,9 +37,8 @@
   let datasetDeliveryDate = $derived(entries[0]?.dataset?.delivery_date ?? null);
   let displayedDeliveryDate = $derived(sameAsDatasetDeliveryDate ? datasetDeliveryDate : selectedDeliveryDate);
   let changed = $derived(
-    entries.length === 1
-      ? selectedDeliveryDate !== initialDeliveryDate
-      : entries.some((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null)),
+    (entries.length !== 1 || selectedDeliveryDate !== initialDeliveryDate) &&
+      entries.some((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null)),
   );
 
   onMount(async () => {

@@ -75,13 +75,12 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
   },
   delivery_date: {
     label: "Delivery Date",
-    dataType: "datetime",
+    dataType: "date",
     clickable: false,
     sortable: true,
     filterable: true,
     filterOptions: {
       filterKey: "delivery_date",
-      dateOnly: true,
       filterBy: "date-range",
       filterOperation: "eq",
     },

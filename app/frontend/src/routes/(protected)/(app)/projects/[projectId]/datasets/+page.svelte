@@ -1,9 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { getContext, onDestroy, onMount, setContext } from "svelte";
-  import { writable } from "svelte/store";
-  import { addDays, startOfDay } from "date-fns";
+  import { getContext, onDestroy, onMount } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
@@ -19,26 +17,6 @@
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
-
-  const today = writable(startOfDay(new Date()));
-  setContext("datasetDeliveryToday", today);
-
-  onMount(() => {
-    let midnightTimer: ReturnType<typeof setTimeout>;
-    const refreshToday = () => {
-      clearTimeout(midnightTimer);
-      const now = new Date();
-      today.set(startOfDay(now));
-      const nextDay = startOfDay(addDays(now, 1));
-      midnightTimer = setTimeout(refreshToday, nextDay.getTime() - now.getTime());
-    };
-    refreshToday();
-    window.addEventListener("focus", refreshToday);
-    return () => {
-      clearTimeout(midnightTimer);
-      window.removeEventListener("focus", refreshToday);
-    };
-  });
 
   // Contexts
   const project: ProjectRecord = getContext("project");

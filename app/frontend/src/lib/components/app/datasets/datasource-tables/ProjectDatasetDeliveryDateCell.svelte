@@ -1,8 +1,7 @@
 <script lang="ts">
   import { Badge } from "@/components/ui/badge";
   import { parseISO } from "date-fns";
-  import { getContext } from "svelte";
-  import type { Readable } from "svelte/store";
+  import { today } from "@/utils/date";
 
   import DateText from "@/components/app/texts/date-text.svelte";
 
@@ -12,7 +11,6 @@
 
   // Props
   let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
-  const today = getContext<Readable<Date>>("datasetDeliveryToday");
   let { delivery_date } = $derived(dataset);
 </script>
 
