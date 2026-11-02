@@ -114,6 +114,64 @@ RSpec.describe Dataset::Service, database: true do
       updated_dataset = repo.find!(dataset_id)
       expect(updated_dataset.labels).to eq(["cat", "dog", "bird"])
     end
+
+    it "sets syncing_stats and fires event when labeling_configuration changes" do
+      dataset_id = repo.create(
+        attributes.merge(
+          labeling_configuration: {
+            "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+          }
+        )
+      )
+
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              labeling_configuration: {
+                "tool" => { values: [{ id: "cat" }] }
+              }
+            }
+          }
+        }
+      )
+
+      allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
+
+      subject.update(record)
+
+      updated = repo.find!(dataset_id)
+      expect(updated.labeling_configuration).to eq(tool: { values: [{ id: "cat" }] })
+      expect(subject.send(:datasets)).to have_received(:labeling_configuration_updated)
+    end
+
+    it "does not fire event when labeling_configuration is unchanged" do
+      dataset_id = repo.create(
+        attributes.merge(
+          labeling_configuration: {
+            "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+          }
+        )
+      )
+
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: { name: "Renamed" }
+          }
+        }
+      )
+
+      allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
+
+      subject.update(record)
+
+      expect(subject.send(:datasets)).not_to have_received(:labeling_configuration_updated)
+    end
   end
 
   describe "#delete" do

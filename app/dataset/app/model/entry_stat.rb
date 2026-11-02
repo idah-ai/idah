@@ -91,6 +91,29 @@ module EntryStat
       table.where(entry_id:).delete
     end
 
+    def bulk_upsert(entry_id, stats_hash)
+      return if stats_hash.empty?
+
+      now = Time.now
+      rows = stats_hash.map do |key, value|
+        {
+          id: UUIDv7.generate,
+          entry_id: entry_id,
+          key: key.to_s,
+          value: value.to_s,
+          created_at: now,
+          updated_at: now
+        }
+      end
+
+      table.db[:entry_stats]
+           .insert_conflict(
+             target: [:entry_id, :key],
+             update: { value: Sequel[:excluded][:value], updated_at: Sequel[:excluded][:updated_at] }
+           )
+           .multi_insert(rows)
+    end
+
     def bulk_insert(entry_id, stats_hash)
       now = Time.now
       rows = stats_hash.map do |key, value|
@@ -105,6 +128,14 @@ module EntryStat
       end
 
       table.db[:entry_stats].multi_insert(rows) unless rows.empty?
+    end
+
+    # Returns true if the entry has an orphan_category.count stat with a value
+    # greater than zero. Used by the annotation-update handler to decide whether
+    # a recompute is needed.
+    def orphan_category(entry_id)
+      record = table.where(entry_id: entry_id, key: "orphan_category.count").first
+      record ? record[:value] != "0" : false
     end
   end
 end

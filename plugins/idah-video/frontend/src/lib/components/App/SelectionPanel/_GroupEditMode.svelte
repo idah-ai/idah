@@ -15,6 +15,7 @@
     displayName: string;
     onReSelectCategory: (reselectedCategoryId?: string) => void;
     disabled: boolean;
+    placeholder?: string;
   };
 
   let {
@@ -26,6 +27,7 @@
     displayName,
     onReSelectCategory,
     disabled,
+    placeholder = "Select category",
   }: Props = $props();
 </script>
 
@@ -47,6 +49,6 @@
     {shapeType}
     onValueChange={onReSelectCategory}
     {disabled}
-    placeholder="Select category"
+    {placeholder}
   />
 </section>
