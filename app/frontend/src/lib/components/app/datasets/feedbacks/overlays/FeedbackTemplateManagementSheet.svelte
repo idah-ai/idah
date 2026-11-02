@@ -47,50 +47,52 @@
       {@render SingleSelectTemplateField()}
     </Sheet.Header>
 
-    {#key feedbackConfigTemplate.selection}
-      {#await refreshSheetData() then _}
-        {#if feedbackConfigTemplate.isLoading}
-          <div class="flex min-h-screen items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        {:else if feedbackConfigTemplate.template.isEmpty}
-          <ResponseBlock
-            icon={GalleryVerticalEndIcon}
-            title="No Templates Yet"
-            description="You havn't created any feedback templates. Build a feedback configuration, then use 'Save as a template to reuse it across datasets.'"
-          >
-            {#snippet actions()}
-              {#if feedbackConfigTemplate.template.isNotEmpty}
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      {#key feedbackConfigTemplate.selection}
+        {#await refreshSheetData() then _}
+          {#if feedbackConfigTemplate.isLoading}
+            <div class="flex h-full items-center justify-center">
+              <Spinner size="lg" />
+            </div>
+          {:else if feedbackConfigTemplate.template.isEmpty}
+            <ResponseBlock
+              icon={GalleryVerticalEndIcon}
+              title="No Templates Yet"
+              description="You havn't created any feedback templates. Build a feedback configuration, then use 'Save as a template to reuse it across datasets.'"
+            >
+              {#snippet actions()}
+                {#if feedbackConfigTemplate.template.isNotEmpty}
+                  {#key feedbackConfigTemplate.selection}
+                    {@render SingleSelectTemplateField()}
+                  {/key}
+                {/if}
+              {/snippet}
+            </ResponseBlock>
+          {:else if feedbackConfigTemplate.template.isNotEmpty && feedbackConfigTemplate.isNotSelected}
+            <ResponseBlock
+              icon={GalleryVerticalEndIcon}
+              title="No Templates Selected"
+              description="Select a feedback template to view, edit or apply it."
+            >
+              {#snippet actions()}
                 {#key feedbackConfigTemplate.selection}
                   {@render SingleSelectTemplateField()}
                 {/key}
-              {/if}
-            {/snippet}
-          </ResponseBlock>
-        {:else if feedbackConfigTemplate.template.isNotEmpty && feedbackConfigTemplate.isNotSelected}
+              {/snippet}
+            </ResponseBlock>
+          {:else if feedbackConfigTemplate.selection}
+            <FeedbackConfigTemplateManagementList
+              feedbackConfig={feedbackConfigTemplate.selection.feedback_configuration}
+            />
+          {/if}
+        {:catch}
           <ResponseBlock
-            icon={GalleryVerticalEndIcon}
-            title="No Templates Selected"
-            description="Select a feedback template to view, edit or apply it."
-          >
-            {#snippet actions()}
-              {#key feedbackConfigTemplate.selection}
-                {@render SingleSelectTemplateField()}
-              {/key}
-            {/snippet}
-          </ResponseBlock>
-        {:else if feedbackConfigTemplate.selection}
-          <FeedbackConfigTemplateManagementList
-            feedbackConfig={feedbackConfigTemplate.selection.feedback_configuration}
-          />
-        {/if}
-      {:catch}
-        <ResponseBlock
-          icon={ServerCrashIcon}
-          title="Something went wrong"
-          description="There was an error with our server. Please try again."
-        ></ResponseBlock>
-      {/await}
-    {/key}
+            icon={ServerCrashIcon}
+            title="Something went wrong"
+            description="There was an error with our server. Please try again."
+          ></ResponseBlock>
+        {/await}
+      {/key}
+    </div>
   </Sheet.Content>
 </Sheet.Root>
