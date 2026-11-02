@@ -254,8 +254,8 @@
 
   function filterByDateRange(dateRange: DateRange): void {
     if (dateRange.start && dateRange.end) {
-      const formattedStartDate = dateRange.start.toString().concat(" 00:00:00");
-      const formattedEndDate = dateRange.end.toString().concat(" 23:59:59");
+      const formattedStartDate = dateRange.start.toString().concat(filterOptions?.dateOnly ? "" : " 00:00:00");
+      const formattedEndDate = dateRange.end.toString().concat(filterOptions?.dateOnly ? "" : " 23:59:59");
 
       onFilter({
         filters: {
@@ -330,14 +330,12 @@
 
     onFilter({
       filters: {
-        [`${filterKey}__gte`]:
-          filterKey === "delivery_date"
-            ? format(filterStartDate, "yyyy-MM-dd")
-            : filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
-        [`${filterKey}__lte`]:
-          filterKey === "delivery_date"
-            ? format(filterEndDate, "yyyy-MM-dd")
-            : filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
+        [`${filterKey}__gte`]: filterOptions?.dateOnly
+          ? format(filterStartDate, "yyyy-MM-dd")
+          : filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
+        [`${filterKey}__lte`]: filterOptions?.dateOnly
+          ? format(filterEndDate, "yyyy-MM-dd")
+          : filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
       },
     });
   }

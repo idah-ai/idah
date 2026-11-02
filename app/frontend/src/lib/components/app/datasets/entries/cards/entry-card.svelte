@@ -3,7 +3,6 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { Badge } from "@/components/ui/badge";
-  import { isOverdue } from "@/utils/date";
   import { ExternalLinkIcon, TriangleAlertIcon } from "@lucide/svelte";
   import { format, isAfter, parseISO } from "date-fns";
   import { getContext, onDestroy, onMount } from "svelte";
@@ -425,7 +424,7 @@
                     </TooltipProvider>
                   {/if}
 
-                  {#if entry.status !== "completed" && isOverdue(entry.delivery_date || entry.dataset?.delivery_date, today)}
+                  {#if entry.isOverdueOn(today)}
                     <Badge variant="destructive">Overdue</Badge>
                   {/if}
                 </div>

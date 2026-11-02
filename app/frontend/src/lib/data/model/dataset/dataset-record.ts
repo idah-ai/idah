@@ -44,8 +44,8 @@ export class DatasetRecord extends Record {
     return foundDatasetStatus ?? defaultBadgeProps;
   }
 
-  public get overdue(): boolean {
-    return this.status !== "completed" && isOverdue(this.delivery_date);
+  public isOverdueOn(today: Date): boolean {
+    return this.status !== "completed" && isOverdue(this.delivery_date, today);
   }
 }
 

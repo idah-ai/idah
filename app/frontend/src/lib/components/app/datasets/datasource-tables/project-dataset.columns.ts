@@ -81,6 +81,7 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
     filterable: true,
     filterOptions: {
       filterKey: "delivery_date",
+      dateOnly: true,
       filterBy: "date-range",
       filterOperation: "eq",
     },

@@ -9,7 +9,7 @@
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DataView from "@/components/app/data-view/data-view.svelte";
-  import EntryCard from "@/components/app/datasets/entries/cards/entryCard.svelte";
+  import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
 
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";

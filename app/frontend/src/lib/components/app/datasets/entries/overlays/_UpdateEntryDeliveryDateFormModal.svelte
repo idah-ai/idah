@@ -31,11 +31,16 @@
   let loading = $state(true);
   let sameAsDatasetDeliveryDate = $state(false);
   let selectedDeliveryDate = $state<string | null>(null);
+  let initialDeliveryDate = $state<string | null>(null);
   let submitting = $state(false);
   let errors = $state<string[]>([]);
   let datasetDeliveryDate = $derived(entries[0]?.dataset?.delivery_date ?? null);
   let displayedDeliveryDate = $derived(sameAsDatasetDeliveryDate ? datasetDeliveryDate : selectedDeliveryDate);
-  let changed = $derived(entries.some((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null)));
+  let changed = $derived(
+    entries.length === 1
+      ? selectedDeliveryDate !== initialDeliveryDate
+      : entries.some((entry) => selectedDeliveryDate !== (entry.delivery_date ?? null)),
+  );
 
   onMount(async () => {
     try {
@@ -57,6 +62,7 @@
       selectedDeliveryDate = sameAsDatasetDeliveryDate
         ? datasetDeliveryDate
         : entry?.delivery_date || datasetDeliveryDate;
+      initialDeliveryDate = selectedDeliveryDate;
     } catch (error) {
       errors = ["Some selected entries could not be loaded. Please reopen this form."];
       showActionFailedToast(error);

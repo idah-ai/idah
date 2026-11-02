@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Badge } from "@/components/ui/badge";
   import { parseISO } from "date-fns";
+  import { getContext } from "svelte";
+  import type { Readable } from "svelte/store";
 
   import DateText from "@/components/app/texts/date-text.svelte";
 
@@ -10,7 +12,8 @@
 
   // Props
   let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
-  let { delivery_date, overdue } = $derived(dataset);
+  const today = getContext<Readable<Date>>("datasetDeliveryToday");
+  let { delivery_date } = $derived(dataset);
 </script>
 
 <div class="flex flex-col items-center gap-2">
@@ -19,7 +22,7 @@
   {:else}
     <span>—</span>
   {/if}
-  {#if overdue}
+  {#if dataset.isOverdueOn($today)}
     <Badge variant="destructive">Overdue</Badge>
   {/if}
 </div>
