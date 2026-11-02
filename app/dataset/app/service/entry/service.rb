@@ -12,7 +12,7 @@ module Entry
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       keys = sort.is_a?(String) ? sort.split(",") : sort
       method = if keys.is_a?(Array) && keys.length == 1 &&
-                  %w[delivery_date -delivery_date entries.delivery_date -entries.delivery_date].include?(keys.first)
+                  %w[delivery_date -delivery_date].include?(keys.first)
                  :index_by_delivery_date
                else
                  :index
