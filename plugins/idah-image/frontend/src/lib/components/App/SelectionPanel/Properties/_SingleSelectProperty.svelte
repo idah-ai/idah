@@ -1,25 +1,31 @@
 <script lang="ts">
-  import Label from "$lib/components/ui/Label/Label.svelte";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
+  import * as Field from "$lib/components/ui/Field";
+  import * as Select from "$lib/components/ui/Select";
 
   import { formatConformity, propertyFullfilled } from "$lib/components/App/SelectionPanel";
 
   import type { IConfigProperty } from "$idah/v2/types";
+
+  interface Props {
+	  property: IConfigProperty;
+	  value: string | undefined;
+	  onValueChange: (v: string | undefined) => void;
+	  disabled: boolean;
+	  placeholder?: string;
+    validationOverride?: boolean;
+  }
 
   let {
     property,
     value,
     onValueChange,
     disabled,
-  }: {
-    property: IConfigProperty;
-    value: string;
-    onValueChange: (v: string) => void;
-    disabled: boolean;
-  } = $props();
+    placeholder,
+    validationOverride,
+  }: Props = $props();
 
   const options = $derived(property.format.options);
-  const invalid = $derived(!propertyFullfilled(value, property));
+  const invalid = $derived(validationOverride ?? !propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, (v: unknown) => string>([
     ["required", (_: unknown) => [property.label, "is required"].join(" ")],
@@ -27,29 +33,32 @@
   ]);
 </script>
 
-<div class="flex flex-col gap-1">
-  <Label for={property.id} class="text-xs">
+<Field.Field>
+  <Field.Label for={property.id} class="text-xs" required={property.required}>
     {property.label}
-    {#if property.required}
-      <span class="text-red-500">*</span>
-    {/if}
-  </Label>
+  </Field.Label>
 
-  <Select type="single" {value} {onValueChange} {disabled}>
-    <SelectTrigger
-      class="data-placeholder:text-secondary-foreground bg-background w-full text-xs"
+  <Select.Root type="single" {value} {onValueChange} {disabled}>
+    <Select.Trigger
       aria-invalid={invalid}
+      class="data-placeholder:text-secondary-foreground bg-background w-full text-xs"
+      {placeholder}
     >
-      {options?.find(({ id }) => id == value)?.label || "Select property"}
-    </SelectTrigger>
-    <SelectContent>
-      <SelectGroup>
+      {options?.find(({ id }) => id == value)?.label || placeholder || "Select property"}
+    </Select.Trigger>
+    <Select.Content>
+      <Select.Group>
         {#each options as option (option.id)}
-          <SelectItem value={option.id} label={option.label} class="text-xs" />
+          <Select.Item value={option.id} label={option.label} class="text-xs" />
         {/each}
-      </SelectGroup>
-    </SelectContent>
-  </Select>
+      </Select.Group>
+    </Select.Content>
+  </Select.Root>
+
+  {#if property.description}
+    <Field.Description class="text-[10px]">{property.description}</Field.Description>
+  {/if}
+
   {#if invalid}
     <ul class="text-xs">
       {#each format as entry, index (index)}
@@ -58,10 +67,8 @@
 
         {#if formatter && formatter(v)}
           <li style:color="red">{formatter(v)}</li>
-          <!-- {:else}
-          <li style:color="red">{k}:<span>{v}</span></li> -->
         {/if}
       {/each}
     </ul>
   {/if}
-</div>
+</Field.Field>
