@@ -3,10 +3,10 @@ import { createBackendDataSource, encodeModel } from "./BackendDataSource";
 import { Record, RecordFactory, field, type } from "./model/Record";
 
 const TransformerTest = {
-  from(value: any) {
+  from(value: string) {
     return value && value + "from";
   },
-  to(value: any) {
+  to(value: Date | string) {
     return value && value + "to";
   }
 };
