@@ -15,6 +15,7 @@
   // Inlined entry modals + actions (mirrors entry-dropdown-menu.svelte)
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
+  import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
@@ -45,6 +46,7 @@
   // Modal visibility - owned here
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
+  let openReopen = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
@@ -56,9 +58,13 @@
         openSetPriority = true;
       },
       onDelete: confirmDelete,
+      onReopen: () => {
+        openReopen = true;
+      },
       isAssigned: sel.checkAnyAssigned(controller.selectedIds),
       isAssignDisabled: sel.assignableEntryIds.length === 0,
       isUnassignDisabled: sel.unAssignableEntryIds.length === 0,
+      isReopenHidden: sel.reopenableEntryIds.length === 0,
     }),
   );
 
@@ -201,3 +207,15 @@
 />
 
 <UpdateEntryPriorityFormModal action="update" entryIds={controller.selectedIds} bind:open={openSetPriority} />
+
+<ReopenEntryModal
+  action="update"
+  entryIds={sel.reopenableEntryIds}
+  entryMap={sel.entryMap}
+  onReopened={async (updated) => {
+    controller.patchRecords(updated);
+    controller.clearSelection();
+    await controller.fetch();
+  }}
+  bind:open={openReopen}
+/>

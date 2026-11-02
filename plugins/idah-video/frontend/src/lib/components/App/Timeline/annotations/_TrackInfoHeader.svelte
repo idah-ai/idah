@@ -7,7 +7,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { isEditable } from "$lib/state/editor.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -45,7 +45,9 @@
           icon: Trash2Icon,
           disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
-            showConfirmDialog({
+            showConfirmDeleteAnnotationsDialog({
+              count: annotations.length,
+              type: "annotation",
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations?",
               onConfirm: () => getDriver().command.call("idah-video:annotation.delete-all"),

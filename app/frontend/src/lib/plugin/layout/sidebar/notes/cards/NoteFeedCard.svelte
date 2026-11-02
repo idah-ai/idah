@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/ResolveNoteFeedButton.svelte";
   import NoteCard from "@/plugin/layout/sidebar/notes/cards/NoteCard.svelte";
@@ -31,6 +32,7 @@
 
   // Variables
   let { id, content_md, feedback_keys, created_by_email, created_at, edited_at, noteType } = $derived(noteFeedRecord);
+  let isAnchorDeleted = $derived(noteFeedRecord.isAnchorDeleted);
 
   let isOwner = $derived(AuthContext.currentAuthContext?.email === created_by_email);
 
@@ -76,6 +78,7 @@
   editable={isOwner}
   deletable={isOwner}
   {highlighted}
+  dimmed={isAnchorDeleted}
   onClick={selectNoteFeed}
   onUpdate={updateNoteFeed}
   onDelete={async () => {
@@ -85,6 +88,12 @@
 >
   {#snippet headerIcon()}
     <NoteFeedIcon {noteType} />
+  {/snippet}
+
+  {#snippet headerMeta()}
+    {#if isAnchorDeleted}
+      <Badge variant="warning" rounded="full" class="mt-0.5 px-1.5 py-0 text-[10px]">Annotation deleted</Badge>
+    {/if}
   {/snippet}
 
   {#snippet headerActions()}

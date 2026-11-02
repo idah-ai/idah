@@ -79,6 +79,96 @@ RSpec.describe Dataset, database: true do
       expect(subject.find!(dataset_id).status).to eq("completed")
     end
 
+    it "does not count errored entries as completed progress" do
+      add_entry("errored")
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(0)
+      expect(dataset.progress).to eq(0.0)
+      expect(dataset.status).to eq("pending")
+    end
+
+    it "counts errored entries in the progress denominator" do
+      add_entry("completed")
+      add_entry("pending")
+      add_entry("pending")
+      add_entry("errored")
+
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.25)
+      expect(dataset.status).to eq("in_progress")
+    end
+
+    it "stays in_progress when completed entries also have errored entries" do
+      add_entry("completed")
+      add_entry("errored")
+
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.5)
+      expect(dataset.status).to eq("in_progress")
+    end
+
+    it "excludes submitted errored entries from submitted progress" do
+      id = entry_repo.create({ project_id:, dataset_id:, status: "pending", wf_step: "review" })
+      entry_repo.update!(id, { submitted_by_id: 1, submitted_by_email: "a@example.com" })
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("in_progress")
+
+      entry_repo.update!(id, { status: "errored" })
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("pending")
+
+      entry_repo.update!(id, { status: "pending" })
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("in_progress")
+    end
+
+    it "resets to pending with zero progress when the last entry is deleted" do
+      entry_id = add_entry("completed")
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("completed")
+
+      entry_repo.delete!(entry_id)
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.status).to eq("pending")
+      expect(dataset.progress).to eq(0.0)
+    end
+
+    %w[pending in_progress errored].each do |status|
+      it "recalculates progress after deleting a #{status} entry" do
+        add_entry("completed")
+        entry_id = add_entry(status)
+        subject.update_progress!(dataset_id)
+
+        entry_repo.delete!(entry_id)
+        subject.update_progress!(dataset_id)
+
+        dataset = subject.find!(dataset_id)
+        expect(dataset.progress).to eq(1.0)
+        expect(dataset.status).to eq("completed")
+      end
+    end
+
+    it "recalculates progress after deleting a completed entry" do
+      completed_entry_id = add_entry("completed")
+      add_entry("pending")
+      subject.update_progress!(dataset_id)
+
+      entry_repo.delete!(completed_entry_id)
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.progress).to eq(0.0)
+      expect(dataset.status).to eq("pending")
+    end
+
     it "reopens a completed dataset to in_progress when a new unassigned entry is added" do
       add_entry("completed")
       subject.update_progress!(dataset_id)
@@ -87,6 +177,95 @@ RSpec.describe Dataset, database: true do
       add_entry("pending")
       subject.update_progress!(dataset_id)
       expect(subject.find!(dataset_id).status).to eq("in_progress")
+    end
+
+    it "decrements completed counter when a completed entry is moved to in_progress" do
+      add_entry("completed")
+      subject.update_progress!(dataset_id)
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(1)
+      expect(dataset.entries_in_progress_count).to eq(0)
+
+      completed_entry = Entry::Repository.new(auth_context)
+                                         .index({ dataset_id: dataset_id, status: "completed" }).first
+      Entry::Repository.new(auth_context).update!(completed_entry.id, { status: "in_progress" })
+
+      dataset = subject.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(0)
+      expect(dataset.entries_in_progress_count).to eq(1)
+
+      subject.update_progress!(dataset_id)
+      expect(subject.find!(dataset_id).status).to eq("in_progress")
+    end
+  end
+
+  describe "#lock!" do
+    let(:auth_context) { Verse::Auth::Context[:system] }
+
+    subject { Dataset::Repository.new(auth_context) }
+
+    let(:project_repo) { Project::Repository.new(auth_context) }
+
+    let!(:project_id) do
+      project_repo.create(
+        name: "Test Project",
+        description: "A test project",
+        created_by_email: "user@example.com",
+        organization_id: 1
+      )
+    end
+
+    let!(:dataset_id) do
+      subject.create(
+        modality: "video",
+        labels: ["cat", "dog"],
+        labeling_configuration: {},
+        workflow_configuration: {},
+        project_id: project_id
+      )
+    end
+
+    before do
+      subject.update!(
+        dataset_id,
+        { feedback_configuration: { "aB3kF9mN2q" => { label: "Fix this" } } }
+      )
+    end
+
+    it "returns the record with decoded JSONB columns" do
+      dataset = nil
+      subject.transaction do
+        dataset = subject.lock!(dataset_id)
+      end
+
+      expect(dataset.id).to eq(dataset_id)
+      expect(dataset.feedback_configuration).to eq(aB3kF9mN2q: { label: "Fix this" })
+    end
+
+    it "raises NotFound when the row does not exist" do
+      expect { subject.lock!(UUIDv7.generate) }.to raise_error(Verse::Error::NotFound)
+    end
+
+    it "acquires a SELECT ... FOR UPDATE lock on the row" do
+      # Other threads/connections cannot see rows created inside the spec's
+      # rollback transaction, so a true cross-connection "block until commit"
+      # probe is not possible here. Instead verify directly that `lock!` issues
+      # a row-level FOR UPDATE lock: a SELECT FOR UPDATE holds a granted
+      # RowShareLock on the table (added on top of a plain MVCC read).
+      modes = nil
+      subject.transaction do
+        subject.lock!(dataset_id)
+
+        modes = subject.client do |db|
+          db[:pg_locks]
+            .where(granted: true)
+            .where(Sequel.lit("relation = 'datasets'::regclass"))
+            .select_map(:mode)
+        end
+      end
+
+      expect(modes).to include("RowShareLock")
     end
   end
 end

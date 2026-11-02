@@ -575,7 +575,6 @@ end
 
 ```
 app/<service>/
-├── Dockerfile
 ├── Gemfile + Gemfile.lock
 ├── config.ru                     ← Rack entry point
 ├── config/

@@ -6,7 +6,7 @@ import { Transformers } from "@/data/model/transformers";
 
 import { SyncJobRecord } from "@/data/model/sync/jobs/record";
 
-import type { ExportFormat } from "@/data/model/sync/exports/type";
+import type { ExportFormat, ExportOptionValues } from "@/data/model/sync/exports/type";
 import type { Hash } from "@/utils/types";
 
 @type("sync:exports")
@@ -46,8 +46,10 @@ export const ExportsBackendDataSource = createBackendDataSource(ExportRecord, ex
     exporter: string;
     includeMedias: string;
     completedEntries: boolean;
+    /** The format's own options (see `ExportFormat.options`). */
+    options?: ExportOptionValues;
   }) => {
-    const { projectId, datasetIds, exporter, includeMedias, completedEntries } = params;
+    const { projectId, datasetIds, exporter, includeMedias, completedEntries, options = {} } = params;
     const res = await fetch(`${exportsBasePath}/export`, {
       method: "POST",
       body: JSON.stringify({
@@ -55,6 +57,7 @@ export const ExportsBackendDataSource = createBackendDataSource(ExportRecord, ex
         dataset_ids: datasetIds,
         exporter: exporter,
         options: {
+          ...options,
           include_medias: includeMedias,
           completed_entries: completedEntries,
         },

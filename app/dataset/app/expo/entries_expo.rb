@@ -11,7 +11,13 @@ class EntriesExpo < BaseExpo
   MD
 
   json_api Entry::Record do
-    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by", "entry_stats"
+    allowed_included "dataset",
+                     "dataset.project",
+                     "assigned_to",
+                     "submitted_by",
+                     "reviewed_by",
+                     "reopened_by",
+                     "entry_stats"
     show
     index do
       allowed_filters :resource__match,
@@ -118,6 +124,40 @@ class EntriesExpo < BaseExpo
     opts = params.dig(:data, :attributes) || {}
 
     service.error(entry_id, **opts)
+  end
+
+  expose on_http(:post, "/:id/reopen") do
+    desc "Reopen a completed entry to a specific workflow stage"
+    input do
+      field :id, String
+      field :data, Hash do
+        field :attributes, Hash do
+          field :target_step, String
+        end
+      end
+    end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
+  end
+  def reopen
+    entry_id = params[:id]
+    opts = params.dig(:data, :attributes) || {}
+
+    service.reopen(entry_id, **opts)
+  end
+
+  expose on_http(:get, "/:id/reopen_targets") do
+    desc "List the workflow steps a completed entry can be reopened to"
+    input do
+      field :id, String
+    end
+
+    output do
+      field :data, Array, of: String
+    end
+  end
+  def reopen_targets
+    { data: service.reopen_targets(params[:id]) }
   end
 
   expose on_resource_event(Resource::Media::Jobs, "completed")

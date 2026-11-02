@@ -12,7 +12,6 @@
 **/.bundle
 app/frontend/build
 plugins/*/frontend/build
-doc/frontend/dist
 
 # Test artefacts
 **/coverage
@@ -24,8 +23,6 @@ doc/frontend/dist
 **/.env.*
 config/
 deploy/
-staging/config
-staging/storage
 app/*/config/keys/*
 !app/*/config/keys/*.dev.pem
 !app/*/config/keys/README.md

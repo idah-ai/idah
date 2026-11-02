@@ -25,12 +25,14 @@
     editable?: boolean;
     deletable?: boolean;
     highlighted?: boolean;
+    dimmed?: boolean;
 
     onClick?: () => void;
     onUpdate: (params: { editedContentMd: string | null; editedFeedbackKeys: string[] | null }) => Promise<void>;
     onDelete?: () => Promise<void>;
 
     headerIcon?: Snippet;
+    headerMeta?: Snippet;
     headerActions?: Snippet;
     contentActions?: Snippet;
   }
@@ -45,10 +47,12 @@
     editable = false,
     deletable = false,
     highlighted = false,
+    dimmed = false,
     onClick,
     onUpdate,
     onDelete,
     headerIcon,
+    headerMeta,
     headerActions,
     contentActions,
   }: Props = $props();
@@ -98,7 +102,10 @@
 <div
   role="button"
   tabindex="0"
-  class={cn("hover:bg-primary/5 flex cursor-pointer gap-2 border-b p-2", { "bg-secondary": highlighted })}
+  class={cn("hover:bg-primary/5 flex cursor-pointer gap-2 border-b p-2", {
+    "bg-secondary": highlighted,
+    "opacity-60": dimmed,
+  })}
   onkeypress={handleClickCard}
   onclick={handleClickCard}
 >
@@ -135,6 +142,8 @@
             </TooltipProvider>
           {/if}
         </div>
+
+        {@render headerMeta?.()}
       </div>
 
       <div class="ml-auto flex items-center">

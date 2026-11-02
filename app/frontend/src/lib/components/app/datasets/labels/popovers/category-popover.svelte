@@ -51,7 +51,7 @@
 <Popover>
   <PopoverTrigger>
     {#snippet child({ props })}
-      <Button {...props} variant="ghost" class="px-2 text-sm">
+      <Button {...props} variant="ghost" class="min-w-0 shrink px-2 text-sm" title={label}>
         <!-- ICON -->
         {#if color !== null}
           <div
@@ -70,7 +70,7 @@
         </KbdGroup>
 
         <!-- LABEL -->
-        {label}
+        <span class="truncate">{label}</span>
       </Button>
     {/snippet}
   </PopoverTrigger>

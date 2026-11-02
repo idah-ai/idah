@@ -160,6 +160,25 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
       expect(last_response.status).to eq 200
     end
 
+    it "forwards the exporter's own options to the service" do
+      expect_any_instance_of(Exports::Service).to receive(:create)
+        .with(project_id,
+              dataset_ids,
+              exporter,
+              { include_medias: "original", completed_entries: true, task: "segment", val_percent: 20 })
+        .and_return(export_without_file)
+
+      post "/exports/export",
+           {
+             project_id:,
+             dataset_ids:,
+             exporter:,
+             options: { task: "segment", val_percent: 20 }
+           }
+
+      expect(last_response.status).to eq 200
+    end
+
     it "requires project_id parameter" do
       post "/exports/export",
            {
@@ -198,7 +217,9 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
         {
           name: "Format A",
           description: "Description for Format A",
-          exporter: "TestExporterA"
+          exporter: "TestExporterA",
+          options: [{ name: "task", type: "string", default: "detect", required: false,
+                      choices: [{ value: "detect", label: "Detection (boxes)" }] }]
         },
         {
           name: "Format B",
@@ -223,6 +244,10 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
       expect(body[0][:name]).to eq "Format A"
       expect(body[0][:description]).to eq "Description for Format A"
       expect(body[0][:exporter]).to eq "TestExporterA"
+      expect(body[0][:options]).to eq(
+        [{ name: "task", type: "string", default: "detect", required: false,
+           choices: [{ value: "detect", label: "Detection (boxes)" }] }]
+      )
       expect(body[1][:name]).to eq "Format B"
       expect(body[1][:description]).to eq "Description for Format B"
       expect(body[1][:exporter]).to eq "TestExporterB"

@@ -115,9 +115,9 @@
 
   {#if InfoSlot}
     {@render InfoSlot()}
-  {:else}
+  {:else if acceptedFileTypesString}
     <Text class="text-muted-foreground text-center" size="sm">
-      Supported file types: {acceptedFileTypesString ?? "All file types"}
+      Supported file types: {acceptedFileTypesString}
     </Text>
   {/if}
 </div>

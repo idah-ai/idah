@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { svelteTesting } from "@testing-library/svelte/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { sentrySvelteKit } from "@sentry/sveltekit";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   // Source-map upload needs SENTRY_AUTH_TOKEN in the build environment;
@@ -14,9 +14,9 @@ export default defineConfig({
     },
   },
   test: {
-    workspace: [
+    projects: [
       {
-        extends: "./vite.config.ts",
+        extends: true,
         plugins: [svelteTesting()],
         test: {
           name: "client",
@@ -28,7 +28,7 @@ export default defineConfig({
         },
       },
       {
-        extends: "./vite.config.ts",
+        extends: true,
         test: {
           name: "server",
           environment: "node",

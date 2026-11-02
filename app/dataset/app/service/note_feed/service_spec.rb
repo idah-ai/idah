@@ -209,6 +209,26 @@ RSpec.describe NoteFeed::Service, database: true do
         result = subject.index({}, page: 1, items_per_page: 1)
         expect(result.count).to eq(1)
       end
+
+      it "includes a soft-deleted annotation with deleted_at set" do
+        # Create a note feed anchored to the annotation, then soft-delete it via
+        # the annotation service (repository#delete is a hard delete).
+        params = note_feed_attributes.merge(
+          anchor_type: "annotation",
+          annotation_id: annotation_id
+        )
+        created = subject.create_from_params(params)
+        Annotation::Service.new(current_auth_context).delete(annotation_id)
+
+        result = subject.index({}, included: ["annotation"])
+        feed = result.find { |nf| nf.annotation_id == annotation_id }
+
+        expect(created.annotation_id).to eq(annotation_id)
+        expect(feed).not_to be_nil
+        expect(feed.annotation).not_to be_nil
+        expect(feed.annotation.id).to eq(annotation_id)
+        expect(feed.annotation.deleted_at).not_to be_nil
+      end
     end
 
     describe "#show" do
@@ -267,6 +287,134 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect(result.position).to eq({ x: 300, y: 400 })
         expect(result.edited_at).to eq(Time.now)
+      end
+
+      context "when content must be kept" do
+        let(:system_dataset_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
+
+        before do
+          system_dataset_repo.update!(
+            dataset_id,
+            { feedback_configuration: {
+              "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
+            } }
+          )
+        end
+
+        it "raises when the update would remove all feedback_keys and content_md" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  content_md: nil
+                }
+              }
+            }
+          )
+
+          expect { subject.update(record) }
+            .to raise_error(Verse::Error::ValidationFailed, /either feedback_keys or content_md must be provided/)
+        end
+
+        it "raises when clearing feedback_keys on a feedback-only note without content_md" do
+          feedback_only_id = subject.create_from_params(
+            note_feed_attributes.merge(
+              feedback_keys: ["aB3kF9mN2q"],
+              content_md: nil
+            )
+          ).id
+
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: feedback_only_id,
+                attributes: {
+                  feedback_keys: [],
+                  content_md: nil
+                }
+              }
+            }
+          )
+
+          expect { subject.update(record) }
+            .to raise_error(Verse::Error::ValidationFailed, /either feedback_keys or content_md must be provided/)
+        end
+      end
+
+      context "when updating feedback_keys" do
+        let(:system_dataset_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
+
+        before do
+          system_dataset_repo.update!(
+            dataset_id,
+            { feedback_configuration: {
+              "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
+            } }
+          )
+        end
+
+        it "raises when a feedback_key does not exist in the dataset config" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  feedback_keys: ["nonexistent"],
+                  content_md: nil
+                }
+              }
+            }
+          )
+
+          expect { subject.update(record) }
+            .to raise_error(Verse::Error::ValidationFailed, /do not exist/)
+        end
+
+        it "allows feedback_keys that exist in the dataset config" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  feedback_keys: ["aB3kF9mN2q"],
+                  content_md: nil
+                }
+              }
+            }
+          )
+
+          result = subject.update(record)
+
+          expect(result.feedback_keys).to eq(["aB3kF9mN2q"])
+          expect(result.content_md).to be_nil
+          expect(result.edited_at).to eq(Time.now)
+        end
+      end
+
+      context "edited_at" do
+        it "does not bump edited_at when the content is unchanged" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  content_md: "This is a test note"
+                }
+              }
+            }
+          )
+
+          result = subject.update(record)
+
+          expect(result.content_md).to eq("This is a test note")
+          expect(result.edited_at).to be_nil
+        end
       end
     end
 

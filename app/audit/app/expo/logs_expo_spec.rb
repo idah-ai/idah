@@ -244,7 +244,7 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
       }
     end
 
-    %w[created updated deleted assigned unassigned submitted].each do |event|
+    %w[created updated deleted assigned unassigned reopened submitted].each do |event|
       it "processes entry #{event} event" do
         expect_any_instance_of(LogsExpo).to receive(:log_attributes)
         expect(service).to receive(:create)

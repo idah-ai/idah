@@ -102,6 +102,24 @@ RSpec.describe FeedbackConfigTemplate::Service, database: true do
       expect(record.updated_by_id).to eq(1)
     end
 
+    it "cannot create with an invalid feedback configuration" do
+      create_data[:data][:attributes][:feedback_configuration] = {
+        "xY7zP1wR4t" => { description: "missing label" }
+      }
+
+      expect { subject.create(deserialize(create_data)) }
+        .to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+    end
+
+    it "cannot update with an invalid feedback configuration" do
+      update_data[:data][:attributes][:feedback_configuration] = {
+        "xY7zP1wR4t" => { label: "" }
+      }
+
+      expect { subject.update(deserialize(update_data)) }
+        .to raise_error(Verse::Error::ValidationFailed, /can't be empty/)
+    end
+
     it "can delete" do
       subject.delete(template_org1_id)
 

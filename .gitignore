@@ -56,8 +56,13 @@ test/version_tmp/
 *.bak
 *.backup
 
+# Local Docker Compose changes, merged over compose.yml automatically
+/compose.override.yml
+
 # Local git worktrees
 .claude/worktrees/
 
 # Local agent instructions (project conventions live in AGENTS.md)
 CLAUDE.md
+
+/exports/

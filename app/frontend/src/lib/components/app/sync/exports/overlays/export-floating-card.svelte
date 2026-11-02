@@ -126,13 +126,15 @@
 </script>
 
 {#if showFloatingCard}
-  <div class="bg-background fixed right-2 bottom-0 z-50 h-auto rounded-md rounded-br-none rounded-bl-none border">
+  <div
+    class="bg-background fixed right-2 bottom-0 z-50 h-auto min-w-96 rounded-md rounded-br-none rounded-bl-none border"
+  >
     <Collapsible bind:open>
-      <CollapsibleTrigger>
+      <CollapsibleTrigger class="w-full">
         <Button
           variant="ghost"
           size="lg"
-          class={cn("w-96 justify-start rounded-br-none rounded-bl-none", {
+          class={cn("w-full justify-start rounded-br-none rounded-bl-none", {
             "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100 dark:hover:bg-emerald-800 dark:hover:text-emerald-200":
               isDownloadReady,
             "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/20 dark:hover:text-primary":
@@ -167,7 +169,7 @@
       </CollapsibleTrigger>
 
       <CollapsibleContent>
-        <div class="min-w-96 border-t">
+        <div class="border-t">
           {#each $exportingExportRecords as exportingExportRecord (exportingExportRecord.id)}
             {@const { id, job_id, job, filename } = exportingExportRecord}
             {#await getExportDatasetsName(job_id) then datasetsName}

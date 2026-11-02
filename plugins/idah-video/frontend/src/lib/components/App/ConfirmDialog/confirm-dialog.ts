@@ -6,6 +6,8 @@ interface ConfirmDialogState {
   description: string;
   dismissable?: boolean;
   onConfirm: () => Promise<void> | void;
+  /** Called when the dialog is dismissed without confirming. */
+  onCancel?: () => void;
 }
 
 interface ConfirmDialogProps {
@@ -13,6 +15,7 @@ interface ConfirmDialogProps {
   description: string;
   dismissable?: boolean;
   onConfirm: () => Promise<void> | void;
+  onCancel?: () => void;
 }
 
 export const confirmDialogState = writable<ConfirmDialogState>({
@@ -21,10 +24,15 @@ export const confirmDialogState = writable<ConfirmDialogState>({
   description: "",
   dismissable: false,
   onConfirm: () => {},
+  onCancel: () => {},
 });
 
 export function showConfirmDialog(props: ConfirmDialogProps) {
   confirmDialogState.set({ ...props, open: true });
+}
+
+export function hideConfirmDialog() {
+  confirmDialogState.update((s) => ({ ...s, open: false }));
 }
 
 export function closeConfirmDialog() {
@@ -34,5 +42,6 @@ export function closeConfirmDialog() {
     description: "",
     dismissable: false,
     onConfirm: () => {},
+    onCancel: () => {},
   });
 }

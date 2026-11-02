@@ -6,31 +6,39 @@
   import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
   import { fieldTypes, type FieldType } from "@/data/model/dataset/labels";
+  import { cn } from "@/utils";
 
-  import type { IConfigProperty } from "@/plugin/interface/Activity";
+  import type { IConfigProperty, IConfigValue } from "@/plugin/v2/types";
   import type { Hash } from "@/utils/types";
 
   // Props
   interface Props {
     property: IConfigProperty;
-    onSetProperty: (property: IConfigProperty) => void;
+    /** Categories and properties of the label config, for visibility conditions. */
+    categories: IConfigValue[];
+    properties: IConfigProperty[];
+    /** Returns whether the update was applied. */
+    onSetProperty: (property: IConfigProperty) => boolean;
     onRemoveProperty: (propertyId: string) => void;
   }
-  let { property, onSetProperty, onRemoveProperty }: Props = $props();
+  let { property, categories, properties, onSetProperty, onRemoveProperty }: Props = $props();
 
   // Variables
   let { id, label, type } = $derived(property);
   let showContent: boolean = $state(false);
+  // Once opened, the options stay mounted while collapsed, so unsaved builder conditions survive.
+  let opened: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
 
   // Functions
   function toggleContent() {
     showContent = !showContent;
+    opened ||= showContent;
   }
 
-  function setProperty(valueToSet: Hash) {
-    onSetProperty({ ...property, ...valueToSet });
+  function setProperty(valueToSet: Hash): boolean {
+    return onSetProperty({ ...property, ...valueToSet });
   }
 </script>
 
@@ -50,9 +58,9 @@
   </CardHeader>
 
   <!-- CONTENT -->
-  {#if showContent}
-    <CardContent class="flex flex-col gap-4 px-0">
-      <PropertyOptions {property} onSetValue={setProperty}></PropertyOptions>
+  {#if opened}
+    <CardContent class={cn("flex flex-col gap-4 px-0", !showContent && "hidden")}>
+      <PropertyOptions {property} {categories} {properties} onSetValue={setProperty}></PropertyOptions>
     </CardContent>
   {/if}
 </Card>

@@ -238,6 +238,20 @@ RSpec.describe Entry::Service, database: true do
       other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("done")
     end
+
+    it "counts an errored processing entry in progress after a later entry completes" do
+      subject.mark_entries_status_as(job_id, "errored")
+
+      completed_entry_id = repo.create(
+        { project_id:, dataset_id:, resource: "completed-after-error.mp4", status: "pending" }
+      )
+      repo.update!(completed_entry_id, { status: "completed" })
+      dataset_repo.update_progress!(dataset_id)
+
+      dataset = dataset_repo.find!(dataset_id)
+      expect(dataset.entries_completed_count).to eq(1)
+      expect(dataset.progress).to eq(1.0 / 3)
+    end
   end
 
   describe "#index" do
@@ -393,6 +407,21 @@ RSpec.describe Entry::Service, database: true do
     it "deletes an entry" do
       subject.delete(entry.id)
       expect { repo.find!(entry.id) }.to raise_error(Verse::Error::NotFound)
+    end
+
+    it "refreshes dataset progress after deleting an entry" do
+      pending_entry_id = entry.id
+      completed_entry_id = repo.create({ project_id:, dataset_id:, resource: "completed.mp4", status: "pending" })
+      repo.update!(completed_entry_id, { status: "completed" })
+      dataset_repo.update_progress!(dataset_id)
+
+      expect(dataset_repo.find!(dataset_id).progress).to eq(0.5)
+
+      subject.delete(pending_entry_id)
+
+      dataset = dataset_repo.find!(dataset_id)
+      expect(dataset.progress).to eq(1.0)
+      expect(dataset.status).to eq("completed")
     end
 
     it "cannot delete an entry with in_progress or completed status" do
@@ -621,6 +650,109 @@ RSpec.describe Entry::Service, database: true do
         expect { subject.error(UUIDv7.generate) }
           .to raise_error(Verse::Error::NotFound)
       end
+    end
+  end
+
+  describe "#reopen" do
+    let!(:completed_entry) do
+      repo.create(
+        {
+          project_id:,
+          dataset_id:,
+          resource: "completed-video.mp4",
+          status: "completed",
+          wf_step: "done",
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
+        }
+      )
+    end
+
+    context "when entry is not completed" do
+      it "raises ValidationFailed" do
+        pending_entry = repo.create(
+          {
+            project_id:,
+            dataset_id:,
+            resource: "pending-video.mp4",
+            status: "pending",
+            wf_step: "annotate"
+          }
+        )
+
+        expect { subject.reopen(pending_entry, target_step: "review") }
+          .to raise_error(Verse::Error::ValidationFailed, /Only completed entries can be reopened/)
+      end
+    end
+
+    context "when entry is completed, sets the entry to Unassigned", as: :admin do
+      subject { described_class.new(current_auth_context) }
+
+      it "records the actor as reopened_by" do
+        result = subject.reopen(completed_entry, target_step: "review")
+
+        expect(result.reopened_by_id).to eq(1)
+        expect(result.reopened_by_email).to eq("admin@example.com")
+      end
+
+      it "moves entry back to the requested step" do
+        result = subject.reopen(completed_entry, target_step: "review")
+
+        expect(result.wf_step).to eq("review")
+        expect(result.status).to eq("pending")
+        expect(result.assigned_to_id).to be_nil
+        expect(result.assigned_to_email).to be_nil
+        expect(result.reopened_by_id).to eq(1)
+        expect(result.reopened_by_email).to eq("admin@example.com")
+      end
+
+      it "marks the dataset as in_progress when it was previously completed" do
+        # Make the dataset completed by adding another completed entry
+        repo.create(
+          {
+            project_id:,
+            dataset_id:,
+            resource: "other.mp4",
+            status: "completed",
+            wf_step: "done"
+          }
+        )
+
+        # Reopen one entry
+        subject.reopen(completed_entry, target_step: "review")
+
+        expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+      end
+    end
+
+    context "when target_step is invalid" do
+      it "raises ValidationFailed" do
+        expect { subject.reopen(completed_entry, target_step: "export") }
+          .to raise_error(Verse::Error::ValidationFailed, /Invalid reopen target step/)
+      end
+    end
+  end
+
+  describe "#reopen_targets" do
+    let!(:completed_entry) do
+      repo.create(
+        {
+          project_id:,
+          dataset_id:,
+          resource: "completed-video.mp4",
+          status: "completed",
+          wf_step: "done",
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
+        }
+      )
+    end
+    it "returns the workflow steps a completed entry can be reopened to" do
+      expect(subject.reopen_targets(completed_entry)).to eq(%w[annotate review])
     end
   end
 

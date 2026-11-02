@@ -33,6 +33,11 @@ module FeedbackConfigTemplate
       attributes[:created_by_id] = account_id
       attributes[:updated_by_id] = account_id
 
+      if attributes.key?(:feedback_configuration)
+        attributes[:feedback_configuration] =
+          FeedbackConfigSchema.validate!(attributes[:feedback_configuration])
+      end
+
       templates.transaction do
         id = templates.create(attributes)
         templates.find!(id)
@@ -42,6 +47,11 @@ module FeedbackConfigTemplate
     def update(record)
       attributes = record.attributes
       attributes[:updated_by_id] = auth_context.metadata[:id]
+
+      if attributes.key?(:feedback_configuration)
+        attributes[:feedback_configuration] =
+          FeedbackConfigSchema.validate!(attributes[:feedback_configuration])
+      end
 
       templates.update!(record.id, attributes)
       templates.find!(record.id)

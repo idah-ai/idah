@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+
+# media's image: the service image, which already holds media's gems and code,
+# plus the programs and libraries only media runs. Built after the service
+# image, from the one it names:
+#
+#   docker build -f docker/Dockerfile.media --build-arg SERVICE_IMAGE=idah-service -t idah-media .
+#
+# The release workflow passes the service image it has just built, by digest,
+# so media's image shares every one of its layers and an install downloads
+# them once.
+#
+# The layer added here sits on top of the service image, so it is rebuilt, and
+# downloaded again on an upgrade, with every release.
+ARG SERVICE_IMAGE=idah-service
+
+FROM ${SERVICE_IMAGE}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # The video plugin runs ffmpeg and ffprobe
+    ffmpeg \
+    # ImageMagick, which the rmagick gem links against for the image plugin,
+    # and its coders for SVG, DJVU, OpenEXR and WMF: the image plugin takes
+    # any image/* upload
+    libmagickwand-6.q16-6 \
+    libmagickcore-6.q16-6-extra \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/media

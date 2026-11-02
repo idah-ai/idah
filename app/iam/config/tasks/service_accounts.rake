@@ -20,8 +20,6 @@ namespace :service_accounts do
       password ||= \
         if environment == "production"
           SecureRandom.base64(15)
-        elsif environment == "staging"
-          ENV.fetch("IDAH_SERVICE_PASSWORD")
         else
           "password"
         end

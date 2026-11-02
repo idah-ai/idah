@@ -218,21 +218,19 @@ module NoteFeed
       find!(id)
     end
 
+    # Checks whether any note in the dataset references the given feedback key.
+    # Uses the `@>` containment operator so the GIN index on feedback_keys is
+    # used (the previous `= ANY()` / nested self-subquery form could not).
+    # Intentionally unscoped: only invoked through the system note feeds
+    # repository from the dataset service (delete-prevention check).
     def feedback_key_in_use?(dataset_id, key)
-      table.where(
+      !table.where(
         Sequel.lit(
-          <<~SQL,
-            EXISTS (
-              SELECT 1
-              FROM note_feeds
-              WHERE dataset_id = :dataset_id
-                AND :key = ANY(feedback_keys)
-            )
-          SQL
+          "dataset_id = :dataset_id AND feedback_keys @> ARRAY[:key]",
           dataset_id: dataset_id,
           key: key.to_s
         )
-      ).any?
+      ).empty?
     end
 
     def feedback_keys_in_use(dataset_id)

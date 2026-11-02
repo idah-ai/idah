@@ -290,7 +290,7 @@
   }
 
   function addNewProperty() {
-    controller.setProperty({
+    controller.addProperty({
       id: `property-${new Date().getTime()}`,
       label: "New Property",
       type: "text",
@@ -301,8 +301,8 @@
     });
   }
 
-  function setProperty(property: IConfigProperty) {
-    controller.setProperty(property);
+  function setProperty(property: IConfigProperty): boolean {
+    return controller.setProperty(property);
   }
 
   function changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
@@ -443,9 +443,9 @@
   </div>
 
   <!-- LABEL CONFIG::CATEGORIES & PROPERTIES -->
-  <div class="grid flex-1 grid-cols-1 gap-2 lg:grid-cols-5">
+  <div class="grid min-w-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-2">
     <!-- CATEGORIES -->
-    <Card class="col-span-1 h-full gap-2 lg:col-span-3">
+    <Card class="h-full min-w-0 gap-2">
       <CardHeader>
         <CardTitle>Categories</CardTitle>
         <CardDescription class="text-xs">
@@ -485,7 +485,7 @@
     </Card>
 
     <!-- PROPERTIES -->
-    <Card class="col-span-1 h-full gap-2 md:col-span-2">
+    <Card class="h-full min-w-0 gap-2">
       <CardHeader>
         <CardTitle>Properties</CardTitle>
         <CardDescription class="text-xs">
@@ -502,7 +502,13 @@
       <CardContent class="flex flex-col gap-2">
         {#if selectedLabelConfig}
           {#each Object.values(selectedLabelConfig.properties) as property (property.id)}
-            <PropertyCard {property} onSetProperty={setProperty} onRemoveProperty={removeProperty} />
+            <PropertyCard
+              {property}
+              categories={selectedLabelConfig.values}
+              properties={selectedLabelConfig.properties}
+              onSetProperty={setProperty}
+              onRemoveProperty={removeProperty}
+            />
           {:else}
             <ResponseBlock
               icon={BoltIcon}

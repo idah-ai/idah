@@ -9,15 +9,19 @@ name: CI - App
 
 on:
   pull_request:
-    paths:
-      - "app/**"
-      - "common/**"
     types:
       # Trigger the workflow only when PR is ready for review
       - ready_for_review
       - synchronize
       - opened
       - reopened
+
+  # Every merge too: a pull request is tested against main as it was when its
+  # checks ran, and other merges may have landed since. On main the path
+  # filters compare with the commit before the merge.
+  push:
+    branches:
+      - main
 
 env:
   FRONTEND_DIR: ./app/frontend
@@ -30,14 +34,16 @@ env:
   DATASET_DIR: ./app/dataset
   COMMON_DIR: ./common
 
+# A newer push to a pull request cancels its older run. On main each commit
+# gets its own group, so every merge is tested in full.
 concurrency:
-  group: ${{ github.head_ref }}
+  group: ${{ github.head_ref || github.sha }}-app
   cancel-in-progress: true
 
 jobs:
   changes:
     name: Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       iam: ${{ steps.filter.outputs.iam }}
@@ -48,8 +54,8 @@ jobs:
       media: ${{ steps.filter.outputs.media }}
       dataset: ${{ steps.filter.outputs.dataset }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           # Every Ruby service loads common/, so a change there runs all of them.
@@ -83,13 +89,13 @@ jobs:
     name: Frontend
     if: ${{ needs.changes.outputs.frontend == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.FRONTEND_DIR }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -108,7 +114,7 @@ jobs:
           echo "js_files=$(echo "${{ steps.filter.outputs.js_files }}" | sed -r 's/app\/frontend\/+//g')" >> $GITHUB_OUTPUT
           echo "svelte_files=$(echo "${{ steps.filter.outputs.svelte_files }}" | sed -r 's/app\/frontend\/+//g')" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         if: ${{ steps.filter.outputs.js == 'true' }}
         with:
           path: "**/node_modules"
@@ -116,7 +122,7 @@ jobs:
 
       - name: Setup Node
         if: ${{ steps.filter.outputs.js == 'true' }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -150,7 +156,7 @@ jobs:
     name: IAM Service
     if: ${{ needs.changes.outputs.iam == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.IAM_DIR }}
@@ -165,8 +171,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -222,7 +228,7 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: iam-code-coverage
           path: ${{ env.IAM_DIR }}/coverage
@@ -231,7 +237,7 @@ jobs:
     name: Notification Service
     if: ${{ needs.changes.outputs.notification == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.NOTIFICATION_DIR }}
@@ -246,8 +252,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -303,7 +309,7 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: notification-code-coverage
           path: ${{ env.NOTIFICATION_DIR }}/coverage
@@ -312,7 +318,7 @@ jobs:
     name: Setting Service
     if: ${{ needs.changes.outputs.setting == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.SETTING_DIR }}
@@ -327,8 +333,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -392,7 +398,7 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: setting-code-coverage
           path: ${{ env.SETTING_DIR }}/coverage
@@ -401,7 +407,7 @@ jobs:
     name: Audit Service
     if: ${{ needs.changes.outputs.audit == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.AUDIT_DIR }}
@@ -416,8 +422,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -473,7 +479,7 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: audit-code-coverage
           path: ${{ env.AUDIT_DIR }}/coverage
@@ -482,7 +488,7 @@ jobs:
     name: Sync Service
     if: ${{ needs.changes.outputs.sync == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.SYNC_DIR }}
@@ -497,8 +503,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -554,7 +560,7 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sync-code-coverage
           path: ${{ env.SYNC_DIR }}/coverage
@@ -563,7 +569,7 @@ jobs:
     name: Media Service
     if: ${{ needs.changes.outputs.media == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.MEDIA_DIR }}
@@ -578,8 +584,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -643,7 +649,7 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: media-code-coverage
           path: ${{ env.MEDIA_DIR }}/coverage
@@ -652,7 +658,7 @@ jobs:
     name: Dataset Service
     if: ${{ needs.changes.outputs.dataset == 'true' }}
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ${{ env.DATASET_DIR }}
@@ -667,8 +673,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: shell
@@ -724,7 +730,26 @@ jobs:
 
       - name: Upload Code Coverage
         if: ${{ !cancelled() && (steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dataset-code-coverage
           path: ${{ env.DATASET_DIR }}/coverage
+
+  # The one check branch protection requires. The workflow runs on every PR and
+  # the jobs above skip themselves when their paths did not change, so this job
+  # always reports: skipped counts as passed, failed or cancelled does not.
+  passed:
+    name: App CI passed
+    if: ${{ always() }}
+    needs: [changes, frontend, iam, notification, setting, audit, sync, media, dataset]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check every job's result
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if jq -e 'any(.[]; . == "failure" or . == "cancelled")' <<< "$RESULTS" > /dev/null; then
+            echo "::error::A job failed or was cancelled."
+            exit 1
+          fi

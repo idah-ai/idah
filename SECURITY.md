@@ -8,12 +8,48 @@ Security is a top priority for the IDAH project. This document outlines our secu
 
 ## 🔒 Supported Versions
 
-We provide security updates for the following versions:
+IDAH releases one version for the whole platform (see [RELEASE.md](RELEASE.md)). A running
+service reports its version on `/healthcheck`.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| Latest  | ✅ Yes             |
-| < 1.0   | ⚠️ Best effort     |
+**While IDAH is on 0.x** (today), only the latest minor release receives security fixes:
+
+| Version                 | Supported |
+| ----------------------- | --------- |
+| Latest `0.x` minor      | ✅ Yes    |
+| Older `0.x` minors      | ❌ No — upgrade to the latest minor |
+| Release candidates (`-rc.N`) | ❌ No |
+
+**From 1.0 onwards**, we support the current major version and the one before it. Security
+fixes are backported to the latest minor of both; nothing else is backported.
+
+Security fixes ship as a patch release (for example `0.4.1`) from that minor's release branch,
+following the same release process as any other version. The release notes say when a release
+contains a security fix.
+
+---
+
+## 🚨 Reporting a Vulnerability
+
+**Please do not report security vulnerabilities through public GitHub issues, discussions or
+pull requests.**
+
+Report them privately through
+[GitHub Security Advisories](https://github.com/idah-ai/idah/security/advisories/new), or by
+email to [contact@idah.ai](mailto:contact@idah.ai) with "SECURITY" in the subject.
+
+Please include:
+
+- The affected version (from `/healthcheck` or your `IDAH_VERSION`) and service
+- A description of the issue and its impact
+- Steps to reproduce, or a proof of concept
+- Any suggested fix or mitigation
+
+What to expect:
+
+1. We acknowledge your report within a few working days.
+2. We confirm the issue, assess its severity and agree a disclosure timeline with you.
+3. We fix it on the supported release branches and publish patch releases.
+4. We publish a GitHub Security Advisory and credit you, unless you prefer to stay anonymous.
 
 ---
 
@@ -62,6 +98,11 @@ Before deploying IDAH to production:
   - Enable SSL/TLS for database connections
   - Restrict network access
   - Regular backups
+
+- [ ] **Pin and Verify the Release**
+  - Set `IDAH_VERSION` to an exact release — never `latest` or a release candidate
+  - Check downloads against the release's `SHA256SUMS`
+  - Watch [releases](https://github.com/idah-ai/idah/releases) and [security advisories](https://github.com/idah-ai/idah/security/advisories), and upgrade with `./install.sh --upgrade`
 
 - [ ] **Application Security**
   - Keep dependencies updated
@@ -177,6 +218,7 @@ IDAH includes several built-in security features:
 
 ## 📞 Contact
 
+- **Vulnerabilities:** [report privately](#-reporting-a-vulnerability) — never in a public issue
 - **General Support:** [GitHub Issues](https://github.com/idah-ai/idah/issues)
 - **Documentation:** [docs.idah.ai](https://docs.idah.ai)
 
