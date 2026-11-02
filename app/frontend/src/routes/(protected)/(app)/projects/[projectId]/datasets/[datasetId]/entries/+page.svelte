@@ -41,6 +41,7 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let showOrphanCategories = $state(false);
+  let canExportEntry = $state(false);
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: { projectId, projectMemberRoles: ["project_owner"] },
@@ -56,9 +57,10 @@
 
   onMount(async () => {
     const account = $authStatus.authContext;
-    [canUpdateEntry, canDeleteEntry] = await Promise.all([
+    [canUpdateEntry, canDeleteEntry, canExportEntry] = await Promise.all([
       account?.can("update", "dataset:entries", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
       account?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
+      account?.can("create", "sync:exports", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
     ]);
   });
 
@@ -84,7 +86,7 @@
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
     {#if !showOrphanCategories}
-      <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+      <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {canExportEntry} {projectId} />
     {/if}
   {/snippet}
 </PageHeader>
