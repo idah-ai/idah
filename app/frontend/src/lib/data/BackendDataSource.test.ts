@@ -62,7 +62,7 @@ describe(encodeModel, () => {
 
 describe(createBackendDataSource, () => {
   const fetch = vi.fn();
-  global.fetch = <any>fetch;
+  global.fetch = fetch;
 
   const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records");
 
