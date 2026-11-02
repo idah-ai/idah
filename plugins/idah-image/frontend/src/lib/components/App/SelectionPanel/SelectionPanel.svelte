@@ -142,7 +142,7 @@
   {/if}
 {:else if selection.selectedAnnotationIds.size > 1}
   <!-- Multiple annotations selected: show a compact list of selected items -->
-  <SelectedAnnotationsList />
+  <SelectedAnnotationsList {disabled} />
 {:else}
   <!-- Edit mode: edit a single selected annotation -->
   <EditMode

@@ -36,6 +36,7 @@
   import { snapEngine } from "$lib/snap-engine/instance";
   import { getDriver } from "$lib/state/driver.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { marqueeSelectionIds } from "$lib/utils/marquee-selection";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data, setPendingNoteScene, type AnnotationItem } from "$lib/state/data.svelte";
@@ -555,23 +556,12 @@
     return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   }
 
-  /** Check if two AABBs intersect. */
-  function aabbIntersects(a: [number, number, number, number], b: [number, number, number, number]): boolean {
-    return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
-  }
-
   /** Complete the rectangle selection, selecting all visible annotations intersecting the rect. */
   function completeRectSelection() {
     const rect = selectionRect;
     if (!rect) return;
 
-    const intersectingIds = visibleAnnotations
-      .filter((ann) => {
-        const aabb = getAnnotationAABB(ann);
-        if (!aabb) return false;
-        return aabbIntersects(aabb, rect);
-      })
-      .map((ann) => ann.id);
+    const intersectingIds = marqueeSelectionIds(visibleAnnotations, rect, annotation.isHidden, getAnnotationAABB);
 
     selection.selectAnnotations(intersectingIds);
     cancelRectSelection();
