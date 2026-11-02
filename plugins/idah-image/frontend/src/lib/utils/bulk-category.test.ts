@@ -183,7 +183,7 @@ describe("bulk category preparation", () => {
     expect(bulkPropertyValidity(items, dependent, conditionalDriver, undefined, {}, propertyFullfilled)).toBe(true);
     expect(bulkPropertyValidity(items, dependent, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)).toBe(true);
     expect(bulkPreview(items, conditionalDriver, undefined, { occluded: false }, propertyFullfilled)?.updates[0].properties)
-      .not.toHaveProperty("detail");
+      .toHaveProperty("detail", "high");
   });
 
   it("offers only properties visible for every selected annotation", () => {
@@ -494,7 +494,7 @@ describe("bulk category preparation", () => {
     expect(result.updates.map((update) => update.properties)).toEqual([{ tags: [] }, { tags: [] }]);
   });
 
-  it("removes values hidden after a property edit", () => {
+  it("preserves values hidden after a property edit", () => {
     const conditionalDriver = {
       ...driver,
       getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
@@ -509,11 +509,11 @@ describe("bulk category preparation", () => {
     ], { mode: "basic" }, conditionalDriver, valid);
     expect(result.error).toBeUndefined();
     expect(result.updates.map((update) => update.properties)).toEqual([
-      { mode: "basic" }, { mode: "basic" },
+      { mode: "basic", detail: "A" }, { mode: "basic", detail: "B" },
     ]);
   });
 
-  it("removes mixed occlusion levels after applying false", () => {
+  it("keeps mixed occlusion levels while toggling off and back on", () => {
     const conditionalDriver = {
       ...driver,
       getFilteredConfig: (_shape: string, value: { properties: Record<string, unknown> }) => ({
@@ -535,15 +535,13 @@ describe("bulk category preparation", () => {
     expect(propertyState(items, "occluded_level").mixed).toBe(true);
     const switchedOff = bulkPreview(items, conditionalDriver, undefined, { occluded: false }, valid)?.updates;
     expect(switchedOff?.map((update) => update.properties))
-      .toEqual([{ occluded: false }, { occluded: false }]);
+      .toEqual([{ occluded: false, occluded_level: "100_occluded" },
+        { occluded: false, occluded_level: "50_occluded" }]);
     expect(bulkPreview(items, conditionalDriver, undefined, { occluded: true }, valid)?.error)
       .toBe("No changes to apply.");
     const savedOff = items.map((item, index) => ({ ...item, properties: switchedOff![index].properties }));
     expect(bulkPreview(savedOff, conditionalDriver, undefined, { occluded: true }, valid)?.updates.map((update) => update.properties))
-      .toEqual([{ occluded: true }, { occluded: true }]);
-    const stale = record("old", "vehicle", { occluded: false, occluded_level: "100_occluded" });
-    expect(bulkPreview([stale], conditionalDriver, undefined, { occluded: false }, valid)?.updates[0].properties)
-      .toEqual({ occluded: false });
+      .toEqual(items.map((item) => item.properties));
     expect(items.map((item) => item.properties?.occluded_level))
       .toEqual(["100_occluded", "50_occluded"]);
   });

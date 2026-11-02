@@ -13,7 +13,6 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
-import { pruneHiddenProperties } from "$lib/utils/prune-hidden-properties";
 
 export const command = {
   name: "idah-video:annotation.update-group-category",
@@ -48,23 +47,30 @@ export function register(driver: IIdahDriverV2): void {
 
       if (groupAnnotations.length === 0) return noopAction(command);
 
-      const snapshots: AnnotationItem[] = groupAnnotations.map((ann) => ({
-        ...ann, properties: { ...ann.properties },
+      // Snapshot old values
+      const snapshots: Array<{ annotation: AnnotationItem; oldCategory?: string }> = groupAnnotations.map((ann) => ({
+        annotation: ann,
+        oldCategory: ann.category as string | undefined,
       }));
-      const updates = snapshots.map((ann) => {
-        const prepared = pruneHiddenProperties(driver, ann.shape_type, props.categoryIdToBeUpdate, ann.properties ?? {});
-        return prepared && { ...ann, category: props.categoryIdToBeUpdate, properties: prepared.properties };
-      });
-      if (updates.some((item) => !item)) return noopAction(command);
 
       return {
         command: { ...command },
         async do() {
-          for (const item of updates) await data.annotations!.update(item!);
+          for (const { annotation } of snapshots) {
+            await data.annotations!.update({
+              ...annotation,
+              category: props.categoryIdToBeUpdate,
+            });
+          }
         },
         async undo() {
           if (!data.annotations) return;
-          for (const item of snapshots) await data.annotations!.update(item);
+          for (const { annotation, oldCategory } of snapshots) {
+            await data.annotations!.update({
+              ...annotation,
+              ...(oldCategory ? { category: oldCategory } : {}),
+            });
+          }
         },
         isCombinable() {
           return false;

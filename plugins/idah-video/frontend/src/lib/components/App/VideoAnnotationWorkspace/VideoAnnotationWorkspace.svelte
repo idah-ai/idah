@@ -8,7 +8,6 @@
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { resolveEntryRoot, resolveFrame, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
-  import { pruneHiddenProperties } from "$lib/utils/prune-hidden-properties";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -110,8 +109,11 @@
 
     if (!shapeSelectionArgs) return false;
     if (!pendingCategory || pendingCategory === "") return false;
-    const prepared = pruneHiddenProperties(getDriver(), shapeSelectionArgs[0], pendingCategory, pendingValue);
-    return !!prepared && requiredFullfilled(prepared.properties, prepared.fields);
+    const properties =
+      getDriver().getFilteredConfig(shapeSelectionArgs[0], { category: pendingCategory, properties: pendingValue })
+        ?.properties ?? [];
+
+    return requiredFullfilled(pendingValue, properties);
   });
 
   let length = $state(0);
@@ -227,9 +229,6 @@
   async function addAnnotation(shape: AnnotationShape, category?: string, properties: AnnotationAttributes = {}) {
     if (!editable) return;
 
-    const prepared = pruneHiddenProperties(getDriver(), shape.type, category, properties);
-    if (!prepared || !requiredFullfilled(prepared.properties, prepared.fields)) return;
-
     const { type, start, end, frames } = shape;
     const videoShape: IVideoAnnotationShape = {
       start: start!,
@@ -241,7 +240,7 @@
       shape: videoShape,
       shape_type: type,
       category,
-      properties: prepared.properties,
+      properties,
     });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
@@ -294,8 +293,10 @@
     if (!editable) return;
 
     const effectiveProperties = properties ?? annotationValue.properties;
-    const prepared = pruneHiddenProperties(getDriver(), selAnnotation?.shape_type ?? valueMode, category, effectiveProperties);
-    let requirementFullfilled = !!prepared && requiredFullfilled(prepared.properties, prepared.fields);
+    let requirementFullfilled = requiredFullfilled(
+      effectiveProperties,
+      getDriver().getFilteredConfig(valueMode, { category, properties: effectiveProperties })?.properties,
+    );
 
     if (valueMode == ENTRY_ROOT && !selAnnotation && entryRoot.value?.metadata?.id)
       selection.selectAnnotation(entryRoot.value as any);
@@ -317,9 +318,9 @@
       if (category && category != "" && requirementFullfilled)
         addAnnotation({ type: valueMode }, category, $state.snapshot(effectiveProperties));
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, category, properties: requirementFullfilled ? prepared!.properties : effectiveProperties } as any);
+      selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       if (requirementFullfilled)
-        updateAnnotationValue($state.snapshot(selAnnotation), category, $state.snapshot(prepared!.properties));
+        updateAnnotationValue($state.snapshot(selAnnotation), category, $state.snapshot(effectiveProperties));
     } else if (selGroup) {
       // Update category for all annotations in the group
       getDriver().command.call("idah-video:annotation.update-group-category", {
@@ -358,8 +359,6 @@
     let points = $state.snapshot(_points) as Point[];
     let attributes = $state.snapshot(pendingValue) as AnnotationAttributes;
     let category = pendingCategory;
-    const prepared = pruneHiddenProperties(getDriver(), type, category, attributes);
-    if (!prepared || !requiredFullfilled(prepared.properties, prepared.fields)) return;
 
     let shape: AnnotationShape = { type };
     switch (type) {
@@ -383,7 +382,7 @@
 
     shapeSelectionArgs = undefined;
     resetPending();
-    addAnnotation(shape, category, prepared.properties);
+    addAnnotation(shape, category, attributes);
   }
 
   function onShapeSelection(
@@ -399,7 +398,6 @@
     if (!selectedId) {
       let annotation_category_from = $state.snapshot(pendingCategory);
       let annotation_properties_from = $state.snapshot(pendingValue) as AnnotationAttributes;
-      const prepared = pruneHiddenProperties(getDriver(), type, annotation_category_from, annotation_properties_from);
 
       // todo proper validation
       let shape: AnnotationShape = { type };
@@ -439,11 +437,17 @@
 
       if (
         getDriver().config[type]?.values.some((v) => v.id == annotation_category_from) &&
-        prepared && requiredFullfilled(prepared.properties, prepared.fields)
+        requiredFullfilled(
+          annotation_properties_from,
+          getDriver().getFilteredConfig(type, {
+            category: annotation_category_from,
+            properties: annotation_properties_from,
+          })?.properties,
+        )
       ) {
         shapeSelectionArgs = undefined;
         resetPending();
-        addAnnotation(shape, annotation_category_from, prepared.properties);
+        addAnnotation(shape, annotation_category_from, annotation_properties_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, angle, selectedId];
         // Keep pendingValue so the popover shows the selected category
@@ -458,9 +462,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    const prepared = pruneHiddenProperties(getDriver(), ann.shape_type, category ?? ann.category, properties ?? ann.properties ?? {});
-    if (!prepared || !requiredFullfilled(prepared.properties, prepared.fields)) return;
-    getDriver().command.call("idah-video:annotation.update", { annotation: ann, category, properties: prepared.properties });
+    getDriver().command.call("idah-video:annotation.update", { annotation: ann, category, properties });
   }
 
   /** Full-length frame range for the entry:root annotation so it survives the
@@ -505,16 +507,16 @@
   function onEntryRootChange(value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
-    const prepared = pruneHiddenProperties(getDriver(), ENTRY_ROOT, value.category, value.properties ?? {});
-    if (!prepared) return false;
-    const cleanedValue = { ...value, properties: prepared.properties };
-    if (!isTaggingValueComplete(cleanedValue, prepared.fields)) return false;
+    // Only create/update when the category + required properties are valid.
+    const properties =
+      getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!isTaggingValueComplete(value, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
-    const resolution = resolveEntryRoot(items, cleanedValue);
+    const resolution = resolveEntryRoot(items, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value.category, prepared.properties);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation(entryRootFullRangeShape(), value.category, prepared.properties);
+      addAnnotation(entryRootFullRangeShape(), value.category, value.properties);
     }
     return true;
   }
@@ -525,17 +527,17 @@
   function onFrameCreate(value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
-    const prepared = pruneHiddenProperties(getDriver(), VIDEO_FRAME, value.category, value.properties ?? {});
-    if (!prepared) return false;
-    const cleanedValue = { ...value, properties: prepared.properties };
-    if (!isTaggingValueComplete(cleanedValue, prepared.fields)) return false;
+    // Only create/update when the category + required properties are valid.
+    const properties =
+      getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!isTaggingValueComplete(value, properties)) return false;
     const frame = viewport.video.currentFrame.value;
     const items = (data.annotations?.items ?? []) as unknown as IVideoAnnotationRecord[];
-    const resolution = resolveFrame(items, frame, value.category, cleanedValue);
+    const resolution = resolveFrame(items, frame, value.category, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value.category, prepared.properties);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation({ type: VIDEO_FRAME, start: frame, end: frame, frames: [] }, value.category, prepared.properties);
+      addAnnotation({ type: VIDEO_FRAME, start: frame, end: frame, frames: [] }, value.category, value.properties);
     }
     return true;
   }
@@ -544,9 +546,11 @@
    *  was persisted (false when a required field is missing). */
   function onFrameUpdate(ann: IVideoAnnotationRecord, value: IVideoAnnotationValue): boolean {
     if (!editable) return false;
-    const prepared = pruneHiddenProperties(getDriver(), VIDEO_FRAME, value.category, value.properties ?? {});
-    if (!prepared || !isTaggingValueComplete({ ...value, properties: prepared.properties }, prepared.fields)) return false;
-    updateAnnotationValue(ann, value.category, prepared.properties);
+    // Editing must satisfy the same required-field gate as creation.
+    const properties =
+      getDriver().getFilteredConfig(VIDEO_FRAME, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!isTaggingValueComplete(value, properties)) return false;
+    updateAnnotationValue(ann, value.category, value.properties);
     return true;
   }
 

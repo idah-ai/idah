@@ -8,7 +8,6 @@
 
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { resolveEntryRoot, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
-  import { pruneHiddenProperties } from "$lib/utils/prune-hidden-properties";
   import { annotation } from "$lib/state/annotation.svelte";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
@@ -112,8 +111,11 @@
 
     if (!shapeSelectionArgs) return false;
     if (!pendingCategory || pendingCategory === "") return false;
-    const prepared = pruneHiddenProperties(getDriver(), shapeSelectionArgs[0], pendingCategory, pendingValue);
-    return !!prepared && requiredFullfilled(prepared.properties, prepared.fields);
+    const properties =
+      getDriver().getFilteredConfig(shapeSelectionArgs[0], { category: pendingCategory, properties: pendingValue })
+        ?.properties ?? [];
+
+    return requiredFullfilled(pendingValue, properties);
   });
 
   let length = $state(0);
@@ -235,10 +237,7 @@
   ) {
     if (!editable) return;
 
-    const prepared = pruneHiddenProperties(getDriver(), shapeType, category, properties);
-    if (!prepared || !requiredFullfilled(prepared.properties, prepared.fields)) return;
-
-    getDriver().command.call("idah-image:annotation.add", { shape, shape_type: shapeType, category, properties: prepared.properties });
+    getDriver().command.call("idah-image:annotation.add", { shape, shape_type: shapeType, category, properties });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -273,8 +272,10 @@
     if (!editable) return;
 
     const effectiveProperties = properties ?? annotationValue.properties;
-    const prepared = pruneHiddenProperties(getDriver(), selAnnotation?.shape_type ?? valueMode, category, effectiveProperties);
-    let requirementFullfilled = !!prepared && requiredFullfilled(prepared.properties, prepared.fields);
+    let requirementFullfilled = requiredFullfilled(
+      effectiveProperties,
+      getDriver().getFilteredConfig(valueMode, { category, properties: effectiveProperties })?.properties,
+    );
 
     if (valueMode == ENTRY_ROOT && !selAnnotation && entryRoot.value?.metadata?.id)
       selection.selectAnnotation(entryRoot.value as any);
@@ -296,12 +297,12 @@
       if (category && category != "" && requirementFullfilled)
         addAnnotation({} as IImageAnnotationShape, valueMode, category, $state.snapshot(effectiveProperties));
     } else if (selAnnotation) {
-      selection.selectAnnotation({ ...selAnnotation, category, properties: requirementFullfilled ? prepared!.properties : effectiveProperties } as any);
+      selection.selectAnnotation({ ...selAnnotation, category, properties: effectiveProperties } as any);
       if (requirementFullfilled)
         updateAnnotationValue(
           $state.snapshot(selAnnotation) as unknown as IImageAnnotationRecord,
           category,
-          $state.snapshot(prepared!.properties),
+          $state.snapshot(effectiveProperties),
         );
     } else if (valueMode !== ENTRY_ROOT) {
       // ── Resolve the actual shape type from config ────────────────────
@@ -377,14 +378,12 @@
     let points = $state.snapshot(_points) as Point[];
     let properties = $state.snapshot(pendingValue) as AnnotationAttributes;
     let category = pendingCategory;
-    const prepared = pruneHiddenProperties(getDriver(), type, category, properties);
-    if (!prepared || !requiredFullfilled(prepared.properties, prepared.fields)) return;
 
     const shape: IImageAnnotationShape = { points, ..._extraProps };
 
     shapeSelectionArgs = undefined;
     resetPending();
-    addAnnotation(shape, type, category, prepared.properties);
+    addAnnotation(shape, type, category, properties);
   }
 
   function onShapeSelection(
@@ -415,17 +414,22 @@
 
     let annotation_category_from = $state.snapshot(pendingCategory);
     let annotation_properties_from = $state.snapshot(pendingValue) as AnnotationAttributes;
-    const prepared = pruneHiddenProperties(getDriver(), type, annotation_category_from, annotation_properties_from);
 
     const shape: IImageAnnotationShape = { points, ...extraProps };
 
     if (
       getDriver().config[type]?.values.some((v) => v.id == annotation_category_from) &&
-      prepared && requiredFullfilled(prepared.properties, prepared.fields)
+      requiredFullfilled(
+        annotation_properties_from,
+        getDriver().getFilteredConfig(type, {
+          category: annotation_category_from,
+          properties: annotation_properties_from,
+        })?.properties,
+      )
     ) {
       shapeSelectionArgs = undefined;
       resetPending();
-      addAnnotation(shape, type, annotation_category_from, prepared.properties);
+      addAnnotation(shape, type, annotation_category_from, annotation_properties_from);
     } else {
       shapeSelectionArgs = [type, _points, extraProps];
       // Keep pendingValue so the popover shows the selected category
@@ -437,9 +441,7 @@
     if (!editable) return;
     if (ann && annotation.isLocked(ann)) return;
 
-    const prepared = pruneHiddenProperties(getDriver(), ann.shape_type, category ?? ann.category, properties ?? ann.properties ?? {});
-    if (!prepared || !requiredFullfilled(prepared.properties, prepared.fields)) return;
-    getDriver().command.call("idah-image:annotation.update", { annotation: ann, category, properties: prepared.properties });
+    getDriver().command.call("idah-image:annotation.update", { annotation: ann, category, properties });
   }
 
   // The entry:root annotation for this entry, derived reactively from the live
@@ -455,16 +457,16 @@
   function onEntryRootChange(value: IImageAnnotationValue): boolean {
     if (!editable) return false;
     if (!value.category) return false;
-    const prepared = pruneHiddenProperties(getDriver(), ENTRY_ROOT, value.category, value.properties ?? {});
-    if (!prepared) return false;
-    const cleanedValue = { ...value, properties: prepared.properties };
-    if (!isTaggingValueComplete(cleanedValue, prepared.fields)) return false;
+    // Only create/update when the category + required properties are valid.
+    const properties =
+      getDriver().getFilteredConfig(ENTRY_ROOT, value as unknown as Record<string, unknown>)?.properties ?? [];
+    if (!isTaggingValueComplete(value, properties)) return false;
     const items = (data.annotations?.items ?? []) as unknown as IImageAnnotationRecord[];
-    const resolution = resolveEntryRoot(items, cleanedValue);
+    const resolution = resolveEntryRoot(items, value);
     if (resolution.action === "update") {
-      updateAnnotationValue(resolution.existing, value.category, prepared.properties);
+      updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation({} as IImageAnnotationShape, ENTRY_ROOT, value.category, prepared.properties);
+      addAnnotation({} as IImageAnnotationShape, ENTRY_ROOT, value.category, value.properties);
     }
     return true;
   }
