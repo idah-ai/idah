@@ -23,6 +23,8 @@ module Project
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "projects"
     self.resource = Resource::Dataset::Projects
 
@@ -31,19 +33,15 @@ module Project
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-          project_id = auth_context.custom_scopes[:project]
-
-          if org_ids
-            table.where(organization_id: org_ids)
-          elsif project_id
-            table.where(id: project_id)
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
+            table.where(id: auth_context.custom_scopes[:project])
           else
-            table.where(Sequel.lit("false"))
+            table.where(org_projects_condition | user_project_scoped_condition(action))
           end
         end
 
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
@@ -56,15 +54,21 @@ module Project
     # 1. annotators and reviewers can only read projects assigned to them
     # 2. project_owner(member) can update and delete projects
     # 3. only org_owner and admin roles can create projects
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      Sequel[:organization_id] =~ org_ids
+    end
+
     query
-    def user_project_scoped_query(action)
-      # Ignore create action as it will be handled in service layer
-      return table if action == :create
+    def user_project_scoped_condition(action)
+      return Sequel.lit("true") if action == :create
 
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
-          -- All with roles
           SELECT 1
           FROM project_members pm
           WHERE pm.account_id = :account_id
@@ -76,20 +80,16 @@ module Project
 
       case action
       when :read
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner annotator reviewer]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          roles: %w[project_owner annotator reviewer]
         )
       when :update, :delete
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          roles: %w[project_owner]
         )
       else
         raise Verse::Error::Unauthorized,
@@ -99,7 +99,10 @@ module Project
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(organization_id: attributes[:organization_id])
+        add_event_metadata(
+          organization_id: attributes[:organization_id],
+          project_id: attributes[:id]
+        )
 
         super(attributes)
       end
@@ -109,10 +112,16 @@ module Project
       with_metadata do
         project = find!(id)
 
-        add_event_metadata(
-          organization_id: attributes[:organization_id] || project.organization_id,
+        new_org = attributes[:organization_id] || project.organization_id
+        metadata = {
+          organization_id: new_org,
           project_id: id
-        )
+        }
+        if attributes.key?(:organization_id) && attributes[:organization_id] != project.organization_id
+          metadata[:previous_organization_id] = project.organization_id
+        end
+
+        add_event_metadata(**metadata)
 
         super(id, attributes, scope:)
       end
@@ -134,12 +143,7 @@ module Project
     private
 
     def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
+      add_metadata(**opts)
     end
   end
 end

@@ -16,8 +16,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Contexts
   const project: ProjectRecord = getContext("project");
 
@@ -42,18 +40,12 @@
   // Lifecycle
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
 
     canUpdateDataset =
-      (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("update", "dataset:datasets", projectId, "project_owner")) || false;
     canDeleteDataset =
-      (await currentAccount?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("delete", "dataset:datasets", projectId, "project_owner")) || false;
+    canExport = (await currentAccount?.canOnProject("create", "sync:exports", projectId, "project_owner")) || false;
     columns.action.visible = canUpdateDataset || canDeleteDataset || canExport;
   });
 

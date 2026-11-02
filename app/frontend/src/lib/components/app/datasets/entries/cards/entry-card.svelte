@@ -27,7 +27,6 @@
   import { humanize } from "@/utils/string";
 
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
-  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -78,19 +77,12 @@
     return assigned_to_id == Number(currentAccount.id);
   });
 
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: {
-      projectId,
-      projectMemberRoles: ["project_owner"],
-    },
-  };
-
   // Lifecycle
   onMount(async () => {
     canUpdateEntry =
-      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("update", "dataset:entries", projectId, "project_owner")) || false;
     canDeleteEntry =
-      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("delete", "dataset:entries", projectId, "project_owner")) || false;
     periodicCheckJobStatus();
   });
 

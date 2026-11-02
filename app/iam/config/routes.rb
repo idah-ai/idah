@@ -11,5 +11,6 @@ Verse.on_boot do
     OrganizationsExpo,
     ApiKeysExpo,
     Auth::ApiExpo,
+    ProjectMembership::CacheExpo,
   ].each(&:register)
 end

@@ -44,6 +44,8 @@ Represents a user account. Defined in `app/model/account.rb`.
 
 **Repository:** `Account::Repository` scopes queries via `auth_context.can!`. Provides a `login` method that includes a timing-attack mitigation delay (`sleep(rand(0.3..0.5))`) when the email is not found. Publishes `logged_in`, `created`, `updated`, and `deleted` resource events.
 
+**Org_owner read union:** the `as_org_owner` **read** scope is `self ∪ enabled members of the actor's org projects ∪ co-members of projects where the actor is an enabled member` (foreign memberships included). **Updates stay limited** to accounts reachable through the actor's own orgs — foreign memberships never widen update scope. Membership data is resolved through `ProjectMembership::Lookup`.
+
 ---
 
 ### AccountSession::Record
@@ -98,7 +100,7 @@ Represents a tenant organization. Defined in `app/model/organization.rb`.
 | `created_at` | Time | Readonly |
 | `updated_at` | Time | Readonly |
 
-**Repository:** `Organization::Repository` scopes via `auth_context.can!` with `as_org_owner?` filtering to organizations in the user's `role_scope["org"]`, and `as_user?` filtering via project membership (cross-service API call to Dataset).
+**Repository:** `Organization::Repository` scopes via `auth_context.can!` with `as_org_owner?` filtering to the actor's organizations in `role_scope["org"]` **plus** the organizations of projects where the actor is an enabled member (the union), and `as_user?` filtering via project membership. Membership data is resolved through `ProjectMembership::Lookup`.
 
 ---
 
@@ -152,9 +154,11 @@ All HTTP endpoints are served under the `/api/v1/iam` prefix (standard IDAH rout
 
 | Prefix | Endpoints | Auth | Exposition File |
 |--------|-----------|------|----------------|
-| `/accounts` | GET `/accounts`, GET `/accounts/:id`, POST `/accounts`, PATCH `/accounts/:id`, DELETE `/accounts/:id` | admin / org_owner | `app/expo/accounts_expo.rb` |
+| `/accounts` | GET `/accounts`, GET `/accounts/:id`, PATCH `/accounts/:id`, DELETE `/accounts/:id` | admin / org_owner | `app/expo/accounts_expo.rb` |
+| `/accounts` | POST `/accounts` (create) | **system only** | `app/expo/accounts_expo.rb` |
+| `/accounts` | POST `/accounts/invite` | admin / org_owner (`iam:accounts.invite`) | `app/expo/accounts_expo.rb` |
 | `/accounts` | PATCH `/:token/join` | none (public) | `app/expo/accounts_expo.rb` |
-| `/accounts` | POST `/:id/resend_invitation` | admin / org_owner | `app/expo/accounts_expo.rb` |
+| `/accounts` | POST `/:id/resend_invitation` | admin / org_owner (`iam:accounts.invite` + resend rule) | `app/expo/accounts_expo.rb` |
 | `/account_sessions` | GET `/account_sessions`, DELETE `/account_sessions/:id` | own sessions only | `app/expo/account_sessions_expo.rb` |
 | `/organizations` | GET `/organizations`, GET `/organizations/:id`, POST `/organizations`, PATCH `/organizations/:id`, DELETE `/organizations/:id` | admin | `app/expo/organizations_expo.rb` |
 | `/api_keys` | GET `/api_keys`, GET `/api_keys/:id`, POST `/api_keys`, PATCH `/api_keys/:id`, DELETE `/api_keys/:id` | admin / org_owner | `app/expo/api_keys_expo.rb` |
@@ -211,15 +215,19 @@ CRUD for accounts with invitation flow and cross-organization scope cleanup.
 
 - `show(id, included:)` — Finds account by ID.
 
-- `create(record)` — Prevents creation of system/admin accounts by non-admin users. Checks for existing accounts by email (returns existing if found). Generates a random default password (`SecureRandom.hex(16)`) if none provided. Creates an invitation token valid for 3 days. Hashes the password with BCrypt. Sends `account_created` notification email.
+- `create(record)` — **Internal only (no HTTP route).** Callable through a system context; admin's wildcard rights also pass the check. Whitelists attributes (`name`, `email`, `role_name`, `role_scope`, `enabled`, `password`); rejects non-assignable roles. Checks for existing accounts by email (returns existing if found). Generates a random default password (`SecureRandom.hex(16)`) if none provided. Creates an invitation token valid for 3 days. Hashes the password with BCrypt. Sends `account_created` notification email.
 
-- `update(record)` — Rejects unauthorized updates. Stores `role_scope` as JSON. After commit, triggers `RoleChangeNotification` if the role name or scope changed.
+- `invite(record)` — Guarded account invitation (`POST /accounts/invite`). Applies the account-level rules (role strictly below the actor, with `admin → admin` and `org_owner → org_owner` exceptions; scope restricted to the actor's orgs) and the "invite on existing email" table (expand, never reduce). An account ranked above the actor is a no-op (returned unchanged, no error, no email). New accounts are created through a **system-context** `Account::Service` so `create` stays the only creation path. Existing accounts are updated via `RoleHierarchy.merge_role_scope` and trigger `RoleChangeNotification` on change.
+
+- `update(record)` — Rejects unauthorized updates. Self-update allows only `name`; `role_name`, `role_scope`, `enabled` are rejected on self. Toggling `enabled` requires a strictly higher rank and the target being within the actor's update scope. `role_scope` changes go through `RoleHierarchy.merge_role_scope` (in-reach add/remove only; out-of-reach orgs preserved). Auto-demotes an org_owner to `user` when its org list becomes empty. Stores `role_scope` as JSON. After commit, triggers `RoleChangeNotification` if the role name or scope changed.
 
 - `delete(id)` — Only allowed for accounts that haven't joined (`joined_at` is nil). Prevents deletion of active users (soft-disable via `enabled` instead).
 
 - `mark_as_joined(token)` — Finds account by invitation token, validates expiry (3-day window), sets `joined_at` and clears `invitation_token`. Also generates a password reset token (valid 1 hour) required for the user to set their initial password.
 
-- `resend_pending_invitations(id)` — Regenerates invitation token (invalidates previous), extends expiry by 3 more days, re-sends the notification.
+- `resend_pending_invitations(id)` — **System-only.** Regenerates invitation token (invalidates previous), extends expiry by 3 more days, re-sends the notification.
+
+- `resend_invitation(id)` — Guarded account-level resend (`POST /accounts/:id/resend_invitation`). Authorised by the `iam:accounts.invite` right and allowed only if the actor could invite the account with its current role and scope (admin: any; org_owner: target ranked at most org_owner and every org in the target's scope within the actor's orgs; user: never). Delegates to a system-context `resend_pending_invitations`.
 
 - `remove_org_from_account_role_scope(organization_id)` — Cleans up all accounts' `role_scope` when an organization is deleted. Called by the `on_organization_deleted` event listener.
 
@@ -537,6 +545,8 @@ The `Account::Repository.login` method delays response by a random 300–500ms w
 The IAM service calls the Dataset service for:
 - `Account::Repository#accounts_from_project_member_scoped` — fetching project members to determine org-owner scoped account visibility
 - `Organization::Repository#organizations_from_project_member_scoped` — fetching projects the user belongs to for org visibility
+
+Both now go through `ProjectMembership::Lookup` (`common/lib/project_membership/lookup.rb`), the single entry point for membership data outside dataset. The lookup is backed by an optional per-process in-memory cache (`ProjectMembership::Cache`) invalidated by broadcast resource events; see [`guide/inter-service-api.md`](inter-service-api.md).
 - `Organization::Service#delete` — checking for remaining projects before deletion
 - `ApiKey::Repository#projects_from_organization_scoped` — filtering API keys to those scoped within the org owner's organization
 

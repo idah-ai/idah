@@ -190,7 +190,7 @@ module Auth
           name: account.name,
           picture_url: account.picture_url,
           role_name: role.name,
-          scopes: account.role_scope,
+          role_scope: account.role_scope,
           role_rights: role.rights,
           auth_token:,
           refresh_token:,

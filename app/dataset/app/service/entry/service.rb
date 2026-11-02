@@ -54,16 +54,8 @@ module Entry
               "dataset not found to create an entry"
       end
 
-      # With "as_user" access ensure account can "create" entry to the project
-      if auth_context.can?(:create, entries.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           dataset.project_id,
-           ["project_owner"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create entry on this project"
-      end
+      # Creating an entry requires effective rank >= project_owner on the project.
+      ensure_project_owner!(dataset.project_id)
 
       # Assign attributes
       attributes[:id] = record.id || UUIDv7.generate
@@ -240,16 +232,8 @@ module Entry
               "dataset not found to duplicate entries"
       end
 
-      # With "as_user" access ensure account can "create" entry to the project
-      if auth_context.can?(:create, entries.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           dataset.project_id,
-           ["project_owner"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create entry on this project"
-      end
+      # Creating an entry requires effective rank >= project_owner on the project.
+      ensure_project_owner!(dataset.project_id)
 
       duping_entries = if entry_ids
                          # INFO: also filter with duping_dataset_id to ensure the entries are in the duping dataset
@@ -318,6 +302,21 @@ module Entry
           next
         end
       end
+    end
+
+    private
+
+    # Creating an entry requires effective rank >= project_owner on the project.
+    # Decides on the resolver so an org_owner with a membership on a foreign
+    # project is evaluated with their membership role.
+    def ensure_project_owner!(project_id)
+      effective_rank = ProjectAccess::Service.effective_rank(
+        auth_context, project_id, action: :create, resource: entries.class.resource
+      )
+      return if effective_rank && effective_rank >= RoleHierarchy.rank("project_owner")
+
+      raise Verse::Error::Unauthorized,
+            "You do not have permission to create entry on this project"
     end
   end
 end

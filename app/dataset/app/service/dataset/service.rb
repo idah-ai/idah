@@ -120,26 +120,23 @@ module Dataset
     end
 
     private def authorize_creation(project_id)
-      access = auth_context.can?(:create, datasets.class.resource)
+      # Decides on the actor's effective access on the concrete project so an
+      # org_owner with a membership on a foreign project is evaluated with their
+      # membership role, not org_owner powers.
+      access = ProjectAccess::Service.resolve(
+        auth_context, project_id, action: :create, resource: datasets.class.resource
+      )
 
-      if access == :as_org_owner
-        project = projects.find!(project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create dataset on this project"
-        end
-      end
-
-      # With "as_user" ensure account can "create" dataset to the project
-      if access == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           project_id,
-           ["project_owner"]
-         )
+      # Only effective rank >= project_owner may create a dataset.
+      effective_rank = ProjectAccess::Service.effective_rank(
+        auth_context, project_id, action: :create, resource: datasets.class.resource
+      )
+      unless effective_rank && effective_rank >= RoleHierarchy.rank("project_owner")
         raise Verse::Error::Unauthorized,
               "You do not have permission to create dataset on this project"
       end
+
+      access
     end
   end
 end

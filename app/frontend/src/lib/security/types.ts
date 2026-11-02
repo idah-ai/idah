@@ -9,6 +9,7 @@ export const actions = [
   "read",
   "update",
   "delete",
+  "invite",
 ] as const;
 
 export type Action = (typeof actions)[number];
