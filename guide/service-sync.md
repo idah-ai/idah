@@ -266,7 +266,7 @@ The general options default as follows:
 - `completed_entries` defaults to `false`: every entry is exported (completed
   or not) unless the caller explicitly asks for completed entries only.
   Exporters read it through `context.options.fetch(:completed_entries, false)`
-  (see`app/service/exports/upd/exporter.rb` and the plugins' `base_exporter.rb`).
+  (see `app/service/exports/upd/exporter.rb` and the plugins' `base_exporter.rb`).
 
 An exporter without options returns `Verse::Schema.empty` and behaves as
 before.
