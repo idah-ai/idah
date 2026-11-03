@@ -2,8 +2,9 @@
 // annotationsBackendCrud.test.ts — setShape/setShapes transport tests
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import { createBackendCrudDriver, AnnotationsDriverAdapter } from "./annotationsBackendCrud";
+import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 import type { JsonRpcDatasource } from "@/data/jsonrpc";
 
 function makeRpc() {
@@ -82,6 +83,11 @@ describe("AnnotationsDriverAdapter", () => {
 
   beforeEach(() => {
     vi.mocked(rpc.call).mockClear();
+    vi.mocked(annotationsBackendDataSource.list).mockClear();
+  });
+
+  beforeAll(() => {
+    vi.spyOn(annotationsBackendDataSource, "list").mockResolvedValue({ data: [] } as never);
   });
 
   it("setShapes with three entries makes one write_shapes call with all three", async () => {
@@ -125,5 +131,30 @@ describe("AnnotationsDriverAdapter", () => {
       method: "write_shape",
       params: { annotation_id: "ann-1", key: "tile-0x0", value: { rle: "A" } },
     });
+  });
+
+  it('fetch sends deleted: "false" by default', async () => {
+    await driver.fetch();
+
+    expect(annotationsBackendDataSource.list).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: expect.objectContaining({ deleted: "false" }) }),
+    );
+  });
+
+  it('fetch sends deleted: "true" for deleted: "true"', async () => {
+    await driver.fetch({ deleted: "true" });
+
+    expect(annotationsBackendDataSource.list).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: expect.objectContaining({ deleted: "true" }) }),
+    );
+  });
+
+  it('fetch sends no deleted filter for deleted: "all"', async () => {
+    await driver.fetch({ deleted: "all" });
+
+    const call = vi.mocked(annotationsBackendDataSource.list).mock.calls[0][0] as {
+      filters: Record<string, unknown>;
+    };
+    expect(call.filters).not.toHaveProperty("deleted");
   });
 });

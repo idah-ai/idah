@@ -135,6 +135,16 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
       for (const [key, val] of Object.entries(filter)) {
         if (key === "entry_id") {
           filters["entry_id"] = val;
+        } else if (key === "deleted") {
+          // The backend treats any value other than "true" as live only, so
+          // "all" must send no `deleted` filter at all to include tombstones.
+          if (val === "true") {
+            filters["deleted"] = "true";
+          } else if (val !== "all") {
+            filters["deleted"] = "false";
+          } else {
+            delete filters["deleted"];
+          }
         } else if (typeof val === "object" && !Array.isArray(val)) {
           const op = val as Record<string, unknown>;
           if (op.eq !== undefined) filters[key] = op.eq;
