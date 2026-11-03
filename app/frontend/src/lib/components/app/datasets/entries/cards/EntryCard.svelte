@@ -7,6 +7,7 @@
   import { format, isAfter, parseISO } from "date-fns";
   import { getContext, onDestroy, onMount } from "svelte";
 
+  import EntryAnnotationErrorBadge from "@/components/app/datasets/entries/badges/EntryAnnotationErrorBadge.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
@@ -35,12 +36,14 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    orphanCategoryCount: number;
     today: Date;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
     onEntryUpdated: () => void;
   }
-  let { entry, today, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let { entry, orphanCategoryCount, today, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let effectiveDeliveryDate = $derived(entry.delivery_date || entry.dataset?.delivery_date);
 
   let deliveryDateWarning = $derived(
     entry.delivery_date &&
@@ -401,11 +404,11 @@
             <DataDisplay label="Delivery Date">
               {#snippet slotValue()}
                 <div class="flex items-center gap-2">
-                  {#if entry.delivery_date || entry.dataset?.delivery_date}
+                  {#if effectiveDeliveryDate}
                     <DateText
                       size="sm"
                       showTooltip
-                      datetime={parseISO(entry.delivery_date || entry.dataset?.delivery_date)}
+                      datetime={parseISO(effectiveDeliveryDate)}
                       datetimeFormat="MMM dd, yyyy"
                       weight="light"
                     />
@@ -507,6 +510,8 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
+          <EntryAnnotationErrorBadge count={orphanCategoryCount} />
+
           {#if jobProgress < 1}
             <div class="flex flex-col gap-1">
               <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">
