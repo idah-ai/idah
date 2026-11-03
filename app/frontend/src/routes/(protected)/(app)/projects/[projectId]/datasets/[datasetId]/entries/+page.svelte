@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { today } from "@/utils/date";
   import { LayoutListIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
@@ -73,6 +74,7 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
+      today={$today}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

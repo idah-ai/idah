@@ -1,11 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { EllipsisVerticalIcon } from "@lucide/svelte";
+  import { CalendarIcon, EllipsisVerticalIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import EntryExportFormModal from "@/components/app/projects/exports/overlays/_EntryExportFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
+  import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -35,6 +36,8 @@
     onAssigned?: (entry: EntryRecord) => void;
   }
   let { entry, onUnAssigned, onAssigned }: Props = $props();
+
+  let openDeliveryDate = $state(false);
 
   // Records
   let projectId = page.params.projectId as string;
@@ -171,6 +174,11 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
+        {#if canUpdateEntry}
+          <DropdownMenuItem onclick={() => (openDeliveryDate = true)}
+            ><CalendarIcon class="size-4" />Set Delivery Date</DropdownMenuItem
+          >
+        {/if}
         {#each menus as { label, icon: Icon, action, hidden, destructive, disabled }, index (index)}
           {#if !hidden}
             <DropdownMenuItem variant={destructive ? "destructive" : "default"} {disabled} onclick={action}>
@@ -212,4 +220,8 @@
     }}
     bind:open={openReopenEntryModal}
   />
+{/if}
+
+{#if openDeliveryDate}
+  <UpdateEntryDeliveryDateFormModal entryIds={[entry.id]} bind:open={openDeliveryDate} />
 {/if}
