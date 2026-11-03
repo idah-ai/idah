@@ -14,8 +14,17 @@
 // ---------------------------------------------------------------------------
 
 import type { ListOptions } from "@/data/DataSource";
-import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../../types";
+import type {
+  IAnnotationsDriverV2,
+  IAnnotationRecord,
+  IChangesQuery,
+  IChangesResult,
+  IFilter,
+  IFilterValue,
+  IRangeOp,
+} from "../../types";
 import { uuidv7 } from "uuidv7";
+import { createChangesAdapter, type ChangesAdapter } from "./changes";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
 
@@ -331,6 +340,7 @@ export interface IndexedDbAnnotationsDriverConfig<
   pluginId: string;
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
   enqueue: (p: Promise<unknown>) => void;
+  changes?: ChangesAdapter;
 }
 
 // ─── Internal type ────────────────────────────────────────────────────────────
@@ -364,6 +374,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   const virtualFields = new Map<string, (ann: IAnnotationRecord<Shape, Annotation>) => unknown>();
 
+  const changesAdapter = config.changes ?? createChangesAdapter(entryId);
+
   let synced = false;
   let purgeScheduled = false;
   let visitMarked = false;
@@ -385,6 +397,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
         restore: driver.restore.bind(driver),
         setShape: driver.setShape.bind(driver),
         setShapes: driver.setShapes.bind(driver),
+        changes: driver.changes.bind(driver),
+        version: driver.version.bind(driver),
       };
     },
 
@@ -572,6 +586,16 @@ export const IdbBackedAnnotationsDriverAdapter = <
       // Enqueue one backend write_shapes call so a stroke is recorded on the
       // server as one change (one version, one history row).
       enqueue(backend.setShapes(annotationId, entries));
+    },
+
+    // ── Annotation change history (delegated to the shared adapter) ──
+
+    changes(query?: IChangesQuery): Promise<IChangesResult> {
+      return changesAdapter.changes(query);
+    },
+
+    version(id: string, version: number): Promise<IAnnotationRecord<Shape, Annotation>> {
+      return changesAdapter.version(id, version) as unknown as Promise<IAnnotationRecord<Shape, Annotation>>;
     },
   };
 };

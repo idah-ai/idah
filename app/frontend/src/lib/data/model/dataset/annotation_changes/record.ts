@@ -10,8 +10,9 @@ export class AnnotationChangeRecord extends Record {
   @field() public entry_id!: string;
   @field() public project_id!: string;
   @field() public account_id!: number | null;
+  @field() public account_email!: string | null;
 
-  @field() public op!: "created" | "updated" | "deleted" | "restored";
+  @field() public op!: "baseline" | "created" | "updated" | "deleted" | "restored";
   @field() public version!: number;
   @field() public changes!: AnnotationChangeEntry[];
 

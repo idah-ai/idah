@@ -81,6 +81,16 @@ RSpec.describe AnnotationChange::Service, database: true do
       expect(rows.map(&:op)).to contain_exactly("deleted", "restored")
     end
 
+    it "filters by annotation_id__in" do
+      id, = build_history
+
+      rows = subject.index({ annotation_id__in: [id] }, items_per_page: 10_000)
+      expect(rows.map(&:annotation_id)).to all(eq(id))
+
+      rows = subject.index({ annotation_id__in: [UUIDv7.generate] }, items_per_page: 10_000)
+      expect(rows).to be_empty
+    end
+
     it "filters by version__gte and version__lte" do
       id, = build_history
 

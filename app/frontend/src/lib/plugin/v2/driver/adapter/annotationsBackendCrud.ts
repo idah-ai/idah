@@ -2,8 +2,9 @@
 
 import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { annotationsBackendDataSource, type AnnotationRecord } from "@/data/model/dataset/annotations/record";
-import type { IAnnotationRecord, IAnnotationsDriverV2, IFilter } from "../../types";
+import type { IAnnotationRecord, IAnnotationsDriverV2, IChangesQuery, IChangesResult, IFilter } from "../../types";
 import type { ICrudDriver } from "./idb-driver";
+import { createChangesAdapter, type ChangesAdapter } from "./changes";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -119,11 +120,15 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
  */
 export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   private virtualFields = new Map<string, (ann: IAnnotationRecord) => unknown>();
+  private changesAdapter: ChangesAdapter;
 
   constructor(
     private entryId: string,
     private rpc: JsonRpcDatasource,
-  ) {}
+    changes?: ChangesAdapter,
+  ) {
+    this.changesAdapter = changes ?? createChangesAdapter(entryId);
+  }
 
   registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void {
     this.virtualFields.set(name, fn);
@@ -219,5 +224,15 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
         },
       });
     }
+  }
+
+  // ── Annotation change history (delegated to the shared adapter) ──
+
+  changes(query?: IChangesQuery): Promise<IChangesResult> {
+    return this.changesAdapter.changes(query);
+  }
+
+  version(id: string, version: number): Promise<IAnnotationRecord> {
+    return this.changesAdapter.version(id, version) as Promise<IAnnotationRecord>;
   }
 }

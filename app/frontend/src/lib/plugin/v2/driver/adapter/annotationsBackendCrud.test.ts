@@ -157,4 +157,9 @@ describe("AnnotationsDriverAdapter", () => {
     };
     expect(call.filters).not.toHaveProperty("deleted");
   });
+
+  it("exposes the change-history methods", async () => {
+    expect(typeof driver.changes).toBe("function");
+    expect(typeof driver.version).toBe("function");
+  });
 });

@@ -390,6 +390,31 @@ export interface INoteRecord {
   [key: string]: unknown;
 }
 
+// ─── V2 Driver — Annotation change history ────────────────────────────────
+
+/** One recorded annotation change (header only — no diff payload). */
+export interface IAnnotationChange {
+  id: string;
+  annotation_id: string;
+  account_id: number | null;
+  account_email: string | null;
+  op: "baseline" | "created" | "updated" | "deleted" | "restored";
+  version: number;
+  /** Epoch ms, parsed explicitly from the API value (second precision, not ISO). */
+  changed_at: number;
+}
+
+export interface IChangesQuery {
+  annotationIds?: string[];
+  offset?: number;
+  limit?: number;
+}
+
+export interface IChangesResult {
+  items: IAnnotationChange[];
+  total: number;
+}
+
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
 export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
@@ -422,6 +447,15 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
    */
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
+
+  /**
+   * Read the entry's annotation change history, newest first. `limit` defaults
+   * to 50. Each call queries the backend directly.
+   */
+  changes(query?: IChangesQuery): Promise<IChangesResult>;
+
+  /** Rebuild an annotation as it was at a past version. */
+  version(id: string, version: number): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────

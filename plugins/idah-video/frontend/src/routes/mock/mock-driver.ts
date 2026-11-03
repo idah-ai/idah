@@ -19,6 +19,7 @@ import type {
   INoteAnchor,
   INoteScreenPosition,
   IFilter,
+  IChangesResult,
   ICommandAction,
   ICommandDescriptor,
   IModeEvent,
@@ -455,6 +456,16 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
 
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
+  }
+
+  // ── Annotation change history (stubs; filled in by the History step) ──
+
+  async changes(): Promise<IChangesResult> {
+    return { items: [], total: 0 };
+  }
+
+  async version(id: string, version: number): Promise<Annot> {
+    throw new Error("version() is not supported in the mock driver");
   }
 }
 

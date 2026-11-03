@@ -12,6 +12,7 @@ import type {
   ICommandStackEntry,
   IConfig,
   IFilter,
+  IChangesResult,
   IIdahDriverV2,
   IMediaInfo,
   IModeEvent,
@@ -247,6 +248,16 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
     // Mock adapter: no-op for now
+  }
+
+  // ── Annotation change history (stubs; filled in by the History step) ──
+
+  async changes(): Promise<IChangesResult> {
+    return { items: [], total: 0 };
+  }
+
+  async version(id: string, version: number): Promise<Annot> {
+    throw new Error("version() is not supported in the mock driver");
   }
 }
 
