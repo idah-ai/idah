@@ -35,6 +35,7 @@ module Dataset
 
       # Assign attributes
       attributes = record.attributes
+      DeliveryDate.validate!(attributes)
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = record.project.id
       # attributes[:created_by_email] ||= auth_context.metadata[:email]
@@ -48,6 +49,7 @@ module Dataset
     def update(record)
       datasets.transaction do
         old_dataset = datasets.find!(record.id)
+        DeliveryDate.validate!(record.attributes, old_dataset.delivery_date)
         datasets.update!(record.id, record.attributes)
 
         if record.attributes.key?(:labeling_configuration)
@@ -69,6 +71,9 @@ module Dataset
           changed = removed_category_ids | readded_category_ids
 
           if changed.any?
+            # Flag the sweep in this request, so the response (and the first
+            # poll) already reports it before the async recompute starts.
+            datasets.no_event { datasets.update!(record.id, { syncing_stats: true, syncing_stats_at: Time.now }) }
             datasets.labeling_configuration_updated(record.id, changed_category_ids: changed)
           end
         end
@@ -120,6 +125,7 @@ module Dataset
         dataset_id = datasets.create(
           {
             **duping_dataset.fields,
+            delivery_date: nil,
             id: UUIDv7.generate,
             name: dataset_name || "#{duping_dataset.name} - duplicated",
             status: "pending",

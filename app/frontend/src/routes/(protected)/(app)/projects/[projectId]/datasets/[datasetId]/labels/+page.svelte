@@ -26,11 +26,7 @@
   import { resourcePath } from "@/data/BackendDataSource";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import {
-    categoryIdsChanged,
-    datasetStatsSyncContext,
-    type DatasetStatsSyncContext,
-  } from "@/utils/dataset-stats-sync.svelte";
+  import { datasetStatsSyncContext, type DatasetStatsSyncContext } from "@/utils/dataset-stats-sync.svelte";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { refetches } from "@/utils/refetch";
@@ -55,7 +51,6 @@
   let tagging = $state<ModalityTagging>({});
   let modalityLabel = $state("");
   let loaded = $state(false);
-  let savedConfig = $state<DatasetRecord["labeling_configuration"]>({});
   // Set right before re-triggering goto() from the modal so beforeNavigate doesn't re-block it.
   let bypassNavigationGuard = false;
 
@@ -98,7 +93,6 @@
     tagging = showModalityRes.tagging;
     modalityLabel = showModalityRes.label ?? "";
 
-    savedConfig = structuredClone(datasetRes.data.labeling_configuration ?? {});
     controller.load(datasetRes.data.labeling_configuration);
     loaded = true;
   }
@@ -114,20 +108,11 @@
 
     saving = true;
     try {
-      const nextConfig = controller.getCleanedConfig();
-      const shouldPollStats = categoryIdsChanged(savedConfig, nextConfig);
-      if (shouldPollStats && datasetStatsSync.isChecking()) {
-        showToast.error({
-          title: "Statistics still syncing",
-          description: "Wait for the current check before saving more category changes.",
-        });
-        return;
-      }
       const updatedDatasetRes = await datasetsBackendDataSource.update(
         datasetId,
         {
           attributes: {
-            labeling_configuration: nextConfig,
+            labeling_configuration: controller.getCleanedConfig(),
           },
         },
         {
@@ -136,8 +121,8 @@
       );
 
       controller.markSaved(updatedDatasetRes.data.labeling_configuration);
-      savedConfig = structuredClone(updatedDatasetRes.data.labeling_configuration ?? nextConfig);
-      if (shouldPollStats) datasetStatsSync.start();
+      // The backend sets syncing_stats in this request only when a recompute was queued.
+      if (updatedDatasetRes.data.syncing_stats) datasetStatsSync.start();
 
       $refetches.entries.list = new Date();
       clearCache(resourcePath(entryStatsBasePath, null, undefined));
@@ -231,8 +216,7 @@
           class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
-          disabled={!controller.hasUnsavedChanges || controller.hasVisibilityErrors ||
-            (datasetStatsSync.isChecking() && categoryIdsChanged(savedConfig, controller.getCleanedConfig()))}
+          disabled={!controller.hasUnsavedChanges || controller.hasVisibilityErrors}
           onclick={saveLabelConfigChanges}
         >
           <SaveIcon />

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { today } from "@/utils/date";
   import { LayoutListIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
@@ -133,6 +134,7 @@
     <EntryCard
       entry={record}
       orphanCategoryCount={orphanCounts[record.id] ?? 0}
+      today={$today}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

@@ -19,9 +19,8 @@
   import { authStatus } from "@/security/AuthContext";
   import {
     datasetStatsSyncContext,
-    nextStatsSyncState,
+    statsSyncPollDelay,
     type DatasetStatsSyncContext,
-    type StatsSyncState,
   } from "@/utils/dataset-stats-sync.svelte";
 
   import { refetches } from "@/utils/refetch";
@@ -42,7 +41,7 @@
 
   // Records
   let dataset: DatasetRecord = $state(new DatasetRecord());
-  let statsSyncState = $state<StatsSyncState>("idle");
+  let statsSyncing = $state(false);
   let statsSyncWarning = $state(false);
   let statsSyncPolling = false;
   let statsSyncFailures = 0;
@@ -51,7 +50,6 @@
 
   const statsSyncContext: DatasetStatsSyncContext = {
     start: startStatsSyncPolling,
-    isChecking: () => statsSyncState === "waiting" || statsSyncState === "running",
   };
 
   setContext(datasetStatsSyncContext, statsSyncContext);
@@ -83,12 +81,12 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name", "modality", "syncing_stats"],
+        [DatasetRecord.type]: ["name", "modality", "syncing_stats", "delivery_date"],
       },
       noCache: true,
     });
     dataset = datasetRes.data;
-    if (dataset.syncing_stats) startStatsSyncPolling(true);
+    if (dataset.syncing_stats) startStatsSyncPolling();
     return dataset;
   }
 
@@ -98,24 +96,30 @@
     statsSyncTimeout = undefined;
   }
 
-  function startStatsSyncPolling(alreadyRunning = false): void {
-    if (statsSyncPolling) {
-      if (statsSyncState === "waiting") statsSyncStartedAt = Date.now();
-      return;
-    }
+  /**
+   * Call only when the server reported `syncing_stats: true` (on load, or in the
+   * labeling-config save response). The backend sets the flag in that request,
+   * so the first `false` read means the sweep is done.
+   */
+  function startStatsSyncPolling(): void {
+    statsSyncing = true;
+    if (statsSyncPolling) return;
 
     statsSyncPolling = true;
     statsSyncStartedAt = Date.now();
-    statsSyncState = alreadyRunning ? "running" : "waiting";
     statsSyncFailures = 0;
     statsSyncWarning = false;
-    void pollStatsSync();
+    scheduleStatsSyncPoll();
+  }
+
+  function scheduleStatsSyncPoll(): void {
+    const delay = statsSyncPollDelay(Date.now() - statsSyncStartedAt);
+    statsSyncTimeout = setTimeout(() => void pollStatsSync(), delay);
   }
 
   async function pollStatsSync(): Promise<void> {
     if (!statsSyncPolling) return;
 
-    let syncing: boolean | undefined;
     try {
       const datasetRes = await datasetsBackendDataSource.get(datasetId, {
         fields: {
@@ -123,33 +127,25 @@
         },
         noCache: true,
       });
-
       if (!statsSyncPolling) return;
-      syncing = datasetRes.data.syncing_stats;
+
       statsSyncFailures = 0;
       statsSyncWarning = false;
+
+      if (!datasetRes.data.syncing_stats) {
+        statsSyncing = false;
+        stopStatsSyncPolling();
+        clearCache(entriesBasePath);
+        $refetches.entries.list = new Date();
+        return;
+      }
     } catch {
       statsSyncFailures += 1;
-      statsSyncWarning = statsSyncFailures >= 3 && statsSyncState === "running";
+      statsSyncWarning = statsSyncFailures >= 3;
     }
-
-    if (!statsSyncPolling) return;
-    const nextState = nextStatsSyncState(
-      statsSyncState === "running" ? "running" : "waiting",
-      syncing,
-      Date.now() - statsSyncStartedAt,
-    );
-    if (nextState === "complete" || nextState === "unverified") {
-      stopStatsSyncPolling();
-      statsSyncState = nextState === "complete" ? "idle" : "unverified";
-      clearCache(entriesBasePath);
-      $refetches.entries.list = new Date();
-      return;
-    }
-    statsSyncState = nextState;
 
     if (statsSyncPolling) {
-      statsSyncTimeout = setTimeout(() => void pollStatsSync(), 1000);
+      scheduleStatsSyncPoll();
     }
   }
 
@@ -180,8 +176,8 @@
     <PageLoading />
   {:then datasetRecord}
     <div class="space-y-6">
-      {#if statsSyncState !== "idle"}
-        <DatasetStatsSyncAlert state={statsSyncState} warning={statsSyncWarning} />
+      {#if statsSyncing}
+        <DatasetStatsSyncAlert warning={statsSyncWarning} />
       {/if}
 
       <PageHeader>
