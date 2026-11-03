@@ -7,6 +7,7 @@
 // makes this testable — getDriver() throws when no driver is initialised.
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
+import type { LabelVisibility } from "$lib/state/ui.svelte";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 import { categoryValueToLabel } from "$lib/utils/annotation";
 import { centroid, type Point } from "$lib/utils/math/point";
@@ -24,6 +25,21 @@ type LabelAnnotation = {
 export interface AnnotationLabel {
   text: string;
   unresolved: boolean;
+}
+
+/**
+ * Decide whether an annotation label should be rendered.
+ *
+ * Unresolved labels are data errors and stay visible regardless of the user's
+ * category-label visibility setting. Resolved labels use the normal visibility
+ * decision supplied by the caller (always/hover/never plus interaction state).
+ */
+export function isAnnotationLabelVisible(
+  label: AnnotationLabel,
+  visibility: LabelVisibility,
+  normalVisibility: boolean,
+): boolean {
+  return label.unresolved || (visibility !== "never" && normalVisibility);
 }
 
 /** Uppercase the first character, matching categoryValueToLabel's own segment casing. */

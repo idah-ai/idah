@@ -178,11 +178,45 @@ RSpec.describe Dataset::Service, database: true do
 
       allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
 
-      subject.update(record)
+      result = subject.update(record)
 
       updated = repo.find!(dataset_id)
       expect(updated.labeling_configuration).to eq(tool: { values: [{ id: "cat" }] })
+      expect(updated.syncing_stats).to be(true)
+      expect(updated.syncing_stats_at).to be_within(5).of(Time.now)
+      expect(result.syncing_stats).to be(true)
       expect(subject.send(:datasets)).to have_received(:labeling_configuration_updated)
+    end
+
+    it "does not set syncing_stats when only a new category is added" do
+      dataset_id = repo.create(
+        attributes.merge(
+          labeling_configuration: {
+            "tool" => { values: [{ id: "cat" }] }
+          }
+        )
+      )
+
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              labeling_configuration: {
+                "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+              }
+            }
+          }
+        }
+      )
+
+      allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
+
+      result = subject.update(record)
+
+      expect(result.syncing_stats).to be(false)
+      expect(subject.send(:datasets)).not_to have_received(:labeling_configuration_updated)
     end
 
     it "does not fire event when labeling_configuration is unchanged" do
