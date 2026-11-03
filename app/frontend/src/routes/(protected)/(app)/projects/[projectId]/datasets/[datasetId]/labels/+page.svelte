@@ -231,7 +231,8 @@
           class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
-          disabled={!controller.hasUnsavedChanges || controller.hasVisibilityErrors ||
+          disabled={!controller.hasUnsavedChanges ||
+            controller.hasVisibilityErrors ||
             (datasetStatsSync.isChecking() && categoryIdsChanged(savedConfig, controller.getCleanedConfig()))}
           onclick={saveLabelConfigChanges}
         >
