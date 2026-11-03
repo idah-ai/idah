@@ -46,7 +46,7 @@
     entry.delivery_date &&
       entry.dataset?.delivery_date &&
       isAfter(parseISO(entry.delivery_date), parseISO(entry.dataset.delivery_date))
-      ? `Entry delivery date is later than the dataset delivery date (${format(parseISO(entry.dataset.delivery_date), "dd MMM, yyyy")})`
+      ? `Entry delivery date is later than the dataset delivery date (${format(parseISO(entry.dataset.delivery_date), "MMM dd, yyy")})`
       : null,
   );
 
