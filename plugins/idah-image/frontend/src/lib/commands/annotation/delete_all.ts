@@ -12,6 +12,8 @@ import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { invalidateAll } from "$lib/mask/tile-cache";
 import { IMAGE_MASK } from "$lib/types";
+import { annotation } from "$lib/state/annotation.svelte";
+import { showToast } from "$lib/components/ui/Toast/index.svelte";
 
 export const command = {
   name: "idah-image:annotation.delete-all",
@@ -35,6 +37,16 @@ export function register(driver: IIdahDriverV2): void {
 
       const snapshot: AnnotationItem[] = [...data.annotations.items];
       if (snapshot.length === 0) return noopAction(command);
+
+      // Parity with the list menu ("Delete all" is disabled when any annotation
+      // is locked) and idah-image:annotation.delete — never delete locked annotations.
+      if (snapshot.some((ann) => annotation.isLocked(ann))) {
+        showToast.warning({
+          title: "Cannot delete annotations",
+          description: "One or more annotations are locked.",
+        });
+        return noopAction(command);
+      }
 
       return {
         command: { ...command },

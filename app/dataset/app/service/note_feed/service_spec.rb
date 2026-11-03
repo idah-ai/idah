@@ -166,6 +166,26 @@ RSpec.describe NoteFeed::Service, database: true do
         result = subject.index({}, page: 1, items_per_page: 1)
         expect(result.count).to eq(1)
       end
+
+      it "includes a soft-deleted annotation with deleted_at set" do
+        # Create a note feed anchored to the annotation, then soft-delete it via
+        # the annotation service (repository#delete is a hard delete).
+        params = note_feed_attributes.merge(
+          anchor_type: "annotation",
+          annotation_id: annotation_id
+        )
+        created = subject.create_from_params(params)
+        Annotation::Service.new(current_auth_context).delete(annotation_id)
+
+        result = subject.index({}, included: ["annotation"])
+        feed = result.find { |nf| nf.annotation_id == annotation_id }
+
+        expect(created.annotation_id).to eq(annotation_id)
+        expect(feed).not_to be_nil
+        expect(feed.annotation).not_to be_nil
+        expect(feed.annotation.id).to eq(annotation_id)
+        expect(feed.annotation.deleted_at).not_to be_nil
+      end
     end
 
     describe "#show" do

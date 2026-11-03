@@ -109,7 +109,7 @@
   class={cn("track border-b", {
     "hover:bg-primary/5": !isSelected,
     "border-primary bg-primary/15 hover:bg-primary/15 border-t border-b bg-clip-padding": isSelected && (kind === "tagging" || foundCategory),
-    "border-destructive/50 bg-destructive/10 hover:bg-destructive/10 border-t border-b": isSelected && kind !== "tagging" && !foundCategory,
+    "border-destructive bg-destructive/20 hover:bg-destructive/20 border-t border-b": isSelected && kind !== "tagging" && !foundCategory,
   })}
   style:height="{TRACK_HEIGHT}px"
   style="top: {top}px;"

@@ -102,10 +102,12 @@
     class={cn(
       "relative box-border block w-full cursor-pointer border-b text-left select-none focus:outline-none",
       {
-        "hover:bg-primary/5": !isGroupSelected,
+        "hover:bg-primary/5": !isGroupSelected && foundCategory,
         "before:bg-primary before:pointer-events-none before:absolute before:inset-y-1.5 before:left-px before:w-1 before:rounded-full before:content-['']": isVisibleAtFrame,
         "border-primary/50 bg-primary/10 hover:bg-primary/10 border-t border-b": isGroupSelected && foundCategory,
-        "border-destructive/50 bg-destructive/10 hover:bg-destructive/10 border-t border-b": isGroupSelected && !foundCategory,
+        "border-destructive/20 bg-destructive/5 hover:bg-destructive/10": !foundCategory,
+        "border-destructive bg-destructive/20 hover:bg-destructive/20 border-t border-b":
+          isGroupSelected && !foundCategory,
       },
     )}
     style:height="{TRACK_HEIGHT}px;"
@@ -190,7 +192,10 @@
     </HoverCard.Trigger>
 
     <HoverCard.Content side="right">
-      <AnnotationLabelNotFound displayName={title} />
+      <AnnotationLabelNotFound
+        displayName={title}
+        content="This annotation label was renamed or deleted from the label configuration. Reassign this annotation to a valid label."
+      />
     </HoverCard.Content>
   </HoverCard.Root>
 {/if}

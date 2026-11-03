@@ -76,8 +76,9 @@ export interface AnnotationDataStore extends DataStore<AnnotationItem> {
   /**
    * Restore a soft-deleted annotation: insert the pre-delete snapshot locally
    * first, then reconcile with the driver's authoritative response.
+   * Resolves with the restored record.
    */
-  restore(record: AnnotationItem): Promise<void>;
+  restore(record: AnnotationItem): Promise<AnnotationItem>;
 }
 
 export interface DataStore<T extends DataItem> {
@@ -239,7 +240,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       }
     },
 
-    async restore(record: AnnotationItem): Promise<void> {
+    async restore(record: AnnotationItem): Promise<AnnotationItem> {
       // Optimistic: insert locally first so the annotation reappears immediately
       // (the pre-delete snapshot carries everything needed to redisplay it).
       originalUpsert(record);
@@ -248,6 +249,7 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
         // optimistic record with what the backend actually returned.
         const restored = await driver.restore(record.id);
         originalUpsert(restored as AnnotationItem);
+        return restored as AnnotationItem;
       } catch {
         // Rollback on failure — remove the optimistically-inserted record so no
         // phantom "restored" annotation lingers if the backend rejected it.

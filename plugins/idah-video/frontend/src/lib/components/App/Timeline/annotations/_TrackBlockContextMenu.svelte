@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     CrosshairIcon,
+    MergeIcon,
     SquareSplitHorizontalIcon,
     Trash2Icon,
     FramerIcon,
@@ -19,6 +20,8 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import { resolveTargets } from "$lib/commands/annotation/_extend_utils";
+  import { canMerge } from "$lib/commands/annotation/_merge_utils";
 
   // Props
   interface Props extends ContextMenuComponentProps {
@@ -97,12 +100,20 @@
             });
           },
         },
+        merge: {
+          label: "Merge selected",
+          icon: MergeIcon,
+          disabled: !isEditable() || !canMerge(resolveTargets()),
+          onClick: () => {
+            getDriver().command.call("idah-video:annotation.merge");
+          },
+        },
       },
     },
     danger: {
       items: {
         delete: {
-          label: `Delete annotation`,
+          label: `Delete annotation track`,
           icon: Trash2Icon,
           disabled: annotationIsLocked || !isEditable(),
           destructive: true,

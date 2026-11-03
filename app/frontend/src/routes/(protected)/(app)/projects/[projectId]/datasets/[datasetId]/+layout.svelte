@@ -2,18 +2,27 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { onMount, setContext, type Snippet } from "svelte";
+  import { onDestroy, onMount, setContext, type Snippet } from "svelte";
 
   import DatasetModalityBadge from "@/components/app/datasets/badges/DatasetModalityBadge.svelte";
   import ProjectDatasetDropdownMenu from "@/components/app/datasets/dropdowns/project-dataset-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
+  import DatasetStatsSyncAlert from "@/components/app/datasets/alerts/DatasetStatsSyncAlert.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
+  import { clearCache } from "@/data/Cache";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
+  import {
+    datasetStatsSyncContext,
+    nextStatsSyncState,
+    type DatasetStatsSyncContext,
+    type StatsSyncState,
+  } from "@/utils/dataset-stats-sync.svelte";
 
   import { refetches } from "@/utils/refetch";
 
@@ -33,6 +42,19 @@
 
   // Records
   let dataset: DatasetRecord = $state(new DatasetRecord());
+  let statsSyncState = $state<StatsSyncState>("idle");
+  let statsSyncWarning = $state(false);
+  let statsSyncPolling = false;
+  let statsSyncFailures = 0;
+  let statsSyncStartedAt = 0;
+  let statsSyncTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  const statsSyncContext: DatasetStatsSyncContext = {
+    start: startStatsSyncPolling,
+    isChecking: () => statsSyncState === "waiting" || statsSyncState === "running",
+  };
+
+  setContext(datasetStatsSyncContext, statsSyncContext);
 
   $effect(() => {
     setContext("dataset", dataset);
@@ -61,12 +83,77 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name", "modality"],
+        [DatasetRecord.type]: ["name", "modality", "syncing_stats"],
       },
+      noCache: true,
     });
     dataset = datasetRes.data;
+    if (dataset.syncing_stats) startStatsSyncPolling(true);
     return dataset;
   }
+
+  function stopStatsSyncPolling(): void {
+    statsSyncPolling = false;
+    if (statsSyncTimeout) clearTimeout(statsSyncTimeout);
+    statsSyncTimeout = undefined;
+  }
+
+  function startStatsSyncPolling(alreadyRunning = false): void {
+    if (statsSyncPolling) {
+      if (statsSyncState === "waiting") statsSyncStartedAt = Date.now();
+      return;
+    }
+
+    statsSyncPolling = true;
+    statsSyncStartedAt = Date.now();
+    statsSyncState = alreadyRunning ? "running" : "waiting";
+    statsSyncFailures = 0;
+    statsSyncWarning = false;
+    void pollStatsSync();
+  }
+
+  async function pollStatsSync(): Promise<void> {
+    if (!statsSyncPolling) return;
+
+    let syncing: boolean | undefined;
+    try {
+      const datasetRes = await datasetsBackendDataSource.get(datasetId, {
+        fields: {
+          [DatasetRecord.type]: ["syncing_stats"],
+        },
+        noCache: true,
+      });
+
+      if (!statsSyncPolling) return;
+      syncing = datasetRes.data.syncing_stats;
+      statsSyncFailures = 0;
+      statsSyncWarning = false;
+    } catch {
+      statsSyncFailures += 1;
+      statsSyncWarning = statsSyncFailures >= 3 && statsSyncState === "running";
+    }
+
+    if (!statsSyncPolling) return;
+    const nextState = nextStatsSyncState(
+      statsSyncState === "running" ? "running" : "waiting",
+      syncing,
+      Date.now() - statsSyncStartedAt,
+    );
+    if (nextState === "complete" || nextState === "unverified") {
+      stopStatsSyncPolling();
+      statsSyncState = nextState === "complete" ? "idle" : "unverified";
+      clearCache(entriesBasePath);
+      $refetches.entries.list = new Date();
+      return;
+    }
+    statsSyncState = nextState;
+
+    if (statsSyncPolling) {
+      statsSyncTimeout = setTimeout(() => void pollStatsSync(), 1000);
+    }
+  }
+
+  onDestroy(stopStatsSyncPolling);
 
   /**
    * Tabs are a view of the URL, never their own state.
@@ -93,6 +180,10 @@
     <PageLoading />
   {:then datasetRecord}
     <div class="space-y-6">
+      {#if statsSyncState !== "idle"}
+        <DatasetStatsSyncAlert state={statsSyncState} warning={statsSyncWarning} />
+      {/if}
+
       <PageHeader>
         {#snippet slotTitle()}
           <div class="flex items-center gap-2">

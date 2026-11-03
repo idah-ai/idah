@@ -33,11 +33,12 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    orphanCategoryCount: number;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
     onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let { entry, orphanCategoryCount, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -55,6 +56,8 @@
     submitted_by_email,
     reviewed_by_id,
     reviewed_by_email,
+    reopened_by_id,
+    reopened_by_email,
   } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
@@ -279,7 +282,7 @@
 
   function getEntry(entryId: string) {
     return entriesBackendDataSource.get(entryId, {
-      included: ["dataset", "assigned_to", "reviewed_by"],
+      included: ["dataset", "assigned_to", "reviewed_by", "reopened_by"],
       noCache: true,
     });
   }
@@ -437,6 +440,20 @@
                 {/snippet}
               </DataDisplay>
             {/if}
+
+            {#if reopened_by_id}
+              <DataDisplay label="Reopened by">
+                {#snippet slotValue()}
+                  {#if entry.reopened_by}
+                    <ProjectMemberAvatar member={entry.reopened_by} />
+                  {:else if reopened_by_email}
+                    <AccountAvatar size="sm" email={reopened_by_email} showEmail />
+                  {:else}
+                    <Text size="sm">Unassigned</Text>
+                  {/if}
+                {/snippet}
+              </DataDisplay>
+            {/if}
           </div>
         </div>
       </div>
@@ -447,7 +464,7 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
-          <EntryAnnotationErrorBadge {entryId} />
+          <EntryAnnotationErrorBadge count={orphanCategoryCount} />
 
           {#if jobProgress < 1}
             <div class="flex flex-col gap-1">

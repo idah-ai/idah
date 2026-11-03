@@ -5,6 +5,13 @@ require "spec_helper"
 RSpec.describe EntryStats::CoreStats do
   def make_entry(annotations: [], config: {})
     dataset = instance_double(Dataset::Record, labeling_configuration: config)
+    allow(dataset).to receive(:configured_category_ids).and_return(
+      config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
+
+        Array(tool_config[:values]).filter_map { |v| v[:id] }
+      end
+    )
     instance_double(Entry::Record, dataset: dataset, annotations: annotations)
   end
 

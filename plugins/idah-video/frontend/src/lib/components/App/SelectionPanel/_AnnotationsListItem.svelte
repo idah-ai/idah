@@ -9,7 +9,7 @@
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
   import { cn } from "$lib/utils";
-  import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { categoryForShape, categoryValueToLabel } from "$lib/utils/annotation";
   import { getDriver } from "$lib/state/driver.svelte";
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { resolveAnnotationLabel } from "$lib/utils/label";
@@ -22,12 +22,19 @@
   let { annotation }: Props = $props();
 
   const shapeType = $derived(annotation.shape_type);
-  const config = $derived(getDriver().config[shapeType]);
-  const category = $derived(config.values.find((v) => v.id === annotation.category));
+  const config = $derived(getDriver().config);
+  const category = $derived(categoryForShape(config, shapeType, annotation.category));
   const foundCategory = $derived(category !== undefined);
-  const categoryColor = $derived(category?.color);
-  const displayName = $derived(category?.label ?? resolveAnnotationLabel(annotation)?.text ?? "Uncategorized");
-  const parentLabel = $derived(foundCategory ? categoryValueToLabel(category!.id) : "");
+  const isOrphan = $derived(!foundCategory);
+  const categoryColor = $derived(category?.color ?? null);
+  const annGroupId = $derived(annotation.metadata?.group_id ?? annotation.id);
+  const annGroupIdLastPart = $derived(annGroupId.split("-").pop());
+  const displayName = $derived(
+    foundCategory ? `${category?.label}-${annGroupIdLastPart}` : `Group-${annGroupIdLastPart}`,
+  );
+  const parentLabel = $derived(
+    foundCategory ? categoryValueToLabel(category!.id) : (resolveAnnotationLabel(annotation)?.text ?? ""),
+  );
 </script>
 
 {#snippet AnnotationListItem()}
@@ -35,9 +42,9 @@
     size="sm"
     class={cn(
       "border-border min-h-16 cursor-pointer border",
-      foundCategory
-        ? "hover:bg-primary/10 hover:border-primary"
-        : "bg-destructive/5 border-destructive/50 hover:bg-destructive/10 hover:border-destructive text-destructive",
+      isOrphan
+        ? "bg-destructive/5 border-destructive/50 hover:bg-destructive/10 hover:border-destructive text-destructive"
+        : "hover:bg-primary/10 hover:border-primary",
     )}
     onclick={() => {
       selection.selectAnnotation(annotation);
@@ -45,15 +52,15 @@
     }}
   >
     <Item.Media variant="icon">
-      {#if foundCategory}
-        <ShapeIcon {shapeType} color={categoryColor} />
-      {:else}
+      {#if isOrphan}
         <CircleAlertIcon class="fill-destructive text-primary-foreground size-5" />
+      {:else}
+        <ShapeIcon {shapeType} color={categoryColor} />
       {/if}
     </Item.Media>
 
     <Item.Content class="flex min-w-0">
-      {#if parentLabel}
+      {#if parentLabel.length > 0}
         <Item.Description class="text-xs">
           {parentLabel}
         </Item.Description>
@@ -65,7 +72,7 @@
     </Item.Content>
 
     <Item.Actions class="ml-auto flex shrink-0 items-center gap-0">
-      {#each getAnnotationActions(annotation) as { label, icon: Icon, disabled, onclick }, index (index)}
+      {#each getAnnotationActions(annotation, displayName) as { label, icon: Icon, disabled, onclick }, index (index)}
         <CategoryAction
           {label}
           icon={Icon}
@@ -88,13 +95,13 @@
     </HoverCard.Trigger>
 
     <HoverCard.Content align="center" side="left">
-      <AnnotationLabelNotFound {displayName} />
+      <AnnotationLabelNotFound displayName={parentLabel} />
     </HoverCard.Content>
   </HoverCard.Root>
 {/snippet}
 
-{#if foundCategory}
-  {@render AnnotationListItem()}
-{:else}
+{#if isOrphan}
   {@render HoverableAnnotationListItem()}
+{:else}
+  {@render AnnotationListItem()}
 {/if}

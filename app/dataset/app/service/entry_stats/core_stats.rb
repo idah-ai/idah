@@ -32,13 +32,8 @@ module EntryStats
     # @return [Hash{String => String}]
     def self.call(entry)
       config = entry.dataset.labeling_configuration || {}
-
       # Collect all configured category ids across all tool types (flat).
-      configured_ids = config.each_value.flat_map do |tool_config|
-        next [] unless tool_config.is_a?(Hash)
-
-        Array(tool_config[:values]).filter_map { |v| v[:id] }
-      end
+      configured_ids = entry.dataset.configured_category_ids
 
       # Zero-fill all configured ids upfront
       label_counts = Hash.new(0)

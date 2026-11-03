@@ -289,5 +289,33 @@ RSpec.describe EntryStat, database: true do
         end
       end
     end
+
+    describe "#orphan_category" do
+      let(:nil_repo) { EntryStat::Repository.new(nil) }
+
+      before do
+        stat_repo.bulk_insert(
+          entry_org1,
+          { "orphan_category.count" => "3" }
+        )
+      end
+
+      it "returns true when orphan_category.count is greater than zero" do
+        expect(nil_repo.orphan_category(entry_org1)).to be true
+      end
+
+      it "returns false when orphan_category.count is zero" do
+        stat_repo.bulk_insert(entry_org2, { "orphan_category.count" => "0" })
+        expect(nil_repo.orphan_category(entry_org2)).to be false
+      end
+
+      it "returns false when no orphan_category.count stat exists" do
+        expect(nil_repo.orphan_category(entry_org2)).to be false
+      end
+
+      it "returns false for a non-existent entry" do
+        expect(nil_repo.orphan_category(UUIDv7.generate)).to be false
+      end
+    end
   end
 end

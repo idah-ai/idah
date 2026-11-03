@@ -16,7 +16,7 @@ export function createEntriesController(datasetId: string): ListViewController<E
     refetchKey: "entries",
     listOptions: {
       filters: { dataset_id: datasetId },
-      included: ["assigned_to", "submitted_by", "reviewed_by"],
+      included: ["assigned_to", "submitted_by", "reviewed_by", "reopened_by"],
       fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
       sort: ["-created_at"],
     },
