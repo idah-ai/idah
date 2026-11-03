@@ -9,7 +9,7 @@
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
   import { cn } from "$lib/utils";
-  import { categoryForShape, categoryValueToLabel, configuredCategories, isOrphanCategory } from "$lib/utils/annotation";
+  import { categoryForShape, categoryValueToLabel } from "$lib/utils/annotation";
   import { getDriver } from "$lib/state/driver.svelte";
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { resolveAnnotationLabel } from "$lib/utils/label";
@@ -24,9 +24,8 @@
 
 	const shapeType = $derived(annotation.shape_type);
 	const config = $derived(getDriver().config);
-	const categories = $derived(configuredCategories(config));
-	const category = $derived(categoryForShape(config, shapeType, annotation.category, categories));
-	const isOrphan = $derived(isOrphanCategory(annotation.category, categories));
+	const category = $derived(categoryForShape(config, shapeType, annotation.category));
+	const isOrphan = $derived(category === undefined);
 	const categoryColor = $derived(category?.color ?? null);
 	const displayName = $derived(category?.label ?? annotation.category ?? "Uncategorized");
 	const parentLabel = $derived(category ? categoryValueToLabel(category.id) : (resolveAnnotationLabel(annotation)?.text ?? ""));
