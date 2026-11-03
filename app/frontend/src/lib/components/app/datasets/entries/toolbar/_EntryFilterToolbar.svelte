@@ -16,6 +16,7 @@
   import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/_AssignEntryFormModal.svelte";
   import ReopenEntryModal from "@/components/app/datasets/entries/overlays/_ReopenEntryModal.svelte";
+  import UpdateEntryDeliveryDateFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryDeliveryDateFormModal.svelte";
   import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/_UpdateEntryPriorityFormModal.svelte";
   import EntryExportFormModal from "@/components/app/projects/exports/overlays/_EntryExportFormModal.svelte";
   import { deleteEntries, unAssignEntries } from "@/components/app/datasets/entries/util/entry-actions";
@@ -23,7 +24,14 @@
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { pluralizeUnit } from "@/utils/unit";
 
-  import { ArrowDownAZIcon, ArrowDownZAIcon, ArrowUpDownIcon, ChevronsUpDownIcon, FunnelIcon } from "@lucide/svelte";
+  import {
+    ArrowDownAZIcon,
+    ArrowDownZAIcon,
+    ArrowUpDownIcon,
+    CalendarIcon,
+    ChevronsUpDownIcon,
+    FunnelIcon,
+  } from "@lucide/svelte";
 
   import type { ListViewController } from "@/components/app/data-view/list-view-controller.svelte";
   import type { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
@@ -49,8 +57,9 @@
   // Modal visibility - owned here
   let openAssignEntry = $state(false);
   let openSetPriority = $state(false);
-  let openExportModal = $state(false);
+  let openDeliveryDate = $state(false);
   let openReopenModal = $state(false);
+  let openExportModal = $state(false);
 
   const bulkActions = $derived(
     getEntryDropdownMenuActions({
@@ -137,7 +146,12 @@
             filters={controller.listOptions.filters || {}}
             sort={controller.listOptions.sort || []}
             onFilter={controller.applyFilter.bind(controller)}
-            onSort={controller.applySort.bind(controller)}
+            onSort={async (params) => {
+              controller.sort = [];
+              await controller.applySort(
+                params.sortDirection === "none" ? { columnKey: "created_at", sortDirection: "desc" } : params,
+              );
+            }}
             onHide={() => {}}
           >
             {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}
@@ -183,6 +197,12 @@
 
           <DropdownMenuContent>
             <DropdownMenuGroup>
+              {#if canUpdateEntry}
+                <DropdownMenuItem onclick={() => (openDeliveryDate = true)}>
+                  <CalendarIcon class="mr-2 size-4" />
+                  Set Delivery Date
+                </DropdownMenuItem>
+              {/if}
               {#each bulkActions as { label, icon: Icon, action, disabled, hidden }, index (index)}
                 {#if !hidden}
                   <DropdownMenuItem {disabled} onclick={action}>
@@ -236,3 +256,11 @@
   }}
   bind:open={openReopenModal}
 />
+
+{#if canUpdateEntry && openDeliveryDate && controller.selectedIds.length > 0}
+  <UpdateEntryDeliveryDateFormModal
+    entryIds={controller.selectedIds}
+    bind:open={openDeliveryDate}
+    onUpdated={() => controller.clearSelection()}
+  />
+{/if}

@@ -1,4 +1,5 @@
 import { ListViewController } from "@/components/app/data-view/list-view-controller.svelte";
+import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, type EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
@@ -16,8 +17,8 @@ export function createEntriesController(datasetId: string): ListViewController<E
     refetchKey: "entries",
     listOptions: {
       filters: { dataset_id: datasetId },
-      included: ["assigned_to", "submitted_by", "reviewed_by", "reopened_by"],
-      fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
+      included: ["assigned_to", "submitted_by", "reviewed_by", "reopened_by", "dataset"],
+      fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"], [DatasetRecord.type]: ["delivery_date"] },
       sort: ["-created_at"],
     },
   });

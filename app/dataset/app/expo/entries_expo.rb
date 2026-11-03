@@ -20,7 +20,8 @@ class EntriesExpo < BaseExpo
                      "entry_stats"
     show
     index do
-      allowed_filters :resource__match,
+      allowed_filters :id__in,
+                      :resource__match,
                       :status__in,
                       :priority__in,
                       :assigned_to_id,
@@ -31,6 +32,8 @@ class EntriesExpo < BaseExpo
                       :wf_step__in,
                       :participated,
                       :name__match,
+                      :delivery_date__gte,
+                      :delivery_date__lte,
                       :orphan_categories
     end
     create do
@@ -38,6 +41,20 @@ class EntriesExpo < BaseExpo
     end
     update
     delete
+  end
+
+  expose on_http(:post, "/next") do
+    desc "Claim the next eligible entry"
+    input do
+      field(:dataset_id, String).filled
+      field(:wf_step, String).filled
+    end
+    output do
+      field :data, [Hash, NilClass]
+    end
+  end
+  def select_next
+    service.select_next(dataset_id: params[:dataset_id], wf_step: params[:wf_step])
   end
 
   expose on_http(:patch, "/:id/assign") do

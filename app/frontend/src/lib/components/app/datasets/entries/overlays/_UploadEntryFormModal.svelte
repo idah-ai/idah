@@ -1,9 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
+  import { getFieldErrors } from "@/utils/validate";
+  import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
 
+  import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Checkbox } from "@/components/ui/checkbox";
   import { DialogClose, DialogDescription, DialogTitle } from "@/components/ui/dialog";
   import Text from "@/components/ui/text/Text.svelte";
 
@@ -28,8 +33,22 @@
   // Props
   interface CreateEntryFormModalProps extends FormModalBaseProps {
     modality: string;
+    canEditDeliveryDate: boolean;
+    datasetDeliveryDate: string | null;
   }
-  let { action, title, open = $bindable(), modality }: CreateEntryFormModalProps = $props();
+  let {
+    action,
+    title,
+    open = $bindable(),
+    modality,
+    canEditDeliveryDate,
+    datasetDeliveryDate,
+  }: CreateEntryFormModalProps = $props();
+
+  let sameAsDatasetDeliveryDate = $state(true);
+  let selectedDeliveryDate = $state<string | null>(null);
+  let dateErrors = $state<string[]>([]);
+  let displayedDeliveryDate = $derived(sameAsDatasetDeliveryDate ? datasetDeliveryDate : selectedDeliveryDate);
 
   // Types
   interface View {
@@ -107,6 +126,9 @@
 
   // Functions
   function resetForm(): void {
+    sameAsDatasetDeliveryDate = true;
+    selectedDeliveryDate = null;
+    dateErrors = [];
     uploading = false;
     media.selected = null;
     upload.items = [];
@@ -198,7 +220,12 @@
         for (const uploadedMedia of media.uploadedMedias.slice(media.createdEntryCount)) {
           await entriesBackendDataSource.create(
             {
-              attributes: { resource: uploadedMedia.resource, name: uploadedMedia.filename, status: "pending" },
+              attributes: {
+                resource: uploadedMedia.resource,
+                name: uploadedMedia.filename,
+                status: "pending",
+                ...(canEditDeliveryDate && !sameAsDatasetDeliveryDate ? { delivery_date: selectedDeliveryDate } : {}),
+              },
               relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
             },
             { showErrorToast: false },
@@ -253,10 +280,24 @@
   }
 
   async function submit(): Promise<void> {
+    if (uploading) return;
+    if (canEditDeliveryDate && !sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
+      dateErrors = ["Select a Delivery Date or use the Dataset delivery date."];
+      return;
+    }
     uploading = true;
-    view.current = "upload";
-
+    dateErrors = [];
     try {
+      if (canEditDeliveryDate && !sameAsDatasetDeliveryDate && selectedDeliveryDate) {
+        const result = deliveryDateChangeSchema.safeParse({
+          delivery_date: selectedDeliveryDate,
+        });
+        if (!result.success) {
+          dateErrors = (getFieldErrors(result.error) as { delivery_date?: string[] }).delivery_date ?? [];
+          return;
+        }
+      }
+      view.current = "upload";
       await uploadMedia();
     } catch (error) {
       showActionFailedToast(error);
@@ -301,6 +342,41 @@
         </Text>
       {/snippet}
     </FileUpload>
+
+    {#if canEditDeliveryDate}
+      <section class="mt-4 flex flex-col gap-2">
+        {#key displayedDeliveryDate}
+          <DatePickerField
+            name="upload/delivery_date"
+            label="Delivery Date"
+            placeholder="Select delivery date"
+            required={!sameAsDatasetDeliveryDate}
+            value={displayedDeliveryDate ? parseDate(displayedDeliveryDate).toDate(getLocalTimeZone()) : null}
+            minDate={today(getLocalTimeZone())}
+            disabled={uploading || sameAsDatasetDeliveryDate}
+            clearable={!sameAsDatasetDeliveryDate}
+            errors={dateErrors}
+            onDateSelected={(date) => {
+              selectedDeliveryDate = date;
+              dateErrors = [];
+            }}
+          />
+        {/key}
+        <div class="flex items-center gap-2">
+          <Checkbox
+            id="upload-same-as-dataset-delivery-date"
+            checked={sameAsDatasetDeliveryDate}
+            disabled={uploading}
+            onCheckedChange={(checked) => {
+              sameAsDatasetDeliveryDate = checked;
+              selectedDeliveryDate = null;
+              dateErrors = [];
+            }}
+          />
+          <Text size="sm" class="text-muted-foreground">Same as dataset delivery date</Text>
+        </div>
+      </section>
+    {/if}
 
     {#if media.any()}
       <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">

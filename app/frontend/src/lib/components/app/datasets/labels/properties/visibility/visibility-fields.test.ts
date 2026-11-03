@@ -286,9 +286,18 @@ describe("conditionReferenceProblems", () => {
 
   it("accepts free-form property values", () => {
     const allFields = visibilityFields(categories, properties, "");
-    expect(conditionReferenceProblems(newCondition("properties.plate-text", "eq", "abc"), fieldFor(allFields, newCondition("properties.plate-text", "eq", "abc")))).toEqual({});
-    expect(conditionReferenceProblems(newCondition("properties.lanes", "gt", 5), field("properties.lanes"))).toEqual({});
-    expect(conditionReferenceProblems(newCondition("properties.occluded", "eq", true), field("properties.occluded"))).toEqual({});
+    expect(
+      conditionReferenceProblems(
+        newCondition("properties.plate-text", "eq", "abc"),
+        fieldFor(allFields, newCondition("properties.plate-text", "eq", "abc")),
+      ),
+    ).toEqual({});
+    expect(conditionReferenceProblems(newCondition("properties.lanes", "gt", 5), field("properties.lanes"))).toEqual(
+      {},
+    );
+    expect(
+      conditionReferenceProblems(newCondition("properties.occluded", "eq", true), field("properties.occluded")),
+    ).toEqual({});
   });
 
   it("accepts an existing parent category for an under rule", () => {

@@ -280,5 +280,17 @@ RSpec.describe EntryStats::Service, database: true do
       expect(Verse.logger).to have_received(:error).with(/mock failure/).at_least(:once)
       expect(dataset_repo.find!(dataset_id).syncing_stats).to be false
     end
+
+    it "refreshes syncing_stats_at while the sweep runs" do
+      stub_const("EntryStats::Service::SYNCING_STATS_HEARTBEAT_EVERY", 0)
+      system_datasets = subject.send(:system_datasets)
+      allow(system_datasets).to receive(:update!).and_call_original
+
+      subject.recompute_all_for_dataset(dataset_id, changed_category_ids: ["changed_cat"])
+
+      # Once when the sweep starts, then once per entry (two entries here).
+      expect(system_datasets).to have_received(:update!)
+        .with(dataset_id, hash_including(:syncing_stats_at)).at_least(3).times
+    end
   end
 end

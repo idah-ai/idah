@@ -14,7 +14,6 @@ export interface Refetches {
   projects: Refetch;
   projectMembers: Refetch;
   datasets: Refetch;
-  entryStats: Refetch;
   entries: Refetch;
   organizations: Refetch;
   noteFeeds: Refetch;
@@ -47,10 +46,6 @@ export const refetches = writable<Refetches>({
 
   /** DATASET */
   projects: {
-    list: new Date(),
-    get: new Date(),
-  },
-  entryStats: {
     list: new Date(),
     get: new Date(),
   },
