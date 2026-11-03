@@ -342,6 +342,7 @@ module Annotation
           entry_id:,
           project_id:,
           account_id: change_actor_id,
+          account_email: change_actor_email,
           op: op.to_s,
           version:,
           changes: Verse::Sequel::JsonEncoder.encode(changes),
@@ -377,9 +378,14 @@ module Annotation
 
     # The only place that decides the actor of a history row: the repository
     # metadata's actor (when the record is created inside `with_actor`) or the
-    # auth context's account id; nil on a system context.
+    # auth context's account id; nil on a system context. The id and email
+    # always come from the same source — never mix the two.
     def change_actor_id
       @metadata[:actor_account_id] || auth_context.metadata[:id]
+    end
+
+    def change_actor_email
+      @metadata[:actor_account_email] || auth_context.metadata[:email]
     end
 
     # Actions                       | Roles

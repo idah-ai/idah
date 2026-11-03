@@ -9,6 +9,7 @@ module AnnotationChange
     field :entry_id, type: String, readonly: true
     field :project_id, type: String, readonly: true
     field :account_id, type: Integer, readonly: true
+    field :account_email, type: String, readonly: true
     field :op, type: String, readonly: true
     field :version, type: Integer, readonly: true
     field :changes, type: Array, readonly: true

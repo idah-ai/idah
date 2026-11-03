@@ -1130,6 +1130,27 @@ RSpec.describe Annotation::Service, database: true do
         rows = history_rows(id)
         expect(rows.size).to eq(1)
         expect(rows.first.account_id).to be_nil
+        expect(rows.first.account_email).to be_nil
+      end
+
+      it "records the caller's email on the created row" do
+        rows = history_rows(annotation_id)
+        expect(rows.first.account_id).to eq(1) # admin
+        expect(rows.first.account_email).to eq("admin@example.com")
+      end
+
+      it "takes both id and email from the actor when a write runs inside with_actor" do
+        id = subject.annotations.create(attributes)
+
+        subject.annotations.send(:with_metadata) do
+          subject.annotations.add_metadata(actor_account_id: 99, actor_account_email: "actor@example.com")
+          subject.annotations.update(id, { category: "dog" })
+        end
+
+        rows = history_rows(id)
+        updated = rows.find { |r| r.op == "updated" }
+        expect(updated.account_id).to eq(99)
+        expect(updated.account_email).to eq("actor@example.com")
       end
 
       it "version is never client-settable" do

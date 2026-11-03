@@ -142,6 +142,49 @@ RSpec.describe Annotation::Repository, database: true do
     end
   end
 
+  describe "history actor email" do
+    let(:change_repo) { AnnotationChange::Repository.new(Verse::Auth::Context[:system]) }
+
+    it "records the caller's email on a normal write" do
+      subject.update(annotation_id, { category: "dog" })
+
+      rows = change_repo.index({ annotation_id: }, items_per_page: 10_000)
+      updated = rows.find { |r| r.op == "updated" }
+      expect(updated.account_id).to eq(1) # admin
+      expect(updated.account_email).to eq("admin@example.com")
+    end
+
+    it "records a nil email under a system context" do
+      system_repo = Annotation::Repository.new(Verse::Auth::Context[:system])
+      id = system_repo.create(
+        project_id:,
+        dataset_id:,
+        entry_id:,
+        shape_type: "bounding-box",
+        shape_args: { x: 1 },
+        category: "cat",
+        properties: {},
+        created_by_email: "system@example.com"
+      )
+
+      rows = change_repo.index({ annotation_id: id }, items_per_page: 10_000)
+      expect(rows.first.account_id).to be_nil
+      expect(rows.first.account_email).to be_nil
+    end
+
+    it "takes both id and email from the actor inside with_actor" do
+      subject.send(:with_metadata) do
+        subject.add_metadata(actor_account_id: 99, actor_account_email: "actor@example.com")
+        subject.update(annotation_id, { category: "dog" })
+      end
+
+      rows = change_repo.index({ annotation_id: }, items_per_page: 10_000)
+      updated = rows.find { |r| r.op == "updated" }
+      expect(updated.account_id).to eq(99)
+      expect(updated.account_email).to eq("actor@example.com")
+    end
+  end
+
   describe "#soft_delete / #restore" do
     it "publishes exactly one deleted event, with no extra updated" do
       allow(Verse).to receive(:publish_resource_event).and_call_original

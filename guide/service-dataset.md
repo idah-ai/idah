@@ -442,7 +442,8 @@ Every annotation write records who made it, what changed (old and new values) an
 | `annotation_id` | The annotation (no FK — history outlives the annotation row) |
 | `entry_id`, `project_id` | Denormalized for per-entry/per-project listing |
 | `account_id` | The actor (null for system writes) |
-| `op` | `created` \| `updated` \| `deleted` \| `restored` |
+| `account_email` | The actor's email (null for system writes) |
+| `op` | `baseline` \| `created` \| `updated` \| `deleted` \| `restored` |
 | `version` | The annotation version this row records |
 | `changes` | `[[op, path, old, new], ...]` |
 | `changed_at` | When the write happened |
