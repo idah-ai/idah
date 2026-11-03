@@ -27,7 +27,7 @@ Sequel.migration do
       column :changes, :jsonb, null: false       # [[op, path, old, new], ...]
       DateTime :changed_at, null: false
 
-      check %(op IN ('created', 'updated', 'deleted', 'restored'))
+      check %(op IN ('baseline', 'created', 'updated', 'deleted', 'restored'))
 
       index %i[annotation_id version], unique: true
       index %i[entry_id changed_at]

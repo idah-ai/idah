@@ -36,10 +36,14 @@ module AnnotationChange
               "version #{version} is above the current version #{current.version}"
       end
 
-      rows = changes.index(
+      # Page through every later row (a mask-heavy annotation can have more
+      # than 10,000 of them) instead of capping at a single page. `chunked_index`
+      # returns an Enumerator; `lazy.flat_map` chains it into a lazy stream of
+      # change entries that `AnnotationDiff.revert` (it calls `each`) consumes
+      # without materializing the whole history into memory.
+      rows = changes.chunked_index(
         { annotation_id:, version__gt: version },
-        sort: ["-version"],
-        items_per_page: 10_000
+        sort: ["-version"]
       )
 
       state = {
@@ -52,7 +56,7 @@ module AnnotationChange
         "deleted_by_email" => current.deleted_by_email
       }
 
-      reverted = AnnotationDiff.revert(state, rows.flat_map(&:changes))
+      reverted = AnnotationDiff.revert(state, rows.lazy.flat_map(&:changes))
 
       target_row = changes.find_by({ annotation_id:, version: })
 
