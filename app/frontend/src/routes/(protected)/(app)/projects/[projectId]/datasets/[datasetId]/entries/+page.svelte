@@ -18,7 +18,10 @@
 
   import { createEntriesController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
   import { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
+  import { orphanFilterChanges } from "@/components/app/datasets/entries/util/orphan-filter";
+  import { orphanCountsByEntry } from "@/components/app/datasets/entries/util/orphan-counts";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { entryStatBackendDataSource, EntryStatRecord } from "@/data/model/dataset/entry-stats/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
   import { authStatus } from "@/security/AuthContext";
@@ -40,8 +43,42 @@
   // Auth-gated flags (resolved on mount)
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
-  let showOrphanCategories = $state(false);
+  const showOrphanCategories = $derived(
+    controller.filters.orphan_categories === true || controller.filters.orphan_categories === "true",
+  );
+  let orphanCounts = $state<Record<string, number>>({});
+  let orphanCountsError = $state(false);
   let canExportEntry = $state(false);
+
+  $effect(() => {
+    const entryIds = controller.response.data.map((entry) => entry.id);
+    if (entryIds.length === 0) {
+      orphanCounts = {};
+      orphanCountsError = false;
+      return;
+    }
+
+    let cancelled = false;
+    orphanCounts = {};
+    orphanCountsError = false;
+    void entryStatBackendDataSource
+      .list({
+        fields: { [EntryStatRecord.type]: ["entry_id", "value"] },
+        filters: { entry_id__in: entryIds, key__eq: "orphan_category.count" },
+        pagination: { page: 1, itemsPerPage: entryIds.length },
+        noCache: true,
+      })
+      .then((response) => {
+        if (!cancelled) orphanCounts = orphanCountsByEntry(entryIds, response.data);
+      })
+      .catch(() => {
+        if (!cancelled) orphanCountsError = true;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: { projectId, projectMemberRoles: ["project_owner"] },
@@ -66,12 +103,8 @@
 
   async function handleOrphanFilterChange(checked: boolean) {
     await controller.applyFilter({
-      filters: {
-        orphan_categories: checked ? true : undefined,
-      },
+      filters: orphanFilterChanges(controller.filters, checked),
     });
-
-    showOrphanCategories = checked;
   }
 </script>
 
@@ -82,6 +115,10 @@
     onCheckedChange={handleOrphanFilterChange}
   />
 {/key}
+
+{#if orphanCountsError}
+  <p class="text-destructive text-sm" role="status">Could not load annotation error counts.</p>
+{/if}
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
@@ -95,6 +132,7 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
+      orphanCategoryCount={orphanCounts[record.id] ?? 0}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

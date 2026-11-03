@@ -33,11 +33,12 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    orphanCategoryCount: number;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
     onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let { entry, orphanCategoryCount, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -463,7 +464,7 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
-          <EntryAnnotationErrorBadge {entryId} />
+          <EntryAnnotationErrorBadge count={orphanCategoryCount} />
 
           {#if jobProgress < 1}
             <div class="flex flex-col gap-1">

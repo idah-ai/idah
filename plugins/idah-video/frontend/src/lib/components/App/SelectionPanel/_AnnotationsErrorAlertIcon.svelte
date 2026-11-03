@@ -26,7 +26,7 @@
     {/snippet}
 
     {#snippet content()}
-      {errorCount} {pluralizeUnit(errorCount, "annotation")} error
+      {errorCount} annotation {pluralizeUnit(errorCount, "error")}
     {/snippet}
   </Tooltips>
 {/if}

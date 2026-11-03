@@ -13,9 +13,16 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
+  import { clearCache } from "@/data/Cache";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
-  import { datasetStatsSyncContext, type DatasetStatsSyncContext } from "@/utils/dataset-stats-sync.svelte";
+  import {
+    datasetStatsSyncContext,
+    nextStatsSyncState,
+    type DatasetStatsSyncContext,
+    type StatsSyncState,
+  } from "@/utils/dataset-stats-sync.svelte";
 
   import { refetches } from "@/utils/refetch";
 
@@ -35,14 +42,16 @@
 
   // Records
   let dataset: DatasetRecord = $state(new DatasetRecord());
-  let statsSyncing = $state(false);
+  let statsSyncState = $state<StatsSyncState>("idle");
   let statsSyncWarning = $state(false);
   let statsSyncPolling = false;
   let statsSyncFailures = 0;
+  let statsSyncStartedAt = 0;
   let statsSyncTimeout: ReturnType<typeof setTimeout> | undefined;
 
   const statsSyncContext: DatasetStatsSyncContext = {
     start: startStatsSyncPolling,
+    isChecking: () => statsSyncState === "waiting" || statsSyncState === "running",
   };
 
   setContext(datasetStatsSyncContext, statsSyncContext);
@@ -76,8 +85,10 @@
       fields: {
         [DatasetRecord.type]: ["name", "modality", "syncing_stats"],
       },
+      noCache: true,
     });
     dataset = datasetRes.data;
+    if (dataset.syncing_stats) startStatsSyncPolling(true);
     return dataset;
   }
 
@@ -87,10 +98,15 @@
     statsSyncTimeout = undefined;
   }
 
-  function startStatsSyncPolling(): void {
-    if (statsSyncPolling) return;
+  function startStatsSyncPolling(alreadyRunning = false): void {
+    if (statsSyncPolling) {
+      if (statsSyncState === "waiting") statsSyncStartedAt = Date.now();
+      return;
+    }
 
     statsSyncPolling = true;
+    statsSyncStartedAt = Date.now();
+    statsSyncState = alreadyRunning ? "running" : "waiting";
     statsSyncFailures = 0;
     statsSyncWarning = false;
     void pollStatsSync();
@@ -99,6 +115,7 @@
   async function pollStatsSync(): Promise<void> {
     if (!statsSyncPolling) return;
 
+    let syncing: boolean | undefined;
     try {
       const datasetRes = await datasetsBackendDataSource.get(datasetId, {
         fields: {
@@ -107,22 +124,29 @@
         noCache: true,
       });
 
+      if (!statsSyncPolling) return;
+      syncing = datasetRes.data.syncing_stats;
       statsSyncFailures = 0;
       statsSyncWarning = false;
-
-      if (!datasetRes.data.syncing_stats) {
-        statsSyncing = false;
-        stopStatsSyncPolling();
-        $refetches.entries.list = new Date();
-        $refetches.entryStats.list = new Date();
-        return;
-      }
-
-      statsSyncing = true;
     } catch {
       statsSyncFailures += 1;
-      statsSyncWarning = statsSyncFailures >= 3 && statsSyncing;
+      statsSyncWarning = statsSyncFailures >= 3 && statsSyncState === "running";
     }
+
+    if (!statsSyncPolling) return;
+    const nextState = nextStatsSyncState(
+      statsSyncState === "running" ? "running" : "waiting",
+      syncing,
+      Date.now() - statsSyncStartedAt,
+    );
+    if (nextState === "complete" || nextState === "unverified") {
+      stopStatsSyncPolling();
+      statsSyncState = nextState === "complete" ? "idle" : "unverified";
+      clearCache(entriesBasePath);
+      $refetches.entries.list = new Date();
+      return;
+    }
+    statsSyncState = nextState;
 
     if (statsSyncPolling) {
       statsSyncTimeout = setTimeout(() => void pollStatsSync(), 1000);
@@ -156,8 +180,8 @@
     <PageLoading />
   {:then datasetRecord}
     <div class="space-y-6">
-      {#if statsSyncing}
-        <DatasetStatsSyncAlert warning={statsSyncWarning} />
+      {#if statsSyncState !== "idle"}
+        <DatasetStatsSyncAlert state={statsSyncState} warning={statsSyncWarning} />
       {/if}
 
       <PageHeader>

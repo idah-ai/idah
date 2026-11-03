@@ -43,6 +43,23 @@ export function categoryValueToLabel(value?: string, replaceLabel?: string): str
   return label.join(" / ");
 }
 
+export function configuredCategories(config: IConfig) {
+  return new Map(Object.values(config).flatMap((shape) => shape.values.map((value) => [value.id, value] as const)));
+}
+
+export function categoryForShape(
+  config: IConfig,
+  shapeType: string,
+  id: string | undefined,
+  configured: ReturnType<typeof configuredCategories>,
+) {
+  return config[shapeType]?.values.find((value) => value.id === id) ?? configured.get(id ?? "");
+}
+
+export function isOrphanCategory(id: string | undefined, configured: ReadonlyMap<string, unknown>): boolean {
+  return !!id && !configured.has(id);
+}
+
 /**
  * Return all unique group IDs in the timeline display order.
  *
@@ -74,7 +91,6 @@ export function getSortedGroupIds(): string[] {
 
 /** Return total of orphan annotations */
 export function countOrphanAnnotations(annotations: IVideoAnnotationRecord[], config: IConfig): number {
-  const configured = new Set(Object.values(config).flatMap((shape) => shape.values.map((v) => v.id)));
-
-  return annotations.filter((ann) => !ann.deleted_at && !!ann.category && !configured.has(ann.category)).length;
+  const configured = configuredCategories(config);
+  return annotations.filter((ann) => !ann.deleted_at && isOrphanCategory(ann.category, configured)).length;
 }

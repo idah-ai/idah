@@ -431,10 +431,15 @@ export function conditionReferenceProblems(
     return {};
   }
 
+  if (field.kind !== "category" && field.kind !== "select" && field.kind !== "multi") return {};
+
   const values = Array.isArray(condition.value) ? condition.value.map(String) : [String(condition.value)];
-  const options =
-    condition.operator === "match" && values.length === 1 && values[0].endsWith("/*") ? field.parents : field.options;
-  const missing = values.filter((value) => value !== "" && !options.some((option) => option.value === value));
+  const isUnder =
+    field.kind === "category" && condition.operator === "match" && values.length === 1 && values[0].endsWith("/*");
+  const options = isUnder ? field.parents : field.options;
+  const missing = values.filter(
+    (value) => value !== "" && !options.some((option) => option.value === (isUnder ? value.slice(0, -2) : value)),
+  );
   if (missing.length === 0) return {};
 
   return {

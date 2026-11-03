@@ -9,7 +9,7 @@
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
   import { cn } from "$lib/utils";
-  import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { categoryForShape, categoryValueToLabel, configuredCategories, isOrphanCategory } from "$lib/utils/annotation";
   import { getDriver } from "$lib/state/driver.svelte";
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { resolveAnnotationLabel } from "$lib/utils/label";
@@ -22,9 +22,11 @@
   let { annotation }: Props = $props();
 
   const shapeType = $derived(annotation.shape_type);
-  const config = $derived(getDriver().config[shapeType]);
-  const category = $derived(config.values.find((v) => v.id === annotation.category));
+  const config = $derived(getDriver().config);
+  const categories = $derived(configuredCategories(config));
+  const category = $derived(categoryForShape(config, shapeType, annotation.category, categories));
   const foundCategory = $derived(category !== undefined);
+  const isOrphan = $derived(isOrphanCategory(annotation.category, categories));
   const categoryColor = $derived(category?.color ?? null);
   const annGroupId = $derived(annotation.metadata?.group_id ?? annotation.id);
   const annGroupIdLastPart = $derived(annGroupId.split("-").pop());
@@ -41,9 +43,9 @@
     size="sm"
     class={cn(
       "border-border min-h-16 cursor-pointer border",
-      foundCategory
-        ? "hover:bg-primary/10 hover:border-primary"
-        : "bg-destructive/5 border-destructive/50 hover:bg-destructive/10 hover:border-destructive text-destructive",
+      isOrphan
+        ? "bg-destructive/5 border-destructive/50 hover:bg-destructive/10 hover:border-destructive text-destructive"
+        : "hover:bg-primary/10 hover:border-primary",
     )}
     onclick={() => {
       selection.selectAnnotation(annotation);
@@ -51,10 +53,10 @@
     }}
   >
     <Item.Media variant="icon">
-      {#if foundCategory}
-        <ShapeIcon {shapeType} color={categoryColor} />
-      {:else}
+      {#if isOrphan}
         <CircleAlertIcon class="fill-destructive text-primary-foreground size-5" />
+      {:else}
+        <ShapeIcon {shapeType} color={categoryColor} />
       {/if}
     </Item.Media>
 
@@ -99,8 +101,8 @@
   </HoverCard.Root>
 {/snippet}
 
-{#if foundCategory}
-  {@render AnnotationListItem()}
-{:else}
+{#if isOrphan}
   {@render HoverableAnnotationListItem()}
+{:else}
+  {@render AnnotationListItem()}
 {/if}
