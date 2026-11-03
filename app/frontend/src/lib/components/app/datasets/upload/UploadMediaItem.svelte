@@ -6,8 +6,8 @@
   import * as Item from "@/components/ui/item";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
-  import UploadItemCollapsibleSection from "./upload-item-collapsible-section.svelte";
-  import UploadItemStatusIcon from "./upload-item-status-icon.svelte";
+  import UploadItemCollapsibleSection from "./UploadItemCollapsibleSection.svelte";
+  import UploadItemStatusIcon from "./_UploadItemStatusIcon.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";

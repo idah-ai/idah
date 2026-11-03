@@ -3,7 +3,7 @@
 
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
 
-  import PreviewUploadMediaItem from "./preview-upload-media-item.svelte";
+  import PreviewUploadMediaItem from "./PreviewUploadMediaItem.svelte";
 
   import { groupIntoDatasets, pickedItems } from "@/components/app/datasets/upload/dataset-groups";
   import { mergePickedFiles, type PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";

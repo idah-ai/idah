@@ -2,7 +2,7 @@
   import { page } from "$app/state";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import MediaPicker from "@/components/app/datasets/upload/media-picker.svelte";
+  import MediaPicker from "@/components/app/datasets/upload/MediaPicker.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";

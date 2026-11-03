@@ -6,8 +6,8 @@
   import { DialogClose, DialogDescription, DialogTitle } from "@/components/ui/dialog";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import MediaPicker from "@/components/app/datasets/upload/media-picker.svelte";
-  import UploadMediaItem from "@/components/app/datasets/upload/upload-media-item.svelte";
+  import MediaPicker from "@/components/app/datasets/upload/MediaPicker.svelte";
+  import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
 
   import { buildEntryRows, rowItems, rowView } from "@/components/app/datasets/upload/upload-rows";
   import { MAX_RETRIES, showUploadSummaryToast, uploadAll } from "@/components/app/datasets/upload/upload-pipeline";

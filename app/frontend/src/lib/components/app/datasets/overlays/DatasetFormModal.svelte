@@ -3,8 +3,8 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
-  import UploadMediaItem from "@/components/app/datasets/upload/upload-media-item.svelte";
-  import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
+  import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
+  import DatasetForm from "@/components/app/datasets/forms/DatasetForm.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { DialogClose, DialogDescription, DialogTitle } from "@/components/ui/dialog";
