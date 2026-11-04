@@ -1,8 +1,9 @@
-import type { BackendDataSource } from "@/data/BackendDataSource";
-import type { ListOptions } from "@/data/DataSource";
 import { datasetsBackendDataSource, DatasetRecord } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
+
+import type { BackendDataSource } from "@/data/BackendDataSource";
+import type { ListOptions } from "@/data/DataSource";
 import type { Record } from "@/data/model/Record";
 import type { CollectionResponse, JsonApiErrorResponse } from "@/data/model/types";
 
@@ -32,6 +33,7 @@ export function validateCounts(values: unknown[]): Counts {
   if (residual < 0) throw new Error("Dashboard counts changed while loading. Please refresh.");
   return { total, completed, reviewing, pendingReview, annotating, pendingAnnotation, residual };
 }
+
 export function normalizeTableQuery(options: ListOptions, ids: string[]): ListOptions {
   const filters = options.filters ?? {};
   if (Object.keys(filters).some((k) => k !== "name__match")) throw new Error("Unsupported Dashboard table filter");
@@ -50,7 +52,10 @@ export function normalizeTableQuery(options: ListOptions, ids: string[]): ListOp
 }
 
 // Keep Project scope and count aggregation local; transport and parsing use the existing datasources.
-export function createProjectDashboardDataSources(projectId: string, denied: (error: JsonApiErrorResponse) => void) {
+export function createProjectDashboardDataSources(
+  projectId: string,
+  denied: (error: JsonApiErrorResponse) => void,
+): ProjectDashboardDataSources {
   let retired = false;
   let activeCounts = 0;
   const waitingCounts: (() => void)[] = [];
@@ -66,7 +71,11 @@ export function createProjectDashboardDataSources(projectId: string, denied: (er
     }
   }
 
-  function source<T extends Record>(existing: BackendDataSource<T>, fields: string[], sort: string[]) {
+  function source<T extends Record>(
+    existing: BackendDataSource<T>,
+    fields: string[],
+    sort: string[],
+  ): BackendDataSource<T> {
     return {
       ...existing,
       async list(options: ListOptions = {}): Promise<CollectionResponse<T>> {
@@ -130,7 +139,7 @@ export function createProjectDashboardDataSources(projectId: string, denied: (er
     return validateCounts(values);
   }
 
-  async function attention(ids: string[], today: Date = new Date()) {
+  async function attention(ids: string[], today: Date = new Date()): Promise<number | null> {
     const result = await datasets.list({
       filters: ids.length ? { id: [...ids] } : {},
       pagination: { page: 1, itemsPerPage: 100 },
@@ -142,16 +151,17 @@ export function createProjectDashboardDataSources(projectId: string, denied: (er
   return {
     datasets,
     attention,
-    openEntries(ids: string[], combined = true) {
+    openEntries(ids: string[], combined = true): ReturnType<ProjectDashboardDataSources["openEntries"]> {
       const selected = [...ids];
       let latest: Promise<CollectionResponse<EntryRecord>>;
       let latestPagination: { page: number; itemsPerPage: number };
       const contexts = new WeakMap<CollectionResponse<EntryRecord>, { datasetNames: { [id: string]: string } }>();
       return {
         ...entries,
-        contexts: (response: CollectionResponse<EntryRecord>) => contexts.get(response) ?? {},
-        async list(options: ListOptions = {}) {
-          latest = (async () => {
+        contexts: (response: CollectionResponse<EntryRecord>): { datasetNames?: { [id: string]: string } } =>
+          contexts.get(response) ?? {},
+        async list(options: ListOptions = {}): Promise<CollectionResponse<EntryRecord>> {
+          latest = (async (): Promise<CollectionResponse<EntryRecord>> => {
             const pagination = options.pagination ?? { page: 1, itemsPerPage: 10 };
             if (
               !Number.isInteger(pagination.page) ||
@@ -215,22 +225,40 @@ export function createProjectDashboardDataSources(projectId: string, denied: (er
       };
     },
     counts,
-    table: (ids: string[]) => datasetTableSource(datasets, ids),
-    retire: () => {
+    table: (ids: string[]): ReturnType<typeof datasetTableSource> => datasetTableSource(datasets, ids),
+    retire: (): void => {
       retired = true;
     },
   };
 }
-export type ProjectDashboardDataSources = ReturnType<typeof createProjectDashboardDataSources>;
+export type ProjectDashboardDataSources = {
+  datasets: BackendDataSource<DatasetRecord>;
+  attention: (ids: string[], today?: Date) => Promise<number | null>;
+  openEntries: (
+    ids: string[],
+    combined?: boolean,
+  ) => BackendDataSource<EntryRecord> & {
+    contexts: (response: CollectionResponse<EntryRecord>) => { datasetNames?: { [id: string]: string } };
+  };
+  counts: (ids: string[]) => Promise<Counts>;
+  table: (ids: string[]) => ReturnType<typeof datasetTableSource>;
+  retire: () => void;
+};
 
-function datasetTableSource(datasets: BackendDataSource<DatasetRecord>, ids: string[]) {
+function datasetTableSource(
+  datasets: BackendDataSource<DatasetRecord>,
+  ids: string[],
+): BackendDataSource<DatasetRecord> & {
+  position: (id: string, response: CollectionResponse<DatasetRecord>) => number | null;
+  synchronize: (response: CollectionResponse<DatasetRecord>) => Promise<void>;
+} {
   const selected = [...ids];
   let previousName: string | undefined;
   let latest: Promise<CollectionResponse<DatasetRecord>>;
   let latestQuery: ListOptions;
   const optionsByResponse = new WeakMap<CollectionResponse<DatasetRecord>, ListOptions[]>();
 
-  async function currentResponse() {
+  async function currentResponse(): Promise<CollectionResponse<DatasetRecord>> {
     while (true) {
       const observed = latest;
       try {
@@ -241,27 +269,27 @@ function datasetTableSource(datasets: BackendDataSource<DatasetRecord>, ids: str
       }
     }
   }
-  function syncOptions(options: ListOptions) {
+  function syncOptions(options: ListOptions): void {
     // DatasourceTable writes these captured preferences after enrichment finishes.
     if (options.pagination) Object.assign(options.pagination, latestQuery.pagination);
     if (options.sort) options.sort.splice(0, options.sort.length, ...(latestQuery.sort ?? []));
   }
   return {
     ...datasets,
-    position(id: string, response: CollectionResponse<DatasetRecord>) {
+    position(id: string, response: CollectionResponse<DatasetRecord>): number | null {
       if (latestQuery.filters?.name__match || latestQuery.sort?.[0] !== "name") return null;
       const index = response.data.findIndex((record) => record.id === id);
       return index < 0
         ? null
         : ((latestQuery.pagination?.page ?? 1) - 1) * (latestQuery.pagination?.itemsPerPage ?? 10) + index + 1;
     },
-    async synchronize(response: CollectionResponse<DatasetRecord>) {
+    async synchronize(response: CollectionResponse<DatasetRecord>): Promise<void> {
       const current = await currentResponse();
       Object.assign(response, current);
       for (const options of optionsByResponse.get(response) ?? []) syncOptions(options);
     },
-    async list(options: ListOptions = {}) {
-      latest = (async () => {
+    async list(options: ListOptions = {}): Promise<CollectionResponse<DatasetRecord>> {
+      latest = (async (): Promise<CollectionResponse<DatasetRecord>> => {
         const query = normalizeTableQuery(options, selected);
         const name = String(query.filters?.name__match ?? "");
         if (previousName !== undefined && name !== previousName && query.pagination) query.pagination.page = 1;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MultipleSelect from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
+  import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   // Props
@@ -14,7 +14,7 @@
   } = $props();
 </script>
 
-<MultipleSelect
+<MultipleSelectDatasourceField
   name="dashboard-datasets"
   label="Datasets"
   class="w-64 max-w-full min-w-0"
@@ -36,4 +36,4 @@
       {ids.length === 1 ? selectedChoices[0]?.label : `${ids.length} datasets selected`}
     </span>
   {/snippet}
-</MultipleSelect>
+</MultipleSelectDatasourceField>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MultipleSelect from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
+  import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   import type { LabelValue } from "@/utils/types";
@@ -11,7 +11,7 @@
   }: { maxSelections?: number; onSelected: (choices: LabelValue<string | number>[]) => void } = $props();
 </script>
 
-<MultipleSelect
+<MultipleSelectDatasourceField
   dataSource={datasetsBackendDataSource}
   displayKey="name"
   name="datasets"
@@ -24,4 +24,4 @@
   {#snippet slotSelectAll({ selectAll, allChoicesSelected })}
     <button onclick={() => selectAll(!allChoicesSelected)}>Select all</button>
   {/snippet}
-</MultipleSelect>
+</MultipleSelectDatasourceField>

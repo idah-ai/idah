@@ -7,6 +7,8 @@ import {
 } from "@/components/app/projects/dashboard/DashboardData";
 import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
+import type { CollectionResponse } from "@/data/model/types";
+
 export class DashboardManager {
   ids: string[] = $state([]);
   focused: DatasetRecord | null = $state(null);
@@ -28,7 +30,7 @@ export class DashboardManager {
   constructor(readonly projectId: string) {
     this.replaceSources();
   }
-  private replaceSources() {
+  private replaceSources(): void {
     this.sources?.retire();
     this.sources = createProjectDashboardDataSources(this.projectId, (error) => {
       this.error =
@@ -38,12 +40,12 @@ export class DashboardManager {
       this.denyAccess();
     });
   }
-  private clearMetrics() {
+  private clearMetrics(): void {
     this.summary = null;
     this.attention = null;
     this.updated = null;
   }
-  async load() {
+  async load(): Promise<void> {
     if (this.disposed) return;
     const generation = ++this.generation;
     this.loading = true;
@@ -70,7 +72,7 @@ export class DashboardManager {
       if (generation === this.generation) this.loading = false;
     }
   }
-  async updateReportingDay(day: Date) {
+  async updateReportingDay(day: Date): Promise<void> {
     if (this.disposed || this.reportingDay?.getTime() === day.getTime()) return;
     const initialized = this.reportingDay !== null;
     this.reportingDay = day;
@@ -85,7 +87,7 @@ export class DashboardManager {
       if (generation === this.generation && this.reportingDay === day) this.attention = null;
     }
   }
-  private listDatasetPage(page: number) {
+  private listDatasetPage(page: number): Promise<CollectionResponse<DatasetRecord>> {
     return this.sources.datasets.list({
       filters: this.ids.length ? { id: this.ids } : {},
       sort: ["name", "id"],
@@ -93,7 +95,7 @@ export class DashboardManager {
       count: true,
     });
   }
-  async select(ids: string[]) {
+  async select(ids: string[]): Promise<void> {
     if (this.disposed) return;
     if (ids.length > 100) {
       this.error = "Select up to 100 datasets.";
@@ -124,7 +126,7 @@ export class DashboardManager {
       }
     }
   }
-  async focus(dataset: DatasetRecord | null, page: number | null = null) {
+  async focus(dataset: DatasetRecord | null, page: number | null = null): Promise<void> {
     if (this.disposed) return;
     this.tableEpoch++;
     this.clearMetrics();
@@ -133,7 +135,7 @@ export class DashboardManager {
     this.replaceSources();
     await this.load();
   }
-  async refresh() {
+  async refresh(): Promise<void> {
     if (this.disposed) return;
     if (this.denied) {
       this.denied = false;
@@ -166,7 +168,7 @@ export class DashboardManager {
     }
   }
 
-  async step(delta: number) {
+  async step(delta: number): Promise<void> {
     if (this.disposed || this.loading) return;
     if (this.ids.length === 1) return;
     if (!this.poolCount) return;
@@ -196,14 +198,14 @@ export class DashboardManager {
       if (generation === this.generation) this.loading = false;
     }
   }
-  denyAccess() {
+  denyAccess(): void {
     this.generation++;
     this.clearMetrics();
     this.loading = false;
     this.denied = true;
     this.sources.retire();
   }
-  dispose() {
+  dispose(): void {
     this.disposed = true;
     this.denyAccess();
   }
