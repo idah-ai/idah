@@ -4,7 +4,9 @@ module NoteFeed
   class Service < Verse::Service::Base
     use note_feeds: NoteFeed::Repository
     use_system entries: Entry::Repository,
-               annotations: Annotation::Repository
+               annotations: Annotation::Repository,
+               entry_time_slots: EntryTimeSlot::Repository,
+               entry_work_times: EntryWorkTime::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       note_feeds.index(
@@ -24,16 +26,24 @@ module NoteFeed
     def update(record)
       record.attributes[:edited_at] = Time.now
 
+      feed = note_feeds.find!(record.id)
       note_feeds.update!(record.id, record.attributes)
+      touch_entry(feed.entry_id)
       note_feeds.find!(record.id)
     end
 
     def delete(id)
-      note_feeds.delete!(id)
+      feed = note_feeds.find!(id)
+      result = note_feeds.delete!(id)
+      touch_entry(feed.entry_id)
+      result
     end
 
     def resolve(id)
-      note_feeds.resolve!(id)
+      feed = note_feeds.find!(id)
+      resolved = note_feeds.resolve!(id)
+      touch_entry(feed.entry_id)
+      resolved
     end
 
     def create_from_params(data)
@@ -88,8 +98,23 @@ module NoteFeed
 
       note_feeds.transaction do
         id = note_feeds.create(attributes)
-        note_feeds.find!(id)
+        feed = note_feeds.find!(id)
+        touch_entry(entry.id)
+        feed
       end
+    end
+
+    private
+
+    def touch_entry(entry_id)
+      TimeTracking.safe_touch(
+        entry_repo: entries,
+        slot_repo: entry_time_slots,
+        work_repo: entry_work_times,
+        entry_id: entry_id,
+        account_id: auth_context.metadata[:id],
+        email: auth_context.metadata[:email]
+      )
     end
   end
 end

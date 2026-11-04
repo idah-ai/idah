@@ -12,6 +12,8 @@ module Resource
     NoteComments = "dataset:note_comments"
     EntryStats = "dataset:entry_stats"
     LabelConfigTemplates = "dataset:label_config_templates"
+    EntryTimeSlots = "dataset:entry_time_slots"
+    EntryWorkTimes = "dataset:entry_work_times"
     # rubocop:enable Naming/ConstantName
   end
 end

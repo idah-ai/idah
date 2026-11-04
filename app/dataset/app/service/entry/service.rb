@@ -6,8 +6,12 @@ module Entry
         datasets: Dataset::Repository,
         projects: Project::Repository,
         project_members: ProjectMember::Repository,
-        annotations: Annotation::Repository
-    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
+        annotations: Annotation::Repository,
+        entry_time_slots: EntryTimeSlot::Repository,
+        entry_work_times: EntryWorkTime::Repository
+    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository,
+               system_entry_time_slots_repo: EntryTimeSlot::Repository,
+               system_entry_work_times_repo: EntryWorkTime::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       keys = sort.is_a?(String) ? sort.split(",") : sort
@@ -169,17 +173,55 @@ module Entry
 
         # Use read scope when updating as anyone with read access can select
         entries.select(entry.id)
+
+        # Opening the entry starts the session even before any edit.
+        TimeTracking.safe_touch(
+          entry_repo: entries,
+          slot_repo: entry_time_slots,
+          work_repo: entry_work_times,
+          entry_id: entry.id,
+          account_id: account_id,
+          email: auth_context.metadata[:email]
+        )
+
         system_datasets_repo.update_progress!(entry.dataset_id)
         entries.find!(entry.id)
       end
+    end
+
+    # Fire-and-forget activity ping. Updates time-tracking slots for the
+    # current user if they are the assignee and the step is trackable.
+    # Never raises (savepoint + rescue inside safe_touch).
+    def notify_activity(entry_id)
+      TimeTracking.safe_touch(
+        entry_repo: entries,
+        slot_repo: entry_time_slots,
+        work_repo: entry_work_times,
+        entry_id: entry_id,
+        account_id: auth_context.metadata[:id],
+        email: auth_context.metadata[:email]
+      )
+
+      { data: { attributes: { accepted: true } } }
     end
 
     def submit(entry_id, **opts)
       # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
+        from_step = entry.wf_step
+
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
+
+        TimeTracking.rollup(
+          slot_repo: system_entry_time_slots_repo,
+          work_repo: system_entry_work_times_repo,
+          system_entries_repo: system_entries_repo,
+          entry_id: entry.id,
+          wf_step: from_step,
+          submitted_at: Time.now
+        )
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -193,6 +235,8 @@ module Entry
     def error(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
+        from_step = entry.wf_step
+
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
 
         entry_workflow.error!
@@ -202,6 +246,15 @@ module Entry
             wf_step: entry_workflow.aasm.current_state.to_s,
             status: "errored"
           }
+        )
+
+        TimeTracking.rollup(
+          slot_repo: system_entry_time_slots_repo,
+          work_repo: system_entry_work_times_repo,
+          system_entries_repo: system_entries_repo,
+          entry_id: entry.id,
+          wf_step: from_step,
+          submitted_at: Time.now
         )
 
         # Update dataset progress after entry status change
