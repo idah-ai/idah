@@ -3,7 +3,7 @@
 
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
-  import type { DatasetTableContexts } from "@/data/model/dataset/projects/dashboard/record";
+  import type { DatasetTableContexts } from "@/components/app/projects/dashboard/DashboardData";
 
   // Props
   let { record, contexts }: { record: DatasetRecord; contexts?: Partial<DatasetTableContexts> } = $props();

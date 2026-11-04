@@ -2,7 +2,7 @@
   import StackedProgressBar from "@/components/app/charts/bars/stacked-progress-bar.svelte";
   import { statusGroups } from "@/components/app/projects/dashboard/DashboardStatus";
 
-  import type { Counts } from "@/data/model/dataset/projects/dashboard/record";
+  import type { Counts } from "@/components/app/projects/dashboard/DashboardData";
 
   // Props
   let { counts, compact = false }: { counts: Counts; compact?: boolean } = $props();

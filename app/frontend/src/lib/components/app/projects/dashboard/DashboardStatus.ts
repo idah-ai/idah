@@ -1,7 +1,10 @@
-import type { Counts } from "@/data/model/dataset/projects/dashboard/record";
-import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
+import { differenceInCalendarDays } from "date-fns";
 
-export function statusGroups(d: Counts) {
+import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+
+import type { Counts } from "@/components/app/projects/dashboard/DashboardData";
+
+export function statusGroups(d: Counts): { label: string; value: number; bgColor: string; textColor?: string }[] {
   return [
     { label: "Completed", value: d.completed, bgColor: "bg-emerald-500" },
     { label: "Reviewing", value: d.reviewing, bgColor: "bg-blue-500" },
@@ -11,25 +14,22 @@ export function statusGroups(d: Counts) {
   ];
 }
 
-export function deliveryDate(value: string | null) {
+export function deliveryDate(value: string | null): Date | null {
   if (!value) return null;
   const [y, m, d] = value.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
-export function deliveryStatus(date: string | null, counts: Pick<Counts, "total" | "completed">) {
+export function deliveryStatus(
+  date: string | null,
+  counts: Pick<Counts, "total" | "completed">,
+  today: Date = new Date(),
+) {
   if (counts.total > 0 && counts.completed === counts.total)
     return { label: "Completed", color: "bg-green-50 text-green-700 dark:bg-green-600/15 dark:text-green-400" };
   if (!date) return { label: "No due date", color: "bg-muted text-muted-foreground" };
 
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Bangkok",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-
-  const days = Math.round((Date.parse(date + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86400000);
+  const days = differenceInCalendarDays(deliveryDate(date)!, today);
   return days < 0
     ? { label: "Overdue", color: "bg-destructive/10 text-destructive" }
     : days === 0
@@ -39,4 +39,4 @@ export function deliveryStatus(date: string | null, counts: Pick<Counts, "total"
         : { label: `Due in ${days} days`, color: "bg-primary/10 text-primary" };
 }
 
-export const datasetDeliveryDate = (record: DatasetRecord) => record.delivery_date ?? null;
+export const datasetDeliveryDate = (record: DatasetRecord): string | null => record.delivery_date ?? null;

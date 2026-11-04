@@ -7,7 +7,7 @@
     isAccessError,
     type DatasetTableContexts,
     type ProjectDashboardDataSources,
-  } from "@/data/model/dataset/projects/dashboard/record";
+  } from "@/components/app/projects/dashboard/DashboardData";
   import { datasetProgressColumns as columns } from "./dataset-progress.columns";
   let {
     sources,

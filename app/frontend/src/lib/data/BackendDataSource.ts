@@ -176,7 +176,13 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
           method: "GET",
         });
 
-        body = await out.json();
+        body = await out.json().catch((error) => {
+          if (!out.ok) throw parseSingleElementError({ status: out.status, errors: [] });
+          throw error;
+        });
+        if (!out.ok || body?.errors) {
+          throw parseSingleElementError({ status: out.status, errors: body?.errors ?? [] });
+        }
 
         if (nextBody.data.length > 0) {
           body.data = nextBody.data.concat(body.data);

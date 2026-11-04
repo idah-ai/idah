@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DatasetTableContexts } from "@/data/model/dataset/projects/dashboard/record";
+  import type { DatasetTableContexts } from "@/components/app/projects/dashboard/DashboardData";
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
   // Props

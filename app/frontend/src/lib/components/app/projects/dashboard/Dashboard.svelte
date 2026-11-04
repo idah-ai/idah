@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { today as localToday } from "@/utils/date";
   import { onMount, untrack } from "svelte";
   import { getLocalTimeZone, today } from "@internationalized/date";
   import { ChevronLeftIcon, ChevronRightIcon, RefreshCwIcon, ArrowLeftIcon } from "@lucide/svelte";
@@ -7,7 +8,7 @@
   import { Badge } from "@/components/ui/badge";
   import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
   import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-  import { TooltipProvider } from "@/components/ui/tooltip";
+  import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import MetricCard from "@/components/app/cards/metric-card.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
@@ -23,8 +24,9 @@
     deliveryStatus,
     datasetDeliveryDate,
   } from "@/components/app/projects/dashboard/DashboardStatus";
+  import Text from "@/components/ui/text/Text.svelte";
 
-  import { type DashboardRange, type Interval } from "@/components/app/projects/dashboard/DashboardHistory";
+  import type { DashboardRange, Interval } from "@/components/app/projects/dashboard/DashboardHistory";
 
   // Props
   let { projectId }: { projectId: string } = $props();
@@ -55,8 +57,14 @@
 
   // Initialize
   onMount(() => {
+    const unsubscribe = localToday.subscribe((day) => {
+      void manager.updateReportingDay(day);
+    });
     void manager.select([]);
-    return () => manager.dispose();
+    return () => {
+      unsubscribe();
+      manager.dispose();
+    };
   });
 </script>
 
@@ -71,11 +79,52 @@
     {:else}
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex max-w-full min-w-0 items-center gap-3">
-          <span class="text-muted-foreground text-xs">Datasets</span><DatasetSelector
-            sources={manager.sources}
-            ids={manager.ids}
-            select={(ids) => void manager.select(ids)}
-          />
+          <span class="text-muted-foreground text-xs">Datasets</span>
+          <DatasetSelector {projectId} ids={manager.ids} select={(ids) => void manager.select(ids)} />
+
+          {#if manager.ids.length !== 1 && manager.poolCount > 1}
+            <div
+              role="toolbar"
+              tabindex="0"
+              aria-label="Dataset view"
+              class="bg-background inline-flex h-8 max-w-72 min-w-0 shrink-0 items-center rounded-md border shadow-xs"
+              onkeydown={(event) => {
+                if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                  event.preventDefault();
+                  void manager.step(event.key === "ArrowLeft" ? -1 : 1);
+                }
+              }}
+            >
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                class="size-7 rounded-none rounded-l-md"
+                aria-label="Previous dataset"
+                disabled={manager.loading}
+                onclick={() => void manager.step(-1)}
+              >
+                <ChevronLeftIcon class="size-3" />
+              </Button>
+              <Tooltip>
+                <TooltipTrigger class="min-w-0 flex-1 truncate px-2 text-xs font-medium">
+                  {detail?.name ?? (manager.ids.length ? "Selected datasets" : "All datasets")}
+                </TooltipTrigger>
+                <TooltipContent class="max-w-xs [overflow-wrap:anywhere]">
+                  {detail?.name ?? (manager.ids.length ? "Selected datasets" : "All datasets")}
+                </TooltipContent>
+              </Tooltip>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                class="size-7 rounded-none rounded-r-md"
+                aria-label="Next dataset"
+                disabled={manager.loading}
+                onclick={() => void manager.step(1)}
+              >
+                <ChevronRightIcon class="size-3" />
+              </Button>
+            </div>
+          {/if}
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -90,58 +139,6 @@
         </div>
       </div>
 
-      {#if manager.ids.length !== 1 && manager.poolCount > 1}
-        <div
-          role="toolbar"
-          tabindex="0"
-          aria-label="Dataset view"
-          class="flex min-w-0 flex-wrap items-center gap-2"
-          onkeydown={(event) => {
-            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-              event.preventDefault();
-              void manager.step(event.key === "ArrowLeft" ? -1 : 1);
-            }
-          }}
-        >
-          <Button variant={!detail ? "secondary" : "outline"} onclick={() => void manager.focus(null)}>
-            {manager.ids.length
-              ? `Selected datasets (${manager.ids.length})`
-              : `All datasets (${manager.poolCount}${manager.poolMore ? "+" : ""})`}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Previous dataset"
-            disabled={manager.navigationPage === null || (!detail && manager.poolMore)}
-            onclick={() => void manager.step(-1)}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <Button
-            variant={detail ? "secondary" : "outline"}
-            class="max-w-80 min-w-0"
-            title={detail?.name ?? manager.remembered?.name ?? "View a dataset"}
-            onclick={() => {
-              if (manager.remembered) void manager.focus(manager.remembered);
-              else void manager.step(1);
-            }}
-          >
-            <span class="truncate">
-              {detail?.name ?? manager.remembered?.name ?? "View a dataset"}
-            </span>
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Next dataset"
-            disabled={manager.navigationPage === null}
-            onclick={() => void manager.step(1)}
-          >
-            <ChevronRightIcon />
-          </Button>
-        </div>
-      {/if}
-
       {#if manager.error}
         <Alert variant="destructive">
           <AlertTitle>Dashboard could not refresh</AlertTitle><AlertDescription>{manager.error}</AlertDescription>
@@ -151,7 +148,7 @@
       {#if detail}<div class="space-y-3">
           {#if manager.ids.length !== 1}
             <Button variant="ghost" size="sm" class="px-0" onclick={() => void manager.focus(null)}
-              ><ArrowLeftIcon />Back to all datasets</Button
+              ><ArrowLeftIcon />{manager.ids.length ? "Back to selected datasets" : "Back to all datasets"}</Button
             >
           {/if}
           <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -188,61 +185,60 @@
           title="Total entries"
           value={counts ? counts.total.toLocaleString() : (detail?.entries_total_count?.toLocaleString() ?? "—")}
         />
-        <Card>
-          <CardHeader
-            ><CardDescription
-              >{detail
-                ? "Dataset progress"
-                : manager.ids.length
-                  ? "Progress of selection"
-                  : "Overall progress"}</CardDescription
-            >
-            <CardTitle class="text-2xl">{progress === null ? "—" : `${progress}%`}</CardTitle>
+
+        <MetricCard
+          title={detail ? "Dataset progress" : manager.ids.length ? "Progress of selection" : "Overall progress"}
+        >
+          {#snippet slotValue()}
+            <Text size="h2" weight="semibold">{progress === null ? "—" : `${progress}%`}</Text>
 
             <div class="bg-muted mt-2 h-1.5 overflow-hidden rounded-full">
               <div class="bg-primary h-full" style={`width:${progress ?? 0}%`}></div>
             </div>
 
-            <CardDescription
-              >{counts
+            <Text class="text-muted-foreground" size="sm">
+              {counts
                 ? `${counts.completed.toLocaleString()} of ${counts.total.toLocaleString()} completed`
                 : detail
                   ? `${detail.entries_completed_count.toLocaleString()} of ${detail.entries_total_count.toLocaleString()} completed`
-                  : "Exact workflow counts unavailable"}</CardDescription
-            ></CardHeader
-          >
-        </Card>
-        <Card
-          ><CardHeader
-            ><CardDescription>Open entries</CardDescription><CardTitle class="text-2xl"
-              >{deliveryCounts ? (deliveryCounts.total - deliveryCounts.completed).toLocaleString() : "—"}</CardTitle
-            ><CardDescription
-              >{counts
+                  : "Exact workflow counts unavailable"}
+            </Text>
+          {/snippet}
+        </MetricCard>
+
+        <MetricCard title="Open entries">
+          {#snippet slotValue()}
+            <Text size="h2" weight="semibold"
+              >{deliveryCounts ? (deliveryCounts.total - deliveryCounts.completed).toLocaleString() : "—"}</Text
+            >
+            <Text class="text-muted-foreground" size="sm">
+              {counts
                 ? `${(counts.reviewing + counts.pendingReview).toLocaleString()} in review · ${(counts.annotating + counts.pendingAnnotation).toLocaleString()} in annotation${counts.residual ? ` · ${counts.residual} outside active workflow` : ""}`
-                : "Workflow breakdown unavailable"}</CardDescription
-            ></CardHeader
-          ></Card
-        >
-        <Card
-          ><CardHeader
-            ><CardDescription>{detail ? "Delivery" : "Datasets needing attention"}</CardDescription><CardTitle
-              class={detail ? "text-lg" : "text-2xl"}
+                : "Workflow breakdown unavailable"}
+            </Text>
+          {/snippet}
+        </MetricCard>
+
+        <MetricCard title={detail ? "Delivery" : "Datasets needing attention"}>
+          {#snippet slotValue()}
+            <Text size="h2" weight="semibold"
               >{detail
                 ? deliveryCounts
-                  ? deliveryStatus(datasetDeliveryDate(detail), deliveryCounts).label
+                  ? deliveryStatus(datasetDeliveryDate(detail), deliveryCounts, $localToday).label
                   : "Unavailable"
-                : (manager.attention?.toLocaleString() ?? "—")}</CardTitle
-            ><CardDescription
-              >{detail
+                : (manager.attention?.toLocaleString() ?? "—")}</Text
+            >
+            <Text class="text-muted-foreground" size="sm">
+              {detail
                 ? datasetDeliveryDate(detail)
                   ? "Based on delivery date and current completion"
                   : "No due date set"
                 : manager.attention === null
                   ? "Overdue count unavailable for this scope"
-                  : "Overdue datasets that are not completed"}</CardDescription
-            ></CardHeader
-          ></Card
-        >
+                  : "Overdue datasets that are not completed"}
+            </Text>
+          {/snippet}
+        </MetricCard>
       </div>
       <Card
         ><CardHeader
@@ -300,13 +296,13 @@
         </CardHeader>
         <CardContent class="px-0"
           >{#key `${scope}-${manager.version}`}<OpenEntriesTable
+              stateKey={"dashboard-open-entries-" + uid + "-" + manager.tableEpoch}
               sources={manager.sources}
               ids={detail ? [detail.id] : manager.ids}
               combined={!detail}
             />{/key}</CardContent
         ></Card
       >
-      <p class="text-muted-foreground text-xs">Reporting timezone: Asia/Bangkok.</p>
 
       {#if notice}<Alert
           ><AlertTitle>Dashboard information</AlertTitle><AlertDescription

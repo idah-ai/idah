@@ -1,6 +1,14 @@
 <script lang="ts">
+  import { today as localToday } from "@/utils/date";
   import { MediaQuery } from "svelte/reactivity";
-  import { today, toCalendarDate, startOfWeek, startOfMonth, endOfMonth } from "@internationalized/date";
+  import {
+    fromDate,
+    getLocalTimeZone,
+    toCalendarDate,
+    startOfWeek,
+    startOfMonth,
+    endOfMonth,
+  } from "@internationalized/date";
   import { CalendarIcon } from "@lucide/svelte";
 
   import { Button } from "@/components/ui/button";
@@ -23,12 +31,10 @@
   let { range = $bindable(), interval = $bindable() }: { range: DashboardRange; interval: Interval } = $props();
 
   // Variables
-  const day = today("Asia/Bangkok"),
-    desktop = new MediaQuery("(min-width:768px)");
-  const dateLabel = (value: CalendarDate) =>
-    value
-      .toDate("Asia/Bangkok")
-      .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Bangkok" });
+  const day = $derived(toCalendarDate(fromDate($localToday, getLocalTimeZone())));
+  const desktop = new MediaQuery("(min-width:768px)");
+  const dateLabel = (value: CalendarDate): string =>
+    value.toDate(getLocalTimeZone()).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   let rangeOpen = $state(false),
     draft: DateRange | undefined = $state();
   const days = $derived(rangeDays(range));
@@ -37,12 +43,12 @@
   );
 
   // Functions
-  function openRange(open: boolean) {
+  function openRange(open: boolean): void {
     rangeOpen = open;
     draft = open ? { start: range.start, end: range.end } : undefined;
   }
 
-  function preset(label: string) {
+  function preset(label: string): void {
     let start = day,
       end = day;
     const week = startOfWeek(day, "en-GB");
@@ -63,14 +69,14 @@
     draft = { start, end };
   }
 
-  function applyRange() {
+  function applyRange(): void {
     if (!valid || !draft?.start || !draft.end) return;
     range = { start: toCalendarDate(draft.start), end: toCalendarDate(draft.end) };
     interval = automaticInterval(rangeDays(range));
     openRange(false);
   }
 
-  function intervalAllowed(value: Interval) {
+  function intervalAllowed(value: Interval): boolean {
     return allowed(value, days);
   }
 </script>
@@ -90,7 +96,7 @@
       ><PopoverContent align="end" class="w-auto max-w-[calc(100vw-2rem)] p-0"
         ><div class="border-b px-4 py-3">
           <p class="text-sm font-medium">Completion date range</p>
-          <p class="text-muted-foreground text-xs">Asia/Bangkok</p>
+          <p class="text-muted-foreground text-xs">{getLocalTimeZone()}</p>
         </div>
         <div class="flex flex-col md:flex-row">
           <div class="flex max-w-lg flex-wrap gap-1 border-b p-2 md:w-36 md:flex-col md:border-r md:border-b-0">
@@ -164,8 +170,5 @@
     >
       Historical completion dates are unavailable. Current totals cannot be shown as a completion timeline.
     </div>
-    <p class="text-muted-foreground mt-4 text-xs">
-      Grouping adjusts to your range. Date range does not change current progress.
-    </p></CardContent
-  ></Card
+  </CardContent></Card
 >
