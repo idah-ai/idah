@@ -20,6 +20,33 @@ function createSelection(entries: MockEntry[], selectedIds: string[]): EntrySele
 }
 
 describe("EntrySelection", () => {
+  describe("selectedEntryRecords", () => {
+    it("returns the selected entries in selection order", () => {
+      const entries: MockEntry[] = [
+        { id: "1", name: "A" },
+        { id: "2", name: "B" },
+        { id: "3", name: "C" },
+      ];
+      const sel = createSelection(entries, ["3", "1"]);
+
+      expect(sel.selectedEntryRecords.map((e) => e.id)).toEqual(["3", "1"]);
+    });
+
+    it("returns empty array when nothing is selected", () => {
+      const entries: MockEntry[] = [{ id: "1", name: "A" }];
+      const sel = createSelection(entries, []);
+
+      expect(sel.selectedEntryRecords).toEqual([]);
+    });
+
+    it("skips selected ids that are not present in the loaded data", () => {
+      const entries: MockEntry[] = [{ id: "1", name: "A" }];
+      const sel = createSelection(entries, ["1", "missing"]);
+
+      expect(sel.selectedEntryRecords.map((e) => e.id)).toEqual(["1"]);
+    });
+  });
+
   describe("reopenableEntryIds", () => {
     it("returns ids of selected entries whose status is 'completed'", () => {
       const entries: MockEntry[] = [

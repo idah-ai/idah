@@ -59,13 +59,31 @@ module EntryStats
       stats.merge!(plugin_stats)
     end
 
-    # Deletes all existing stats for the entry and inserts the new set in one transaction.
+    # Persists stats for the given entry: deletes stale keys first, then upserts
+    # the new set — all in one transaction. The DELETE clears old category/shape keys
+    # (e.g. after a category rename), while INSERT … ON CONFLICT DO UPDATE prevents
+    # the unique-key race between two concurrent recomputes for the same entry
+    # (sweep + submit handler).
     def self.persist(entry_id, stats)
       repo = EntryStat::Repository.new(nil)
       repo.transaction do
         repo.delete_by_entry_id(entry_id)
-        repo.bulk_insert(entry_id, stats)
+        repo.bulk_upsert(entry_id, stats)
       end
+    end
+
+    # Computes and persists ONLY the orphan_category.count stat for the given entry.
+    # Used for pending/in-progress entries when a category is removed from the
+    # labeling configuration — we want to track orphan categories without writing
+    # annotation/category/shape stats (which could go stale before submit).
+    #
+    # Single-key upsert only — no delete needed, no race.
+    #
+    # @param entry [Entry::Record] entry with dataset, project, and annotations preloaded
+    def self.orphan_only(entry)
+      stats = EntryStats::CoreStats.call(entry)
+      repo = EntryStat::Repository.new(nil)
+      repo.bulk_upsert(entry.id, { "orphan_category.count" => stats["orphan_category.count"] })
     end
   end
 end

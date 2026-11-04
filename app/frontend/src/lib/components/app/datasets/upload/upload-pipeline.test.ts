@@ -89,6 +89,17 @@ describe("uploadAll", () => {
     expect(entryNames()).toEqual(["0001.jpg", "0001.jpg"]); // duplicates are fine
   });
 
+  it("uses a selected entry delivery date and otherwise inherits the dataset date", async () => {
+    upload.mockResolvedValue(uploaded("a.jpg"));
+    const context = { projectId: "p1", modality: "idah-image", getDatasetId: async () => "ds1" };
+
+    await uploadAll([item("a.jpg")], context);
+    await uploadAll([item("b.jpg")], { ...context, deliveryDate: "2026-12-01" });
+
+    expect(createEntry.mock.calls[0][0].attributes).not.toHaveProperty("delivery_date");
+    expect(createEntry.mock.calls[1][0].attributes.delivery_date).toBe("2026-12-01");
+  });
+
   it("keeps going when one item fails every retry", async () => {
     upload
       .mockRejectedValueOnce(new Error("down"))

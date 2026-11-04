@@ -66,6 +66,7 @@ import { register as registerAnnotationMerge } from "./annotation/merge";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
+import { register as registerAnnotationBulkUpdate } from "./annotation/bulk-update";
 import { register as registerAnnotationUpdateGroupCategory } from "./annotation/updateGroupCategory";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
@@ -134,6 +135,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
+  registerAnnotationBulkUpdate(driver);
   registerAnnotationSplit(driver, () => viewport.video.currentFrame.value);
   registerAnnotationMerge(driver);
   registerAnnotationExtendPrev(driver);

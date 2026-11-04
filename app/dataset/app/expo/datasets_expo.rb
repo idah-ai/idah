@@ -22,7 +22,9 @@ class DatasetsExpo < BaseExpo
                       :created_at__gte,
                       :created_at__lte,
                       :updated_at__gte,
-                      :updated_at__lte
+                      :updated_at__lte,
+                      :delivery_date__gte,
+                      :delivery_date__lte
     end
 
     show

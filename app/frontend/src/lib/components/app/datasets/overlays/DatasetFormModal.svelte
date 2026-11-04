@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { onMount } from "svelte";
 
   import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
   import DatasetForm from "@/components/app/datasets/forms/DatasetForm.svelte";
@@ -24,9 +25,17 @@
     uploadAll,
   } from "@/components/app/datasets/upload/upload-pipeline";
   import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
+  import {
+    createDatasetSchema,
+    deliveryDateChangeSchema,
+    updateDatasetSchema,
+  } from "@/data/model/dataset/datasets/schema";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
@@ -35,6 +44,7 @@
   import type { PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { IConfig } from "@/plugin/v2/types";
+  import type { ProjectMemberScope } from "@/security/types";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -42,6 +52,17 @@
     datasetRecord?: DatasetRecord;
   }
   let { action, open = $bindable(), title, datasetRecord }: Props = $props();
+
+  let canEditDeliveryDate = $state(false);
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    if (!projectId) return;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: { projectId, projectMemberRoles: ["project_owner"] },
+    };
+    canEditDeliveryDate =
+      (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+  });
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
@@ -79,6 +100,7 @@
           attributes: {
             name: null,
             description: null,
+            delivery_date: null,
           },
         }),
   );
@@ -97,6 +119,7 @@
     return {
       name: source.name,
       modality: source.modality,
+      delivery_date: source.delivery_date ?? null,
     };
   }
   const changeTracker = new FormChangeTracker(serializeEditableFields, () => datasetRecord);
@@ -150,6 +173,7 @@
         attributes: {
           name,
           modality: draft.modality,
+          ...(canEditDeliveryDate && draft.delivery_date ? { delivery_date: draft.delivery_date } : {}),
           labeling_configuration: labelConfig,
           workflow_configuration: {},
         },
@@ -219,6 +243,8 @@
 
   async function updateDataset() {
     const labelConfig = await getLabelConfig();
+    const deliveryDateChanged =
+      canEditDeliveryDate && (draft.delivery_date ?? null) !== (datasetRecord?.delivery_date ?? null);
 
     await datasetsBackendDataSource.update(
       datasetRecord!.id,
@@ -226,6 +252,7 @@
         attributes: {
           name: draft.name,
           modality: draft.modality,
+          ...(deliveryDateChanged ? { delivery_date: draft.delivery_date ?? null } : {}),
           labeling_configuration: labelConfig,
         },
       },
@@ -234,6 +261,10 @@
       },
     );
 
+    if (deliveryDateChanged) {
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+      $refetches.entries.list = new Date();
+    }
     open = false;
     $refetches.datasets.list = new Date();
     $refetches.datasets.get = new Date();
@@ -254,9 +285,18 @@
         : updateDatasetSchema;
 
     try {
+      const dateValidation = deliveryDateChangeSchema.safeParse({
+        delivery_date: canEditDeliveryDate ? draft.delivery_date : undefined,
+        original_delivery_date: datasetRecord?.delivery_date ?? null,
+      });
+      if (!dateValidation.success) {
+        fieldErrors = getFieldErrors(dateValidation.error);
+        return;
+      }
       const validated = validateData(schema, {
         name: draft.name,
         modality: draft.modality,
+        delivery_date: draft.delivery_date,
       });
 
       if (!validated.success) {
@@ -344,7 +384,8 @@
       </Tabs>
     {/if}
 
-    <DatasetForm {dataset} {fieldErrors} {newRecord} {uploadMode} onValueChange={setValue}></DatasetForm>
+    <DatasetForm {dataset} {fieldErrors} {newRecord} {uploadMode} {canEditDeliveryDate} onValueChange={setValue}
+    ></DatasetForm>
   {/if}
 </FormModal>
 

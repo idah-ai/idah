@@ -9,6 +9,8 @@ import type { JsonApiErrorResponse } from "@/data/model/types";
 export interface UploadContext {
   projectId: string;
   modality: string;
+  // Omit to inherit the dataset delivery date; pass a date for an explicit override.
+  deliveryDate?: string | null;
   // Called only once an upload produced media, so a dataset can be created lazily.
   getDatasetId: () => Promise<string>;
 }
@@ -104,7 +106,12 @@ export async function uploadSingleMedia(media: UploadItem, context: UploadContex
         for (const uploadedMedia of pendingMedias) {
           await entriesBackendDataSource.create(
             {
-              attributes: { resource: uploadedMedia.resource, name: uploadedMedia.filename, status: "pending" },
+              attributes: {
+                resource: uploadedMedia.resource,
+                name: uploadedMedia.filename,
+                status: "pending",
+                ...(context.deliveryDate !== undefined ? { delivery_date: context.deliveryDate } : {}),
+              },
               relationships: { dataset: { data: { type: "datasets:datasets", id: datasetId } } },
             },
             { showErrorToast: false },
