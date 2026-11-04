@@ -29,8 +29,8 @@
   let { children }: Props = $props();
 
   // Variables
-  let projectId: string = page.params.projectId as string;
-  let tabs = $state(projectTabs);
+  let projectId = $derived(page.params.projectId as string);
+  let tabs = $state(projectTabs.filter((tab) => tab.value !== "dashboard" && tab.value !== "exports"));
   let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
 
   // Reactive variables
@@ -51,9 +51,14 @@
       },
     };
     const canReadExport = await currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]);
+    const canReadDashboard = await currentAccount?.can("read", "dataset:datasets", ["as_org_owner", as_project_owner]);
 
     if (!canReadExport) {
       tabs = projectTabs.filter((tab) => tab.value !== "exports");
+    }
+
+    if (!canReadDashboard) {
+      tabs = projectTabs.filter((tab) => tab.value !== "dashboard");
     }
   });
 
