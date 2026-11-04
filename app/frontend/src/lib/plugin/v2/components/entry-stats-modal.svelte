@@ -29,6 +29,46 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
+  interface TimeRow {
+    label: string;
+    value: string;
+  }
+  interface TimeStepGroup {
+    step: string;
+    color: string;
+    total: string | undefined;
+    authors: TimeRow[];
+  }
+
+  // Step accent colors shared with the rest of the UI
+  const STEP_COLORS: Record<string, string> = {
+    annotate: "#7c3aed",
+    review: "#1668dc",
+    done: "#15803d",
+  };
+
+  // Time section → step totals with one indented row per author underneath
+  const timeGroups = $derived.by(() => {
+    const byStep = new SvelteMap<string, { total?: string; authors: TimeRow[] }>();
+    for (const { key, value, label } of stats) {
+      const parts = key.split(".");
+      if (parts[0] !== "time" || !parts[1]) continue;
+      if (!byStep.has(parts[1])) byStep.set(parts[1], { authors: [] });
+      const g = byStep.get(parts[1])!;
+      if (parts[2] === "total") {
+        g.total = value;
+      } else {
+        g.authors.push({ label: label ?? humanizeKey(parts.slice(2)), value });
+      }
+    }
+    return [...byStep.entries()].map<TimeStepGroup>(([step, g]) => ({
+      step: step.charAt(0).toUpperCase() + step.slice(1),
+      color: STEP_COLORS[step] ?? "#1668dc",
+      total: g.total,
+      authors: g.authors,
+    }));
+  });
+
   const grouped = $derived.by(() => {
     const map = new SvelteMap<
       string,
@@ -45,6 +85,7 @@
     >();
 
     for (const { key, value, section, sectionHeader, unitHeader, label, tags } of stats) {
+      if (section === "time") continue; // rendered via timeGroups
       const rest = key.split(".").slice(1);
       const rowLabel = label ?? humanizeKey(rest, unitHeader ?? "");
 
@@ -113,6 +154,40 @@
         {:else if stats.length === 0}
           <p class="text-muted-foreground py-6 text-center text-sm">No statistics available yet.</p>
         {:else}
+          <!-- Time section: step totals + indented authors -->
+          {#if timeGroups.length > 0}
+            <div class="mb-4">
+              <div
+                class="text-muted-foreground mb-1 flex justify-between text-xs font-semibold tracking-wide uppercase"
+              >
+                <span>Time</span>
+                <span>Duration</span>
+              </div>
+              <table class="w-full text-sm">
+                <tbody>
+                  {#each timeGroups as { step, color, total, authors } (step)}
+                    <tr class="border-b last:border-0">
+                      <td class="inline-flex items-center gap-2 py-1.5">
+                        <span class="h-2 w-2 rounded-full" style:background={color}></span>
+                        <span class="font-semibold">{step}</span>
+                      </td>
+                      <td class="py-1.5 text-right tabular-nums font-semibold">{total ?? "—"}</td>
+                    </tr>
+                    {#each authors as author (author.label)}
+                      <tr class="border-b last:border-0">
+                        <td class="inline-flex items-center gap-2 py-1.5">
+                          <span class="w-4"></span>
+                          <span class="text-muted-foreground">{author.label}</span>
+                        </td>
+                        <td class="py-1.5 text-right tabular-nums text-muted-foreground">{author.value}</td>
+                      </tr>
+                    {/each}
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
+
           {#each grouped as { section, unitHeader, rows } (section)}
             <div class="mb-4">
               {#if unitHeader}

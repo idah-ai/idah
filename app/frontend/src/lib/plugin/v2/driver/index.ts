@@ -6,6 +6,7 @@ import type {
   ICommandDriverV2,
   IConfig,
   IDatasetInfo,
+  IEntryWorkTime,
   IIdahDriverV2,
   IMediaInfo,
   IToolbarDriverV2,
@@ -79,6 +80,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _config: IConfig;
   private _workflowStep: string;
   private _entryStatus: string;
+  private _timeTracking: Record<string, number> | null;
+  private _workTimes: IEntryWorkTime[];
   private _mode = "editor";
   private _ready = false;
 
@@ -102,6 +105,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     config: IConfig;
     workflowStep: string;
     entryStatus: string;
+    timeTracking: Record<string, number> | null;
+    workTimes: IEntryWorkTime[];
   }) {
     this._id = opts.id;
     this._dataset = opts.dataset;
@@ -110,6 +115,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._config = sortConfigByOrder(opts.config);
     this._workflowStep = opts.workflowStep;
     this._entryStatus = opts.entryStatus;
+    this._timeTracking = opts.timeTracking;
+    this._workTimes = opts.workTimes;
     this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
@@ -245,6 +252,15 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   get entryStatus(): string {
     return this._entryStatus;
   }
+
+  get timeTracking(): Record<string, number> | null {
+    return this._timeTracking;
+  }
+
+  get workTimes(): IEntryWorkTime[] {
+    return this._workTimes;
+  }
+
   get mode(): string {
     return this._mode;
   }
@@ -313,7 +329,33 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       (this.command as CommandDriverAdapter).openPalette();
       return true;
     }
-    return this.command.resolveKeyEvent(event, this._mode);
+    const handled = this.command.resolveKeyEvent(event, this._mode);
+    // A resolved command means the user did something — record it for time
+    // tracking. Catches every keyboard-triggered command in one place.
+    if (handled) this.notifyActivity();
+    return handled;
+  }
+
+  /**
+   * Fire-and-forget activity ping for time tracking.
+   * Sends at most one request per 2-minute slot (throttled client-side).
+   * The server floors the time to the even minute; an empty ping is enough.
+   */
+  #lastNotifySlot = 0;
+  notifyActivity(): void {
+    const SLOT = 120; // 2 minutes in seconds
+    const now = Date.now();
+    const currentSlot = Math.floor(now / (SLOT * 1000));
+    if (currentSlot === this.#lastNotifySlot) return;
+    this.#lastNotifySlot = currentSlot;
+
+    fetch(`/api/v1/dataset/entries/${this._id}/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/vnd.api+json" },
+      body: JSON.stringify({}),
+    }).catch(() => {
+      // Swallow — fire-and-forget; server-side mutation hooks cover real work.
+    });
   }
 
   // ── Private helpers ───────────────────────────────────────────────────
@@ -354,6 +396,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get entryStatus() {
         return driver.entryStatus;
       },
+      get timeTracking() {
+        return driver.timeTracking;
+      },
+      get workTimes() {
+        return driver.workTimes;
+      },
       get mode() {
         return driver.mode;
       },
@@ -389,6 +437,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       onSyncError: driver.onSyncError.bind(driver),
       getFilteredConfig: driver.getFilteredConfig.bind(driver),
       handleKeydown: driver.handleKeydown.bind(driver),
+      notifyActivity: driver.notifyActivity.bind(driver),
     };
   }
 }
@@ -407,7 +456,7 @@ import { SettingsDriverAdapter } from "./adapter/settings.svelte";
 
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
-    included: ["dataset", "dataset.project"],
+    included: ["dataset", "dataset.project", "entry_work_times"],
     noCache: true,
   });
 
@@ -454,6 +503,13 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     config: dataset.labeling_configuration as IConfig,
     workflowStep: entry.wf_step,
     entryStatus: entry.status,
+    timeTracking: entry.time_tracking ?? null,
+    workTimes: (entry.entry_work_times ?? []).map((wt) => ({
+      accountId: wt.account_id,
+      email: wt.email,
+      wfStep: wt.wf_step,
+      seconds: wt.seconds,
+    })),
   });
 
   return driver;
