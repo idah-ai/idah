@@ -303,7 +303,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   // ── Default project config ──────────────────────────────────────────
   private _config: IConfig = {
-    IMAGE_BOUNDING_BOX: {
+    [IMAGE_BOUNDING_BOX]: {
       values: [
         { id: "vehicles/car", color: "#F6402B", label: "Car", text_color: "#FFFFFF", description: "A car" },
         { id: "vehicles/bus", color: "#EB1461", label: "Bus", text_color: "#FFFFFF", description: "A bus" },

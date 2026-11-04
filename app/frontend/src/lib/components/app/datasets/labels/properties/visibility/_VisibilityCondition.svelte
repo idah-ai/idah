@@ -10,6 +10,7 @@
     applyOperator,
     builderOperator,
     conditionProblem,
+    conditionReferenceProblems,
     fieldFor,
     operatorsFor,
     selectableFields,
@@ -37,6 +38,7 @@
   let field = $derived(fieldFor(fields, condition));
   let operator = $derived(builderOperator(condition, field));
   let problem = $derived(conditionProblem(condition, field));
+  let referenceProblems = $derived(conditionReferenceProblems(condition, field));
 
   // A field or value that is no longer in the label config stays listed, so the condition still shows it.
   let fieldChoices = $derived(
@@ -93,7 +95,12 @@
   onSelect: (v: string) => void,
 )}
   <Select type="single" {value} onValueChange={onSelect}>
-    <SelectTrigger size="sm" class={control} aria-label={ariaLabel} aria-invalid={!!problem}>
+    <SelectTrigger
+      size="sm"
+      class={control}
+      aria-label={ariaLabel}
+      aria-invalid={!!(problem || referenceProblems.value)}
+    >
       <span class="truncate">{label}</span>
     </SelectTrigger>
     <SelectContent class="max-w-80">
@@ -109,7 +116,7 @@
   <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] items-start gap-1">
     <!-- CONDITION::FIELD -->
     <Select type="single" value={field.path} onValueChange={setField}>
-      <SelectTrigger size="sm" class={control} aria-label="Field">
+      <SelectTrigger size="sm" class={control} aria-label="Field" aria-invalid={!!referenceProblems.field}>
         <span class="truncate">{field.label}</span>
       </SelectTrigger>
       <SelectContent>
@@ -134,7 +141,12 @@
     <!-- CONDITION::VALUE -->
     {#if isListOperator(operator)}
       <Select type="multiple" value={(condition.value as string[]) ?? []} onValueChange={(values) => setValue(values)}>
-        <SelectTrigger size="sm" class={control} aria-label="Values" aria-invalid={!!problem}>
+        <SelectTrigger
+          size="sm"
+          class={control}
+          aria-label="Values"
+          aria-invalid={!!(problem || referenceProblems.value)}
+        >
           <span class="truncate">
             {#if Array.isArray(condition.value) && condition.value.length > 0}
               {valueLabel(condition, field)}
@@ -178,7 +190,7 @@
         step="1"
         class="h-7 px-2 text-xs"
         aria-label="Value"
-        aria-invalid={!!problem}
+        aria-invalid={!!(problem || referenceProblems.value)}
         value={condition.value}
         oninput={(e) => setValue(e.currentTarget.valueAsNumber)}
       />
@@ -186,7 +198,7 @@
       <Input
         class="h-7 px-2 text-xs"
         aria-label="Value"
-        aria-invalid={!!problem}
+        aria-invalid={!!(problem || referenceProblems.value)}
         placeholder={operator !== "match" ? "Value" : field.kind === "category" ? "e.g. vehicles/c*" : "e.g. AB-*"}
         value={condition.value}
         oninput={(e) => setValue(e.currentTarget.value)}
@@ -207,5 +219,9 @@
 
   {#if problem}
     <p class="text-destructive text-xs">{problem}</p>
+  {:else if referenceProblems.field}
+    <p class="text-destructive text-xs">{referenceProblems.field}</p>
+  {:else if referenceProblems.value}
+    <p class="text-destructive text-xs">{referenceProblems.value}</p>
   {/if}
 </div>

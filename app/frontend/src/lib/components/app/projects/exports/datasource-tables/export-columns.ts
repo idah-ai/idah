@@ -4,6 +4,7 @@ import ExportDatasetIncludedMediasCell from "@/components/app/projects/exports/d
 import ExportDatasetNameCell from "@/components/app/projects/exports/datasource-tables/export-dataset-name-cell.svelte";
 import ExportDatasetStatusCell from "@/components/app/projects/exports/datasource-tables/export-dataset-status-cell.svelte";
 import ExportRowActionCell from "@/components/app/projects/exports/datasource-tables/export-row-action-cell.svelte";
+import ExportTypeCell from "@/components/app/projects/exports/datasource-tables/export-type-cell.svelte";
 
 import { ExportRecord } from "@/data/model/sync/exports/record";
 
@@ -19,6 +20,16 @@ export const exportsColumns: ColumnsSettings<ExportRecord> = {
     visible: true,
     hidable: false,
     cellComponent: ExportDatasetNameCell,
+  },
+  type: {
+    label: "Type",
+    dataType: "enum",
+    clickable: false,
+    sortable: false,
+    filterable: false,
+    visible: true,
+    hidable: false,
+    cellComponent: ExportTypeCell,
   },
   exporter: {
     label: "Format",

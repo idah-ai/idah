@@ -15,15 +15,29 @@
     annotationValue: IVideoAnnotationValue;
     onValueChange: (property: IConfigProperty, value: string | number | string[] | boolean | undefined) => void;
     disabled: boolean;
+    showTitle?: boolean;
+    placeholder?: string;
+    validationOverride?: boolean;
   };
 
-  let { properties, annotationValue, onValueChange, disabled }: Props = $props();
+  let {
+    properties,
+    annotationValue,
+    onValueChange,
+    disabled,
+    showTitle = true,
+    placeholder,
+    validationOverride,
+  }: Props = $props();
 </script>
 
 <section class="flex flex-col gap-2">
-  <div class="flex flex-row items-center gap-2">
-    <Text size="sm" weight="semibold">Properties</Text>
-  </div>
+  {#if showTitle}
+    <div class="flex flex-row items-center gap-2">
+      <Text size="sm" weight="semibold">Properties</Text>
+    </div>
+  {/if}
+
   {#each properties as property, i (`${property.id}-${i}`)}
     <div class="flex flex-col gap-1">
       {#if property.type === "text"}
@@ -31,6 +45,8 @@
           {property}
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
+          {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "integer"}
@@ -38,6 +54,8 @@
           {property}
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
+          {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "boolean"}
@@ -45,6 +63,8 @@
           {property}
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
+          {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "single-select"}
@@ -52,6 +72,8 @@
           {property}
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
+          {placeholder}
+          {validationOverride}
           {disabled}
         />
       {:else if property.type === "multi-select"}
@@ -59,6 +81,8 @@
           {property}
           value={annotationValue.properties?.[property.id] as any}
           onValueChange={(v: any) => onValueChange(property, v)}
+          {placeholder}
+          {validationOverride}
           {disabled}
         />
       {/if}

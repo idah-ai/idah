@@ -5,6 +5,6 @@ export type ProjectTab = "datasets" | "members" | "exports" | "dashboard";
 export const projectTabs: BaseTabs<ProjectTab> = [
   { label: "Datasets", value: "datasets" },
   { label: "Dashboard", value: "dashboard" },
-  { label: "Datasets Exports", value: "exports" },
+  { label: "Exports", value: "exports" },
   { label: "Members", value: "members" },
 ];

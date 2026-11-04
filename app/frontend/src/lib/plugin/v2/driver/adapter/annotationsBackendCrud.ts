@@ -140,8 +140,20 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
       }
     }
 
-    const res = await annotationsBackendDataSource.list({ filters, noCache: true });
-    return res.data.map(annotationRecordToV2);
+    filters["entry_id"] = this.entryId;
+    const itemsPerPage = 100;
+    const records: IAnnotationRecord[] = [];
+    for (let page = 1; ; page++) {
+      const res = await annotationsBackendDataSource.list({
+        filters,
+        pagination: { page, itemsPerPage },
+        sort: ["id"],
+        noCache: true,
+      });
+      records.push(...res.data.map(annotationRecordToV2));
+      if (res.data.length < itemsPerPage) break;
+    }
+    return records;
   }
 
   async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {

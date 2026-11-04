@@ -121,3 +121,53 @@ describe("LabelConfigController properties", () => {
     expect(update.id).toBe("property-1");
   });
 });
+
+describe("LabelConfigController visibility validation", () => {
+  it("reports invalid properties and their configuration", () => {
+    const controller = new LabelConfigController();
+    controller.load({
+      "idah-video:bounding-box": {
+        values: [{ id: "car", label: "Car", color: null, text_color: null }],
+        properties: [
+          property("visible", "Visible", {
+            visibility: ["eq", [["get", ["properties.deleted"]], true]] as IConfigProperty["visibility"],
+          }),
+        ],
+      },
+    });
+
+    expect(controller.hasPropertyVisibilityErrors("idah-video:bounding-box", "visible")).toBe(true);
+    expect(controller.hasConfigVisibilityErrors("idah-video:bounding-box")).toBe(true);
+    expect(controller.hasVisibilityErrors).toBe(true);
+  });
+
+  it("validates configurations that are not selected", () => {
+    const controller = new LabelConfigController();
+    controller.load({
+      "idah-video:bounding-box": { values: [], properties: [] },
+      "entry:root": {
+        values: [],
+        properties: [
+          property("visible", "Visible", {
+            visibility: ["eq", [["get", ["category"]], "removed"]] as IConfigProperty["visibility"],
+          }),
+        ],
+      },
+    });
+
+    expect(controller.selectedConfigKey).toBe("idah-video:bounding-box");
+    expect(controller.hasVisibilityErrors).toBe(true);
+    expect(controller.hasConfigVisibilityErrors("entry:root")).toBe(true);
+  });
+
+  it("clears the error after the referenced property is restored", () => {
+    const controller = controllerWith(
+      property("visible", "Visible", {
+        visibility: ["eq", [["get", ["properties.deleted"]], true]] as IConfigProperty["visibility"],
+      }),
+    );
+    controller.addProperty(property("deleted", "Deleted"));
+
+    expect(controller.hasVisibilityErrors).toBe(false);
+  });
+});
