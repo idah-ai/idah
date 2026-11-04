@@ -45,20 +45,18 @@
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
     const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
+      as_user: { projectId, projectMemberRoles: ["project_owner"] },
     };
-    const canReadExport = await currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]);
-    const canReadDashboard = await currentAccount?.can("read", "dataset:datasets", ["as_org_owner", as_project_owner]);
-
-    if (!canReadExport) {
-      tabs = projectTabs.filter((tab) => tab.value !== "exports");
-    }
-
-    if (!canReadDashboard) {
-      tabs = projectTabs.filter((tab) => tab.value !== "dashboard");
+    try {
+      const [canReadExport, canReadDashboard] = await Promise.all([
+        currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]),
+        currentAccount?.can("read", "dataset:datasets", ["as_org_owner", as_project_owner]),
+      ]);
+      tabs = projectTabs.filter(
+        (tab) => (tab.value !== "exports" || canReadExport) && (tab.value !== "dashboard" || canReadDashboard),
+      );
+    } catch {
+      /* Keep restricted tabs hidden if access cannot be checked. */
     }
   });
 
