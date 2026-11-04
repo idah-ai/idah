@@ -33,10 +33,11 @@ module NoteFeed
       end
 
       # When feedback keys are modified, they must exist in the dataset's
-      # feedback configuration (same rule as the create path).
+      # feedback configuration (same rule as the create path). The normalized
+      # (de-duplicated) keys are written back before persisting.
       if attributes.key?(:feedback_keys)
         entry = entries.find!(current.entry_id, included: ["dataset"])
-        validate_feedback_keys!(entry, attributes[:feedback_keys])
+        attributes[:feedback_keys] = validate_feedback_keys!(entry, attributes[:feedback_keys])
       end
 
       # Only stamp edited_at when the note's content actually changed, so no-op
@@ -98,8 +99,9 @@ module NoteFeed
               "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
-      # Validate that all feedback_keys exist in the dataset's feedback configuration
-      validate_feedback_keys!(entry, attributes[:feedback_keys])
+      # Validate that all feedback_keys exist in the dataset's feedback
+      # configuration and de-duplicate them before persisting.
+      attributes[:feedback_keys] = validate_feedback_keys!(entry, attributes[:feedback_keys])
 
       if attributes[:annotation_id] && attributes[:anchor_type] == "annotation"
         annotation_id = attributes[:annotation_id]
@@ -130,15 +132,28 @@ module NoteFeed
       has_feedback_key || has_content_md
     end
 
-    # Validates that every provided feedback key exists in the dataset's
-    # feedback configuration. Shared by the create and update paths.
+    # Validates that every provided feedback key is a string that exists in the
+    # dataset's feedback configuration, returning the de-duplicated keys.
+    # Shared by the create and update paths.
     def validate_feedback_keys!(entry, feedback_keys)
-      return unless feedback_keys.is_a?(Array) && feedback_keys.any?
+      return feedback_keys if feedback_keys.nil?
+
+      unless feedback_keys.is_a?(Array) && feedback_keys.all? { |key| key.is_a?(String) }
+        raise Verse::Error::ValidationFailed,
+              "feedback_keys must be an array of strings"
+      end
+
+      # De-duplicate (order preserving): the frontend renders the keys in a
+      # keyed Svelte {#each ... (feedbackKey)} block, and duplicates would make
+      # it throw `each_key_duplicate`, so the badges would not render.
+      feedback_keys = feedback_keys.uniq
+
+      return feedback_keys if feedback_keys.empty?
 
       feedback_config = entry.dataset.feedback_configuration || {}
       missing = feedback_keys.reject { |key| feedback_config.key?(key.to_sym) }
 
-      return if missing.empty?
+      return feedback_keys if missing.empty?
 
       raise Verse::Error::ValidationFailed,
             "Feedback keys #{missing.inspect} do not exist in the dataset's feedback configuration"

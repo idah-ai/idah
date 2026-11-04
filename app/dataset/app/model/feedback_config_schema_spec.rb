@@ -37,6 +37,38 @@ RSpec.describe FeedbackConfigSchema do
     end.to raise_error(Verse::Error::ValidationFailed, /label can't be empty/)
   end
 
+  it "rejects an item with a whitespace-only label" do
+    expect do
+      FeedbackConfigSchema.validate!({ "aB3kF9mN2q" => { label: "   " } })
+    end.to raise_error(Verse::Error::ValidationFailed, /label can't be empty/)
+  end
+
+  it "accepts keys made of letters, digits, underscores and hyphens" do
+    config = FeedbackConfigSchema.validate!(
+      { "keep_key-2" => { label: "Fine" } }
+    )
+
+    expect(config).to eq({ "keep_key-2".to_sym => { label: "Fine" } })
+  end
+
+  it "rejects an empty key" do
+    expect do
+      FeedbackConfigSchema.validate!({ "" => { label: "No key" } })
+    end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+  end
+
+  it "rejects a key that is too long" do
+    expect do
+      FeedbackConfigSchema.validate!({ "a" * 65 => { label: "Too long" } })
+    end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+  end
+
+  it "rejects a key containing invalid characters" do
+    expect do
+      FeedbackConfigSchema.validate!({ "a b" => { label: "Space" } })
+    end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+  end
+
   it "rejects a non-object item" do
     expect do
       FeedbackConfigSchema.validate!({ "aB3kF9mN2q" => "not a hash" })

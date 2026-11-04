@@ -8,10 +8,6 @@ Sequel.migration do
     alter_table(:datasets) do
       add_column :feedback_configuration, :jsonb, null: true, default: Sequel.lit("'{}'::jsonb")
     end
-
-    alter_table(:datasets) do
-      set_column_not_null :feedback_configuration
-    end
   end
 
   down do
