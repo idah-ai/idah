@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { getContext, tick } from "svelte";
   import { GalleryVerticalEndIcon, ServerCrashIcon } from "@lucide/svelte";
 
   import * as Sheet from "@/components/ui/sheet/index";
@@ -10,13 +10,15 @@
 
   import { feedbackConfigTemplate } from "@/components/app/datasets/feedbacks/feedback.controller.svelte";
   import { feedbackConfigTemplateDataSource } from "@/data/model/dataset/feedback-config-templates/record";
+  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import type { Resource } from "@/security/types";
 
   const resource: Resource = "dataset:feedback_config_templates";
+  const dataset: DatasetRecord = getContext("dataset");
 
   async function refreshSheetData() {
     await tick();
-    await feedbackConfigTemplate.loadTemplates();
+    await feedbackConfigTemplate.loadTemplates(dataset.modality);
   }
 </script>
 
@@ -34,6 +36,7 @@
       dataSource={feedbackConfigTemplateDataSource}
       listOptions={{
         sort: ["name", "created_at"],
+        filters: { modality: dataset.modality },
       }}
       value={feedbackConfigTemplate.selection?.id || null}
       onSelected={(selectedId: string | number | null) => feedbackConfigTemplate.selectTemplate(selectedId)}
@@ -58,7 +61,7 @@
             <ResponseBlock
               icon={GalleryVerticalEndIcon}
               title="No Templates Yet"
-              description="You havn't created any feedback templates. Build a feedback configuration, then use 'Save as a template to reuse it across datasets.'"
+              description="You haven't created any feedback templates. Build a feedback configuration, then use 'Save as template' to reuse it across datasets."
             >
               {#snippet actions()}
                 {#if feedbackConfigTemplate.template.isNotEmpty}

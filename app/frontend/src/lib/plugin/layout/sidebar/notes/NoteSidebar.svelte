@@ -29,6 +29,7 @@
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
   import { refetches } from "@/utils/refetch";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { Hash } from "@/utils/types";
@@ -162,6 +163,8 @@
         driver.command.call(`${driver.dataset.modality}:viewport.reset`);
 
         selectedNoteFeed = noteFeed;
+        feedbackKeys = [];
+        contentMd = "";
         break;
       }
 
@@ -193,6 +196,8 @@
 
   function backToNoteFeedList() {
     selectedNoteFeed = null;
+    feedbackKeys = [];
+    contentMd = "";
     $refetches.noteFeeds.list = new Date();
 
     // Remove hash from url if exists
@@ -247,46 +252,51 @@
   }
 
   async function createNote() {
-    if (!isAllowToCreateNewNote) return;
+    if (!isAllowToCreateNewNote || (isDetailView ? !contentMd.trim() : !contentMd.trim() && feedbackKeys.length === 0))
+      return;
 
     isSubmitting = true;
+    try {
+      if (isListView) {
+        /** Create a general note feed, if current view is list */
+        await noteFeedsBackendDataSource.create({
+          attributes: {
+            entry_id: driver.id,
+            annotation_id: undefined,
+            anchor_type: "entry",
+            content_md: contentMd,
+            feedback_keys: feedbackKeys,
+          },
+        });
+        $refetches.noteFeeds.list = new Date();
+      }
 
-    if (isListView) {
-      /** Create a general note feed, if current view is list */
-      await noteFeedsBackendDataSource.create({
-        attributes: {
-          entry_id: driver.id,
-          annotation_id: undefined,
-          anchor_type: "entry",
-          content_md: contentMd,
-          feedback_keys: feedbackKeys,
-        },
-      });
-      $refetches.noteFeeds.list = new Date();
-    }
-
-    if (isDetailView && selectedNoteFeed) {
-      /** Create a note comment under the selected note feed, if current view is detail */
-      await noteCommentsBackendDataSource.create({
-        attributes: {
-          note_feed_id: selectedNoteFeed.id,
-          content_md: contentMd,
-        },
-        relationships: {
-          note_feed: {
-            data: {
-              id: selectedNoteFeed.id,
-              type: "dataset:note_feeds",
+      if (isDetailView && selectedNoteFeed) {
+        /** Create a note comment under the selected note feed, if current view is detail */
+        await noteCommentsBackendDataSource.create({
+          attributes: {
+            note_feed_id: selectedNoteFeed.id,
+            content_md: contentMd,
+          },
+          relationships: {
+            note_feed: {
+              data: {
+                id: selectedNoteFeed.id,
+                type: "dataset:note_feeds",
+              },
             },
           },
-        },
-      });
-      $refetches.noteComments.list = new Date();
-    }
+        });
+        $refetches.noteComments.list = new Date();
+      }
 
-    contentMd = "";
-    feedbackKeys = [];
-    isSubmitting = false;
+      contentMd = "";
+      feedbackKeys = [];
+    } catch (err) {
+      showActionFailedToast(err);
+    } finally {
+      isSubmitting = false;
+    }
   }
 
   async function deleteNote() {

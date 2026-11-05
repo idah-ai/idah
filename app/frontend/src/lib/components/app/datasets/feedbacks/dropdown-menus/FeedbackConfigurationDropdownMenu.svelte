@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import { getContext, onMount, tick } from "svelte";
   import {
     ArrowDownIcon,
@@ -24,22 +23,16 @@
   } from "@/components/app/datasets/feedbacks/feedback.controller.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import type { IDropdownMenuItem, IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IFeedbackConfig } from "@/plugin/v2/types";
+  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import type { FeedbackConfigTemplateRecord } from "@/data/model/dataset/feedback-config-templates/record";
 
-  interface Props {
-    onConfigurationSaved: (config: IFeedbackConfig) => void;
-  }
-
-  let { onConfigurationSaved }: Props = $props();
-
-  const datasetId = page.params.datasetId as string;
+  const dataset: DatasetRecord = getContext("dataset");
   const key: symbol = getContext("key");
   const datasetFeedbackConfigController = getFeedbackConfigController(key);
 
   onMount(async () => {
     await tick();
-    await feedbackConfigTemplate.loadTemplates();
+    await feedbackConfigTemplate.loadTemplates(dataset.modality);
   });
 
   const replaceItems = $derived<IDropdownMenuItem[]>(
@@ -104,20 +97,7 @@
 
     const config = datasetFeedbackConfigController.getConfigHash();
 
-    /**
-     * Actions once confirm
-     * 1. Replace current config to selected template
-     * 2. Update current config to current dataset
-     * 3. Mark current config as saved
-     */
-    const [, savedConfig] = await Promise.all([
-      feedbackConfigTemplate.replace({ templateId: template.id, config }),
-      datasetFeedbackConfigController.updateConfiguration(datasetId),
-    ]);
-
-    if (savedConfig) {
-      onConfigurationSaved(savedConfig);
-    }
+    await feedbackConfigTemplate.replace({ templateId: template.id, config });
   }
 </script>
 

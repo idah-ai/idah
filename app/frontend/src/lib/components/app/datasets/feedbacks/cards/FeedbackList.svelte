@@ -25,7 +25,7 @@
   const controller = getFeedbackConfigController(key);
 </script>
 
-{#await controller.loadKeysInUse(datasetId)}
+{#await isTemplate ? Promise.resolve({ keys: [] as string[] }) : controller.loadKeysInUse(datasetId)}
   <FeedbackListLoading />
 {:then { keys: keysInUse }}
   <Card.Root class="gap-0 pt-4 pb-0">

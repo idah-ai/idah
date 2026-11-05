@@ -52,7 +52,7 @@
 
   let unsubFns: Array<() => void> = [];
 
-  let disableSubmitButton = $derived(selectedFeedbackKeys.length === 0 && !contentMd.trim());
+  let disableSubmitButton = $derived(!contentMd.trim() && (isCreating ? selectedFeedbackKeys.length === 0 : true));
 
   // Owner checks
   let isSelectedNoteOwner = $derived(AuthContext.currentAuthContext?.email === selectedNote?.created_by_email);
@@ -132,7 +132,7 @@
             selectedNote = found;
             pendingAnchor = null;
             contentMd = "";
-            selectedFeedbackKeys = found.feedback_keys ?? [];
+            selectedFeedbackKeys = [];
             resetEditingState();
           }
         }

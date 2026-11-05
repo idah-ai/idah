@@ -21,7 +21,7 @@
   };
 </script>
 
-<Can action="create" resource="dataset:feedback_config_templates" scopes={["as_org_owner", as_project_owner]}>
+<Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
   <Button variant="outline" onclick={() => controller.openFormModal()}>
     <PlusIcon />
     Add Feedback

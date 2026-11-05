@@ -61,31 +61,21 @@
     disabled: externalDisabled = false,
   }: Props = $props();
 
-  // Internal state for reactive disabled computation
-  let internalFeedbackValues = $state<string[]>(feedbackValues);
-  let internalContentValue = $state<string | null>(contentValue);
-  let internalDisabled = $derived(!internalContentValue?.trim() && internalFeedbackValues.length === 0);
+  let internalDisabled = $derived(!contentValue?.trim() && (showFeedbackField ? feedbackValues.length === 0 : true));
   let submitDisabled = $derived(externalDisabled || internalDisabled);
 
   function handleFeedbackSelected(selected: string[]) {
-    internalFeedbackValues = selected;
     onFeedbackSelected(selected);
   }
 
   function handleContentChange(newValue: string) {
-    internalContentValue = newValue;
     onContentChange(newValue);
-  }
-
-  function resetInternalFormState() {
-    internalFeedbackValues = [];
-    internalContentValue = null;
   }
 </script>
 
 <Form class={cn("gap-2", className)}>
   {#if showFeedbackField}
-    <MultipleSelectFeedbacksField values={internalFeedbackValues} onSelected={handleFeedbackSelected} />
+    <MultipleSelectFeedbacksField values={feedbackValues} onSelected={handleFeedbackSelected} />
   {/if}
 
   <NoteContentMdField
@@ -118,7 +108,6 @@
         e.stopPropagation();
         if (submitDisabled) return;
         await onSubmit();
-        resetInternalFormState();
       }}
     >
       {submitLabel}

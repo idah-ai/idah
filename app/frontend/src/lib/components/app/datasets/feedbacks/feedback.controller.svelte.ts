@@ -10,6 +10,7 @@ import { showActionFailedToast } from "@/utils/error/error.toasts";
 import { showToast } from "@/components/ui/toast/index.svelte";
 
 import type { FormModalAction } from "@/components/app/overlays/modals/form-modal.types";
+import type { JsonApiErrorResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 import type { IFeedbackConfig, IFeedbackItem } from "@/plugin/v2/types";
 
@@ -85,15 +86,20 @@ export class FeedBackConfigController {
 
       return updated.data;
     } catch (err) {
-      showActionFailedToast(err);
+      const detail = (err as JsonApiErrorResponse)?.errors?.[0]?.detail;
+      if (detail) {
+        showToast.error({ title: "Could not save feedback configuration", description: detail });
+      } else {
+        showActionFailedToast(err);
+      }
       return undefined;
     } finally {
       this.isUpdating = false;
     }
   }
 
-  public apply(config: IFeedbackConfig) {
-    this.setConfig(config);
+  public apply(config: IFeedbackConfig, itemsInUse: IFeedbackConfig = {}) {
+    this.setConfig({ ...config, ...itemsInUse });
   }
 
   public upsertItem() {
@@ -158,10 +164,10 @@ class FeedbackConfigTemplateController {
   public isDeleting = $state<boolean>(false);
   public isPending = $derived<boolean>(this.isUpdating || this.isDeleting);
 
-  public async loadTemplates() {
+  public async loadTemplates(modality: string) {
     this.isLoading = true;
     try {
-      const res = await feedbackConfigTemplateDataSource.list();
+      const res = await feedbackConfigTemplateDataSource.list({ filters: { modality } });
 
       this.templates = res.data;
     } catch (err) {
@@ -223,7 +229,7 @@ class FeedbackConfigTemplateController {
       });
 
       /** Load templates again once created to display on dropdown menus */
-      await this.loadTemplates();
+      await this.loadTemplates(modality);
 
       showToast.success({
         title: "Template created",
@@ -283,7 +289,7 @@ class FeedbackConfigTemplateController {
 
       showToast.success({
         title: "Template renamed",
-        description: `The template have been renamed to "${newName}"`,
+        description: `The template has been renamed to "${newName}"`,
       });
     } catch (err) {
       showActionFailedToast(err);
@@ -292,8 +298,8 @@ class FeedbackConfigTemplateController {
     }
   }
 
-  public async save(params: { newConfig: IFeedbackConfig }) {
-    if (this.isNotSelected) return;
+  public async save(params: { newConfig: IFeedbackConfig }): Promise<boolean> {
+    if (this.isNotSelected) return false;
 
     this.isUpdating = true;
 
@@ -306,13 +312,16 @@ class FeedbackConfigTemplateController {
       });
 
       const updated = res.data;
+      this.selection = updated;
 
       showToast.success({
         title: "Template saved",
         description: `The template "${updated.name}" has been saved.`,
       });
+      return true;
     } catch (err) {
       showActionFailedToast(err);
+      return false;
     } finally {
       this.isUpdating = false;
     }

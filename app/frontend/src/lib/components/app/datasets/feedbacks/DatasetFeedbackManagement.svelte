@@ -37,7 +37,7 @@
 <PageHeader title="Feedback Configuration">
   {#snippet slotTitle()}
     <div class="flex flex-col gap-2">
-      <FeedbackConfigurationDropdownMenu onConfigurationSaved={syncSavedConfiguration} />
+      <FeedbackConfigurationDropdownMenu />
     </div>
   {/snippet}
 

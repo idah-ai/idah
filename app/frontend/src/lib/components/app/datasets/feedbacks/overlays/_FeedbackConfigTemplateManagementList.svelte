@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { setContext } from "svelte";
+  import { getContext, setContext } from "svelte";
   import { ArrowDownIcon, SaveIcon, Trash2Icon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
@@ -16,7 +16,9 @@
     setFeedbackConfigController,
   } from "@/components/app/datasets/feedbacks/feedback.controller.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
-  import type { IFeedbackConfig } from "@/data/model/dataset/feedback-config-templates/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import type { IFeedbackConfig } from "@/plugin/v2/types";
 
   interface Props {
     feedbackConfig: IFeedbackConfig;
@@ -27,6 +29,7 @@
   const configTemplateKey: symbol = setContext("key", FEEDBACK_CONFIG_TEMPLATE_CONTROLLER_KEY);
   const configTemplateController = new FeedBackConfigController(feedbackConfig);
   const datasetConfigController = getFeedbackConfigController(datasetConfigKey);
+  const dataset: DatasetRecord = getContext("dataset");
   setFeedbackConfigController(configTemplateKey, configTemplateController);
 
   async function openConfirmDeleteModal() {
@@ -34,7 +37,7 @@
 
     const choice = await showConfirmModal({
       title: "Delete Template?",
-      description: `Are you sure you wanty to delete this template "${feedbackConfigTemplate.selection?.name}"? This action cannot be undone.`,
+      description: `Are you sure you want to delete this template "${feedbackConfigTemplate.selection?.name}"? This action cannot be undone.`,
       confirmLabel: "Yes, Delete",
     });
 
@@ -44,16 +47,27 @@
   }
 
   async function saveTemplate() {
-    feedbackConfigTemplate.save({ newConfig: configTemplateController.getConfigHash() });
-    configTemplateController.markCurrentAsSaved();
+    if (await feedbackConfigTemplate.save({ newConfig: configTemplateController.getConfigHash() })) {
+      configTemplateController.markCurrentAsSaved();
+    }
   }
 
-  function applyTemplate() {
+  async function applyTemplate() {
     if (feedbackConfigTemplate.isNotSelected) return;
 
-    datasetConfigController.apply(configTemplateController.getConfigHash());
-    feedbackConfigTemplate.closeSheet();
-    feedbackConfigTemplate.unSelectTemplate();
+    try {
+      const { keys } = await datasetConfigController.loadKeysInUse(dataset.id);
+      const itemsInUse = Object.fromEntries(
+        keys
+          .filter((key) => key in dataset.feedback_configuration)
+          .map((key) => [key, dataset.feedback_configuration[key]]),
+      );
+      datasetConfigController.apply(configTemplateController.getConfigHash(), itemsInUse);
+      feedbackConfigTemplate.closeSheet();
+      feedbackConfigTemplate.unSelectTemplate();
+    } catch (err) {
+      showActionFailedToast(err);
+    }
   }
 </script>
 

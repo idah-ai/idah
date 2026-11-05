@@ -53,7 +53,7 @@
     ]);
 
     if (!canUpdateDataset) {
-      tabs = datasetTabs.filter((tab) => tab.value !== "labels");
+      tabs = datasetTabs.filter((tab) => tab.value !== "labels" && tab.value !== "feedback-configuration");
     }
   });
 

@@ -12,8 +12,7 @@ import type { DataSourceOptions } from "@/data/DataSource";
 import type { RecordResponse } from "@/data/model/types";
 
 import type { Hash } from "@/utils/types";
-import type { IConfig } from "@/plugin/v2/types";
-import type { IFeedbackConfig } from "@/data/model/dataset/feedback-config-templates/record";
+import type { IConfig, IFeedbackConfig } from "@/plugin/v2/types";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -117,7 +116,7 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
       if (body && body.errors) {
         if (body.errors.length > 0) {
           body.errors.forEach((err: Hash) => {
-            console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+            console.error(`Error updating feedback configuration: ${err.title} - ${err.detail}`, err);
           });
         }
 
@@ -139,7 +138,7 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
       if (body && body.errors) {
         if (body.errors.length > 0) {
           body.errors.forEach((err: Hash) => {
-            console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+            console.error(`Error loading feedback keys in use: ${err.title} - ${err.detail}`, err);
           });
         }
 

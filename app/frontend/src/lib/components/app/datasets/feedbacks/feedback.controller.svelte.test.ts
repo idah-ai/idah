@@ -17,4 +17,13 @@ describe("FeedBackConfigController feedback payload", () => {
 
     expect(controller.getConfigHash()).toEqual({ existing: { label: "Fix this", description: "" } });
   });
+
+  it("keeps feedback items used by notes when applying a template", () => {
+    const used = { label: "Already used", description: "Keep me" };
+    const controller = new FeedBackConfigController({ used, removed: { label: "Old", description: "" } });
+
+    controller.apply({ new: { label: "New", description: "" } }, { used });
+
+    expect(controller.getConfigHash()).toEqual({ new: { label: "New", description: "" }, used });
+  });
 });
