@@ -173,6 +173,17 @@ module Entry
         end
 
         # Use read scope when updating as anyone with read access can select
+        # Record activity before assignment so both EntryCard clicks and
+        # select_next (auto-claim after submit) create the first slot.
+        TimeTracking.safe_touch(
+          entry_repo: entries,
+          slot_repo: entry_time_slots,
+          work_repo: entry_work_times,
+          entry_id: entry.id,
+          account_id: account_id,
+          email: auth_context.metadata[:email]
+        )
+
         entries.select(entry.id)
 
         system_datasets_repo.update_progress!(entry.dataset_id)

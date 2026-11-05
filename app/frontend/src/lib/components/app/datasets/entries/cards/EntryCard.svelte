@@ -147,6 +147,7 @@
       fetch(`/api/v1/dataset/entries/${entryId}/activity`, {
         method: "POST",
         headers: { "Content-Type": "application/vnd.api+json" },
+        body: JSON.stringify({}),
       }).catch(() => {});
       goto(resolve(`/entries/${entryId}/plugin`));
     }
