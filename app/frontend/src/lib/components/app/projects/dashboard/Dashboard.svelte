@@ -1,7 +1,7 @@
 <script lang="ts">
   import { today as localToday } from "@/utils/date";
   import { onMount, untrack } from "svelte";
-  import { ChevronLeftIcon, ChevronRightIcon, RefreshCwIcon, ArrowLeftIcon } from "@lucide/svelte";
+  import { ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from "@lucide/svelte";
 
   import { Button } from "@/components/ui/button";
   import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@
     datasetDeliveryDate,
   } from "@/components/app/projects/dashboard/DashboardStatus";
   import Text from "@/components/ui/text/Text.svelte";
+  import DataDisplay from "@/components/app/texts/data-display.svelte";
 
   import type { Interval } from "@/components/app/projects/dashboard/DashboardHistory";
 
@@ -152,13 +153,17 @@
             </div>
           </div>
 
-          <div class="text-muted-foreground flex gap-2 text-xs">
-            Delivery date:
-            {#if datasetDeliveryDate(detail)}
-              <DateText datetime={deliveryDate(datasetDeliveryDate(detail))} datetimeFormat="MMM dd, yyyy" size="sm" />
-            {:else}No delivery date
-            {/if}
-          </div>
+          <DataDisplay label="Delivery date">
+            {#snippet slotValue()}
+              <DateText
+                datetime={deliveryDate(datasetDeliveryDate(detail))}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
+            {/snippet}
+          </DataDisplay>
         </div>
       {:else if manager.ids.length}
         <p class="text-muted-foreground text-xs">
