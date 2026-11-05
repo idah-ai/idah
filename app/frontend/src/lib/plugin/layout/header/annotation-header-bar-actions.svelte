@@ -290,7 +290,7 @@
 
       // ── Auto-select next entry ──────────────────────────────────────────
       if (autoSelectNextEntry) {
-        const nextEntryId = await entriesBackendDataSource.findNextEntry(
+        const nextEntryId = await entriesBackendDataSource.selectNextEntry(
           driver.dataset.id,
           driver.workflowStep as EntryWorkflowStep,
         );

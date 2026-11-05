@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 module Dataset
+  # A sweep that hasn't refreshed `syncing_stats_at` for this long is treated as
+  # dead (worker killed, or its event never delivered). Sweeps refresh it every
+  # EntryStats::Service::SYNCING_STATS_HEARTBEAT_EVERY seconds.
+  SYNCING_STATS_STALE_AFTER = 180 # seconds
+
   class Record < Verse::Model::Record::Base
     type Resource::Dataset::Datasets
 
@@ -8,6 +13,7 @@ module Dataset
     field :project_id, type: String, readonly: true
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
     field :labels, type: Array
     field :modality, type: String, readonly: true
 
@@ -21,6 +27,15 @@ module Dataset
     field :entries_completed_count, type: Integer, readonly: true
     field :entries_in_progress_count, type: Integer, readonly: true
 
+    field :syncing_stats_at, type: [Time, NilClass], readonly: true, visible: false
+    # True only while the sweep's heartbeat is recent, so a dead sweep stops
+    # showing as syncing on its own.
+    field :syncing_stats, type: [TrueClass], readonly: true do
+      next false unless @fields[:syncing_stats] && syncing_stats_at
+
+      syncing_stats_at > Time.now - SYNCING_STATS_STALE_AFTER
+    end
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -29,6 +44,17 @@ module Dataset
     has_many :entries, repository: "Entry::Repository", foreign_key: :dataset_id
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :dataset_id
     has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :dataset_id
+
+    # Returns the set of configured category IDs from this dataset's
+    # labeling_configuration. Flattens values[*][:id] across all tool-type keys.
+    def configured_category_ids
+      config = labeling_configuration || {}
+      config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
+
+        Array(tool_config[:values]).filter_map { |v| v[:id] }
+      end
+    end
 
     def entry_workflow
       Workflow::SimpleReviewAnnotationWorkflow
@@ -293,6 +319,16 @@ module Dataset
     event(name: "duplicated")
     def duplicate(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
       # NOTE: just publish the event
+    end
+
+    event(name: "labeling_configuration_updated")
+    def labeling_configuration_updated(dataset_id, changed_category_ids: [])
+      no_event do
+        add_event_metadata(
+          dataset_id: dataset_id,
+          changed_category_ids: changed_category_ids
+        )
+      end
     end
 
     private

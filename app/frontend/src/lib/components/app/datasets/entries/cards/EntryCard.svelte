@@ -2,9 +2,12 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { ExternalLinkIcon } from "@lucide/svelte";
+  import { Badge } from "@/components/ui/badge";
+  import { ExternalLinkIcon, TriangleAlertIcon } from "@lucide/svelte";
+  import { format, isAfter, parseISO } from "date-fns";
   import { getContext, onDestroy, onMount } from "svelte";
 
+  import EntryAnnotationErrorBadge from "@/components/app/datasets/entries/badges/EntryAnnotationErrorBadge.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
@@ -18,6 +21,7 @@
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import Progress from "@/components/ui/progress/progress.svelte";
   import Text from "@/components/ui/text/Text.svelte";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -32,11 +36,22 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    orphanCategoryCount: number;
+    today: Date;
     selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
     onEntryUpdated: () => void;
   }
-  let { entry, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let { entry, orphanCategoryCount, today, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  let effectiveDeliveryDate = $derived(entry.delivery_date || entry.dataset?.delivery_date);
+
+  let deliveryDateWarning = $derived(
+    entry.delivery_date &&
+      entry.dataset?.delivery_date &&
+      isAfter(parseISO(entry.delivery_date), parseISO(entry.dataset.delivery_date))
+      ? `Entry delivery date is later than the dataset delivery date (${format(parseISO(entry.dataset.delivery_date), "MMM dd, yyy")})`
+      : null,
+  );
 
   const dataset: DatasetRecord = getContext("dataset");
 
@@ -386,6 +401,39 @@
               {/snippet}
             </DataDisplay>
 
+            <DataDisplay label="Delivery Date">
+              {#snippet slotValue()}
+                <div class="flex items-center gap-2">
+                  {#if effectiveDeliveryDate}
+                    <DateText
+                      size="sm"
+                      showTooltip
+                      datetime={parseISO(effectiveDeliveryDate)}
+                      datetimeFormat="MMM dd, yyyy"
+                      weight="light"
+                    />
+                  {:else}
+                    <span>—</span>
+                  {/if}
+
+                  {#if deliveryDateWarning}
+                    <TooltipProvider>
+                      <Tooltip delayDuration={200}>
+                        <TooltipTrigger aria-label={deliveryDateWarning}>
+                          <TriangleAlertIcon class="size-4 text-amber-600" />
+                        </TooltipTrigger>
+                        <TooltipContent>{deliveryDateWarning}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  {/if}
+
+                  {#if entry.isOverdueOn(today)}
+                    <Badge variant="destructive">Overdue</Badge>
+                  {/if}
+                </div>
+              {/snippet}
+            </DataDisplay>
+
             <!-- PRIORITY AT -->
             <div>
               <EntryPriority {entry} updatable />
@@ -462,6 +510,8 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
+          <EntryAnnotationErrorBadge count={orphanCategoryCount} />
+
           {#if jobProgress < 1}
             <div class="flex flex-col gap-1">
               <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">

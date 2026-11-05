@@ -9,9 +9,13 @@ module EntryStats
     #   "shape.<type>.count"                → count of annotations per shape type, with the
     #                                         "<modality>:" prefix stripped (e.g.
     #                                         "idah-video:bounding-box" → "shape.bounding-box.count").
-    #                                         Shape types from tool-type config keys are zero-filled
+    #                                         Shape types from tool-type config keys are zero-filled.
     #                                         Generic across modalities, so it
     #                                         lives here rather than in a per-plugin generator.
+    #   "orphan_category.count"             → count of annotations whose category is not
+    #                                         present in labeling_configuration (e.g. was
+    #                                         deleted or renamed). Each annotation counted
+    #                                         individually.
     #
     # Note: Verse::Sequel::JsonEncoder deserialises JSON with symbolized keys.
     #
@@ -19,6 +23,8 @@ module EntryStats
     # @return [Hash{String => String}]
     def self.call(entry)
       config = entry.dataset.labeling_configuration || {}
+      # Collect all configured category ids across all tool types (flat).
+      configured_ids = entry.dataset.configured_category_ids
 
       # Shape type is "<modality>:<type>" in annotation.dimensions[:type]; strip the
       # modality prefix generically (everything up to the first ":") so the key reads
@@ -40,6 +46,16 @@ module EntryStats
       end
 
       stats = { "annotation.count" => live_annotations.size.to_s }
+
+      # Count annotations whose category is not present in the labeling configuration.
+      # These are "orphan" annotations — the category was deleted, renamed, or never
+      # configured. Each annotation is counted individually (not per distinct category).
+      configured_set = configured_ids.to_set
+      orphan_annotation_count = live_annotations.count do |annotation|
+        category = annotation.category
+        category && !configured_set.include?(category)
+      end
+      stats["orphan_category.count"] = orphan_annotation_count.to_s
 
       shape_counts.each do |shape, count|
         stats["shape.#{shape}.count"] = count.to_s
