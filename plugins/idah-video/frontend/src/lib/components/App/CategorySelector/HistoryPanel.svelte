@@ -17,7 +17,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { data } from "$lib/state/data.svelte";
+  import { data, getDeletedAnnotation } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import { resolveAnnotationColor } from "$lib/utils/color";
@@ -25,25 +25,6 @@
   import type { IVideoAnnotationShape } from "$lib/types";
 
   let { sidebarWidthRem }: { sidebarWidthRem: number } = $props();
-
-  // Deleted-annotation map: id -> tombstone record, for category labels and the frame range.
-  let deletedMap = $state<Map<string, { category?: string; shape_type?: string; shape_args?: unknown }>>(new Map());
-
-  async function loadDeleted() {
-    const driver = getDriver();
-    try {
-      const toms = await driver.annotations.fetch({ deleted: "true" });
-      deletedMap = new Map(
-        toms.map((t) => [t.id, { category: t.category, shape_type: t.shape_type, shape_args: t.shape_args }]),
-      );
-    } catch {
-      // Offline: keep whatever we have.
-    }
-  }
-
-  $effect(() => {
-    if (history.open) void loadDeleted();
-  });
 
   // Scope follows the selection reactively: the store derives the scope from
   // the selection, and this effect reloads (back to page 1) whenever the
@@ -74,8 +55,9 @@
    *  Matches the editor's naming: `{categoryLabel}-{groupIdLastPart}`. */
   function categoryLabel(change: IAnnotationChange): string {
     const ann = liveAnnotation(change);
-    const category = ann?.category ?? deletedMap.get(change.annotation_id)?.category;
-    const shapeType = ann?.shape_type ?? deletedMap.get(change.annotation_id)?.shape_type;
+    const tomb = getDeletedAnnotation(change.annotation_id);
+    const category = ann?.category ?? tomb?.category;
+    const shapeType = ann?.shape_type ?? tomb?.shape_type;
     if (!category) return `Annotation ${change.annotation_id.slice(0, 8)}`;
     const config = shapeType ? getDriver().config[shapeType] : undefined;
     const cat = config?.values?.find((v) => v.id === category);
@@ -90,8 +72,9 @@
    *  the group's deterministic colour. */
   function categoryColor(change: IAnnotationChange): string {
     const ann = liveAnnotation(change);
-    const category = ann?.category ?? deletedMap.get(change.annotation_id)?.category;
-    const shapeType = ann?.shape_type ?? deletedMap.get(change.annotation_id)?.shape_type;
+    const tomb = getDeletedAnnotation(change.annotation_id);
+    const category = ann?.category ?? tomb?.category;
+    const shapeType = ann?.shape_type ?? tomb?.shape_type;
     if (!category || !shapeType) return "#71717a";
     return resolveAnnotationColor({ id: change.annotation_id, category, shape_type: shapeType });
   }
@@ -99,9 +82,10 @@
   /** The annotation's frame range, e.g. "frames 12–45" (live or tombstone). */
   function frameRange(change: IAnnotationChange): string | null {
     const ann = liveAnnotation(change);
+    const tomb = getDeletedAnnotation(change.annotation_id);
     const shapeArgs =
       (ann?.shape_args as { start?: number; end?: number } | undefined) ??
-      (deletedMap.get(change.annotation_id)?.shape_args as { start?: number; end?: number } | undefined);
+      (tomb?.shape_args as { start?: number; end?: number } | undefined);
     if (!shapeArgs) return null;
     const start = shapeArgs.start;
     const end = shapeArgs.end;
@@ -171,7 +155,7 @@
     // The header rows carry no `changes` payload (it is fetched lazily), so
     // seek to the annotation's own start frame rather than a frame path.
     const ann = liveAnnotation(change);
-    const tomb = deletedMap.get(change.annotation_id);
+    const tomb = getDeletedAnnotation(change.annotation_id);
     const shape = (ann?.shape_args ?? tomb?.shape_args) as IVideoAnnotationShape | undefined;
     const shapeType = ann?.shape_type ?? tomb?.shape_type;
     const frame = shape?.start ?? viewport.video.currentFrame.value;

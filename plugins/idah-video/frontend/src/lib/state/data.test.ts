@@ -1,11 +1,14 @@
 // ---------------------------------------------------------------------------
 // data.spec.ts — Unit tests for the DataStore
 // ---------------------------------------------------------------------------
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   createDataStore,
   createAnnotationStore,
   computeMissingRanges,
+  getDeletedAnnotation,
+  removeDeletedAnnotation,
+  setDeletedAnnotation,
   type DataItem,
   type RangeFetchFn,
   type AnnotationDriver,
@@ -330,18 +333,18 @@ describe("CRUD", () => {
 
 // ─── Annotation store ─────────────────────────────────────────────────────
 
-describe("createAnnotationStore", () => {
-  function makeDriver(overrides: Partial<AnnotationDriver> = {}): AnnotationDriver {
-    return {
-      fetch: vi.fn(async () => []),
-      create: vi.fn(async (data) => ({ id: "created", ...data })),
-      update: vi.fn(async () => {}),
-      delete: vi.fn(async () => {}),
-      restore: vi.fn(async (id) => ({ id })),
-      ...overrides,
-    };
-  }
+function makeDriver(overrides: Partial<AnnotationDriver> = {}): AnnotationDriver {
+  return {
+    fetch: vi.fn(async () => []),
+    create: vi.fn(async (data) => ({ id: "created", ...data })),
+    update: vi.fn(async () => {}),
+    delete: vi.fn(async () => {}),
+    restore: vi.fn(async (id) => ({ id })),
+    ...overrides,
+  };
+}
 
+describe("createAnnotationStore", () => {
   it("restore() resolves to the backend's restored record", async () => {
     const backendRecord = {
       id: "ann-1",
@@ -365,5 +368,74 @@ describe("createAnnotationStore", () => {
     expect(result).toEqual(backendRecord);
     // The optimistic snapshot was reconciled with the backend record.
     expect(store.items.find((i) => i.id === "ann-1")).toEqual(backendRecord);
+  });
+});
+
+// ─── Deleted-annotation map ───────────────────────────────────────────────
+
+describe("deleted-annotation map", () => {
+  beforeEach(() => {
+    removeDeletedAnnotation("ann-1");
+  });
+
+  it("set/get/remove round-trips a tombstone", () => {
+    const tomb = { id: "ann-1", shape_type: "idah-video:bounding-box", shape_args: {}, category: "test/cat" };
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+    setDeletedAnnotation(tomb as any);
+    expect(getDeletedAnnotation("ann-1")).toEqual(tomb);
+    removeDeletedAnnotation("ann-1");
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+  });
+
+  it("delete() records the tombstone and restore() clears it", async () => {
+    const ann = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const driver = makeDriver();
+    const store = createAnnotationStore(driver);
+    store.upsert(ann as any);
+
+    await store.delete("ann-1");
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
+
+    await store.restore(ann as any);
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+  });
+
+  it("restore() puts the tombstone back when the backend fails", async () => {
+    const ann = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const driver = makeDriver({ restore: vi.fn(async () => { throw new Error("offline"); }) });
+    const store = createAnnotationStore(driver);
+    store.upsert(ann as any);
+
+    await store.delete("ann-1");
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
+
+    await expect(store.restore(ann as any)).rejects.toThrow("Failed to restore annotation");
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
+  });
+
+  it("delete() keeps the tombstone on backend failure (surfaced via onSyncError)", async () => {
+    const ann = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const driver = makeDriver({ delete: vi.fn(async () => { throw new Error("offline"); }) });
+    const store = createAnnotationStore(driver);
+    store.upsert(ann as any);
+
+    await expect(store.delete("ann-1")).rejects.toThrow("offline");
+    // The tombstone stays; the backend failure is surfaced via onSyncError.
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
   });
 });
