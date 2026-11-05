@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
-// last-category.ts — Category of the most recently created annotation, and what
-// the "reuse last category" shortcut does with it.
+// last-category.ts — Category of the most recently created annotation, which
+// the "reuse last category" shortcut picks for the next annotation.
 // ---------------------------------------------------------------------------
 
 export interface LastCategory {
@@ -31,27 +31,4 @@ export function findLastCategory(
     if (!last || item.id > last.id) last = item;
   }
   return last ? { category: last.category!, shapeType: last.shape_type, annotationId: last.id } : undefined;
-}
-
-export type CategoryReuse =
-  | { action: "none" }
-  | { action: "draw"; category: string; shapeType: string }
-  | { action: "relabel"; category: string; shapeType: string };
-
-/**
- * What reusing the last category does:
- * - nothing created yet → nothing;
- * - a selection with another category → change the selection to it;
- * - otherwise (nothing selected, or the selection already has it, typically the
- *   annotation just drawn) → pick it to draw the next annotation.
- */
-export function planCategoryReuse(
-  last: LastCategory | undefined,
-  selectedCategory: string | null | undefined,
-  hasSelection: boolean,
-): CategoryReuse {
-  if (!last) return { action: "none" };
-  const { category, shapeType } = last;
-  if (hasSelection && selectedCategory !== category) return { action: "relabel", category, shapeType };
-  return { action: "draw", category, shapeType };
 }

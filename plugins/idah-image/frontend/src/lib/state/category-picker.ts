@@ -6,8 +6,8 @@
 // commands such as category.reuse-last call `apply`.
 // ---------------------------------------------------------------------------
 
-/** Applies `category` (of `shapeType`): changes the selection, or picks it for drawing
- *  when nothing is selected. Returns false when it doesn't fit the selection's shape type. */
+/** Picks `category` (of `shapeType`) for the next annotation. Returns false when it is no
+ *  longer in the label config. */
 export type ApplyCategory = (category: string, shapeType: string) => boolean;
 
 let handler: ApplyCategory | null = null;

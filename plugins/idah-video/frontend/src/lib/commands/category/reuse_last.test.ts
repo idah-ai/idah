@@ -8,7 +8,6 @@ import { categoryPicker } from "$lib/state/category-picker";
 
 const mockDataItems = vi.hoisted(() => [] as any[]);
 const mockSelectionValue = vi.hoisted(() => ({ value: null as any }));
-const mockSelectedGroups = vi.hoisted(() => ({ value: [] as any[] }));
 const mockDeselect = vi.hoisted(() => vi.fn());
 const mockIsEditable = vi.hoisted(() => vi.fn(() => true));
 const mockToastInfo = vi.hoisted(() => vi.fn());
@@ -29,9 +28,6 @@ vi.mock("$lib/state/selection.svelte", () => ({
     get value() {
       return mockSelectionValue.value;
     },
-    get selectedGroups() {
-      return mockSelectedGroups.value;
-    },
     deselect: mockDeselect,
   },
 }));
@@ -49,10 +45,7 @@ const ann = (id: string, category: string, shape_type = box) => ({ id, shape_typ
 
 function setup() {
   let callback: () => any = () => undefined;
-  const driver: any = {
-    config: { [box]: { values: [{ id: "vehicle/car", label: "Car" }] } },
-    command: { register: (opts: any) => (callback = opts.callback) },
-  };
+  const driver: any = { command: { register: (opts: any) => (callback = opts.callback) } };
   register(driver);
   const apply = vi.fn((_category: string, _shapeType: string) => true);
   const detach = categoryPicker.attach(apply);
@@ -65,7 +58,6 @@ describe("idah-video:category.reuse-last", () => {
   beforeEach(() => {
     mockDataItems.length = 0;
     mockSelectionValue.value = null;
-    mockSelectedGroups.value = [];
     mockIsEditable.mockReturnValue(true);
     vi.clearAllMocks();
     ctx = setup();
@@ -77,7 +69,7 @@ describe("idah-video:category.reuse-last", () => {
     expect(command.group).toBe("Annotation");
   });
 
-  it("shows a hint and applies nothing when no annotation exists", () => {
+  it("shows a hint and picks nothing when no annotation exists", () => {
     ctx.run();
     expect(ctx.apply).not.toHaveBeenCalled();
     expect(mockToastInfo).toHaveBeenCalledOnce();
@@ -89,7 +81,7 @@ describe("idah-video:category.reuse-last", () => {
     expect(ctx.apply).not.toHaveBeenCalled();
   });
 
-  it("picks the newest category for drawing when nothing is selected", () => {
+  it("picks the newest category for the next annotation", () => {
     mockDataItems.push(
       ann("0190a000-0000-7000-8000-000000000002", "vehicle/car"),
       ann("0190a000-0000-7000-8000-000000000001", "person/adult"),
@@ -99,42 +91,23 @@ describe("idah-video:category.reuse-last", () => {
     expect(ctx.apply).toHaveBeenCalledWith("vehicle/car", box);
   });
 
-  it("picks it for drawing when the selected annotation already has it", () => {
-    const created = ann("0190a000-0000-7000-8000-000000000002", "vehicle/car");
-    mockDataItems.push(created);
-    mockSelectionValue.value = { type: "annotation", annotation: created };
-    ctx.run();
-    expect(mockDeselect).toHaveBeenCalledOnce();
-    expect(ctx.apply).toHaveBeenCalledWith("vehicle/car", box);
-  });
-
-  it("changes a selected annotation with another category, keeping the selection", () => {
+  it("clears a selection with another category instead of changing it", () => {
     const other = ann("0190a000-0000-7000-8000-000000000001", "person/adult");
     mockDataItems.push(other, ann("0190a000-0000-7000-8000-000000000002", "vehicle/car"));
     mockSelectionValue.value = { type: "annotation", annotation: other };
     ctx.run();
-    expect(mockDeselect).not.toHaveBeenCalled();
+    expect(mockDeselect).toHaveBeenCalledOnce();
+    expect(mockDeselect.mock.invocationCallOrder[0]).toBeLessThan(ctx.apply.mock.invocationCallOrder[0]);
     expect(ctx.apply).toHaveBeenCalledWith("vehicle/car", box);
+    expect(other.category).toBe("person/adult");
   });
 
-  it("compares against the selected group's category", () => {
-    const member = ann("0190a000-0000-7000-8000-000000000001", "person/adult");
-    mockDataItems.push(member, ann("0190a000-0000-7000-8000-000000000002", "vehicle/car"));
-    mockSelectionValue.value = { type: "group", groupId: "g1" };
-    mockSelectedGroups.value = [{ groupId: "g1", annotations: [member] }];
-    ctx.run();
-    expect(mockDeselect).not.toHaveBeenCalled();
-    expect(ctx.apply).toHaveBeenCalledWith("vehicle/car", box);
-  });
-
-  it("warns, with the category's label, when it doesn't fit the selection", () => {
-    const other = ann("0190a000-0000-7000-8000-000000000001", "lane", "idah-video:polygon");
-    mockDataItems.push(other, ann("0190a000-0000-7000-8000-000000000002", "vehicle/car"));
-    mockSelectionValue.value = { type: "annotation", annotation: other };
+  it("warns when the category is no longer in the label configuration", () => {
+    mockDataItems.push(ann("0190a000-0000-7000-8000-000000000001", "vehicle/car"));
     ctx.apply.mockReturnValue(false);
     ctx.run();
     expect(mockToastWarning).toHaveBeenCalledWith(
-      expect.objectContaining({ description: expect.stringContaining("Car") }),
+      expect.objectContaining({ description: expect.stringContaining("vehicle/car") }),
     );
   });
 
@@ -142,6 +115,7 @@ describe("idah-video:category.reuse-last", () => {
     mockIsEditable.mockReturnValue(false);
     mockDataItems.push(ann("0190a000-0000-7000-8000-000000000001", "vehicle/car"));
     ctx.run();
+    expect(mockDeselect).not.toHaveBeenCalled();
     expect(ctx.apply).not.toHaveBeenCalled();
     expect(mockToastInfo).not.toHaveBeenCalled();
   });

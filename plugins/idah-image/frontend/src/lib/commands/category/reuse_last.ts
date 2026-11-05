@@ -1,12 +1,10 @@
 // ---------------------------------------------------------------------------
 // idah-image:category.reuse-last — Reuse the category of the last annotation created.
 //
-// Nothing selected, or the selection already has that category (typically the
-// annotation just drawn): picks it for the next annotation, like clicking it in
-// the sidebar. A selection with another category: changes it to that category.
+// Clears the selection and picks that category for the next annotation, like
+// clicking it in the sidebar. It never changes an existing annotation.
 //
-// Not undoable itself: picking a category is UI state, and changing the selection
-// goes through idah-image:annotation.update, which is.
+// Not undoable: picking a category is UI state.
 //
 // Usage:
 //   driver.command.call("idah-image:category.reuse-last");
@@ -17,7 +15,7 @@ import { selection } from "$lib/state/selection.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import { categoryPicker } from "$lib/state/category-picker";
 import { showToast } from "$lib/components/ui/Toast/index.svelte";
-import { findLastCategory, planCategoryReuse } from "$lib/utils/last-category";
+import { findLastCategory } from "$lib/utils/last-category";
 import {
   DEFAULT_MODE,
   IMAGE_BOUNDING_BOX,
@@ -36,13 +34,8 @@ export const command = {
   modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK],
   shortcut: "R",
   shortDescription: "Reuse last category",
-  longDescription:
-    "Use the category of the last annotation created: pick it for the next annotation, or change the selected annotation to it",
+  longDescription: "Draw the next annotation with the category of the last annotation created",
 };
-
-function categoryLabel(driver: IIdahDriverV2, category: string, shapeType: string): string {
-  return driver.config[shapeType]?.values.find((v) => v.id === category)?.label ?? category;
-}
 
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
@@ -55,18 +48,16 @@ export function register(driver: IIdahDriverV2): void {
       if (!isEditable()) return noopAction(command);
 
       const last = findLastCategory(data.annotations?.items ?? [], NON_DRAWABLE_SHAPE_TYPES);
-      const selected = selection.value;
-      const plan = planCategoryReuse(last, selected?.category, selected !== null);
-      if (plan.action === "none") {
+      if (!last) {
         showToast.info({ title: "No category to reuse", description: "Create an annotation first." });
         return noopAction(command);
       }
 
-      if (plan.action === "draw") selection.deselect();
-      if (!categoryPicker.apply(plan.category, plan.shapeType)) {
+      selection.deselect();
+      if (!categoryPicker.apply(last.category, last.shapeType)) {
         showToast.warning({
           title: "Category not available",
-          description: `${categoryLabel(driver, plan.category, plan.shapeType)} can't be used for the selected annotation.`,
+          description: `${last.category} is no longer in the label configuration.`,
         });
       }
       return noopAction(command);

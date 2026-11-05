@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { findLastCategory, planCategoryReuse } from "./last-category";
+import { findLastCategory } from "./last-category";
 
 const box = "idah-video:bounding-box";
 const tagging = new Set(["entry:root", "idah-video:frame"]);
@@ -38,41 +38,5 @@ describe("findLastCategory", () => {
   it("keeps the shape type of the annotation it came from", () => {
     const items = [item("0190a000-0000-7000-8000-000000000001", "lane", "idah-video:polygon")];
     expect(findLastCategory(items, tagging)?.shapeType).toBe("idah-video:polygon");
-  });
-});
-
-describe("planCategoryReuse", () => {
-  const last = { category: "vehicle/car", shapeType: box, annotationId: "a" };
-
-  it("does nothing when no annotation has been created", () => {
-    expect(planCategoryReuse(undefined, undefined, false)).toEqual({ action: "none" });
-  });
-
-  it("picks the category for drawing when nothing is selected", () => {
-    expect(planCategoryReuse(last, undefined, false)).toEqual({
-      action: "draw",
-      category: "vehicle/car",
-      shapeType: box,
-    });
-  });
-
-  it("picks it for drawing when the selection already has it (the annotation just drawn)", () => {
-    expect(planCategoryReuse(last, "vehicle/car", true)).toEqual({
-      action: "draw",
-      category: "vehicle/car",
-      shapeType: box,
-    });
-  });
-
-  it("changes the selection when it has another category", () => {
-    expect(planCategoryReuse(last, "person/adult", true)).toEqual({
-      action: "relabel",
-      category: "vehicle/car",
-      shapeType: box,
-    });
-  });
-
-  it("changes a selection that has no category yet", () => {
-    expect(planCategoryReuse(last, undefined, true).action).toBe("relabel");
   });
 });

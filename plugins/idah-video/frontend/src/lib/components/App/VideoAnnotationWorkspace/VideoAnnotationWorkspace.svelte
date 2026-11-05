@@ -346,15 +346,13 @@
     }
   }
 
-  /** Apply a category from a command (category.reuse-last) the way the sidebar does: change the
-   *  selected annotation or group, or pick it for drawing when nothing is selected. Returns false
-   *  when the category doesn't exist for the selection's shape type. */
+  /** Pick a category for the next annotation from a command (category.reuse-last), the same way a
+   *  sidebar click does. The command clears the selection first. Returns false when the category
+   *  is no longer in the label config. */
   function applyCategory(category: string, shapeType: string): boolean {
     if (!editable) return false;
-    const targetShapeType =
-      selAnnotation?.shape_type ?? selection.selectedGroups[0]?.annotations[0]?.shape_type ?? shapeType;
-    if (!getDriver().config[targetShapeType]?.values.some((v) => v.id === category)) return false;
-    onEditValue(category, targetShapeType);
+    if (!getDriver().config[shapeType]?.values.some((v) => v.id === category)) return false;
+    onEditValue(category, shapeType);
     return true;
   }
 
