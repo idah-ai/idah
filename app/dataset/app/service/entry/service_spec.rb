@@ -588,7 +588,9 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#update" do
-    it "updates an entry" do
+    it "updates an entry status and clears its previous completion timestamp" do
+      repo.update!(entry.id, { status: "completed", wf_step: "done" })
+      expect(repo.find!(entry.id).completed_at).to be_a(Time)
       record = deserialize(
         {
           data: {
@@ -605,16 +607,37 @@ RSpec.describe Entry::Service, database: true do
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.status).to eq("in_progress")
+      expect(updated_entry.completed_at).to be_nil
+    end
+
+    it "preserves completion when name, priority and delivery date are changed" do
+      id = repo.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
+      completed_at = repo.find!(id).completed_at
+      expect(completed_at).to be_a(Time)
+      date = Date.today + 1
+      record = deserialize(data: { type: Resource::Dataset::Entries, id:,
+        attributes: { name: "Renamed", priority: 3, delivery_date: date } })
+
+      result = subject.update(record)
+
+      expect(result.name).to eq("Renamed")
+      expect(result.priority).to eq(3)
+      expect(result.delivery_date).to eq(date)
+      expect(result.status).to eq("completed")
+      expect(result.completed_at).to eq(completed_at)
     end
   end
 
   describe "#assign_member" do
-    it "assigns a member to an entry and sets status to in_progress" do
+    it "assigns a member, sets status to in_progress and clears completion" do
+      repo.update!(entry.id, { status: "completed", wf_step: "done" })
+      expect(repo.find!(entry.id).completed_at).to be_a(Time)
       subject.assign_member(entry.id, 2)
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.assigned_to_id).to eq(2)
       expect(updated_entry.status).to eq("in_progress")
+      expect(updated_entry.completed_at).to be_nil
     end
 
     it "moves the dataset to in_progress" do
@@ -629,12 +652,15 @@ RSpec.describe Entry::Service, database: true do
       subject.assign_member(entry.id, 2)
     end
 
-    it "clears the assigned member and sets status to pending" do
+    it "clears the assigned member and completion timestamp and sets status to pending" do
+      repo.update!(entry.id, { status: "completed", wf_step: "done" })
+      expect(repo.find!(entry.id).completed_at).to be_a(Time)
       subject.unassign_member(entry.id)
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.assigned_to_id).to be_nil
       expect(updated_entry.status).to eq("pending")
+      expect(updated_entry.completed_at).to be_nil
     end
 
     it "moves the dataset back to pending when the last assignment is removed" do
@@ -780,6 +806,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("review")
         expect(result.status).to eq("pending")
+        expect(result.completed_at).to be_nil
       end
     end
 
@@ -798,6 +825,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("done")
         expect(result.status).to eq("completed")
+        expect(result.completed_at).to be_a(Time)
       end
     end
 
@@ -811,6 +839,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("done")
         expect(result.status).to eq("completed")
+        expect(result.completed_at).to be_a(Time)
       end
     end
 
@@ -824,6 +853,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("annotate")
         expect(result.status).to eq("in_progress")
+        expect(result.completed_at).to be_nil
       end
     end
 
@@ -982,7 +1012,19 @@ RSpec.describe Entry::Service, database: true do
         expect(result.reopened_by_email).to eq("admin@example.com")
       end
 
-      it "moves entry back to the requested step" do
+      it "moves back to the requested step and assigns a new timestamp on re-completion" do
+        # CURRENT_TIMESTAMP is fixed per transaction. Seed an earlier cycle only
+        # in this rollback-isolated fixture so replacement can be asserted.
+        previous_completed_at = Time.utc(2000, 1, 1)
+        repo.client do |db|
+          db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+          begin
+            db[:entries].where(id: completed_entry).update(completed_at: previous_completed_at)
+          ensure
+            db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+          end
+        end
+        expect(repo.find!(completed_entry).completed_at).to eq(previous_completed_at)
         result = subject.reopen(completed_entry, target_step: "review")
 
         expect(result.wf_step).to eq("review")
@@ -991,6 +1033,12 @@ RSpec.describe Entry::Service, database: true do
         expect(result.assigned_to_email).to be_nil
         expect(result.reopened_by_id).to eq(1)
         expect(result.reopened_by_email).to eq("admin@example.com")
+        expect(result.completed_at).to be_nil
+
+        completed = subject.submit(completed_entry, approved: true)
+        expect(completed.status).to eq("completed")
+        expect(completed.completed_at).to be_a(Time)
+        expect(completed.completed_at).to be > previous_completed_at
       end
 
       it "marks the dataset as in_progress when it was previously completed" do
@@ -1230,6 +1278,9 @@ RSpec.describe Entry::Service, database: true do
     # advanced off "start" immediately. Sources still processing are skipped.
     it "advances a processed source's duplicate off start without reprocessing" do
       allow(subject.send(:entries)).to receive(:no_event).and_call_original
+      repo.update!(entry_processed, { status: "completed", wf_step: "done" })
+      original_completed_at = repo.find!(entry_processed).completed_at
+      expect(original_completed_at).to be_a(Time)
 
       subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_processed])
 
@@ -1239,6 +1290,8 @@ RSpec.describe Entry::Service, database: true do
       expect(duplicated.status).to eq("pending")
       expect(duplicated.job_id).to be_nil
       expect(duplicated.resource).to eq("http://example.com/processed.mp4")
+      expect(duplicated.completed_at).to be_nil
+      expect(repo.find!(entry_processed).completed_at).to eq(original_completed_at)
     end
 
     it "resets the duplicated deadline even when the destination Dataset has a date" do

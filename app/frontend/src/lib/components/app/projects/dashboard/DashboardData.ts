@@ -1,3 +1,4 @@
+import { completionBounds, completionDay, type DashboardRange } from "./DashboardHistory";
 import { datasetsBackendDataSource, DatasetRecord } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
@@ -139,6 +140,63 @@ export function createProjectDashboardDataSources(
     return validateCounts(values);
   }
 
+  async function completionTrend(
+    ids: string[],
+    range: DashboardRange,
+    zone: string,
+    isCurrent: () => boolean,
+    progress: (daily: { [date: string]: number }, loaded: number) => void,
+  ): Promise<void> {
+    const selected = [...ids];
+    const bounds = completionBounds(range, zone);
+    const start = Date.parse(bounds.start),
+      end = Date.parse(bounds.end);
+    const daily: { [date: string]: number } = {};
+    let cursor = "",
+      loaded = 0;
+    while (isCurrent()) {
+      const response = await entries.list({
+        filters: {
+          ...(selected.length ? { dataset_id: selected } : {}),
+          status__in: ["completed"],
+          completed_at__gte: bounds.start,
+          completed_at__lte: bounds.endInclusive,
+          ...(cursor ? { id__gt: cursor } : {}),
+        },
+        fields: { [EntryRecord.type]: ["id", "completed_at"] },
+        sort: ["id"],
+        pagination: { page: 1, itemsPerPage: 1000 },
+        count: false,
+      });
+      if (!isCurrent()) return;
+      if (!Array.isArray(response.data) || response.data.length > 1000)
+        throw new Error("Completion results could not be validated. Retry.");
+      if (!response.data.length) return;
+      const batch: { [date: string]: number } = {};
+      let next = cursor;
+      for (const record of response.data) {
+        const timestamp = record.completed_at;
+        if (
+          typeof record.id !== "string" ||
+          !record.id ||
+          record.id <= next ||
+          !(timestamp instanceof Date) ||
+          !Number.isFinite(timestamp.getTime()) ||
+          timestamp.getTime() < start ||
+          timestamp.getTime() >= end
+        )
+          throw new Error("Completion results changed or did not advance. Retry.");
+        next = record.id;
+        const day = completionDay(timestamp, zone);
+        batch[day] = (batch[day] ?? 0) + 1;
+      }
+      for (const [day, count] of Object.entries(batch)) daily[day] = (daily[day] ?? 0) + count;
+      cursor = next;
+      loaded += response.data.length;
+      if (isCurrent()) progress({ ...daily }, loaded);
+      if (response.data.length < 1000) return;
+    }
+  }
   async function attention(ids: string[], today: Date = new Date()): Promise<number | null> {
     const result = await datasets.list({
       filters: ids.length ? { id: [...ids] } : {},
@@ -150,6 +208,7 @@ export function createProjectDashboardDataSources(
   }
   return {
     datasets,
+    completionTrend,
     attention,
     openEntries(ids: string[], combined = true): ReturnType<ProjectDashboardDataSources["openEntries"]> {
       const selected = [...ids];
@@ -232,6 +291,13 @@ export function createProjectDashboardDataSources(
   };
 }
 export type ProjectDashboardDataSources = {
+  completionTrend: (
+    ids: string[],
+    range: DashboardRange,
+    zone: string,
+    isCurrent: () => boolean,
+    progress: (daily: { [date: string]: number }, loaded: number) => void,
+  ) => Promise<void>;
   datasets: BackendDataSource<DatasetRecord>;
   attention: (ids: string[], today?: Date) => Promise<number | null>;
   openEntries: (

@@ -1,3 +1,10 @@
+import {
+  completionBounds,
+  initialCompletionRange,
+  viewerTimeZone,
+  type DashboardRange,
+  type CompletionTrend,
+} from "./DashboardHistory";
 import { SvelteDate, SvelteSet } from "svelte/reactivity";
 import {
   createProjectDashboardDataSources,
@@ -23,6 +30,16 @@ export class DashboardManager {
   poolCount = $state(0);
   navigationPage: number | null = $state(0);
   poolMore = $state(false);
+  trendRange: DashboardRange = $state(initialCompletionRange());
+  trend: CompletionTrend = $state.raw({
+    status: "idle",
+    daily: {},
+    loaded: 0,
+    error: "",
+    zone: viewerTimeZone(),
+  });
+  private trendGeneration = 0;
+  private scopeReady = false;
   private generation = 0;
   private disposed = false;
   private reportingDay: Date | null = null;
@@ -45,6 +62,52 @@ export class DashboardManager {
     this.attention = null;
     this.updated = null;
   }
+  private invalidateTrend(status: CompletionTrend["status"] = "loading"): void {
+    this.trendGeneration++;
+    this.trend = {
+      status,
+      daily: {},
+      loaded: 0,
+      error: "",
+      zone: viewerTimeZone(),
+    };
+  }
+  async applyTrendRange(range: DashboardRange): Promise<void> {
+    completionBounds(range, viewerTimeZone());
+    this.trendRange = { start: range.start, end: range.end };
+    this.invalidateTrend();
+    if (this.scopeReady) await this.loadTrend();
+  }
+  async retryTrend(): Promise<void> {
+    if (!this.scopeReady) await this.refresh();
+    else await this.loadTrend();
+  }
+  async loadTrend(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    this.invalidateTrend();
+    const token = this.trendGeneration;
+    const sources = this.sources;
+    const ids = this.focused ? [this.focused.id] : [...this.ids];
+    const range = { ...this.trendRange };
+    const zone = this.trend.zone;
+    const current = (): boolean => token === this.trendGeneration && !this.disposed && !this.denied;
+    await sources
+      .completionTrend(ids, range, zone, current, (daily, loaded): void => {
+        if (current()) this.trend = { ...this.trend, daily, loaded };
+      })
+      .then((): void => {
+        if (current()) this.trend = { ...this.trend, status: this.trend.loaded ? "ready" : "empty" };
+      })
+      .catch((error: unknown): void => {
+        if (current())
+          this.trend = {
+            ...this.trend,
+            status: this.trend.loaded ? "partial" : "unavailable",
+            error: error instanceof Error ? error.message : "Completion results unavailable",
+          };
+      });
+  }
+
   async load(): Promise<void> {
     if (this.disposed) return;
     const generation = ++this.generation;
@@ -73,7 +136,9 @@ export class DashboardManager {
     }
   }
   async updateReportingDay(day: Date): Promise<void> {
-    if (this.disposed || this.reportingDay?.getTime() === day.getTime()) return;
+    if (this.disposed) return;
+    if (viewerTimeZone() !== this.trend.zone && this.scopeReady && !this.denied) void this.loadTrend();
+    if (this.reportingDay?.getTime() === day.getTime()) return;
     const initialized = this.reportingDay !== null;
     this.reportingDay = day;
     if (!initialized || this.denied) return;
@@ -101,6 +166,8 @@ export class DashboardManager {
       this.error = "Select up to 100 datasets.";
       return;
     }
+    this.invalidateTrend();
+    this.scopeReady = false;
     this.tableEpoch++;
     this.denied = false;
     const token = ++this.generation;
@@ -118,25 +185,40 @@ export class DashboardManager {
       if (this.poolCount === 1) {
         this.focused = first.data[0] ?? null;
       }
+      this.scopeReady = true;
+      void this.loadTrend();
       await this.load();
     } catch (error) {
       if (token === this.generation) {
         this.loading = false;
-        if (!isAccessError(error)) this.error = "Unable to load selected datasets";
+        if (!isAccessError(error)) {
+          this.error = "Unable to load selected datasets";
+          this.trend = {
+            ...this.trend,
+            status: "unavailable",
+            error: this.error,
+          };
+        }
       }
     }
   }
   async focus(dataset: DatasetRecord | null, page: number | null = null): Promise<void> {
     if (this.disposed) return;
+    this.invalidateTrend();
+    this.scopeReady = false;
     this.tableEpoch++;
     this.clearMetrics();
     this.focused = dataset;
     this.navigationPage = dataset ? page : 0;
     this.replaceSources();
+    this.scopeReady = true;
+    void this.loadTrend();
     await this.load();
   }
   async refresh(): Promise<void> {
     if (this.disposed) return;
+    this.invalidateTrend();
+    this.scopeReady = false;
     if (this.denied) {
       this.denied = false;
       this.replaceSources();
@@ -160,9 +242,18 @@ export class DashboardManager {
         this.focused = current.data[0];
         this.navigationPage = null;
       }
+      this.scopeReady = true;
+      void this.loadTrend();
       await this.load();
     } catch (error) {
-      if (token === this.generation) this.error = error instanceof Error ? error.message : "Dashboard refresh failed";
+      if (token === this.generation) {
+        this.error = error instanceof Error ? error.message : "Dashboard refresh failed";
+        this.trend = {
+          ...this.trend,
+          status: "unavailable",
+          error: this.error,
+        };
+      }
     } finally {
       if (token === this.generation) this.loading = false;
     }
@@ -181,6 +272,8 @@ export class DashboardManager {
     }
     if (page < 1) page = this.poolMore ? 1 : this.poolCount;
     if (!this.poolMore && page > this.poolCount) page = 1;
+    this.invalidateTrend();
+    this.scopeReady = false;
     const generation = this.generation;
     this.loading = true;
     try {
@@ -189,16 +282,28 @@ export class DashboardManager {
       if (result.data[0]) await this.focus(result.data[0], page);
       else if (page > 1) {
         const first = await this.listDatasetPage(1);
-        if (generation === this.generation && first.data[0]) await this.focus(first.data[0], 1);
+        if (generation !== this.generation) return;
+        if (!first.data[0]) throw new Error("No Dataset is available in this scope");
+        await this.focus(first.data[0], 1);
+      } else {
+        throw new Error("No Dataset is available in this scope");
       }
     } catch (error) {
-      if (generation === this.generation)
+      if (generation === this.generation) {
         this.error = error instanceof Error ? error.message : "Dataset navigation unavailable";
+        this.trend = {
+          ...this.trend,
+          status: "unavailable",
+          error: this.error,
+        };
+      }
     } finally {
       if (generation === this.generation) this.loading = false;
     }
   }
   denyAccess(): void {
+    this.invalidateTrend("unavailable");
+    this.scopeReady = false;
     this.generation++;
     this.clearMetrics();
     this.loading = false;

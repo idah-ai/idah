@@ -402,3 +402,147 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
   end
 end
+
+# Real-service integration coverage stays outside the service-stubbed group above.
+RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
+  let(:system_context) { Verse::Auth::Context[:system] }
+  let(:entries) { Entry::Repository.new(system_context) }
+  let!(:project_id) do
+    Project::Repository.new(system_context).create(name: "Completion API", organization_id: 1, created_by_email: "test@example.com")
+  end
+  let!(:dataset_id) do
+    Dataset::Repository.new(system_context).create(project_id:, modality: "video", labels: [], labeling_configuration: {}, workflow_configuration: {})
+  end
+  let(:forged) { "2000-01-01T00:00:00Z" }
+
+  it "returns an offset-bearing timestamp and cannot overwrite it through ordinary updates" do
+    id = entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
+    original = entries.find!(id).completed_at
+    patch "/entries/#{id}", { data: { type: Resource::Dataset::Entries, id:, attributes: { name: "Edited", completed_at: forged } } }
+    expect(last_response.status).to eq(200)
+    expect(entries.find!(id).name).to eq("Edited")
+    expect(entries.find!(id).completed_at).to eq(original)
+    timestamp = JSON.parse(last_response.body).dig("data", "attributes", "completed_at")
+    expect(timestamp).to match(/(?:Z|[+-]\d{2}:?\d{2})\z/)
+    expect(Time.parse(timestamp).to_i).to eq(original.to_i)
+    patch "/entries/#{id}", { data: { type: Resource::Dataset::Entries, id:, attributes: { priority: 3, completed_at: nil } } }
+    expect(last_response.status).to eq(200)
+    expect(entries.find!(id).completed_at).to eq(original)
+  end
+
+  it "does not accept a caller-chosen completion time on creation" do
+    post "/entries", {
+      data: {
+        type: Resource::Dataset::Entries,
+        attributes: { resource: UUIDv7.generate, status: "completed", wf_step: "done", completed_at: forged },
+        relationships: { dataset: { data: { type: Resource::Dataset::Datasets, id: dataset_id } } }
+      }
+    }
+    expect(last_response.status).to eq(201)
+    body = JSON.parse(last_response.body)
+    completed_at = entries.find!(body.dig("data", "id")).completed_at
+    expect(completed_at).to be_a(Time)
+    expect(completed_at).not_to eq(Time.iso8601(forged))
+  end
+
+  describe "completion range filters" do
+    let!(:entry_id) { entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done") }
+    let(:completed_at) { entries.find!(entry_id).completed_at }
+
+    def read_entries(extra = {}, count: false)
+      params = { filter: { project_id:, dataset_id: [dataset_id], status__in: ["completed"] }.merge(extra),
+        sort: "id", page: { number: 1, size: 1000 }, count:,
+        fields: { Resource::Dataset::Entries => ["id", "completed_at"] } }
+      get "/entries?#{Rack::Utils.build_nested_query(params)}"
+      expect(last_response.status).to eq(200), last_response.body
+      JSON.parse(last_response.body)
+    end
+
+    it "normalizes offset-bearing bounds and includes exact lower and upper timestamps" do
+      lower = completed_at.getlocal("+07:00").iso8601(6)
+      upper = completed_at.getlocal("-08:00").iso8601(6)
+      expect(read_entries({ completed_at__gte: lower, completed_at__lte: upper })["data"].map { |e| e["id"] }).to eq([entry_id])
+      expect(read_entries({ completed_at__lte: (completed_at - Rational(1, 1_000_000)).iso8601(6) })["data"]).to be_empty
+      expect(read_entries({ completed_at__gte: (completed_at + Rational(1, 1_000_000)).iso8601(6) })["data"]).to be_empty
+    end
+
+    it "includes the final microsecond of the selected local date but excludes the next midnight" do
+      next_entry = entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
+      inclusive_end = Time.iso8601("2026-10-30T23:59:59.999999-07:00").utc
+      next_midnight = Time.iso8601("2026-10-31T00:00:00-07:00").utc
+      entries.client do |db|
+        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+        begin
+          db[:entries].where(id: entry_id).update(completed_at: inclusive_end)
+          db[:entries].where(id: next_entry).update(completed_at: next_midnight)
+        ensure
+          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+        end
+      end
+      filters = {
+        completed_at__gte: "2026-10-01T00:00:00-07:00",
+        completed_at__lte: "2026-10-30T23:59:59.999999-07:00"
+      }
+      expect(read_entries(filters)["data"].map { |e| e["id"] }).to eq([entry_id])
+      expect(read_entries(filters.merge(completed_at__lte: (inclusive_end - Rational(1, 1_000_000)).iso8601(6)))["data"]).to be_empty
+      expect(read_entries({ completed_at__gte: next_midnight.iso8601(6) })["data"].map { |e| e["id"] }).to eq([next_entry])
+    end
+
+    [:completed_at__gte, :completed_at__lte].each do |filter|
+      ["not-a-date", "2026-11-05", "2026-11-05T12:00:00", "2026-02-30T00:00:00Z", ["2026-11-05T00:00:00Z"]].each do |value|
+        it "rejects an invalid/ambiguous #{filter} timestamp #{value.inspect}" do
+          get "/entries?#{Rack::Utils.build_nested_query(filter: { filter => value })}"
+          expect(last_response.status).to eq(422)
+        end
+      end
+    end
+
+    it "excludes legacy null timestamps from dated completions" do
+      # Recreate a pre-migration unknown timestamp only in this rollback-isolated fixture.
+      entries.client do |db|
+        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+        begin
+          db[:entries].where(id: entry_id).update(completed_at: nil)
+        ensure
+          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+        end
+      end
+      expect(read_entries({ completed_at__gte: Time.utc(2000).iso8601, completed_at__lte: Time.utc(2100).iso8601 })["data"]).to be_empty
+    end
+
+    it "continues beyond capped metadata with UUID ordering and no offset drift" do
+      ids = Array.new(2004) { UUIDv7.generate }
+      entries.client { |db| db[:entries].multi_insert(ids.map { |id| { id:, project_id:, dataset_id:, status: "completed", wf_step: "done" } }) }
+      expected = ([entry_id] + ids).sort
+      filters = { completed_at__gte: (completed_at - 1).iso8601(6), completed_at__lte: (completed_at + 1).iso8601(6) }
+      capped = read_entries(filters, count: true)
+      expect(capped.dig("meta", "count")).to eq(1000)
+      expect(capped.dig("meta", "more")).to be(true)
+      collected = []
+      cursor = nil
+      loop do
+        page = read_entries(filters.merge(cursor ? { id__gt: cursor } : {}))["data"]
+        break if page.empty?
+        page_ids = page.map { |e| e["id"] }
+        expect(page_ids).to eq(page_ids.sort)
+        collected.concat(page_ids)
+        cursor = page_ids.last
+        entries.update!(expected.first, { status: "pending" }) if collected.length == 1000
+      end
+      expect(collected).to eq(expected)
+      expect(collected.uniq.length).to eq(2005)
+    end
+
+    context "as a Project Owner", as: :project_owner do
+      it "retains repository scope even with an explicit foreign project filter" do
+        ProjectMember::Repository.new(system_context).create(project_id:, account_id: 3, role: "project_owner", email: "owner@example.com", invited_by_id: 1)
+        foreign_project = Project::Repository.new(system_context).create(name: "Foreign", organization_id: 2, created_by_email: "other@example.com")
+        foreign_dataset = Dataset::Repository.new(system_context).create(project_id: foreign_project, modality: "video", labels: [], labeling_configuration: {}, workflow_configuration: {})
+        entries.create(project_id: foreign_project, dataset_id: foreign_dataset, status: "completed", wf_step: "done")
+        filters = { completed_at__gte: (completed_at - 1).iso8601(6), completed_at__lte: (completed_at + 1).iso8601(6) }
+        expect(read_entries(filters)["data"].length).to eq(1)
+        expect(read_entries(filters.merge(project_id: foreign_project, dataset_id: [foreign_dataset]))["data"]).to be_empty
+      end
+    end
+  end
+end

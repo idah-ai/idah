@@ -1,7 +1,6 @@
 <script lang="ts">
   import { today as localToday } from "@/utils/date";
   import { onMount, untrack } from "svelte";
-  import { getLocalTimeZone, today } from "@internationalized/date";
   import { ChevronLeftIcon, ChevronRightIcon, RefreshCwIcon, ArrowLeftIcon } from "@lucide/svelte";
 
   import { Button } from "@/components/ui/button";
@@ -26,7 +25,7 @@
   } from "@/components/app/projects/dashboard/DashboardStatus";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import type { DashboardRange, Interval } from "@/components/app/projects/dashboard/DashboardHistory";
+  import type { Interval } from "@/components/app/projects/dashboard/DashboardHistory";
 
   // Props
   let { projectId }: { projectId: string } = $props();
@@ -34,7 +33,6 @@
   // Variables
   const uid = $props.id();
   const manager = untrack(() => new DashboardManager(projectId));
-  const day = today(getLocalTimeZone());
   const counts = $derived(manager.summary);
   const detail = $derived(manager.focused);
   const progress = $derived(
@@ -52,7 +50,6 @@
   const scope = $derived(detail?.id ?? (manager.ids.join(",") || "all"));
 
   let notice = $state("");
-  let range: DashboardRange = $state({ start: day.subtract({ days: 6 }), end: day });
   let interval: Interval = $state("Day");
 
   // Initialize
@@ -255,7 +252,13 @@
             />{/if}</CardContent
         ></Card
       >
-      <CompletionHistoryChart bind:range bind:interval />
+      <CompletionHistoryChart
+        range={manager.trendRange}
+        bind:interval
+        trend={manager.trend}
+        onApply={(range) => manager.applyTrendRange(range)}
+        onRetry={() => manager.retryTrend()}
+      />
       {#if !detail}<Card
           ><CardHeader
             ><CardTitle>Progress by dataset</CardTitle><CardDescription
@@ -295,7 +298,7 @@
           {/if}
         </CardHeader>
         <CardContent class="px-0"
-          >{#key `${scope}-${manager.version}`}<OpenEntriesTable
+          >{#key `${scope}-${manager.version}-${manager.tableEpoch}`}<OpenEntriesTable
               stateKey={"dashboard-open-entries-" + uid + "-" + manager.tableEpoch}
               sources={manager.sources}
               ids={detail ? [detail.id] : manager.ids}
