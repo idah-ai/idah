@@ -2,10 +2,11 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { onMount, setContext, type Snippet } from "svelte";
+  import { setContext, type Snippet } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import SelectedDatasetsDropdownMenu from "@/components/app/datasets/dropdowns/selected-datasets-dropdown-menu.svelte";
+  import Redirect from "@/components/app/misc/redirect.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
@@ -30,7 +31,6 @@
 
   // Variables
   let projectId = $derived(page.params.projectId as string);
-  let tabs = $state(projectTabs.filter((tab) => tab.value !== "dashboard" && tab.value !== "exports"));
   let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
 
   // Reactive variables
@@ -41,12 +41,21 @@
 
   setContext("project", project);
 
-  // Lifecycle
-  onMount(async () => {
+  // Functions
+  async function fetchProject(): Promise<{ project: ProjectRecord; tabs: typeof projectTabs }> {
+    const requestedProjectId = projectId;
     const currentAccount = $authStatus.authContext;
+    const projectRes = await projectsBackendDataSource.get(requestedProjectId, {
+      fields: {
+        [ProjectRecord.type]: ["name", "description", "organization_id"],
+      },
+    });
     const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: { projectId, projectMemberRoles: ["project_owner"] },
+      as_user: { projectId: requestedProjectId, projectMemberRoles: ["project_owner"] },
     };
+
+    let tabs = projectTabs.filter((tab) => tab.value !== "dashboard" && tab.value !== "exports");
+
     try {
       const [canReadExport, canReadDashboard] = await Promise.all([
         currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]),
@@ -58,18 +67,8 @@
     } catch {
       /* Keep restricted tabs hidden if access cannot be checked. */
     }
-  });
-
-  // Functions
-  async function fetchProject(): Promise<ProjectRecord> {
-    const projectRes = await projectsBackendDataSource.get(projectId, {
-      fields: {
-        [ProjectRecord.type]: ["name", "description", "organization_id"],
-      },
-    });
-    Object.assign(project, projectRes.data);
-
-    return project;
+    if (requestedProjectId === projectId) Object.assign(project, projectRes.data);
+    return { project, tabs };
   }
 
   function handleTabChange(value: ProjectTab): void {
@@ -80,7 +79,7 @@
 {#key $refetches.projects.get}
   {#await fetchProject()}
     <PageLoading />
-  {:then project}
+  {:then { project, tabs }}
     <PageProvider
       name="project-detail"
       roles={["admin", "org_owner", "user"]}
@@ -128,7 +127,11 @@
         </Tabs>
       {/if}
 
-      {@render children()}
+      {#if activeTab !== "dashboard" || tabs.some((tab) => tab.value === "dashboard")}
+        {@render children()}
+      {:else}
+        <Redirect to={resolve(`/projects/${projectId}/datasets`)} />
+      {/if}
     </PageProvider>
   {/await}
 {/key}

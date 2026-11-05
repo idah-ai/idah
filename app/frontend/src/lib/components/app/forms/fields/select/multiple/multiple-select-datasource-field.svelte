@@ -97,8 +97,10 @@
           };
         }),
       );
-      // Assuming we want to set selectedChoice to the first matched choice
-      knownChoices = [...knownChoices.filter((choice) => !values.includes(choice.value)), ...fetchedChoices];
+      knownChoices = [
+        ...knownChoices.filter((known) => !fetchedChoices.some((choice) => choice.value === known.value)),
+        ...fetchedChoices,
+      ];
     }
   });
 

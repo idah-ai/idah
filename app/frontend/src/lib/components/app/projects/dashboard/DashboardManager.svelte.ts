@@ -127,7 +127,6 @@ export class DashboardManager {
       this.updated = summary.status === "fulfilled" ? new SvelteDate() : null;
       if (summary.status === "rejected")
         this.error = summary.reason instanceof Error ? summary.reason.message : "Dashboard counts unavailable";
-      this.version++;
     } catch (error) {
       if (generation === this.generation)
         this.error = error instanceof Error ? error.message : "Dashboard data unavailable";
@@ -223,6 +222,7 @@ export class DashboardManager {
       this.denied = false;
       this.replaceSources();
     }
+    this.version++;
     const token = this.generation;
     this.loading = true;
     this.error = "";

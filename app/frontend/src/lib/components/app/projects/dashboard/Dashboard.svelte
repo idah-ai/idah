@@ -286,7 +286,7 @@
           {/if}
         </CardHeader>
         <CardContent class="px-0"
-          >{#key `${scope}-${manager.version}-${manager.tableEpoch}`}<OpenEntriesTable
+          >{#key `${!!detail}-${scope}-${manager.version}-${manager.tableEpoch}`}<OpenEntriesTable
               stateKey={"dashboard-open-entries-" + uid + "-" + manager.tableEpoch}
               sources={manager.sources}
               ids={detail ? [detail.id] : manager.ids}
