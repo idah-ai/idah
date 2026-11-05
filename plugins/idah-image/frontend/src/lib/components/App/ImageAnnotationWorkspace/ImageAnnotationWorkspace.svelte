@@ -9,6 +9,7 @@
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { resolveEntryRoot, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { categoryPicker } from "$lib/state/category-picker";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -369,6 +370,21 @@
       onShapeSelection(...shapeSelectionArgs);
     }
   }
+
+  /** Apply a category from a command (category.reuse-last) the way the sidebar does: change the
+   *  selected annotation, or pick it for drawing when nothing is selected. Returns false when the
+   *  category doesn't exist for the selection's shape type, or the selection is a mask (one mask
+   *  per category, so a mask keeps its category). */
+  function applyCategory(category: string, shapeType: string): boolean {
+    if (!editable) return false;
+    if (selAnnotation?.shape_type === IMAGE_MASK) return false;
+    const targetShapeType = selAnnotation?.shape_type ?? shapeType;
+    if (!getDriver().config[targetShapeType]?.values.some((v) => v.id === category)) return false;
+    onEditValue(category, targetShapeType);
+    return true;
+  }
+
+  $effect(() => categoryPicker.attach(applyCategory));
 
   /** Called by the Confirm button / Enter key in the popover.
    *  Creates the annotation with the value the user picked (category + any properties). */
