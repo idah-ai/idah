@@ -14,7 +14,11 @@ import { hasConfig } from "$idah/v2/utils";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 import { maskTool } from "$lib/state/mask-tool.svelte";
 import { toolPanel } from "$lib/state/tool-panel.svelte";
+import { history } from "$lib/state/history.svelte";
 import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
+
+// ── History icon as inline SVG ─────────────────────────────────────────
+const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
 
 // ── Magnet icon as inline SVG ──────────────────────────────────────────
 const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 16 19"/><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"/><path d="M5 8 9 12"/></svg>`;
@@ -154,6 +158,31 @@ export function initToolbar(driver: IIdahDriverV2): void {
 
   t.orderGroups(DEFAULT_MODE, ["selection"]);
   t.orderGroups(NOTE_MODE, ["selection"]);
+
+  // ── History toggle ────────────────────────────────────────────────
+  // The item is hidden when the driver has no `changes()` (an older platform).
+  if (typeof driver.annotations.changes === "function") {
+    t.add({
+      icon: historyIcon,
+      label: "History",
+      name: "idah-image:tool.history",
+      modes: [
+        DEFAULT_MODE,
+        REVIEW_MODE,
+        NOTE_MODE,
+        IMAGE_BOUNDING_BOX,
+        IMAGE_CIRCLE,
+        IMAGE_ELLIPSE,
+        IMAGE_LINE,
+        IMAGE_POLYGON,
+        IMAGE_MASK,
+      ],
+      group: null,
+      visibleWhen: () => true,
+      onClick: () => history.toggle(),
+      whenToggled: () => history.open,
+    });
+  }
 
   // ── Magnetic snap toggle (available in all edit modes) ──────────────
   t.add({
