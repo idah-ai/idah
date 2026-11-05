@@ -339,21 +339,14 @@ function makeDriver(overrides: Partial<AnnotationDriver> = {}): AnnotationDriver
     create: vi.fn(async (data) => ({ id: "created", ...data })),
     update: vi.fn(async () => {}),
     delete: vi.fn(async () => {}),
-    restore: vi.fn(async (id) => ({ id })),
+    restore: vi.fn(async () => {}),
     ...overrides,
   };
 }
 
 describe("createAnnotationStore", () => {
-  it("restore() resolves to the backend's restored record", async () => {
-    const backendRecord = {
-      id: "ann-1",
-      shape_type: "idah-video:bounding-box",
-      shape_args: { start: 0, end: 4, frames: [] },
-      category: "test/cat",
-      restored: true,
-    };
-    const driver = makeDriver({ restore: vi.fn(async () => backendRecord) });
+  it("restore() inserts the snapshot locally and resolves with it", async () => {
+    const driver = makeDriver();
     const store = createAnnotationStore(driver);
 
     const snapshot = {
@@ -365,9 +358,10 @@ describe("createAnnotationStore", () => {
     const result = await store.restore(snapshot as any);
 
     expect(driver.restore).toHaveBeenCalledWith("ann-1");
-    expect(result).toEqual(backendRecord);
-    // The optimistic snapshot was reconciled with the backend record.
-    expect(store.items.find((i) => i.id === "ann-1")).toEqual(backendRecord);
+    expect(result).toEqual(snapshot);
+    // The snapshot is present locally; the backend restore is enqueued and a
+    // failure surfaces via onSyncError, so the local record stays.
+    expect(store.items.find((i) => i.id === "ann-1")).toEqual(snapshot);
   });
 });
 
@@ -405,7 +399,7 @@ describe("deleted-annotation map", () => {
     expect(getDeletedAnnotation("ann-1")).toBeUndefined();
   });
 
-  it("restore() puts the tombstone back when the backend fails", async () => {
+  it("restore() keeps the local record restored when the backend fails (onSyncError handles it)", async () => {
     const ann = {
       id: "ann-1",
       shape_type: "idah-video:bounding-box",
@@ -419,8 +413,12 @@ describe("deleted-annotation map", () => {
     await store.delete("ann-1");
     expect(getDeletedAnnotation("ann-1")).toEqual(ann);
 
-    await expect(store.restore(ann as any)).rejects.toThrow("Failed to restore annotation");
-    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
+    // The backend restore rejects, but the local record stays restored: no
+    // tombstone rollback, the failure surfaces via onSyncError like every other
+    // write.
+    await expect(store.restore(ann as any)).rejects.toThrow("offline");
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+    expect(store.items.find((i) => i.id === "ann-1")).toEqual(ann);
   });
 
   it("delete() keeps the tombstone on backend failure (surfaced via onSyncError)", async () => {

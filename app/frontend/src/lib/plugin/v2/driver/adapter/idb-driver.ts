@@ -47,7 +47,7 @@ export interface ICrudDriver<T extends { id: string }> {
   create(record: T): Promise<T>;
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
-  restore(id: string): Promise<T>;
+  restore(id: string): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -486,27 +486,17 @@ export const IdbBackedAnnotationsDriverAdapter = <
       enqueue(backend.delete(id));
     },
 
-    async restore(id: string): Promise<IAnnotationRecord<Shape, Annotation>> {
+    async restore(id: string): Promise<void> {
       const db = await getDb();
       // Local-first: clear the tombstone immediately so undo does not hang
-      // offline, then reconcile with the backend's authoritative response.
+      // offline. Like every other write, the backend restore is enqueued and
+      // any failure surfaces via onSyncError with the local record kept (the
+      // same pattern as create/update/delete).
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
       if (existing) {
         await idbUpsertBatch(db, entryId, [{ ...existing, deleted_at: null, deleted_by_id: null }]);
       }
-      const op = backend.restore(id).then(async (record) => {
-        await idbUpsertBatch(db, entryId, [record]);
-        return record;
-      });
-      op.catch(async () => {
-        // Backend failed: put the tombstone back so the annotation does not
-        // look restored locally.
-        if (existing) {
-          await idbUpsertBatch(db, entryId, [existing]);
-        }
-      });
-      enqueue(op);
-      return op;
+      enqueue(backend.restore(id));
     },
 
     async create(data): Promise<IAnnotationRecord<Shape, Annotation>> {

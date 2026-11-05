@@ -73,10 +73,10 @@ export function computeMissingRanges(
 // ---------------------------------------------------------------------------
 
 export interface AnnotationDataStore extends DataStore<AnnotationItem> {
-  /**
-   * Restore a soft-deleted annotation: insert the pre-delete snapshot locally
-   * first, then reconcile with the driver's authoritative response.
-   * Resolves with the restored record.
+  /*
+   * Restore a soft-deleted annotation: inserts the pre-delete snapshot locally
+   * first; the backend restore is enqueued like every other write and failures
+   * surface via onSyncError. Resolves with the snapshot.
    */
   restore(record: AnnotationItem): Promise<AnnotationItem>;
 }
@@ -145,7 +145,7 @@ export interface AnnotationDriver {
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
-  restore(id: string): Promise<{ id: string } & Record<string, unknown>>;
+  restore(id: string): Promise<void>;
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
@@ -239,25 +239,15 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
     },
 
     async restore(record: AnnotationItem): Promise<AnnotationItem> {
-      // Optimistic: forget the tombstone and insert locally first so the
-      // annotation reappears immediately (the pre-delete snapshot carries
-      // everything needed to redisplay it).
+      // Local-first: forget the tombstone and insert the snapshot immediately so
+      // the annotation reappears (the pre-delete snapshot carries everything
+      // needed to redisplay it). Like every other write, the backend restore is
+      // enqueued by the driver and a failure surfaces via onSyncError; the local
+      // record stays. Returns the snapshot so callers keep a usable record.
       removeDeletedAnnotation(record.id);
       originalUpsert(record);
-      try {
-        // Reconcile with the backend's authoritative response — replace the
-        // optimistic record with what the backend actually returned.
-        const restored = await driver.restore(record.id);
-        originalUpsert(restored as AnnotationItem);
-        return restored as AnnotationItem;
-      } catch {
-        // Rollback on failure — remove the optimistically-inserted record so no
-        // phantom "restored" annotation lingers if the backend rejected it, and
-        // put the tombstone back.
-        store.remove(record.id);
-        setDeletedAnnotation(record);
-        throw new Error("Failed to restore annotation");
-      }
+      await driver.restore(record.id);
+      return record;
     },
 
     async update(item: AnnotationItem): Promise<void> {

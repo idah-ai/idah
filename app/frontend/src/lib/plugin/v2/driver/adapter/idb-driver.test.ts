@@ -42,14 +42,19 @@ function makeBackend(overrides: Partial<ICrudDriver<IAnnotationRecord>> = {}): I
   } as unknown as ICrudDriver<IAnnotationRecord>;
 }
 
-/** A driver whose sync loop is pre-seeded so fetch() does not hit the backend. */
-async function makeSeededDriver(records: IAnnotationRecord[]) {
+/** A driver whose sync loop is pre-seeded so fetch() does not hit the backend. The
+ *  production enqueue observes op rejections (driver/index.ts #enqueue), so the
+ *  mock enqueue should too when a test rejects a backend op. */
+async function makeSeededDriver(
+  records: IAnnotationRecord[],
+  enqueue: (op: Promise<unknown>) => void = () => {},
+) {
   const backend = makeBackend();
   const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
     entryId: ENTRY_ID,
     pluginId: PLUGIN_ID,
     backend,
-    enqueue: () => {},
+    enqueue,
   });
   if (!driver) throw new Error("driver is null");
 
@@ -117,28 +122,33 @@ describe("IdbBackedAnnotationsDriverAdapter tombstones", () => {
     expect(backend.delete).toHaveBeenCalledWith("ann-1");
   });
 
-  it("restore clears the tombstone locally first, then reconciles with the backend", async () => {
+  it("restore clears the tombstone locally first, then enqueues the backend restore", async () => {
     const tomb = makeRecord({ id: "ann-1", deleted_at: new Date("2026-01-02T00:00:00Z") });
-    const restored = makeRecord({ id: "ann-1", deleted_at: null });
     const { driver, backend } = await makeSeededDriver([tomb]);
-    vi.mocked(backend.restore).mockResolvedValue(restored);
 
     const result = await driver.restore("ann-1");
-    expect(result.deleted_at).toBeNull();
+    expect(result).toBeUndefined(); // fire-and-forget, like the other writes
+    expect(backend.restore).toHaveBeenCalledWith("ann-1");
 
+    // The local tombstone is cleared immediately.
     const all = await driver.fetch({ deleted: "all" });
     expect(all[0].deleted_at).toBeNull();
   });
 
-  it("restore puts the tombstone back when the backend fails", async () => {
+  it("restore keeps the local record restored when the backend fails (onSyncError handles it)", async () => {
     const tomb = makeRecord({ id: "ann-1", deleted_at: new Date("2026-01-02T00:00:00Z") });
-    const { driver, backend } = await makeSeededDriver([tomb]);
+    // Observe the enqueued op's rejection the way the production enqueue does.
+    const { driver, backend } = await makeSeededDriver([tomb], (op) => {
+      op.catch(() => {});
+    });
     vi.mocked(backend.restore).mockRejectedValue(new Error("offline"));
 
-    await expect(driver.restore("ann-1")).rejects.toThrow("offline");
+    await driver.restore("ann-1"); // does not reject: the op is enqueued
+    expect(backend.restore).toHaveBeenCalledWith("ann-1");
 
+    // The local record stays restored; the failure surfaces via onSyncError.
     const all = await driver.fetch({ deleted: "all" });
-    expect(all[0].deleted_at).toBeInstanceOf(Date);
+    expect(all[0].deleted_at).toBeNull();
   });
 
   it("update refuses a tombstone", async () => {

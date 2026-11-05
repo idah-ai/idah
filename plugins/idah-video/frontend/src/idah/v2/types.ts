@@ -465,8 +465,8 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
-  /** Restore a soft-deleted annotation; resolves with the restored record. */
-  restore(id: string): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+  /** Restore a soft-deleted annotation; local-first, enqueued like all writes. The backend failure surfaces via onSyncError. */
+  restore(id: string): Promise<void>;
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
   create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;

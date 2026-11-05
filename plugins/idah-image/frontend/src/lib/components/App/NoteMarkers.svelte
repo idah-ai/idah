@@ -1,6 +1,14 @@
 <script lang="ts">
   import { getDriver } from "$lib/state/driver.svelte";
-  import { activeNoteId, data, notes, pendingNoteScene, setPendingNoteScene } from "$lib/state/data.svelte";
+  import {
+    activeNoteId,
+    data,
+    getDeletedAnnotation,
+    notes,
+    pendingNoteScene,
+    setPendingNoteScene,
+    type AnnotationItem,
+  } from "$lib/state/data.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -23,6 +31,26 @@
 
   let invScale = $derived(1 / viewport.workspace.transform.scale);
 
+  /** True when a note is anchored to a soft-deleted annotation (a tombstone). */
+  function isNoteOnDeletedAnnotation(note: INoteRecord): boolean {
+    if (note.anchor.anchor_type !== "annotation" || !note.anchor.annotation_id) return false;
+    const annId = note.anchor.annotation_id;
+    const ann = data.annotations?.items?.find((a) => a.id === annId);
+    if (ann) return false; // live
+    return !!getDeletedAnnotation(annId);
+  }
+
+  /** A deleted annotation's marker is hidden when its id is hidden, or when
+   *  every live annotation of its category is hidden. */
+  function isDeletedMarkerHidden(tomb: AnnotationItem): boolean {
+    if (annotation.isHidden(tomb)) return true;
+    const live = (data.annotations?.items ?? []).filter(
+      (a) => a.category === tomb.category && a.shape_type === tomb.shape_type,
+    );
+    if (live.length === 0) return false;
+    return live.every((a) => annotation.isHidden(a));
+  }
+
   function noteScenePosition(note: INoteRecord): { x: number; y: number } | null {
     if (note.anchor.anchor_type === "entry") {
       const pos = note.anchor.position as { x?: number; y?: number } | undefined;
@@ -33,10 +61,16 @@
       const annId = note.anchor.annotation_id;
       if (!annId) return null;
       const ann = data.annotations?.items?.find(a => a.id === annId);
-      if (!ann) return null;
+      const tomb = getDeletedAnnotation(annId);
+      const record = ann ?? tomb;
+      if (!record) return null;
       // Skip markers on hidden annotations
-      if (annotation.isHidden(ann)) return null;
-      const shape = ann.shape_args as IImageAnnotationShape | undefined;
+      if (ann) {
+        if (annotation.isHidden(ann)) return null;
+      } else if (tomb) {
+        if (isDeletedMarkerHidden(tomb)) return null;
+      }
+      const shape = record.shape_args as IImageAnnotationShape | undefined;
       if (!shape || !shape.points?.length) return null;
 
       // Compute centroid of the annotation shape points
@@ -54,10 +88,10 @@
   }
 
   let markers = $derived.by(() => {
-    const result: Array<{ note: INoteRecord; x: number; y: number }> = [];
+    const result: Array<{ note: INoteRecord; x: number; y: number; deleted: boolean }> = [];
     for (const note of notes.list) {
       const pos = noteScenePosition(note);
-      if (pos) result.push({ note, ...pos });
+      if (pos) result.push({ note, ...pos, deleted: isNoteOnDeletedAnnotation(note) });
     }
     return result;
   });
@@ -151,15 +185,20 @@
       }
 
       if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
-        const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+        const annId = note.anchor.annotation_id;
+        const ann = data.annotations?.items?.find(a => a.id === annId);
+        const tomb = getDeletedAnnotation(annId);
         if (ann) {
           selection.selectAnnotation(ann);
           driver.command.call("idah-image:selection.center");
+        } else if (tomb) {
+          // Deleted annotation: open the note without selecting anything. There
+          // is no seek in the image plugin.
         } else {
           // Annotations not loaded yet — defer until they are
           const stop = $effect.root(() => {
             $effect(() => {
-              const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+              const found = data.annotations?.items?.find(a => a.id === annId);
               if (!found) return;
               selection.selectAnnotation(found);
               driver.command.call("idah-image:selection.center");
@@ -198,13 +237,14 @@
       class:cursor-pointer={!isNoteMode}
       class:cursor-note={isNoteMode}
       class:pointer-events-none={isNoteMode}
+      class:opacity-50={marker.deleted}
       style="transform: translate({marker.x}px, {marker.y - 24 * invScale}px)"
       onclick={() => handleMarkerClick(marker.note, marker.x, marker.y)}
       onkeypress={(e) => { if (e.key === 'Enter') handleMarkerClick(marker.note, marker.x, marker.y); }}
       role="button"
       tabindex="0"
     >
-      <title>{marker.note.content_md ?? "Note marker"}</title>
+      <title>{marker.deleted ? `${marker.note.content_md ?? "Note marker"} — Annotation deleted` : (marker.note.content_md ?? "Note marker")}</title>
       <g style="transform: scale({invScale}); transform-origin: 0 0;">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-md">
           <path

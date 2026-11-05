@@ -78,12 +78,11 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       });
     },
 
-    async restore(id: string): Promise<IAnnotationRecord> {
-      const result = await rpc.call({
+    async restore(id: string): Promise<void> {
+      await rpc.call({
         method: "restore",
         params: { id, entry_id: entryId },
       });
-      return result as unknown as IAnnotationRecord;
     },
 
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
@@ -183,9 +182,8 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
     await this.rpc.call({ method: "delete", params: { id, entry_id: this.entryId } });
   }
 
-  async restore(id: string): Promise<IAnnotationRecord> {
-    const result = await this.rpc.call({ method: "restore", params: { id, entry_id: this.entryId } });
-    return result as unknown as IAnnotationRecord;
+  async restore(id: string): Promise<void> {
+    await this.rpc.call({ method: "restore", params: { id, entry_id: this.entryId } });
   }
 
   async create(data: IAnnotationRecord): Promise<IAnnotationRecord> {

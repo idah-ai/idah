@@ -472,11 +472,10 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
     }
   }
 
-  async restore(id: string): Promise<Annot> {
+  async restore(id: string): Promise<void> {
     const restored = this.store.restore(id);
     const version = this.nextVersion(id);
     this.recordChange(restored, "restored", version, [["~", "deleted_at", new Date().toISOString(), null]]);
-    return restored;
   }
 
   async create(data: Annot): Promise<Annot> {
