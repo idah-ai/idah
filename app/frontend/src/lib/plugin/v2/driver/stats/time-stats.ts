@@ -31,8 +31,7 @@ export class TimeStatsProvider implements IStatProvider {
 
     // Per-author rows, one per (step, author) stint
     for (const wt of workTimes) {
-      const showEmail =
-        wt.email && wt.email !== "null" ? wt.email : `Account ${wt.accountId}`;
+      const showEmail = wt.email && wt.email !== "null" ? wt.email : `Account ${wt.accountId}`;
       stats.push({
         key: `time.${wt.wfStep}.${wt.accountId}`,
         value: formatDuration(wt.seconds),

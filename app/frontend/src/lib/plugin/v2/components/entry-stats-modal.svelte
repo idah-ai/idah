@@ -72,9 +72,7 @@
   });
 
   // Total annotations (from the core "annotation.count" stat)
-  const annotationTotal = $derived(
-    Number(stats.find((s) => s.key === "annotation.count")?.value ?? 0),
-  );
+  const annotationTotal = $derived(Number(stats.find((s) => s.key === "annotation.count")?.value ?? 0));
 
   // Total tracked time across all steps (combined cache on the entry)
   const timeTotal = $derived(Object.values(driver.timeTracking ?? {}).reduce((a, b) => a + b, 0));
@@ -186,8 +184,8 @@
           <p class="text-muted-foreground py-6 text-center text-sm">No statistics available yet.</p>
         {:else if tab === "annotations"}
           <!-- Annotations tab -->
-          <div class="my-4 flex items-baseline justify-between rounded-lg bg-muted/40 px-3 py-2">
-            <span class="text-xs text-muted-foreground">total annotations</span>
+          <div class="bg-muted/40 my-4 flex items-baseline justify-between rounded-lg px-3 py-2">
+            <span class="text-muted-foreground text-xs">total annotations</span>
             <span class="text-xl font-bold tabular-nums">{annotationTotal}</span>
           </div>
 
@@ -223,9 +221,10 @@
           {/each}
         {:else}
           <!-- Time tab -->
-          <div class="my-4 flex items-baseline justify-between rounded-lg bg-muted/40 px-3 py-2">
-            <span class="text-xs text-muted-foreground">
-              total time ({timeGroups.length} {timeGroups.length === 1 ? "step" : "steps"})
+          <div class="bg-muted/40 my-4 flex items-baseline justify-between rounded-lg px-3 py-2">
+            <span class="text-muted-foreground text-xs">
+              total time ({timeGroups.length}
+              {timeGroups.length === 1 ? "step" : "steps"})
             </span>
             <span class="text-xl font-bold tabular-nums">{formatDuration(timeTotal)}</span>
           </div>
@@ -244,8 +243,8 @@
                   <tbody>
                     {#each authors as author (author.label)}
                       <tr class="border-b last:border-0">
-                        <td class="py-1.5 pl-5 text-muted-foreground">{author.label}</td>
-                        <td class="py-1.5 text-right tabular-nums text-muted-foreground">{author.value}</td>
+                        <td class="text-muted-foreground py-1.5 pl-5">{author.label}</td>
+                        <td class="text-muted-foreground py-1.5 text-right tabular-nums">{author.value}</td>
                       </tr>
                     {/each}
                   </tbody>
@@ -253,7 +252,7 @@
               </div>
             {/each}
           {:else}
-            <p class="py-8 text-center text-sm text-muted-foreground">No time tracked yet.</p>
+            <p class="text-muted-foreground py-8 text-center text-sm">No time tracked yet.</p>
           {/if}
         {/if}
       </div>
