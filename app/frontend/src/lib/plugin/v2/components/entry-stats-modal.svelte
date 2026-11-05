@@ -7,6 +7,7 @@
 
   import type { IIdahDriverV2, IStatEntry, IStatTag } from "@/plugin/v2/types";
   import Badge from "@/components/ui/badge/badge.svelte";
+  import { formatDuration } from "@/utils/duration";
 
   // Props
   interface Props {
@@ -16,6 +17,7 @@
 
   // Variables
   let open = $state(false);
+  let tab = $state<"annotations" | "time">("annotations");
   let stats = $state<IStatEntry[]>([]);
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -68,6 +70,14 @@
       authors: g.authors,
     }));
   });
+
+  // Total annotations (from the core "annotation.count" stat)
+  const annotationTotal = $derived(
+    Number(stats.find((s) => s.key === "annotation.count")?.value ?? 0),
+  );
+
+  // Total tracked time across all steps (combined cache on the entry)
+  const timeTotal = $derived(Object.values(driver.timeTracking ?? {}).reduce((a, b) => a + b, 0));
 
   const grouped = $derived.by(() => {
     const map = new SvelteMap<
@@ -146,47 +156,40 @@
         <Dialog.Description>Annotation statistics and Media information for the current entry.</Dialog.Description>
       </Dialog.Header>
 
-      <div class="mt-2 max-h-[60vh] overflow-y-auto">
+      <div class="mt-3 flex gap-1">
+        <button
+          type="button"
+          onclick={() => (tab = "annotations")}
+          class="flex-1 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors"
+          class:bg-muted={tab === "annotations"}
+          class:text-muted-foreground={tab !== "annotations"}
+        >
+          Annotations
+        </button>
+        <button
+          type="button"
+          onclick={() => (tab = "time")}
+          class="flex-1 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors"
+          class:bg-muted={tab === "time"}
+          class:text-muted-foreground={tab !== "time"}
+        >
+          Time
+        </button>
+      </div>
+
+      <div class="max-h-[50vh] overflow-y-auto pt-2">
         {#if loading}
           <p class="text-muted-foreground py-6 text-center text-sm">Loading…</p>
         {:else if error}
           <p class="text-destructive py-6 text-center text-sm">{error}</p>
         {:else if stats.length === 0}
           <p class="text-muted-foreground py-6 text-center text-sm">No statistics available yet.</p>
-        {:else}
-          <!-- Time section: step totals + indented authors -->
-          {#if timeGroups.length > 0}
-            <div class="mb-4">
-              <div
-                class="text-muted-foreground mb-1 flex justify-between text-xs font-semibold tracking-wide uppercase"
-              >
-                <span>Time</span>
-                <span>Duration</span>
-              </div>
-              <table class="w-full text-sm">
-                <tbody>
-                  {#each timeGroups as { step, color, total, authors } (step)}
-                    <tr class="border-b last:border-0">
-                      <td class="inline-flex items-center gap-2 py-1.5">
-                        <span class="h-2 w-2 rounded-full" style:background={color}></span>
-                        <span class="font-semibold">{step}</span>
-                      </td>
-                      <td class="py-1.5 text-right tabular-nums font-semibold">{total ?? "—"}</td>
-                    </tr>
-                    {#each authors as author (author.label)}
-                      <tr class="border-b last:border-0">
-                        <td class="inline-flex items-center gap-2 py-1.5">
-                          <span class="w-4"></span>
-                          <span class="text-muted-foreground">{author.label}</span>
-                        </td>
-                        <td class="py-1.5 text-right tabular-nums text-muted-foreground">{author.value}</td>
-                      </tr>
-                    {/each}
-                  {/each}
-                </tbody>
-              </table>
-            </div>
-          {/if}
+        {:else if tab === "annotations"}
+          <!-- Annotations tab -->
+          <div class="my-4 flex items-baseline justify-between rounded-lg bg-muted/40 px-3 py-2">
+            <span class="text-xs text-muted-foreground">total annotations</span>
+            <span class="text-xl font-bold tabular-nums">{annotationTotal}</span>
+          </div>
 
           {#each grouped as { section, unitHeader, rows } (section)}
             <div class="mb-4">
@@ -218,6 +221,40 @@
               </table>
             </div>
           {/each}
+        {:else}
+          <!-- Time tab -->
+          <div class="my-4 flex items-baseline justify-between rounded-lg bg-muted/40 px-3 py-2">
+            <span class="text-xs text-muted-foreground">
+              total time ({timeGroups.length} {timeGroups.length === 1 ? "step" : "steps"})
+            </span>
+            <span class="text-xl font-bold tabular-nums">{formatDuration(timeTotal)}</span>
+          </div>
+
+          {#if timeGroups.length > 0}
+            {#each timeGroups as { step, color, total, authors } (step)}
+              <div class="mb-4">
+                <div class="mb-1 flex items-baseline justify-between text-xs font-semibold tracking-wide uppercase">
+                  <span class="text-muted-foreground inline-flex items-center gap-1.5">
+                    <span class="h-2 w-2 rounded-full" style:background={color}></span>
+                    <span>{step}</span>
+                  </span>
+                  <span class="tabular-nums">{total ?? "—"}</span>
+                </div>
+                <table class="w-full text-sm">
+                  <tbody>
+                    {#each authors as author (author.label)}
+                      <tr class="border-b last:border-0">
+                        <td class="py-1.5 pl-5 text-muted-foreground">{author.label}</td>
+                        <td class="py-1.5 text-right tabular-nums text-muted-foreground">{author.value}</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {/each}
+          {:else}
+            <p class="py-8 text-center text-sm text-muted-foreground">No time tracked yet.</p>
+          {/if}
         {/if}
       </div>
     </Dialog.Content>

@@ -21,7 +21,7 @@ module EntryTimeSlot
     self.resource = Resource::Dataset::EntryTimeSlots
 
     def scoped(action)
-      result = auth_context.can!(action, self.class.resource) do |scope|
+      auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
         scope.as_org_owner? do
@@ -49,7 +49,6 @@ module EntryTimeSlot
 
         scope.as_user? { user_project_scoped_query(action) }
       end
-      result
     end
 
     query

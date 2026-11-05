@@ -13,13 +13,22 @@ RSpec.describe EntryWorkTime, database: true do
     project_repo.create(name: "Proj_test", description: "", organization_id: 1, created_by_email: "alpha@idah.com")
   end
   let!(:dataset_id) do
-    dataset_repo.create(modality: "image", labels: [], labeling_configuration: {}, workflow_configuration: {},
-                        project_id:)
+    dataset_repo.create(
+      modality: "image",
+      labels: [],
+      labeling_configuration: {},
+      workflow_configuration: {},
+      project_id:
+    )
   end
   let!(:entry_id) do
     entry_repo.create(
-      priority: 1, wf_step: "annotate", status: "in_progress",
-      assigned_to_id: 10, project_id:, dataset_id:
+      priority: 1,
+      wf_step: "annotate",
+      status: "in_progress",
+      assigned_to_id: 10,
+      project_id:,
+      dataset_id:
     )
   end
 
@@ -124,7 +133,12 @@ RSpec.describe EntryWorkTime, database: true do
     let(:entry_repo) { Entry::Repository.new(system_ctx) }
 
     let!(:project_id) do
-      Project::Repository.new(system_ctx).create(name: "Proj_test", description: "", organization_id: 1, created_by_email: "alpha@idah.com")
+      Project::Repository.new(system_ctx).create(
+        name: "Proj_test",
+        description: "",
+        organization_id: 1,
+        created_by_email: "alpha@idah.com"
+      )
     end
     let!(:dataset_id) do
       Dataset::Repository.new(system_ctx).create(
@@ -133,8 +147,12 @@ RSpec.describe EntryWorkTime, database: true do
     end
     let!(:entry_id) do
       entry_repo.create(
-        priority: 1, wf_step: "annotate", status: "in_progress",
-        assigned_to_id: 10, project_id:, dataset_id:
+        priority: 1,
+        wf_step: "annotate",
+        status: "in_progress",
+        assigned_to_id: 10,
+        project_id:,
+        dataset_id:
       )
     end
 
@@ -150,8 +168,12 @@ RSpec.describe EntryWorkTime, database: true do
     end
     let!(:entry_org2) do
       entry_repo.create(
-        priority: 1, wf_step: "annotate", status: "in_progress",
-        assigned_to_id: 10, project_id: project_org2, dataset_id: dataset_org2
+        priority: 1,
+        wf_step: "annotate",
+        status: "in_progress",
+        assigned_to_id: 10,
+        project_id: project_org2,
+        dataset_id: dataset_org2
       )
     end
 

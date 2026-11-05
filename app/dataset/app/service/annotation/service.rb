@@ -2,8 +2,10 @@
 
 module Annotation
   class Service < Verse::Service::Base
-    use annotations: Annotation::Repository, entries: Entry::Repository,
-        entry_time_slots: EntryTimeSlot::Repository, entry_work_times: EntryWorkTime::Repository
+    use annotations: Annotation::Repository,
+        entries: Entry::Repository,
+        entry_time_slots: EntryTimeSlot::Repository,
+        entry_work_times: EntryWorkTime::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       result = annotations.index(

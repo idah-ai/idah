@@ -63,22 +63,35 @@ RSpec.describe TimeTracking do
       project_repo.create(name: "P", description: "", organization_id: 1, created_by_email: "user_test@idah.com")
     end
     let!(:dataset_id) do
-      dataset_repo.create(modality: "image", labels: [], labeling_configuration: {}, workflow_configuration: {},
-                          project_id:)
+      dataset_repo.create(
+        modality: "image",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {},
+        project_id:
+      )
     end
     let!(:entry_id) do
       entry_repo.create(
-        priority: 1, wf_step: "annotate", status: "in_progress",
-        assigned_to_id: 10, assigned_to_email: "annotator@example.com",
-        project_id:, dataset_id:
+        priority: 1,
+        wf_step: "annotate",
+        status: "in_progress",
+        assigned_to_id: 10,
+        assigned_to_email: "annotator@example.com",
+        project_id:,
+        dataset_id:
       )
     end
     let(:now) { Time.utc(2026, 11, 3, 10, 30, 15) }
 
     it "inserts a slot and creates an open work-time row" do
       described_class.touch(
-        entry_repo:, slot_repo:, work_repo:,
-        entry_id:, account_id: 10, email: "annotator@example.com",
+        entry_repo:,
+        slot_repo:,
+        work_repo:,
+        entry_id:,
+        account_id: 10,
+        email: "annotator@example.com",
         at: now
       )
 
@@ -99,8 +112,12 @@ RSpec.describe TimeTracking do
 
       expect do
         described_class.touch(
-          entry_repo:, slot_repo:, work_repo:,
-          entry_id:, account_id: 10, email: "annotator@example.com",
+          entry_repo:,
+          slot_repo:,
+          work_repo:,
+          entry_id:,
+          account_id: 10,
+          email: "annotator@example.com",
           at: now
         )
       end.not_to(change { slot_repo.table.count })
@@ -108,15 +125,23 @@ RSpec.describe TimeTracking do
 
     it "keeps the same open row on a second touch" do
       described_class.touch(
-        entry_repo:, slot_repo:, work_repo:,
-        entry_id:, account_id: 10, email: "annotator@example.com",
+        entry_repo:,
+        slot_repo:,
+        work_repo:,
+        entry_id:,
+        account_id: 10,
+        email: "annotator@example.com",
         at: now
       )
 
       later = now + 30
       described_class.touch(
-        entry_repo:, slot_repo:, work_repo:,
-        entry_id:, account_id: 10, email: "different@example.com",
+        entry_repo:,
+        slot_repo:,
+        work_repo:,
+        entry_id:,
+        account_id: 10,
+        email: "different@example.com",
         at: later
       )
 
@@ -128,8 +153,12 @@ RSpec.describe TimeTracking do
 
     it "does nothing when the caller is not the assignee" do
       described_class.touch(
-        entry_repo:, slot_repo:, work_repo:,
-        entry_id:, account_id: 99, email: "other@example.com",
+        entry_repo:,
+        slot_repo:,
+        work_repo:,
+        entry_id:,
+        account_id: 99,
+        email: "other@example.com",
         at: now
       )
 
@@ -139,14 +168,21 @@ RSpec.describe TimeTracking do
 
     it "does nothing when the step is not allowed" do
       start_entry_id = entry_repo.create(
-        priority: 1, wf_step: "start", status: "in_progress",
+        priority: 1,
+        wf_step: "start",
+        status: "in_progress",
         assigned_to_id: 10,
-        project_id:, dataset_id:
+        project_id:,
+        dataset_id:
       )
 
       described_class.touch(
-        entry_repo:, slot_repo:, work_repo:,
-        entry_id: start_entry_id, account_id: 10, email: "annotator@example.com",
+        entry_repo:,
+        slot_repo:,
+        work_repo:,
+        entry_id: start_entry_id,
+        account_id: 10,
+        email: "annotator@example.com",
         at: now
       )
 
@@ -157,17 +193,24 @@ RSpec.describe TimeTracking do
     context "when the entry is unassigned" do
       let!(:unassigned_entry_id) do
         entry_repo.create(
-          priority: 1, wf_step: "annotate", status: "pending",
+          priority: 1,
+          wf_step: "annotate",
+          status: "pending",
           assigned_to_id: nil,
-          project_id:, dataset_id:
+          project_id:,
+          dataset_id:
         )
       end
 
       it "does nothing" do
         described_class.touch(
-          entry_repo:, slot_repo:, work_repo:,
-          entry_id: unassigned_entry_id, account_id: 10,
-          email: "user_test@idah.com", at: now
+          entry_repo:,
+          slot_repo:,
+          work_repo:,
+          entry_id: unassigned_entry_id,
+          account_id: 10,
+          email: "user_test@idah.com",
+          at: now
         )
 
         expect(slot_repo.table.where(entry_id: unassigned_entry_id).count).to eq(0)
@@ -184,17 +227,30 @@ RSpec.describe TimeTracking do
     let(:dataset_repo) { Dataset::Repository.new(system_ctx) }
 
     let!(:project_id) do
-      project_repo.create(name: "Poject Test", description: "", organization_id: 1, created_by_email: "user_test@idah.com")
+      project_repo.create(
+        name: "Poject Test",
+        description: "",
+        organization_id: 1,
+        created_by_email: "user_test@idah.com"
+      )
     end
     let!(:dataset_id) do
-      dataset_repo.create(modality: "image", labels: [], labeling_configuration: {}, workflow_configuration: {},
-                          project_id:)
+      dataset_repo.create(
+        modality: "image",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {},
+        project_id:
+      )
     end
     let!(:entry_id) do
       entry_repo.create(
-        priority: 1, wf_step: "annotate", status: "in_progress",
+        priority: 1,
+        wf_step: "annotate",
+        status: "in_progress",
         assigned_to_id: 10,
-        project_id:, dataset_id:
+        project_id:,
+        dataset_id:
       )
     end
 
@@ -202,16 +258,24 @@ RSpec.describe TimeTracking do
 
     def touch_at(account_id:, at:)
       described_class.touch(
-        entry_repo:, slot_repo:, work_repo:,
-        entry_id:, account_id:, email: "user_test@idah.com", at:
+        entry_repo:,
+        slot_repo:,
+        work_repo:,
+        entry_id:,
+        account_id:,
+        email: "user_test@idah.com",
+        at:
       )
     end
 
     def do_rollup(submitted_at: Time.now)
       described_class.rollup(
-        slot_repo:, work_repo:,
+        slot_repo:,
+        work_repo:,
         system_entries_repo: entry_repo,
-        entry_id:, wf_step: "annotate", submitted_at:
+        entry_id:,
+        wf_step: "annotate",
+        submitted_at:
       )
     end
 
@@ -239,7 +303,7 @@ RSpec.describe TimeTracking do
       do_rollup(submitted_at: later + 10)
 
       rows = work_repo.table.where(entry_id:, account_id: 10, wf_step: "annotate")
-                       .order(:created_at).all
+                      .order(:created_at).all
       expect(rows.size).to eq(2)
       expect(rows[0][:seconds]).to be > 0
       expect(rows[1][:seconds]).to be > 0

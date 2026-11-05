@@ -17,11 +17,10 @@ module TimeTracking
 
   # Called on every user action (mutation hook or /activity ping).
   # Guarded: must be called inside a savepoint.
-  # rubocop:disable Metrics/ParameterLists
   def self.touch(
-    entry_repo:,     # Entry::Repository (scoped, used for find!)
-    slot_repo:,      # EntryTimeSlot::Repository
-    work_repo:,      # EntryWorkTime::Repository
+    entry_repo:,
+    slot_repo:,
+    work_repo:,
     entry_id:,
     account_id:,
     email:,
@@ -55,10 +54,11 @@ module TimeTracking
   end
 
   # Called on submit / error. Finalizes every open session on the leaving step.
+  # rubocop:disable Metrics/ParameterLists
   def self.rollup(
-    slot_repo:,      # EntryTimeSlot::Repository
-    work_repo:,      # EntryWorkTime::Repository
-    system_entries_repo:, # Entry::Repository (system scope, no events)
+    slot_repo:,
+    work_repo:,
+    system_entries_repo:,
     entry_id:,
     wf_step:,
     submitted_at: Time.now
@@ -95,6 +95,7 @@ module TimeTracking
     # Refresh the combined per-step cache
     recompute_entry_cache(system_entries_repo, entry_id)
   end
+  # rubocop:enable Metrics/ParameterLists
 
   # Recompute entries.time_tracking from all entry_work_times rows of the entry.
   def self.recompute_entry_cache(system_entries_repo, entry_id)

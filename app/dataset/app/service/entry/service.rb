@@ -9,7 +9,8 @@ module Entry
         annotations: Annotation::Repository,
         entry_time_slots: EntryTimeSlot::Repository,
         entry_work_times: EntryWorkTime::Repository
-    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository,
+    use_system system_datasets_repo: Dataset::Repository,
+               system_entries_repo: Entry::Repository,
                system_entry_time_slots_repo: EntryTimeSlot::Repository,
                system_entry_work_times_repo: EntryWorkTime::Repository
 
@@ -173,16 +174,6 @@ module Entry
 
         # Use read scope when updating as anyone with read access can select
         entries.select(entry.id)
-
-        # Opening the entry starts the session even before any edit.
-        TimeTracking.safe_touch(
-          entry_repo: entries,
-          slot_repo: entry_time_slots,
-          work_repo: entry_work_times,
-          entry_id: entry.id,
-          account_id: account_id,
-          email: auth_context.metadata[:email]
-        )
 
         system_datasets_repo.update_progress!(entry.dataset_id)
         entries.find!(entry.id)
