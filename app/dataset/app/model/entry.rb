@@ -84,6 +84,7 @@ module Entry
       unless value.is_a?(String) && value.match?(/T.*(?:Z|[+-]\d{2}:?\d{2})\z/)
         raise Verse::Error::ValidationFailed, "Completion bounds require an ISO timestamp with timezone"
       end
+
       # iso8601 can normalize invalid calendar dates; reject those explicitly.
       Date.iso8601(value.split("T", 2).first)
       Time.iso8601(value).utc
