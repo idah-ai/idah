@@ -134,6 +134,17 @@ RSpec.describe NoteFeed::Service, database: true do
           expect(result.content_md).to be_nil
         end
 
+        it "de-duplicates repeated feedback_keys" do
+          params = note_feed_attributes.merge(
+            feedback_keys: ["aB3kF9mN2q", "aB3kF9mN2q"],
+            content_md: nil
+          )
+
+          result = subject.create_from_params(params)
+
+          expect(result.feedback_keys).to eq(["aB3kF9mN2q"])
+        end
+
         it "raises error when a feedback_key does not exist in dataset config" do
           params = note_feed_attributes.merge(
             feedback_keys: ["nonexistent"],
@@ -393,6 +404,61 @@ RSpec.describe NoteFeed::Service, database: true do
           expect(result.feedback_keys).to eq(["aB3kF9mN2q"])
           expect(result.content_md).to be_nil
           expect(result.edited_at).to eq(Time.now)
+        end
+
+        it "de-duplicates repeated feedback_keys" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  feedback_keys: ["aB3kF9mN2q", "aB3kF9mN2q"],
+                  content_md: nil
+                }
+              }
+            }
+          )
+
+          result = subject.update(record)
+
+          expect(result.feedback_keys).to eq(["aB3kF9mN2q"])
+        end
+
+        it "raises ValidationFailed (not a 500) when feedback_keys contains non-string items" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  feedback_keys: [1],
+                  content_md: "keep me"
+                }
+              }
+            }
+          )
+
+          expect { subject.update(record) }
+            .to raise_error(Verse::Error::ValidationFailed, /must be an array of strings/)
+        end
+
+        it "raises ValidationFailed when feedback_keys contains null items" do
+          record = deserialize(
+            {
+              data: {
+                type: "dataset:note_feeds",
+                id: note_feed.id,
+                attributes: {
+                  feedback_keys: [nil],
+                  content_md: "keep me"
+                }
+              }
+            }
+          )
+
+          expect { subject.update(record) }
+            .to raise_error(Verse::Error::ValidationFailed, /must be an array of strings/)
         end
       end
 

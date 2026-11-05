@@ -4,12 +4,14 @@ module Exports
   class Job < Jobs::Base
     def run_impl
       options, dataset_ids = arguments.values_at(:options, :dataset_ids)
+      entry_ids = arguments[:entry_ids]
       export_class = arguments[:exporter]
 
       export_context = Exports::Context.new(
         self,
         dataset_ids,
-        options
+        options,
+        entry_ids
       )
 
       export_class = Verse::Util::Reflection.constantize(export_class)

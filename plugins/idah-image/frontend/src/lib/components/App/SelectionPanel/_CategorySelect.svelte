@@ -17,10 +17,11 @@
     onValueChange: (value?: string) => void;
     disabled: boolean;
     placeholder?: string;
+    showShapeIcon?: boolean;
     usedMaskCategories?: Set<string>;
   };
 
-  let { configValues, category, selectedCategory, shapeType, onValueChange, disabled, placeholder, usedMaskCategories = new Set<string>() }: Props = $props();
+  let { configValues, category, selectedCategory, shapeType, onValueChange, disabled, placeholder, showShapeIcon = true, usedMaskCategories = new Set<string>() }: Props = $props();
 </script>
 
 <div class="flex flex-col gap-1">
@@ -36,7 +37,10 @@
             <div class="whitespace-break-spaces">{parentLabel}</div>
           {/if}
           <div class="flex items-center justify-start gap-1">
-            <ShapeIcon {shapeType} color={category.color} />
+            {#if showShapeIcon}
+            	<ShapeIcon {shapeType} color={category.color} />
+            {/if}
+
             <b>{category.label}</b>
           </div>
         </div>
@@ -57,7 +61,9 @@
             disabled={isDisabled}
             title={isMaskCategoryBlocked ? "Already used by another mask on this entry" : undefined}
           >
-            <ShapeIcon {shapeType} {color} />
+            {#if showShapeIcon}
+            	<ShapeIcon {shapeType} {color} />
+            {/if}
             {valueLabel}
             {#if isMaskCategoryBlocked}
               <span class="text-[0.625rem] text-red-400 dark:text-red-500">
