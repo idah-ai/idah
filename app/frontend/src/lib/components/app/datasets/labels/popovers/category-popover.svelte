@@ -6,7 +6,6 @@
   import ColorPickerField from "@/components/app/forms/fields/picker/color-picker-field.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Button } from "@/components/ui/button";
-  import { Kbd, KbdGroup } from "@/components/ui/kbd";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Separator from "@/components/ui/separator/separator.svelte";
 
@@ -64,11 +63,6 @@
           </div>
         {/if}
 
-        <!-- KBD -->
-        <KbdGroup>
-          <Kbd>⌘ {label.charAt(0)}</Kbd>
-        </KbdGroup>
-
         <!-- LABEL -->
         <span class="truncate">{label}</span>
       </Button>
@@ -106,8 +100,6 @@
             updateCategory({ label: value });
           }}
         />
-
-        <!-- SHORTCUT KEY -->
 
         <!-- SELECTABLE -->
         <CheckboxField
