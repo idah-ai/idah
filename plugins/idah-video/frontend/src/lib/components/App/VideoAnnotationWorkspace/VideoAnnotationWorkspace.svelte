@@ -20,6 +20,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { categoryPicker } from "$lib/state/category-picker";
   import {
     VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX,
     VIDEO_POLYGON as IDAH_VIDEO_POLYGON,
@@ -344,6 +345,20 @@
       onShapeSelection(...shapeSelectionArgs);
     }
   }
+
+  /** Apply a category from a command (category.reuse-last) the way the sidebar does: change the
+   *  selected annotation or group, or pick it for drawing when nothing is selected. Returns false
+   *  when the category doesn't exist for the selection's shape type. */
+  function applyCategory(category: string, shapeType: string): boolean {
+    if (!editable) return false;
+    const targetShapeType =
+      selAnnotation?.shape_type ?? selection.selectedGroups[0]?.annotations[0]?.shape_type ?? shapeType;
+    if (!getDriver().config[targetShapeType]?.values.some((v) => v.id === category)) return false;
+    onEditValue(category, targetShapeType);
+    return true;
+  }
+
+  $effect(() => categoryPicker.attach(applyCategory));
 
   /** Called by the Confirm button / Enter key in the popover.
    *  Creates the annotation with the value the user picked (category + any properties). */
