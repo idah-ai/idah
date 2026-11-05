@@ -71,9 +71,8 @@ module Dataset
       )
 
       if auth_context.can?(:read, self.class.resource) == :as_user
-        owned_projects = table.db[:project_members].where(
-          account_id: auth_context.metadata[:id], role: "project_owner", disabled_at: nil
-        ).select(:project_id)
+        owned_projects = ProjectMember::Repository.new(auth_context)
+                                                  .owned_project_ids(auth_context.metadata[:id])
         raise Verse::Error::Unauthorized, "Project owner access required" unless owned_projects.any?
 
         collection = collection.where(project_id: owned_projects)

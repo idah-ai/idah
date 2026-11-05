@@ -27,25 +27,15 @@ module Dataset
 
     def category_counts(id)
       dataset = datasets.find!(id)
-      if auth_context.can?(:read, Resource::Dataset::Datasets) == :as_user
-        owner = project_members.table.where(
-          project_id: dataset.project_id,
-          account_id: auth_context.metadata[:id],
-          role: "project_owner",
-          disabled_at: nil
-        ).any?
-        raise Verse::Error::Unauthorized, "Project owner access required" unless owner
+      if auth_context.can?(:read, Resource::Dataset::Datasets) == :as_user &&
+         !project_members.owner?(dataset.project_id, auth_context.metadata[:id])
+        raise Verse::Error::Unauthorized, "Project owner access required"
       end
 
       observed = category_count_rows.totals_for_dataset(id).to_h do |row|
         [row[:category], row[:annotation_count]]
       end
-      config = dataset.labeling_configuration || {}
-      configured = config.each_value.flat_map do |tool_config|
-        next [] unless tool_config.is_a?(Hash)
-
-        Array(tool_config[:values]).filter_map { |value| value[:id] }
-      end
+      configured = dataset.configured_category_ids
 
       (configured + observed.keys).uniq.sort.map do |category|
         DatasetCategoryTotal::Record.new(

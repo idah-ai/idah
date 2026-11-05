@@ -71,4 +71,57 @@ RSpec.describe "entry category count concurrency" do
     first&.join
     second&.join
   end
+
+  it "preserves a decrement racing an insert for the same entry and category" do
+    attributes = {
+      project_id: @project_id, dataset_id: @dataset_id, entry_id: @entry_id,
+      category: "car", shape_type: "image:box", shape_args: Sequel.pg_jsonb({}),
+      created_by_email: "system@example.com"
+    }
+    original_id = annotations.client { |db| db[:annotations].insert(attributes) }
+    first_inserted = Queue.new
+    release_first = Queue.new
+    delete_pid = Queue.new
+
+    first = Thread.new do
+      annotations.client do |db|
+        db.transaction do
+          db[:annotations].insert(attributes)
+          first_inserted << true
+          Timeout.timeout(5) { release_first.pop }
+        end
+      end
+    end
+    Timeout.timeout(5) { first_inserted.pop }
+
+    second = Thread.new do
+      annotations.client do |db|
+        delete_pid << db.get(Sequel.lit("pg_backend_pid()"))
+        db[:annotations].where(id: original_id).delete
+      end
+    end
+    pid = Timeout.timeout(5) { delete_pid.pop }
+    Timeout.timeout(5) do
+      loop do
+        waiting = annotations.client do |db|
+          db[:pg_stat_activity].where(pid:).get(:wait_event_type)
+        end
+        break if waiting == "Lock"
+
+        sleep 0.01
+      end
+    end
+    release_first << true
+    first.value
+    second.value
+
+    rows = annotations.client do |db|
+      db[:entry_category_counts].where(entry_id: @entry_id, category: "car").all
+    end
+    expect(rows.map { |row| row[:count] }).to eq([1])
+  ensure
+    release_first << true if release_first
+    first&.join
+    second&.join
+  end
 end

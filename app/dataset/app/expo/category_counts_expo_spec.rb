@@ -38,4 +38,29 @@ RSpec.describe "category count endpoints", type: :exposition, as: :system do
     expect(body.fetch("data").map { |record| [record.fetch("type"), record.dig("attributes", "annotation_count")] })
       .to eq([[Resource::Dataset::CategoryTotals, 3]])
   end
+
+  it "denies an annotator dataset totals over HTTP", database: true, as: :annotator do
+    system = Verse::Auth::Context[:system]
+    project_id = Project::Repository.new(system).create(
+      name: "Count access", created_by_email: "system@example.com", organization_id: 1
+    )
+    dataset_id = Dataset::Repository.new(system).create(
+      project_id:,
+      name: "Count access",
+      modality: "image",
+      labels: [],
+      labeling_configuration: {},
+      workflow_configuration: {}
+    )
+    ProjectMember::Repository.new(system).create(
+      project_id:, account_id: 4, role: "annotator", email: "annotator@example.com", invited_by_id: 1
+    )
+    Entry::Repository.new(system).create(
+      project_id:, dataset_id:, status: "pending", wf_step: "annotate", assigned_to_id: 4
+    )
+
+    get "/datasets/#{dataset_id}/category_counts"
+
+    expect(last_response.status).to eq(403)
+  end
 end
