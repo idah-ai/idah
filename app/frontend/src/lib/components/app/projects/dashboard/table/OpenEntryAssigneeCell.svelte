@@ -14,8 +14,10 @@
   );
 </script>
 
-{#if record.assigned_to_id == null}<Text size="sm">Unassigned</Text>{:else if email}<AccountAvatar
-    size="sm"
-    {email}
-    showEmail
-  />{:else}<Text size="sm">Assignment details unavailable</Text>{/if}
+{#if record.assigned_to_id == null}
+  <Text size="xs">Unassigned</Text>
+{:else if email}
+  <AccountAvatar size="sm" {email} showEmail />
+{:else}
+  <Text size="sm">Assignment details unavailable</Text>
+{/if}

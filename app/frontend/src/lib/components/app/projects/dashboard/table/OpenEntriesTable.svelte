@@ -8,7 +8,7 @@
   import DatasetCell from "@/components/app/projects/dashboard/table/OpenEntryDatasetCell.svelte";
   import StatusCell from "@/components/app/projects/dashboard/table/OpenEntryStatusCell.svelte";
   import AssigneeCell from "@/components/app/projects/dashboard/table/OpenEntryAssigneeCell.svelte";
-  import TimeCell from "@/components/app/projects/dashboard/table/OpenEntryTimeCell.svelte";
+  // import TimeCell from "@/components/app/projects/dashboard/table/OpenEntryTimeCell.svelte";
   import { entryWorkflowSteps } from "@/data/model/dataset/entries/constants";
 
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -37,7 +37,7 @@
     { label: "Status" },
     { label: "Stage" },
     { label: "Assigned to" },
-    { label: "In status", class: "pr-0 text-right" },
+    // { label: "In status", class: "pr-0 text-right" },
   ]);
   const dataSource = untrack(() => sources.openEntries(ids, combined));
   let response: CollectionResponse<EntryRecord> = $state.raw({ data: [], meta: {} });
@@ -122,7 +122,7 @@
           <StatusCell {record} />
         </TableCell>
 
-        <TableCell class="text-muted-foreground">
+        <TableCell class="text-xs">
           {entryWorkflowSteps.find((step) => step.value === record.wf_step)?.label ?? "—"}
         </TableCell>
 
@@ -130,9 +130,9 @@
           <AssigneeCell {record} />
         </TableCell>
 
-        <TableCell class="pr-0 text-right">
+        <!-- <TableCell class="pr-0 text-right">
           <TimeCell {record} />
-        </TableCell>
+        </TableCell> -->
       </TableRow>
     {/each}
   </AppTableBody>

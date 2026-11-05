@@ -34,9 +34,9 @@
   const source = untrack(() => sources.table(ids));
   const tableColumns = [
     { label: "Dataset" },
-    { label: "Entries" },
+    { label: "Entries", class: "text-right" },
     { label: "Progress" },
-    { label: "Annotations" },
+    { label: "Annotations", class: "text-right" },
     { label: "Delivery date" },
     { label: "Delivery status" },
   ];

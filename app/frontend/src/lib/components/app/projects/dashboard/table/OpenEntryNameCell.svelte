@@ -6,6 +6,6 @@
   let { record }: { record: EntryRecord } = $props();
 </script>
 
-<a class="text-primary text-xs underline-offset-4 hover:underline" href={resolve(`/entries/${record.id}/plugin`)}
-  >{record.name || record.resource}</a
->
+<a class="text-primary text-sm underline-offset-4 hover:underline" href={resolve(`/entries/${record.id}/plugin`)}>
+  {record.name || record.resource}
+</a>
