@@ -77,6 +77,22 @@ RSpec.describe ProjectMember, database: true do
       )
     end
 
+    describe "#owned_project_ids and #owner?" do
+      it "returns enabled owner memberships only", as: :project_owner do
+        repository = described_class.new(current_auth_context)
+
+        expect(repository.owned_project_ids(3).all.map { |row| row[:project_id] })
+          .to contain_exactly(project_org1, project_org2)
+        expect(repository.owner?(project_org1, 3)).to be(true)
+
+        project_member_repo.update!(pm_project_owner_org2, { disabled_at: Time.now.utc })
+
+        expect(repository.owned_project_ids(3).all.map { |row| row[:project_id] }).to eq([project_org1])
+        expect(repository.owner?(project_org2, 3)).to be(false)
+        expect(repository.owner?(project_org1, 4)).to be(false)
+      end
+    end
+
     describe "#scoped" do
       context "As Admin", as: :admin do
         subject { described_class.new(current_auth_context) }
