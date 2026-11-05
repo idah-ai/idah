@@ -5,7 +5,7 @@
   import { CalendarIcon } from "@lucide/svelte";
 
   import { Button } from "@/components/ui/button";
-  import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+  import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
   import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
   import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
   import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
